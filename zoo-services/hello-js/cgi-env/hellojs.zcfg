@@ -1,0 +1,47 @@
+[hellojs]
+ Title = HelloWorld Service in JavaScript
+ Abstract = Output and Hello Wolrd string
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = hello.js
+ serviceType = JS
+ <MetaData lang="en">
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [S]
+   Title = Name
+   Abstract = The name to display in the hello message
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+    title = Mon test  
+   </MetaData>   
+   <LiteralData>
+    DataType = string
+    <Default>
+     value = Your Name Here
+    </Default>
+    <Supported>
+     value = Your Name Here
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [result]
+   Title = The resulting string
+   Abstract = The string created by service.
+   <MetaData lang="en">
+    title = Mon test  
+   </MetaData>   
+   <LiteralOutput>
+    <Default>
+     datatype = string
+    </Default>
+    <Supported>
+     dataType = string
+    </Supported>
+   </LiteralOutput>
+ </DataOutputs>  

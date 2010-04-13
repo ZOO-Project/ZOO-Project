@@ -1,0 +1,56 @@
+[Multiply]
+ Title = Multiply two values
+ Abstract = Multiply two values and stor the result in Result.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = demo_service.zo
+ serviceType = C
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [A]
+   Title = first value
+   Abstract = The value used to multiply by B.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1.0
+     UOM = meters
+    </Default>
+    <Supported>
+     UOM = feet
+    </Supported>
+   </LiteralData>
+  [B]
+   Title = second value
+   Abstract = The value used to multiply by A.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     UOM = meters
+    </Default>
+    <Supported>
+     UOM = feet
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = A x B 
+   Abstract = The value of A x B.
+   <LiteralOutput>
+    DataType = float
+    <Default>
+     UOM = meters
+    </Default>
+    <Supported>
+     UOM = feet
+    </Supported>
+   </LiteralOutput>
+ </DataOutputs>  

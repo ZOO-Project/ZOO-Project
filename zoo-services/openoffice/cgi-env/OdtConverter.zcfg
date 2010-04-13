@@ -1,0 +1,55 @@
+[OdtConverter]
+ Title = Convert raster data from one format to another. 
+ Abstract = Converts raster data between different formats.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = Python
+ serviceProvider = Exporter
+ <MetaData lang="en">
+   title = My Demo
+ </MetaData>
+ <DataInputs>
+  [InputDoc]
+   Title = The input data source name
+   Abstract = The input data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = feet
+    </Default>	
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+  [OutputDoc]
+   Title = The output data source name
+   Abstract = The output data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = feet
+    </Default>	
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [OutputedDoc]
+   Title = The resulting converted file
+   Abstract = The file name resulting of the convertion
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = feet
+    </Default>	
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+ </DataOutputs>  

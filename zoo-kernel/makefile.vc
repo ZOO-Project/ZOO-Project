@@ -1,0 +1,60 @@
+GEODIR=c:/OSGeo4W
+DESTDIR=c:/OSGeo4W
+TPATH=..\..\..\tools
+TOOLS=$(TPATH)\bin
+CFLAGS=/EHa /nologo /MT /W3 /GX /O2 /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I./ -I..\thirds\dirent-win32 -IC:\OSGeo4W\apps\Python25\include -I$(GEODIR)/include -I$(TPATH)\include -DLINUX_FREE_ISSUE #-DDEBUG
+CC=cl $(CFLAGS)
+CPP=cl /TP $(CFLAGS)
+
+all:  service_loader
+
+service_loader: service.h lex.sr.obj service_conf.tab.obj service_conf.y service_internal_python.obj service_loader.obj main_conf_read.tab.obj lex.cr.obj service_internal.obj
+	cl $(CFLAGS) lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj lex.cr.obj service_internal.obj service_internal_python.obj service_loader.obj -o service_loader -ldl `python-config --libs` `xml2-config --libs` -lfl -lcurl
+
+main_conf_read.tab.c: main_conf_read.y service.h
+	$(TOOLS)\bison -p cr -d main_conf_read.y
+
+main_conf_read.tab.obj: main_conf_read.tab.c service.h
+	$(CPP) /EHsc $(CFLAGS) main_conf_read.tab.c /c
+
+lex.cr.c: main_conf_read.y main_conf_read.l main_conf_read.tab.c service.h
+	$(TOOLS)\flex -Pcr main_conf_read.l
+
+lex.cr.obj: lex.cr.c service.h
+	$(CPP) $(CFLAGS) /c lex.cr.c
+
+service_conf.tab.c: service_conf.y service.h
+	$(TOOLS)\bison -p sr -d service_conf.y
+
+service_conf.tab.obj: service_conf.tab.c service.h
+	$(CPP) $(CFLAGS) service_conf.tab.c /c
+
+lex.sr.c: service_conf.y service_conf.l service_conf.tab.c service.h
+	$(TOOLS)\flex -Psr service_conf.l
+
+lex.sr.obj: lex.sr.c service.h
+	$(CPP) $(CFLAGS) /c lex.sr.c
+
+service_internal.obj: service_internal.c
+	$(CPP) $(CFLAGS) /c service_internal.c
+
+service_internal_python.obj: service_internal_python.c service.h
+	$(CPP) /c $(CFLAGS) service_internal_python.c
+
+service_internal_java.obj: service_internal_java.c service.h
+	$(CPP) /c $(CFLAGS) $(CJFLAGS) service_internal_java.c
+
+service_loader.obj: service_loader.c service.h
+	$(CPP) /c $(CFLAGS)  service_loader.c
+
+zoo_service_loader.obj: zoo_service_loader.c service.h
+	$(CPP) /c $(CFLAGS)  zoo_service_loader.c
+
+zoo_loader.obj: zoo_loader.c service.h
+	$(CPP) /EHsc /c $(CFLAGS) zoo_loader.c
+
+zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj service_internal_python.obj ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
+	link zoo_loader.obj dirent.obj service_internal.obj service_internal_python.obj ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi  $(GEODIR)/lib/libfcgi.lib $(GEODIR)/lib/libcurl_imp.lib  $(GEODIR)/apps/Python25/libs/python25.lib $(GEODIR)/lib/libxml2.lib $(GEODIR)/lib/libcgic.lib $(GEODIR)/lib/gdal_i.lib $(TOOLS)\..\lib\libeay32.dll.a $(TOOLS)\..\lib\libcrypto.a $(TOOLS)\..\lib\libssl32.dll.a /machine:i386 
+
+clean:
+	erase -f *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling

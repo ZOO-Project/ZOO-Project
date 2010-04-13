@@ -1,0 +1,71 @@
+[Boundary]
+ Title = Compute boundary.
+ Abstract = A new geometry object is created and returned containing the boundary of the geometry on which the method is invoked. 
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = ogr_service.zo
+ serviceType = C
+ <MetaData>
+   Test = Demo
+ </MetaData>
+ <DataInputs>
+  [InputPolygon]
+   Title = Polygon to be buffered
+   Abstract = URI to a set of GML that describes the polygon.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+    Test = Mon test  
+   </MetaData>   
+   <ComplexData>
+    <Default>
+     mimeType = text/js
+     encoding = UTF-8
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Supported>
+   </ComplexData>
+  [BufferDistance]
+   Title = Buffer Distance
+   Abstract = Distance to be used to calculate buffer.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     uom = meters
+    </Default>
+    <Supported>
+     uom = feet
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Boundary]
+   Title = The geometry created
+   Abstract = The geometry containing the boundary of the geometry on which the method is invoked.
+   <MetaData lang="en">
+    Test1 = Mon test  
+   </MetaData>   
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+     asReference = true	
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Supported>
+    <Supported>
+     mimeType = text/js
+     encoding = UTF-8
+    </Supported>
+   </ComplexData>
+ </DataOutputs>  

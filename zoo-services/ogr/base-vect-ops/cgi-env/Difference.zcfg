@@ -1,0 +1,73 @@
+[Difference]
+ Title = Compute difference. . 
+ Abstract = Generates a new geometry which is the region of this geometry with the region of the other geometry removed.
+ Profile = urn:ogc:wps:1.0.0:difference
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = ogr_service.zo
+ serviceType = C
+ <MetaData>
+   Test = Demo
+ </MetaData>
+ <DataInputs>
+  [InputEntity1]
+   Title = the first geometry 
+   Abstract = the first geometry to compare against.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+    Test = Mon test  
+   </MetaData>   
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Supported>
+   </ComplexData>
+  [InputEntity2]
+   Title = the other geometry
+   Abstract = the other geometry to compare against.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+    Test = Mon test  
+   </MetaData>   
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+     encoding = UTF-8
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Supported>
+   </ComplexData>
+ </DataInputs>
+ <DataOutputs>
+  [Distance]
+   Title = The distance between two geometries
+   Abstract = The shortest distance between the two geometries.
+   <MetaData lang="en">
+    Test1 = Mon test  
+   </MetaData>   
+    <ComplexData>
+     <Default>
+       mimeType = application/json
+       encoding = UTF-8
+     </Default>
+     <Supported>
+      mimeType = text/xml
+      schema = http://fooa/gml/3.1.0/polygon.xsd
+      encoding = UTF-8
+     </Supported>
+    </ComplexData>
+ </DataOutputs>  

@@ -1,0 +1,89 @@
+JAVACFLAGS=@JAVA_CPPFLAGS@
+JAVALDFLAGS=@JAVA_LDFLAGS@
+CFLAGS=-I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+PHPCFLAGS=@PHP_CPPFLAGS@
+PHPLDFLAGS=@PHP_LDFLAGS@
+PYTHONCFLAGS=@PYTHON_CPPFLAGS@
+PYTHONLDFLAGS=@PYTHON_LDFLAGS@
+JSCFLAGS=@JS_CPPFLAGS@
+JSLDFLAGS=@JS_LDFLAGS@
+XML2CFLAGS=@XML2_CPPFLAGS@
+XML2LDFLAGS=@XML2_LDFLAGS@
+GDAL_CFLAGS=@GDAL_CFLAGS@
+GDAL_LIBS=@GDAL_LIBS@
+PHP_ENABLED=@PHP_ENABLED@
+PHP_FILE=@PHP_FILE@
+JAVA_ENABLED=@JAVA_ENABLED@
+JAVA_FILE=@JAVA_FILE@
+JS_ENABLED=@JS_ENABLED@
+JS_FILE=@JS_FILE@
+
+
+all: zoo_loader.cgi service_loader
+
+main_conf_read.tab.c: main_conf_read.y service.h
+	bison -p cr -d main_conf_read.y
+
+main_conf_read.tab.o: main_conf_read.tab.c service.h
+	g++ ${CFLAGS} -c main_conf_read.tab.c
+
+lex.cr.c: main_conf_read.y main_conf_read.l main_conf_read.tab.c service.h
+	flex -P cr --header-file main_conf_read.l
+
+lex.cr.o: lex.cr.c service.h
+	g++ ${CFLAGS} -c lex.cr.c
+
+service_conf.tab.c: service_conf.y service.h
+	bison -p sr -d service_conf.y
+
+service_conf.tab.o: service_conf.tab.c service.h
+	g++ ${CFLAGS} -c service_conf.tab.c
+
+lex.sr.c: service_conf.y service_conf.l service_conf.tab.c service.h
+	flex -P sr --header-file service_conf.l
+
+lex.sr.o: lex.sr.c service.h
+	g++ ${CFLAGS} -c lex.sr.c
+
+ulinet.o: ulinet.c
+	gcc ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
+
+service_internal.o: service_internal.c service.h
+	g++ ${XML2CFLAGS} ${CFLAGS} -c service_internal.c
+
+service_internal_python.o: service_internal_python.c service.h
+	g++ ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c service_internal_python.c
+
+service_internal_php.o: service_internal_php.c service.h
+	g++ -c ${XML2CFLAGS} ${PHPCFLAGS} ${CFLAGS}  ${PHP_ENABLED} service_internal_php.c
+
+service_internal_java.o: service_internal_java.c service.h
+	gcc -c ${XML2CFLAGS} ${JAVACFLAGS} ${CFLAGS} ${JAVA_ENABLED} service_internal_java.c
+
+service_internal_js.o: service_internal_js.c service_internal_js.h
+	gcc ${XML2CFLAGS} ${JSCFLAGS} ${CFLAGS} ${JS_ENABLED} -c service_internal_js.c
+
+
+service_loader.o: service_loader.c service.h
+	g++ -c ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} service_loader.c
+
+zoo_service_loader.o: zoo_service_loader.c service.h
+	g++ -g -O2 -Wall ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${PHPCFLAGS} ${JS_ENABLED} ${PHP_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
+
+zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y service_internal_python.o  ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${PHP_FILE} ${JAVA_FILE} ${JS_FILE}
+	g++ -g -O2 -Wall ${JSCFLAGS} ${PHPCFLAGS} ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
+	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o service_internal_python.o  ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -lcurl -lcgic -lcurl ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi 
+
+service_loader: service.h lex.sr.o service_conf.tab.o service_conf.y service_internal_python.o ulinet.o  service_loader.o main_conf_read.tab.o lex.cr.o service_internal.o
+	g++ ${CFLAGS} lex.sr.o service_conf.tab.o main_conf_read.tab.o lex.cr.o service_internal.o service_internal_python.o ulinet.o service_loader.o -o service_loader -ldl  ${JSLDFLAGS} ${PYTHONLDFLAGS} ${XML2LDFLAGS} -lfl -lcurl  -lssl
+
+install:
+	@echo "##############################################################################"
+	@echo "# This won't install anything !!!                                            #"
+	@echo "#                                                                            #"
+	@echo "# Please copy the zoo_loader.cgi and its companion main.cfg into your cgbin  #"
+	@echo "# directory.                                                                 #"
+	@echo "##############################################################################"
+
+clean:
+	rm -f *.o *.zo *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM

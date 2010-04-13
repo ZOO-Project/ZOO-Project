@@ -1,0 +1,49 @@
+[hellof]
+ Title = Hello string
+ Abstract = Create a welcome message.
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = driftx_service.zo
+ serviceType = C-FORTRAN
+ <MetaData lang="en">
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [S]
+   Title = The string
+   Abstract = The name to display in the welcome message.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+    title = Mon test  
+   </MetaData>   
+   <LiteralData>
+    DataType = string
+    <Default>
+     value = Your Name
+     UOM = meter
+    </Default>
+    <Supported>
+     UOM = meter
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [result]
+   Title = The string
+   Abstract = The string created by service.
+   <MetaData lang="en">
+    title = Mon test  
+   </MetaData>   
+   <LiteralData>
+    DataType = string
+    <Default>
+     UOM = meter
+    </Default>
+    <Supported>
+     UOM = meter
+    </Supported>
+   </LiteralData>
+ </DataOutputs>  

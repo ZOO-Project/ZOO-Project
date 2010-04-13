@@ -1,0 +1,50 @@
+[GetArea]
+ Title = Compute geometry area.
+ Abstract = Computes the area for a geometry
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = ogr_service.zo
+ serviceType = C
+ <MetaData lang="en">
+   Test = Demo
+ </MetaData>
+ <DataInputs>
+  [InputPolygon]
+   Title = Polygon to compute are
+   Abstract = URI to a set of GML that describes the polygon.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+   Test1 = Mon test
+   </MetaData>
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Supported>
+   </ComplexData>
+ </DataInputs>
+ <DataOutputs>
+  [Area]
+   Title = Computed Area
+   Abstract = The Computed Area Value
+   <MetaData lang="en">
+    Test1 = Mon test  
+   </MetaData>   
+   <LiteralData>
+    DataType = float
+    <Default>
+     uom = degree
+    </Default>
+    <Supported>
+     uom = meter
+    </Supported>
+   </LiteralData>
+ </DataOutputs> 

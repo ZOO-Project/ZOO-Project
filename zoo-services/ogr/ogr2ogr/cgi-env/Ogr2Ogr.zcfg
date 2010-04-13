@@ -1,0 +1,69 @@
+[Ogr2Ogr]
+ Title = Convert raster data from one format to another. 
+ Abstract = Converts raster data between different formats.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = C
+ serviceProvider = ogr2ogr_service.zo
+ <MetaData lang="en">
+   title = My Demo
+ </MetaData>
+ <DataInputs>
+  [F]
+   Title = Format of the input data
+   Abstract = Select the input format.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     value = AAIGrid
+    </Default>
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+  [InputDSN]
+   Title = The input data source name
+   Abstract = The input data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = feet
+    </Default>	
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+  [OutputDSN]
+   Title = The output data source name
+   Abstract = The output data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = feet
+    </Default>	
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [OutputedDataSourceName]
+   Title = The resulting converted file
+   Abstract = The file name resulting of the convertion
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = feet
+    </Default>	
+    <Supported>
+     value = AAIGrid
+    </Supported>
+   </LiteralData>
+ </DataOutputs>  
