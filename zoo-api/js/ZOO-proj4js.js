@@ -1,26 +1,14 @@
-/**
- * Author : René-Luc D'Hont
- *
- * Copyright 2010 3liz SARL. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+/*
+  proj4js.js -- Javascript reprojection library. 
+  
+  Authors:      Mike Adair madairATdmsolutions.ca
+                Richard Greenwood richATgreenwoodmap.com
+                Didier Richard didier.richardATign.fr
+                Stephen Irons
+  License:      LGPL as per: http://www.gnu.org/copyleft/lesser.html 
+                Note: This program is an almost direct port of the C library
+                Proj4.
+*/
 Proj4js={defaultDatum:'WGS84',transform:function(source,dest,point){if(!source.readyToUse||!dest.readyToUse){this.reportError("Proj4js initialization for "+source.srsCode+" not yet complete");return point;}
 if((source.srsProjNumber=="900913"&&dest.datumCode!="WGS84")||(dest.srsProjNumber=="900913"&&source.datumCode!="WGS84")){var wgs84=Proj4js.WGS84;this.transform(source,wgs84,point);source=wgs84;}
 if(source.projName=="longlat"){point.x*=Proj4js.common.D2R;point.y*=Proj4js.common.D2R;}else{if(source.to_meter){point.x*=source.to_meter;point.y*=source.to_meter;}

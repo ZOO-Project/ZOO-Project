@@ -1391,9 +1391,11 @@ int runRequest(map* request_inputs)
 #endif
 	  charxxxToMaps((char***)&outputs[0],&request_output_real_format);
 	}else{
+#ifdef WIN32
 	  errstr = GetLastError();
 #ifdef DEBUG
 	  fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
+#endif
 #endif
 	  r_inputs=getMap(request_inputs,"Identifier");
 #ifdef DEBUG
