@@ -481,7 +481,6 @@ int runRequest(map* request_inputs)
 #endif
 	tmp_output=tmp_output->next;
       }
-      //dumpMaps(request_output_real_format);
     }
 
 
@@ -600,14 +599,13 @@ int runRequest(map* request_inputs)
   } 
   else {
     xmlInitParser();
-    //dumpMap(postRequest);
 #ifdef DEBUG
     fflush(stderr);
     fprintf(stderr,"BEFORE %s\n",postRequest->value);
     fflush(stderr);
 #endif
     xmlDocPtr doc =
-      xmlParseMemory(postRequest->value,cgiContentLength);//strlen(postRequest->value));
+      xmlParseMemory(postRequest->value,cgiContentLength);
 #ifdef DEBUG
     fprintf(stderr,"AFTER\n");
     fflush(stderr);
@@ -1433,10 +1431,9 @@ int runRequest(map* request_inputs)
 	  fprintf(stderr,"Function loaded and returned %d\n",eres);
 	  fflush(stderr);
 #endif
-	  //return 1;
 	}
 
-	//dlclose(so);
+	dlclose(so);
       } else {
 	/**
 	 * Unable to load the specified shared library
@@ -1471,8 +1468,6 @@ int runRequest(map* request_inputs)
 	#ifdef USE_JS
 	    if(strcmp(mtoupper(r_inputs->value),"JS")==0){
 	      eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	      //dumpMaps(request_output_real_format);
-	      //exit(-1);
 	    }
 	    else
          #endif
@@ -1523,7 +1518,12 @@ int runRequest(map* request_inputs)
 #endif
       freopen(tmp1 , "w+", stdout);
       fclose(stdin);
-      fclose(stderr);
+      r_inputs=getMapFromMaps(m,"main","tmpPath");
+      sprintf(tmp1,"%s",r_inputs->value);
+      r_inputs=getMap(s1->content,"ServiceProvider");
+      sprintf(tmp1,"%s/%s",strdup(tmp1),r_inputs->value);
+      sprintf(tmp1,"%s_%d_error.log",strdup(tmp1),cpid);
+      freopen(tmp1,"w+",stderr);
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
        * content was outputed (the file used to store the ResponseDocument).
@@ -1637,14 +1637,11 @@ int runRequest(map* request_inputs)
 	     * set the status code value returned by the service function itself
 	     */
 	    eres=execute(&m,&request_input_real_format,&request_output_real_format);
-	    //dlclose(so);
+	    dlclose(so);
 	  }
 	} else {
-	  //#ifdef DEBUG
 	  /**
-	   * Should fallback to others languages.
-	   * Maybe beter to keep this informations anywhere 
-	   * (in the service metadata ?)
+	   * Unable to load the requested C Library
 	   */
 	  char tmps2[1024];
 	  sprintf(tmps1,"C Library can't be loaded %s \n",errstr);
@@ -1710,6 +1707,5 @@ int runRequest(map* request_inputs)
   fflush(stderr);
 #endif
 
-  //dlclose(so);
   return 0;
 }
