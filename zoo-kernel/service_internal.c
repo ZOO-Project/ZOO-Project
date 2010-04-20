@@ -249,7 +249,6 @@ void printProcessResponse1(maps* m,map* request, int pid,service* serv,char* ser
    */
   xmlFree(xmlbuff);
   xmlFree(nr);
-  xmlFree(n);
   xmlFreeDoc(doc);
 
 }
