@@ -168,7 +168,6 @@ LIBS_SAVE="$LIBS"
 LIBS="$PYTHON_LDFLAGS"
 # Shouldn't we get python here rather than python2.6 :) ??
 PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
-echo $PY_LIB
 AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
 
 AC_SUBST([PYTHON_CPPFLAGS])
@@ -320,58 +319,72 @@ AC_SUBST([JAVA_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([js], 
-	[AS_HELP_STRING([--with-js=PATH], [specify an alternative directory for spidermonkey installation or --with-js=no to disabled js support])], 
+	[AS_HELP_STRING([--with-js=PATH], [specify --with-js to enabled js support or --with-js=path-to-js js support is disabled by default ])], 
 	[JSHOME="$withval"], [JSHOME=""])
-if test "$JSHOME" != "no";
+
+JS_ENABLED=""
+JS_FILE=""
+
+
+if test "$JSHOME" = "yes"
 then
-        JS_ENABLED="-DUSE_JS"
+	JS_ENABLED="-DUSE_JS"
         JS_FILE="service_internal_js.o"
 
-	#if test "x$JSHOME" = "x"; then
-	#	# JS was not specified, so search within the current path
-#		# AC_PATH_PROG([JSCONFIG], [js-config])
-#	
-#		# If we couldn't find js-config, display a warning
-#		if test "x$JSHOME" = "x"; then
-#			AC_MSG_ERROR([could not find js-config from libpython within the current path. You may need to try re-running configure with a --with-js parameter.])
-#		fi
-#	else
-#		# JS was specified; display a message to the user
-#		if test "x$JSHOME" = "xyes"; then
-#			AC_MSG_ERROR([you must specify a parameter to --with-js, e.g. --with-js=/path/to/js])
-#		else
-#			if test -f $JSHOME; then
-#			AC_MSG_RESULT([Using user-specified js-config file: $JSCONFIG])
-#			else
-#				AC_MSG_ERROR([the user-specified js-config file $JSCONFIG does not exist])
-#			fi	
-#		fi
-#	fi
-
-
-	# Extract the linker and include flags 
-	JS_CPPFLAGS="-I$JSHOME/include"
-	JS_LDFLAGS="-L$JSHOME/lib -ljs -lm"
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$JS_CPPFLAGS"
-	#AC_CHECK_HEADERS([jsapi.h],
-	#		 [], [AC_MSG_ERROR([could not find headers include related to libjs])])
-
-	# Ensure we can link against libjs
-	LIBS_SAVE="$LIBS"
-	LIBS="$JS_LDFLAGS"
+	#on teste si on est sous debian like 
+	if test -f "/usr/bin/dpkg"
+	then
+		if test -n "`dpkg -l | grep libmozjs-dev`"
+		then
+			JS_CPPFLAGS="-I/usr/include/mozjs/"
+                        JS_LDFLAGS="-L/usr/lib -lmozjs -lm"
+                        JS_LIB="mozjs"
+		else
+			AC_MSG_ERROR([You must install libmozjs-dev or specify your custom install of libjs])
+		fi
+	else
+		JS_LIB="js"
+	fi
 	
-	AC_CHECK_LIB([js], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find libjs])], [])
 
-	AC_SUBST([JS_CPPFLAGS])
-	AC_SUBST([JS_LDFLAGS])
+	CPPFLAGS_SAVE="$CPPFLAGS"
+        CPPFLAGS="$JS_CPPFLAGS"
+        #AC_CHECK_HEADERS([jsapi.h],
+        #                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
 
-else
-        JS_ENABLED=""
-        JS_FILE=""
+        # Ensure we can link against libjs
+        LIBS_SAVE="$LIBS"
+        LIBS="$JS_LDFLAGS"
+
+        AC_CHECK_LIB([$JS_LIB], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
+
+        AC_SUBST([JS_CPPFLAGS])
+        AC_SUBST([JS_LDFLAGS])
+
+
+else if test  "$JSHOME" != ""
+	then 
+		JS_ENABLED="-DUSE_JS"
+        	JS_FILE="service_internal_js.o"
+		JS_CPPFLAGS="-I$JSHOME/include"
+                JS_LDFLAGS="-L$JSHOME/lib -ljs -lm"
+                JS_LIB="js"
+
+		CPPFLAGS_SAVE="$CPPFLAGS"
+        	CPPFLAGS="$JS_CPPFLAGS"
+        	#AC_CHECK_HEADERS([jsapi.h],
+        	#                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
+
+        	# Ensure we can link against libjs
+        	LIBS_SAVE="$LIBS"
+        	LIBS="$JS_LDFLAGS"
+
+        	AC_CHECK_LIB([$JS_LIB], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
+
+        	AC_SUBST([JS_CPPFLAGS])
+        	AC_SUBST([JS_LDFLAGS])
+	fi
 fi
-
 AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
 
