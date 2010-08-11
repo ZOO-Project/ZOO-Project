@@ -22,10 +22,12 @@ int cgiMain() {
 	/* Load a saved CGI scenario if we're debugging */
 	cgiReadEnvironment("/home/boutell/public_html/capcgi.dat");
 #endif
-	cgiHeaderContentType("text/html");
-	fprintf(cgiOut, "<HTML><HEAD>\n");
-	fprintf(cgiOut, "<TITLE>cgic test</TITLE></HEAD>\n");
-	fprintf(cgiOut, "<BODY><H1>cgic test</H1>\n");
+	dup2(cgiOut,stdout);
+	printf("Content-Type: text/html; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+	//cgiHeaderContentType("text/html");
+	printf( "<HTML><HEAD>\n");
+	printf( "<TITLE>cgic test</TITLE></HEAD>\n");
+	printf( "<BODY><H1>cgic test</H1>\n");
 	Name();
 	Address();
 	Hungry();
@@ -35,7 +37,7 @@ int cgiMain() {
 	Flavors();
 	NonExButtons();
 	RadioButtons();
-	fprintf(cgiOut, "</BODY></HTML>\n");
+	printf( "</BODY></HTML>\n");
 	return 0;
 }
 
@@ -44,51 +46,51 @@ void Name() {
 	int result = cgiFormStringNoNewlines("name", name, 81);
 	switch (result) {
 		case cgiFormSuccess:
-		fprintf(cgiOut, "Name fetched, result code: cgiFormSuccess<br>\n");
+		printf( "Name fetched, result code: cgiFormSuccess<br>\n");
 		break;
 		case cgiFormTruncated:
-		fprintf(cgiOut, "Name fetched, result code: cgiFormTruncated<br>\n");
+		printf( "Name fetched, result code: cgiFormTruncated<br>\n");
 		break;
 		case cgiFormEmpty:
-		fprintf(cgiOut, "Name fetched, result code: cgiFormEmpty<br>\n");
+		printf( "Name fetched, result code: cgiFormEmpty<br>\n");
 		break;
 		case cgiFormNotFound:
-		fprintf(cgiOut, "Name fetched, result code: cgiFormNotFound<br>\n");
+		printf( "Name fetched, result code: cgiFormNotFound<br>\n");
 		break;
 		case cgiFormMemory:
-		fprintf(cgiOut, "Name fetched, result code: cgiFormMemory<br>\n");
+		printf( "Name fetched, result code: cgiFormMemory<br>\n");
 		break;
 		default:
-		fprintf(cgiOut, "Name fetched, unexpected result code: %d\n", result);
+		printf( "Name fetched, unexpected result code: %d\n", result);
 		break;
 	}	
-	fprintf(cgiOut, "Name: %s<BR>\n", name);
+	printf( "Name: %s<BR>\n", name);
 }
 	
 void Address() {
 	char address[241];
 	cgiFormString("address", address, 241);
-	fprintf(cgiOut, "Address: <PRE>\n%s</PRE>\n", address);
+	printf( "Address: <PRE>\n%s</PRE>\n", address);
 }
 
 void Hungry() {
 	if (cgiFormCheckboxSingle("hungry") == cgiFormSuccess) {
-		fprintf(cgiOut, "I'm Hungry!<BR>\n");
+		printf( "I'm Hungry!<BR>\n");
 	} else {
-		fprintf(cgiOut, "I'm Not Hungry!<BR>\n");
+		printf( "I'm Not Hungry!<BR>\n");
 	}
 }
 	
 void Temperature() {
 	double temperature;
 	cgiFormDoubleBounded("temperature", &temperature, 80.0, 120.0, 98.6);
-	fprintf(cgiOut, "My temperature is %f.<BR>\n", temperature);
+	printf( "My temperature is %f.<BR>\n", temperature);
 }
 	
 void Frogs() {
 	int frogsEaten;
 	cgiFormInteger("frogs", &frogsEaten, 0);
-	fprintf(cgiOut, "I have eaten %d frogs.<BR>\n", frogsEaten);
+	printf( "I have eaten %d frogs.<BR>\n", frogsEaten);
 }
 
 char *colors[] = {
@@ -100,7 +102,7 @@ char *colors[] = {
 void Color() {
 	int colorChoice;
 	cgiFormSelectSingle("colors", colors, 3, &colorChoice, 0);
-	fprintf(cgiOut, "I am: %s<BR>\n", colors[colorChoice]);
+	printf( "I am: %s<BR>\n", colors[colorChoice]);
 }	 
 
 char *flavors[] = {
@@ -117,16 +119,16 @@ void Flavors() {
 	result = cgiFormSelectMultiple("flavors", flavors, 3, 
 		flavorChoices, &invalid);
 	if (result == cgiFormNotFound) {
-		fprintf(cgiOut, "I hate ice cream.<p>\n");
+		printf( "I hate ice cream.<p>\n");
 	} else {	
-		fprintf(cgiOut, "My favorite ice cream flavors are:\n");
-		fprintf(cgiOut, "<ul>\n");
+		printf( "My favorite ice cream flavors are:\n");
+		printf( "<ul>\n");
 		for (i=0; (i < 3); i++) {
 			if (flavorChoices[i]) {
-				fprintf(cgiOut, "<li>%s\n", flavors[i]);
+				printf( "<li>%s\n", flavors[i]);
 			}
 		}
-		fprintf(cgiOut, "</ul>\n");
+		printf( "</ul>\n");
 	}
 }
 
@@ -145,7 +147,7 @@ void RadioButtons() {
 		you wish to enumerate them. */
 	cgiFormRadio("age", ages, 4, &ageChoice, 0);
 
-	fprintf(cgiOut, "Age of Truck: %s (method #1)<BR>\n", 
+	printf( "Age of Truck: %s (method #1)<BR>\n", 
 		ages[ageChoice]);
 
 	/* Approach #2: just get the string. Good
@@ -156,7 +158,7 @@ void RadioButtons() {
 		used instead of cgiFormString. */	
 	cgiFormString("age", ageText, 10);
 
-	fprintf(cgiOut, "Age of Truck: %s (method #2)<BR>\n", ageText);
+	printf( "Age of Truck: %s (method #2)<BR>\n", ageText);
 }
 
 char *votes[] = {
@@ -177,39 +179,39 @@ void NonExButtons() {
 	/* Method #1: check for valid votes. This is a good idea,
 		since votes for nonexistent candidates should probably
 		be discounted... */
-	fprintf(cgiOut, "Votes (method 1):<BR>\n");
+	printf( "Votes (method 1):<BR>\n");
 	result = cgiFormCheckboxMultiple("vote", votes, 4, 
 		voteChoices, &invalid);
 	if (result == cgiFormNotFound) {
-		fprintf(cgiOut, "I hate them all!<p>\n");
+		printf( "I hate them all!<p>\n");
 	} else {	
-		fprintf(cgiOut, "My preferred candidates are:\n");
-		fprintf(cgiOut, "<ul>\n");
+		printf( "My preferred candidates are:\n");
+		printf( "<ul>\n");
 		for (i=0; (i < 4); i++) {
 			if (voteChoices[i]) {
-				fprintf(cgiOut, "<li>%s\n", votes[i]);
+				printf( "<li>%s\n", votes[i]);
 			}
 		}
-		fprintf(cgiOut, "</ul>\n");
+		printf( "</ul>\n");
 	}
 
 	/* Method #2: get all the names voted for and trust them.
 		This is good if the form will change more often
 		than the code and invented responses are not a danger
 		or can be checked in some other way. */
-	fprintf(cgiOut, "Votes (method 2):<BR>\n");
+	printf( "Votes (method 2):<BR>\n");
 	result = cgiFormStringMultiple("vote", &responses);
 	if (result == cgiFormNotFound) {	
-		fprintf(cgiOut, "I hate them all!<p>\n");
+		printf( "I hate them all!<p>\n");
 	} else {
 		int i = 0;
-		fprintf(cgiOut, "My preferred candidates are:\n");
-		fprintf(cgiOut, "<ul>\n");
+		printf( "My preferred candidates are:\n");
+		printf( "<ul>\n");
 		while (responses[i]) {
-			fprintf(cgiOut, "<li>%s\n", responses[i]);
+			printf( "<li>%s\n", responses[i]);
 			i++;
 		}
-		fprintf(cgiOut, "</ul>\n");
+		printf( "</ul>\n");
 	}
 	/* We must be sure to free the string array or a memory
 		leak will occur. Simply calling free() would free

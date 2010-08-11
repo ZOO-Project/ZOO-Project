@@ -135,10 +135,16 @@ int main(int argc, char *argv[]) {
 	cgiGetenv(&cgiServerProtocol, "SERVER_PROTOCOL");
 	cgiGetenv(&cgiServerPort, "SERVER_PORT");
 	cgiGetenv(&cgiRequestMethod, "REQUEST_METHOD");
+	if(strcmp(cgiRequestMethod,"")==0 && argc>=1)
+		cgiRequestMethod="GET";
 	cgiGetenv(&cgiPathInfo, "PATH_INFO");
 	cgiGetenv(&cgiPathTranslated, "PATH_TRANSLATED");
 	cgiGetenv(&cgiScriptName, "SCRIPT_NAME");
 	cgiGetenv(&cgiQueryString, "QUERY_STRING");
+	if(strcmp(cgiQueryString,"")==0 && argc>=2){
+		cgiQueryString=argv[1];
+	}else
+		fprintf(stderr,"cgiQueryString : %s\n",cgiQueryString);
 	cgiGetenv(&cgiRemoteHost, "REMOTE_HOST");
 	cgiGetenv(&cgiRemoteAddr, "REMOTE_ADDR");
 	cgiGetenv(&cgiAuthType, "AUTH_TYPE");
@@ -189,6 +195,10 @@ int main(int argc, char *argv[]) {
 	}
 	cgiGetenv(&cgiContentLengthString, "CONTENT_LENGTH");
 	cgiContentLength = atoi(cgiContentLengthString);	
+	if(cgiContentLength==0 && argc>=2){
+		cgiContentLength=strlen(argv[1]);
+	}
+	fprintf(stderr,"%d\n",cgiContentLength);
 	cgiGetenv(&cgiAccept, "HTTP_ACCEPT");
 	cgiGetenv(&cgiUserAgent, "HTTP_USER_AGENT");
 	cgiGetenv(&cgiReferrer, "HTTP_REFERER");
@@ -207,8 +217,8 @@ int main(int argc, char *argv[]) {
 	_setmode( FCGI_fileno( stdout ), _O_BINARY );
 #endif /* WIN32 */
 	cgiFormEntryFirst = 0;
-	cgiIn = stdin;
-	cgiOut = stdout;
+	cgiIn = FCGI_stdin;
+	cgiOut = FCGI_stdout;
 	cgiRestored = 0;
 
 
@@ -292,6 +302,7 @@ int main(int argc, char *argv[]) {
 	result = cgiMain();
 	cgiFreeResources();
 	}
+	FCGI_Finish();
 	return result;
 }
 

@@ -2,7 +2,7 @@ CFLAGS=-g -Wall
 CC=gcc
 AR=ar
 RANLIB=ranlib
-LIBS=-L./ -lcgic ../fcgi-2.4.0/libfcgi/.libs/libfcgi.a 
+LIBS=-L./ -lcgic /usr/lib/libfcgi.a 
 CFLAGS=-I//var/www/localhost/include
 
 all: libcgic.a cgictest.cgi capture
