@@ -19,7 +19,7 @@ JS_ENABLED=@JS_ENABLED@
 JS_FILE=@JS_FILE@
 
 
-all: zoo_loader.cgi service_loader
+all: zoo_loader.cgi
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
