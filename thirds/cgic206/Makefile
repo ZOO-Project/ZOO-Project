@@ -3,7 +3,6 @@ CC=gcc
 AR=ar
 RANLIB=ranlib
 LIBS=-L./ -lcgic /usr/lib/libfcgi.a 
-CFLAGS=-I//var/www/localhost/include
 
 all: libcgic.a cgictest.cgi capture
 
