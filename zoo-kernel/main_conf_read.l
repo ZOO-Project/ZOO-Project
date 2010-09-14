@@ -1,7 +1,6 @@
 /* pour pouvoir acceder au numero de ligne dans bison */
 %option yylineno
 
-
 %{
 //======================================================
 /**
@@ -113,11 +112,11 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 {newline}+{whitesp}*			{if (affichetrace==1) printf ("\n\nNEWLINE 1\n") ; return NEWLINE;}
 
-<INITIAL,HORSBALISE>"["{attname}"]"             {if (affichetrace==1) printf ("\n\nANID:%s\n",yytext); crlval.chaine=strdup(yytext);crlval.chaine[strlen(crlval.chaine)-1]=0;crlval.chaine+=1;return ANID; }
+<INITIAL,HORSBALISE>"["{attname}"]"             {if (affichetrace==1) printf ("\n\nANID:%s\n",yytext); crlval.chaine=yytext;crlval.chaine[strlen(crlval.chaine)-1]=0;crlval.chaine+=1;return ANID; }
 
-<INITIAL,HORSBALISE>{attname}             {if (affichetrace==1) printf ("\n\nATT_NAME:%s\n",yytext); crlval.chaine=strdup(yytext); return SPAIR; }
+<INITIAL,HORSBALISE>{attname}             {if (affichetrace==1) printf ("\n\nATT_NAME:%s\n",yytext); crlval.chaine=yytext; return SPAIR; }
 
-<PAIRSTART,HORSBALISE>{attvalue1}             {if (affichetrace==1) printf ("\n\nATT_VALUE:%s\n",yytext);crlval.chaine=strdup(yytext);BEGIN(INITIAL);return EPAIR;}
+<PAIRSTART,HORSBALISE>{attvalue1}             {if (affichetrace==1) printf ("\n\nATT_VALUE:%s\n",yytext);crlval.chaine=yytext;BEGIN(INITIAL);return EPAIR;}
 
 <PAIRSTART,INITIAL,HORSBALISE>{whitesp}*"="{whitesp}*             {BEGIN(PAIRSTART);}
 
@@ -160,7 +159,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 <DANSBALISE>{egalevolue}			{if (affichetrace==1) printf ("\n\nEq:'%s'\n",yytext) ; return Eq;}
 
 
-<DANSBALISE>{Name}			{if (affichetrace==1) printf ("\n\nID:%s\n",yytext) ; crlval.s=strdup(yytext);return ID;}
+<DANSBALISE>{Name}			{if (affichetrace==1) printf ("\n\nID:%s\n",yytext) ; crlval.s=yytext;return ID;}
 
 
 <DANSBALISE>{attvalue}		{if (affichetrace==1) printf ("\n\nATTVALUE:%s\n",yytext) ; return ATTVALUE;}
@@ -174,5 +173,5 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 %%
 
 
-int yywrap()
+int crwrap()
 {return 1;}

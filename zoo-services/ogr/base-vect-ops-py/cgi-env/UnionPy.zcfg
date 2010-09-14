@@ -1,12 +1,12 @@
-[SymDifference]
- Title = Compute symmetric difference. 
- Abstract = Generates a new geometry which is the symmetric difference of this geometry and the other geometry.
- Profile = urn:ogc:wps:1.0.0:symmetricdifference
+[UnionPy]
+ Title = Compute union. 
+ Abstract = Generates a new geometry which is the region of union of the two geometries operated on.
+ Profile = urn:ogc:wps:1.0.0:union
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = ogr_service.zo
- serviceType = C
+ serviceProvider = ogr_sp
+ serviceType = Python
  <MetaData>
    title = Demo
  </MetaData>
@@ -26,9 +26,8 @@
      schema = http://fooa/gml/3.1.0/polygon.xsd
     </Default>
     <Supported>
-     mimeType = text/xml
-     encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     mimeType = application/json
+     encoding = UTF-8
     </Supported>
    </ComplexData>
   [InputEntity2]
@@ -46,16 +45,15 @@
      encoding = UTF-8
     </Default>
     <Supported>
-     mimeType = text/xml
-     encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     mimeType = application/json
+     encoding = UTF-8
     </Supported>
    </ComplexData>
  </DataInputs>
  <DataOutputs>
   [Result]
-   Title = The resulting geometry
-   Abstract = The symmetric difference of two geometries
+   Title = The union of two geometries
+   Abstract = The geometry representing the union of the two geometries.
    <MetaData lang="en">
     title = Mon test  
    </MetaData>   

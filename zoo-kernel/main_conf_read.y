@@ -5,8 +5,6 @@
 **/
 //======================================================
 
-
-
 #include <string>
 #include <stdio.h>
 #include <ctype.h>
@@ -22,11 +20,8 @@ static elements* current_element=NULL;
 static map* scontent=NULL;
 static char* curr_key;
 static int debug=0;
-//static int data=-1;
 static int previous_data=0;
 static int current_data=0;
-//static char* myFinalObjectAsJSON="{";
-// namespace
 using namespace std;
 
 extern void crerror(char *s);
@@ -42,7 +37,7 @@ extern int crlineno;
 extern FILE* crin;
 
 extern int crlex(void);
-
+extern int crlex_destroy(void);
 
 %}
 
@@ -127,18 +122,18 @@ miscetoile
 element
  : STag contentetoile ETag	
 {
-	/* les non terminaux rendent les valeurs de leur identifiants de balise */
-	/* en char*, donc on peut comparer ces valeurs avec la fonction C++ strcmp(const char*;const char*) */
-	/* de string */
-	if (strcmp($1,$3) != 0)
-	{
-	   crerror("Opening and ending tag mismatch");
-	   printf("\n  ::details : tag '%s' et '%s' \n",$1,$3);
-	   return 1;
-	   // on retourne different de 0
-	   // sinon yyparse rendra 0
-	   // et dans le main on croira a le fichier xml est valide !
-	}
+  /* les non terminaux rendent les valeurs de leur identifiants de balise */
+  /* en char*, donc on peut comparer ces valeurs avec la fonction C++ strcmp(const char*;const char*) */
+  /* de string */
+  if (strcmp($1,$3) != 0)
+    {
+      crerror("Opening and ending tag mismatch");
+      printf("\n  ::details : tag '%s' et '%s' \n",$1,$3);
+      return 1;
+      // on retourne different de 0
+      // sinon yyparse rendra 0
+      // et dans le main on croira a le fichier xml est valide !
+    }
 }
 // pour neutre
 // on a rien a faire, meme pas renvoyer l identificateur de balise
@@ -265,8 +260,9 @@ pair: PAIR {curr_key=strdup($1);/*printf("START 0 PAIR FOUND !! \n [%s]\n",$1);*
 | EPAIR {
   if(current_content==NULL) 
     current_content=createMap(curr_key,$1);
-  else 
+  else{ 
     addToMap(current_content,curr_key,$1);
+  }
   if(debug){ 
     printf("EPAIR FOUND !! \n"); 
     printf("[%s=>%s]\n",curr_key,$1);
@@ -278,16 +274,25 @@ pair: PAIR {curr_key=strdup($1);/*printf("START 0 PAIR FOUND !! \n [%s]\n",$1);*
 
 
 processid
- : ANID  {
+: ANID  {
    if(current_maps->name!=NULL){
-     current_maps->content=current_content;
-     current_maps->next=(maps*)malloc(MAP_SIZE);
+     addMapToMap(&current_maps->content,current_content);
+     freeMap(&current_content);
+     free(current_content);
+     current_maps->next=NULL;
+     current_maps->next=(maps*)malloc(MAPS_SIZE);
+     current_maps->next->name=strdup($1);
+     current_maps->next->content=NULL;
+     current_maps->next->next=NULL;
      current_maps=current_maps->next;
-     current_maps->name=strdup($1);
-     current_content=NULL;
+     current_content=current_maps->content;
    }
    else{
-     current_maps->name=strdup($1);
+     current_maps->name=(char*)malloc((strlen($1)+1)*sizeof(char));
+     snprintf(current_maps->name,(strlen($1)+1),"%s",$1);
+     current_maps->content=NULL;
+     current_maps->next=NULL;
+     current_content=NULL;
    }
  }
  ;
@@ -309,9 +314,6 @@ void crerror(char *s)
 /* fonction principale : entrée dans le programme */
 //======================================================
 int conf_read(char* file,maps* my_map){
-  /* mode debug ou pas : */
-  /* 1 = debug , 0 = normal */
-  //yydebug = 1;
   
   crin = fopen(file,"r");
   if (crin==NULL){
@@ -319,27 +321,25 @@ int conf_read(char* file,maps* my_map){
     return 2 ;
   }
 
-  //my_map=(maps*)malloc(sizeof(maps*));
   my_maps=my_map;
   my_maps->name=NULL;
   current_maps=my_maps;
   
   int resultatYYParse = crparse() ;
-
-  if(current_content!=NULL)
-    current_maps->content=current_content;
-	  
-  //dumpMaps(my_maps);
+  if(current_content!=NULL){
+    addMapToMap(&current_maps->content,current_content);
+    current_maps->next=NULL;
+    freeMap(&current_content);
+    free(current_content);
+  }
 
   fclose(crin);
+  crlex_destroy();
+
   return resultatYYParse;
 }
 
 
-void usage(void)
-{
-    printf("usage : $./test1 <fichier_de_configuration_principale>\n") ;	 
-}
 //======================================================
 // FIN //
 //======================================================

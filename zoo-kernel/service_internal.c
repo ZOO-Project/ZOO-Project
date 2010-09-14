@@ -73,694 +73,95 @@ char *url_decode(char *str) {
   return buf;
 }
 
+char *zCapitalize1(char *tmp){
+        char *res=strdup(tmp);
+        if(res[0]>=97 && res[0]<=122)
+                res[0]-=32;
+        return res;
+}
 
-void printProcessResponse1(maps* m,map* request, int pid,service* serv,char* service,int status,maps* inputs,maps* outputs){
-  if(getpid()==pid)
-    printf("Content-Type: text/xml; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");  
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr nr,n,nc,nc1,nc2,nc3,pseudor;
-  xmlDocPtr doc;
-  xmlChar *xmlbuff;
-  int buffersize;
-  time_t time1;  
-  time(&time1);
-  /**
-   * Create the document and its temporary root.
-   */
-  doc = xmlNewDoc(BAD_CAST "1.0");
-  pseudor = xmlNewNode(ns, BAD_CAST "root");
-  ns_ows=xmlNewNs(pseudor,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-
-  maps* tmp_maps=getMaps(m,"main");
-  if(tmp_maps!=NULL){
-    map* tmp=getMap(tmp_maps->content,"encoding");
-    if(tmp!=NULL){
-      doc->encoding = xmlCharStrdup(tmp->value);
-    }
-    else
-      doc->encoding = xmlCharStrdup("UTF-8");
-  }
-  
-  n = xmlNewNode(ns, BAD_CAST "ExecuteResponse");  
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd");
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
-  char tmp[256];
-  char url[256];
-  memset(tmp,0,256);
-  memset(url,0,256);
-  if(tmp_maps!=NULL){
-    map* tmpm=getMap(tmp_maps->content,"serverAddress");
-    map* tmpm1=getMap(tmp_maps->content,"tmpUrl");
-    if(tmpm!=NULL && tmpm1!=NULL){
-      sprintf(url,"%s/%s/%s_%i.xml",tmpm->value,tmpm1->value,service,pid);
-    }
-	if(tmpm1!=NULL)
-      sprintf(tmp,"%s/",tmpm->value);
-  }
-
-  xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
-  if(status!=SERVICE_SUCCEEDED){
-    xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
-  }
-
-  nc = xmlNewNode(ns, BAD_CAST "Process");
-  map* tmp2=getMap(serv->content,"processVersion");
-
-  if(tmp2!=NULL)
-    xmlNewProp(nc,BAD_CAST "wps:processVersion",BAD_CAST tmp2->value);
-  
-  printDescription(nc,ns_ows,serv->name,serv->content);
-  fflush(stderr);
-
-  xmlAddChild(n,nc);
-
-  nc = xmlNewNode(ns, BAD_CAST "Status");
-  const struct tm *tm;
-  size_t len;
-  time_t now;
-  char *tmp1;
-  
-  now = time ( NULL );
-  tm = localtime ( &now );
-
-  tmp1 = new char[TIME_SIZE];
-
-  len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
-
-  switch(status){
-  case SERVICE_SUCCEEDED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
-    break;
-  case SERVICE_STARTED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
-    xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST "NEED_SERVICE_ACCESS"); 
-    break;
-  case SERVICE_ACCEPTED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
-    break;
-  case SERVICE_FAILED:
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
-    break;
-  default :
-    printf("error code not know : %i\n",status);
-    exit(1);
-    break;
-  }
-  xmlAddChild(nc,nc1);
-  xmlAddChild(n,nc);
-
-#ifdef DEBUG
-  fprintf(stderr,"printProcessResponse 1 161\n");
-#endif
-
-  map* lineage=getMap(request,"lineage");
-  if(lineage!=NULL){
-    nc = xmlNewNode(ns, BAD_CAST "DataInputs");
-    int i;
-    maps* mcursor=inputs;
-    elements* scursor=serv->inputs;
-    while(mcursor!=NULL && scursor!=NULL){
-      printIOType1(doc,nc,ns,ns_ows,scursor,mcursor,"Input");
-      mcursor=mcursor->next;
-      scursor=scursor->next;
-    }
-    xmlAddChild(n,nc);
-    
-#ifdef DEBUG
-    fprintf(stderr,"printProcessResponse 1 177\n");
-#endif
-
-    nc = xmlNewNode(ns, BAD_CAST "OutputDefinitions");
-    mcursor=outputs;
-    scursor=serv->outputs;
-    while(mcursor!=NULL /*&& scursor!=NULL*/){
-      printOutputDefinitions1(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
-      mcursor=mcursor->next;
-      //scursor=scursor->next;
-    }
-    xmlAddChild(n,nc);
-  }
-#ifdef DEBUG
-  fprintf(stderr,"printProcessResponse 1 190\n");
-#endif
-
-  /**
-   * Display the process output only when requested !
-   */
-  if(status==SERVICE_SUCCEEDED){
-    nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
-    maps* mcursor=outputs;
-    elements* scursor=serv->outputs;
-    while(mcursor!=NULL/* && scursor!=NULL*/){
-      //xmlAddChild(nc,xmlNewComment(BAD_CAST "Here we need to check for output format from metadata"));
-      printIOType1(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
-      mcursor=mcursor->next;
-      //scursor=scursor->next;
-    }
-    xmlAddChild(n,nc);
-  }
-#ifdef DEBUG
-  fprintf(stderr,"printProcessResponse 1 202\n");
-#endif
-
-  xmlAddChild(nr,n);
-  xmlDocSetRootElement(doc, n);
-
-  /*
-   * Dump the document to a buffer and print it
-   * for demonstration purposes.
-   */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
-  
-  /*
-   * Free associated memory.
-   */
-  xmlFree(xmlbuff);
-  xmlFree(nr);
-  xmlFreeDoc(doc);
-
+char *zCapitalize(char *tmp){
+  int i=0;
+  char *res=strdup(tmp);
+  for(i=0;i<strlen(res);i++)
+    if(res[i]>=97 && res[i]<=122)
+      res[i]-=32;
+  return res;
 }
 
 
-void printProcessResponse(maps* m,int pid,service* serv,char* service,int status,map* inputs,map* outputs){
-  
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr nr,n,nc,nc1,nc2,nc3,pseudor;
-  xmlDocPtr doc;
-  xmlChar *xmlbuff;
-  int buffersize;
-  time_t time1;  
-  time(&time1);
-  /**
-   * Create the document and its temporary root.
-   */
-  doc = xmlNewDoc(BAD_CAST "1.0");
-  pseudor = xmlNewNode(ns, BAD_CAST "root");
-  ns_ows=xmlNewNs(pseudor,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-
-  maps* tmp_maps=getMaps(m,"main");
-  if(tmp_maps!=NULL){
-    map* tmp=getMap(tmp_maps->content,"encoding");
-    if(tmp!=NULL){
-      doc->encoding = xmlCharStrdup(tmp->value);
-    }
-    else
-      doc->encoding = xmlCharStrdup("UTF-8");
-  }
-  
-  n = xmlNewNode(ns, BAD_CAST "ExecuteResponse");  
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd");
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
-  char tmp[256];
-  char url[256];
-  memset(tmp,0,256);
-  memset(url,0,256);
-  if(tmp_maps!=NULL){
-    map* tmpm=getMap(tmp_maps->content,"serverAddress");
-    if(tmpm!=NULL){
-      sprintf(url,"%s/temp/%s_%i.xml",tmpm->value,service,pid);
-      sprintf(tmp,"%s/%s",tmpm->value,service);
-    }
-  }
-
-  //sprintf(tmp,"%s/%s",SERVICE_URL,service);
-  xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
-  //memset(tmp,0,256);
-  
-  
-  if(status!=SERVICE_SUCCEEDED){
-    xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
-  }
-
-
-  nc = xmlNewNode(ns, BAD_CAST "Process");
-  map* tmp2=getMap(serv->content,"processVersion");
-
-  if(tmp2!=NULL)
-    xmlNewProp(nc,BAD_CAST "wps:processVersion",BAD_CAST tmp2->value);
-  
-  printDescription(nc,ns_ows,serv->name,serv->content);
-  fflush(stderr);
-
-  xmlAddChild(n,nc);
-
-  nc = xmlNewNode(ns, BAD_CAST "Status");
-  const struct tm *tm;
-  size_t len;
-  time_t now;
-  char *tmp1;
-  
-  now = time ( NULL );
-  tm = localtime ( &now );
-
-  tmp1 = new char[TIME_SIZE];
-
-  len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
-
-  switch(status){
-  case SERVICE_SUCCEEDED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
-    break;
-  case SERVICE_STARTED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
-    xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST "NEED_SERVICE_ACCESS"); 
-    break;
-  case SERVICE_ACCEPTED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
-    break;
-  case SERVICE_FAILED:
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
-    break;
-  default :
-    printf("error code not know : %i\n",status);
-    exit(1);
-    break;
-  }
-  xmlAddChild(nc,nc1);
-  xmlAddChild(n,nc);
-
-  fprintf(stderr,"printProcessResponse 1\n");
-
-  nc = xmlNewNode(ns, BAD_CAST "DataInputs");
+int zooXmlSearchForNs(char* name){
   int i;
-  map* mcursor=inputs;
-  elements* scursor=serv->inputs;
-  while(mcursor!=NULL && scursor!=NULL){
-    //xmlAddChild(nc,xmlNewComment(BAD_CAST "Here we need to check for input format from metadata"));
-    printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Input");
-    mcursor=mcursor->next;
-    scursor=scursor->next;
-  }
-  xmlAddChild(n,nc);
-
-  fprintf(stderr,"printProcessResponse 1\n");
-
-  nc = xmlNewNode(ns, BAD_CAST "OutputDefinitions");
-  mcursor=outputs;
-  scursor=serv->outputs;
-  //dumpMap(mcursor);
-  while(mcursor!=NULL && scursor!=NULL){
-    //xmlAddChild(nc,xmlNewComment(BAD_CAST "Here we need to check for output format from metadata"));
-    printOutputDefinitions(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
-    mcursor=mcursor->next;
-    scursor=scursor->next;
-  }
-  xmlAddChild(n,nc);
-
-  fprintf(stderr,"printProcessResponse 1\n");
-  
-  nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
-  mcursor=outputs;
-  scursor=serv->outputs;
-  while(mcursor!=NULL && scursor!=NULL){
-    //xmlAddChild(nc,xmlNewComment(BAD_CAST "Here we need to check for output format from metadata"));
-    printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
-    mcursor=mcursor->next;
-    scursor=scursor->next;
-  }
-  xmlAddChild(n,nc);
-  fprintf(stderr,"printProcessResponse 1\n");
-
-  xmlAddChild(nr,n);
-  xmlDocSetRootElement(doc, n);
-
-  /*
-   * Dump the document to a buffer and print it
-   * for demonstration purposes.
-   */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
-  
-  /*
-   * Free associated memory.
-   */
-  xmlFree(xmlbuff);
-  xmlFreeDoc(doc);
-
+  int res=-1;
+  for(i=0;i<nbNs;i++)
+    if(strncasecmp(name,nsName[i],strlen(nsName[i]))==0){
+      res=i;
+      break;
+    }
+  return res;
 }
 
-
-void printGetCapabilitiesResponse(service** serv,int sc,char* service,maps* m){
-
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr nr,n,nc,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
-  xmlDocPtr doc;
-  xmlChar *xmlbuff;
-  int buffersize;
-  /**
-   * Create the document and its temporary root.
-   */
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-
-  maps* toto1=getMaps(m,"main");
-  doc = xmlNewDoc(BAD_CAST "1.0");
-  if(toto1!=NULL){
-    map* tmp=getMap(toto1->content,"encoding");
-    if(tmp!=NULL){
-      doc->encoding = xmlCharStrdup(tmp->value);
-    }
-    else
-      doc->encoding = xmlCharStrdup("UTF-8");
-  }
-  else
-    doc->encoding = xmlCharStrdup ("UTF-8");
-
-  n = xmlNewNode(ns, BAD_CAST "Capabilities");  
-  ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsGetCapabilities_response.xsd");
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-  
-  if(toto1!=NULL){
-    map* tmp=getMap(toto1->content,"version");
-    if(tmp!=NULL){
-      xmlNewProp(n,BAD_CAST "version",BAD_CAST tmp->value);
-    }
-    else
-      xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  }
-  else
-    xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-
-  char tmp[256];
-  
-  nc = xmlNewNode(ns_ows, BAD_CAST "ServiceIdentification");
-  maps* tmp4=getMaps(m,"identification");
-  if(tmp4!=NULL){
-    map* tmp2=tmp4->content;
-    while(tmp2!=NULL){
-      if(strcmp(tmp2->name,"keywords")!=0 &&
-	 strcmp(tmp2->name,"serverAddress")!=0 &&
-	 strcmp(tmp2->name,"lang")!=0 &&
-	 strcmp(tmp2->name,"encoding")!=0 &&
-	 strcmp(tmp2->name,"version")!=0){
-	tmp2->name[0]=toupper(tmp2->name[0]);
-	nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	xmlAddChild(nc,nc1);
-      }
-      else
-	if(strcmp(tmp2->name,"keywords")==0){
-	  nc1 = xmlNewNode(ns_ows, BAD_CAST "Keywords");
-	  char *toto=tmp2->value;
-	  char buff[256];
-	  int i=0;
-	  int j=0;
-	  while(toto[i]){
-	    if(toto[i]!=',' && toto[i]!=0){
-	      buff[j]=toto[i];
-	      buff[j+1]=0;
-	      j++;
-	    }
-	    else{
-	      nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
-	      xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
-	      xmlAddChild(nc1,nc2);
-	      j=0;
-	    }
-	    i++;
-	  }
-	  if(strlen(buff)>0){
-	    nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
-	    xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
-	    xmlAddChild(nc1,nc2);
-	  }
-	  xmlAddChild(nc,nc1);
-	}
-      tmp2=tmp2->next;
+int zooXmlAddNs(xmlNodePtr nr,char* url,char* name){
+#ifdef DEBUG
+  fprintf(stderr,"zooXmlAddNs %d \n",nbNs);
+#endif
+  int currId=-1;
+  if(nbNs==0){
+    nbNs++;
+    currId=0;
+    nsName[currId]=strdup(name);
+    usedNs[currId]=xmlNewNs(nr,BAD_CAST url,BAD_CAST name);
+  }else{
+    currId=zooXmlSearchForNs(name);
+    if(currId<0){
+      nbNs++;
+      currId=nbNs-1;
+      nsName[currId]=strdup(name);
+      usedNs[currId]=xmlNewNs(nr,BAD_CAST url,BAD_CAST name);
     }
   }
-  else{
-    fprintf(stderr,"TMP4 NOT FOUND !!");
-    //dumpMaps(tmp4);
-    return;
+  return currId;
+}
+
+void zooXmlCleanupNs(){
+  int j;
+#ifdef DEBUG
+  fprintf(stderr,"zooXmlCleanup %d\n",nbNs);
+#endif
+  for(j=nbNs-1;j>=0;j--){
+#ifdef DEBUG
+    fprintf(stderr,"zooXmlCleanup %d\n",j);
+#endif
+    if(j==0)
+      xmlFreeNs(usedNs[j]);
+    free(nsName[j]);
+    nbNs--;
   }
-  xmlAddChild(n,nc);
-
-  nc = xmlNewNode(ns_ows, BAD_CAST "ServiceProvider");
-  nc3 = xmlNewNode(ns_ows, BAD_CAST "ServiceContact");
-  nc4 = xmlNewNode(ns_ows, BAD_CAST "ContactInfo");
-  nc5 = xmlNewNode(ns_ows, BAD_CAST "Phone");
-  nc6 = xmlNewNode(ns_ows, BAD_CAST "Address");
-  tmp4=getMaps(m,"provider");
-  if(tmp4!=NULL){
-    map* tmp2=tmp4->content;
-    while(tmp2!=NULL){
-      if(strcmp(tmp2->name,"keywords")!=0 &&
-	 strcmp(tmp2->name,"serverAddress")!=0 &&
-	 strcmp(tmp2->name,"lang")!=0){
-	tmp2->name[0]=toupper(tmp2->name[0]);
-	if(strcmp(tmp2->name,"ProviderName")==0 || 
-	   strcmp(tmp2->name,"ProviderSite")==0){
-	  nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	  xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	  xmlAddChild(nc,nc1);
-	}
-	else{
-	  if(strcmp(tmp2->name,"IndividualName")==0 || 
-	     strcmp(tmp2->name,"PositionName")==0){
-	    nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	    xmlAddChild(nc3,nc1);
-	  } 
-	  else 
-	    if(strncmp(tmp2->name,"Phone",5)==0){
-	      char *toto=NULL;
-	      char *toto1=tmp2->name;
-	      toto=strstr(toto1,"Phone");
-	      nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+5);
-	      xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	      xmlAddChild(nc5,nc1);
-	    }
-	    else 
-	      if(strncmp(tmp2->name,"Address",7)==0){
-		char *toto=NULL;
-		char *toto1=tmp2->name;
-		toto=strstr(toto1,"Address");
-		nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+7);
-		xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-		xmlAddChild(nc6,nc1);
-	      }
-	}
-      }
-      else
-	if(strcmp(tmp2->name,"keywords")==0){
-	  nc1 = xmlNewNode(ns_ows, BAD_CAST "Keywords");
-	  char *toto=tmp2->value;
-	  char buff[256];
-	  int i=0;
-	  int j=0;
-	  while(toto[i]){
-	    if(toto[i]!=',' && toto[i]!=0){
-	      buff[j]=toto[i];
-	      buff[j+1]=0;
-	      j++;
-	    }
-	    else{
-	      nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
-	      xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
-	      xmlAddChild(nc1,nc2);
-	      j=0;
-	    }
-	    i++;
-	  }
-	  if(strlen(buff)>0){
-	    nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
-	    xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
-	    xmlAddChild(nc1,nc2);
-	  }
-	  xmlAddChild(nc,nc1);
-	}
-      tmp2=tmp2->next;
-    }
-  }
-  else{
-    fprintf(stderr,"TMP4 NOT FOUND !!");
-    //dumpMaps(tmp4);
-  }
-  xmlAddChild(nc4,nc5);
-  xmlAddChild(nc4,nc6);
-  xmlAddChild(nc3,nc4);
-  xmlAddChild(nc,nc3);
-  xmlAddChild(n,nc);
-
-
-  nc = xmlNewNode(ns_ows, BAD_CAST "OperationsMetadata");
-  char *tmp2[3];
-  tmp2[0]="GetCapabilities";
-  tmp2[1]="DescribeProcess";
-  tmp2[2]="Execute";
-  int j=0;
-
-
-  for(j=0;j<3;j++){
-    nc1 = xmlNewNode(ns_ows, BAD_CAST "Operation");
-    xmlNewProp(nc1,BAD_CAST "name",BAD_CAST tmp2[j]);
-    nc2 = xmlNewNode(ns_ows, BAD_CAST "DCP");
-    nc3 = xmlNewNode(ns_ows, BAD_CAST "HTTP");
-    nc4 = xmlNewNode(ns_ows, BAD_CAST "Get");
-    sprintf(tmp,"%s/%s",SERVICE_URL,service);
-    xmlNewProp(nc4,BAD_CAST "xlink:href",BAD_CAST tmp);
-    xmlAddChild(nc3,nc4);
-    if(j>0){
-      nc4 = xmlNewNode(ns_ows, BAD_CAST "Post");
-      xmlNewProp(nc4,BAD_CAST "xlink:href",BAD_CAST tmp);
-      xmlAddChild(nc3,nc4);
-    }
-    xmlAddChild(nc2,nc3);
-    xmlAddChild(nc1,nc2);    
-    xmlAddChild(nc,nc1);    
-  }
-  xmlAddChild(n,nc);
-
-
-  nc = xmlNewNode(ns, BAD_CAST "ProcessOfferings");
-  /**
-   * Need to loop over various operations
-   */
-  int cursor=0;
-  map* tmp1;
-  for(cursor=0;cursor<sc;cursor++){
-    //dumpService(serv[cursor]);
-    if(serv[cursor]->content!=NULL){
-      nc1 = xmlNewNode(ns, BAD_CAST "Process");
-      tmp1=getMap(serv[cursor]->content,"processVersion");
-      if(tmp1!=NULL)
-	xmlNewProp(nc1,BAD_CAST "wps:processVersion",BAD_CAST tmp1->value);
-      
-      printDescription(nc1,ns_ows,serv[cursor]->name,serv[cursor]->content);
-      tmp1=serv[cursor]->metadata;
-      while(tmp1!=NULL){
-	nc2 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-	xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-	xmlAddChild(nc1,nc2);
-	tmp1=tmp1->next;
-      }
-      xmlAddChild(nc,nc1);
-      xmlAddChild(n,nc);
-    }
-  }
-
-
-  nc1 = xmlNewNode(ns, BAD_CAST "Languages");
-  nc2 = xmlNewNode(ns, BAD_CAST "Default");
-  nc3 = xmlNewNode(ns, BAD_CAST "Supported");
-  
-  toto1=getMaps(m,"main");
-  if(toto1!=NULL){
-    tmp1=getMap(toto1->content,"lang");
-    char *toto=tmp1->value;
-    char buff[256];
-    int i=0;
-    int j=0;
-    int dcount=0;
-    while(toto[i]){
-      if(toto[i]!=',' && toto[i]!=0){
-	buff[j]=toto[i];
-	buff[j+1]=0;
-	j++;
-      }
-      else{
-	nc4 = xmlNewNode(ns_ows, BAD_CAST "Language");
-	xmlAddChild(nc4,xmlNewText(BAD_CAST buff));
-	if(dcount==0){
-	  xmlAddChild(nc2,nc4);
-	  xmlAddChild(nc1,nc2);
-	  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST buff);
-	  dcount++;
-	}
-	nc4 = xmlNewNode(ns_ows, BAD_CAST "Language");
-	xmlAddChild(nc4,xmlNewText(BAD_CAST buff));
-	xmlAddChild(nc3,nc4);
-	j=0;
-	buff[j]=0;
-      }
-      i++;
-    }
-    if(strlen(buff)>0){
-      nc4 = xmlNewNode(ns_ows, BAD_CAST "Language");
-      xmlAddChild(nc4,xmlNewText(BAD_CAST buff));	      
-      xmlAddChild(nc3,nc4);
-    }
-  }
-  xmlAddChild(nc1,nc3);
-  xmlAddChild(n,nc1);
-  
-  xmlDocSetRootElement(doc, n);
-    
-  /*
-   * Dump the document to a buffer and print it
-   * for demonstration purposes.
-   */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
-  
-  /*
-   * Free associated memory.
-   */
-  xmlFree(xmlbuff);
-  //xmlFreeDoc(doc);
-
+  nbNs=0;
 }
 
 xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr nr,n,nc,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
-  //xmlDocPtr doc;
+  xmlNodePtr n,nc,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
   xmlChar *xmlbuff;
   int buffersize;
   /**
    * Create the document and its temporary root.
    */
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-
+  int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
+  ns=usedNs[wpsId];
   maps* toto1=getMaps(m,"main");
-  //doc = xmlNewDoc(BAD_CAST "1.0");
-  if(toto1!=NULL){
-    map* tmp=getMap(toto1->content,"encoding");
-    if(tmp!=NULL){
-      doc->encoding = xmlCharStrdup(tmp->value);
-    }
-    else
-      doc->encoding = xmlCharStrdup("UTF-8");
-  }
-  else
-    doc->encoding = xmlCharStrdup ("UTF-8");
 
-  n = xmlNewNode(ns, BAD_CAST "Capabilities");  
-  ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  n = xmlNewNode(ns, BAD_CAST "Capabilities");
+  int owsId=zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
   xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsGetCapabilities_response.xsd");
+  int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
+  ns_xsi=usedNs[xsiId];
+  int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+  ns_xlink=usedNs[xlinkId];
+  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsGetCapabilities_response.xsd"); 
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
   
   if(toto1!=NULL){
@@ -781,11 +182,11 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   if(tmp4!=NULL){
     map* tmp2=tmp4->content;
     while(tmp2!=NULL){
-      if(strcmp(tmp2->name,"keywords")!=0 &&
-	 strcmp(tmp2->name,"serverAddress")!=0 &&
-	 strcmp(tmp2->name,"lang")!=0 &&
-	 strcmp(tmp2->name,"encoding")!=0 &&
-	 strcmp(tmp2->name,"version")!=0){
+      if(strncasecmp(tmp2->name,"keywords",8)!=0 &&
+	 strncasecmp(tmp2->name,"serverAddress",13)!=0 &&
+	 strncasecmp(tmp2->name,"lang",4)!=0 &&
+	 strncasecmp(tmp2->name,"encoding",8)!=0 &&
+	 strncasecmp(tmp2->name,"version",7)!=0){
 	tmp2->name[0]=toupper(tmp2->name[0]);
 	nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
 	xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
@@ -856,7 +257,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 	else{
 	  if(strcmp(tmp2->name,"ProviderSite")==0){
 	    nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	    xmlNewProp(nc1,BAD_CAST "xlink:href",BAD_CAST tmp2->value);
+	    xmlNewNsProp(nc1,ns_xlink,BAD_CAST "href",BAD_CAST tmp2->value);
 	    xmlAddChild(nc,nc1);
 	  } 
 	  else  
@@ -930,9 +331,9 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 
   nc = xmlNewNode(ns_ows, BAD_CAST "OperationsMetadata");
   char *tmp2[3];
-  tmp2[0]="GetCapabilities";
-  tmp2[1]="DescribeProcess";
-  tmp2[2]="Execute";
+  tmp2[0]=strdup("GetCapabilities");
+  tmp2[1]=strdup("DescribeProcess");
+  tmp2[2]=strdup("Execute");
   int j=0;
 
   if(toto1!=NULL){
@@ -941,10 +342,10 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
       SERVICE_URL = strdup(tmp->value);
     }
     else
-      SERVICE_URL = "not_found";
+      SERVICE_URL = strdup("not_found");
   }
   else
-    SERVICE_URL = "not_found";
+    SERVICE_URL = strdup("not_found");
 
   for(j=0;j<3;j++){
     nc1 = xmlNewNode(ns_ows, BAD_CAST "Operation");
@@ -953,23 +354,23 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
     nc3 = xmlNewNode(ns_ows, BAD_CAST "HTTP");
     nc4 = xmlNewNode(ns_ows, BAD_CAST "Get");
     sprintf(tmp,"%s/%s",SERVICE_URL,service);
-    xmlNewProp(nc4,BAD_CAST "xlink:href",BAD_CAST tmp);
+    xmlNewNsProp(nc4,ns_xlink,BAD_CAST "href",BAD_CAST tmp);
     xmlAddChild(nc3,nc4);
     if(j>0){
       nc4 = xmlNewNode(ns_ows, BAD_CAST "Post");
-      xmlNewProp(nc4,BAD_CAST "xlink:href",BAD_CAST tmp);
+      xmlNewNsProp(nc4,ns_xlink,BAD_CAST "href",BAD_CAST tmp);
       xmlAddChild(nc3,nc4);
     }
     xmlAddChild(nc2,nc3);
     xmlAddChild(nc1,nc2);    
     xmlAddChild(nc,nc1);    
   }
+  for(j=2;j>=0;j--)
+    free(tmp2[j]);
   xmlAddChild(n,nc);
 
   nc = xmlNewNode(ns, BAD_CAST "ProcessOfferings");
   xmlAddChild(n,nc);
-
-
 
   nc1 = xmlNewNode(ns, BAD_CAST "Languages");
   nc2 = xmlNewNode(ns, BAD_CAST "Default");
@@ -1016,18 +417,23 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   xmlAddChild(n,nc1);
   
   xmlDocSetRootElement(doc, n);
-
+  //xmlFreeNs(ns);
+  free(SERVICE_URL);
   return nc;
 }
 
 void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
-
-  xmlNsPtr ns,ns_ows;
+  xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr nr,n,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
-
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  ns_ows=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/ows/1.1.0",BAD_CAST "ows");
+  /**
+   * Initialize or get existing namspaces
+   */
+  int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
+  ns=usedNs[wpsId];
+  int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
+  int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+  ns_xlink=usedNs[xlinkId];
 
   int cursor=0;
   map* tmp1;
@@ -1035,86 +441,60 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
     nc1 = xmlNewNode(ns, BAD_CAST "Process");
     tmp1=getMap(serv->content,"processVersion");
     if(tmp1!=NULL)
-      xmlNewProp(nc1,BAD_CAST "wps:processVersion",BAD_CAST tmp1->value);
-    
+      xmlNewNsProp(nc1,ns,BAD_CAST "processVersion",BAD_CAST tmp1->value);
     printDescription(nc1,ns_ows,serv->name,serv->content);
     tmp1=serv->metadata;
     while(tmp1!=NULL){
       nc2 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-      char toto[1024];
-      sprintf(toto,"xlink:%s",tmp1->name);
-      xmlNewProp(nc2,BAD_CAST toto,BAD_CAST tmp1->value);
+      xmlNewNsProp(nc2,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
       xmlAddChild(nc1,nc2);
       tmp1=tmp1->next;
     }
     xmlAddChild(nc,nc1);
   }
-  
 }
 
-void printDocument(xmlDocPtr doc){
-  rewind(stdout);
-  printf("Content-Type: text/xml; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-  fflush(stdout);
-  xmlChar *xmlbuff;
-  int buffersize;
-  /*
-   * Dump the document to a buffer and print it on stdout
-   * for demonstration purposes.
-   */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
-  /*
-   * Free associated memory.
-   */
-  xmlFree(xmlbuff);
-  xmlFreeDoc(doc);
-}
-
-void printGetCapabilitiesDocument(xmlDocPtr doc){
-  printf("Content-Type: text/xml; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-  xmlChar *xmlbuff;
-  int buffersize;
-  /*
-   * Dump the document to a buffer and print it on stdout
-   * for demonstration purposes.
-   */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
-  /*
-   * Free associated memory.
-   */
-  xmlFree(xmlbuff);
-
-}
-  
-
-void printDescribeProcessResponse(service* serv,char* service){
+xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,char* service,maps* m){
 
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr nr,n,nc,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
-  xmlDocPtr doc;
+  xmlNodePtr n,nr;
   xmlChar *xmlbuff;
   int buffersize;
-  /**
-   * Create the document and its temporary root.
-   */
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://schemas.opengis.net/wps/1.0.0",BAD_CAST "wps");
 
-  doc = xmlNewDoc(BAD_CAST "1.0");
-  doc->encoding = xmlCharStrdup ("UTF-8");
-
-  n = xmlNewNode(ns, BAD_CAST "ProcessDescriptions");  
-  ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  int wpsId=zooXmlAddNs(NULL,"http://schemas.opengis.net/wps/1.0.0","wps");
+  ns=usedNs[wpsId];
+  n = xmlNewNode(ns, BAD_CAST "ProcessDescriptions");
+  int owsId=zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
   xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsDescribeProcess_response.xsd");
+  zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+  int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
+  ns_xsi=usedNs[xsiId];
+  
+  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsDescribeProcess_response.xsd");
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
+  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
+
+  xmlDocSetRootElement(doc, n);
+
+  return n;
+}
+
+void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
+  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
+  xmlNodePtr nr,n,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
+
   char tmp[256];
+  n=nc;
   
+  int wpsId=zooXmlAddNs(NULL,"http://schemas.opengis.net/wps/1.0.0","wps");
+  ns=usedNs[wpsId];
+  int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
+  int xlinkId=zooXmlAddNs(NULL,"http://www.w3.org/1999/xlink","xlink");
+  ns_xlink=usedNs[xlinkId];
+
   nc = xmlNewNode(NULL, BAD_CAST "ProcessDescription");
   char *tmp4[3];
   tmp4[0]="processVersion";
@@ -1126,7 +506,7 @@ void printDescribeProcessResponse(service* serv,char* service){
     tmp1=getMap(serv->content,tmp4[j]);
     if(tmp1!=NULL){
       if(j==0)
-	xmlNewProp(nc,BAD_CAST "wps:processVersion",BAD_CAST tmp1->value);      
+	xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp1->value);      
       else
 	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST tmp1->value);      
     }
@@ -1141,7 +521,7 @@ void printDescribeProcessResponse(service* serv,char* service){
   tmp1=serv->metadata;
   while(tmp1!=NULL){
     nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-    xmlNewProp(nc1,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
+    xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
     xmlAddChild(nc,nc1);
     tmp1=tmp1->next;
   }
@@ -1172,7 +552,9 @@ void printDescribeProcessResponse(service* serv,char* service){
 
     nc3 = xmlNewNode(NULL, BAD_CAST e->format);
     iotype* _tmp=e->defaults;
+    int datatype=0;
     if(_tmp!=NULL){
+      int isAnyValue=1;
       if(strcmp(e->format,"LiteralData")!=0){
 	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
 	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
@@ -1180,71 +562,120 @@ void printDescribeProcessResponse(service* serv,char* service){
       else{
 	nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
 	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
+	datatype=1;
       }
       tmp1=_tmp->content;
+      int default1=0;
+      xmlNodePtr nc7;
       while(tmp1!=NULL){
 #ifdef DEBUG
 	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
 #endif
-	if(strcmp(tmp1->name,"DataType")==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
+	if(strncasecmp(tmp1->name,"DataType",8)==0){
+	  nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
 	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	  char tmp[1024];
 	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewProp(nc6,BAD_CAST "ows:reference",BAD_CAST tmp);
+	  xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
 	  xmlAddChild(nc3,nc6);
 	  tmp1=tmp1->next;
 	  continue;
 	}
-	if(strcmp(tmp1->name,"asReference")!=0 && 
-	   strcmp(tmp1->name,"DataType")!=0 && 
-	   strcmp(tmp1->name,"value")!=0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
+	if(strcasecmp(tmp1->name,"asReference")!=0 && 
+	   strcasecmp(tmp1->name,"DataType")!=0 && 
+	   strncasecmp(tmp1->name,"AllowedValues",13)!=0 &&
+	   strcasecmp(tmp1->name,"value")!=0 &&
+	   strcasecmp(tmp1->name,"extension")!=0){
+	  if(datatype==0){
+	    char *tmp2=zCapitalize1(tmp1->name);
+	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
+	  else{
+	    char *tmp2=zCapitalize(tmp1->name);
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
 	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	  xmlAddChild(nc5,nc6);
 	}
 	else{
 	  if(strcmp(tmp1->name,"value")==0){
-	    nc6 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
-	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	    nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
+	    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
+	    default1=1;
+	  }
+	  if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	    char *token,*saveptr1;
+	    token=strtok_r(tmp1->value,",",&saveptr1);
+	    while(token!=NULL){
+	   	nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+		char *tmps=strdup(token);
+		tmps[strlen(tmps)]=0;
+		xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
+		fprintf(stderr,"strgin : %s\n",tmps);
+		xmlAddChild(nc6,nc7);
+		token=strtok_r(NULL,",",&saveptr1);
+	    }
 	    xmlAddChild(nc3,nc6);
+	    isAnyValue=-1;
 	  }
 	}
 	tmp1=tmp1->next;
       }
       xmlAddChild(nc4,nc5);
       xmlAddChild(nc3,nc4);
+      if(datatype==1 && isAnyValue==1){
+	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	if(default1>0)
+	  xmlAddChild(nc3,nc7);
+      }
+      if(datatype==1 && default1>0)
+      	xmlAddChild(nc3,nc7);
     }
     xmlAddChild(nc2,nc3);
     
     _tmp=e->supported;
-    if(_tmp!=NULL){
-      if(strcmp(e->format,"LiteralData")!=0){
+    while(_tmp!=NULL){
+      if(datatype==0){
 	nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
 	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
       }
       else{
 	nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
-	
       }
       tmp1=_tmp->content;
       while(tmp1!=NULL){
 	/*if(strcmp(e->format,"LiteralData")==0)
 	  xmlAddChild(nc5,nc6);*/
-	nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
+	if(datatype==0){
+	  char *tmp2=zCapitalize1(tmp1->name);
+	  nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	  free(tmp2);
+	}
+	else{
+	  char *tmp2=zCapitalize(tmp1->name);	  
+	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	  free(tmp2);
+	}
 	xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	xmlAddChild(nc5,nc6);
 	tmp1=tmp1->next;
       }
-      xmlAddChild(nc4,nc5);
-      if(strcmp(e->format,"LiteralData")!=0){
+      if(datatype==0){
+        xmlAddChild(nc4,nc5);
 	xmlAddChild(nc3,nc4);
+      }else{
+      	xmlAddChild(nc4,nc5);
+	//xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
       }
+      _tmp=_tmp->next;
+      if(strcmp(e->format,"LiteralData")!=0){
+	xmlAddChild(nc2,nc3);
+      }
+      xmlAddChild(nc1,nc2);
     }
-    if(strcmp(e->format,"LiteralData")!=0){
-      xmlAddChild(nc2,nc3);
-    }
-    xmlAddChild(nc1,nc2);
     
     
     e=e->next;
@@ -1267,319 +698,10 @@ void printDescribeProcessResponse(service* serv,char* service){
 
     printDescription(nc2,ns_ows,e->name,e->content);
 
-    nc3 = xmlNewNode(ns, BAD_CAST e->format);
-    fprintf(stderr,"LITERALDATA ? %s",e->format);
-    iotype* _tmp=e->defaults;
-    if(_tmp!=NULL){
-      if(strcmp(e->format,"LiteralData")!=0 &&
-	 strcmp(e->format,"LiteralOutput")!=0){
-	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }   
-      else{
-	nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
-      }
-
-      /*nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      */
-      tmp1=_tmp->content;
-      while(tmp1!=NULL){
-#ifdef DEBUG
-	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
-	fprintf(stderr,"DEBUG DATATYPE !!\n");
-	dumpMap(tmp1);
-#endif
-	if(strcmp(tmp1->name,"DataType")==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  char tmp[1024];
-	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewProp(nc6,BAD_CAST "ows:reference",BAD_CAST tmp);
-	  xmlAddChild(nc5,nc6);
-	  tmp1=tmp1->next;
-	  continue;
-	}
-	if(strcmp(tmp1->name,"asReference")!=0 && strcmp(tmp1->name,"DataType")!=0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	}
-	tmp1=tmp1->next;
-      }
-      xmlAddChild(nc4,nc5);
-      xmlAddChild(nc3,nc4);	    
-    }
-    _tmp=e->supported;
-    while(_tmp!=NULL){
-      nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
-      nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      tmp1=_tmp->content;
-      while(tmp1!=NULL){
-#ifdef DEBUG
-	printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
-#endif
-	if(strcmp(tmp1->name,"asReference")!=0 && strcmp(tmp1->name,"DataType")!=0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	}
-	tmp1=tmp1->next;
-      }
-      _tmp=_tmp->next;
-      xmlAddChild(nc4,nc5);
-      xmlAddChild(nc3,nc4);
-    }
-    xmlAddChild(nc2,nc3);
-
-    xmlAddChild(nc3,nc4);
-      
-    
-    xmlAddChild(nc2,nc3);
-    
-    xmlAddChild(nc1,nc2);
-    
-    e=e->next;
-  }
-  xmlAddChild(nc,nc1);
-
-  xmlAddChild(n,nc);
-
-  xmlDocSetRootElement(doc, n);
-    
-  /*
-   * Dump the document to a buffer and print it
-   * for demonstration purposes.
-   */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
-  
-  /*
-   * Free associated memory.
-   */
-  xmlFree(xmlbuff);
-  //xmlFreeDoc(doc);
-
-}
-
-xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,char* service,maps* m){
-
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  //xmlDocPtr doc;
-  xmlNodePtr n,nr;
-  xmlChar *xmlbuff;
-  int buffersize;
-  /**
-   * Create the document and its temporary root.
-   */
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://schemas.opengis.net/wps/1.0.0",BAD_CAST "wps");
-
-  /*doc = xmlNewDoc(BAD_CAST "1.0");
-    doc->encoding = xmlCharStrdup ("UTF-8");*/
-
-  n = xmlNewNode(ns, BAD_CAST "ProcessDescriptions");  
-  ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsDescribeProcess_response.xsd");
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
-
-  xmlDocSetRootElement(doc, n);
-
-  return n;
-}
-
-void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service** serv,int sc){
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr nr,n,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
-
-  char tmp[256];
-  n=nc;
-  nr = xmlNewNode(ns, BAD_CAST "root");
-  
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  ns_ows=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/ows/1.1.0",BAD_CAST "ows");
-
-  nc = xmlNewNode(NULL, BAD_CAST "ProcessDescription");
-  char *tmp4[3];
-  tmp4[0]="processVersion";
-  tmp4[1]="storeSupported";
-  tmp4[2]="statusSupported";
-  int j=0;
-  map* tmp1=NULL;
-  for(j=0;j<3;j++){
-    tmp1=getMap(serv[0]->content,tmp4[j]);
-    if(tmp1!=NULL){
-      if(j==0)
-	xmlNewProp(nc,BAD_CAST "wps:processVersion",BAD_CAST tmp1->value);      
-      else
-	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST tmp1->value);      
-    }
-    else{
-      if(j>0)
-	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST "false");      
-    }
-  }
-  
-  printDescription(nc,ns_ows,serv[0]->name,serv[0]->content);
-
-  tmp1=serv[0]->metadata;
-  while(tmp1!=NULL){
-    nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-    char toto[1024];
-    sprintf(toto,"xlink:%s",tmp1->name);
-    xmlNewProp(nc1,BAD_CAST toto,BAD_CAST tmp1->value);
-    xmlAddChild(nc,nc1);
-    tmp1=tmp1->next;
-  }
-
-  tmp1=getMap(serv[0]->content,"Profile");
-  if(tmp1!=NULL){
-    nc1 = xmlNewNode(ns, BAD_CAST "Profile");
-    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp1->value));
-    xmlAddChild(nc,nc1);
-  }
-
-  nc1 = xmlNewNode(NULL, BAD_CAST "DataInputs");
-  
-  elements* e=serv[0]->inputs;
-  while(e!=NULL){
-    nc2 = xmlNewNode(NULL, BAD_CAST "Input");
-    tmp1=getMap(e->content,"minOccurs");
-    if(tmp1){
-      xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    }
-    tmp1=getMap(e->content,"maxOccurs");
-    if(tmp1){
-      xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    }
-
-    printDescription(nc2,ns_ows,e->name,e->content);
-
-
-    nc3 = xmlNewNode(NULL, BAD_CAST e->format);
-    iotype* _tmp=e->defaults;
-    int datatype=0;
-    if(_tmp!=NULL){
-      if(strcmp(e->format,"LiteralData")!=0){
-	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }
-      else{
-	nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
-	datatype=1;
-      }
-      tmp1=_tmp->content;
-      int default1=0;
-      xmlNodePtr nc7;
-      while(tmp1!=NULL){
-#ifdef DEBUG
-	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
-#endif
-	if(strcmp(tmp1->name,"DataType")==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  char tmp[1024];
-	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewProp(nc6,BAD_CAST "ows:reference",BAD_CAST tmp);
-	  xmlAddChild(nc3,nc6);
-	  tmp1=tmp1->next;
-	  continue;
-	}
-	if(strcmp(tmp1->name,"asReference")!=0 && 
-	   strcmp(tmp1->name,"DataType")!=0 && 
-	   strcmp(tmp1->name,"value")!=0){
-	  if(datatype==0)
-	  nc6 = xmlNewNode(NULL, BAD_CAST tmp1->name);
-	  else
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	}
-	else{
-	  if(strcmp(tmp1->name,"value")==0){
-	    nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
-	    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
-	    default1=1;
-	  }
-	}
-	tmp1=tmp1->next;
-      }
-      xmlAddChild(nc4,nc5);
-      xmlAddChild(nc3,nc4);
-      if(datatype==1){
-		xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-		if(default1>0)
-	    xmlAddChild(nc3,nc7);
-      }
-    }
-    xmlAddChild(nc2,nc3);
-    
-    _tmp=e->supported;
-    if(_tmp!=NULL){
-      if(datatype==0){
-	nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }
-      else{
-	nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
-      }
-      tmp1=_tmp->content;
-      while(tmp1!=NULL){
-	/*if(strcmp(e->format,"LiteralData")==0)
-	  xmlAddChild(nc5,nc6);*/
-	if(datatype==0)
-	nc6 = xmlNewNode(NULL, BAD_CAST tmp1->name);
-	else
-	nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
-	xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	xmlAddChild(nc5,nc6);
-	tmp1=tmp1->next;
-      }
-      if(datatype==0){
-        xmlAddChild(nc4,nc5);
-	xmlAddChild(nc3,nc4);
-      }else{
-      	xmlAddChild(nc4,nc5);
-	//xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-	}
-    }
-    if(strcmp(e->format,"LiteralData")!=0){
-      xmlAddChild(nc2,nc3);
-    }
-    xmlAddChild(nc1,nc2);
-    
-    
-    e=e->next;
-  }
-  xmlAddChild(nc,nc1);
-
-  nc1 = xmlNewNode(NULL, BAD_CAST "ProcessOutputs");
-  
-  e=serv[0]->outputs;
-  while(e!=NULL){
-    nc2 = xmlNewNode(NULL, BAD_CAST "Output");
-    tmp1=getMap(e->content,"minOccurs");
-    if(tmp1){
-      xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    }
-    tmp1=getMap(e->content,"maxOccurs");
-    if(tmp1){
-      xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    }
-
-    printDescription(nc2,ns_ows,e->name,e->content);
-
-    if(strcmp(mtoupper(e->format),"LITERALDATA")==0)
+    if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
       nc3 = xmlNewNode(NULL, BAD_CAST "LiteralOutput");
     else
-      if(strcmp(mtoupper(e->format),"COMPLEXDATA")==0)
+      if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
 	nc3 = xmlNewNode(NULL, BAD_CAST "ComplexOutput");
       else
 	nc3 = xmlNewNode(NULL, BAD_CAST e->format);
@@ -1593,30 +715,38 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service** serv,int sc)
 	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
      }
       else{
-      nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-      nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
+	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
       }
       tmp1=_tmp->content;
       while(tmp1!=NULL){
 #ifdef DEBUG
 	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
 #endif
-	if(strcmp(tmp1->name,"DataType")==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
+	if(strncasecmp(tmp1->name,"DataType",8)==0){
+	  nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
 	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	  char tmp[1024];
 	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewProp(nc6,BAD_CAST "ows:reference",BAD_CAST tmp);
+	  xmlNewNsProp(nc6,ns_xlink,BAD_CAST "reference",BAD_CAST tmp);
 	  xmlAddChild(nc3,nc6);
 	  tmp1=tmp1->next;
 	  datatype=1;
 	  continue;
 	}
-	if(strcmp(tmp1->name,"asReference")!=0 && strcmp(tmp1->name,"DataType")!=0){
-	  if(datatype==0)
-	  nc6 = xmlNewNode(NULL, BAD_CAST tmp1->name);
-	  else
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
+	if(strcmp(tmp1->name,"asReference")!=0 &&
+	   strncasecmp(tmp1->name,"DataType",8)!=0 &&
+	   strcasecmp(tmp1->name,"extension")!=0){
+	  if(datatype==0){
+	    char *tmp2=zCapitalize1(tmp1->name);
+	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
+	  else{
+	    char *tmp2=zCapitalize(tmp1->name);
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
 	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	  xmlAddChild(nc5,nc6);
 	}
@@ -1638,11 +768,19 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service** serv,int sc)
 #ifdef DEBUG
 	printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
 #endif
-	if(strcmp(tmp1->name,"asReference")!=0 && strcmp(tmp1->name,"DataType")!=0){
-	  if(datatype==0)
-	  nc6 = xmlNewNode(NULL, BAD_CAST tmp1->name);
-	  else
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp1->name);
+	if(strcmp(tmp1->name,"asReference")!=0 && 
+	   strcmp(tmp1->name,"DataType")!=0 &&
+	   strcasecmp(tmp1->name,"extension")!=0){
+	  if(datatype==0){
+	    char *tmp2=zCapitalize1(tmp1->name);
+	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
+	  else{
+	    char *tmp2=zCapitalize(tmp1->name);
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
 	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	  xmlAddChild(nc5,nc6);
 	}
@@ -1672,24 +810,189 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service** serv,int sc)
 
 }
 
-void printDescribeProcessDocument(xmlDocPtr doc){
+void printProcessResponse(maps* m,map* request, int pid,service* serv,char* service,int status,maps* inputs,maps* outputs){
+  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
+  xmlNodePtr nr,n,nc,nc1,nc2,nc3,pseudor;
+  xmlDocPtr doc;
+  xmlChar *xmlbuff;
+  int buffersize;
+  time_t time1;  
+  time(&time1);
+  /**
+   * Create the document and its temporary root.
+   */
+  doc = xmlNewDoc(BAD_CAST "1.0");
+  int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
+  ns=usedNs[wpsId];
+  
+  n = xmlNewNode(ns, BAD_CAST "ExecuteResponse");
+  int owsId=zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
+  int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+  ns_xlink=usedNs[xlinkId];
+  int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
+  ns_xsi=usedNs[xsiId];
+  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
+
+  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd");
+  
+  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
+  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
+  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
+  char tmp[256];
+  char url[256];
+  memset(tmp,0,256);
+  memset(url,0,256);
+  maps* tmp_maps=getMaps(m,"main");
+  if(tmp_maps!=NULL){
+    map* tmpm=getMap(tmp_maps->content,"serverAddress");
+    map* tmpm1=getMap(tmp_maps->content,"tmpUrl");
+    if(tmpm!=NULL && tmpm1!=NULL){
+      sprintf(url,"%s/%s/%s_%i.xml",tmpm->value,tmpm1->value,service,pid);
+    }
+    if(tmpm!=NULL)
+      sprintf(tmp,"%s/",tmpm->value);
+  }
+
+  xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
+  if(status!=SERVICE_SUCCEEDED){
+    xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
+  }
+
+  nc = xmlNewNode(ns, BAD_CAST "Process");
+  map* tmp2=getMap(serv->content,"processVersion");
+
+  if(tmp2!=NULL)
+    xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
+  
+  printDescription(nc,ns_ows,serv->name,serv->content);
+  fflush(stderr);
+
+  xmlAddChild(n,nc);
+
+  nc = xmlNewNode(ns, BAD_CAST "Status");
+  const struct tm *tm;
+  size_t len;
+  time_t now;
+  char *tmp1;
+  
+  now = time ( NULL );
+  tm = localtime ( &now );
+
+  tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
+
+  len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+
+  switch(status){
+  case SERVICE_SUCCEEDED:
+    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
+    nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
+    break;
+  case SERVICE_STARTED:
+    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
+    nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
+    xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST "NEED_SERVICE_ACCESS"); 
+    break;
+  case SERVICE_ACCEPTED:
+    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
+    nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
+    break;
+  case SERVICE_FAILED:
+    nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
+    break;
+  default :
+    printf("error code not know : %i\n",status);
+    exit(1);
+    break;
+  }
+  xmlAddChild(nc,nc1);
+  xmlAddChild(n,nc);
+  free(tmp1);
+
+#ifdef DEBUG
+  fprintf(stderr,"printProcessResponse 1 161\n");
+#endif
+
+  map* lineage=getMap(request,"lineage");
+  if(lineage!=NULL){
+    nc = xmlNewNode(ns, BAD_CAST "DataInputs");
+    int i;
+    maps* mcursor=inputs;
+    elements* scursor=serv->inputs;
+    while(mcursor!=NULL /*&& scursor!=NULL*/){
+      printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Input");
+      mcursor=mcursor->next;
+      //scursor=scursor->next;
+    }
+    xmlAddChild(n,nc);
+    
+#ifdef DEBUG
+    fprintf(stderr,"printProcessResponse 1 177\n");
+#endif
+
+    nc = xmlNewNode(ns, BAD_CAST "OutputDefinitions");
+    mcursor=outputs;
+    scursor=serv->outputs;
+    while(mcursor!=NULL /*&& scursor!=NULL*/){
+      printOutputDefinitions1(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
+      mcursor=mcursor->next;
+      //scursor=scursor->next;
+    }
+    xmlAddChild(n,nc);
+  }
+#ifdef DEBUG
+  fprintf(stderr,"printProcessResponse 1 190\n");
+#endif
+
+  /**
+   * Display the process output only when requested !
+   */
+  if(status==SERVICE_SUCCEEDED){
+    nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
+    maps* mcursor=outputs;
+    elements* scursor=serv->outputs;
+    while(mcursor!=NULL && scursor!=NULL){
+      printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
+      mcursor=mcursor->next;
+      scursor=scursor->next;
+    }
+    xmlAddChild(n,nc);
+  }
+#ifdef DEBUG
+  fprintf(stderr,"printProcessResponse 1 202\n");
+#endif
+  xmlDocSetRootElement(doc, n);
+  printDocument(m,doc,pid);
+
+  xmlCleanupParser();
+  zooXmlCleanupNs();
+}
+
+
+void printDocument(maps* m, xmlDocPtr doc,int pid){
+  rewind(stdout);
+  char *encoding=getEncoding(m);
+  if(pid==getpid()){
+    printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+  }
+  fflush(stdout);
   xmlChar *xmlbuff;
   int buffersize;
   /*
-   * Dump the document to a buffer and print it
+   * Dump the document to a buffer and print it on stdout
    * for demonstration purposes.
    */
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
+  xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
   printf((char *) xmlbuff);
-  
+  //fflush(stdout);
   /*
    * Free associated memory.
    */
   xmlFree(xmlbuff);
-  //xmlFreeDoc(doc);
-
+  xmlFreeDoc(doc);
+  xmlCleanupParser();
+  zooXmlCleanupNs();
 }
-//printGetCapabilitiesHeader
 
 void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
   xmlNodePtr nc1;
@@ -1704,10 +1007,10 @@ void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPt
     return;
   }
   while(tmp!=NULL){
-    if(strcmp(mtoupper(tmp->name),"MIMETYPE")==0
-       || strcmp(mtoupper(tmp->name),"ENCODING")==0
-       || strcmp(mtoupper(tmp->name),"SCHEMA")==0
-       || strcmp(mtoupper(tmp->name),"UOM")==0)
+    if(strncasecmp(tmp->name,"MIMETYPE",strlen(tmp->name))==0
+       || strncasecmp(tmp->name,"ENCODING",strlen(tmp->name))==0
+       || strncasecmp(tmp->name,"SCHEMA",strlen(tmp->name))==0
+       || strncasecmp(tmp->name,"UOM",strlen(tmp->name))==0)
     xmlNewProp(nc1,BAD_CAST tmp->name,BAD_CAST tmp->value);
     tmp=tmp->next;
   }
@@ -1751,20 +1054,29 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 
 }
 
-void printIOType1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
+void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=e->content;
-#ifdef DEBUG
+  //#ifdef DEBUG
   dumpMap(tmp);
   dumpElements(e);
-#endif
+  //#endif
   nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
-  xmlAddChild(nc2,xmlNewText(BAD_CAST m->name));
+  nc3=xmlNewText(BAD_CAST e->name);
+  xmlAddChild(nc2,nc3);
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
+  // Extract Title required to be first element in the ZCFG file !
   nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-  xmlAddChild(nc2,xmlNewText(BAD_CAST tmp->value));
+  nc3=xmlNewText(BAD_CAST tmp->value);
+  xmlAddChild(nc2,nc3);  
+  xmlAddChild(nc1,nc2);
+  // Extract Abstract required to be second element in the ZCFG file !
+  tmp=tmp->next;
+  nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
+  nc3=xmlNewText(BAD_CAST tmp->value);
+  xmlAddChild(nc2,nc3);  
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
   tmp=tmp->next;
@@ -1772,92 +1084,69 @@ void printIOType1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,el
   /**
    * IO type Reference or full Data ?
    */
-#ifdef DEBUG
-  fprintf(stderr,"FORMAT %s %s\n",e->format,mtoupper(e->format));
-#endif
-  nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-  if(strcmp(mtoupper(e->format),"LITERALOUTPUT")==0)
-    nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
-  else
-    if(strcmp(mtoupper(e->format),"COMPLEXOUTPUT")==0)
-      nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
+  //#ifdef DEBUG
+  fprintf(stderr,"FORMAT %s %s\n",e->format,e->format);
+  //#endif
+  map *tmpMap=getMap(m->content,"Reference");
+  if(tmpMap==NULL){
+    nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
+    if(strncasecmp(e->format,"LITERALOUTPUT",strlen(e->format))==0)
+      nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
     else
-      nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
-  tmp=m->content;
-  while(tmp!=NULL){
-    if(strcmp(tmp->name,"value")!=0)
-      xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
-    tmp=tmp->next;
-    xmlAddChild(nc2,nc3);
-  }
-  tmp=getMap(e->defaults->content,"mimeType");
-  map* tmp1=getMap(m->content,"encoding");
-  map* tmp2=getMap(m->content,"mimeType");
-  map* toto=getMap(m->content,"value");
-  if((tmp1!=NULL && strncmp(tmp1->value,"base64",6)==0)
-     || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0
-			|| strncmp(tmp2->value,"application/",6)==0)) ){
-    map* rs=getMap(m->content,"size");
-    if(rs==NULL){
-      char tmp1[1024];
-      sprintf(tmp1,"%d",strlen(toto->value));
-      rs=createMap("z",tmp1);
+      if(strncasecmp(e->format,"COMPLEXOUTPUT",strlen(e->format))==0)
+	nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
+      else
+	nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
+    tmp=m->content;
+    while(tmp!=NULL){
+      if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0)
+	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+      tmp=tmp->next;
+      xmlAddChild(nc2,nc3);
     }
-    xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
-  }
-  else if(tmp!=NULL){
-    if(strcmp(tmp->value,"text/js")==0)
-      xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
+    tmp=getMap(e->defaults->content,"mimeType");
+    map* tmp1=getMap(m->content,"encoding");
+    map* tmp2=getMap(m->content,"mimeType");
+    map* toto=getMap(m->content,"value");
+    if((tmp1!=NULL && strncmp(tmp1->value,"base64",6)==0)
+       || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0
+			  || strncmp(tmp2->value,"application/",6)==0)) ){
+      map* rs=getMap(m->content,"size");
+      if(rs==NULL){
+	char tmp1[1024];
+	sprintf(tmp1,"%d",strlen(toto->value));
+	rs=createMap("z",tmp1);
+      }
+      xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
+    }
+    else if(tmp!=NULL){
+      if(strcmp(tmp->value,"text/js")==0)
+	xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
+      else
+	xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+      xmlAddChild(nc2,nc3);
+    }
     else
       xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
-    xmlAddChild(nc2,nc3);
   }
-  else
-    xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
-
-  xmlAddChild(nc1,nc2);
-  xmlAddChild(nc,nc1);
-
-}
-
-void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,map* m,char* type){
-  xmlNodePtr nc1,nc2,nc3;
-  nc1=xmlNewNode(ns_wps, BAD_CAST type);
-  map *tmp=e->content;
-  nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
-  xmlAddChild(nc2,xmlNewText(BAD_CAST m->name));
-  xmlAddChild(nc1,nc2);
-  xmlAddChild(nc,nc1);
-  nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-  xmlAddChild(nc2,xmlNewText(BAD_CAST tmp->value));
-  xmlAddChild(nc1,nc2);
-  xmlAddChild(nc,nc1);
-  tmp=tmp->next;
-
-  /**
-   * IO type Reference or full Data ?
-   */
-#ifdef DEBUG
-  printf("FORMAT %s\n",e->format);
-#endif
-  nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-  nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
-  tmp=e->defaults->content;
-  while(tmp!=NULL){
-    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
-    tmp=tmp->next;
-    xmlAddChild(nc2,nc3);
+  else{
+    nc3=nc2=xmlNewNode(ns_wps, BAD_CAST "Reference");
+    xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
+    tmp=m->content;
+    while(tmp!=NULL){
+      if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"reference",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"abstract",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"status",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"storeExecuteResponse",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0)
+	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+      tmp=tmp->next;
+      xmlAddChild(nc2,nc3);
+    }
   }
-  tmp=getMap(e->defaults->content,"mimeType");
-  if(tmp!=NULL){
-    if(strcmp(tmp->value,"text/js")==0)
-      xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST m->value,strlen(m->value)));
-    else
-      xmlAddChild(nc3,xmlNewText(BAD_CAST m->value));
-    xmlAddChild(nc2,nc3);
-  }
-  else
-    xmlAddChild(nc3,xmlNewText(BAD_CAST m->value));
 
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
@@ -1883,51 +1172,57 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,char* identifier,map* amap
   }
 }
 
+char* getEncoding(maps* m){
+  if(m!=NULL){
+    map* tmp=getMap(m->content,"encoding");
+    if(tmp!=NULL){
+      return tmp->value;
+    }
+    else
+      return "UTF-8";
+  }
+  else
+    return "UTF-8";  
+}
+
+char* getVersion(maps* m){
+  if(m!=NULL){
+    map* tmp=getMap(m->content,"version");
+    if(tmp!=NULL){
+      return tmp->value;
+    }
+    else
+      return "1.0.0";
+  }
+  else
+    return "1.0.0";
+}
+
 void printExceptionReportResponse(maps* m,map* s){
   
-  printf("Content-Type: text/xml; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");  
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
-  xmlNsPtr ns=NULL;
-  xmlNodePtr nr = xmlNewNode(ns, BAD_CAST "root");
-  ns=xmlNewNs(nr,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
+  xmlNodePtr n,nc,nc1,nc2;
 
-  maps* toto1=getMaps(m,"main");
   doc = xmlNewDoc(BAD_CAST "1.0");
-  if(toto1!=NULL){
-    map* tmp=getMap(toto1->content,"encoding");
-  //map* tmp=getMapFromMaps(m,"main","encoding");
-    if(tmp!=NULL){
-      doc->encoding = xmlCharStrdup(tmp->value);
-    }
-    else
-      doc->encoding = xmlCharStrdup("UTF-8");
-  }
-  else
-    doc->encoding = xmlCharStrdup ("UTF-8");
+  maps* tmpMap=getMaps(m,"main");
+  char *encoding=getEncoding(tmpMap);
+  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
 
-  xmlNodePtr n = xmlNewNode(ns, BAD_CAST "ExceptionReport");  
-  xmlNsPtr ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
-  xmlNewProp(n,BAD_CAST "xml:lan",BAD_CAST "en");
+  ns=xmlNewNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  n = xmlNewNode(ns, BAD_CAST "ExceptionReport");  
+  ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  ns_xlink=xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
+  ns_xsi=xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
+  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1/owsExceptionReport.xsd");
+  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
 
-  if(toto1!=NULL){
-    map* tmp=getMap(toto1->content,"version");
-    if(tmp!=NULL){
-      xmlNewProp(n,BAD_CAST "version",BAD_CAST tmp->value);
-    }
-    else
-      xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  }
-  else
-    xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
+  xmlNewProp(n,BAD_CAST "version",BAD_CAST getVersion(tmpMap));
 
-
-  xmlNodePtr nc = xmlNewNode(ns, BAD_CAST "Exception");  
+  nc = xmlNewNode(ns, BAD_CAST "Exception");  
 
   map* tmp=getMap(s,"code");
   if(tmp!=NULL)
@@ -1936,27 +1231,25 @@ void printExceptionReportResponse(maps* m,map* s){
     xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST "NoApplicableCode");
 
   tmp=getMap(s,"text");
-  xmlNodePtr nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
+  nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
+  nc2=NULL;
   if(tmp!=NULL){
-    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp->value));
+    xmlNodeSetContent(nc1, BAD_CAST tmp->value);
   }
-  else
-    xmlAddChild(nc1,xmlNewText(BAD_CAST "No debug message available"));
-  
+  else{
+    xmlNodeSetContent(nc1, BAD_CAST "No debug message available");
+  }
   xmlAddChild(nc,nc1);
   xmlAddChild(n,nc);
   xmlDocSetRootElement(doc, n);
 
-  xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-  printf((char *) xmlbuff);
+  xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
+  printf("%s",xmlbuff);
+  fflush(stdout);
+  xmlFreeDoc(doc);
   xmlFree(xmlbuff);
-  xmlFree(ns_ows);
-  xmlFree(nr);
-  xmlFree(nc1);
-  xmlFree(nc);
-  xmlFree(n);
-  xmlFree(ns);
-  xmlFree(doc);
+  xmlFreeNs(ns);
+  xmlCleanupParser();
 }
 
 
@@ -1971,14 +1264,37 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   int asRaw=0;
   if(toto!=NULL)
     asRaw=1;
-   
+  
   if(asRaw==0){
+#ifdef DEBUG
+    fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
+    dumpMaps(request_outputs);
+#endif
+    toto=getMap(request_outputs->content,"asReference");
+    if(toto!=NULL && strcasecmp(toto->value,"true")==0){
+      toto=getMap(request_outputs->content,"extension");
+      map *tmp1=getMapFromMaps(m,"main","tmpPath");
+      char *file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
+      sprintf(file_name,"%s/%s_%i.%s",tmp1->value,s->name,cpid+100000,toto->value);
+      FILE *ofile=fopen(file_name,"w");
+      map *tmp2=getMapFromMaps(m,"main","tmpUrl");
+      map *tmp3=getMapFromMaps(m,"main","serverAddress");
+      char *file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
+      sprintf(file_url,"%s/%s/%s_%i.%s",tmp3->value,tmp2->value,s->name,cpid+100000,toto->value);
+      addToMap(request_outputs->content,"Reference",file_url);
+      toto=getMap(request_outputs->content,"value");
+      if(toto!=NULL)
+	fwrite(toto->value,sizeof(char),strlen(toto->value),ofile);
+      fclose(ofile);
+      free(file_name);
+      free(file_url);
+    }
     map *r_inputs=getMap(s->content,"serviceProvider");
 #ifdef DEBUG
     fprintf(stderr,"SERVICE : %s\n",r_inputs->value);
     dumpMaps(m);
 #endif
-    printProcessResponse1(m,request_inputs1,cpid,
+    printProcessResponse(m,request_inputs1,cpid,
 			  s,r_inputs->value,res,
 			  request_inputs,
 			  request_outputs);
@@ -2006,16 +1322,14 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 		mi->value);
       else
 	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-    printf(mime);
-    toto=getMapFromMaps(request_outputs,
-			request_outputs->name,"value");
+    printf("%s",mime);
+    toto=getMap(request_outputs->content,"value");
     if(mi!=NULL && strncmp(mi->value,"image",5)==0){
-      map* rs=getMapFromMaps(request_outputs,
-			     request_outputs->name,"size");
+      map* rs=getMapFromMaps(request_outputs,request_outputs->name,"size");
       fwrite(toto->value,atoi(rs->value),1,stdout);
     }
     else
-      printf(toto->value);
+      printf("%s",toto->value);
 #ifdef DEBUG
     dumpMap(toto);
 #endif
@@ -2044,58 +1358,57 @@ char *base64(const unsigned char *input, int length)
   return buff;
 }
 
-void addDefaultValues(maps** out,elements* in,maps* m,char* type){
+char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
   elements* tmpInputs=in;
   maps* out1=*out;
   while(tmpInputs!=NULL){
     maps *tmpMaps=getMaps(out1,tmpInputs->name);
     if(tmpMaps==NULL){
       map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
-      if(strcmp(type,"inputs")==0)
+      if(strncmp(type,"inputs",6)==0)
 	if(tmpMap1!=NULL && atoi(tmpMap1->value)>=1){
-	  char tmps[1024];
-	  sprintf(tmps,"The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file.",tmpInputs->name);
-	  map* tmpe=createMap("text",tmps);
-	  addToMap(tmpe,"code","MissingParameterValue");
-	  printExceptionReportResponse(m,tmpe);
-	  exit(1);
+	  return tmpInputs->name;
 	}
-      tmpMaps=(maps*)malloc(MAPS_SIZE);
-      tmpMaps->name=strdup((char*)tmpInputs->name);
-      tmpMaps->content=NULL;
+      maps* tmpMaps2=(maps*)malloc(MAPS_SIZE);
+      tmpMaps2->name=strdup((char*)tmpInputs->name);
+      tmpMaps2->content=NULL;
+      tmpMaps2->next=NULL;
       iotype* tmpIoType=tmpInputs->defaults;
       while(tmpIoType!=NULL){
-	tmpMaps->content=tmpIoType->content;
-	tmpMaps->content->next;
+	addMapToMap(&tmpMaps2->content,tmpIoType->content);
 	tmpIoType=tmpIoType->next;
       }
-      map *tmpMap=getMap(tmpMaps->content,"value");
+      map *tmpMap=getMap(tmpMaps2->content,"value");
       if(tmpMap==NULL)
-	addToMap(tmpMaps->content,"value","NULL");
-      tmpMaps->next=NULL;
-      dumpMaps(tmpMaps);
+	addToMap(tmpMaps2->content,"value","NULL");
       if(out1==NULL){
-	out1=(maps*)malloc(MAPS_SIZE);
-	out1->name=tmpMaps->name;
-	out1->content=tmpMaps->content;
-	out1->next=NULL;
-	*out=out1;
+	*out=dupMaps(&tmpMaps2);
       }
       else
-	addMapsToMaps(&out1,tmpMaps);
+	addMapsToMaps(&out1,tmpMaps2);
+      freeMaps(&tmpMaps2);
+      free(tmpMaps2);
+      tmpMaps2=NULL;
     }
     else{
       map* tmpContent=tmpInputs->defaults->content;
+      
+      map* cval=NULL;
+      
       while(tmpContent!=NULL){
-	map* tmpIn=getMap(out1->content,tmpContent->name);
-	if(tmpIn==NULL)
-	  if(out1->content==NULL)
-	    out1->content=createMap(tmpContent->name,tmpContent->value);
+	if((cval=getMap(tmpMaps->content,tmpContent->name))==NULL){
+#ifdef DEBUG
+	  fprintf(stderr,"addDefaultValues %s => %s\n",tmpContent->name,tmpContent->value);
+#endif
+	  if(tmpMaps->content==NULL)
+	    tmpMaps->content=createMap(tmpContent->name,tmpContent->value);
 	  else
-	    addToMap(out1->content,tmpContent->name,tmpContent->value);
+	    addToMap(tmpMaps->content,tmpContent->name,tmpContent->value);
+	}
 	tmpContent=tmpContent->next;
       }
     }
     tmpInputs=tmpInputs->next;
   }
+  return "";
 }

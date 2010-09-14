@@ -85,6 +85,8 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     map* err=createMap("text",pbt);
     addToMap(err,"code","NoApplicableCode");
     printExceptionReportResponse(m,err);
+    freeMap(&err);
+    free(err);
     (*jvm)->DestroyJavaVM(jvm);
     return 1;
   }
@@ -147,25 +149,31 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 	map* err=createMap("text",pbt);
 	addToMap(err,"code","NoApplicableCode");
 	printExceptionReportResponse(m,err);
+	freeMap(&err);
+	free(err);
 	(*jvm)->DestroyJavaVM(jvm);
-	return 1;
+	return -1;
       }
     }
     else{
       char tmpS[1024];
       sprintf(tmpS, "Cannot find function %s \n", s->name);
-      map* tmps=createMap("text",tmpS);
-      printExceptionReportResponse(m,tmps);
+      map* err=createMap("text",tmpS);
+      printExceptionReportResponse(m,err);
+      freeMap(&err);
+      free(err);
       (*jvm)->DestroyJavaVM(jvm);
-      exit(-1);
+      return -1;
     }
   }else{
     char tmpS[1024];
     sprintf(tmpS, "Cannot find function %s \n", tmp->value);
-    map* tmps=createMap("text",tmpS);
-    printExceptionReportResponse(m,tmps);
-    if (PyErr_Occurred())
-      PyErr_Print();
+    map* err=createMap("text",tmpS);
+    printExceptionReportResponse(m,err);
+    freeMap(&err);
+    free(err);
+    (*jvm)->DestroyJavaVM(jvm);
+    return -1;
   }
   (*jvm)->DestroyJavaVM(jvm);
   return res;
@@ -311,10 +319,13 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t){
     cmap->content=res;
     cmap->next=NULL;
     if(final_res==NULL){
-      final_res=cmap;
+      final_res=dupMaps(&cmap);
     }else
-      addMapsToMaps(final_res,cmap);
+      addMapsToMaps(&final_res,cmap);
     final_res->next=NULL;
+    freeMaps(&cmap);
+    free(cmap);
+    cmap=NULL;
     res=NULL;
   }
 #ifdef DEBUG

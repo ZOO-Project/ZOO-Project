@@ -1,12 +1,12 @@
-[Buffer]
+[BufferPy]
  Title = Create a buffer around a polygon. 
  Abstract = Create a buffer around a single polygon. Accepts the polygon as GML and provides GML output for the buffered feature. 
  Profile = urn:ogc:wps:1.0.0:buffer
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = ogr_service.zo
- serviceType = C
+ serviceProvider = ogr_sp
+ serviceType = Python
  <MetaData lang="en">
    title = Demo
  </MetaData>
@@ -40,7 +40,7 @@
     DataType = float
     <Default>
      uom = meters
-     value = 10
+     value = 1
     </Default>
     <Supported>
      uom = feet
@@ -58,20 +58,12 @@
     <Default>
      mimeType = application/json
      encoding = UTF-8
-     extension = js
-     asReference = true	
     </Default>
-    <Supported>
-     mimeType = text/xml
-     encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
-     extension = xml
-    </Supported>
     <Supported>
      mimeType = text/xml
      encoding = UTF-8
      schema = http://fooa/gml/3.1.0/polygon.xsd
-     extension = xml
+     asReference = true	
     </Supported>
    </ComplexData>
  </DataOutputs>  

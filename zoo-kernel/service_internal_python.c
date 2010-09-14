@@ -24,117 +24,6 @@
 
 #include "service_internal_python.h"
 
-int python_support(maps* m,service* s,int argc,char** argv,map *inputs,map *outputs){
-  Py_Initialize();
-  PyObject *pName, *pModule, *pFunc;
-  pName = PyString_FromString(argv[2]);
-  pModule = PyImport_Import(pName);
-  int i;
-  if (pModule != NULL) {
-    pFunc=PyObject_GetAttrString(pModule,argv[4]);
-    if (pFunc && PyCallable_Check(pFunc)){
-      PyDictObject* arg1=PyDict_FromMap(inputs);
-      PyDictObject* arg2=PyDict_FromMap(outputs);
-      PyObject *pArgs=PyTuple_New(2);
-      PyObject *pValue;
-      PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
-      PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
-      pValue = PyString_FromString(argv[argc-1]);
-#ifdef DEBUG
-      fprintf(stderr,"Function successfully loaded\n");
-#endif	
-      /**
-       * Need to check if we need to fork to load a status enabled 
-       */
-      if(strcmp(PyString_AsString(pValue),"bg")!=0){
-#ifdef DEBUG
-	fprintf(stderr,"RUN IN NORMAL MODE \n");
-#endif
-	pValue = PyObject_CallObject(pFunc, pArgs);
-	if (pValue != NULL) {
-	  inputs=mapFromPyDict(arg1);
-	  outputs=mapFromPyDict(arg2);
-#ifdef DEBUG
-	  fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
-	  dumpMap(inputs);
-	  dumpMap(outputs);
-#ifndef WIN32
-	  fprintf(stderr,"printProcessResponse(%i,\"%s\",%i,inputs,outputs);",getpid(),argv[1],PyInt_AsLong(pValue));
-#endif
-#endif
-	  printProcessResponse(m,getpid(),s,argv[2],PyInt_AsLong(pValue),inputs,outputs);
-	}
-      }
-      else{
-	pid_t pid;
-#ifdef WIN32
-	pid = 0;
-#else
-	pid = fork ();
-#endif
-	if (pid > 0) {
-	  /* dady */
-	  printProcessResponse(m,pid,s,argv[2],SERVICE_STARTED,inputs,outputs);
-	}else if (pid == 0) {
-	  /* son */
-#ifdef DEBUG
-	  fprintf(stderr,"RUN IN BACKGROUND MODE \n");
-#endif
-	  char tmp1[256];
-	  sprintf(tmp1,"service/temp/%s_%d.xml",argv[2],getpid());
-#ifndef WIN32
-	  stdout =
-#endif
-		  freopen(tmp1 , "w+" , stdout);
-	  printProcessResponse(m,getpid(),s,argv[2],SERVICE_STARTED,inputs,outputs);
-	  fflush(stdout);
-	  pValue = PyObject_CallObject(pFunc, pArgs);
-	  if (pValue != NULL) {
-	    rewind(stdout);
-	    inputs=mapFromPyDict(arg1);
-	    outputs=mapFromPyDict(arg2);
-#ifdef DEBUG
-	    fprintf(stderr,"Result of call: %ld\n", PyInt_AsLong(pValue));
-	    dumpMap(inputs);
-	    dumpMap(outputs);
-	    fprintf(stderr,"printProcessResponse(%i,%s,%i,inputs,outputs);",s,getpid(),argv[2],PyInt_AsLong(pValue));
-#endif
-//	    sleep(6);
-	    printProcessResponse(m,getpid(),s,argv[2],PyInt_AsLong(pValue),inputs,outputs);
-	  }
-	  exit(1);
-	} else {
-	  /* error */
-	}
-      }
-      Py_DECREF(pArgs);
-      Py_DECREF(pValue);
-#ifdef DEBUG
-      fprintf(stderr,"Function ran successfully\n");
-#endif	
-    }
-    else{
-      char tmpS[1024];
-      sprintf(tmpS, "Cannot find function %s \n", argv[4]);
-      map* tmps=createMap("text",tmpS);
-      printExceptionReportResponse(m,tmps);
-      //fprintf(stderr, "Cannot find function %s \n", argv[2]);
-      exit(-1);
-    }
-  }else{
-    char tmpS[1024];
-    sprintf(tmpS, "Cannot find function %s \n", argv[4]);
-    map* tmps=createMap("text",tmpS);
-    printExceptionReportResponse(m,tmps);
-    //fprintf(stderr, "Cannot find function %s \n", argv[4]);
-    if (PyErr_Occurred())
-      PyErr_Print();
-
-  }
-  Py_Finalize();
-  return 2;
-}
-
 int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
@@ -143,33 +32,35 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   getcwd(ntmp,1024);
   map* tmp=NULL;
   tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH");
-  char *python_path=NULL;
+  char *python_path;
+  fprintf(stderr,"PYTHON SUPPORT \n");
+  fflush(stderr);
   if(tmp!=NULL){
-	  python_path=(char*)malloc((1+strlen(tmp->value))*sizeof(char));
-	  sprintf(python_path,"%s",tmp->value);
+    fprintf(stderr,"PYTHON SUPPORT (%i)\n",strlen(tmp->value));
+    python_path=(char*)malloc((strlen(tmp->value))*sizeof(char));
+    sprintf(python_path,"%s",tmp->value);
   }
   else{
-	python_path=(char*)malloc(2*sizeof(char));
-	python_path=".";
+    python_path=strdup(".");
   }
   tmp=NULL;
   tmp=getMap(request,"metapath");
   char *pythonpath=(char*)malloc((1+strlen(python_path)+2048)*sizeof(char));
   if(tmp!=NULL && strcmp(tmp->value,"")!=0)
 #ifdef WIN32
-	  sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+    sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
 #else
-	  sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
 #endif
   else
 #ifdef WIN32
     sprintf(pythonpath,"%s;%s",ntmp,python_path);
 #else
-    sprintf(pythonpath,"%s:%s",ntmp,python_path);
+  sprintf(pythonpath,"%s:%s",ntmp,python_path);
 #endif
-#ifdef DEBUG
-  fprintf(stderr,"PYTHONPATH=%s\n",pythonpath);
-#endif
+  //#ifdef DEBUG
+    fprintf(stderr,"PYTHONPATH=%s\n",pythonpath);
+  //#endif
 #ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);
 #else
@@ -177,12 +68,18 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #endif
   free(python_path);
   free(pythonpath);
-  //
+
   Py_Initialize();
   PyObject *pName, *pModule, *pFunc;
   tmp=getMap(s->content,"serviceProvider");
-  //if(tmp!=NULL)
-  pName = PyString_FromString(tmp->value);
+  if(tmp!=NULL)
+    pName = PyString_FromString(tmp->value);
+  else{
+    map* err=createMap("text","Unable to parse serviceProvider please check your zcfg file.");
+    addToMap(err,"code","NoApplicableCode");
+    printExceptionReportResponse(m,err);
+    exit(-1);
+  }
   pModule = PyImport_Import(pName);
   int i;
   int res=SERVICE_FAILED;
@@ -201,30 +98,29 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       tmp=getMap(request,"storeExecuteResponse");
 #ifdef DEBUG
       fprintf(stderr,"RUN IN NORMAL MODE \n");
-      //fflush(stderr);
+      fflush(stderr);
 #endif
       pValue = PyObject_CallObject(pFunc, pArgs);
       if (pValue != NULL) {
 	res=PyInt_AsLong(pValue);
-	/*inputs=mapsFromPyDict(arg2);
-	dumpMaps(inputs);*/
-	outputs=mapsFromPyDict(arg3);
-	*real_outputs=outputs;
-
+	freeMaps(real_outputs);
+	free(*real_outputs);
+	//*real_inputs=mapsFromPyDict(arg2);
+	//createMapsFromPyDict(real_outputs,arg3);
+	*real_outputs=mapsFromPyDict(arg3);
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
 	dumpMaps(inputs);
 	dumpMaps(outputs);
-	fprintf(stderr,"printProcessResponse(%i,\"%s\",%i,inputs,outputs);",
-		getpid(),tmp->value,PyInt_AsLong(pValue));
-	dumpMaps(outputs);
 #endif
+	Py_DECREF(arg1);
+	Py_DECREF(arg2);
+	Py_DECREF(arg3);
+      	Py_DECREF(pArgs);
 	Py_DECREF(pValue);
 	Py_XDECREF(pFunc);
-      	Py_DECREF(pArgs);
 	Py_DECREF(pModule);
-      }else{
-	  
+      }else{	  
 	PyObject *ptype,*pvalue, *ptraceback;
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	PyObject *trace=PyObject_Str(pvalue);
@@ -267,22 +163,23 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       sprintf(tmpS, "Cannot find the %s function int the %s file.\n", s->name, tmp->value);
       map* tmps=createMap("text",tmpS);
       printExceptionReportResponse(m,tmps);
-      //fprintf(stderr, "Cannot find function %s \n", argv[2]);
       Py_XDECREF(pFunc);
       Py_DECREF(pModule);
       exit(-1);
     }
   } else{
     char tmpS[1024];
-    sprintf(tmpS, "Cannot find function %s \n", tmp->value);
+    sprintf(tmpS, "Python module %s cannot be loaded.\n", tmp->value);
     map* tmps=createMap("text",tmpS);
     printExceptionReportResponse(m,tmps);
-    //fprintf(stderr, "Cannot find function %s \n", argv[4]);
     if (PyErr_Occurred())
       PyErr_Print();
     exit(-1);
   } 
+#ifndef DEBUG
+  // Failed when DEBUG is defined
   Py_Finalize();
+#endif
   return res;
 }
 
@@ -328,10 +225,10 @@ maps* mapsFromPyDict(PyDictObject* t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-    if(cursor!=NULL){
+    while(cursor!=NULL){
       cursor=cursor->next;
     }
-    cursor=(maps*)malloc(sizeof(maps*));
+    cursor=(maps*)malloc(MAPS_SIZE);
     cursor->name=PyString_AsString(key);
 #ifdef DEBUG
     dumpMap(mapFromPyDict((PyDictObject*)value));

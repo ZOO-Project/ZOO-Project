@@ -1,17 +1,17 @@
-[GetArea]
- Title = Compute geometry area.
- Abstract = Computes the area for a geometry
- processVersion = 2
+[ConvexHullPy]
+ Title = Compute convex hull.
+ Abstract = A new geometry object is created and returned containing the convex hull of the geometry on which the method is invoked.
+ processVersion = 1
  storeSupported = true
  statusSupported = true
- serviceProvider = ogr_service.zo
- serviceType = C
+ serviceProvider = ogr_sp
+ serviceType = Python
  <MetaData lang="en">
    title = Demo
  </MetaData>
  <DataInputs>
   [InputPolygon]
-   Title = Polygon to compute are
+   Title = Polygon to compute convexhull
    Abstract = URI to a set of GML that describes the polygon.
    minOccurs = 1
    maxOccurs = 1
@@ -25,26 +25,27 @@
      schema = http://fooa/gml/3.1.0/polygon.xsd
     </Default>
     <Supported>
-     mimeType = text/xml
-     encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     mimeType = application/json
+     encoding = UTF-8
     </Supported>
    </ComplexData>
  </DataInputs>
  <DataOutputs>
-  [Area]
-   Title = Computed Area
-   Abstract = The Computed Area Value
+  [Result]
+   Title = The convex hull of the geometry
+   Abstract = The convex hull of the geometry
    <MetaData lang="en">
     title = Mon test  
    </MetaData>   
-   <LiteralData>
-    DataType = float
+   <ComplexData>
     <Default>
-     uom = degree
+     mimeType = application/json
+     encoding = UTF-8
     </Default>
     <Supported>
-     uom = meter
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://fooa/gml/3.1.0/polygon.xsd
     </Supported>
-   </LiteralData>
+   </ComplexData>
  </DataOutputs> 

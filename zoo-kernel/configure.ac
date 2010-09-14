@@ -297,8 +297,8 @@ then
 	LIBS_SAVE="$LIBS"
 	LIBS="$JAVA_LDFLAGS"
 	# Shouldn't we get java here rather than java5 :) ??
-	AC_CHECK_LIB([javaplugin_jni], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjava])], [])
-	AC_CHECK_LIB([jvm], [main], [], [AC_MSG_ERROR([could not find libjava])], [])
+	AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjava])], [])
+	#AC_CHECK_LIB([jvm], [main], [], [AC_MSG_ERROR([could not find libjava])], [])
 
 	AC_SUBST([JAVA_CPPFLAGS])
 	AC_SUBST([JAVA_LDFLAGS])
@@ -346,7 +346,6 @@ then
 		JS_LIB="js"
 	fi
 	
-
 	CPPFLAGS_SAVE="$CPPFLAGS"
         CPPFLAGS="$JS_CPPFLAGS"
         #AC_CHECK_HEADERS([jsapi.h],
@@ -366,7 +365,7 @@ else if test  "$JSHOME" != ""
 	then 
 		JS_ENABLED="-DUSE_JS"
         	JS_FILE="service_internal_js.o"
-		JS_CPPFLAGS="-I$JSHOME/include"
+		JS_CPPFLAGS="-I$JSHOME/include/js"
                 JS_LDFLAGS="-L$JSHOME/lib -ljs -lm"
                 JS_LIB="js"
 

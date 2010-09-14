@@ -1,17 +1,17 @@
-[Boundary]
+[BoundaryPy]
  Title = Compute boundary.
  Abstract = A new geometry object is created and returned containing the boundary of the geometry on which the method is invoked. 
  processVersion = 1
  storeSupported = true
  statusSupported = true
- serviceProvider = ogr_service.zo
- serviceType = C
+ serviceProvider = ogr_sp
+ serviceType = Python
  <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
   [InputPolygon]
-   Title = Polygon to compute boundary
+   Title = Polygon to conpute boundary
    Abstract = URI to a set of GML that describes the polygon.
    minOccurs = 1
    maxOccurs = 1
@@ -25,9 +25,8 @@
      schema = http://fooa/gml/3.1.0/polygon.xsd
     </Default>
     <Supported>
-     mimeType = text/xml
-     encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     mimeType = application/json
+     encoding = UTF-8
     </Supported>
    </ComplexData>
  </DataInputs>
@@ -42,20 +41,17 @@
     <Default>
      mimeType = application/json
      encoding = UTF-8
-     extension = js
-     asReference = true	
     </Default>
     <Supported>
      mimeType = text/xml
      encoding = UTF-8
      schema = http://fooa/gml/3.1.0/polygon.xsd
-     extension = xml
     </Supported>
     <Supported>
      mimeType = text/xml
      encoding = base64
      schema = http://fooa/gml/3.1.0/polygon.xsd
-     extension = xml
+     asReference = true	
     </Supported>
    </ComplexData>
  </DataOutputs>  

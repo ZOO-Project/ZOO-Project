@@ -214,6 +214,7 @@ void InternetCloseHandle(HINTERNET handle){
   }
   if(handle.handle)
     curl_easy_cleanup(handle.handle);
+  curl_global_cleanup();
 }
 
 HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
@@ -232,7 +233,7 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
       curl_easy_setopt(hInternet.handle, CURLOPT_WRITEDATA, &hInternet);
       break;
     default:
-      sprintf(filename,"/tmp/HTCcache%d",(int)time(NULL));
+      sprintf(filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
       printf("file=%s",filename);
 #ifdef MSG_LAF_VERBOSE
       printf("file=%s",filename);

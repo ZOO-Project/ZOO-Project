@@ -1,12 +1,12 @@
-[SymDifference]
- Title = Compute symmetric difference. 
- Abstract = Generates a new geometry which is the symmetric difference of this geometry and the other geometry.
- Profile = urn:ogc:wps:1.0.0:symmetricdifference
+[IntersectionPy]
+ Title = Compute intersection. 
+ Abstract = Generates a new geometry which is the region of intersection of the two geometries operated on.
+ Profile = urn:ogc:wps:1.0.0:union
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = ogr_service.zo
- serviceType = C
+ serviceProvider = ogr_sp
+ serviceType = Python
  <MetaData>
    title = Demo
  </MetaData>
@@ -54,8 +54,8 @@
  </DataInputs>
  <DataOutputs>
   [Result]
-   Title = The resulting geometry
-   Abstract = The symmetric difference of two geometries
+   Title = Intersection of the two geometries
+   Abstract = A new geometry representing the intersection or NULL if there is no intersection or an error occurs.
    <MetaData lang="en">
     title = Mon test  
    </MetaData>   

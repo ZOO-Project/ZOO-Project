@@ -1,6 +1,6 @@
 JAVACFLAGS=@JAVA_CPPFLAGS@
 JAVALDFLAGS=@JAVA_LDFLAGS@
-CFLAGS=-I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+CFLAGS=-I../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 PHPCFLAGS=@PHP_CPPFLAGS@
 PHPLDFLAGS=@PHP_LDFLAGS@
 PYTHONCFLAGS=@PYTHON_CPPFLAGS@
@@ -68,14 +68,11 @@ service_loader.o: service_loader.c service.h
 	g++ -c ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} service_loader.c
 
 zoo_service_loader.o: zoo_service_loader.c service.h
-	g++ -g -O2 -Wall ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${PHPCFLAGS} ${JS_ENABLED} ${PHP_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
+	g++ -g -O2 -Wall ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PHPCFLAGS} ${JS_ENABLED} ${PHP_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
 zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y service_internal_python.o  ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${PHP_FILE} ${JAVA_FILE} ${JS_FILE}
 	g++ -g -O2 -Wall ${JSCFLAGS} ${PHPCFLAGS} ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
-	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o service_internal_python.o  ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -lcurl -lcgic -lcurl ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi 
-
-service_loader: service.h lex.sr.o service_conf.tab.o service_conf.y service_internal_python.o ulinet.o  service_loader.o main_conf_read.tab.o lex.cr.o service_internal.o
-	g++ ${CFLAGS} lex.sr.o service_conf.tab.o main_conf_read.tab.o lex.cr.o service_internal.o service_internal_python.o ulinet.o service_loader.o -o service_loader -ldl  ${JSLDFLAGS} ${PYTHONLDFLAGS} ${XML2LDFLAGS} -lfl -lcurl  -lssl
+	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o service_internal_python.o  ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -lcurl -L../thirds/cgic206 -lcgic -lcurl ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi 
 
 install:
 	@echo "##############################################################################"

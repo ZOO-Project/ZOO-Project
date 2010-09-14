@@ -8,7 +8,7 @@
  serviceProvider = ogr_service.zo
  serviceType = C
  <MetaData>
-   Test = Demo
+   title = Demo
  </MetaData>
  <DataInputs>
   [InputEntity1]
@@ -17,7 +17,7 @@
    minOccurs = 1
    maxOccurs = 1
    <MetaData lang="en">
-    Test = Mon test  
+    title = Mon test  
    </MetaData>   
    <ComplexData>
     <Default>
@@ -37,7 +37,7 @@
    minOccurs = 1
    maxOccurs = 1
    <MetaData lang="en">
-    Test = Mon test  
+    title = Mon test  
    </MetaData>   
    <ComplexData>
     <Default>
@@ -53,21 +53,23 @@
    </ComplexData>
  </DataInputs>
  <DataOutputs>
-  [Distance]
-   Title = The distance between two geometries
-   Abstract = The shortest distance between the two geometries.
+  [Result]
+   Title = Intersection of geometries
+   Abstract = A new geometry representing the intersection or NULL if there is no intersection or an error occurs.
    <MetaData lang="en">
-    Test1 = Mon test  
+    title = Mon test  
    </MetaData>   
     <ComplexData>
      <Default>
        mimeType = application/json
        encoding = UTF-8
+       extension = js
      </Default>
      <Supported>
       mimeType = text/xml
       schema = http://fooa/gml/3.1.0/polygon.xsd
       encoding = UTF-8
+      extension = xml
      </Supported>
     </ComplexData>
  </DataOutputs>  

@@ -1,12 +1,12 @@
-[SymDifference]
+[SymDifferencePy]
  Title = Compute symmetric difference. 
  Abstract = Generates a new geometry which is the symmetric difference of this geometry and the other geometry.
  Profile = urn:ogc:wps:1.0.0:symmetricdifference
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = ogr_service.zo
- serviceType = C
+ serviceProvider = ogr_sp
+ serviceType = Python
  <MetaData>
    title = Demo
  </MetaData>
@@ -54,10 +54,10 @@
  </DataInputs>
  <DataOutputs>
   [Result]
-   Title = The resulting geometry
-   Abstract = The symmetric difference of two geometries
+   Title = The symmetric difference between two geometries
+   Abstract = The symmetric difference between the two geometries.
    <MetaData lang="en">
-    title = Mon test  
+    Title = Symmetric Difference  
    </MetaData>   
     <ComplexData>
      <Default>

@@ -29,6 +29,10 @@ static char dbg[1024];
 int zoo_js_support(maps** main_conf,map* request,service* s,
 		   maps **inputs,maps **outputs)
 {
+  maps* main=*main_conf;
+  maps* _inputs=*inputs;
+  maps* _outputs=*outputs;
+
   /* The class of the global object. */
   JSClass global_class = {
     "global", JSCLASS_GLOBAL_FLAGS,
@@ -46,9 +50,9 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   rt = JS_NewRuntime(8L * 1024L * 1024L);
   if (rt == NULL)
     return 1;
-
+  
   /* Create a context. */
-  cx = JS_NewContext(rt, 8192);
+  cx = JS_NewContext(rt,8192);
   if (cx == NULL){
     return 1;
   }
@@ -77,7 +81,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   maps* mc=*main_conf;
   map* tmpm1=getMap(request,"metapath");
   map* tmpm2=getMap(s->content,"serviceProvider");
-  char *filename[strlen(tmpm1->value)+strlen(tmpm2->value)+6];
+  char filename[strlen(tmpm1->value)+strlen(tmpm2->value)+6];
   char ntmp[1024];
   getcwd(ntmp,1024);
   sprintf(filename,"%s/%s%s",ntmp,tmpm1->value,tmpm2->value);
@@ -86,10 +90,10 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   char source[file_status.st_size];
   uint16 lineno;
   jsval rval;
-  FILE *jsfile=fopen(filename,"rb");
+  FILE *jsfile=fopen(filename,"r");
   JSBool ok ;
-  JSScript *script = JS_CompileFileHandle(cx, global, filename, jsfile);
-  if(script){
+  JSScript *script = JS_CompileFileHandle(cx, global, filename,jsfile);
+  if(script!=NULL){
     (void)JS_ExecuteScript(cx, global, script, &rval);
   }
   else{
@@ -101,14 +105,18 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     JS_DestroyContext(cx);
     JS_DestroyRuntime(rt);
     JS_ShutDown();
+    fclose(jsfile);
     exit(-1);
   }
   /* Call a function in obj's scope. */
   jsval argv[3];
-  argv[0] = OBJECT_TO_JSVAL(JSObject_FromMaps(cx,*main_conf));
-  argv[1] = OBJECT_TO_JSVAL(JSObject_FromMaps(cx,*inputs));
-  argv[2] = OBJECT_TO_JSVAL(JSObject_FromMaps(cx,*outputs));
-  jsval rval1;
+  JSObject *jsargv1=JSObject_FromMaps(cx,*main_conf);
+  argv[0] = OBJECT_TO_JSVAL(jsargv1);
+  JSObject *jsargv2=JSObject_FromMaps(cx,*inputs);
+  argv[1] = OBJECT_TO_JSVAL(jsargv2);
+  JSObject *jsargv3=JSObject_FromMaps(cx,*outputs);
+  argv[2] = OBJECT_TO_JSVAL(jsargv3);
+  jsval rval1=JSVAL_NULL;
 #ifdef JS_DEBUG
   fprintf(stderr, "object %p\n", (void *) argv[2]);
 #endif
@@ -120,100 +128,89 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 #endif
 
   JSObject *d;
-  if (ok==JS_TRUE) {
+  if (ok==JS_TRUE && JSVAL_IS_OBJECT(rval1)==JS_TRUE) {
 #ifdef JS_DEBUG
     fprintf(stderr,"Function run sucessfully !\n");
 #endif
     /* Should get a number back from the service function call. */
     ok = JS_ValueToObject(cx, rval1, &d);
-    if (ok==JS_TRUE) {
-#ifdef JS_DEBUG
-      fprintf(stderr,"Function run sucessfully !\n");
-#endif
-      /*char tmpres[10];
-      sprintf(tmpres,"%p",(void *)d);
-      res=atoi(tmpres);*/
-    }
   }else{
     /* Unable to run JS function */
     char tmp1[1024];
-    //sprintf(tmp1,"Unable to run %s from the JavScript file %s",s->name,filename);
+    if(strlen(dbg)==0)
+      sprintf(dbg,"No result was found after the function call");
     sprintf(tmp1,"Unable to run %s from the JavScript file %s : \n %s",s->name,filename,dbg);
     fprintf(stderr,"%s",tmp1);
     map* err=createMap("text",tmp1);
-    addMapToMap(err,createMap("code","NoApplicableCode"));
+    addToMap(err,"code","NoApplicableCode");
     printExceptionReportResponse(*main_conf,err);
+    freeMap(&err);
+    free(err);
     JS_DestroyContext(cx);
     JS_DestroyRuntime(rt);
     JS_ShutDown();
+    // Should return -1 here but the unallocation won't work from zoo_service_loader.c line 1847
     exit(-1);
   }
 
   jsval t=OBJECT_TO_JSVAL(d);
-  //JSVAL_TO_OBJECT(t);
-  if(JS_IsArrayObject(cx,t)){
+  if(JS_IsArrayObject(cx,d)){
 #ifdef JS_DEBUG
     fprintf(stderr,"An array was returned !\n");
 #endif
-    jsdouble len;
-    if((JS_GetArrayLength(cx, t, &len)==JS_FALSE)){
+    jsint len;
+    if((JS_GetArrayLength(cx, d, &len)==JS_FALSE)){
 #ifdef JS_DEBUG
       fprintf(stderr,"outputs array is empty\n");
 #endif
     }
     jsval tmp1;
-    JSBool hasResult=JS_GetElement(cx,t,0,&tmp1);
+    JSBool hasResult=JS_GetElement(cx,d,0,&tmp1);
     res=JSVAL_TO_INT(tmp1);
 #ifdef JS_DEBUG
     fprintf(stderr," * %d * \n",res);
 #endif
     jsval tmp2;
-    JSBool hasElement=JS_GetElement(cx,t,1,&tmp2);
-    out=mapsFromJSObject(cx,tmp2);
-    *outputs=out;
+    JSBool hasElement=JS_GetElement(cx,d,1,&tmp2);
+    if(hasElement==JS_TRUE){
+      *outputs=mapsFromJSObject(cx,tmp2);
+    }
   }
   else{
-    //#ifdef JS_DEBUG
-    fprintf(stderr,"The service didn't return an array !\n");
-    //#endif
+#ifdef JS_DEBUG
+    fprintf(stderr,"The serice didn't return an array !\n");
+#endif
     jsval tmp1;
-    JSBool hasResult=JS_GetProperty(cx,t,"result",&tmp1);
+    JSBool hasResult=JS_GetProperty(cx,d,"result",&tmp1);
     res=JSVAL_TO_INT(tmp1);
 
-    //#ifdef JS_DEBUG
+#ifdef JS_DEBUG
     fprintf(stderr," * %d * \n",res);
-    //#endif
+#endif
     jsval tmp2;
-    JSBool hasElement=JS_GetProperty(cx,t,"outputs",&tmp2);
+    JSBool hasElement=JS_GetProperty(cx,d,"outputs",&tmp2);
     if(!hasElement)
       fprintf(stderr,"No outputs property returned\n");
-    if(JS_IsArrayObject(cx,tmp2))
+    if(JS_IsArrayObject(cx,JSVAL_TO_OBJECT(tmp2)))
       fprintf(stderr,"outputs is array an as expected\n");
     else
       fprintf(stderr,"outputs is not an array as expected\n");
-    out=mapsFromJSObject(cx,tmp2);
+    *outputs=mapsFromJSObject(cx,tmp2);
 #ifdef JS_DEBUG
     dumpMaps(out);
 #endif
-    *outputs=out;
   }
 
-  *inputs=mapsFromJSObject(cx,argv[1]);
-  *main_conf=mapsFromJSObject(cx,argv[0]);
-
-  
-  //}
-  //else
-  // ERROR 
-  //;
-
   /* Cleanup. */
-  JS_MaybeGC(cx);
+  // The JS_MaybeGC call imply segmentation fault
+  //JS_MaybeGC(cx);
   JS_DestroyScript(cx, script);
-  JS_DestroyContext(cx);
+  // If we use the DestroyContext as requested to release memory then we get 
+  // issue getting back the main configuration maps after coming back to the 
+  // runRequest function ...
+  //JS_DestroyContext(cx);
   JS_DestroyRuntime(rt);
   JS_ShutDown();
-  fflush(stderr);
 #ifdef JS_DEBUG
   fprintf(stderr,"Returned value %d\n",res);
 #endif
@@ -222,6 +219,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 
 JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
   JSObject *res = JS_NewArrayObject(cx, 0, NULL);
+  if(res==NULL)
+    fprintf(stderr,"Array Object is NULL!\n");
   maps* tmp=t;
   while(tmp!=NULL){
     jsuint len;
@@ -246,7 +245,7 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
   map* tmpm=t;
   while(tmpm!=NULL){
     jsval jsstr = STRING_TO_JSVAL(JS_NewString(cx,tmpm->value,strlen(tmpm->value)));
-    JS_SetProperty(cx, resf, tmpm->name,&jsstr);
+    JS_SetProperty(cx, res, tmpm->name,&jsstr);
 #ifdef JS_DEBUG
     fprintf(stderr,"%s => %s\n",tmpm->name,tmpm->value);
 #endif
@@ -258,40 +257,34 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
 maps* mapsFromJSObject(JSContext *cx,jsval t){
   maps *res=NULL;
   maps *tres=NULL;
-  JSVAL_TO_OBJECT(t);
+  jsint oi=0;
+  JSObject* tt=JSVAL_TO_OBJECT(t);
 #ifdef JS_DEBUG
   fprintf(stderr,"Is finally an array ?\n");
-#endif
-  if(JS_IsArrayObject(cx,t)){
-#ifdef JS_DEBUG
+  if(JS_IsArrayObject(cx,tt)){
     fprintf(stderr,"Is finally an array !\n");
-#endif
   }
-#ifdef JS_DEBUG
   else
     fprintf(stderr,"Is not an array !\n");
 #endif
-  jsdouble len;
-  if((JS_GetArrayLength(cx, t, &len)==JS_FALSE)){
+  jsint len;
+  JSBool hasLen=JS_GetArrayLength(cx, tt, &len);
+  if(hasLen==JS_FALSE){
 #ifdef JS_DEBUG
     fprintf(stderr,"outputs array is empty\n");
 #endif
   }
-  int i=0;
-  char tmp[10];
-  sprintf(tmp,"%d",len);
-  int clen=atoi(tmp);
 #ifdef JS_DEBUG
   fprintf(stderr,"outputs array length : %d\n",len);
 #endif
-  for(i=0;i<len;i++){
+  for(oi=0;oi < len;oi++){
 #ifdef JS_DEBUG
-    fprintf(stderr,"outputs array length : %d step %d\n",len,i);
+    fprintf(stderr,"outputs array length : %d step %d \n",len,oi);
 #endif
     jsval tmp1;
-    JSBool hasElement=JS_GetElement(cx,t,i,&tmp1);
-    JSVAL_TO_OBJECT(tmp1);
-    JSIdArray *idp=JS_Enumerate(cx,tmp1);
+    JSBool hasElement=JS_GetElement(cx,tt,oi,&tmp1);
+    JSObject *otmp1=JSVAL_TO_OBJECT(tmp1);
+    JSIdArray *idp=JS_Enumerate(cx,otmp1);
     if(idp!=NULL) {
       int index;
       jsdouble argNum;
@@ -299,7 +292,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
       fprintf(stderr,"Properties length :  %d \n",idp->length);
 #endif
       for (index=0,argNum=idp->length;index<argNum;index++) { 
-	jsid* id = idp->vector[index];
+	jsval id = idp->vector[index];
 	jsval vp;
 	JSString* str; 
 	JS_IdToValue(cx,id,&vp);
@@ -309,12 +302,12 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	jsmsg = JS_ValueToString(cx,vp);
 	len1 = JS_GetStringLength(jsmsg);
 #ifdef JS_DEBUG
-	fprintf(stderr,"Enumerate id : %d => %s\n",i,JS_GetStringBytes(jsmsg));
+	fprintf(stderr,"Enumerate id : %d => %s\n",oi,JS_GetStringBytes(jsmsg));
 #endif
-	jsval nvp;
-	if((JS_GetProperty(cx, tmp1, JS_GetStringBytes(jsmsg), &nvp)==JS_FALSE))
+	jsval nvp=JSVAL_NULL;
+	if((JS_GetProperty(cx, JSVAL_TO_OBJECT(tmp1), JS_GetStringBytes(jsmsg), &nvp)==JS_FALSE))
 #ifdef JS_DEBUG
-	fprintf(stderr,"Enumerate id : %d => %s => No more value\n",i,JS_GetStringBytes(jsmsg));
+	fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,JS_GetStringBytes(jsmsg));
 #endif
 	if(JSVAL_IS_OBJECT(nvp)){
 #ifdef JS_DEBUG
@@ -332,7 +325,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 #ifdef JS_DEBUG
 	  fprintf(stderr,"JSVAL NVP1J IS OBJECT\n");
 #endif
-	  tres=(maps*)malloc(sizeof(maps*));
+	  tres=(maps*)malloc(MAPS_SIZE);
 	  tres->name=strdup(JS_GetStringBytes(jsmsg));
 	  tres->content=mapFromJSObject(cx,nvp1j);
 	  tres->next=NULL;
@@ -340,9 +333,12 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	  dumpMaps(res);
 #endif
 	  if(res==NULL)
-	    res=tres;
+	    res=dupMaps(&tres);
 	  else
 	    addMapsToMaps(&res,tres);
+	  freeMaps(&tres);
+	  free(tres);
+	  tres=NULL;
 #ifdef JS_DEBUG
 	  dumpMaps(res);
 #endif
@@ -362,7 +358,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 
 map* mapFromJSObject(JSContext *cx,jsval t){
   map *res=NULL;
-  JSIdArray *idp=JS_Enumerate(cx,t);
+  JSIdArray *idp=JS_Enumerate(cx,JSVAL_TO_OBJECT(t));
 #ifdef JS_DEBUG
   fprintf(stderr,"Properties %p\n",(void*)t);
 #endif
@@ -373,7 +369,7 @@ map* mapFromJSObject(JSContext *cx,jsval t){
     fprintf(stderr,"Properties length :  %d \n",idp->length);
 #endif
     for (index=0,argNum=idp->length;index<argNum;index++) { 
-      jsid* id = idp->vector[index];
+      jsval id = idp->vector[index];
       jsval vp;
       JSString* str; 
       JS_IdToValue(cx,id,&vp);
@@ -383,16 +379,21 @@ map* mapFromJSObject(JSContext *cx,jsval t){
       jsmsg = JS_ValueToString(cx,vp);
       len = JS_GetStringLength(jsmsg);
       jsval nvp;
-      JS_GetProperty(cx, t, JS_GetStringBytes(jsmsg), &nvp);
+      JS_GetProperty(cx, JSVAL_TO_OBJECT(t), JS_GetStringBytes(jsmsg), &nvp);
       jsmsg1 = JS_ValueToString(cx,nvp);
       len1 = JS_GetStringLength(jsmsg1);
 #ifdef JS_DEBUG
       fprintf(stderr,"Enumerate id : %d [ %s => %s ]\n",index,JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
 #endif
-      if(res!=NULL)
-	addMapToMap(&res,createMap(JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1)));
-      else
+      if(res!=NULL){
+	fprintf(stderr,"%s - %s\n",JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
+	addToMap(res,JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
+      }
+      else{
 	res=createMap(JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
+	res->next=NULL;
+      }
+      dumpMap(res);
     }
   }
 #ifdef JS_DEBUG
@@ -400,7 +401,6 @@ map* mapFromJSObject(JSContext *cx,jsval t){
 #endif
   return res;
 }
-
 
 /* The error reporter callback. */
 void reportError(JSContext *cx, const char *message, JSErrorReport *report)

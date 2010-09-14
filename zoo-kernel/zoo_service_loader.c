@@ -26,6 +26,8 @@
 
 extern "C" int yylex();
 extern "C" int crlex();
+
+
 extern "C" {
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
@@ -70,21 +72,56 @@ extern "C" {
 #include <time.h>
 #include <stdarg.h>
 
-xmlNodeSet* extractFromDoc(xmlDocPtr doc,char* search){
+xmlXPathObjectPtr extractFromDoc(xmlDocPtr doc,char* search){
   xmlXPathContextPtr xpathCtx;
   xmlXPathObjectPtr xpathObj;
   xpathCtx = xmlXPathNewContext(doc);
   xpathObj = xmlXPathEvalExpression(BAD_CAST search,xpathCtx);
-  xmlXPathFreeContext(xpathCtx); 
-  return xpathObj->nodesetval;
+  xmlXPathFreeContext(xpathCtx);
+  return xpathObj;
 }
 
-void sigint_handler(int sig){
+void sig_handler(int sig){
+  char tmp[100];
+  char *ssig;
+  switch(sig){
+  case SIGSEGV:
+    ssig="SIGSEGV";
+    break;
+  case SIGTERM:
+    ssig="SIGTERM";
+    break;
+  case SIGINT:
+    ssig="SIGINT";
+    break;
+  case SIGILL:
+    ssig="SIGILL";
+    break;
+  case SIGFPE:
+    ssig="SIGFPE";
+    break;
+  case SIGABRT:
+    ssig="SIGABRT";
+    break;
+  default:
+    ssig="UNKNOWN";
+    break;
+  }
+  sprintf(tmp,"ZOO Kernel failed to process your request receiving signal %d = %s",sig,ssig);
+  errorException(NULL, tmp, "InternalError");
   fprintf(stderr,"Not this time!\n");
+  exit(0);
 }
 
 int runRequest(map* request_inputs)
 {
+
+  (void) signal(SIGSEGV,sig_handler);
+  (void) signal(SIGTERM,sig_handler);
+  (void) signal(SIGINT,sig_handler);
+  (void) signal(SIGILL,sig_handler);
+  (void) signal(SIGFPE,sig_handler);
+  (void) signal(SIGABRT,sig_handler);
 
   map* r_inputs=NULL,*tmps=NULL;
   maps* m=NULL;
@@ -94,72 +131,86 @@ int runRequest(map* request_inputs)
   /**
    * Parsing service specfic configuration file
    */
-  m=(maps*)malloc(MAPS_SIZE);
+  m=(maps*)calloc(1,MAPS_SIZE);
+  if(m == NULL){
+    return errorException(m, "Unable to allocate memory.", "InternalError");
+  }
   char ntmp[1024];
 #ifndef WIN32
   getcwd(ntmp,1024);
 #else
   _getcwd(ntmp,1024);
 #endif
-  char conf_file[1024];
-  sprintf(conf_file,"%s/main.cfg",ntmp);  
+  r_inputs=getMap(request_inputs,"metapath");
+  if(r_inputs==NULL){
+    if(request_inputs==NULL)
+      request_inputs=createMap("metapath","");
+    else
+      addToMap(request_inputs,"metapath","");
+#ifdef DEBUG
+    fprintf(stderr,"ADD METAPATH\n");
+    dumpMap(request_inputs);
+#endif
+    r_inputs=getMap(request_inputs,"metapath");
+  }
+  char conf_file[10240];
+  snprintf(conf_file,10240,"%s/%s/main.cfg",ntmp,r_inputs->value);
   conf_read(conf_file,m);
-  
+#ifdef DEBUG
+  fprintf(stderr, "***** BEGIN MAPS\n"); 
+  dumpMaps(m);
+  fprintf(stderr, "***** END MAPS\n");
+#endif
+
   /**
    * Check for minimum inputs
    */
   r_inputs=getMap(request_inputs,"Request");
-  if(r_inputs==NULLMAP){ 
-  tmps=createMap("text","Parameter <request> was not specified");
-    addToMap(tmps,"code","MissingParameterValue");
-    printExceptionReportResponse(m,tmps);
+  if(request_inputs==NULL || r_inputs==NULL){ 
+    errorException(m, "Parameter <request> was not specified","MissingParameterValue");
+    freeMaps(&m);
+    free(m);
+    freeMap(&request_inputs);
+    free(request_inputs);
     return 1;
   }
-  else
+  else{
     REQUEST=strdup(r_inputs->value);
+    if(strncasecmp(r_inputs->value,"GetCapabilities",15)!=0
+       && strncasecmp(r_inputs->value,"DescribeProcess",15)!=0
+       && strncasecmp(r_inputs->value,"Execute",7)!=0){ 
+      errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
+      freeMaps(&m);
+      free(m);
+      freeMap(&request_inputs);
+      free(request_inputs);
+      free(REQUEST);
+      return 1;
+    }
+  }
   r_inputs=NULL;
   r_inputs=getMap(request_inputs,"Service");
-  if(r_inputs==NULLMAP){ 
-    tmps=createMap("text","Parameter <service> was not specified");
-    addToMap(tmps,"code","MissingParameterValue");
-    printExceptionReportResponse(m,tmps);
+  if(r_inputs==NULLMAP){
+    errorException(m, "Parameter <service> was not specified","MissingParameterValue");
+    freeMaps(&m);
+    free(m);
+    free(REQUEST);
     return 1;
   }
-  if(strcmp(mtoupper(REQUEST),"GETCAPABILITIES")!=0){
+  if(strncasecmp(REQUEST,"GetCapabilities",15)!=0){
     r_inputs=getMap(request_inputs,"Version");
     if(r_inputs==NULL){ 
-      tmps=createMap("text","Parameter <version> was not specified");
-      addToMap(tmps,"code","MissingParameterValue");
-      printExceptionReportResponse(m,tmps);
+      errorException(m, "Parameter <version> was not specified","MissingParameterValue");
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
       return 1;
     }
   }
 
-  /**
-   * Need to print std exception message here
-   */
-  char SP[1024];
-  if ((argc < 5 && strcmp(mtoupper(REQUEST),"GETCAPABILITIES")!=0) || (argc < 4 && strcmp(mtoupper(REQUEST),"GETCAPABILITIES")==0)){
-    r_inputs=getMap(request_inputs,"ServiceProvider");
-    if(r_inputs==NULLMAP){
-      tmps=createMap("text","Parameter <serviceprovider> was not specified");
-      addToMap(tmps,"code","MissingParameterValue");
-      printExceptionReportResponse(m,tmps);    
-      return 1;
-    }
-    else
-      sprintf(SP,"%s",r_inputs->value);
-    r_inputs=getMap(request_inputs,"MetaPath");
-    if(r_inputs==NULLMAP){
-      tmps=createMap("text","Parameter <metapath> was not specified");
-      addToMap(tmps,"code","MissingParameterValue");
-      printExceptionReportResponse(m,tmps);    
-      return 1;
-    }
-    tmps=createMap("text","Parameter <unknown> was not specified");
-    addToMap(tmps,"code","MissingParameterValue");
-    printExceptionReportResponse(m,tmps);    
-    return 1;
+  r_inputs=getMap(request_inputs,"serviceprovider");
+  if(r_inputs==NULL){
+    addToMap(request_inputs,"serviceprovider","");
   }
 
   map* outputs=NULL;
@@ -181,27 +232,32 @@ int runRequest(map* request_inputs)
   int t;
   char tmps1[1024];
 
-  if(strcmp(mtoupper(REQUEST),mtoupper("GetCapabilities"))==0){
+  r_inputs=NULL;
+  r_inputs=getMap(request_inputs,"metapath");
+  if(r_inputs!=NULL)
+    snprintf(conf_dir,1024,"%s/%s",ntmp,r_inputs->value);
+  else
+    snprintf(conf_dir,1024,"%s",ntmp);
+
+  if(strncasecmp(REQUEST,"GetCapabilities",15)==0){
     int i=0;
     struct dirent *dp;
-    r_inputs=NULL;
-    r_inputs=getMap(request_inputs,"metapath");
 #ifdef DEBUG
     dumpMap(r_inputs);
 #endif
-    sprintf(conf_dir,"%s/%s",ntmp,r_inputs->value);
-	DIR *dirp = opendir(conf_dir);
+    DIR *dirp = opendir(conf_dir);
     if(dirp==NULL){
-      tmps=createMap("text","The specified path doesn't exist.");
-      addToMap(tmps,"code","InvalidParameterValue");
-      printExceptionReportResponse(m,tmps);    
-      return -1;
+      return errorException(m, "The specified path doesn't exist.","InvalidParameterValue");
     }
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
-    doc->encoding = xmlCharStrdup ("UTF-8");
     r_inputs=NULL;
     r_inputs=getMap(request_inputs,"ServiceProvider");
-    xmlNodePtr n = printGetCapabilitiesHeader(doc,r_inputs->value,m);
+    xmlNodePtr n;
+    //dumpMap(request_inputs);
+    if(r_inputs!=NULL)
+      n = printGetCapabilitiesHeader(doc,r_inputs->value,m);
+    else
+      n = printGetCapabilitiesHeader(doc,"",m);
     /**
      * Strange, here we need to close stdout to ensure that no uneeded 
      * char will be printed (parser issue ?)
@@ -210,10 +266,12 @@ int runRequest(map* request_inputs)
     dup2(fileno(stderr),fileno(stdout));
     while ((dp = readdir(dirp)) != NULL)
       if(strstr(dp->d_name,".zcfg")!=0){
-	sprintf(tmps1,"%s/%s",conf_dir,dp->d_name);
-	char *tmps=tmps1;
-	s1=(service*)malloc(sizeof(service*));
-	s[0]=(service*)malloc(sizeof(service*));
+	memset(tmps1,0,1024);
+	snprintf(tmps1,1024,"%s/%s",conf_dir,dp->d_name);
+	s1=(service*)calloc(1,SERVICE_SIZE);
+	if(s1 == NULL){ 
+	  return errorException(m, "Unable to allocate memory.","InternalError");
+	}
 #ifdef DEBUG
 	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
 #endif
@@ -223,55 +281,57 @@ int runRequest(map* request_inputs)
 	fflush(stdout);
 	fflush(stderr);
 #endif
-	s[0]=s1;
 	printGetCapabilitiesForProcess(m,n,s1);
-	//freeService(&s1);
-	//s1=NULL;
+	freeService(&s1);
+	free(s1);
 	scount++;
       }
     (void)closedir(dirp);
     fflush(stdout);
     dup2(saved_stdout,fileno(stdout));
-    
-    printDocument(doc);
+    printDocument(m,doc,getpid());
+    freeMaps(&m);
+    free(m);
+    free(REQUEST);
+    free(SERVICE_URL);
     fflush(stdout);
-    xmlFree(n);
     return 0;
   }
   else{
     r_inputs=getMap(request_inputs,"Identifier");
     if(r_inputs==NULL 
        || strlen(r_inputs->name)==0 || strlen(r_inputs->value)==0){ 
-      if(r_inputs!=NULL && strlen(r_inputs->value)==0)
-	tmps=createMap("text","Mandatory value for <identifier> was not specified");
-      else
-	tmps=createMap("text","Mandatory <identifier> was not specified");
-      addToMap(tmps,"code","MissingParameterValue");
-      printExceptionReportResponse(m,tmps);
-      return 1;
+      errorException(m, "Mandatory <identifier> was not specified","MissingParameterValue");
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      free(SERVICE_URL);
+      return 0;
     }
 
-    r_inputs=getMap(request_inputs,"metapath");
-    sprintf(conf_dir,"%s/%s",ntmp,r_inputs->value);
     struct dirent *dp;
     DIR *dirp = opendir(conf_dir);
     if(dirp==NULL){
-      tmps=createMap("text","The specified metapath path doesn't exist.");
-      addToMap(tmps,"code","InvalidParameterValue");
-      printExceptionReportResponse(m,tmps);    
-      return -1;
+      errorException(m, "The specified path path doesn't exist.","InvalidParameterValue");
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      free(SERVICE_URL);
+      return 0;
     }
-    if(strcmp(mtoupper(REQUEST),"DESCRIBEPROCESS")==0){
+    if(strncasecmp(REQUEST,"DescribeProcess",15)==0){
       /**
        * Loop over Identifier list
        */
       xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
-      doc->encoding = xmlCharStrdup ("UTF-8");
       r_inputs=NULL;
       r_inputs=getMap(request_inputs,"ServiceProvider");
+
       xmlNodePtr n;
       if(r_inputs!=NULL)
 	n = printDescribeProcessHeader(doc,r_inputs->value,m);
+      else
+	n = printDescribeProcessHeader(doc,"",m);
 
       r_inputs=getMap(request_inputs,"Identifier");
       char *tmps=strtok(r_inputs->value,",");
@@ -285,7 +345,7 @@ int runRequest(map* request_inputs)
       dup2(fileno(stderr),fileno(stdout));
       while(tmps){
 	memset(buff,0,256);
-	sprintf(buff,"%s.zcfg",tmps);
+	snprintf(buff,256,"%s.zcfg",tmps);
 	memset(buff1,0,1024);
 #ifdef DEBUG
 	fprintf(stderr,"\n#######%s\n########\n",buff1);
@@ -293,57 +353,70 @@ int runRequest(map* request_inputs)
 	while ((dp = readdir(dirp)) != NULL)
 	  if(strcmp(dp->d_name,buff)==0){
 	    memset(buff1,0,1024);
-	    sprintf(buff1,"%s/%s",conf_dir,dp->d_name);
-	    s1=(service*)malloc(sizeof(service*));
-	    s[scount]=(service*)malloc(sizeof(service*));
+	    snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
+	    //s1=(service*)malloc(sizeof(service*));
+	    s1=(service*)calloc(1,SERVICE_SIZE);
+	    if(s1 == NULL){
+	      return errorException(m, "Unable to allocate memory.","InternalError");
+	    }
 #ifdef DEBUG
-	    fprintf(stderr,"#################\n%s\n#################\n",tmps1);
+	    fprintf(stderr,"#################\n%s\n#################\n",buff1);
 #endif
 	    t=getServiceFromFile(buff1,&s1);
-	    /*dumpService(s1);
-	      fflush(stdout);
-	      fflush(stderr);*/
-	    s[0]=s1;
-	    printDescribeProcessForProcess(m,n,s,1);
+#ifdef DEBUG
+	    dumpService(s1);
+#endif
+	    printDescribeProcessForProcess(m,n,s1,1);
+	    freeService(&s1);
+	    free(s1);
 	    scount++;
 	  }
 	rewinddir(dirp);
 	tmps=strtok(NULL,",");
       }
-      (void)closedir(dirp);
+      closedir(dirp);
       fflush(stdout);
       dup2(saved_stdout,fileno(stdout));
-
-      printDocument(doc);
+      printDocument(m,doc,getpid());
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      free(SERVICE_URL);
       fflush(stdout);
       //xmlFree(n);
 #ifndef LINUX_FREE_ISSUE
-      free(s1);
+      if(s1)
+	free(s1);
 #endif
       return 0;
     }
     else
-      if(strcmp(mtoupper(REQUEST),"EXECUTE")!=0){
-	tmps=createMap("text","Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.");
-	addToMap(tmps,"code","InvalidParameterValue");
-	printExceptionReportResponse(m,tmps);
+      if(strncasecmp(REQUEST,"Execute",strlen(REQUEST))!=0){
+	errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
 #ifdef DEBUG
 	fprintf(stderr,"No request found %s",REQUEST);
 #endif	
+	closedir(dirp);
 	free(s);
 	return 0;
       }
+    closedir(dirp);
   }
   
   s1=NULL;
-  s1=(service*)malloc(sizeof(service*));
-  s[0]=(service*)malloc(sizeof(service*));
+  s1=(service*)calloc(1,SERVICE_SIZE);
+  if(s1 == NULL){
+    return errorException(m, "Unable to allocate memory.","InternalError");
+  }
   r_inputs=getMap(request_inputs,"MetaPath");
-  sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
+  if(r_inputs!=NULL)
+    snprintf(tmps1,1024,"%s/%s",ntmp,r_inputs->value);
+  else
+    snprintf(tmps1,1024,"%s/",ntmp);
   r_inputs=getMap(request_inputs,"Identifier");
-
-  sprintf(tmps1,"%s/%s.zcfg",strdup(tmps1),r_inputs->value);
-
+  char *ttmp=strdup(tmps1);
+  snprintf(tmps1,1024,"%s/%s.zcfg",ttmp,r_inputs->value);
+  free(ttmp);
 #ifdef DEBUG
   fprintf(stderr,"Trying to load %s\n", tmps1);
 #endif
@@ -353,12 +426,10 @@ int runRequest(map* request_inputs)
   fflush(stdout);
   dup2(saved_stdout,fileno(stdout));
   if(t==22){
-    tmps=createMap("text","The value for <indetifier> seems to be wrong. Please, ensure that the process exsits using the GetCapabilities request.");
-    addToMap(tmps,"code","InvalidParameterValue");
-    printExceptionReportResponse(m,tmps);
+    errorException(m, "The value for <indetifier> seems to be wrong. Please, ensure that the process exsits using the GetCapabilities request.", "InvalidParameterValue");
     exit(0);
   }
-  s[0]=s1;
+  //s[0]=s1;
 
 #ifdef DEBUG
   dumpService(s1);
@@ -398,18 +469,20 @@ int runRequest(map* request_inputs)
     fprintf(stderr,"OUTPUT Parsing ... \n");
 #endif
     r_inputs=getMap(request_inputs,"ResponseDocument");	
-    if(r_inputs==NULLMAP)
-      r_inputs=getMap(request_inputs,"RawDataOutput");
-#ifdef DEBUG
+    if(r_inputs==NULL) r_inputs=getMap(request_inputs,"RawDataOutput");
+    
+    //#ifdef DEBUG
     fprintf(stderr,"OUTPUT Parsing ... \n");
-#endif
-    if(r_inputs!=NULLMAP){
-#ifdef DEBUG
+    //#endif
+    if(r_inputs!=NULL){
+      //#ifdef DEBUG
       fprintf(stderr,"OUTPUT Parsing start now ... \n");
-#endif
+      //#endif
       char current_output_as_string[10240];
       char cursor_output[10240];
-      sprintf(cursor_output,"%s",strdup(r_inputs->value));
+      char *cotmp=strdup(r_inputs->value);
+      snprintf(cursor_output,10240,"%s",cotmp);
+      free(cotmp);
       j=0;
       map* request_kvp_outputs=NULL;
 	
@@ -422,7 +495,10 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"OUTPUT [%s]\n",cursor_output);
 #endif
       pToken=strtok(cursor_output,";");
-      char** outputs_as_text=(char**)malloc(128*sizeof(char*));
+      char** outputs_as_text=(char**)calloc(128,sizeof(char*));
+      if(outputs_as_text == NULL) {
+	return errorException(m, "Unable to allocate memory", "InternalError");
+      }
       i=0;
       while(pToken!=NULL){
 #ifdef DEBUG
@@ -430,20 +506,27 @@ int runRequest(map* request_inputs)
 	fflush(stderr);
 	fprintf(stderr,"***%s***\n",pToken);
 #endif
-	outputs_as_text[i]=(char*)malloc(strlen(pToken)*sizeof(char));
-	sprintf(outputs_as_text[i],"%s",pToken);
+	outputs_as_text[i]=(char*)calloc(strlen(pToken)+1,sizeof(char));
+	if(outputs_as_text[i] == NULL) {
+	  return errorException(m, "Unable to allocate memory", "InternalError");
+	}
+	snprintf(outputs_as_text[i],strlen(pToken)+1,"%s",pToken);
 	pToken = strtok(NULL,";");
 	i++;
       }
       for(j=0;j<i;j++){
 	char *tmp=strdup(outputs_as_text[j]);
+	free(outputs_as_text[j]);
 	char *tmpc;
 	tmpc=strtok(tmp,"@");
 	int k=0;
 	while(tmpc!=NULL){
 	  if(k==0){
 	    if(tmp_output==NULL){
-	      tmp_output=(maps*)malloc(MAPS_SIZE);
+	      tmp_output=(maps*)calloc(1,MAPS_SIZE);
+	      if(tmp_output == NULL){
+		return errorException(m, "Unable to allocate memory.", "InternalError");
+	      }
 	      tmp_output->name=strdup(tmpc);
 	      tmp_output->content=NULL;
 	      tmp_output->next=NULL;
@@ -472,15 +555,20 @@ int runRequest(map* request_inputs)
 	  tmpc=strtok(NULL,"@");
 	}
 	if(request_output_real_format==NULL)
-	  request_output_real_format=tmp_output;
+	  request_output_real_format=dupMaps(&tmp_output);
 	else
 	  addMapsToMaps(&request_output_real_format,tmp_output);
+	freeMaps(&tmp_output);
+	free(tmp_output);
+	tmp_output=NULL;
 #ifdef DEBUG
 	dumpMaps(tmp_output);
 	fflush(stderr);
 #endif
-	tmp_output=tmp_output->next;
+	//tmp_output=tmp_output->next;
+	free(tmp);
       }
+      free(outputs_as_text);
     }
 
 
@@ -493,7 +581,16 @@ int runRequest(map* request_inputs)
 #endif
     char current_input_as_string[40960];
     char cursor_input[40960];
-    sprintf(cursor_input,"%s",strdup(r_inputs->value));
+    if(r_inputs!=NULL)
+      snprintf(cursor_input,40960,"%s",r_inputs->value);
+    else{
+      errorException(m, "Parameter <DataInputs> was not specified","MissingParameterValue");
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      free(SERVICE_URL);
+      return 0;
+    }
     j=0;
     map* request_kvp_inputs=NULL;
   
@@ -502,7 +599,10 @@ int runRequest(map* request_inputs)
      */
     char * pToken;
     pToken=strtok(cursor_input,";");
-    char** inputs_as_text=(char**)malloc(100*sizeof(char*));
+    char** inputs_as_text=(char**)calloc(100,sizeof(char*));
+    if(inputs_as_text == NULL){
+      return errorException(m, "Unable to allocate memory.", "InternalError");
+    }
     i=0;
     while(pToken!=NULL){
 #ifdef DEBUG
@@ -512,14 +612,18 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
       fprintf(stderr,"***%s***\n",pToken);
 #endif
-      inputs_as_text[i]=(char*)malloc(strlen(pToken)*sizeof(char));
-      sprintf(inputs_as_text[i],"%s",pToken);
+      inputs_as_text[i]=(char*)calloc(strlen(pToken)+1,sizeof(char));
+      snprintf(inputs_as_text[i],strlen(pToken)+1,"%s",pToken);
+      if(inputs_as_text[i] == NULL){
+	return errorException(m, "Unable to allocate memory.", "InternalError");
+      }
       pToken = strtok(NULL,";");
       i++;
     }
 
     for(j=0;j<i;j++){
       char *tmp=strdup(inputs_as_text[j]);
+      free(inputs_as_text[j]);
       char *tmpc;
       tmpc=strtok(tmp,"@");
       while(tmpc!=NULL){
@@ -536,7 +640,10 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"***\n*** %s = %s ***\n",tmpn,tmpv+1);
 #endif
 	if(tmpmaps==NULL){
-	  tmpmaps=(maps*)malloc(MAPS_SIZE);
+	  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	  if(tmpmaps == NULL){
+	    return errorException(m, "Unable to allocate memory.", "InternalError");
+	  }
 	  tmpmaps->name=strdup(tmpn);
 	  tmpmaps->content=createMap("value",tmpv+1);
 	  tmpmaps->next=NULL;
@@ -565,39 +672,54 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
 #endif
 #ifndef WIN32
-		if(CHECK_INET_HANDLE(hInternet))
+	    if(CHECK_INET_HANDLE(hInternet))
 #endif
-		{
-	      res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
-					    INTERNET_FLAG_NO_CACHE_WRITE,0);
+	      {
+		res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
+				    INTERNET_FLAG_NO_CACHE_WRITE,0);
 #ifdef DEBUG
-	      fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
-		      tmpv1+1,res.nDataAlloc,res.nDataLen);
+		fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
+			tmpv1+1,res.nDataAlloc,res.nDataLen);
 #endif
-	      char* tmpContent=(char*)malloc((res.nDataLen+1)*sizeof(char));
-	      size_t dwRead;
-	      InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
-	      map* tmpMap=getMap(tmpmaps->content,"value");
-	      if(tmpMap!=NULL)
-		tmpMap->value=tmpContent;
-	    }
+		char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
+		if(tmpContent == NULL){
+		  return errorException(m, "Unable to allocate memory.", "InternalError");
+		}
+		size_t dwRead;
+		InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
+		map* tmpMap=getMap(tmpmaps->content,"value");
+		if(tmpMap!=NULL)
+		  tmpMap->value=strdup(tmpContent);
+		free(tmpContent);
+	      }
 	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
 	  }
 	  tmpc=strtok(NULL,"@");
 	}
-	if(request_input_real_format==NULL)
-	  request_input_real_format=tmpmaps;
-	else
-	  addMapsToMaps(&request_input_real_format,tmpmaps);
 #ifdef DEBUG
 	dumpMaps(tmpmaps);
 	fflush(stderr);
 #endif
-	tmpmaps=tmpmaps->next;
+	if(request_input_real_format==NULL)
+	  request_input_real_format=dupMaps(&tmpmaps);
+	else
+	  addMapsToMaps(&request_input_real_format,tmpmaps);
+	/*freeMap(&tmpmaps->content);
+	free(tmpmaps->content);
+	tmpmaps->content=NULL;*/
+	freeMaps(&tmpmaps);
+	free(tmpmaps);
+	  //}
+	tmpmaps=NULL;
+	free(tmp);
       }
     }
-  } 
+    free(inputs_as_text);
+  }
   else {
+    /**
+     * Parse XML request
+     */ 
     xmlInitParser();
 #ifdef DEBUG
     fflush(stderr);
@@ -615,8 +737,8 @@ int runRequest(map* request_inputs)
      * Parse every Input in DataInputs node.
      */
     maps* tempMaps=NULL;
-    xmlNodeSet* tmps=extractFromDoc(doc,
-				    "/*/*/*[local-name()='Input']");
+    xmlXPathObjectPtr tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='Input']");
+    xmlNodeSet* tmps=tmpsptr->nodesetval;
 #ifdef DEBUG
     fprintf(stderr,"*****%d*****\n",tmps->nodeNr);
 #endif
@@ -630,180 +752,237 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
 	fprintf(stderr, "= element 0 node \"%s\"\n", cur->name);
 #endif
-	xmlNodePtr cur1=cur->children;
-	while(cur1){
-#ifdef DEBUG
-	  fprintf(stderr, "= element 1 node \"%s\" = (%s)\n", 
-		  cur1->name,xmlNodeListGetString(doc,cur1,1));
-#endif
-	  xmlNodePtr cur2=cur1/*->next*/;
-	  while(cur2){
-	    /**
-	     * Indentifier
-	     */
-	    if(strcmp(mtoupper((char*)cur2->name),
-		      mtoupper("Identifier"))==0){
-	      xmlChar *val=
-		xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
-	      if(tmpmaps==NULL){
-		tmpmaps=(maps*)malloc(MAPS_SIZE);
-		tmpmaps->name=strdup((char*)val);
-		tmpmaps->content=NULL;
-		tmpmaps->next=NULL;
+	xmlNodePtr cur2=cur->children;
+	while(cur2){
+	  while(cur2->type!=XML_ELEMENT_NODE)
+	    cur2=cur2->next;
+	  /**
+	   * Indentifier
+	   */
+	  if(xmlStrncasecmp(cur2->name,BAD_CAST "Identifier",xmlStrlen(cur2->name))==0){
+	    xmlChar *val= xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
+	    if(tmpmaps==NULL){
+	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      if(tmpmaps == NULL){
+		return errorException(m, "Unable to allocate memory.", "InternalError");
 	      }
+	      tmpmaps->name=strdup((char*)val);
+	      tmpmaps->content=NULL;
+	      tmpmaps->next=NULL;
+	    }
+	    xmlFree(val);
+	  }
+	  /**
+	   * Title, Asbtract
+	   */
+	  if(xmlStrncasecmp(cur2->name,BAD_CAST "Title",xmlStrlen(cur2->name))==0 ||
+	     xmlStrncasecmp(cur2->name,BAD_CAST "Abstract",xmlStrlen(cur2->name))==0){
+	    xmlChar *val=
+	      xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
+	    if(tmpmaps==NULL){
+	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      if(tmpmaps == NULL){
+		return errorException(m, "Unable to allocate memory.", "InternalError");
+	      }
+	      tmpmaps->name="missingIndetifier";
+	      tmpmaps->content=createMap((char*)cur2->name,(char*)val);
+	      tmpmaps->next=NULL;
+	    }
+	    else{
+	      if(tmpmaps->content!=NULL)
+		addToMap(tmpmaps->content,
+			 (char*)cur2->name,(char*)val);
+	      else
+		tmpmaps->content=
+		  createMap((char*)cur2->name,(char*)val);
+	    }
+#ifdef DEBUG
+	    dumpMaps(tmpmaps);
+#endif
+	    xmlFree(val);
+	  }
+	  /**
+	   * InputDataFormChoice (Reference or Data ?) 
+	   */
+	  if(xmlStrcasecmp(cur2->name,BAD_CAST "Reference")==0){
+	    /**
+	     * Get every attribute from a Reference node
+	     * mimeType, encoding, schema, href, method
+	     * Header and Body gesture should be added here
+	     */
+#ifdef DEBUG
+	    fprintf(stderr,"REFERENCE\n");
+#endif
+	    map* referenceMap=NULL;
+	    char *refs[5];
+	    refs[0]="mimeType";
+	    refs[1]="encoding";
+	    refs[2]="schema";
+	    refs[3]="method";
+	    refs[4]="href";
+	    char*url;
+	    for(int l=0;l<5;l++){
+#ifdef DEBUG
+	      fprintf(stderr,"*** %s ***",refs[l]);
+#endif
+	      xmlChar *val=xmlGetProp(cur2,BAD_CAST refs[l]);
+	      if(val!=NULL && xmlStrlen(val)>0){
+		if(tmpmaps->content!=NULL)
+		  addToMap(tmpmaps->content,refs[l],(char*)val);
+		else
+		  tmpmaps->content=createMap(refs[l],(char*)val);
+		map* ltmp=getMap(tmpmaps->content,"method");
+		if(l==4){
+		  if(!(ltmp!=NULL && strcmp(ltmp->value,"POST")==0)
+		     && CHECK_INET_HANDLE(hInternet)){
+		    res=InternetOpenUrl(hInternet,(char*)val,NULL,0,
+					INTERNET_FLAG_NO_CACHE_WRITE,0);
+		    char* tmpContent=
+		      (char*)calloc((res.nDataLen+1),sizeof(char));
+		    if(tmpContent == NULL){
+		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		    }
+		    size_t dwRead;
+		    InternetReadFile(res, (LPVOID)tmpContent,
+				     res.nDataLen, &dwRead);
+		    tmpContent[res.nDataLen]=0;
+		    addToMap(tmpmaps->content,"value",tmpContent);
+		  }
+		}
+	      }
+#ifdef DEBUG
+	      fprintf(stderr,"%s\n",val);
+#endif
 	      xmlFree(val);
 	    }
-	    /**
-	     * Title, Asbtract
-	     */
-	    if(strcmp(mtoupper((char*)cur2->name),
-		      mtoupper("Title"))==0 ||
-	       strcmp(mtoupper((char*)cur2->name),
-		      mtoupper("Abstract"))==0){
-	      xmlChar *val=
-		xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
-	      if(tmpmaps==NULL){
-		tmpmaps=(maps*)malloc(MAPS_SIZE);
-		tmpmaps->name="missingIndetifier";
-		tmpmaps->content=createMap((char*)cur2->name,(char*)val);
-		tmpmaps->next=NULL;
+#ifdef POST_DEBUG
+	    fprintf(stderr,"Parse Header and Body from Reference \n");
+#endif
+	    xmlNodePtr cur3=cur2->children;
+	    hInternet.header=NULL;
+	    while(cur3){
+	      if(xmlStrcasecmp(cur3->name,BAD_CAST "Header")==0 ){
+		xmlNodePtr cur4=cur3;
+		char *tmp=new char[cgiContentLength];
+		char *ha[2];
+		ha[0]="key";
+		ha[1]="value";
+		int hai;
+		char *has;
+		char *key;
+		for(hai=0;hai<2;hai++){
+		  xmlChar *val=xmlGetProp(cur3,BAD_CAST ha[hai]);
+#ifdef POST_DEBUG
+		  fprintf(stderr,"%s = %s\n",ha[hai],(char*)val);
+#endif
+		  if(hai==0){
+		    key=(char*)calloc((1+strlen((char*)val)),sizeof(char));
+		    snprintf(key,1+strlen((char*)val),"%s",(char*)val);
+		  }else{
+		    has=(char*)calloc((3+strlen((char*)val)+strlen(key)),sizeof(char));
+		    if(has == NULL){
+		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		    }
+		    snprintf(has,(3+strlen((char*)val)+strlen(key)),"%s: %s",key,(char*)val);
+#ifdef POST_DEBUG
+		    fprintf(stderr,"%s\n",has);
+#endif
+		  }
+		}
+		hInternet.header=curl_slist_append(hInternet.header, has);
+		//free(has);
 	      }
 	      else{
-		if(tmpmaps->content!=NULL)
-		  addToMap(tmpmaps->content,
-			   (char*)cur2->name,(char*)val);
-		else
-		  tmpmaps->content=
-		    createMap((char*)cur2->name,(char*)val);
-	      }
-#ifdef DEBUG
-	      dumpMaps(tmpmaps);
-#endif
-	      xmlFree(val);
-	    }
-	    /**
-	     * InputDataFormChoice (Reference or Data ?) 
-	     */
-	    if(strcmp(mtoupper((char*)cur2->name),
-		      mtoupper("Reference"))==0){
-	      /**
-	       * Get every attribute from a Reference node
-	       * mimeType, encoding, schema, href, method
-	       * Header and Body gesture should be added here
-	       */
-#ifdef DEBUG
-	      fprintf(stderr,"REFERENCE\n");
-#endif
-	      map* referenceMap=NULL;
-	      char *refs[5];
-	      refs[0]="mimeType";
-	      refs[1]="encoding";
-	      refs[2]="schema";
-	      refs[3]="method";
-	      refs[4]="href";
-	      char*url;
-	      for(int l=0;l<5;l++){
-#ifdef DEBUG
-		fprintf(stderr,"*** %s ***\t",refs[l]);
-#endif
-		xmlChar *val=xmlGetProp(cur2,BAD_CAST refs[l]);
-		if(val!=NULL && strlen((char*)val)>0){
-		  if(tmpmaps->content!=NULL)
-		    addToMap(tmpmaps->content,refs[l],(char*)val);
-		  else
-		    tmpmaps->content=createMap(refs[l],(char*)val);
-		  map* ltmp=getMap(tmpmaps->content,"method");
-		  if(l==4){
-		    if(!(ltmp!=NULL && strcmp(ltmp->value,"POST")==0)
-		       && CHECK_INET_HANDLE(hInternet)){
-			res=InternetOpenUrl(hInternet,(char*)val,NULL,0,
-					    INTERNET_FLAG_NO_CACHE_WRITE,0);
-			char* tmpContent=
-			  (char*)malloc((res.nDataLen+1)*sizeof(char));
-			size_t dwRead;
-			InternetReadFile(res, (LPVOID)tmpContent,
-					 res.nDataLen, &dwRead);
-			tmpContent[res.nDataLen]=0;
-			addToMap(tmpmaps->content,"value",tmpContent);
-		    }
-		  }
-		  
-		}
-#ifdef DEBUG
-		fprintf(stderr,"%s\n",val);
-#endif
-		xmlFree(val);
-	      }
 #ifdef POST_DEBUG
-	      fprintf(stderr,"Parse Header and Body from Reference \n");
+		fprintf(stderr,"Try to fetch the body part of the request ...\n");
 #endif
-	      xmlNodePtr cur3=cur2->children;
-	      hInternet.header=NULL;
-	      while(cur3){
-		if(strcmp(mtoupper((char*)cur3->name), mtoupper("Header"))==0 ){
-		  xmlNodePtr cur4=cur3;
+		if(xmlStrcasecmp(cur3->name,BAD_CAST "Body")==0 ){
+#ifdef POST_DEBUG
+		  fprintf(stderr,"Body part found !!!\n",(char*)cur3->content);
+#endif
 		  char *tmp=new char[cgiContentLength];
-		  char *ha[2];
-		  ha[0]="key";
-		  ha[1]="value";
-		  int hai;
-		  char *has;
-		  char *key;
-		  for(hai=0;hai<2;hai++){
-		    xmlChar *val=xmlGetProp(cur3,BAD_CAST ha[hai]);
+		  memset(tmp,0,cgiContentLength);
+		  xmlNodePtr cur4=cur3->children;
+		  while(cur4!=NULL){
+		    xmlDocPtr bdoc = xmlNewDoc(BAD_CAST "1.0");
+		    bdoc->encoding = xmlCharStrdup ("UTF-8");
+		    xmlDocSetRootElement(bdoc,cur4);
+		    xmlChar* btmps;
+		    int bsize;
+		    xmlDocDumpMemory(bdoc,&btmps,&bsize);
 #ifdef POST_DEBUG
-		    fprintf(stderr,"%s = %s\n",ha[hai],(char*)val);
+		    fprintf(stderr,"Body part found !!! %s %s\n",tmp,(char*)btmps);
 #endif
-		    if(hai==0){
-		      key=(char*)malloc((1+strlen((char*)val))*sizeof(char));
-		      sprintf(key,"%s",(char*)val);
-		    }else{
-		      has=(char*)malloc((3+strlen((char*)val)+strlen(key))*sizeof(char));
-		      sprintf(has,"%s: %s",key,(char*)val);
-#ifdef POST_DEBUG
-		      fprintf(stderr,"%s\n",has);
-#endif
-		    }
+		    if(btmps!=NULL)
+		      sprintf(tmp,"%s",(char*)btmps);
+		    xmlFreeDoc(bdoc);
+		    cur4=cur4->next;
 		  }
-		  hInternet.header=curl_slist_append(hInternet.header, has);
-		  //free(has);
-		}
-		else{
+		  map *btmp=getMap(tmpmaps->content,"href");
+		  if(btmp!=NULL){
 #ifdef POST_DEBUG
-		  fprintf(stderr,"Try to fetch the body part of the request ...\n");
+		    fprintf(stderr,"%s %s\n",btmp->value,tmp);
+		    curl_easy_setopt(hInternet.handle, CURLOPT_VERBOSE, 1);
 #endif
-		  if(strcmp(mtoupper((char*)cur3->name),mtoupper("Body"))==0 ){
-#ifdef POST_DEBUG
-		    fprintf(stderr,"Body part found !!!\n",(char*)cur3->content);
-#endif
-		    char *tmp=new char[cgiContentLength];
-		    memset(tmp,cgiContentLength,0);
-		    xmlNodePtr cur4=cur3->children;
-		    while(cur4!=NULL){
-		      xmlDocPtr bdoc = xmlNewDoc(BAD_CAST "1.0");
-		      bdoc->encoding = xmlCharStrdup ("UTF-8");
-		      xmlDocSetRootElement(bdoc,cur4);
-		      xmlChar* btmps;
-		      int bsize;
-		      xmlDocDumpMemory(bdoc,&btmps,&bsize);
-#ifdef POST_DEBUG
-		      fprintf(stderr,"Body part found !!! %s %s\n",tmp,(char*)btmps);
-#endif
-		      if(btmps!=NULL)
-			sprintf(tmp,"%s",(char*)btmps);
-		      xmlFreeDoc(bdoc);
-		      cur4=cur4->next;
+		    res=InternetOpenUrl(hInternet,btmp->value,tmp,strlen(tmp),
+					INTERNET_FLAG_NO_CACHE_WRITE,0);
+		    char* tmpContent = (char*)calloc((res.nDataLen+1),sizeof(char));
+		    if(tmpContent == NULL){
+		      return errorException(m, "Unable to allocate memory.", "InternalError");
 		    }
+		    size_t dwRead;
+		    InternetReadFile(res, (LPVOID)tmpContent,
+				     res.nDataLen, &dwRead);
+		    tmpContent[res.nDataLen]=0;
+		    if(hInternet.header!=NULL)
+		      curl_slist_free_all(hInternet.header);
+		    addToMap(tmpmaps->content,"value",tmpContent);
+#ifdef POST_DEBUG
+		    fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
+#endif
+		  }
+		}
+		else
+		  if(xmlStrcasecmp(cur3->name,BAD_CAST "BodyReference")==0 ){
+		    xmlChar *val=xmlGetProp(cur3,BAD_CAST "href");
+		    HINTERNET bInternet,res1;
+		    bInternet=InternetOpen(
+#ifndef WIN32
+					   (LPCTSTR)
+#endif
+					   "ZooWPSClient\0",
+					   INTERNET_OPEN_TYPE_PRECONFIG,
+					   NULL,NULL, 0);
+		    if(!CHECK_INET_HANDLE(bInternet))
+		      fprintf(stderr,"WARNING : hInternet handle failed to initialize");
+#ifdef POST_DEBUG
+		    curl_easy_setopt(bInternet.handle, CURLOPT_VERBOSE, 1);
+#endif
+		    res1=InternetOpenUrl(bInternet,(char*)val,NULL,0,
+					 INTERNET_FLAG_NO_CACHE_WRITE,0);
+		    char* tmp=
+		      (char*)calloc((res1.nDataLen+1),sizeof(char));
+		    if(tmp == NULL){
+		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		    }
+		    size_t bRead;
+		    InternetReadFile(res1, (LPVOID)tmp,
+				     res1.nDataLen, &bRead);
+		    tmp[res1.nDataLen]=0;
+		    InternetCloseHandle(bInternet);
 		    map *btmp=getMap(tmpmaps->content,"href");
 		    if(btmp!=NULL){
 #ifdef POST_DEBUG
 		      fprintf(stderr,"%s %s\n",btmp->value,tmp);
 		      curl_easy_setopt(hInternet.handle, CURLOPT_VERBOSE, 1);
 #endif
-		      res=InternetOpenUrl(hInternet,btmp->value,tmp,strlen(tmp),
+		      res=InternetOpenUrl(hInternet,btmp->value,tmp,
+					  strlen(tmp),
 					  INTERNET_FLAG_NO_CACHE_WRITE,0);
-		      char* tmpContent=
-			(char*)malloc((res.nDataLen+1)*sizeof(char));
+		      char* tmpContent = (char*)calloc((res.nDataLen+1),sizeof(char));
+		      if(tmpContent == NULL){
+			return errorException(m, "Unable to allocate memory.", "InternalError");
+		      }
 		      size_t dwRead;
 		      InternetReadFile(res, (LPVOID)tmpContent,
 				       res.nDataLen, &dwRead);
@@ -816,197 +995,116 @@ int runRequest(map* request_inputs)
 #endif
 		    }
 		  }
-		  else
-		    if(strcmp(mtoupper((char*)cur3->name),mtoupper("BodyReference"))==0 ){
-		      xmlChar *val=xmlGetProp(cur3,BAD_CAST "href");
-		      HINTERNET bInternet,res1;
-		      bInternet=InternetOpen(
-#ifndef WIN32
-				  (LPCTSTR)
-#endif
-				  "ZooWPSClient\0",
-					     INTERNET_OPEN_TYPE_PRECONFIG,
-					     NULL,NULL, 0);
-		      if(!CHECK_INET_HANDLE(bInternet))
-			fprintf(stderr,"WARNING : hInternet handle failed to initialize");
-#ifdef POST_DEBUG
-		      curl_easy_setopt(bInternet.handle, CURLOPT_VERBOSE, 1);
-#endif
-		      res1=InternetOpenUrl(bInternet,(char*)val,NULL,0,
-					   INTERNET_FLAG_NO_CACHE_WRITE,0);
-		      char* tmp=
-			(char*)malloc((res1.nDataLen+1)*sizeof(char));
-		      size_t bRead;
-		      InternetReadFile(res1, (LPVOID)tmp,
-				       res1.nDataLen, &bRead);
-		      tmp[res1.nDataLen]=0;
-		      InternetCloseHandle(bInternet);
-		      map *btmp=getMap(tmpmaps->content,"href");
-		      if(btmp!=NULL){
-#ifdef POST_DEBUG
-			fprintf(stderr,"%s %s\n",btmp->value,tmp);
-			curl_easy_setopt(hInternet.handle, CURLOPT_VERBOSE, 1);
-#endif
-			res=InternetOpenUrl(hInternet,btmp->value,tmp,
-					    strlen(tmp),
-					    INTERNET_FLAG_NO_CACHE_WRITE,0);
-			char* tmpContent=
-			  (char*)malloc((res.nDataLen+1)*sizeof(char));
-			size_t dwRead;
-			InternetReadFile(res, (LPVOID)tmpContent,
-					 res.nDataLen, &dwRead);
-			tmpContent[res.nDataLen]=0;
-			if(hInternet.header!=NULL)
-			  curl_slist_free_all(hInternet.header);
-			addToMap(tmpmaps->content,"value",tmpContent);
-#ifdef POST_DEBUG
-			fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
-#endif
-		      }
-		    }
-		}
-		cur3=cur3->next;
 	      }
+	      cur3=cur3->next;
+	    }
 #ifdef POST_DEBUG
-	      fprintf(stderr,"Header and Body was parsed from Reference \n");
+	    fprintf(stderr,"Header and Body was parsed from Reference \n");
 #endif
-#ifdef DEBUG
-	      dumpMap(tmpmaps->content);
-	      fprintf(stderr, "= element 2 node \"%s\" = (%s)\n", 
-		      cur2->name,cur2->content);
-#endif
-	    }
-	    else if(strcmp(mtoupper((char*)cur2->name),
-			   mtoupper("Data"))==0){
-#ifdef DEBUG
-	      fprintf(stderr,"DATA\n");
-#endif
-	      xmlNodePtr cur4=cur2->children;
-	      while(cur4){
-		if(strcmp(mtoupper((char*)cur4->name),
-			  mtoupper("LiteralData"))==0){
-		  /**
-		   * Get every attribute from a LiteralData node
-		   * dataType , uom
-		   */
-		  char *lits[2];
-		  lits[0]="dataType";
-		  lits[1]="uom";
-		  for(int l=0;l<2;l++){
-#ifdef DEBUG
-		    fprintf(stderr,"*** %s ***\t",lits[l]);
-#endif
-		    xmlChar *val=xmlGetProp(cur4,BAD_CAST lits[l]);
-		    if(val!=NULL && strlen((char*)val)>0){
-		      if(tmpmaps->content!=NULL)
-			addToMap(tmpmaps->content,lits[l],(char*)val);
-		      else
-			tmpmaps->content=createMap(lits[l],(char*)val);
-		    }
-#ifdef DEBUG
-		    fprintf(stderr,"%s\n",val);
-#endif
-		    xmlFree(val);
-		  }
-		  xmlChar* mv=xmlNodeListGetString(doc,
-						   cur4->xmlChildrenNode,1);
-		  if(tmpmaps->content!=NULL)
-		    addToMap(tmpmaps->content,
-			     "value",
-			     (char*)mv);
-		  else
-		    tmpmaps->content=
-		      createMap("value",
-				(char*)mv);
-		  xmlFree(mv);
-		}
-		else if(strcmp(mtoupper((char*)cur4->name),
-			       mtoupper("ComplexData"))==0){
-		  /**
-		   * Get every attribute from a Reference node
-		   * mimeType, encoding, schema
-		   */
-		  char *coms[2];
-		  coms[0]="mimeType";
-		  coms[1]="encoding";
-		  coms[2]="schema";
-		  for(int l=0;l<2;l++){
-#ifdef DEBUG
-		    fprintf(stderr,"*** %s ***\t",coms[l]);
-#endif
-		    xmlChar *val=xmlGetProp(cur4,BAD_CAST coms[l]);
-		    if(val!=NULL && strlen((char*)val)>0){
-		      if(tmpmaps->content!=NULL)
-			addToMap(tmpmaps->content,coms[l],(char*)val);
-		      else
-			tmpmaps->content=createMap(coms[l],(char*)val);
-		    }
-#ifdef DEBUG
-		    fprintf(stderr,"%s\n",val);
-#endif
-		    xmlFree(val);
-		  }
-		  xmlChar* mv=xmlNodeListGetString(doc,
-						   cur4->xmlChildrenNode,1);
-		  if(tmpmaps->content!=NULL)
-		    addToMap(tmpmaps->content,
-			     "value",
-			     (char*)mv);
-		  else
-		    tmpmaps->content=
-		      createMap("value",
-				(char*)mv);
-		  xmlFree(mv);
-		}
-		cur4=cur4->next;
-	      }
-	    }
 #ifdef DEBUG
 	    dumpMap(tmpmaps->content);
 	    fprintf(stderr, "= element 2 node \"%s\" = (%s)\n", 
-		    cur2->name,cur2->content);	
+		    cur2->name,cur2->content);
 #endif
-	    xmlNodePtr cur3=cur->children;
-	    while(cur3){
-#ifdef DEBUG
-	      fprintf(stderr, "= element 3 node \"%s\" = (%s)\n",cur3->name,
-		      xmlNodeListGetString(doc,cur3->xmlChildrenNode,1));
-#endif
-	      if(strcmp(mtoupper((char*)cur3->name),
-			mtoupper("Title"))==0){
-#ifdef DEBUG
-		fprintf(stderr, "= element 3 node \"%s\" = (%s)\n", 
-			cur3->name,xmlNodeListGetString(doc,cur3,1));
-#endif
-	      }
-	      cur3=cur3->children;
-	    }
-	    cur2=cur2->next;
 	  }
-	  cur1=cur1->children;
-	}
-	if(request_input_real_format==NULL)
-	  request_input_real_format=tmpmaps;
-	else
-	  addMapsToMaps(&request_input_real_format,tmpmaps);
+	  else if(xmlStrcasecmp(cur2->name,BAD_CAST "Data")==0){
 #ifdef DEBUG
-	dumpMaps(tmpmaps);
+	    fprintf(stderr,"DATA\n");
 #endif
+	    xmlNodePtr cur4=cur2->children;
+	    while(cur4){
+	      while(cur4->type!=XML_ELEMENT_NODE)
+		cur4=cur4->next;
+
+	      if(xmlStrcasecmp(cur4->name, BAD_CAST "LiteralData")==0){
+		/**
+		 * Get every attribute from a LiteralData node
+		 * dataType , uom
+		 */
+		char *lits[2];
+		lits[0]="dataType";
+		lits[1]="uom";
+		for(int l=0;l<2;l++){
+#ifdef DEBUG
+		  fprintf(stderr,"*** LiteralData %s ***",lits[l]);
+#endif
+		  xmlChar *val=xmlGetProp(cur4,BAD_CAST lits[l]);
+		  if(val!=NULL && strlen((char*)val)>0){
+		    if(tmpmaps->content!=NULL)
+		      addToMap(tmpmaps->content,lits[l],(char*)val);
+		    else
+		      tmpmaps->content=createMap(lits[l],(char*)val);
+		  }
+#ifdef DEBUG
+		  fprintf(stderr,"%s\n",val);
+#endif
+		  xmlFree(val);
+		}
+	      }
+	      else if(xmlStrcasecmp(cur4->name, BAD_CAST "ComplexData")==0){
+		/**
+		 * Get every attribute from a Reference node
+		 * mimeType, encoding, schema
+		 */
+		char *coms[3];
+		coms[0]="mimeType";
+		coms[1]="encoding";
+		coms[2]="schema";
+		for(int l=0;l<3;l++){
+#ifdef DEBUG
+		  fprintf(stderr,"*** ComplexData %s ***",coms[l]);
+#endif
+		  xmlChar *val=xmlGetProp(cur4,BAD_CAST coms[l]);
+		  if(val!=NULL && strlen((char*)val)>0){
+		    if(tmpmaps->content!=NULL)
+		      addToMap(tmpmaps->content,coms[l],(char*)val);
+		    else
+		      tmpmaps->content=createMap(coms[l],(char*)val);
+		  }
+#ifdef DEBUG
+		  fprintf(stderr,"%s\n",val);
+#endif
+		  xmlFree(val);
+		}
+	      }
+	      xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
+	      addToMap(tmpmaps->content,"value",(char*)mv);
+	      xmlFree(mv);
+	      cur4=cur4->next;
+	    }
+	  }
+#ifdef DEBUG
+	  fprintf(stderr,"cur2 next \n");
+	  fflush(stderr);
+#endif
+	  cur2=cur2->next;
+	}
+#ifdef DEBUG
+	fprintf(stderr,"ADD MAPS TO REQUEST MAPS !\n");
 	fflush(stderr);
+#endif
+	addMapsToMaps(&request_input_real_format,tmpmaps);
+	
+#ifdef DEBUG
+	fprintf(stderr,"******TMPMAPS*****\n");
+	dumpMaps(tmpmaps);
+	fprintf(stderr,"******REQUESTMAPS*****\n");
+	dumpMaps(request_input_real_format);
+#endif
 	tmpmaps=tmpmaps->next;
 	      
-      } else {
-#ifdef DEBUG
-	fprintf(stderr, "= node \"%s\": type %d\n", cur->name, cur->type);
-#endif
       }
 #ifdef DEBUG
       dumpMaps(tmpmaps); 
 #endif
     }
-    
-    xmlFree(tmps);
-    tmps=extractFromDoc(doc,"/*/*/*[local-name()='ResponseDocument']");
+#ifdef DEBUG
+    fprintf(stderr,"Search for response document node\n");
+#endif
+    xmlXPathFreeObject(tmpsptr);
+    //xmlFree(tmps);
+    tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='ResponseDocument']");
+    tmps=tmpsptr->nodesetval;
 #ifdef DEBUG
     fprintf(stderr,"*****%d*****\n",tmps->nodeNr);
 #endif
@@ -1020,7 +1118,10 @@ int runRequest(map* request_inputs)
 	 * A specific responseDocument node.
 	 */
 	if(tmpmaps==NULL){
-	  tmpmaps=(maps*)malloc(MAPS_SIZE);
+	  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	  if(tmpmaps == NULL){
+	    return errorException(m, "Unable to allocate memory.", "InternalError");
+	  }
 	  tmpmaps->name="unknownIdentifier";
 	  tmpmaps->next=NULL;
 	}
@@ -1052,8 +1153,7 @@ int runRequest(map* request_inputs)
 	}
 	xmlNodePtr cur1=cur->children;
 	while(cur1){
-	  if(strcmp(mtoupper((char*)cur1->name),
-		    mtoupper("Output"))==0){
+	  if(xmlStrncasecmp(cur1->name,BAD_CAST "Output",xmlStrlen(cur1->name))==0){
 	    /**
 	     * Get every attribute from a Output node
 	     * mimeType, encoding, schema, uom, asReference
@@ -1086,12 +1186,14 @@ int runRequest(map* request_inputs)
 	      /**
 	       * Indentifier
 	       */
-	      if(strcmp(mtoupper((char*)cur2->name),
-			mtoupper("Identifier"))==0){
+	      if(xmlStrncasecmp(cur2->name,BAD_CAST "Identifier",xmlStrlen(cur2->name))==0){
 		xmlChar *val=
 		  xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 		if(tmpmaps==NULL){
-		  tmpmaps=(maps*)malloc(MAPS_SIZE);
+		  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+		  if(tmpmaps == NULL){
+		    return errorException(m, "Unable to allocate memory.", "InternalError");
+		  }
 		  tmpmaps->name=strdup((char*)val);
 		  tmpmaps->content=NULL;
 		  tmpmaps->next=NULL;
@@ -1103,14 +1205,15 @@ int runRequest(map* request_inputs)
 	      /**
 	       * Title, Asbtract
 	       */
-	      if(strcmp(mtoupper((char*)cur2->name),
-			mtoupper("Title"))==0 ||
-		 strcmp(mtoupper((char*)cur2->name),
-			mtoupper("Abstract"))==0){
+	      if(xmlStrncasecmp(cur2->name,BAD_CAST "Title",xmlStrlen(cur2->name))==0 ||
+		 xmlStrncasecmp(cur2->name,BAD_CAST "Abstract",xmlStrlen(cur2->name))==0){
 		xmlChar *val=
 		  xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 		if(tmpmaps==NULL){
-		  tmpmaps=(maps*)malloc(MAPS_SIZE);
+		  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+		  if(tmpmaps == NULL){
+		    return errorException(m, "Unable to allocate memory.", "InternalError");
+		  }
 		  tmpmaps->name="missingIndetifier";
 		  tmpmaps->content=createMap((char*)cur2->name,(char*)val);
 		  tmpmaps->next=NULL;
@@ -1140,9 +1243,10 @@ int runRequest(map* request_inputs)
       dumpMaps(tmpmaps);
 #endif
     }
-
-    xmlFree(tmps);
-    tmps=extractFromDoc(doc,"/*/*/*[local-name()='RawDataOutput']");
+    xmlXPathFreeObject(tmpsptr);
+    //xmlFree(tmps);
+    tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='RawDataOutput']");
+    tmps=tmpsptr->nodesetval;
 #ifdef DEBUG
     fprintf(stderr,"*****%d*****\n",tmps->nodeNr);
 #endif
@@ -1166,7 +1270,10 @@ int runRequest(map* request_inputs)
 	val=xmlGetProp(cur1,BAD_CAST outs[l]);
 	if(val!=NULL && strlen((char*)val)>0){
 	  if(tmpmaps==NULL){
-	    tmpmaps=(maps*)malloc(MAPS_SIZE);
+	    tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	    if(tmpmaps == NULL){
+	      return errorException(m, "Unable to allocate memory.", "InternalError");
+	    }
 	    tmpmaps->name="unknownIdentifier";
 	    tmpmaps->content=createMap(outs[l],(char*)val);
 	    tmpmaps->next=NULL;
@@ -1185,12 +1292,14 @@ int runRequest(map* request_inputs)
 	/**
 	 * Indentifier
 	 */
-	if(strcmp(mtoupper((char*)cur2->name),
-		  mtoupper("Identifier"))==0){
+	if(xmlStrncasecmp(cur2->name,BAD_CAST "Identifier",xmlStrlen(cur2->name))==0){
 	  val=
 	    xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 	  if(tmpmaps==NULL){
-	    tmpmaps=(maps*)malloc(MAPS_SIZE);
+	    tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	    if(tmpmaps == NULL){
+	      return errorException(m, "Unable to allocate memory.", "InternalError");
+	    }
 	    tmpmaps->name=strdup((char*)val);
 	    tmpmaps->content=NULL;
 	    tmpmaps->next=NULL;
@@ -1209,37 +1318,53 @@ int runRequest(map* request_inputs)
       dumpMaps(tmpmaps);
 #endif
     }
-    
-    xmlFree(tmps);
+    xmlXPathFreeObject(tmpsptr);
+    //xmlFree(tmps);
     xmlCleanupParser();
   }
 
-  if(CHECK_INET_HANDLE(hInternet))
-    InternetCloseHandle(hInternet);
+  //if(CHECK_INET_HANDLE(hInternet))
+  InternetCloseHandle(hInternet);
 
 #ifdef DEBUG
   fprintf(stderr,"\n%i\n",i);
   dumpMaps(request_input_real_format);
   dumpMaps(request_output_real_format);
-  dumpElements();
+  dumpMap(request_inputs);
 #endif
 
   /**
    * Ensure that each requested arguments are present in the request
    * DataInputs and ResponseDocument / RawDataOutput
-   */
-  addDefaultValues(&request_input_real_format,s1->inputs,m,"inputs");
+   */  
+  char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,"inputs");
+  if(strcmp(dfv,"")!=0){
+    char tmps[1024];
+    snprintf(tmps,1024,"The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file.",dfv);
+    map* tmpe=createMap("text",tmps);
+    addToMap(tmpe,"code","MissingParameterValue");
+    printExceptionReportResponse(m,tmpe);
+    freeMap(&tmpe);
+    free(tmpe);
+    freeMaps(&m);
+    free(m);
+    free(REQUEST);
+    freeMaps(&request_input_real_format);
+    free(request_input_real_format);
+    freeMaps(&request_output_real_format);
+    free(request_output_real_format);
+    freeMaps(&tmpmaps);
+    free(tmpmaps);
+    return 1;
+  }
   addDefaultValues(&request_output_real_format,s1->outputs,m,"outputs");
 
-  const struct tm *tm;
-  size_t len;
-  time_t now;
-  char *sDate;
-  
-  now = time ( NULL );
-  tm = localtime ( &now );
-
-  sDate = new char[TIME_SIZE];
+#ifdef DEBUG
+  fprintf(stderr,"REQUEST_INPUTS\n");
+  dumpMaps(request_input_real_format);
+  fprintf(stderr,"REQUEST_OUTPUTS\n");
+  dumpMaps(request_output_real_format);
+#endif
 
   maps* curs=getMaps(m,"env");
   if(curs!=NULL){
@@ -1279,8 +1404,6 @@ int runRequest(map* request_inputs)
     }
   }
   
-  len = strftime ( sDate, TIME_SIZE, "%d-%B-%YT%I:%M:%SZ", tm );
-
 #ifdef DEBUG
   dumpMap(request_inputs);
 #endif
@@ -1296,6 +1419,9 @@ int runRequest(map* request_inputs)
   dumpMap(request_inputs);
 #endif
 
+  if(r_inputs!=NULL)
+    if(strcasecmp(r_inputs->value,"false")==0)
+      r_inputs=NULL;
   if(r_inputs==NULLMAP){
     /**
      * Extract serviceType to know what kind of service shoudl be loaded
@@ -1306,31 +1432,33 @@ int runRequest(map* request_inputs)
     fprintf(stderr,"LOAD A %s SERVICE PROVIDER IN NORMAL MODE \n",r_inputs->value);
     fflush(stderr);
 #endif
-
-	if(strncmp(mtoupper(r_inputs->value),"C",1)==0){
+    if(strncasecmp(r_inputs->value,"C",1)==0){
       r_inputs=getMap(request_inputs,"metapath");
-      sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
-	  char *altPath=strdup(tmps1);
+      if(r_inputs!=NULL)
+	sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
+      else
+	sprintf(tmps1,"%s/",ntmp);
+      char *altPath=strdup(tmps1);
       r_inputs=getMap(s1->content,"ServiceProvider");
       sprintf(tmps1,"%s/%s",altPath,r_inputs->value);
-	  free(altPath);
+      free(altPath);
 #ifdef DEBUG
       fprintf(stderr,"Trying to load %s\n",tmps1);
 #endif
 #ifdef WIN32
-	  HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
+      HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
       void* so = dlopen(tmps1, RTLD_LAZY);
 #endif
+#ifdef DEBUG
 #ifdef WIN32
       DWORD errstr;
-	  errstr = GetLastError();
-#ifdef DEBUG
-	  fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
-#endif
+      errstr = GetLastError();
+      fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
 #else
       char *errstr;
-	  errstr = dlerror();
+      errstr = dlerror();
+#endif
 #endif
 
       if( so != NULL ) {
@@ -1341,17 +1469,17 @@ int runRequest(map* request_inputs)
 	r_inputs=getMap(s1->content,"serviceType");
 #ifdef DEBUG
 	dumpMap(r_inputs);
-	fprintf(stderr,"%s %s",r_inputs->value,mtoupper(r_inputs->value));
+	fprintf(stderr,"%s\n",r_inputs->value);
 	fflush(stderr);
 #endif
-	if(strcmp(mtoupper(r_inputs->value),"C-FORTRAN")==0){
+	if(strncasecmp(r_inputs->value,"C-FORTRAN",9)==0){
 #ifdef WIN32
 	  //Strange return value needed here !
 	  return 1;
 #endif
 	  r_inputs=getMap(request_inputs,"Identifier");
 	  char fname[1024];
-	  sprintf(fname,"%s",r_inputs->value);
+	  sprintf(fname,"%s_",r_inputs->value);
 #ifdef DEBUG
 	  fprintf(stderr,"Try to load function %s\n",fname);
 #endif
@@ -1370,6 +1498,7 @@ int runRequest(map* request_inputs)
 #endif
 	  fprintf(stderr,"Function loaded %s\n",errstr);
 #endif	
+
 	  char main_conf[10][30][1024];
 	  char inputs[10][30][1024];
 	  char outputs[10][30][1024];
@@ -1389,9 +1518,9 @@ int runRequest(map* request_inputs)
 #endif
 	  charxxxToMaps((char***)&outputs[0],&request_output_real_format);
 	}else{
+#ifdef DEBUG
 #ifdef WIN32
 	  errstr = GetLastError();
-#ifdef DEBUG
 	  fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
 #endif
 #endif
@@ -1403,11 +1532,8 @@ int runRequest(map* request_inputs)
 #ifdef WIN32
 	  execute_t execute=(execute_t)GetProcAddress(so,r_inputs->value); 
 #ifdef DEBUG
-	  /*if(!execute)*/
 	  errstr = GetLastError();
 	  fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
-	  /*else
-	  fprintf(stderr,"Function %s loaded\n",r_inputs->value);*/
 #endif
 #else
 	  execute_t execute=(execute_t)dlsym(so,r_inputs->value);
@@ -1432,13 +1558,17 @@ int runRequest(map* request_inputs)
 	  fflush(stderr);
 #endif
 	}
-
 	dlclose(so);
       } else {
 	/**
 	 * Unable to load the specified shared library
 	 */
 	char tmps[1024];
+#ifdef WIN32
+	DWORD errstr = GetLastError();
+#else
+	char* errstr = dlerror();
+#endif
 	sprintf(tmps,"C Library can't be loaded %s \n",errstr);
 	map* tmps1=createMap("text",tmps);
 	printExceptionReportResponse(m,tmps1);
@@ -1446,38 +1576,38 @@ int runRequest(map* request_inputs)
       }
     }
     else{
-	if(strcmp(mtoupper(r_inputs->value),"PYTHON")==0){
-		eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-      	}
-	else
-
-	#ifdef USE_JAVA
-	if(strcmp(mtoupper(r_inputs->value),"JAVA")==0){
+      if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
+	eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+      }
+      else
+	
+#ifdef USE_JAVA
+	if(strncasecmp(r_inputs->value,"JAVA",4)==0){
 	  eres=zoo_java_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	}
 	else
-	#endif
+#endif
 
-	#ifdef USE_PHP
-	  if(strcmp(mtoupper(r_inputs->value),"PHP")==0){
+#ifdef USE_PHP
+	  if(strncasecmp(r_inputs->value,"PHP",3)==0){
 	    eres=zoo_php_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	  }
-	else
-	#endif
-	
-	#ifdef USE_JS
-	    if(strcmp(mtoupper(r_inputs->value),"JS")==0){
+	  else
+#endif
+	  
+#ifdef USE_JS
+	    if(strncasecmp(r_inputs->value,"JS",2)==0){
 	      eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	    }
 	    else
-         #endif
-		{
-	      char tmpv[1024];
-	      sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
-	      map* tmps=createMap("text",tmpv);
-	      printExceptionReportResponse(m,tmps);
-	      return(-1);
-	    }
+#endif
+	      {
+		char tmpv[1024];
+		sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
+		map* tmps=createMap("text",tmpv);
+		printExceptionReportResponse(m,tmps);
+		return(-1);
+	      }
     }
   }
   else{
@@ -1486,10 +1616,11 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
     fprintf(stderr,"\nPID : %d\n",cpid);
 #endif
+
 #ifndef WIN32
-	pid = fork ();
+    pid = fork ();
 #else
-	pid = 0;
+    pid = 0;
 #endif
     if (pid > 0) {
       /**
@@ -1505,33 +1636,31 @@ int runRequest(map* request_inputs)
        * son : have to close the stdout, stdin and stderr to let the parent
        * process answer to http client.
        */
-      char tmp1[256];
       r_inputs=getMapFromMaps(m,"main","tmpPath");
-      sprintf(tmp1,"%s",r_inputs->value);
-      r_inputs=getMap(s1->content,"ServiceProvider");
-      sprintf(tmp1,"%s/%s",strdup(tmp1),r_inputs->value);
-      sprintf(tmp1,"%s_%d.xml",strdup(tmp1),cpid);
+      map* r_inputs1=getMap(s1->content,"ServiceProvider");
+      char* fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+16)*sizeof(char));
+      sprintf(fbkp,"%s/%s_%d.xml",r_inputs->value,r_inputs1->value,cpid);
+      char* flog=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+22)*sizeof(char));
+      sprintf(flog,"%s/%s_%d_error.log",r_inputs->value,r_inputs1->value,cpid);
+      fprintf(stderr,"File to use as backup %s\n",fbkp);
 #ifdef DEBUG
       fprintf(stderr,"RUN IN BACKGROUND MODE \n");
       fprintf(stderr,"son pid continue (origin %d) %d ...\n",cpid,getpid());
-      fprintf(stderr,"\nFILE TO STORE DATA %s\n",tmp1);
+      fprintf(stderr,"\nFILE TO STORE DATA %s\n",r_inputs->value);
 #endif
-      freopen(tmp1 , "w+", stdout);
+      freopen(fbkp , "w+", stdout);
       fclose(stdin);
-      r_inputs=getMapFromMaps(m,"main","tmpPath");
-      sprintf(tmp1,"%s",r_inputs->value);
-      r_inputs=getMap(s1->content,"ServiceProvider");
-      sprintf(tmp1,"%s/%s",strdup(tmp1),r_inputs->value);
-      sprintf(tmp1,"%s_%d_error.log",strdup(tmp1),cpid);
-      freopen(tmp1,"w+",stderr);
+      freopen(flog,"w+",stderr);
+      free(fbkp);
+      free(flog);
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
        * content was outputed (the file used to store the ResponseDocument).
        * The rewind stdout to restart writing from the bgining of the file,
        * this way the data will be updated at the end of the process run.
        */
-      printProcessResponse1(m,request_inputs,cpid,
-			    s[0],r_inputs->value,SERVICE_STARTED,
+      printProcessResponse(m,request_inputs,cpid,
+			    s1,r_inputs->value,SERVICE_STARTED,
 			    request_input_real_format,
 			    request_output_real_format);
       fflush(stdout);
@@ -1545,33 +1674,40 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"LOAD A %s SERVICE PROVIDER IN BACKGROUND MODE \n",r_inputs->value);
 #endif
 
-      if(strncmp(mtoupper(r_inputs->value),"C",1)==0){
+      if(strncasecmp(r_inputs->value,"C",1)==0){
+
 	r_inputs=getMap(request_inputs,"metapath");
-	sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
-	r_inputs=getMap(s1->content,"ServiceProvider");
-	sprintf(tmps1,"%s/%s",strdup(tmps1),r_inputs->value);
+	if(r_inputs!=NULL){
+	  sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
+	  r_inputs=getMap(s1->content,"ServiceProvider");
+	  if(r_inputs!=NULL)
+	    sprintf(tmps1,"%s/%s",strdup(tmps1),r_inputs->value);
+	}else{
+	  sprintf(tmps1,"%s/",ntmp);
+	}
+	  
   
 #ifdef DEBUG
 	fprintf(stderr,"Trying to load %s\n",tmps1);
 #endif
 #ifdef WIN32
-	  HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
+	HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
-      void* so = dlopen(tmps1, RTLD_LAZY);
+	void* so = dlopen(tmps1, RTLD_LAZY);
 #endif
 #ifdef WIN32
-	  DWORD errstr;
-	  errstr = GetLastError();
+	DWORD errstr;
+	errstr = GetLastError();
 #else
-	  char *errstr;
-	  errstr = dlerror();
+	char *errstr;
+	errstr = dlerror();
 #endif
 	if( so != NULL ) {
 	  r_inputs=getMap(s1->content,"serviceType");
 #ifdef DEBUG
 	  fprintf(stderr,"r_inputs->value = %s\n",r_inputs->value);
 #endif
-	  if(strcmp(mtoupper(r_inputs->value),"C-FORTRAN")==0){
+	  if(strncasecmp(r_inputs->value,"C-FORTRAN",9)==0){
 	    r_inputs=getMap(request_inputs,"Identifier");
 #ifdef DEBUG
 	    fprintf(stderr,"Try to load function %s\n",r_inputs->value);
@@ -1583,15 +1719,15 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"Try to load function %s\n",fname);
 #endif
 #ifdef WIN32
-	  execute_t execute=(execute_t)GetProcAddress(so,fname); 
+	    execute_t execute=(execute_t)GetProcAddress(so,fname); 
 #else
-	  execute_t execute=(execute_t)dlsym(so,fname);
+	    execute_t execute=(execute_t)dlsym(so,fname);
 #endif
 #ifdef DEBUG
 #ifdef WIN32
-	  errstr = GetLastError();
+	    errstr = GetLastError();
 #else
-	  errstr = dlerror();
+	    errstr = dlerror();
 #endif
 #endif	
 	    char main_conf[10][10][1024];
@@ -1621,15 +1757,15 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"Try to load function %s\n",r_inputs->value);
 #endif
 #ifdef WIN32
-	  execute_t execute=(execute_t)GetProcAddress(so,r_inputs->value); 
+	    execute_t execute=(execute_t)GetProcAddress(so,r_inputs->value); 
 #else
-	  execute_t execute=(execute_t)dlsym(so,r_inputs->value);
+	    execute_t execute=(execute_t)dlsym(so,r_inputs->value);
 #endif
 #ifdef DEBUG
 #ifdef WIN32
-	  errstr = GetLastError();
+	    errstr = GetLastError();
 #else
-	  errstr = dlerror();
+	    errstr = dlerror();
 #endif
 	    fprintf(stderr,"Function loaded %s\n",errstr);
 #endif	
@@ -1637,8 +1773,8 @@ int runRequest(map* request_inputs)
 	     * set the status code value returned by the service function itself
 	     */
 	    eres=execute(&m,&request_input_real_format,&request_output_real_format);
-	    dlclose(so);
 	  }
+	  dlclose(so);
 	} else {
 	  /**
 	   * Unable to load the requested C Library
@@ -1647,41 +1783,43 @@ int runRequest(map* request_inputs)
 	  sprintf(tmps1,"C Library can't be loaded %s \n",errstr);
 	  map* tmps=createMap("text",tmps1);
 	  printExceptionReportResponse(m,tmps);
+	  freeMap(&tmps);
+	  free(tmps);
 	  exit(1);
 	}
       } else{
-	if(strcmp(mtoupper(r_inputs->value),"PYTHON")==0){
+	if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
 	  eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	}
 	else
 
-	#ifdef USE_JAVA
-	  if(strcmp(mtoupper(r_inputs->value),"JAVA")==0){
+#ifdef USE_JAVA
+	  if(strncasecmp(r_inputs->value,"JAVA",4)==0){
 	    eres=zoo_java_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	  }
 	  else
-	#endif
-	
-	#ifdef USE_PHP
-	    if(strcmp(mtoupper(r_inputs->value),"PHP")==0){
+#endif
+	    
+#ifdef USE_PHP
+	    if(strncasecmp(r_inputs->value,"PHP",3)==0){
 	      eres=zoo_php_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	    }
 	    else
-	#endif
-
-	#ifdef USE_JS
-	    if(strcmp(mtoupper(r_inputs->value),"JS")==0){
+#endif
+	      
+#ifdef USE_JS
+	      if(strncasecmp(r_inputs->value,"JS",2)==0){
 		eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	      }
-	    else
-	#endif
-	{
-	      char tmpv[1024];
-	      sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
-	      map* tmps=createMap("text",tmpv);
-	      printExceptionReportResponse(m,tmps);
-	      return -1;
-	    }
+	      else
+#endif
+		{
+		  char tmpv[1024];
+		  sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
+		  map* tmps=createMap("text",tmpv);
+		  printExceptionReportResponse(m,tmps);
+		  return -1;
+		}
       }
   
       //res=execute(&m,&request_input_real_format,&request_output_real_format);
@@ -1696,16 +1834,40 @@ int runRequest(map* request_inputs)
 
 #ifdef DEBUG
   dumpMaps(request_output_real_format);
+  fprintf(stderr,"Function loaded and returned %d\n",eres);
+  fflush(stderr);
 #endif
-  outputResponse(s1,request_input_real_format,
-		 request_output_real_format,request_inputs,
-		 cpid,m,eres);
+  if(eres!=-1)
+    outputResponse(s1,request_input_real_format,
+		   request_output_real_format,request_inputs,
+		   cpid,m,eres);
 
+  //if(getpid()==cpid){
+  freeService(&s1);
+  free(s1);
+  freeMaps(&m);
+  free(m);
+  freeMaps(&tmpmaps);
+  free(tmpmaps);
+  
+  freeMaps(&request_input_real_format);
+  free(request_input_real_format);
+  
+  //freeMap(&request_inputs);
+  //free(request_inputs);
+    
+  /* The following is requested but get issue using with Python support :/ */
+  freeMaps(&request_output_real_format);
+  free(request_output_real_format);
+  
+  free(REQUEST);
+  free(SERVICE_URL);
 #ifdef DEBUG
   fprintf(stderr,"Processed response \n");
   fflush(stdout);
   fflush(stderr);
 #endif
+    //}
 
   return 0;
 }

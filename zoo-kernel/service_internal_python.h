@@ -39,9 +39,9 @@ PyDictObject* PyDict_FromMaps(maps* t);
 PyDictObject* PyDict_FromMap(map* t);
 
 maps* mapsFromPyDict(PyDictObject* t);
+void createMapsFromPyDict(maps**,PyDictObject*);
 map* mapFromPyDict(PyDictObject* t);
 
-int python_support(maps*,service*,int,char**,map *,map *);
 int zoo_python_support(maps**,map*,service*,maps**,maps**);
 
 #endif

@@ -39,17 +39,21 @@ extern "C" {
 #define bool int
 #define true 1
 #define false -1
+
 #define SERVICE_ACCEPTED 0
 #define SERVICE_STARTED 1
 #define SERVICE_PAUSED 2
 #define SERVICE_SUCCEEDED 3
 #define SERVICE_FAILED 4
+
 #define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*2)+sizeof(char*)+(((2*sizeof(char*))+sizeof(iotype*))*2)+sizeof(elements*))
-#define MAP_SIZE (2*sizeof(char*))+sizeof(map*)
-#define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+sizeof(maps*)
+#define MAP_SIZE (2*sizeof(char*))+sizeof(NULL)
+#define IOTYPE_SIZE MAP_SIZE+sizeof(NULL)
+#define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
+#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
 
 
-  static char* mtoupper(char* str){
+  /*  static char* mtoupper(char* str){
     char* tmp=strdup(str);
     if(tmp){
       int cnt=strlen(tmp);
@@ -62,18 +66,30 @@ extern "C" {
     else
       tmp[0]=0;
     return tmp;
-  }
+    }*/
 
+  /**
+   * \struct maps
+   * \brief linked list of map pointer
+   *
+   * Small object to store WPS KVP set.
+   */
   typedef struct maps{
-    char* name;
-    struct map* content;
-    struct maps* next;
+    char* name;          
+    struct map* content; 
+    struct maps* next;   
   } maps;
 
+  /**
+   * \struct map
+   * \brief KVP linked list
+   *
+   * Deal with WPS KVP (name,value).
+   */
   typedef struct map{
-    char* name;
-    char* value;
-    struct map* next;
+    char* name;       /* The key */
+    char* value;      /* The value */
+    struct map* next; /* Next couple */
   } map;
 
 #ifdef WIN32
@@ -82,7 +98,7 @@ extern "C" {
 #define NULLMAP NULL
 #endif
 
-  static void* _dumpMap(map* t){
+  static void _dumpMap(map* t){
     if(t!=NULL){
       fprintf(stderr,"[%s] => [%s] \n",t->name,t->value);
       fflush(stderr);
@@ -90,16 +106,14 @@ extern "C" {
       fprintf(stderr,"NULL\n");
       fflush(stderr);
     }
-    return NULL;
   }
 
-  static void* dumpMap(map* t){
+  static void dumpMap(map* t){
     map* tmp=t;
     while(tmp!=NULL){
       _dumpMap(tmp);
       tmp=tmp->next;
     }
-    return NULL;
   }
 
   static void dumpMaps(maps* m){
@@ -111,7 +125,7 @@ extern "C" {
     }
   }
 
-  static map* createMap(char* name,char* value){
+  static map* createMap(const char* name,const char* value){
     map* tmp=(map *)malloc(MAP_SIZE);
     tmp->name=strdup(name);
     tmp->value=strdup(value);
@@ -129,10 +143,10 @@ extern "C" {
     return c;
   }
     
-  static bool hasKey(map* m,char *key){
+  static bool hasKey(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
-      if(strcmp(mtoupper(tmp->name),mtoupper(key))==0)
+      if(strncasecmp(tmp->name,key,strlen(key))==0)
 	return true;
       tmp=tmp->next;
     }
@@ -142,21 +156,23 @@ extern "C" {
     return false;
   }
 
-  static maps* getMaps(maps* m,char *key){
+  static maps* getMaps(maps* m,const char *key){
     maps* tmp=m;
     while(tmp!=NULL){
-      if(strcmp(mtoupper(tmp->name),mtoupper(key))==0)
+      if(strncasecmp(tmp->name,key,strlen(key))==0){
 	return tmp;
+      }
       tmp=tmp->next;
     }
     return NULL;
   }
 
-  static map* getMap(map* m,char *key){
+  static map* getMap(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
-      if(strcmp(mtoupper(tmp->name),mtoupper(key))==0)
+      if(strncasecmp(tmp->name,key,strlen(key))==0){
 	return tmp;
+      }
       tmp=tmp->next;
     }
     return NULL;
@@ -165,15 +181,18 @@ extern "C" {
   static map* getMapFromMaps(maps* m,char* key,char* subkey){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
-      map* tmpm=getMap(_tmpm->content,mtoupper(subkey));
-      return tmpm;
+      map* _ztmpm=getMap(_tmpm->content,subkey);
+      return _ztmpm;
     }
     else return NULL;
   }
 
-  static void* freeMap(map** mo){
+  static void freeMap(map** mo){
     map* _cursor=*mo;
     if(_cursor!=NULL){
+#ifdef DEBUG
+      fprintf(stderr,"freeMap\n");
+#endif
       free(_cursor->name);
       free(_cursor->value);
       if(_cursor->next!=NULL){
@@ -181,9 +200,26 @@ extern "C" {
 	free(_cursor->next);
       }
     }
-	return NULL;
   }
 
+  static void freeMaps(maps** mo){
+    maps* _cursor=*mo;
+    fflush(stderr);
+    if(_cursor && _cursor!=NULL){
+#ifdef DEBUG
+      fprintf(stderr,"freeMaps\n");
+#endif
+      free(_cursor->name);
+      if(_cursor->content!=NULL){
+      	freeMap(&_cursor->content);
+      	free(_cursor->content);
+      }
+      if(_cursor->next!=NULL){
+	freeMaps(&_cursor->next);
+	free(_cursor->next);
+      }
+    }
+  }
 
   typedef struct iotype{
     struct map* content;
@@ -216,9 +252,7 @@ extern "C" {
   static bool hasElement(elements* e,char* key){
     elements* tmp=e;
     while(tmp!=NULL){
-      mtoupper(key);
-      mtoupper(tmp->name);
-      if(strcmp(key,tmp->name)==0)
+      if(strncasecmp(key,tmp->name,strlen(key))==0)
 	return true;
       tmp=tmp->next;
     }
@@ -228,9 +262,7 @@ extern "C" {
   static elements* getElements(elements* m,char *key){
     elements* tmp=m;
     while(tmp!=NULL){
-      mtoupper(tmp->name);
-      mtoupper(key);
-      if(strcmp(tmp->name,key)==0)
+      if(strncasecmp(tmp->name,key,strlen(tmp->name))==0)
 	return tmp;
       tmp=tmp->next;
     }
@@ -238,57 +270,42 @@ extern "C" {
   }
 
 
-  static void* freeIOType(iotype** i){
+  static void freeIOType(iotype** i){
     iotype* _cursor=*i;
     if(_cursor!=NULL){
       freeMap(&_cursor->content);
       free(_cursor->content);
-      freeIOType(&_cursor->next);
-      free(_cursor->next);
+      if(_cursor->next!=NULL){
+	freeIOType(&_cursor->next);
+	free(_cursor->next);
+      }
     }
-	return NULL;
   }
 
   static void freeElements(elements** e){
     elements* tmp=*e;
     if(tmp!=NULL){
-#ifdef DEBUG
-      fprintf(stderr,"FREE 1");
-#endif
       free(tmp->name);
       freeMap(&tmp->content);
-#ifdef DEBUG
-      fprintf(stderr,"FREE 2");
-#endif
       free(tmp->content);
       freeMap(&tmp->metadata);
-#ifdef DEBUG
-      fprintf(stderr,"FREE 3");
-#endif
       free(tmp->metadata);
-#ifdef DEBUG
-      fprintf(stderr,"FREE 4");
-#endif
       free(tmp->format);
       freeIOType(&tmp->defaults);
-#ifdef DEBUG
-      fprintf(stderr,"FREE 5");
-#endif
       if(tmp->defaults!=NULL)
 	free(tmp->defaults);
       freeIOType(&tmp->supported);
-#ifdef DEBUG
-      fprintf(stderr,"FREE 6");
-#endif
       if(tmp->supported!=NULL)
 	free(tmp->supported);
-      tmp=tmp->next;
+      freeElements(&tmp->next);
     }
   }
 
-  static void* freeService(service** s){
+  static void freeService(service** s){
     service* tmp=*s;
     if(tmp!=NULL){
+      if(tmp->name!=NULL)
+	free(tmp->name);
       freeMap(&tmp->content);
       if(tmp->content!=NULL)
 	free(tmp->content);
@@ -304,60 +321,7 @@ extern "C" {
     }
   }
 
-  static void* addMapToMap(map** mo,map* mi){
-    map* tmp=mi;
-    map* _cursor=*mo;
-    while(tmp!=NULL){
-      if(_cursor==NULL){
-	*mo=(map*)malloc(MAP_SIZE);
-	*mo=createMap(tmp->name,tmp->value);
-	_cursor=*mo;
-	_cursor->next=NULL;
-      }
-      else{
-	while(_cursor->next!=NULL)
-	  _cursor=_cursor->next;
-	_cursor->next=createMap(tmp->name,tmp->value);
-      }
-      tmp=tmp->next;
-    }
-    return NULL;
-  }
-
-  static void* addMapsToMaps(maps** mo,maps* mi){
-    maps* tmp=mi;
-    maps* _cursor=*mo;
-    while(tmp!=NULL){
-      if(_cursor==NULL){
-	*mo=(maps*)malloc(MAP_SIZE);
-	*mo=mi;
-	_cursor=*mo;
-      }
-      else{
-	while(_cursor->next!=NULL)
-	  _cursor=_cursor->next;
-	_cursor->next=tmp;
-      }
-      tmp=tmp->next;
-    }
-    return NULL;
-  }
-
-  static void* addMapToIotype(iotype** io,map* mi){
-    iotype* tmp=*io;
-    while(tmp!=NULL){
-      fprintf(stderr,">> CURRENT MAP");
-      dumpMap(tmp->content);
-      tmp=tmp->next;
-    }
-    tmp=(iotype*)malloc(ELEMENTS_SIZE);
-    tmp->content=NULL;
-    tmp->next=NULL;
-    addMapToMap(&tmp->content,mi);
-    return NULL;
-  }
-
-  static void* addToMap(map* m,char* n,char* v){
+  static void addToMap(map* m,const char* n,const char* v){
     if(hasKey(m,n)==false){
       map* _cursor=m;
       while(_cursor->next!=NULL)
@@ -366,13 +330,117 @@ extern "C" {
     }
     else{
       map *tmp=getMap(m,n);
+      if(tmp->value!=NULL)
+      	free(tmp->value);
       tmp->value=strdup(v);
     }
-    return NULL;
+  }
+
+  static void addMapToMap(map** mo,map* mi){
+    map* tmp=mi;
+    map* _cursor=*mo;
+    if(tmp==NULL){
+      if(_cursor!=NULL){
+	while(_cursor!=NULL)
+	  _cursor=_cursor->next;
+	_cursor=NULL;
+      }else
+	*mo=NULL;
+    }
+    while(tmp!=NULL){
+      if(_cursor==NULL){
+	if(*mo==NULL)
+	  *mo=createMap(tmp->name,tmp->value);
+	else
+	  addToMap(*mo,tmp->name,tmp->value);
+      }
+      else{
+#ifdef DEBUG
+	fprintf(stderr,"_CURSOR\n");
+	dumpMap(_cursor);
+#endif
+	while(_cursor!=NULL)
+	  _cursor=_cursor->next;
+	_cursor=createMap(tmp->name,tmp->value);
+	_cursor->next=NULL;
+      }
+      tmp=tmp->next;
+#ifdef DEBUG
+      fprintf(stderr,"MO\n");
+      dumpMap(*mo);
+#endif
+    }
+  }
+
+  static void addMapToIoType(iotype** io,map* mi){
+    iotype* tmp=*io;
+    while(tmp!=NULL){
+#ifdef DEBUG
+      fprintf(stderr,">> CURRENT MAP");
+      dumpMap(tmp->content);
+#endif
+      tmp=tmp->next;
+    }
+#ifdef DEBUG
+    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
+    fflush(stderr);
+#endif
+    tmp=(iotype*)malloc(IOTYPE_SIZE);
+#ifdef DEBUG
+    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
+    fflush(stderr);
+#endif
+    tmp->content=NULL;
+#ifdef DEBUG
+    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
+    fflush(stderr);
+#endif
+    addMapToMap(&tmp->content,mi);
+#ifdef DEBUG
+    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
+    fflush(stderr);
+#endif
+    dumpMap(tmp->content);
+    tmp->next=NULL;
   }
 
 
-  static void* dumpElements(elements* e){
+  static maps* dupMaps(maps** mo){
+    maps* _cursor=*mo;
+    maps* res=NULL;
+    if(_cursor!=NULL){
+      res=(maps*)malloc(MAPS_SIZE);
+      res->name=strdup(_cursor->name);
+      res->content=NULL;
+      res->next=NULL;
+      map* mc=_cursor->content;
+      if(mc!=NULL){
+	addMapToMap(&res->content,mc);
+      }
+      res->next=dupMaps(&_cursor->next);
+    }
+    return res;
+  }
+
+  static void addMapsToMaps(maps** mo,maps* mi){
+    maps* tmp=mi;
+    maps* _cursor=*mo;
+    while(tmp!=NULL){
+      if(_cursor==NULL){
+	*mo=dupMaps(&mi);
+	(*mo)->next=NULL;
+      }
+      else{
+	while(_cursor->next!=NULL)
+	  _cursor=_cursor->next;
+	_cursor->next=dupMaps(&tmp);
+      }
+      tmp=tmp->next;
+    }
+  }
+
+
+  static void dumpElements(elements* e){
     elements* tmp=e;
     while(tmp!=NULL){
       fprintf(stderr,"ELEMENT [%s]\n",tmp->name);
@@ -400,16 +468,18 @@ extern "C" {
       fprintf(stderr,"------------------\n");
       tmp=tmp->next;
     }
-    return NULL;
   }
 
-
   static elements* dupElements(elements* e){
-    if(e!=NULL){
+    elements* cursor=e;
+    elements* tmp=NULL;
+    if(cursor!=NULL){
 #ifdef DEBUG
+      fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
       dumpElements(e);
+      fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
-      elements* tmp=(elements*)malloc(ELEMENTS_SIZE);
+      tmp=(elements*)malloc(ELEMENTS_SIZE);
       tmp->name=strdup(e->name);
       tmp->content=NULL;
       addMapToMap(&tmp->content,e->content);
@@ -417,47 +487,56 @@ extern "C" {
       addMapToMap(&tmp->metadata,e->metadata);
       tmp->format=strdup(e->format);
       if(e->defaults!=NULL){
-	tmp->defaults=(iotype*)malloc(MAP_SIZE);
+	tmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
 	tmp->defaults->content=NULL;
-	tmp->defaults->next=NULL;
 	addMapToMap(&tmp->defaults->content,e->defaults->content);
-	while(e->defaults->next!=NULL){
-	  tmp->defaults->next=(iotype*)malloc(MAP_SIZE);
-	  addMapToMap(&tmp->defaults->next->content,e->defaults->content);
-	}
-      }
+	tmp->defaults->next=NULL;
+#ifdef DEBUG
+	fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
+	dumpMap(tmp->defaults->content);
+#endif
+      }else
+	tmp->defaults=NULL;
       if(e->supported!=NULL){
-	tmp->supported=(iotype*)malloc(MAP_SIZE);
+	tmp->supported=(iotype*)malloc(IOTYPE_SIZE);
 	tmp->supported->content=NULL;
 	tmp->supported->next=NULL;
 	addMapToMap(&tmp->supported->content,e->supported->content);
+	iotype *etmp=*(&tmp->supported->next) ;
 	iotype *tmp2=e->supported->next;
 	while(tmp2!=NULL){
-	  tmp->supported->next=(iotype*)malloc(MAP_SIZE);
-	  addMapToMap(&tmp->supported->next->content,tmp2->content);
+	  etmp=(iotype*)malloc(IOTYPE_SIZE);
+	  etmp->content=NULL;
+	  addMapToMap(&etmp->content,tmp2->content);
+	  etmp->next=NULL;
+#ifdef DEBUG
+	  fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
+	  dumpMap(tmp->defaults->content);
+#endif
 	  tmp2=tmp2->next;
+	  etmp=etmp->next;
 	}
       }
-      tmp->next=NULL;
-      return tmp;
+      else
+	tmp->supported=NULL;
+      tmp->next=dupElements(cursor->next);
     }
-    return NULL;
+    return tmp;
   }
 
-  static void* addToElements(elements* m,elements* e){
-    elements* _cursor=m;
+  static void addToElements(elements** m,elements* e){
+    elements* _cursor=*m;
     elements* tmp=e;
     if(_cursor==NULL){
-      m=dupElements(tmp);
-      return NULL;
+      *m=dupElements(tmp);
+    }else{
+      while(_cursor->next!=NULL)
+	_cursor=_cursor->next;
+      _cursor->next=dupElements(tmp);
     }
-    while(_cursor->next!=NULL)
-      _cursor=_cursor->next;
-    _cursor->next=dupElements(tmp);
-    return NULL;
   }
 
-  static void* dumpService(service* s){
+  static void dumpService(service* s){
     fprintf(stderr,"++++++++++++++++++\nSERVICE [%s]\n++++++++++++++++++\n",s->name);
     if(s->content!=NULL){
       fprintf(stderr,"CONTENT MAP\n");
@@ -474,10 +553,9 @@ extern "C" {
       dumpElements(s->outputs);
     }
     fprintf(stderr,"++++++++++++++++++\n");
-    return NULL;
   }
 
-  static void* mapsToCharXXX(maps* m,char*** c){
+  static void mapsToCharXXX(maps* m,char*** c){
     maps* tm=m;
     int i=0;
     int j=0;
@@ -505,10 +583,9 @@ extern "C" {
       i++;
     }
     memcpy(c,tmp,10*10*1024);
-	return NULL;
   }
 
-  static void* charxxxToMaps(char*** c,maps**m){
+  static void charxxxToMaps(char*** c,maps**m){
     maps* trorf=*m;
     int i,j;
     char tmp[10][30][1024];
@@ -525,12 +602,11 @@ extern "C" {
 	if(trorf->content==NULL)
 	  trorf->content=createMap(tmp[i][j],tmp[i][j+1]);
 	else
-	addMapToMap(&trorf->content,createMap(tmp[i][j],tmp[i][j+1]));
+	  addToMap(trorf->content,tmp[i][j],tmp[i][j+1]);
       }
       trorf=trorf->next;
     }
     m=&trorf;
-    return NULL;
   }
 
 #ifdef __cplusplus

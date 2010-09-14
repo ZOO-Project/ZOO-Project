@@ -1,6 +1,6 @@
 [Centroid]
  Title = Get the centroid of a polygon. 
- Abstract = Create a buffer around a single polygon. Accepts the polygon as GML and provides GML output for the buffered feature. 
+ Abstract = Compute the geometry centroid.
  Profile = urn:ogc:wps:1.0.0:centroid
  processVersion = 2
  storeSupported = true
@@ -8,16 +8,16 @@
  serviceProvider = ogr_service.zo
  serviceType = C
  <MetaData lang="en">
-   Test = Demo
+   title = Demo
  </MetaData>
  <DataInputs>
   [InputPolygon]
-   Title = Polygon to be buffered
-   Abstract = URI to a set of GML that describes the polygon.
+   Title = Polygon to get the centroid
+   Abstract = The centroid which is not necessarily within the geometry.
    minOccurs = 1
    maxOccurs = 1
    <MetaData lang="en">
-    Test = Mon test  
+    title = Mon test  
    </MetaData>   
    <ComplexData>
     <Default>
@@ -33,27 +33,24 @@
    </ComplexData>
  </DataInputs>
  <DataOutputs>
-  [Centroid]
+  [Result]
    Title = The Centroid
    Abstract = JSON String / GML Entity of the centroid
    <MetaData lang="en">
-    Test1 = Mon test  
+    title = Mon test  
    </MetaData>   
    <ComplexData>
     <Default>
-     mimeType = text/js
+     mimeType = application/json
      encoding = UTF-8
+     extension = js
+     asReference = true	
     </Default>
     <Supported>
      mimeType = text/xml
-     encoding = base64
-     schema = http://fooa/gml/3.1.0/point.xsd
-    </Supported>
-    <Supported>
-     mimeType = text/xml
      encoding = UTF-8
      schema = http://fooa/gml/3.1.0/point.xsd
-     asReference = true	
+     extension = xml
     </Supported>
    </ComplexData>
  </DataOutputs>  

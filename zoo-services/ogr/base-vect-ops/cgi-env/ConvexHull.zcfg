@@ -7,16 +7,16 @@
  serviceProvider = ogr_service.zo
  serviceType = C
  <MetaData lang="en">
-   Test = Demo
+   title = Demo
  </MetaData>
  <DataInputs>
   [InputPolygon]
-   Title = Polygon to compute are
+   Title = Polygon to compute convexhull
    Abstract = URI to a set of GML that describes the polygon.
    minOccurs = 1
    maxOccurs = 1
    <MetaData lang="en">
-   Test1 = Mon test
+   title = Mon test
    </MetaData>
    <ComplexData>
     <Default>
@@ -36,18 +36,20 @@
    Title = The convex hull of the geometry
    Abstract = The convex hull of the geometry
    <MetaData lang="en">
-    Test1 = Mon test  
+    title = Mon test  
    </MetaData>   
    <ComplexData>
     <Default>
-     mimeType = text/xml
+     mimeType = application/json
      encoding = UTF-8
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     extension = js
+     asReference = true	
     </Default>
     <Supported>
      mimeType = text/xml
-     encoding = base64
+     encoding = UTF-8
      schema = http://fooa/gml/3.1.0/polygon.xsd
+     extension = xml
     </Supported>
    </ComplexData>
  </DataOutputs> 

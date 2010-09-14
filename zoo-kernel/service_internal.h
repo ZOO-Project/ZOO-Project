@@ -52,33 +52,38 @@ extern "C" {
 #endif
 #include <libxml/parser.h>
   static char* SERVICE_URL;
+  static xmlNsPtr usedNs[5];
+  static char* nsName[5];
+  static int nbNs=0;
+
 
   void URLDecode(char *);
   char *url_encode(char *);
+  char* getEncoding(maps*);
+
+  int zooXmlSearchForNs(char*);
+  int zooXmlAddNs(xmlNodePtr,char*,char*);
+  void zooXmlCleanupNs();
   
   void printExceptionReportResponse(maps*,map*);
-  void printProcessResponse1(maps*,map*,int,service*,char*,int,maps*,maps*);
-  void printProcessResponse(maps*,int,service*,char*,int,map*,map*);
-  void printGetCapabilitiesResponse(service**,int,char*,maps*);
+  void printProcessResponse(maps*,map*,int,service*,char*,int,maps*,maps*);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,char*,maps*);
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
-  void printGetCapabilitiesDocument(xmlDocPtr);
-  void printDescribeProcessResponse(service*,char*);
   xmlNodePtr printDescribeProcessHeader(xmlDocPtr,char*,maps*);
-  void printDescribeProcessForProcess(maps*,xmlNodePtr,service**,int);
-  void printDescribeProcessDocument(xmlDocPtr);
-  void printDocument(xmlDocPtr);
+  void printDescribeProcessForProcess(maps*,xmlNodePtr,service*,int);
+  void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,char*,map*);
-  void printIOType1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
-  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,map*,char*);
+  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
   void printOutputDefinitions1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
-  void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,map*,char*);
   
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
   char *base64(const unsigned char*,int);
 
-  void addDefaultValues(maps**,elements*,maps*,char*);
+  char* addDefaultValues(maps**,elements*,maps*,char*);
+
+  /*defined in zoo_loader.c*/ 
+  int errorException(maps *m, const char *message, const char *errorcode);
 
 #ifdef __cplusplus
 }
