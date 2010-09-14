@@ -1,4 +1,4 @@
-/* pour pouvoir acceder au numero de ligne dans bison */
+/* Line number from bison */
 %option yylineno
 
 %{
@@ -18,71 +18,24 @@ static int attentionImpossibleDeTrouverPIapres = 0 ;
 %}
 
 
-/*====================================================*/
-/*====================================================*/
-/* Les Separateurs xml */
-/*====================================================*/
 S		[ \t\r\n]+
-/*====================================================*/
 
-
-
-
-/*====================================================*/
-/* CharRef regle 66 */
-/*====================================================*/
 CharRef		"&#"[0-9]+";"|"&#x"[0-9a-fA-F]+";"
-/*====================================================*/
 
-
-
-
-/*====================================================*/
-/*   espaces? '=' espaces?    regle 25  */
-/* si on veut pouvoir utiliser S dans bison, */
-/* il faut cr�r au moins une autre start condition */
-/* comme on n'utilise "egalevolue" que pour version et encoding */
-/* il est pr��able de rajouter cette macro */
-/*====================================================*/
 egalevolue		{S}?"="{S}?
-/*====================================================*/
 
-
-
-
-/*====================================================*/
-/* Name regle 5 */
-/*====================================================*/
-/*** Name		[a-zA-Z_:][a-zA-Z0-9.\-_:]* ***/
 Name		([_:]|[\x41-\x5A]|[\x61-\x7A]|[\xC0-\xD6]|[\xD8-\xF6]|[\xF8-\xFF])(([\x41-\x5A]|[\x61-\x7A]|[\xC0-\xD6]|[\xD8-\xF6]|[\xF8-\xFF])|[0-9.\-_:])*
-/*====================================================*/
 
-
-
-
-
-/*====================================================*/
-/* chardata  regle 14 */
-/*====================================================*/
-/**chardata	[a-zA-Z0-9_\-.:" "\"\'\\]***/
 chardata	[^<]*
-/*====================================================*/
+
 attname	[a-zA-Z0-9_\-:]+
-attvalue1	[,@a-zA-Z0-9_\-.:" "\"\'/\\\(\)\+]+
 
+attvalue1	[,@a-zA-Z0-9_\-.:" "\"\'/\\\(\)\+\x41-\xff]+
 
-
-
-
-/*====================================================*/
-/* attvalue regle 10 */
-/*====================================================*/
-/* attvalue		\"([^"&]|{CharRef})*\"|\'([^'&]|{CharRef})*\' */
-/* pas tr� classe mais ca marche . */
 attvalue		\"[^"]*\"|\'[^']*\'
-/*====================================================*/
 
 virgule	[,]+
+
 whitespace                      [ ]{0,}
 whitesp                      [ ]
 newline                 [\r\n]|[\n]
@@ -90,18 +43,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 
 
-
-
-
-
-
-
-
-/*====================================================*/
-/* initial = de debut a ?> du prolog ; DANSBALISE = dans une balise ; HORSBALISE = hors d'une balise */
-/*====================================================*/
 %x DANSBALISE HORSBALISE PAIRSTART
-/*====================================================*/
 
 
 
@@ -122,7 +64,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 <PAIRSTART,INITIAL,HORSBALISE,DANSBALISE>{newline}+{whitesp}*			{if (affichetrace==1) printf ("\n\nNEWLINE 2\n") ; BEGIN(INITIAL); return NEWLINE;}
 
-<INITIAL>"<?"[Xx][Mm][Ll]  { if (attentionImpossibleDeTrouverXMLDeclapres == 1 || attentionImpossibleDeTrouverPIapres == 1) {/* il y a eut un commentaire ou une balise applicative avant la declaration xml */ 	printf("\nerror : a la ligne %d : il y a eut un commentaire ou un PI avant la declaration xml\n",yylineno); exit (10) ; } ; if (affichetrace==1) printf ("\n\nSTARTXMLDECL:%s\n",yytext) ;return STARTXMLDECL;}
+<INITIAL>"<?"[Xx][Mm][Ll]  { if (attentionImpossibleDeTrouverXMLDeclapres == 1 || attentionImpossibleDeTrouverPIapres == 1) { printf("\nerror : a la ligne %d : il y a eut un commentaire ou un PI avant la declaration xml\n",yylineno); exit (10) ; } ; if (affichetrace==1) printf ("\n\nSTARTXMLDECL:%s\n",yytext) ;return STARTXMLDECL;}
 
 <INITIAL>"version"{egalevolue}\"1.0\"|"version"{egalevolue}\'1.0\'  {if (affichetrace==1) printf ("\n\nVERSIONDECL:%s\n",yytext) ;return VERSIONDECL;}
 <INITIAL>"version"{egalevolue}\"[^"]*\"|"version"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : a la ligne %d : la version xml n est pas reconnue : %s\n",yylineno,yytext); exit (9) ; }
