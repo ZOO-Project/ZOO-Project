@@ -1859,8 +1859,9 @@ int runRequest(map* request_inputs)
   //free(request_inputs);
     
   /* The following is requested but get issue using with Python support :/ */
-  freeMaps(&request_output_real_format);
-  free(request_output_real_format);
+  /* freeMaps(&request_output_real_format);
+     free(request_output_real_format);
+  */
   
   free(REQUEST);
   free(SERVICE_URL);
