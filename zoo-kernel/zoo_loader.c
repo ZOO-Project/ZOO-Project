@@ -163,7 +163,9 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-  if(strncasecmp(cgiRequestMethod,"post",4)==0 || count(tmpMap)==1){
+  fprintf(stderr,"%i %i",tmpMap->value[0],'<');
+  if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
+     (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0)){
     /**
      * First include the MetaPath and the ServiceProvider default parameters
      * (which should be always available in GET params so in cgiQueryString)

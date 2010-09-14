@@ -109,7 +109,9 @@ void sig_handler(int sig){
   }
   sprintf(tmp,"ZOO Kernel failed to process your request receiving signal %d = %s",sig,ssig);
   errorException(NULL, tmp, "InternalError");
+#ifdef DEBUG
   fprintf(stderr,"Not this time!\n");
+#endif
   exit(0);
 }
 
