@@ -239,6 +239,55 @@ AC_SUBST([PHP_FILE])
 
 
 # ===========================================================================
+# Detect if perl is installed
+# ===========================================================================
+
+
+
+
+AC_ARG_WITH([perl], 
+	[AS_HELP_STRING([--with-perl=PATH], [specify an alternative directory for perl installation or --with-perl=no  to disable perl support])], 
+	[PERL_PATH="$withval"], [PERL_PATH=""])
+if test "$PERL_PATH" != "no";
+then 
+	if test "x$PERL_PATH" = "xyes";
+	then
+		AC_PATH_PROG([PERLCONFIG], [perl])
+	else
+		PERLCONFIG="$PERL_PATH/bin/perl"
+	fi
+
+	if test -f $PERLCONFIG;
+	then
+		AC_MSG_RESULT([Using user-specified perl file: $PERLCONFIG])
+	else
+		AC_MSG_ERROR([the user-specified perl file $PERLCONFIG does not exist])
+	fi
+
+	PERL_ENABLED="-DUSE_PERL"
+	PERL_FILE="service_internal_perl.o"
+	
+	# Extract the linker and include flags 
+	PERL_LDFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ldopts`
+	PERL_CPPFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ccopts`
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$PERL_CPPFLAGS"
+	AC_CHECK_HEADERS([EXTERN.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libperl])])
+
+	AC_SUBST([PERL_CPPFLAGS])
+	AC_SUBST([PERL_LDFLAGS])
+else
+	PERL_ENABLED=""
+	PERL_FILE=""
+fi
+
+AC_SUBST([PERL_ENABLED])
+AC_SUBST([PERL_FILE])
+
+# ===========================================================================
 # Detect if java is installed
 # ===========================================================================
 
