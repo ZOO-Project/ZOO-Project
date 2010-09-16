@@ -58,7 +58,7 @@
    Abstract = The geometry representing the union of the two geometries.
    <MetaData lang="en">
     title = Mon test  
-   </MetaData>   
+   </MetaData>
     <ComplexData>
      <Default>
        mimeType = application/json

@@ -67,8 +67,8 @@
      </Default>
      <Supported>
       mimeType = text/xml
-      schema = http://fooa/gml/3.1.0/polygon.xsd
       encoding = UTF-8
+      schema = http://fooa/gml/3.1.0/polygon.xsd
       extension = xml
      </Supported>
     </ComplexData>
