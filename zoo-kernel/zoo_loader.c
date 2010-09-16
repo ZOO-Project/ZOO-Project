@@ -101,21 +101,6 @@ int cgiMain(){
   fflush(cgiOut);
 #endif
   
-  /**
-   * Read the main configuration file
-  if(!isStarted){
-    maps* m;
-    m=(maps*)malloc(sizeof(maps*));  
-    conf_read("main.cfg",m);
-#ifdef REAL_FCGI
-#ifdef DEBUG
-    printf("ok passed");
-#endif    
-#endif    
-    isStarted=TRUE;
-  }
-   */
-
 #ifdef DEBUG
   fprintf (stderr, "Addr:%s\n", cgiRemoteAddr); 
   fprintf (stderr, "RequestMethod:%s\n", cgiRequestMethod); 
@@ -131,7 +116,7 @@ int cgiMain(){
       tmpMap=createMap("request",buffer);
     }else{
       /* Here we have to return an error message ... */
-      fprintf(stderr, "Unable to read cgi content in zoo_loader.c line %i\n", __LINE__);      
+      fprintf(stderr, "Unable to read cgi content in zoo_loader.c line %i\n", __LINE__);
       return 1; 
     }
     delete[]buffer;
@@ -163,15 +148,13 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-  fprintf(stderr,"%i %i",tmpMap->value[0],'<');
   if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
      (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0)){
     /**
      * First include the MetaPath and the ServiceProvider default parameters
      * (which should be always available in GET params so in cgiQueryString)
      */
-    //char *saveptr1, *saveptr2;
-    char *str1/*, str2, *token, *subtoken*/;
+    char *str1;
     str1=cgiQueryString;
     /**
      * Store the original XML request in xrequest map

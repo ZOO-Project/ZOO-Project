@@ -172,8 +172,6 @@ int runRequest(map* request_inputs)
     errorException(m, "Parameter <request> was not specified","MissingParameterValue");
     freeMaps(&m);
     free(m);
-    freeMap(&request_inputs);
-    free(request_inputs);
     return 1;
   }
   else{
@@ -184,8 +182,6 @@ int runRequest(map* request_inputs)
       errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
       freeMaps(&m);
       free(m);
-      freeMap(&request_inputs);
-      free(request_inputs);
       free(REQUEST);
       return 1;
     }

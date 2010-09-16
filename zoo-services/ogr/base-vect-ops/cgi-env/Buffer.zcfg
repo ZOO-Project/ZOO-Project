@@ -27,7 +27,7 @@
      asReference = true	
     </Default>
     <Supported>
-     mimeType = aplication/json
+     mimeType = application/json
      encoding = UTF-8
     </Supported>
    </ComplexData>
