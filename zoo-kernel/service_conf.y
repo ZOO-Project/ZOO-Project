@@ -132,19 +132,15 @@ miscetoile
 element
  : STag contentetoile ETag	
 {
-  /*if (strcasecmp($1,$3) != 0)
-    {
-      fprintf(stderr,"Opening and ending tag mismatch\n  ::details : tag '%s' et '%s' \n",$1,$3);
-      //lattribute.clear();
-      //return 1;
-      }*/
   free($3);
 }
+
 // pour neutre
 // on a rien a faire, meme pas renvoyer l identificateur de balise
 // vu qu'il n y a pas de comparaison d'identificateurs avec un balise jumelle .
  | EmptyElemTag          {}
  ;
+
 //======================================================
 // STag
 //======================================================
@@ -156,11 +152,6 @@ element
 STag
 : INFCAR ID Attributeetoile SUPCAR
 {
-  /* l'astuce consiste a vider le contenu du vector ici !! */
-  /* parce que cet element est reconnu AVANT la balise fermante */
-  /* et APRES l'analyse des eventuelles balises internes ou successeur */
-  //lattribute.clear();
-
   if(my_service->content==NULL){
 #ifdef DEBUG_SERVICE_CONF
     fprintf(stderr,"NO CONTENT\n");
@@ -172,7 +163,6 @@ STag
     my_service->metadata=NULL;
     wait_maincontent=false;
   }
-
   if(strncasecmp($2,"DataInputs",10)==0){
     if(wait_mainmetadata==true){
       addMapToMap(&my_service->metadata,current_content);
@@ -317,10 +307,9 @@ STag
   /* et on renvoie l'identifiant de balise afin de pouvoir le comparer */
   /* avec la balise jumelle fermante ! */
   $$ = $2 ;
-  /*if($2!=NULL)
-    free($2);*/
 }
  ;
+
 //======================================================
 // Attributeetoile
 //======================================================
@@ -332,6 +321,7 @@ Attributeetoile
  : Attributeetoile attribute  {}
  | 	                          {/* Epsilon */}
  ;
+
 //======================================================
 // attribute
 //======================================================
@@ -344,22 +334,13 @@ Attributeetoile
 attribute
  : ID Eq ATTVALUE		
 {
-	// on verifie que les attributst ne sont pas en double
-	// sinon on ajoute au vector
 #ifdef DEBUG_SERVICE_CONF
   printf ("attribute : %s\n",$1) ;
 #endif
-  /*for(int i=0;i < lattribute.size(); i++)
-    {
-      if (strcmp($1,lattribute.at(i)) == 0)
-	{
-	  fprintf (stderr,"attributs identiques : %d -- %s , %s",i,lattribute.at(i),$1) ;
-	}
-    }
-    lattribute.push_back($1);*/
   free($1);
 }
  ;
+
 //======================================================
 // EmptyElemTag
 //======================================================
@@ -372,6 +353,7 @@ attribute
 EmptyElemTag
  : INFCAR ID Attributeetoile SLASH SUPCAR	{/*lattribute.clear();/* voir Stag */}
  ;
+
 //======================================================
 // ETag
 //======================================================
@@ -458,6 +440,7 @@ ETag
   $$ = $3;
 }
  ;
+
 //======================================================
 // contentetoile
 //======================================================
@@ -485,6 +468,7 @@ contentetoile
  | contentetoile CDATA {}  
  | {/* Epsilon */}
  ;
+
 //======================================================
 // texteinterbalise
 //======================================================

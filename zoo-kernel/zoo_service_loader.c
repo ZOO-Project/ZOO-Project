@@ -1840,24 +1840,17 @@ int runRequest(map* request_inputs)
 		   request_output_real_format,request_inputs,
 		   cpid,m,eres);
 
-  //if(getpid()==cpid){
   freeService(&s1);
   free(s1);
   freeMaps(&m);
   free(m);
-  freeMaps(&tmpmaps);
-  free(tmpmaps);
   
   freeMaps(&request_input_real_format);
   free(request_input_real_format);
-  
-  //freeMap(&request_inputs);
-  //free(request_inputs);
-    
+
   /* The following is requested but get issue using with Python support :/ */
-  /* freeMaps(&request_output_real_format);
-     free(request_output_real_format);
-  */
+  /*freeMaps(&request_output_real_format);
+  free(request_output_real_format);*/
   
   free(REQUEST);
   free(SERVICE_URL);
@@ -1866,7 +1859,6 @@ int runRequest(map* request_inputs)
   fflush(stdout);
   fflush(stderr);
 #endif
-    //}
 
   return 0;
 }
