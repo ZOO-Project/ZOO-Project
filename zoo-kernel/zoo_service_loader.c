@@ -751,9 +751,12 @@ int runRequest(map* request_inputs)
 	fprintf(stderr, "= element 0 node \"%s\"\n", cur->name);
 #endif
 	xmlNodePtr cur2=cur->children;
-	while(cur2){
-	  while(cur2->type!=XML_ELEMENT_NODE)
+	while(cur2!=NULL){
+	  while(cur2!=NULL && cur2->type!=XML_ELEMENT_NODE)
 	    cur2=cur2->next;
+	  if(cur2==NULL)
+	    break;
+	  
 	  /**
 	   * Indentifier
 	   */
@@ -1010,9 +1013,13 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"DATA\n");
 #endif
 	    xmlNodePtr cur4=cur2->children;
-	    while(cur4){
-	      while(cur4->type!=XML_ELEMENT_NODE)
+	    while(cur4!=NULL){
+	      while(cur4!=NULL && cur4->type!=XML_ELEMENT_NODE)
 		cur4=cur4->next;
+
+	      if(cur4==NULL){
+		break;
+	      }
 
 	      if(xmlStrcasecmp(cur4->name, BAD_CAST "LiteralData")==0){
 		/**
@@ -1089,12 +1096,10 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"******REQUESTMAPS*****\n");
 	dumpMaps(request_input_real_format);
 #endif
-	tmpmaps=tmpmaps->next;
-	      
+	freeMaps(&tmpmaps);
+	free(tmpmaps);
+	tmpmaps=NULL;
       }
-#ifdef DEBUG
-      dumpMaps(tmpmaps); 
-#endif
     }
 #ifdef DEBUG
     fprintf(stderr,"Search for response document node\n");
