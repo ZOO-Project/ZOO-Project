@@ -77,7 +77,7 @@ service_loader.o: service_loader.c service.h
 	g++ -c ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} service_loader.c
 
 zoo_service_loader.o: zoo_service_loader.c service.h
-	g++ -g -O2 -Wall ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PHPCFLAGS} ${JS_ENABLED} ${PHP_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
+	g++ -g -O2 -Wall ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PHPCFLAGS} ${JS_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
 zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y service_internal_python.o  ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE}
 	g++ -g -O2 -Wall ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS}   ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
