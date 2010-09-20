@@ -126,4 +126,76 @@ int hash_to_maps(HV * hh,maps** m){
 	return 1;
 }
 	
+int zoo_perl_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
+	maps* m=*main_conf;
+ 	maps* inputs=*real_inputs;
+	maps* outputs=*real_outputs;
+  	int res=SERVICE_FAILED;
+  	map * tmp=getMap(s->content,"serviceProvide");
+
+	char *my_argv[] = { "", tmp->value };
+	if ((my_perl = perl_alloc()) == NULL){
+		fprintf(stderr,"no memmory");
+		exit(1);
+	}
+	perl_construct( my_perl );
+	perl_parse(my_perl, xs_init, 2, my_argv, (char **)NULL);
+	perl_run(my_perl);
+	
+
+	HV* h_main_conf = (HV *)sv_2mortal((SV *)newHV());
+	HV* h_real_inputs = (HV *)sv_2mortal((SV *)newHV());
+	HV* h_real_outputs = (HV *)sv_2mortal((SV *)newHV());
+	maps_to_hash(m,&h_main_conf);
+	maps_to_hash(inputs,&h_real_inputs);
+	maps_to_hash(outputs,&h_real_outputs);
+	dSP;
+    	ENTER;
+    	SAVETMPS;
+    	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newRV_inc((SV *)h_main_conf)));
+	XPUSHs(sv_2mortal(newRV_inc((SV *)h_real_inputs)));
+	XPUSHs(sv_2mortal(newRV_inc((SV *)h_real_outputs)));
+	PUTBACK;
+	call_pv(s->name, G_SCALAR);
+	SPAGAIN;
+	res = POPi;
+	hash_to_maps(h_real_outputs,real_outputs);
+	PUTBACK;
+    	FREETMPS;
+    	LEAVE;
+	return res;
+}
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
