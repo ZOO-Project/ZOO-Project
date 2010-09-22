@@ -57,6 +57,11 @@ extern "C" {
 #include "service_internal_js.h"
 #endif
 
+#ifdef USE_PERL
+#include "service_internal_perl.h"
+#endif
+
+
 
 #include <dirent.h>
 #include <signal.h>
@@ -172,6 +177,8 @@ int runRequest(map* request_inputs)
     errorException(m, "Parameter <request> was not specified","MissingParameterValue");
     freeMaps(&m);
     free(m);
+    freeMap(&request_inputs);
+    free(request_inputs);
     return 1;
   }
   else{
@@ -182,6 +189,8 @@ int runRequest(map* request_inputs)
       errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
       freeMaps(&m);
       free(m);
+      freeMap(&request_inputs);
+      free(request_inputs);
       free(REQUEST);
       return 1;
     }
@@ -751,12 +760,9 @@ int runRequest(map* request_inputs)
 	fprintf(stderr, "= element 0 node \"%s\"\n", cur->name);
 #endif
 	xmlNodePtr cur2=cur->children;
-	while(cur2!=NULL){
-	  while(cur2!=NULL && cur2->type!=XML_ELEMENT_NODE)
+	while(cur2){
+	  while(cur2->type!=XML_ELEMENT_NODE)
 	    cur2=cur2->next;
-	  if(cur2==NULL)
-	    break;
-	  
 	  /**
 	   * Indentifier
 	   */
@@ -1013,13 +1019,9 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"DATA\n");
 #endif
 	    xmlNodePtr cur4=cur2->children;
-	    while(cur4!=NULL){
-	      while(cur4!=NULL && cur4->type!=XML_ELEMENT_NODE)
+	    while(cur4){
+	      while(cur4->type!=XML_ELEMENT_NODE)
 		cur4=cur4->next;
-
-	      if(cur4==NULL){
-		break;
-	      }
 
 	      if(xmlStrcasecmp(cur4->name, BAD_CAST "LiteralData")==0){
 		/**
@@ -1096,10 +1098,12 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"******REQUESTMAPS*****\n");
 	dumpMaps(request_input_real_format);
 #endif
-	freeMaps(&tmpmaps);
-	free(tmpmaps);
-	tmpmaps=NULL;
+	tmpmaps=tmpmaps->next;
+	      
       }
+#ifdef DEBUG
+      dumpMaps(tmpmaps); 
+#endif
     }
 #ifdef DEBUG
     fprintf(stderr,"Search for response document node\n");
@@ -1597,7 +1601,15 @@ int runRequest(map* request_inputs)
 	  }
 	  else
 #endif
-	  
+
+
+#ifdef USE_PERL
+          if(strncasecmp(r_inputs->value,"PERL",4)==0){
+            eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+          }
+          else
+#endif
+
 #ifdef USE_JS
 	    if(strncasecmp(r_inputs->value,"JS",2)==0){
 	      eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
@@ -1810,6 +1822,12 @@ int runRequest(map* request_inputs)
 	    else
 #endif
 	      
+#ifdef USE_PERL
+          if(strncasecmp(r_inputs->value,"PERL",4)==0){
+            eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+          }
+          else
+#endif
 #ifdef USE_JS
 	      if(strncasecmp(r_inputs->value,"JS",2)==0){
 		eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
@@ -1845,17 +1863,24 @@ int runRequest(map* request_inputs)
 		   request_output_real_format,request_inputs,
 		   cpid,m,eres);
 
+  //if(getpid()==cpid){
   freeService(&s1);
   free(s1);
   freeMaps(&m);
   free(m);
+  freeMaps(&tmpmaps);
+  free(tmpmaps);
   
   freeMaps(&request_input_real_format);
   free(request_input_real_format);
-
+  
+  //freeMap(&request_inputs);
+  //free(request_inputs);
+    
   /* The following is requested but get issue using with Python support :/ */
-  /*freeMaps(&request_output_real_format);
-  free(request_output_real_format);*/
+  /* freeMaps(&request_output_real_format);
+     free(request_output_real_format);
+  */
   
   free(REQUEST);
   free(SERVICE_URL);
@@ -1864,6 +1889,7 @@ int runRequest(map* request_inputs)
   fflush(stdout);
   fflush(stderr);
 #endif
+    //}
 
   return 0;
 }
