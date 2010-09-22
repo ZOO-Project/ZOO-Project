@@ -1,0 +1,47 @@
+[HelloPL]
+ Title = Create a welcome message string.
+ Abstract = Create a welcome string.
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = Hello.pl
+ serviceType = Perl
+ <MetaData lang="en">
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [a]
+   Title = Input string
+   Abstract = The name to display in the welcome message.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData lang="en">
+    title = My test
+   </MetaData>
+   <LiteralData>
+    DataType = string
+    <Default>
+     UOM = meter
+    </Default>
+    <Supported>
+     UOM = meter
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The welcome message
+   Abstract = The welcome message created by service.
+   <MetaData lang="en">
+    title = My test
+   </MetaData>
+   <LiteralData>
+    DataType = string
+    <Default>
+     UOM = meter
+    </Default>
+    <Supported>
+     UOM = meter
+    </Supported>
+   </LiteralData>
+ </DataOutputs>
