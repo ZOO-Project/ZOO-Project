@@ -1,0 +1,44 @@
+[longProcess]
+ Title = Demo long process. 
+ Abstract = This service doesn't do anything except taking its time, it demonstrates how to use the updateStatus function from your ZOO Service. 
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = wps_status.zo
+ serviceType = C
+ <MetaData lang="en">
+   title = Demo GetStatus request
+ </MetaData>
+ <DataInputs>
+  [sid]
+   Title = Service ID
+   Abstract = A ZOO Service ID (unused).
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    dataType = integer
+    <Default>
+     uom = meters
+    </Default>
+    <Supported>
+     uom = feet
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = ExecuteResponse document
+   Abstract = The resulting ExecuteResponse document.
+   <MetaData lang="en">
+    title = Demo XSL use case
+   </MetaData>   
+   <LiteralData>
+    dataType = string
+    <Default>
+     uom = meters
+    </Default>
+    <Supported>
+     uom = feet
+    </Supported>
+   </LiteralData>
+ </DataOutputs>  

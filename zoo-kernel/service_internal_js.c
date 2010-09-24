@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include "service_internal_js.h"
+#include "service_internal.h"
 
 static char dbg[1024];
 
@@ -73,6 +73,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   }
   if (!JS_DefineFunction(cx, global, "ZOORequest", JSRequest, 4, 0))
     return 1;
+  if (!JS_DefineFunction(cx, global, "ZOOUpdateStatus", JSUpdateStatus, 2, 0))
+    return 1;
 
   /* Your application code here. This may include JSAPI calls
      to create your own custom JS objects and run scripts. */
@@ -81,10 +83,12 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   maps* mc=*main_conf;
   map* tmpm1=getMap(request,"metapath");
   map* tmpm2=getMap(s->content,"serviceProvider");
-  char filename[strlen(tmpm1->value)+strlen(tmpm2->value)+6];
   char ntmp[1024];
   getcwd(ntmp,1024);
+  char filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+2];
   sprintf(filename,"%s/%s%s",ntmp,tmpm1->value,tmpm2->value);
+  filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+1]=0;
+  fprintf(stderr,"FILENAME %s\n",filename);
   struct stat file_status;
   stat(filename, &file_status);
   char source[file_status.st_size];
@@ -202,9 +206,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   }
 
   /* Cleanup. */
-  // The JS_MaybeGC call imply segmentation fault
-  //JS_MaybeGC(cx);
   JS_DestroyScript(cx, script);
+  JS_MaybeGC(cx);
   // If we use the DestroyContext as requested to release memory then we get 
   // issue getting back the main configuration maps after coming back to the 
   // runRequest function ...
@@ -386,14 +389,18 @@ map* mapFromJSObject(JSContext *cx,jsval t){
       fprintf(stderr,"Enumerate id : %d [ %s => %s ]\n",index,JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
 #endif
       if(res!=NULL){
+#ifdef JS_DEBUG
 	fprintf(stderr,"%s - %s\n",JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
+#endif
 	addToMap(res,JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
       }
       else{
 	res=createMap(JS_GetStringBytes(jsmsg),JS_GetStringBytes(jsmsg1));
 	res->next=NULL;
       }
+#ifdef JS_DEBUG
       dumpMap(res);
+#endif
     }
   }
 #ifdef JS_DEBUG
