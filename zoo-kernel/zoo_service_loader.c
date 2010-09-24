@@ -43,7 +43,11 @@ extern "C" {
 
 #include "service.h"
 #include "service_internal.h"
+
+
+#ifdef USE_PYTHON
 #include "service_internal_python.h"
+#endif
 
 #ifdef USE_JAVA
 #include "service_internal_java.h"
@@ -1583,10 +1587,12 @@ int runRequest(map* request_inputs)
       }
     }
     else{
+#ifdef USE_PYTHON
       if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
 	eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
       }
       else
+#endif
 	
 #ifdef USE_JAVA
 	if(strncasecmp(r_inputs->value,"JAVA",4)==0){
@@ -1803,10 +1809,13 @@ int runRequest(map* request_inputs)
 	  exit(1);
 	}
       } else{
+
+#ifdef USE_PYTHON
 	if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
 	  eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	}
 	else
+#endif
 
 #ifdef USE_JAVA
 	  if(strncasecmp(r_inputs->value,"JAVA",4)==0){
