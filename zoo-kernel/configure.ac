@@ -127,51 +127,49 @@ AC_SUBST([XML2_LDFLAGS])
 # Detect if python is installed
 # ===========================================================================
 
+
+
+
 AC_ARG_WITH([python], 
-	[AS_HELP_STRING([--with-python=PATH], [specify an alternative directory for python installation])], 
-	[PYTHONCONFIG="$withval/bin/python-config"], [PYTHONCONFIG=""])
+	[AS_HELP_STRING([--with-python=PATH], [To enabled python support or specify an alternative directory for python installation,  disabled by default])], 
+	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
 
-if test "x$PYTHONCONFIG" = "x"; then
-	# PYTHON was not specified, so search within the current path
-	AC_PATH_PROG([PYTHONCONFIG], [python-config])
 
-	# If we couldn't find python-config, display a warning
-	if test "x$PYTHONCONFIG" = "x"; then
-		AC_MSG_ERROR([could not find python-config from libpython within the current path. You may need to try re-running configure with a --with-python parameter.])
-	fi
+if test -z "$PYTHON_ENABLED"
+then
+	PYTHON_FILE=""
 else
-	# PYTHON was specified; display a message to the user
-	if test "x$PYTHON" = "xyes"; then
-		AC_MSG_ERROR([you must specify a parameter to --with-python, e.g. --with-python=/path/to/python])
+	PYTHONCONFIG="$PYTHON_PATH/bin/python-config"
+	PYTHON_FILE="service_internal_python.o"
+	if test  "$PYTHON_PATH" = "yes"
+	then
+		# PHP was not specified, so search within the current path
+		AC_PATH_PROG([PYTHONCONFIG], [python-config])
 	else
-		if test -f $PYTHONCONFIG; then
-			AC_MSG_RESULT([Using user-specified python-config file: $PYTHONCONFIG])
-		else
-			AC_MSG_ERROR([the user-specified python-config file $PYTHONCONFIG does not exist])
-		fi	
+		PYTHONCONFIG="$PYTHON_PATH/bin/python-config"
 	fi
-fi
 
+	# Extract the linker and include flags 
+	PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
+	PYTHON_CPPFLAGS=`$PYTHONCONFIG --cflags`
 
-# Extract the linker and include flags 
-PYTHON_LDFLAGS=`$PYTHONCONFIG --libs`
-PYTHON_CPPFLAGS=`$PYTHONCONFIG --cflags`
-
-# Check headers file
-CPPFLAGS_SAVE="$CPPFLAGS"
-CPPFLAGS="$PYTHON_CPPFLAGS"
-AC_CHECK_HEADERS([Python.h],
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$PYTHON_CPPFLAGS"
+	AC_CHECK_HEADERS([Python.h],
 		 [], [AC_MSG_ERROR([could not find headers include related to libpython])])
 
-# Ensure we can link against libpython
-LIBS_SAVE="$LIBS"
-LIBS="$PYTHON_LDFLAGS"
-# Shouldn't we get python here rather than python2.6 :) ??
-PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
-AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	# Ensure we can link against libphp
+	LIBS_SAVE="$LIBS"
+	LIBS="$PYTHON_LDFLAGS"
+	PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
+	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	AC_SUBST([PYTHON_CPPFLAGS])
+	AC_SUBST([PYTHON_LDFLAGS])
+fi
 
-AC_SUBST([PYTHON_CPPFLAGS])
-AC_SUBST([PYTHON_LDFLAGS])
+AC_SUBST([PYTHON_ENABLED])
+AC_SUBST([PYTHON_FILE])
 
 # ===========================================================================
 # Detect if php is installed
