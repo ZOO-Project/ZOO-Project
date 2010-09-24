@@ -73,7 +73,12 @@ ZOO = {
     Class.prototype = extended;
 
     return Class;
+  },
+  UpdateStatus: function(env,value) {
+    return ZOOUpdateStatus(env,value);
   }
+};
+
 };
 
 ZOO.String = {

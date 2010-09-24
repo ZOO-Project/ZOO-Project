@@ -52,21 +52,7 @@ extern "C" {
 #define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
 #define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
 
-
-  /*  static char* mtoupper(char* str){
-    char* tmp=strdup(str);
-    if(tmp){
-      int cnt=strlen(tmp);
-      int i;
-      for(i=0;i<cnt;i++){
-	tmp[i]=toupper(str[i]);
-	tmp[i+1]=0;
-      }
-    }
-    else
-      tmp[0]=0;
-    return tmp;
-    }*/
+#define SHMSZ     27
 
   /**
    * \struct maps
@@ -436,6 +422,21 @@ extern "C" {
 	_cursor->next=dupMaps(&tmp);
       }
       tmp=tmp->next;
+    }
+  }
+
+
+  static void* setMapInMaps(maps* m,char* key,char* subkey,char *value){
+    maps* _tmpm=getMaps(m,key);
+    if(_tmpm!=NULL){
+      map* _ztmpm=getMap(_tmpm->content,subkey);
+      if(_ztmpm!=NULL){
+	free(_ztmpm->value);
+	_ztmpm->value=strdup(value);
+	dumpMap(_ztmpm);
+      }else{
+	addToMap(_tmpm->content,subkey,value);
+      }
     }
   }
 

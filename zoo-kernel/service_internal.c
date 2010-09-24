@@ -35,6 +35,124 @@ char to_hex(char code) {
   return hex[code & 15];
 }
 
+void* unhandleStatus(maps *conf){
+  int shmid,i;
+  key_t key;
+  void *shm;
+  struct shmid_ds shmids;
+  char *s,*s1;
+  map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+  if(tmpMap!=NULL){
+    key=atoi(tmpMap->value);
+    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
+#ifdef DEBUG
+      fprintf(stderr,"shmget failed to update value\n");
+#endif
+    }else{
+      if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+#ifdef DEBUG
+	fprintf(stderr,"shmat failed to update value\n");
+#endif
+      }else{
+	shmdt(shm);
+	shmctl(shmid,IPC_RMID,&shmids);
+      }
+    }
+  }
+}
+
+#ifdef USE_JS
+
+JSBool
+JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  JS_MaybeGC(cx);
+  char *sid;
+  int istatus=0;
+  char *status=NULL;
+  maps *conf;
+  int i=0;
+  if(argc>2){
+#ifdef JS_DEBUG
+    fprintf(stderr,"Number of arguments used to call the function : %i",argc);
+#endif
+    return JS_FALSE;
+  }
+  conf=mapsFromJSObject(cx,argv[0]);
+  dumpMaps(conf);
+  if(JS_ValueToInt32(cx,argv[1],&istatus)==JS_TRUE){
+    char tmpStatus[4];
+    sprintf(tmpStatus,"%i",istatus);
+    tmpStatus[3]=0;
+    status=strdup(tmpStatus);
+  }
+  if(getMapFromMaps(conf,"lenv","status")!=NULL){
+    if(status!=NULL)
+      setMapInMaps(conf,"lenv","status",status);
+    else
+      setMapInMaps(conf,"lenv","status","15");
+    updateStatus(conf);
+  }
+  freeMaps(&conf);
+  free(conf);
+  JS_MaybeGC(cx);
+  return JS_TRUE;
+}
+
+#endif
+
+void* updateStatus(maps *conf){
+  int shmid,i;
+  key_t key;
+  char *shm,*s,*s1;
+  map *tmpMap=NULL;
+  tmpMap=getMapFromMaps(conf,"lenv","sid");
+  if(tmpMap!=NULL){
+    key=atoi(tmpMap->value);
+    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
+#ifdef DEBUG
+      fprintf(stderr,"shmget failed to update value\n");
+#endif
+    }else{
+      if ((shm = (char*) shmat(shmid, NULL, 0)) == (char *) -1) {
+#ifdef DEBUG
+	fprintf(stderr,"shmat failed to update value\n");
+#endif
+      }
+      else{
+	tmpMap=getMapFromMaps(conf,"lenv","status");
+	s1=shm;
+	for(s=tmpMap->value;*s!=NULL;s++)
+	  *s1++=*s;
+	shmdt((void *)shm);
+      }
+    }
+  }
+}
+
+char* getStatus(int pid){
+  int shmid,i;
+  key_t key;
+  void *shm;
+  char *s;
+  key=pid;
+  if ((shmid = shmget(key, SHMSZ, 0666)) < 0) {
+#ifdef DEBUG
+    fprintf(stderr,"shmget failed in getStatus\n");
+#endif
+  }else{
+    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+#ifdef DEBUG
+      fprintf(stderr,"shmat failed in getStatus\n");
+#endif
+    }else{
+      return (char*)shm;
+    }
+  }
+  return "-1";
+}
+
+
 /* Returns a url-encoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_encode(char *str) {
@@ -728,7 +846,7 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	  char tmp[1024];
 	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewNsProp(nc6,ns_xlink,BAD_CAST "reference",BAD_CAST tmp);
+	  xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
 	  xmlAddChild(nc3,nc6);
 	  tmp1=tmp1->next;
 	  datatype=1;
@@ -840,22 +958,63 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
   xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
   char tmp[256];
-  char url[256];
+  char url[1024];
   memset(tmp,0,256);
   memset(url,0,256);
   maps* tmp_maps=getMaps(m,"main");
   if(tmp_maps!=NULL){
-    map* tmpm=getMap(tmp_maps->content,"serverAddress");
-    map* tmpm1=getMap(tmp_maps->content,"tmpUrl");
-    if(tmpm!=NULL && tmpm1!=NULL){
-      sprintf(url,"%s/%s/%s_%i.xml",tmpm->value,tmpm1->value,service,pid);
+    dumpMaps(getMaps(m,"lenv"));
+    map* tmpm1=getMap(tmp_maps->content,"serverAddress");
+    /**
+     * Check if the ZOO Service GetStatus is available in the local directory.
+     * If yes, then it uses a reference to an URL which the client can access
+     * to get information on the status of a running Service (using the 
+     * percentCompleted attribute). 
+     * Else fallback to the initial method using the xml file to write in ...
+     */
+    char ntmp[1024];
+#ifndef WIN32
+    getcwd(ntmp,1024);
+#else
+    _getcwd(ntmp,1024);
+#endif
+    struct stat myFileInfo;
+    int statRes;
+    char file_path[1024];
+    sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
+    statRes=stat(file_path,&myFileInfo);
+    if(statRes==0){
+      char currentSid[128];
+      map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
+      map *tmp_lenv=NULL;
+      tmp_lenv=getMapFromMaps(m,"lenv","sid");
+      if(tmp_lenv==NULL)
+	sprintf(currentSid,"%i",pid);
+      else
+	sprintf(currentSid,"%s",tmp_lenv->value);
+      if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
+	sprintf(url,"%s/?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;Identifier=GetStatus&amp;DataInputs=sid=%s&amp;RawDataOutput=Result",tmpm1->value,currentSid);
+      }else{
+	if(strlen(tmpm->value)>0)
+	  if(strcasecmp(tmpm->value,"true")!=0)
+	    sprintf(url,"%s/%s/GetStatus/%s",tmpm1->value,tmpm->value,currentSid);
+	  else
+	    sprintf(url,"%s/GetStatus/%s",tmpm1->value,currentSid);
+	else
+	  sprintf(url,"%s/?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;Identifier=GetStatus&amp;DataInputs=sid=%s&amp;RawDataOutput=Result",tmpm1->value,currentSid);
+      }
+    }else{
+      map* tmpm2=getMap(tmp_maps->content,"tmpUrl");
+      if(tmpm1!=NULL && tmpm2!=NULL){
+	sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,pid);
+      }
     }
-    if(tmpm!=NULL)
-      sprintf(tmp,"%s/",tmpm->value);
+    if(tmpm1!=NULL)
+      sprintf(tmp,"%s/",tmpm1->value);
   }
 
   xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
-  if(status!=SERVICE_SUCCEEDED){
+  if(status!=SERVICE_SUCCEEDED && status!=SERVICE_FAILED){
     xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
   }
 
@@ -875,6 +1034,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   size_t len;
   time_t now;
   char *tmp1;
+  map *tmpStatus;
   
   now = time ( NULL );
   tm = localtime ( &now );
@@ -883,26 +1043,50 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
 
   len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
 
+  xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
+
+  char sMsg[2048];
   switch(status){
   case SERVICE_SUCCEEDED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
+    sprintf(sMsg,"Service \"%s\" run successfully.",serv->name);
+    nc3=xmlNewText(BAD_CAST sMsg);
+    xmlAddChild(nc1,nc3);
     break;
   case SERVICE_STARTED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
-    xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST "NEED_SERVICE_ACCESS"); 
+    tmpStatus=getMapFromMaps(m,"lenv","status");
+    xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST tmpStatus->value);
+    sprintf(sMsg,"ZOO Service \"%s\" is currently running. Please, reload this document to get the up-to-date status of the Service.",serv->name);
+    nc3=xmlNewText(BAD_CAST sMsg);
+    xmlAddChild(nc1,nc3);
     break;
   case SERVICE_ACCEPTED:
-    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
+    sprintf(sMsg,"Service \"%s\" was accepted by the ZOO Kernel and it run as a background task. Please consult the statusLocation attribtue providen in this document to get the up-to-date document.",serv->name);
+    nc3=xmlNewText(BAD_CAST sMsg);
+    xmlAddChild(nc1,nc3);
     break;
   case SERVICE_FAILED:
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
+    map *errorMap;
+    map *te;
+    te=getMapFromMaps(m,"lenv","code");
+    if(te!=NULL)
+      errorMap=createMap("code",te->value);
+    else
+      errorMap=createMap("code","NoApplicableCode");
+    te=getMapFromMaps(m,"lenv","message");
+    if(te!=NULL)
+      addToMap(errorMap,"text",te->value);
+    else
+      addToMap(errorMap,"text","No more information available");
+    nc3=createExceptionReportNode(m,errorMap,0);
+    xmlAddChild(nc1,nc3);
     break;
   default :
     printf("error code not know : %i\n",status);
-    exit(1);
+    //exit(1);
     break;
   }
   xmlAddChild(nc,nc1);
@@ -1058,10 +1242,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=e->content;
-  //#ifdef DEBUG
+#ifdef DEBUG
   dumpMap(tmp);
   dumpElements(e);
-  //#endif
+#endif
   nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
   nc3=xmlNewText(BAD_CAST e->name);
   xmlAddChild(nc2,nc3);
@@ -1084,9 +1268,9 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
   /**
    * IO type Reference or full Data ?
    */
-  //#ifdef DEBUG
+#ifdef DEBUG
   fprintf(stderr,"FORMAT %s %s\n",e->format,e->format);
-  //#endif
+#endif
   map *tmpMap=getMap(m->content,"Reference");
   if(tmpMap==NULL){
     nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
@@ -1209,18 +1393,18 @@ void printExceptionReportResponse(maps* m,map* s){
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
   char *encoding=getEncoding(tmpMap);
-  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+  map *tmpSid=getMapFromMaps(m,"lenv","sid");
+  if(tmpSid==NULL)
+    printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
 
   ns=xmlNewNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");  
   ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
   ns_xlink=xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
   ns_xsi=xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1/owsExceptionReport.xsd");
+  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
   xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST getVersion(tmpMap));
+  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
 
   nc = xmlNewNode(ns, BAD_CAST "Exception");  
 
@@ -1250,6 +1434,51 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlFree(xmlbuff);
   xmlFreeNs(ns);
   xmlCleanupParser();
+}
+
+xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
+  
+  int buffersize;
+  xmlChar *xmlbuff;
+  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
+  xmlNodePtr n,nc,nc1,nc2;
+
+  maps* tmpMap=getMaps(m,"main");
+
+  ns=xmlNewNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
+
+  if(use_ns==1){
+    ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+    int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
+    ns_xsi=usedNs[xsiId];
+    int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+    ns_xlink=usedNs[xlinkId];
+    xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
+  }
+  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
+  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
+  
+  nc = xmlNewNode(ns, BAD_CAST "Exception");
+
+  map* tmp=getMap(s,"code");
+  if(tmp!=NULL)
+    xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST tmp->value);
+  else
+    xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST "NoApplicableCode");
+
+  tmp=getMap(s,"text");
+  nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
+  nc2=NULL;
+  if(tmp!=NULL){
+    xmlNodeSetContent(nc1, BAD_CAST tmp->value);
+  }
+  else{
+    xmlNodeSetContent(nc1, BAD_CAST "No debug message available");
+  }
+  xmlAddChild(nc,nc1);
+  xmlAddChild(n,nc);
+  return n;
 }
 
 
@@ -1295,45 +1524,61 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     dumpMaps(m);
 #endif
     printProcessResponse(m,request_inputs1,cpid,
-			  s,r_inputs->value,res,
-			  request_inputs,
-			  request_outputs);
+			 s,r_inputs->value,res,
+			 request_inputs,
+			 request_outputs);
   }
-  else{
-    /**
-     * We get the first output only !!
-     */
-    char mime[1024];
-    map* mi=getMap(request_outputs->content,"mimeType");
+  else
+    if(res!=SERVICE_FAILED){
+      /**
+       * We get the first output only !!
+       */
+      char mime[1024];
+      map* mi=getMap(request_outputs->content,"mimeType");
 #ifdef DEBUG
-    fprintf(stderr,"SERVICE OUTPUTS\n");
-    dumpMaps(request_outputs);
-    fprintf(stderr,"SERVICE OUTPUTS\n");
+      fprintf(stderr,"SERVICE OUTPUTS\n");
+      dumpMaps(request_outputs);
+      fprintf(stderr,"SERVICE OUTPUTS\n");
 #endif
-    map* en=getMap(request_outputs->content,"encoding");
-    if(mi!=NULL && en!=NULL)
-      sprintf(mime,
-	      "Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
-	      mi->value,en->value);
-    else
-      if(mi!=NULL)
+      map* en=getMap(request_outputs->content,"encoding");
+      if(mi!=NULL && en!=NULL)
 	sprintf(mime,
-		"Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
-		mi->value);
+		"Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
+		mi->value,en->value);
       else
-	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-    printf("%s",mime);
-    toto=getMap(request_outputs->content,"value");
-    if(mi!=NULL && strncmp(mi->value,"image",5)==0){
-      map* rs=getMapFromMaps(request_outputs,request_outputs->name,"size");
-      fwrite(toto->value,atoi(rs->value),1,stdout);
-    }
-    else
-      printf("%s",toto->value);
+	if(mi!=NULL)
+	  sprintf(mime,
+		  "Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
+		  mi->value);
+	else
+	  sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+      printf("%s",mime);
+      toto=getMap(request_outputs->content,"value");
+      if(mi!=NULL && strncmp(mi->value,"image",5)==0){
+	map* rs=getMapFromMaps(request_outputs,request_outputs->name,"size");
+	fwrite(toto->value,atoi(rs->value),1,stdout);
+      }
+      else
+	printf("%s",toto->value);
 #ifdef DEBUG
-    dumpMap(toto);
+      dumpMap(toto);
 #endif
-  }
+    }else{
+      char tmp[1024];
+      map * errormap;
+      map *lenv;
+      lenv=getMapFromMaps(m,"lenv","message");
+      if(lenv!=NULL)
+	sprintf(tmp,"Unable to run the Service. The message returned back by the Service was the following : %s",lenv->value);
+      else
+	sprintf(tmp,"Unable to run the Service. No more information was returned back by the Service.");
+      errormap = createMap("text",tmp);      
+      addToMap(errormap,"code", "InternalError");
+      printf("Content-Type: text/xml; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+      printExceptionReportResponse(m,errormap);
+      freeMap(&errormap);
+      free(errormap);
+    }
 }
 
 char *base64(const unsigned char *input, int length)

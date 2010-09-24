@@ -1,0 +1,44 @@
+[GetStatus]
+ Title = Produce an updated ExecuteResponse document. 
+ Abstract = Create an ExecuteResponse document from a sid (Service ID), it will use the niternal ZOO Kernel mechanisms to access the current status from a running Service and update the percentCompleted from the original backup file used by the ZOO Kernel when running a Service in background. 
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = wps_status.zo
+ serviceType = C
+ <MetaData lang="en">
+   title = Demo GetStatus request
+ </MetaData>
+ <DataInputs>
+  [sid]
+   Title = Service ID
+   Abstract = The ZOO Service ID of the ZOO Service we want to get the current status.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = integer
+    <Default>
+     uom = meters
+    </Default>
+    <Supported>
+     uom = feet
+    </Supported>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = ExecuteResponse document
+   Abstract = The resulting ExecuteResponse document.
+   <MetaData lang="en">
+    title = Demo XSL use case
+   </MetaData>   
+   <LiteralData>
+    DataType = string
+    <Default>
+     uom = meters
+    </Default>
+    <Supported>
+     uom = feet
+    </Supported>
+   </LiteralData>
+ </DataOutputs>  

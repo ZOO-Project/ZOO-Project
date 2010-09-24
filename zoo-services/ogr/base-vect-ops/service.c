@@ -73,7 +73,6 @@ extern "C" {
     xmlDocDumpFormatMemory(ndoc, &xmlbuff, &buffersize, 1);
     char *tmp=(char*)calloc((xmlStrlen(xmlStrstr(xmlbuff,BAD_CAST "?>"))-1),sizeof(char));
     sprintf(tmp,"%s",xmlStrstr(xmlbuff,BAD_CAST "?>")+2);
-    //strdup(strstr((char*)xmlbuff,"?>")+2);
     xmlXPathFreeObject(xpathObj);
     xmlXPathFreeContext(xpathCtx);
     xmlFree(xmlbuff);
@@ -86,13 +85,11 @@ extern "C" {
     OGRGeometryH res=OGR_G_CreateFromGML(tmp);
     free(tmp);
     if(res==NULL){
-      map* tmp=createMap("text","Unable to call OGR_G_CreatFromGML");
-      addToMap(tmp,"code","NoApplicableCode");
-      printExceptionReportResponse(conf,tmp);
-      exit(0);
+      setMapInMaps(conf,"lenv","message","Unable to call OGR_G_CreatFromGML");
+      return NULL;
     }
     else
-      return res;//OGR_G_CreateFromGML(tmp);
+      return res;
   }
 
   int Simplify(maps*& conf,maps*& inputs,maps*& outputs){
@@ -107,38 +104,54 @@ extern "C" {
       tolerance=atof(tmp0->value);
     fprintf(stderr,"Tolerance for Simplify %f",tolerance);
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
-    if(!tmp)
+    if(!tmp){
+      setMapInMaps(conf,"lenv","message","Unagle to parse the input geometry from InputPolygon");
       return SERVICE_FAILED;
-    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeTime");
+    }
+    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
     if(tmp1!=NULL){
       if(strncmp(tmp1->value,"text/js",7)==0 ||
-	 strncmp(tmp1->value,"application/json",7)==0)
+	 strncmp(tmp1->value,"application/json",16)==0)
         geometry=OGR_G_CreateGeometryFromJson(tmp->value);
       else
         geometry=createGeometryFromGML(conf,tmp->value);
     }
-    else
-      geometry=createGeometryFromGML(conf,tmp->value);
+    else{
+      setMapInMaps(conf,"lenv","message","Unable to find any geometry for InputPolygon");
+      return SERVICE_FAILED;
+    }
+    if(geometry==NULL){
+      setMapInMaps(conf,"lenv","message","Unagle to parse the input geometry from InputPolygon");
+      return SERVICE_FAILED;
+    }
+    fprintf(stderr,"Create GEOSGeometry object");
     GEOSGeometry* ggeometry=((OGRGeometry *) geometry)->exportToGEOS();
     GEOSGeometry* gres=GEOSTopologyPreserveSimplify(ggeometry,tolerance);
     res=OGRGeometryFactory::createFromGEOS(gres);
+    tmp1=getMapFromMaps(outputs,"Result","mimeType");
     if(tmp1!=NULL){
       if(strncmp(tmp1->value,"text/js",7)==0 ||
 	 strncmp(tmp1->value,"application/json",16)==0){
-        outputs->content=createMap("value",OGR_G_ExportToJson(tmp->value));
-	addMapToMap(&outputs->content,createMap("mimeType","text/plain"));
-	addMapToMap(&outputs->content,createMap("encoding","UTF-8"));
+	char *tmpS=OGR_G_ExportToJson(res);
+	setMapInMaps(outputs,"Result","value",tmpS);
+	setMapInMaps(outputs,"Result","mimeType","text/plain");
+	setMapInMaps(outputs,"Result","encoding","UTF-8");
+	free(tmpS);
       }
       else{
-        outputs->content=createMap("value",OGR_G_ExportToGML(res));
-	addMapToMap(&outputs->content,createMap("mimeType","text/xml"));
-	addMapToMap(&outputs->content,createMap("encoding","UTF-8"));
-	addMapToMap(&outputs->content,createMap("schema","http://fooa/gml/3.1.0/polygon.xsd"));
+	char *tmpS=OGR_G_ExportToGML(res);
+	setMapInMaps(outputs,"Result","value",tmpS);
+	setMapInMaps(outputs,"Result","mimeType","text/xml");
+	setMapInMaps(outputs,"Result","encoding","UTF-8");
+	setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
+	free(tmpS);
       }
     }else{
-      outputs->content=createMap("value",OGR_G_ExportToJson(res));
-      addMapToMap(&outputs->content,createMap("mimeType","text/plain"));
-      addMapToMap(&outputs->content,createMap("encoding","UTF-8"));
+      char *tmpS=OGR_G_ExportToJson(tmp->value);
+      setMapInMaps(outputs,"Result","value",tmpS);
+      setMapInMaps(outputs,"Result","mimeType","text/plain");
+      setMapInMaps(outputs,"Result","encoding","UTF-8");
+      free(tmpS);
     }
     outputs->next=NULL;
     //GEOSFree(ggeometry);
@@ -177,6 +190,8 @@ extern "C" {
     }
     else
       geometry=createGeometryFromGML(conf,tmp->value);
+    if(geometry==NULL)
+      return SERVICE_FAILED;
     res=(*myFunc)(geometry);
     fprintf(stderr,"Service internal print \n");
     dumpMaps(outputs);
@@ -188,23 +203,26 @@ extern "C" {
     if(tmp_2!=NULL){
       if(strncmp(tmp_2->value,"text/js",7)==0 ||
 	 strncmp(tmp_2->value,"application/json",16)==0){
-	char *tres=OGR_G_ExportToJson(res);
-        addToMap(outputs->content,"value",tres);
-	free(tres);
-	addToMap(outputs->content,"mimeType","text/plain");
-	addToMap(outputs->content,"encoding","UTF-8");
+	char *tmpS=OGR_G_ExportToJson(res);
+	setMapInMaps(outputs,"Result","value",tmpS);
+	setMapInMaps(outputs,"Result","mimeType","text/plain");
+	setMapInMaps(outputs,"Result","encoding","UTF-8");
+	free(tmpS);
       }
       else{
-	char *tres=OGR_G_ExportToGML(res);
-        addToMap(outputs->content,"value",tres);
-	free(tres);
+	char *tmpS=OGR_G_ExportToGML(res);
+	setMapInMaps(outputs,"Result","value",tmpS);
+	setMapInMaps(outputs,"Result","mimeType","text/plain");
+	setMapInMaps(outputs,"Result","encoding","UTF-8");
+	free(tmpS);
+
       }
     }else{
-      char *tres=OGR_G_ExportToJson(res);
-      addToMap(outputs->content,"value",tres);
-      free(tres);
-      addToMap(outputs->content,"mimeType","text/plain");
-      addToMap(outputs->content,"encoding","UTF-8");
+      char *tmpS=OGR_G_ExportToJson(res);
+      setMapInMaps(outputs,"Result","value",tmpS);
+      setMapInMaps(outputs,"Result","mimeType","text/plain");
+      setMapInMaps(outputs,"Result","encoding","UTF-8");
+      free(tmpS);
     }
     outputs->next=NULL;
 #ifdef DEBUG
@@ -234,121 +252,38 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
      geometry=OGR_G_CreateGeometryFromJson(tmp->value);
    else
      geometry=createGeometryFromGML(conf,tmp->value);
-   int bufferDistance=1;
+   if(geometry==NULL){
+     setMapInMaps(conf,"lenv","message","Unable to parse input geometry");
+     return SERVICE_FAILED;
+   }
+   double bufferDistance;
    tmp=getMapFromMaps(inputs,"BufferDistance","value");
-   if(tmp!=NULL)
-		bufferDistance=atoi(tmp->value);
+   if(tmp==NULL){
+     bufferDistance=atof("10.0");
+   }
+   else
+     bufferDistance=atof(tmp->value);
    res=OGR_G_Buffer(geometry,bufferDistance,30);
    tmp1=getMapFromMaps(outputs,"Result","mimeType");
    if(strncmp(tmp1->value,"application/json",16)==0){
-		addToMap(outputs->content,"value",OGR_G_ExportToJson(res));
-		addToMap(outputs->content,"mimeType","text/plain");
+     char *tmpS=OGR_G_ExportToJson(res);
+     setMapInMaps(outputs,"Result","value",tmpS);
+     setMapInMaps(outputs,"Result","mimeType","text/plain");
+     setMapInMaps(outputs,"Result","encoding","UTF-8");
+     free(tmpS);
    }
    else{
-		addToMap(outputs->content,"value",OGR_G_ExportToGML(res));
+     char *tmpS=OGR_G_ExportToGML(res);
+     setMapInMaps(outputs,"Result","value",tmpS);
+     setMapInMaps(outputs,"Result","mimeType","text/xml");
+     setMapInMaps(outputs,"Result","encoding","UTF-8");
+     setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
    }
    outputs->next=NULL;
    OGR_G_DestroyGeometry(geometry);
    OGR_G_DestroyGeometry(res);
    return SERVICE_SUCCEEDED;
 }
-
-/*  int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
-#ifdef DEBUG
-    fprintf(stderr,"\nService internal print\n");
-#endif
-    maps* cursor=inputs;
-    OGRGeometryH geometry,res;
-    int bufferDistance;    
-    if(cursor!=NULL){
-#ifdef DEBUG
-      fprintf(stderr,"\nService internal print\n");
-      dumpMaps(cursor);
-      fprintf(stderr,"\nService internal print\n");
-      dumpMaps(inputs);
-      fprintf(stderr,"\nService internal print\n");
-#endif
-      map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
-      map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
-      if(tmp1!=NULL){
-        if(strncmp(tmp1->value,"application/json",16)==0 ||
-	   strncmp(tmp1->value,"text/js",7)==0)
-      	  geometry=OGR_G_CreateGeometryFromJson(tmp->value);
-	else
-	  geometry=createGeometryFromGML(conf,tmp->value);
-      }
-      else
-      	geometry=createGeometryFromGML(conf,tmp->value);
-    }
-    if(cursor!=NULL){
-      map* tmp=getMapFromMaps(cursor,"BufferDistance","value");
-      if(tmp==NULL){
-	bufferDistance=10;
-      }
-      else
-	bufferDistance=atoi(tmp->value);
-#ifdef DEBUG
-      fprintf(stderr,"\nService internal print (BufferDistance value: %i)\n",bufferDistance);
-#endif
-    }
-#ifdef DEBUG
-    dumpMaps(outputs);
-#endif
-    map* tmp=getMapFromMaps(outputs,"Result","mimeType");
-    res=OGR_G_Buffer(geometry,bufferDistance,30);
-#ifdef DEBUG
-    dumpMap(tmp);
-#endif
-    if(tmp!=NULL){
-#ifdef DEBUG
-      dumpMap(tmp);
-#endif
-      if(strncmp(tmp->value,"application/json",16)==0){
-	addToMap(outputs->content,"value",OGR_G_ExportToJson(res));
-	addToMap(outputs->content,"mimeType","text/plain");
-	addToMap(outputs->content,"encoding","UTF-8");
-      }
-      else if(strcmp(tmp->value,"text/xml")==0){
-	xmlInitParser();
-	xmlDocPtr doc = xmlParseMemory(tmp->value,strlen(tmp->value));
-	xmlChar *xmlbuff;
-	int buffersize;
-	char *buff=OGR_G_ExportToGML(res);
-	addToMap(outputs->content,"value",buff);
-	map* tmp1=getMapFromMaps(outputs,"Result","encoding");
-	if(tmp1!=NULL)
-	  addToMap(outputs->content,"encoding",tmp1->value);
-	else
-	  addToMap(outputs->content,"encoding","UTF-8");
-	xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-	xmlFree(xmlbuff);
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-      }
-      else{
-	addToMap(outputs->content,"value",OGR_G_ExportToJson(res));
-	addToMap(outputs->content,"mimeType","text/plain");
-	addToMap(outputs->content,"encoding","UTF-8");
-	outputs->next=NULL;
-      }
-      outputs->next=NULL;
-    }
-    else{
-      addToMap(outputs->content,"value",OGR_G_ExportToJson(res));
-      addToMap(outputs->content,"mimeType","text/plain");
-      addToMap(outputs->content,"encoding","UTF-8");
-      outputs->next=NULL;
-    }
-    outputs->next=NULL;
-#ifdef DEBUG
-    dumpMaps(outputs);
-    fprintf(stderr,"\nService internal print\n===\n");
-#endif
-    OGR_G_DestroyGeometry(geometry);
-    OGR_G_DestroyGeometry(res);
-    return SERVICE_SUCCEEDED;
-  }
-*/
 
 #ifdef WIN32
   __declspec(dllexport)
@@ -386,8 +321,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
   int applyTwo(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometryH (*myFunc)(OGRGeometryH,OGRGeometryH)){
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print1\n");
-#endif
     fflush(stderr);
+#endif
+    fprintf(stderr,"\nService internal print1\n");
+    dumpMaps(inputs);
+    fprintf(stderr,"\nService internal print1\n");
 
     maps* cursor=inputs;
     OGRGeometryH geometry1,geometry2;
@@ -404,28 +342,49 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       else
       	geometry1=createGeometryFromGML(conf,tmp->value);
     }
+    if(geometry1==NULL){
+      setMapInMaps(conf,"lenv","message","Unable to parse input geometry for InputEntity1.");
+      fprintf(stderr,"SERVICE FAILED !\n");
+      return SERVICE_FAILED;
+    }
+    fprintf(stderr,"\nService internal print1 InputEntity1\n");
     {
       map* tmp=getMapFromMaps(inputs,"InputEntity2","value");
       map* tmp1=getMapFromMaps(inputs,"InputEntity2","mimeType");
-#ifdef DEBUG
+      //#ifdef DEBUG
+      fprintf(stderr,"MY MAP \n[%s] - %i\n",tmp1->value,strncmp(tmp1->value,"application/json",16));
+      //dumpMap(tmp);
       fprintf(stderr,"MY MAP\n");
-      dumpMap(tmp1);
-      fprintf(stderr,"MY MAP\n");
-#endif
+      ///#endif
+      fprintf(stderr,"\nService internal print1 InputEntity2\n");
       if(tmp1!=NULL){
-        if(strncmp(tmp1->value,"application/json",16)==0)
+        if(strncmp(tmp1->value,"application/json",16)==0){
+	  fprintf(stderr,"\nService internal print1 InputEntity2 as JSON\n");
       	  geometry2=OGR_G_CreateGeometryFromJson(tmp->value);
-	else
+	}
+	else{
+	  fprintf(stderr,"\nService internal print1 InputEntity2 as GML\n");
 	  geometry2=createGeometryFromGML(conf,tmp->value);
+	}
       }
       else
       	geometry2=createGeometryFromGML(conf,tmp->value);
+      fprintf(stderr,"\nService internal print1 InputEntity2 PreFinal\n");
     }
+    fprintf(stderr,"\nService internal print1 InputEntity2 Final\n");
+    if(geometry2==NULL){
+      setMapInMaps(conf,"lenv","message","Unable to parse input geometry for InputEntity2.");
+      fprintf(stderr,"SERVICE FAILED !\n");
+      return SERVICE_FAILED;
+    }
+    fprintf(stderr,"\nService internal print1\n");
     res=(*myFunc)(geometry1,geometry2);
-    addToMap(outputs->content,"value",OGR_G_ExportToJson(res));
-    addToMap(outputs->content,"mimeType","text/plain");
-    addToMap(outputs->content,"encoding","UTF-8");
-    outputs->next=NULL;
+    fprintf(stderr,"\nService internal print1\n");
+    char *tmpS=OGR_G_ExportToJson(res);
+    setMapInMaps(outputs,"Result","value",tmpS);
+    setMapInMaps(outputs,"Result","mimeType","text/plain");
+    setMapInMaps(outputs,"Result","encoding","UTF-8");
+    free(tmpS);
     OGR_G_DestroyGeometry(geometry1);
     OGR_G_DestroyGeometry(geometry2);
     OGR_G_DestroyGeometry(res);
@@ -468,7 +427,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     fprintf(stderr,"\nService internal print1\n");
 #endif
     fflush(stderr);
-
     maps* cursor=inputs;
     OGRGeometryH geometry1,geometry2;
     double res;
@@ -490,6 +448,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       else
       	geometry1=createGeometryFromGML(conf,tmp->value);
     }
+    if(geometry1==NULL){
+      setMapInMaps(conf,"lenv","message","Unable to parse input geometry for InputEntity1.");
+      fprintf(stderr,"SERVICE FAILED !\n");
+      return SERVICE_FAILED;
+    }
     {
       map* tmp=getMapFromMaps(inputs,"InputEntity2","value");
       map* tmp1=getMapFromMaps(inputs,"InputEntity2","mimeType");
@@ -508,14 +471,16 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       else
       	geometry2=createGeometryFromGML(conf,tmp->value);
     }
-    res=OGR_G_Distance(geometry1,geometry2);
-    outputs=(maps*)malloc(sizeof(maps*));
-    outputs->name="Distance";
+    if(geometry2==NULL){
+      setMapInMaps(conf,"lenv","message","Unable to parse input geometry for InputEntity2.");
+      fprintf(stderr,"SERVICE FAILED !\n");
+      return SERVICE_FAILED;
+    }
+    res=OGR_G_Distance(geometry1,geometry2);    
     char tmpres[100];
     sprintf(tmpres,"%d",res);
-    outputs->content=createMap("value",tmpres);
-    addMapToMap(&outputs->content,createMap("datatype","float"));
-    outputs->next=NULL;
+    setMapInMaps(outputs,"Distance","value",tmpres);
+    setMapInMaps(outputs,"Distance","dataType","float");
 #ifdef DEBUG
     dumpMaps(outputs);
     fprintf(stderr,"\nService internal print\n===\n");
@@ -530,25 +495,30 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     fprintf(stderr,"GETAREA \n");
     double res;
     /**
-     * Extract Geometry from the InputEntity1 value
+     * Extract Geometry from the InputPolygon value
      */
-    OGRGeometryH geometry1;
-    map* tmp=getMapFromMaps(inputs,"InputEntity1","value");
+    OGRGeometryH geometry;
+    map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(tmp==NULL){
+      setMapInMaps(conf,"lenv","message","Unable to parse input geometry from InputPolygon");
+      return SERVICE_FAILED;
+    }
     fprintf(stderr,"geometry creation %s \n",tmp->value);
-    geometry1=createGeometryFromGML(conf,tmp->value);
+    geometry=createGeometryFromGML(conf,tmp->value);
+    if(geometry==NULL){
+      setMapInMaps(conf,"lenv","message","Unable to parse input geometry from InputPolygon");
+      return SERVICE_FAILED;
+    }
     fprintf(stderr,"geometry created %s \n",tmp->value);
-    res=OGR_G_GetArea(geometry1);
+    res=OGR_G_GetArea(geometry);
     fprintf(stderr,"area %d \n",res);
     /**
-     * Creating the outputs
+     * Filling the outputs
      */
-    outputs=(maps*)malloc(sizeof(maps*));
-    outputs->name="Area";
     char tmp1[100];
     sprintf(tmp1,"%d",res);
-    outputs->content=createMap("value",tmp1);
-    addMapToMap(&outputs->content,createMap("datatype","float"));
-    outputs->next=NULL;
+    setMapInMaps(outputs,"Area","value",tmp1);
+    setMapInMaps(outputs,"Area","dataType","float");
 #ifdef DEBUG
     dumpMaps(outputs);
 #endif

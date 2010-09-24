@@ -30,7 +30,11 @@
 #define DEFAULT_SERVICE_URL "http://dev.geolabs.fr/zoo-wps/"
 #define TIME_SIZE 40
 
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 #include <ctype.h>
@@ -47,6 +51,11 @@
 extern   int getServiceFromFile(char*,service**);
 extern   int conf_read(char*,maps*);
 
+#ifdef USE_JS
+#define XP_UNIX 0
+#include "service_internal_js.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,7 +65,15 @@ extern "C" {
   static char* nsName[5];
   static int nbNs=0;
 
+  void* unhandleStatus(maps*);
+  void* updateStatus(maps*);
+  char* getStatus(int);
 
+#ifdef USE_JS
+  char* JSValToChar(JSContext*,jsval*);
+  JSBool JSUpdateStatus(JSContext*,JSObject*,uintN,jsval *,jsval *);
+#endif
+  
   void URLDecode(char *);
   char *url_encode(char *);
   char* getEncoding(maps*);
@@ -66,6 +83,7 @@ extern "C" {
   void zooXmlCleanupNs();
   
   void printExceptionReportResponse(maps*,map*);
+  xmlNodePtr createExceptionReportNode(maps*,map*,int);
   void printProcessResponse(maps*,map*,int,service*,char*,int,maps*,maps*);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,char*,maps*);
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
