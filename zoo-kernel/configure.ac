@@ -181,37 +181,24 @@ AC_SUBST([PYTHON_LDFLAGS])
 
 
 AC_ARG_WITH([php], 
-	[AS_HELP_STRING([--with-php=PATH], [specify an alternative directory for php installation or --with-php=no  to disable php support])], 
-	[PHP_PATH="$withval"], [PHP_PATH=""])
-if test "$PHP_PATH" != "no";
-then 
-	PHPCONFIG="$PHP_PATH/bin/php-config"
-	PHP_ENABLED="-DUSE_PHP"
-	PHP_FILE="service_internal_php.o"
-	if test "x$PHPCONFIG" = "x"; 
-	then
-	# PHP was not specified, so search within the current path
-	AC_PATH_PROG([PHPCONFIG], [php-config])
+	[AS_HELP_STRING([--with-php=PATH], [To enabled php support or specify an alternative directory for php installation,  disabled by default])], 
+	[PHP_PATH="$withval"; PHP_ENABLED="-DUSE_PHP"], [PHP_ENABLED=""])
 
-	# If we couldn't find php-config, display a warning
-	if test "x$PHPCONFIG" = "x"; 
+
+if test -z "$PHP_ENABLED"
+then
+	PHP_FILE=""
+else
+	PHPCONFIG="$PHP_PATH/bin/php-config"
+	PHP_FILE="service_internal_php.o"
+	if test  "$PHP_PATH" = "yes"
 	then
-		AC_MSG_ERROR([could not find php-config from libphp within the current path. You may need to try re-running configure with a --with-php parameter.])
-	fi
+		# PHP was not specified, so search within the current path
+		AC_PATH_PROG([PHPCONFIG], [php-config])
 	else
-		# PHP was specified; display a message to the user
-		if test "x$PHP" = "xyes"; 
-		then
-			AC_MSG_ERROR([you must specify a parameter to --with-php, e.g. --with-php=/path/to/php])
-		else
-			if test -f $PHPCONFIG; 
-			then
-				AC_MSG_RESULT([Using user-specified php-config file: $PHPCONFIG])
-			else
-				AC_MSG_ERROR([the user-specified php-config file $PHPCONFIG does not exist])
-			fi	
-		fi
+		PHPCONFIG="$PHP_PATH/bin/php-config"
 	fi
+
 	# Extract the linker and include flags 
 	PHP_LDFLAGS="-L/`$PHPCONFIG --prefix`/lib -lphp5"
 	PHP_CPPFLAGS=`$PHPCONFIG --includes`
@@ -229,9 +216,6 @@ then
 	AC_CHECK_LIB([php5], [call_user_function], [], [AC_MSG_ERROR([could not find libphp])], [])
 	AC_SUBST([PHP_CPPFLAGS])
 	AC_SUBST([PHP_LDFLAGS])
-else
-	PHP_ENABLED=""
-	PHP_FILE=""
 fi
 
 AC_SUBST([PHP_ENABLED])
@@ -243,30 +227,25 @@ AC_SUBST([PHP_FILE])
 # ===========================================================================
 
 
-
-
 AC_ARG_WITH([perl], 
-	[AS_HELP_STRING([--with-perl=PATH], [specify an alternative directory for perl installation or --with-perl=no  to disable perl support])], 
-	[PERL_PATH="$withval"], [PERL_PATH=""])
-if test "$PERL_PATH" != "no";
-then 
-	if test "x$PERL_PATH" = "xyes";
+	[AS_HELP_STRING([--with-perl=PATH], [To enabled perl support or specify an alternative directory for perl installation,  disabled by default])], 
+	[PERL_PATH="$withval"; PERL_ENABLED="-DUSE_PERL"], [PERL_ENABLED=""])
+
+
+if test -z "$PERL_ENABLED"
+then
+	PERL_FILE=""
+else
+	PERLCONFIG="$PERL_PATH/bin/perl"
+	PHP_FILE="service_internal_perl.o"
+	if test  "$PERL_PATH" = "yes"
 	then
+		# PHP was not specified, so search within the current path
 		AC_PATH_PROG([PERLCONFIG], [perl])
 	else
 		PERLCONFIG="$PERL_PATH/bin/perl"
 	fi
 
-	if test -f $PERLCONFIG;
-	then
-		AC_MSG_RESULT([Using user-specified perl file: $PERLCONFIG])
-	else
-		AC_MSG_ERROR([the user-specified perl file $PERLCONFIG does not exist])
-	fi
-
-	PERL_ENABLED="-DUSE_PERL"
-	PERL_FILE="service_internal_perl.o"
-	
 	# Extract the linker and include flags 
 	PERL_LDFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ldopts`
 	PERL_CPPFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ccopts`
@@ -279,9 +258,6 @@ then
 
 	AC_SUBST([PERL_CPPFLAGS])
 	AC_SUBST([PERL_LDFLAGS])
-else
-	PERL_ENABLED=""
-	PERL_FILE=""
 fi
 
 AC_SUBST([PERL_ENABLED])
