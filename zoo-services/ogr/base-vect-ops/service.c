@@ -245,8 +245,14 @@ extern "C" {
 int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
    OGRGeometryH geometry,res;
    map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
-   if(tmp==NULL)
+   if(tmp==NULL){
+     setMapInMaps(conf,"lenv","message","Unable to fetch input geometry");
      return SERVICE_FAILED;
+   }else
+     if(strlen(tmp->value)<=0){
+       setMapInMaps(conf,"lenv","message","Unable to fetch input geometry");
+       return SERVICE_FAILED;
+     }
    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
    if(strncmp(tmp1->value,"application/json",16)==0)
      geometry=OGR_G_CreateGeometryFromJson(tmp->value);

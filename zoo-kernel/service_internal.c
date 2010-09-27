@@ -79,7 +79,6 @@ JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_FALSE;
   }
   conf=mapsFromJSObject(cx,argv[0]);
-  dumpMaps(conf);
   if(JS_ValueToInt32(cx,argv[1],&istatus)==JS_TRUE){
     char tmpStatus[4];
     sprintf(tmpStatus,"%i",istatus);
@@ -349,7 +348,6 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   }
   else{
     fprintf(stderr,"TMP4 NOT FOUND !!");
-    //dumpMaps(tmp4);
     return NULL;
   }
   xmlAddChild(n,nc);
@@ -438,7 +436,6 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   }
   else{
     fprintf(stderr,"TMP4 NOT FOUND !!");
-    //dumpMaps(tmp4);
   }
   xmlAddChild(nc4,nc5);
   xmlAddChild(nc4,nc6);
@@ -963,7 +960,6 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   memset(url,0,256);
   maps* tmp_maps=getMaps(m,"main");
   if(tmp_maps!=NULL){
-    dumpMaps(getMaps(m,"lenv"));
     map* tmpm1=getMap(tmp_maps->content,"serverAddress");
     /**
      * Check if the ZOO Service GetStatus is available in the local directory.
@@ -1284,6 +1280,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
     tmp=m->content;
     while(tmp!=NULL){
       if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"status",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"storeExecuteResponse",strlen(tmp->name))!=0 &&
 	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0)
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       tmp=tmp->next;
@@ -1305,7 +1305,8 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
       xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
     }
     else if(tmp!=NULL){
-      if(strcmp(tmp->value,"text/js")==0)
+      if(strncmp(tmp->value,"text/js",4)==0 ||
+	 strncmp(tmp->value,"application/js",14)==0)
 	xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
       else
 	xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
@@ -1393,8 +1394,15 @@ void printExceptionReportResponse(maps* m,map* s){
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
   char *encoding=getEncoding(tmpMap);
-  map *tmpSid=getMapFromMaps(m,"lenv","sid");
-  if(tmpSid==NULL)
+  if(m!=NULL){
+    map *tmpSid=getMapFromMaps(m,"lenv","sid");
+    if(tmpSid!=NULL){
+      if( getpid()==atoi(tmpSid->value) )
+	printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+    }
+    else
+      printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+  }else
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
 
   ns=xmlNewNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
@@ -1533,6 +1541,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       /**
        * We get the first output only !!
        */
+      toto=getMap(request_outputs->content,"value");
+      if(toto==NULL){
+	map * errormap = createMap("text","Unable to fetch any result");
+	addToMap(errormap,"code", "InternalError");
+	fprintf(stderr,"DISPLAY ERROR MESSAGE !!!\n");
+	printExceptionReportResponse(m,errormap);
+	freeMap(&errormap);
+	free(errormap);
+      }
       char mime[1024];
       map* mi=getMap(request_outputs->content,"mimeType");
 #ifdef DEBUG
@@ -1553,7 +1570,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	else
 	  sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
       printf("%s",mime);
-      toto=getMap(request_outputs->content,"value");
       if(mi!=NULL && strncmp(mi->value,"image",5)==0){
 	map* rs=getMapFromMaps(request_outputs,request_outputs->name,"size");
 	fwrite(toto->value,atoi(rs->value),1,stdout);
@@ -1574,7 +1590,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	sprintf(tmp,"Unable to run the Service. No more information was returned back by the Service.");
       errormap = createMap("text",tmp);      
       addToMap(errormap,"code", "InternalError");
-      printf("Content-Type: text/xml; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+      fprintf(stderr,"DISPLAY ERROR MSG !!!!\n");
       printExceptionReportResponse(m,errormap);
       freeMap(&errormap);
       free(errormap);
