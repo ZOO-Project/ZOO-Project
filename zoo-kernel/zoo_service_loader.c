@@ -43,7 +43,10 @@ extern "C" {
 
 #include "service.h"
 #include "service_internal.h"
+
+#ifdef USE_PYTHON
 #include "service_internal_python.h"
+#endif
 
 #ifdef USE_JAVA
 #include "service_internal_java.h"
@@ -1606,11 +1609,13 @@ int runRequest(map* request_inputs)
 	exit(1);
       }
     }
-    else{
+    else
+#ifdef USE_PYTHON
       if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
 	eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
       }
       else
+#endif
 	
 #ifdef USE_JAVA
 	if(strncasecmp(r_inputs->value,"JAVA",4)==0){
@@ -1625,8 +1630,8 @@ int runRequest(map* request_inputs)
 	  }
 	  else
 #endif
-
-
+	    
+	    
 #ifdef USE_PERL
           if(strncasecmp(r_inputs->value,"PERL",4)==0){
             eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
@@ -1647,8 +1652,7 @@ int runRequest(map* request_inputs)
 		printExceptionReportResponse(m,tmps);
 		return(-1);
 	      }
-    }
-  }
+  } 
   else{
 
     pid_t   pid;
@@ -1828,16 +1832,17 @@ int runRequest(map* request_inputs)
 	  free(tmps);
 	  exit(1);
 	}
-      } else{
-	if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
+      }
+      else
+#ifdef USE_PYTHON
+	if(strncasecmp(r_inputs->value,"PYTHON",6)==0)
 	  eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	}
 	else
-
+#endif 
 #ifdef USE_JAVA
 	  if(strncasecmp(r_inputs->value,"JAVA",4)==0){
 	    eres=zoo_java_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	  }
+	    }
 	  else
 #endif
 	    
@@ -1849,25 +1854,25 @@ int runRequest(map* request_inputs)
 #endif
 	      
 #ifdef USE_PERL
-          if(strncasecmp(r_inputs->value,"PERL",4)==0){
-            eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-          }
-          else
-#endif
-#ifdef USE_JS
-	      if(strncasecmp(r_inputs->value,"JS",2)==0){
-		eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+	      if(strncasecmp(r_inputs->value,"PERL",4)==0){
+		eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	      }
 	      else
 #endif
-		{
-		  char tmpv[1024];
-		  sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
-		  map* tmps=createMap("text",tmpv);
-		  printExceptionReportResponse(m,tmps);
-		  return -1;
+#ifdef USE_JS
+		if(strncasecmp(r_inputs->value,"JS",2)==0){
+		  eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 		}
-      }
+		else
+#endif
+		  {
+		    char tmpv[1024];
+		    sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
+		    map* tmps=createMap("text",tmpv);
+		    printExceptionReportResponse(m,tmps);
+		    return -1;
+		  }
+      
   
     } else {
       /**

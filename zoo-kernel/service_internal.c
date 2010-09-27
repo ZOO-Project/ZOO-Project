@@ -1545,7 +1545,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       if(toto==NULL){
 	map * errormap = createMap("text","Unable to fetch any result");
 	addToMap(errormap,"code", "InternalError");
-	fprintf(stderr,"DISPLAY ERROR MESSAGE !!!\n");
 	printExceptionReportResponse(m,errormap);
 	freeMap(&errormap);
 	free(errormap);
@@ -1590,7 +1589,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	sprintf(tmp,"Unable to run the Service. No more information was returned back by the Service.");
       errormap = createMap("text",tmp);      
       addToMap(errormap,"code", "InternalError");
-      fprintf(stderr,"DISPLAY ERROR MSG !!!!\n");
       printExceptionReportResponse(m,errormap);
       freeMap(&errormap);
       free(errormap);
