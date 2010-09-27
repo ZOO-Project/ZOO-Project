@@ -63,14 +63,25 @@ extern "C" {
     struct dirent *dp;
     DIR *dirp = opendir(tmpTmap->value);
     char fileName[1024],xslFileName[1024];
+    int hasFile=-1;
     if(dirp!=NULL){
       char tmp[128];
       sprintf(tmp,"_%s.xml",tmpMap->value);
       while ((dp = readdir(dirp)) != NULL)
-	if(strstr(dp->d_name,tmp)!=0)
+	if(strstr(dp->d_name,tmp)!=0){
 	  sprintf(fileName,"%s/%s",tmpTmap->value,dp->d_name);
-    }else{  
-      setMapInMaps(conf,"lenv","message","GetStatus was unable to use the tmpPath value set in main.cfg file.");
+	  hasFile=1;
+	}
+    }else{
+      char tmp[1024];
+      snprintf(tmp,1024,"GetStatus was unable to use the tmpPath value set in main.cfg file as directory %s.",tmpTmap->value);
+      setMapInMaps(conf,"lenv","message",tmp);
+      return SERVICE_FAILED;
+    }
+    if(hasFile<0){
+      char tmp[1024];
+      snprintf(tmp,1024,"GetStatus was unable to find any cache file for Service ID %s.",tmpMap->value);
+      setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }
     sprintf(xslFileName,"%s/updateStatus.xsl",tmpMmap->value);
@@ -93,9 +104,9 @@ extern "C" {
       setMapInMaps(outputs,"Result","encoding","UTF-8");
       xmlFree(xmlbuff);
     }
-    else{   
+    else{
       char tmp[1024];
-      sprintf(tmp,"ZOO GetStatus Service was unable to find or parse the cache xml file available for the Service ID %s.",tmpMap->value);
+      sprintf(tmp,"ZOO GetStatus Service was unable to parse the cache xml file available for the Service ID %s.",tmpMap->value);
       setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }

@@ -43,11 +43,7 @@ extern "C" {
 
 #include "service.h"
 #include "service_internal.h"
-
-
-#ifdef USE_PYTHON
 #include "service_internal_python.h"
-#endif
 
 #ifdef USE_JAVA
 #include "service_internal_java.h"
@@ -181,8 +177,6 @@ int runRequest(map* request_inputs)
     errorException(m, "Parameter <request> was not specified","MissingParameterValue");
     freeMaps(&m);
     free(m);
-    freeMap(&request_inputs);
-    free(request_inputs);
     return 1;
   }
   else{
@@ -193,8 +187,6 @@ int runRequest(map* request_inputs)
       errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
       freeMaps(&m);
       free(m);
-      freeMap(&request_inputs);
-      free(request_inputs);
       free(REQUEST);
       return 1;
     }
@@ -417,6 +409,10 @@ int runRequest(map* request_inputs)
   s1=NULL;
   s1=(service*)calloc(1,SERVICE_SIZE);
   if(s1 == NULL){
+    freeMaps(&m);
+    free(m);
+    free(REQUEST);
+    free(SERVICE_URL);
     return errorException(m, "Unable to allocate memory.","InternalError");
   }
   r_inputs=getMap(request_inputs,"MetaPath");
@@ -436,11 +432,19 @@ int runRequest(map* request_inputs)
   t=getServiceFromFile(tmps1,&s1);
   fflush(stdout);
   dup2(saved_stdout,fileno(stdout));
-  if(t==22){
-    errorException(m, "The value for <indetifier> seems to be wrong. Please, ensure that the process exsits using the GetCapabilities request.", "InvalidParameterValue");
-    exit(0);
+  if(t<0){
+    char tmpMsg[2048+strlen(r_inputs->value)];
+    sprintf(tmpMsg,"The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request.",r_inputs->value);
+    errorException(m, tmpMsg, "InvalidParameterValue");
+    freeService(&s1);
+    free(s1);
+    freeMaps(&m);
+    free(m);
+    free(REQUEST);
+    free(SERVICE_URL);
+    return 0;
   }
-  //s[0]=s1;
+  close(saved_stdout);
 
 #ifdef DEBUG
   dumpService(s1);
@@ -482,13 +486,13 @@ int runRequest(map* request_inputs)
     r_inputs=getMap(request_inputs,"ResponseDocument");	
     if(r_inputs==NULL) r_inputs=getMap(request_inputs,"RawDataOutput");
     
-    //#ifdef DEBUG
+#ifdef DEBUG
     fprintf(stderr,"OUTPUT Parsing ... \n");
-    //#endif
+#endif
     if(r_inputs!=NULL){
-      //#ifdef DEBUG
+#ifdef DEBUG
       fprintf(stderr,"OUTPUT Parsing start now ... \n");
-      //#endif
+#endif
       char current_output_as_string[10240];
       char cursor_output[10240];
       char *cotmp=strdup(r_inputs->value);
@@ -764,9 +768,11 @@ int runRequest(map* request_inputs)
 	fprintf(stderr, "= element 0 node \"%s\"\n", cur->name);
 #endif
 	xmlNodePtr cur2=cur->children;
-	while(cur2){
-	  while(cur2->type!=XML_ELEMENT_NODE)
+	while(cur2!=NULL){
+	  while(cur2!=NULL && cur2->type!=XML_ELEMENT_NODE)
 	    cur2=cur2->next;
+	  if(cur2==NULL)
+	    break;
 	  /**
 	   * Indentifier
 	   */
@@ -1023,10 +1029,11 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"DATA\n");
 #endif
 	    xmlNodePtr cur4=cur2->children;
-	    while(cur4){
-	      while(cur4->type!=XML_ELEMENT_NODE)
+	    while(cur4!=NULL){
+	      while(cur4!=NULL &&cur4->type!=XML_ELEMENT_NODE)
 		cur4=cur4->next;
-
+	      if(cur4==NULL)
+		break;
 	      if(xmlStrcasecmp(cur4->name, BAD_CAST "LiteralData")==0){
 		/**
 		 * Get every attribute from a LiteralData node
@@ -1102,8 +1109,9 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"******REQUESTMAPS*****\n");
 	dumpMaps(request_input_real_format);
 #endif
-	tmpmaps=tmpmaps->next;
-	      
+	freeMaps(&tmpmaps);
+	free(tmpmaps);
+	tmpmaps=NULL;	      
       }
 #ifdef DEBUG
       dumpMaps(tmpmaps); 
@@ -1426,6 +1434,18 @@ int runRequest(map* request_inputs)
   r_inputs=getMap(request_inputs,"storeExecuteResponse");
   int eres=SERVICE_STARTED;
   int cpid=getpid();
+  
+  maps *_tmpMaps=(maps*)malloc(MAPS_SIZE);
+  _tmpMaps->name=strdup("lenv");
+  char tmpBuff[100];
+  sprintf(tmpBuff,"%i",cpid);
+  _tmpMaps->content=createMap("sid",tmpBuff);
+  _tmpMaps->next=NULL;
+  addToMap(_tmpMaps->content,"status","0");
+  addMapsToMaps(&m,_tmpMaps);
+  freeMaps(&_tmpMaps);
+  free(_tmpMaps);
+
 #ifdef DEBUG
   dumpMap(request_inputs);
 #endif
@@ -1587,12 +1607,10 @@ int runRequest(map* request_inputs)
       }
     }
     else{
-#ifdef USE_PYTHON
       if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
 	eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
       }
       else
-#endif
 	
 #ifdef USE_JAVA
 	if(strncasecmp(r_inputs->value,"JAVA",4)==0){
@@ -1659,11 +1677,10 @@ int runRequest(map* request_inputs)
        */
       r_inputs=getMapFromMaps(m,"main","tmpPath");
       map* r_inputs1=getMap(s1->content,"ServiceProvider");
-      char* fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+16)*sizeof(char));
+      char* fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+100)*sizeof(char));
       sprintf(fbkp,"%s/%s_%d.xml",r_inputs->value,r_inputs1->value,cpid);
-      char* flog=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+22)*sizeof(char));
+      char* flog=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+100)*sizeof(char));
       sprintf(flog,"%s/%s_%d_error.log",r_inputs->value,r_inputs1->value,cpid);
-      fprintf(stderr,"File to use as backup %s\n",fbkp);
 #ifdef DEBUG
       fprintf(stderr,"RUN IN BACKGROUND MODE \n");
       fprintf(stderr,"son pid continue (origin %d) %d ...\n",cpid,getpid());
@@ -1674,14 +1691,17 @@ int runRequest(map* request_inputs)
       freopen(flog,"w+",stderr);
       free(fbkp);
       free(flog);
+      if(setsid()<0)
+	return errorException(m, "Unable to run the child process properly", "InternalError");
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
        * content was outputed (the file used to store the ResponseDocument).
        * The rewind stdout to restart writing from the bgining of the file,
        * this way the data will be updated at the end of the process run.
        */
+      updateStatus(m);
       printProcessResponse(m,request_inputs,cpid,
-			    s1,r_inputs->value,SERVICE_STARTED,
+			    s1,r_inputs1->value,SERVICE_STARTED,
 			    request_input_real_format,
 			    request_output_real_format);
       fflush(stdout);
@@ -1809,13 +1829,10 @@ int runRequest(map* request_inputs)
 	  exit(1);
 	}
       } else{
-
-#ifdef USE_PYTHON
 	if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
 	  eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
 	}
 	else
-#endif
 
 #ifdef USE_JAVA
 	  if(strncasecmp(r_inputs->value,"JAVA",4)==0){
@@ -1852,7 +1869,6 @@ int runRequest(map* request_inputs)
 		}
       }
   
-      //res=execute(&m,&request_input_real_format,&request_output_real_format);
     } else {
       /**
        * error server don't accept the process need to output a valid 
@@ -1872,24 +1888,23 @@ int runRequest(map* request_inputs)
 		   request_output_real_format,request_inputs,
 		   cpid,m,eres);
 
-  //if(getpid()==cpid){
+  if(((int)getpid())!=cpid){
+    fclose(stdout);
+    fclose(stderr);
+    unhandleStatus(m);
+  }
+
   freeService(&s1);
   free(s1);
   freeMaps(&m);
   free(m);
-  freeMaps(&tmpmaps);
-  free(tmpmaps);
   
   freeMaps(&request_input_real_format);
   free(request_input_real_format);
   
-  //freeMap(&request_inputs);
-  //free(request_inputs);
-    
   /* The following is requested but get issue using with Python support :/ */
   /* freeMaps(&request_output_real_format);
-     free(request_output_real_format);
-  */
+     free(request_output_real_format);*/
   
   free(REQUEST);
   free(SERVICE_URL);
@@ -1898,7 +1913,6 @@ int runRequest(map* request_inputs)
   fflush(stdout);
   fflush(stderr);
 #endif
-    //}
 
   return 0;
 }

@@ -53,7 +53,7 @@ using namespace std;
 
 int errorException(maps *m, const char *message, const char *errorcode) 
 {
-  map * errormap = createMap("text", message);
+  map* errormap = createMap("text", message);
   addToMap(errormap,"code", errorcode);
   printExceptionReportResponse(m,errormap);
   freeMap(&errormap);
