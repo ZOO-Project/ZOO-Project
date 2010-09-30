@@ -22,11 +22,16 @@
  * THE SOFTWARE.
  */
 
+#include <libintl.h>
+#include <locale.h>
+#define _(String) dgettext ("zoo-services",String)
+
 #include "cpl_conv.h"
 #include "ogr_api.h"
 #include "ogr_geometry.h"
 #include "geos_c.h"
 #include "service.h"
+
 
 extern "C" {
 #include <libxml/tree.h>
@@ -478,7 +483,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       	geometry2=createGeometryFromGML(conf,tmp->value);
     }
     if(geometry2==NULL){
-      setMapInMaps(conf,"lenv","message","Unable to parse input geometry for InputEntity2.");
+      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry for InputEntity2."));
       fprintf(stderr,"SERVICE FAILED !\n");
       return SERVICE_FAILED;
     }

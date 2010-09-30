@@ -207,7 +207,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 
   /* Cleanup. */
   JS_DestroyScript(cx, script);
-  JS_MaybeGC(cx);
+  //JS_MaybeGC(cx);
   // If we use the DestroyContext as requested to release memory then we get 
   // issue getting back the main configuration maps after coming back to the 
   // runRequest function ...

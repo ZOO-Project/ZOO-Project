@@ -39,9 +39,12 @@ extern "C" {
 #include "cgic.h"
 #include "ulinet.h"
 
+#include <libintl.h>
+#include <locale.h>
 #include <string.h>
 
 #include "service.h"
+
 #include "service_internal.h"
 
 #ifdef USE_PYTHON
@@ -80,6 +83,17 @@ extern "C" {
 #include <time.h>
 #include <stdarg.h>
 
+#define _(String) dgettext ("zoo-kernel",String)
+
+
+void *translateChar(char* str,char toReplace,char toReplaceBy){
+  int i=0,len=strlen(str);
+  for(i=0;i<len;i++){
+    if(str[i]==toReplace)
+      str[i]=toReplaceBy;
+  }
+}
+
 xmlXPathObjectPtr extractFromDoc(xmlDocPtr doc,char* search){
   xmlXPathContextPtr xpathCtx;
   xmlXPathObjectPtr xpathObj;
@@ -115,12 +129,217 @@ void sig_handler(int sig){
     ssig="UNKNOWN";
     break;
   }
-  sprintf(tmp,"ZOO Kernel failed to process your request receiving signal %d = %s",sig,ssig);
+  sprintf(tmp,_("ZOO Kernel failed to process your request receiving signal %d = %s"),sig,ssig);
   errorException(NULL, tmp, "InternalError");
 #ifdef DEBUG
   fprintf(stderr,"Not this time!\n");
 #endif
   exit(0);
+}
+
+void *loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **inputs,maps** ioutputs,int* eres){
+  char tmps1[1024];
+  char ntmp[1024];
+  maps *m=*myMap;
+  maps *request_output_real_format=*ioutputs;
+  maps *request_input_real_format=*inputs;
+  /**
+   * Extract serviceType to know what kind of service should be loaded
+   */
+  map* r_inputs=NULL;
+#ifndef WIN32
+  getcwd(ntmp,1024);
+#else
+  _getcwd(ntmp,1024);
+#endif
+  r_inputs=getMap(s1->content,"serviceType");
+#ifdef DEBUG
+  fprintf(stderr,"LOAD A %s SERVICE PROVIDER \n",r_inputs->value);
+  fflush(stderr);
+#endif
+  if(strncasecmp(r_inputs->value,"C",1)==0){
+    r_inputs=getMap(request_inputs,"metapath");
+    if(r_inputs!=NULL)
+      sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
+    else
+      sprintf(tmps1,"%s/",ntmp);
+    char *altPath=strdup(tmps1);
+    r_inputs=getMap(s1->content,"ServiceProvider");
+    sprintf(tmps1,"%s/%s",altPath,r_inputs->value);
+    free(altPath);
+#ifdef DEBUG
+    fprintf(stderr,"Trying to load %s\n",tmps1);
+#endif
+#ifdef WIN32
+    HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
+#else
+    void* so = dlopen(tmps1, RTLD_LAZY);
+#endif
+#ifdef DEBUG
+#ifdef WIN32<
+    DWORD errstr;
+    errstr = GetLastError();
+    fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
+#else
+    char *errstr;
+    errstr = dlerror();
+#endif
+#endif
+
+    if( so != NULL ) {
+#ifdef DEBUG
+      fprintf(stderr,"Library loaded %s \n",errstr);
+      fprintf(stderr,"Service Shared Object = %s\n",r_inputs->value);
+#endif
+      r_inputs=getMap(s1->content,"serviceType");
+#ifdef DEBUG
+      dumpMap(r_inputs);
+      fprintf(stderr,"%s\n",r_inputs->value);
+      fflush(stderr);
+#endif
+      if(strncasecmp(r_inputs->value,"C-FORTRAN",9)==0){
+#ifdef WIN32
+	//Strange return value needed here !
+	return 1;
+#endif
+	r_inputs=getMap(request_inputs,"Identifier");
+	char fname[1024];
+	sprintf(fname,"%s_",r_inputs->value);
+#ifdef DEBUG
+	fprintf(stderr,"Try to load function %s\n",fname);
+#endif
+#ifdef WIN32
+	typedef int (CALLBACK* execute_t)(char***,char***,char***);
+	execute_t execute=(execute_t)GetProcAddress(so,fname);
+#else
+	typedef int (*execute_t)(char***,char***,char***);
+	execute_t execute=(execute_t)dlsym(so,fname);
+#endif
+#ifdef DEBUG
+#ifdef WIN32
+	errstr = GetLastError();
+#else
+	errstr = dlerror();
+#endif
+	fprintf(stderr,"Function loaded %s\n",errstr);
+#endif	
+
+	char main_conf[10][30][1024];
+	char inputs[10][30][1024];
+	char outputs[10][30][1024];
+	for(int i=0;i<10;i++){
+	  for(int j=0;j<30;j++){
+	    memset(main_conf[i][j],0,1024);
+	    memset(inputs[i][j],0,1024);
+	    memset(outputs[i][j],0,1024);
+	  }
+	}
+	mapsToCharXXX(m,(char***)main_conf);
+	mapsToCharXXX(request_input_real_format,(char***)inputs);
+	mapsToCharXXX(request_output_real_format,(char***)outputs);
+	*eres=execute((char***)&main_conf[0],(char***)&inputs[0],(char***)&outputs[0]);
+#ifdef DEBUG
+	fprintf(stderr,"Function run successfully \n");
+#endif
+	charxxxToMaps((char***)&outputs[0],&request_output_real_format);
+      }else{
+#ifdef DEBUG
+#ifdef WIN32
+	errstr = GetLastError();
+	fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
+#endif
+#endif
+	r_inputs=getMap(request_inputs,"Identifier");
+#ifdef DEBUG
+	fprintf(stderr,"Try to load function %s\n",r_inputs->value);
+#endif
+	typedef int (*execute_t)(maps**,maps**,maps**);
+#ifdef WIN32
+	execute_t execute=(execute_t)GetProcAddress(so,r_inputs->value); 
+#else
+	execute_t execute=(execute_t)dlsym(so,r_inputs->value);
+#endif
+
+#ifdef DEBUG
+#ifdef WIN32
+	errstr = GetLastError();
+#else
+	errstr = dlerror();
+#endif
+	fprintf(stderr,"Function loaded %s\n",errstr);
+#endif	
+
+#ifdef DEBUG
+	fprintf(stderr,"Now run the function \n");
+	fflush(stderr);
+#endif
+	*eres=execute(&m,&request_input_real_format,&request_output_real_format);
+#ifdef DEBUG
+	fprintf(stderr,"Function loaded and returned %d\n",eres);
+	fflush(stderr);
+#endif
+      }
+      dlclose(so);
+    } else {
+      /**
+       * Unable to load the specified shared library
+       */
+      char tmps[1024];
+#ifdef WIN32
+      DWORD errstr = GetLastError();
+#else
+      char* errstr = dlerror();
+#endif
+      sprintf(tmps,_("C Library can't be loaded %s \n"),errstr);
+      map* tmps1=createMap("text",tmps);
+      printExceptionReportResponse(m,tmps1);
+      *eres=-1;
+    }
+  }
+  else
+#ifdef USE_PYTHON
+    if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
+      *eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+    }
+    else
+#endif
+	
+#ifdef USE_JAVA
+      if(strncasecmp(r_inputs->value,"JAVA",4)==0){
+	*eres=zoo_java_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+      }
+      else
+#endif
+
+#ifdef USE_PHP
+	if(strncasecmp(r_inputs->value,"PHP",3)==0){
+	  *eres=zoo_php_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+	}
+	else
+#endif
+	    
+	    
+#ifdef USE_PERL
+          if(strncasecmp(r_inputs->value,"PERL",4)==0){
+            *eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+          }
+          else
+#endif
+
+#ifdef USE_JS
+	    if(strncasecmp(r_inputs->value,"JS",2)==0){
+	      *eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+	    }
+	    else
+#endif
+	      {
+		char tmpv[1024];
+		sprintf(tmpv,_("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),r_inputs->value);
+		map* tmps=createMap("text",tmpv);
+		printExceptionReportResponse(m,tmps);
+		*eres=-1;
+	      }
+  *ioutputs=request_output_real_format;
 }
 
 int runRequest(map* request_inputs)
@@ -143,7 +362,7 @@ int runRequest(map* request_inputs)
    */
   m=(maps*)calloc(1,MAPS_SIZE);
   if(m == NULL){
-    return errorException(m, "Unable to allocate memory.", "InternalError");
+    return errorException(m, _("Unable to allocate memory."), "InternalError");
   }
   char ntmp[1024];
 #ifndef WIN32
@@ -172,12 +391,33 @@ int runRequest(map* request_inputs)
   fprintf(stderr, "***** END MAPS\n");
 #endif
 
+  bindtextdomain ("zoo-kernel","/usr/share/locale/");
+  bindtextdomain ("zoo-services","/usr/share/locale/");
+  
+  if((r_inputs=getMap(request_inputs,"language"))!=NULL){
+    char *tmp=strdup(r_inputs->value);
+    translateChar(tmp,'-','_');
+    setlocale (LC_ALL, tmp);
+    free(tmp);
+    setMapInMaps(m,"main","language",r_inputs->value);
+  }
+  else{
+    setlocale (LC_ALL, "en_US");
+    setMapInMaps(m,"main","language","en-US");
+  }
+  setlocale (LC_NUMERIC, "en_US");
+  bind_textdomain_codeset("zoo-kernel","UTF-8");
+  textdomain("zoo-kernel");
+  bind_textdomain_codeset("zoo-services","UTF-8");
+  textdomain("zoo-services");
+
+
   /**
    * Check for minimum inputs
    */
   r_inputs=getMap(request_inputs,"Request");
   if(request_inputs==NULL || r_inputs==NULL){ 
-    errorException(m, "Parameter <request> was not specified","MissingParameterValue");
+    errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue");
     freeMaps(&m);
     free(m);
     return 1;
@@ -187,7 +427,7 @@ int runRequest(map* request_inputs)
     if(strncasecmp(r_inputs->value,"GetCapabilities",15)!=0
        && strncasecmp(r_inputs->value,"DescribeProcess",15)!=0
        && strncasecmp(r_inputs->value,"Execute",7)!=0){ 
-      errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
+      errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -197,7 +437,7 @@ int runRequest(map* request_inputs)
   r_inputs=NULL;
   r_inputs=getMap(request_inputs,"Service");
   if(r_inputs==NULLMAP){
-    errorException(m, "Parameter <service> was not specified","MissingParameterValue");
+    errorException(m, _("Parameter <service> was not specified"),"MissingParameterValue");
     freeMaps(&m);
     free(m);
     free(REQUEST);
@@ -206,7 +446,7 @@ int runRequest(map* request_inputs)
   if(strncasecmp(REQUEST,"GetCapabilities",15)!=0){
     r_inputs=getMap(request_inputs,"Version");
     if(r_inputs==NULL){ 
-      errorException(m, "Parameter <version> was not specified","MissingParameterValue");
+      errorException(m, _("Parameter <version> was not specified"),"MissingParameterValue");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -253,7 +493,7 @@ int runRequest(map* request_inputs)
 #endif
     DIR *dirp = opendir(conf_dir);
     if(dirp==NULL){
-      return errorException(m, "The specified path doesn't exist.","InvalidParameterValue");
+      return errorException(m, _("The specified path doesn't exist."),"InvalidParameterValue");
     }
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
     r_inputs=NULL;
@@ -276,7 +516,7 @@ int runRequest(map* request_inputs)
 	snprintf(tmps1,1024,"%s/%s",conf_dir,dp->d_name);
 	s1=(service*)calloc(1,SERVICE_SIZE);
 	if(s1 == NULL){ 
-	  return errorException(m, "Unable to allocate memory.","InternalError");
+	  return errorException(m, _("Unable to allocate memory."),"InternalError");
 	}
 #ifdef DEBUG
 	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
@@ -307,7 +547,7 @@ int runRequest(map* request_inputs)
     r_inputs=getMap(request_inputs,"Identifier");
     if(r_inputs==NULL 
        || strlen(r_inputs->name)==0 || strlen(r_inputs->value)==0){ 
-      errorException(m, "Mandatory <identifier> was not specified","MissingParameterValue");
+      errorException(m, _("Mandatory <identifier> was not specified"),"MissingParameterValue");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -318,7 +558,7 @@ int runRequest(map* request_inputs)
     struct dirent *dp;
     DIR *dirp = opendir(conf_dir);
     if(dirp==NULL){
-      errorException(m, "The specified path path doesn't exist.","InvalidParameterValue");
+      errorException(m, _("The specified path path doesn't exist."),"InvalidParameterValue");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -363,7 +603,7 @@ int runRequest(map* request_inputs)
 	    //s1=(service*)malloc(sizeof(service*));
 	    s1=(service*)calloc(1,SERVICE_SIZE);
 	    if(s1 == NULL){
-	      return errorException(m, "Unable to allocate memory.","InternalError");
+	      return errorException(m, _("Unable to allocate memory."),"InternalError");
 	    }
 #ifdef DEBUG
 	    fprintf(stderr,"#################\n%s\n#################\n",buff1);
@@ -398,7 +638,7 @@ int runRequest(map* request_inputs)
     }
     else
       if(strncasecmp(REQUEST,"Execute",strlen(REQUEST))!=0){
-	errorException(m, "Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute.", "InvalidParameterValue");
+	errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue");
 #ifdef DEBUG
 	fprintf(stderr,"No request found %s",REQUEST);
 #endif	
@@ -416,7 +656,7 @@ int runRequest(map* request_inputs)
     free(m);
     free(REQUEST);
     free(SERVICE_URL);
-    return errorException(m, "Unable to allocate memory.","InternalError");
+    return errorException(m, _("Unable to allocate memory."),"InternalError");
   }
   r_inputs=getMap(request_inputs,"MetaPath");
   if(r_inputs!=NULL)
@@ -437,7 +677,7 @@ int runRequest(map* request_inputs)
   dup2(saved_stdout,fileno(stdout));
   if(t<0){
     char tmpMsg[2048+strlen(r_inputs->value)];
-    sprintf(tmpMsg,"The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request.",r_inputs->value);
+    sprintf(tmpMsg,_("The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),r_inputs->value);
     errorException(m, tmpMsg, "InvalidParameterValue");
     freeService(&s1);
     free(s1);
@@ -515,7 +755,7 @@ int runRequest(map* request_inputs)
       pToken=strtok(cursor_output,";");
       char** outputs_as_text=(char**)calloc(128,sizeof(char*));
       if(outputs_as_text == NULL) {
-	return errorException(m, "Unable to allocate memory", "InternalError");
+	return errorException(m, _("Unable to allocate memory"), "InternalError");
       }
       i=0;
       while(pToken!=NULL){
@@ -526,7 +766,7 @@ int runRequest(map* request_inputs)
 #endif
 	outputs_as_text[i]=(char*)calloc(strlen(pToken)+1,sizeof(char));
 	if(outputs_as_text[i] == NULL) {
-	  return errorException(m, "Unable to allocate memory", "InternalError");
+	  return errorException(m, _("Unable to allocate memory"), "InternalError");
 	}
 	snprintf(outputs_as_text[i],strlen(pToken)+1,"%s",pToken);
 	pToken = strtok(NULL,";");
@@ -543,7 +783,7 @@ int runRequest(map* request_inputs)
 	    if(tmp_output==NULL){
 	      tmp_output=(maps*)calloc(1,MAPS_SIZE);
 	      if(tmp_output == NULL){
-		return errorException(m, "Unable to allocate memory.", "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
 	      tmp_output->name=strdup(tmpc);
 	      tmp_output->content=NULL;
@@ -602,7 +842,7 @@ int runRequest(map* request_inputs)
     if(r_inputs!=NULL)
       snprintf(cursor_input,40960,"%s",r_inputs->value);
     else{
-      errorException(m, "Parameter <DataInputs> was not specified","MissingParameterValue");
+      errorException(m, _("Parameter <DataInputs> was not specified"),"MissingParameterValue");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -619,7 +859,7 @@ int runRequest(map* request_inputs)
     pToken=strtok(cursor_input,";");
     char** inputs_as_text=(char**)calloc(100,sizeof(char*));
     if(inputs_as_text == NULL){
-      return errorException(m, "Unable to allocate memory.", "InternalError");
+      return errorException(m, _("Unable to allocate memory."), "InternalError");
     }
     i=0;
     while(pToken!=NULL){
@@ -633,7 +873,7 @@ int runRequest(map* request_inputs)
       inputs_as_text[i]=(char*)calloc(strlen(pToken)+1,sizeof(char));
       snprintf(inputs_as_text[i],strlen(pToken)+1,"%s",pToken);
       if(inputs_as_text[i] == NULL){
-	return errorException(m, "Unable to allocate memory.", "InternalError");
+	return errorException(m, _("Unable to allocate memory."), "InternalError");
       }
       pToken = strtok(NULL,";");
       i++;
@@ -660,7 +900,7 @@ int runRequest(map* request_inputs)
 	if(tmpmaps==NULL){
 	  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 	  if(tmpmaps == NULL){
-	    return errorException(m, "Unable to allocate memory.", "InternalError");
+	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
 	  tmpmaps->name=strdup(tmpn);
 	  tmpmaps->content=createMap("value",tmpv+1);
@@ -701,7 +941,7 @@ int runRequest(map* request_inputs)
 #endif
 		char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
 		if(tmpContent == NULL){
-		  return errorException(m, "Unable to allocate memory.", "InternalError");
+		  return errorException(m, _("Unable to allocate memory."), "InternalError");
 		}
 		size_t dwRead;
 		InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
@@ -784,7 +1024,7 @@ int runRequest(map* request_inputs)
 	    if(tmpmaps==NULL){
 	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 	      if(tmpmaps == NULL){
-		return errorException(m, "Unable to allocate memory.", "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
 	      tmpmaps->name=strdup((char*)val);
 	      tmpmaps->content=NULL;
@@ -802,7 +1042,7 @@ int runRequest(map* request_inputs)
 	    if(tmpmaps==NULL){
 	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 	      if(tmpmaps == NULL){
-		return errorException(m, "Unable to allocate memory.", "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
 	      tmpmaps->name="missingIndetifier";
 	      tmpmaps->content=createMap((char*)cur2->name,(char*)val);
@@ -860,7 +1100,7 @@ int runRequest(map* request_inputs)
 		    char* tmpContent=
 		      (char*)calloc((res.nDataLen+1),sizeof(char));
 		    if(tmpContent == NULL){
-		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
 		    size_t dwRead;
 		    InternetReadFile(res, (LPVOID)tmpContent,
@@ -901,7 +1141,7 @@ int runRequest(map* request_inputs)
 		  }else{
 		    has=(char*)calloc((3+strlen((char*)val)+strlen(key)),sizeof(char));
 		    if(has == NULL){
-		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
 		    snprintf(has,(3+strlen((char*)val)+strlen(key)),"%s: %s",key,(char*)val);
 #ifdef POST_DEBUG
@@ -948,7 +1188,7 @@ int runRequest(map* request_inputs)
 					INTERNET_FLAG_NO_CACHE_WRITE,0);
 		    char* tmpContent = (char*)calloc((res.nDataLen+1),sizeof(char));
 		    if(tmpContent == NULL){
-		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
 		    size_t dwRead;
 		    InternetReadFile(res, (LPVOID)tmpContent,
@@ -983,7 +1223,7 @@ int runRequest(map* request_inputs)
 		    char* tmp=
 		      (char*)calloc((res1.nDataLen+1),sizeof(char));
 		    if(tmp == NULL){
-		      return errorException(m, "Unable to allocate memory.", "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
 		    size_t bRead;
 		    InternetReadFile(res1, (LPVOID)tmp,
@@ -1001,7 +1241,7 @@ int runRequest(map* request_inputs)
 					  INTERNET_FLAG_NO_CACHE_WRITE,0);
 		      char* tmpContent = (char*)calloc((res.nDataLen+1),sizeof(char));
 		      if(tmpContent == NULL){
-			return errorException(m, "Unable to allocate memory.", "InternalError");
+			return errorException(m, _("Unable to allocate memory."), "InternalError");
 		      }
 		      size_t dwRead;
 		      InternetReadFile(res, (LPVOID)tmpContent,
@@ -1142,7 +1382,7 @@ int runRequest(map* request_inputs)
 	if(tmpmaps==NULL){
 	  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 	  if(tmpmaps == NULL){
-	    return errorException(m, "Unable to allocate memory.", "InternalError");
+	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
 	  tmpmaps->name="unknownIdentifier";
 	  tmpmaps->next=NULL;
@@ -1214,7 +1454,7 @@ int runRequest(map* request_inputs)
 		if(tmpmaps==NULL){
 		  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 		  if(tmpmaps == NULL){
-		    return errorException(m, "Unable to allocate memory.", "InternalError");
+		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
 		  tmpmaps->name=strdup((char*)val);
 		  tmpmaps->content=NULL;
@@ -1234,7 +1474,7 @@ int runRequest(map* request_inputs)
 		if(tmpmaps==NULL){
 		  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 		  if(tmpmaps == NULL){
-		    return errorException(m, "Unable to allocate memory.", "InternalError");
+		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
 		  tmpmaps->name="missingIndetifier";
 		  tmpmaps->content=createMap((char*)cur2->name,(char*)val);
@@ -1294,7 +1534,7 @@ int runRequest(map* request_inputs)
 	  if(tmpmaps==NULL){
 	    tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 	    if(tmpmaps == NULL){
-	      return errorException(m, "Unable to allocate memory.", "InternalError");
+	      return errorException(m, _("Unable to allocate memory."), "InternalError");
 	    }
 	    tmpmaps->name="unknownIdentifier";
 	    tmpmaps->content=createMap(outs[l],(char*)val);
@@ -1320,7 +1560,7 @@ int runRequest(map* request_inputs)
 	  if(tmpmaps==NULL){
 	    tmpmaps=(maps*)calloc(1,MAPS_SIZE);
 	    if(tmpmaps == NULL){
-	      return errorException(m, "Unable to allocate memory.", "InternalError");
+	      return errorException(m, _("Unable to allocate memory."), "InternalError");
 	    }
 	    tmpmaps->name=strdup((char*)val);
 	    tmpmaps->content=NULL;
@@ -1362,7 +1602,7 @@ int runRequest(map* request_inputs)
   char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,"inputs");
   if(strcmp(dfv,"")!=0){
     char tmps[1024];
-    snprintf(tmps,1024,"The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file.",dfv);
+    snprintf(tmps,1024,_("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),dfv);
     map* tmpe=createMap("text",tmps);
     addToMap(tmpe,"code","MissingParameterValue");
     printExceptionReportResponse(m,tmpe);
@@ -1457,204 +1697,9 @@ int runRequest(map* request_inputs)
     if(strcasecmp(r_inputs->value,"false")==0)
       r_inputs=NULL;
   if(r_inputs==NULLMAP){
-    /**
-     * Extract serviceType to know what kind of service shoudl be loaded
-     */
-    r_inputs=NULL;
-    r_inputs=getMap(s1->content,"serviceType");
-#ifdef DEBUG
-    fprintf(stderr,"LOAD A %s SERVICE PROVIDER IN NORMAL MODE \n",r_inputs->value);
-    fflush(stderr);
-#endif
-    if(strncasecmp(r_inputs->value,"C",1)==0){
-      r_inputs=getMap(request_inputs,"metapath");
-      if(r_inputs!=NULL)
-	sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
-      else
-	sprintf(tmps1,"%s/",ntmp);
-      char *altPath=strdup(tmps1);
-      r_inputs=getMap(s1->content,"ServiceProvider");
-      sprintf(tmps1,"%s/%s",altPath,r_inputs->value);
-      free(altPath);
-#ifdef DEBUG
-      fprintf(stderr,"Trying to load %s\n",tmps1);
-#endif
-#ifdef WIN32
-      HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
-#else
-      void* so = dlopen(tmps1, RTLD_LAZY);
-#endif
-#ifdef DEBUG
-#ifdef WIN32
-      DWORD errstr;
-      errstr = GetLastError();
-      fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
-#else
-      char *errstr;
-      errstr = dlerror();
-#endif
-#endif
-
-      if( so != NULL ) {
-#ifdef DEBUG
-	fprintf(stderr,"Library loaded %s \n",errstr);
-	fprintf(stderr,"Service Shared Object = %s\n",r_inputs->value);
-#endif
-	r_inputs=getMap(s1->content,"serviceType");
-#ifdef DEBUG
-	dumpMap(r_inputs);
-	fprintf(stderr,"%s\n",r_inputs->value);
-	fflush(stderr);
-#endif
-	if(strncasecmp(r_inputs->value,"C-FORTRAN",9)==0){
-#ifdef WIN32
-	  //Strange return value needed here !
-	  return 1;
-#endif
-	  r_inputs=getMap(request_inputs,"Identifier");
-	  char fname[1024];
-	  sprintf(fname,"%s_",r_inputs->value);
-#ifdef DEBUG
-	  fprintf(stderr,"Try to load function %s\n",fname);
-#endif
-#ifdef WIN32
-	  typedef int (CALLBACK* execute_t)(char***,char***,char***);
-	  execute_t execute=(execute_t)GetProcAddress(so,fname);
-#else
-	  typedef int (*execute_t)(char***,char***,char***);
-	  execute_t execute=(execute_t)dlsym(so,fname);
-#endif
-#ifdef DEBUG
-#ifdef WIN32
-	  errstr = GetLastError();
-#else
-	  errstr = dlerror();
-#endif
-	  fprintf(stderr,"Function loaded %s\n",errstr);
-#endif	
-
-	  char main_conf[10][30][1024];
-	  char inputs[10][30][1024];
-	  char outputs[10][30][1024];
-	  for(int i=0;i<10;i++){
-	    for(int j=0;j<30;j++){
-	      memset(main_conf[i][j],0,1024);
-	      memset(inputs[i][j],0,1024);
-	      memset(outputs[i][j],0,1024);
-	    }
-	  }
-	  mapsToCharXXX(m,(char***)main_conf);
-	  mapsToCharXXX(request_input_real_format,(char***)inputs);
-	  mapsToCharXXX(request_output_real_format,(char***)outputs);
-	  eres=execute((char***)&main_conf[0],(char***)&inputs[0],(char***)&outputs[0]);
-#ifdef DEBUG
-	  fprintf(stderr,"Function run successfully \n");
-#endif
-	  charxxxToMaps((char***)&outputs[0],&request_output_real_format);
-	}else{
-#ifdef DEBUG
-#ifdef WIN32
-	  errstr = GetLastError();
-	  fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
-#endif
-#endif
-	  r_inputs=getMap(request_inputs,"Identifier");
-#ifdef DEBUG
-	  fprintf(stderr,"Try to load function %s\n",r_inputs->value);
-#endif
-	  typedef int (*execute_t)(maps**,maps**,maps**);
-#ifdef WIN32
-	  execute_t execute=(execute_t)GetProcAddress(so,r_inputs->value); 
-#ifdef DEBUG
-	  errstr = GetLastError();
-	  fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
-#endif
-#else
-	  execute_t execute=(execute_t)dlsym(so,r_inputs->value);
-#endif
-
-#ifdef DEBUG
-#ifdef WIN32
-	  errstr = GetLastError();
-#else
-	  errstr = dlerror();
-#endif
-	  fprintf(stderr,"Function loaded %s\n",errstr);
-#endif	
-
-#ifdef DEBUG
-	  fprintf(stderr,"Now run the function \n");
-	  fflush(stderr);
-#endif
-	  eres=execute(&m,&request_input_real_format,&request_output_real_format);
-#ifdef DEBUG
-	  fprintf(stderr,"Function loaded and returned %d\n",eres);
-	  fflush(stderr);
-#endif
-	}
-	dlclose(so);
-      } else {
-	/**
-	 * Unable to load the specified shared library
-	 */
-	char tmps[1024];
-#ifdef WIN32
-	DWORD errstr = GetLastError();
-#else
-	char* errstr = dlerror();
-#endif
-	sprintf(tmps,"C Library can't be loaded %s \n",errstr);
-	map* tmps1=createMap("text",tmps);
-	printExceptionReportResponse(m,tmps1);
-	exit(1);
-      }
-    }
-    else
-#ifdef USE_PYTHON
-      if(strncasecmp(r_inputs->value,"PYTHON",6)==0){
-	eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-      }
-      else
-#endif
-	
-#ifdef USE_JAVA
-	if(strncasecmp(r_inputs->value,"JAVA",4)==0){
-	  eres=zoo_java_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	}
-	else
-#endif
-
-#ifdef USE_PHP
-	  if(strncasecmp(r_inputs->value,"PHP",3)==0){
-	    eres=zoo_php_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	  }
-	  else
-#endif
-	    
-	    
-#ifdef USE_PERL
-          if(strncasecmp(r_inputs->value,"PERL",4)==0){
-            eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-          }
-          else
-#endif
-
-#ifdef USE_JS
-	    if(strncasecmp(r_inputs->value,"JS",2)==0){
-	      eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	    }
-	    else
-#endif
-	      {
-		char tmpv[1024];
-		sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
-		map* tmps=createMap("text",tmpv);
-		printExceptionReportResponse(m,tmps);
-		return(-1);
-	      }
-  } 
+    loadServiceAndRun(&m,s1,request_inputs,&request_input_real_format,&request_output_real_format,&eres);
+  }
   else{
-
     pid_t   pid;
 #ifdef DEBUG
     fprintf(stderr,"\nPID : %d\n",cpid);
@@ -1695,8 +1740,6 @@ int runRequest(map* request_inputs)
       freopen(flog,"w+",stderr);
       free(fbkp);
       free(flog);
-      if(setsid()<0)
-	return errorException(m, "Unable to run the child process properly", "InternalError");
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
        * content was outputed (the file used to store the ResponseDocument).
@@ -1710,175 +1753,16 @@ int runRequest(map* request_inputs)
 			    request_output_real_format);
       fflush(stdout);
       rewind(stdout);
-      /**
-       * Extract serviceType to know what kind of service shoudl be loaded
-       */
-      r_inputs=NULL;
-      r_inputs=getMap(s1->content,"serviceType");
-#ifdef DEBUG
-      fprintf(stderr,"LOAD A %s SERVICE PROVIDER IN BACKGROUND MODE \n",r_inputs->value);
-#endif
 
-      if(strncasecmp(r_inputs->value,"C",1)==0){
+      loadServiceAndRun(&m,s1,request_inputs,&request_input_real_format,&request_output_real_format,&eres);
 
-	r_inputs=getMap(request_inputs,"metapath");
-	if(r_inputs!=NULL){
-	  sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
-	  r_inputs=getMap(s1->content,"ServiceProvider");
-	  if(r_inputs!=NULL)
-	    sprintf(tmps1,"%s/%s",strdup(tmps1),r_inputs->value);
-	}else{
-	  sprintf(tmps1,"%s/",ntmp);
-	}
-	  
-  
-#ifdef DEBUG
-	fprintf(stderr,"Trying to load %s\n",tmps1);
-#endif
-#ifdef WIN32
-	HINSTANCE so = LoadLibraryEx(tmps1,NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
-#else
-	void* so = dlopen(tmps1, RTLD_LAZY);
-#endif
-#ifdef WIN32
-	DWORD errstr;
-	errstr = GetLastError();
-#else
-	char *errstr;
-	errstr = dlerror();
-#endif
-	if( so != NULL ) {
-	  r_inputs=getMap(s1->content,"serviceType");
-#ifdef DEBUG
-	  fprintf(stderr,"r_inputs->value = %s\n",r_inputs->value);
-#endif
-	  if(strncasecmp(r_inputs->value,"C-FORTRAN",9)==0){
-	    r_inputs=getMap(request_inputs,"Identifier");
-#ifdef DEBUG
-	    fprintf(stderr,"Try to load function %s\n",r_inputs->value);
-#endif
-	    typedef int (*execute_t)(char***,char***,char***);
-	    char fname[1024];
-	    sprintf(fname,"%s_",r_inputs->value);
-#ifdef DEBUG
-	    fprintf(stderr,"Try to load function %s\n",fname);
-#endif
-#ifdef WIN32
-	    execute_t execute=(execute_t)GetProcAddress(so,fname); 
-#else
-	    execute_t execute=(execute_t)dlsym(so,fname);
-#endif
-#ifdef DEBUG
-#ifdef WIN32
-	    errstr = GetLastError();
-#else
-	    errstr = dlerror();
-#endif
-#endif	
-	    char main_conf[10][10][1024];
-	    char inputs[10][10][1024];
-	    char outputs[10][10][1024];
-	    for(int i=0;i<10;i++){
-	      for(int j=0;j<10;j++){
-		memset(main_conf[i][j],0,1024);
-		memset(inputs[i][j],0,1024);
-		memset(outputs[i][j],0,1024);
-	      }
-	    }
-	    mapsToCharXXX(m,(char***)main_conf);
-	    mapsToCharXXX(request_input_real_format,(char***)inputs);
-	    //mapsToCharXXX(request_output_real_format,(char***)outputs);
-	    eres=execute((char***)&main_conf[0],(char***)&inputs[0],(char***)&outputs[0]);
-	    charxxxToMaps((char***)&outputs[0],&request_output_real_format);
-
-	  }else{
-
-	    typedef int (*execute_t)(maps**,maps**,maps**);
-#ifdef DEBUG
-	    fprintf(stderr,"Library loaded %s \n",errstr);
-#endif
-	    r_inputs=getMap(request_inputs,"Identifier");
-#ifdef DEBUG
-	    fprintf(stderr,"Try to load function %s\n",r_inputs->value);
-#endif
-#ifdef WIN32
-	    execute_t execute=(execute_t)GetProcAddress(so,r_inputs->value); 
-#else
-	    execute_t execute=(execute_t)dlsym(so,r_inputs->value);
-#endif
-#ifdef DEBUG
-#ifdef WIN32
-	    errstr = GetLastError();
-#else
-	    errstr = dlerror();
-#endif
-	    fprintf(stderr,"Function loaded %s\n",errstr);
-#endif	
-	    /**
-	     * set the status code value returned by the service function itself
-	     */
-	    eres=execute(&m,&request_input_real_format,&request_output_real_format);
-	  }
-	  dlclose(so);
-	} else {
-	  /**
-	   * Unable to load the requested C Library
-	   */
-	  char tmps2[1024];
-	  sprintf(tmps1,"C Library can't be loaded %s \n",errstr);
-	  map* tmps=createMap("text",tmps1);
-	  printExceptionReportResponse(m,tmps);
-	  freeMap(&tmps);
-	  free(tmps);
-	  exit(1);
-	}
-      }
-      else
-#ifdef USE_PYTHON
-	if(strncasecmp(r_inputs->value,"PYTHON",6)==0)
-	  eres=zoo_python_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	else
-#endif 
-#ifdef USE_JAVA
-	  if(strncasecmp(r_inputs->value,"JAVA",4)==0){
-	    eres=zoo_java_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	    }
-	  else
-#endif
-	    
-#ifdef USE_PHP
-	    if(strncasecmp(r_inputs->value,"PHP",3)==0){
-	      eres=zoo_php_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	    }
-	    else
-#endif
-	      
-#ifdef USE_PERL
-	      if(strncasecmp(r_inputs->value,"PERL",4)==0){
-		eres=zoo_perl_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-	      }
-	      else
-#endif
-#ifdef USE_JS
-		if(strncasecmp(r_inputs->value,"JS",2)==0){
-		  eres=zoo_js_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
-		}
-		else
-#endif
-		  {
-		    char tmpv[1024];
-		    sprintf(tmpv,"Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n",r_inputs->value);
-		    map* tmps=createMap("text",tmpv);
-		    printExceptionReportResponse(m,tmps);
-		    return -1;
-		  }
-      
-  
     } else {
       /**
        * error server don't accept the process need to output a valid 
        * error response here !!!
        */
+      eres=-1;
+      errorException(m, _("Unable to run the child process properly"), "InternalError");
     }
       	
   }

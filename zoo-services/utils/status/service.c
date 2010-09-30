@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 #include "service.h"
 
 extern "C" {
@@ -74,13 +75,13 @@ extern "C" {
 	}
     }else{
       char tmp[1024];
-      snprintf(tmp,1024,"GetStatus was unable to use the tmpPath value set in main.cfg file as directory %s.",tmpTmap->value);
+      snprintf(tmp,1024,_ss("GetStatus was unable to use the tmpPath value set in main.cfg file as directory %s."),tmpTmap->value);
       setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }
     if(hasFile<0){
       char tmp[1024];
-      snprintf(tmp,1024,"GetStatus was unable to find any cache file for Service ID %s.",tmpMap->value);
+      snprintf(tmp,1024,_ss("GetStatus was unable to find any cache file for Service ID %s."),tmpMap->value);
       setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }
@@ -106,7 +107,7 @@ extern "C" {
     }
     else{
       char tmp[1024];
-      sprintf(tmp,"ZOO GetStatus Service was unable to parse the cache xml file available for the Service ID %s.",tmpMap->value);
+      sprintf(tmp,_ss("ZOO GetStatus Service was unable to parse the cache xml file available for the Service ID %s."),tmpMap->value);
       setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }
