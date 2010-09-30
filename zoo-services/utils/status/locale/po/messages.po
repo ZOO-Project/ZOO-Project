@@ -1,0 +1,82 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: zoo-services\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-09-30 03:46+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../.cache/my_service_string_to_translate.c:1
+msgid "Produce an updated ExecuteResponse document. "
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:2
+#: ../.cache/my_service_string_to_translate.c:8
+msgid "Service ID"
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:3
+#: ../.cache/my_service_string_to_translate.c:9
+msgid "ExecuteResponse document"
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:4
+msgid ""
+"Create an ExecuteResponse document from a sid (Service ID), it will use the "
+"niternal ZOO Kernel mechanisms to access the current status from a running "
+"Service and update the percentCompleted from the original backup file used "
+"by the ZOO Kernel when running a Service in background. "
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:5
+msgid ""
+"The ZOO Service ID of the ZOO Service we want to get the current status."
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:6
+#: ../.cache/my_service_string_to_translate.c:12
+msgid "The resulting ExecuteResponse document."
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:7
+msgid "Demo long process. "
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:10
+msgid ""
+"This service doesn't do anything except taking its time, it demonstrates how "
+"to use the updateStatus function from your ZOO Service. "
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:11
+msgid "A ZOO Service ID (unused)."
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:94
+#, c-format
+msgid ""
+"GetStatus was unable to use the tmpPath value set in main.cfg file as "
+"directory %s."
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:100
+#, c-format
+msgid "GetStatus was unable to find any cache file for Service ID %s."
+msgstr ""
+
+#: ../.cache/my_service_string_to_translate.c:126
+#, c-format
+msgid ""
+"ZOO GetStatus Service was unable to parse the cache xml file available for "
+"the Service ID %s."
+msgstr ""

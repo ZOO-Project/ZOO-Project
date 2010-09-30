@@ -1,0 +1,171 @@
+# English translations for ZOO Kernel package.
+# Copyright (C) 2010 THE ZOO Kernel'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the ZOO Kernel package.
+# root <gerald.fenoy@geolabs.fr>, 2010.
+#
+#: service_internal.c:1672 zoo_service_loader.c:158 zoo_service_loader.c:160
+#: zoo_service_loader.c:220 zoo_service_loader.c:267 zoo_service_loader.c:341
+#: zoo_service_loader.c:1135 zoo_service_loader.c:1277
+#: zoo_service_loader.c:1364
+msgid ""
+msgstr ""
+"Project-Id-Version: ZOO Kernel 0.0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-09-28 00:38+0200\n"
+"PO-Revision-Date: 2010-09-28 00:39+0200\n"
+"Last-Translator: root <gerald.fenoy@geolabs.fr>\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: service_internal.c:1056
+#, c-format
+msgid ""
+"ZOO Service \"%s\" is currently running. Please, reload this document to get "
+"the up-to-date status of the Service."
+msgstr ""
+"ZOO Service \"%s\" is currently running. Please, reload this document to get "
+"the up-to-date status of the Service."
+
+#: service_internal.c:1062
+#, c-format
+msgid ""
+"Service \"%s\" was accepted by the ZOO Kernel and it run as a background "
+"task. Please consult the statusLocation attribtue providen in this document "
+"to get the up-to-date document."
+msgstr ""
+"Service \"%s\" was accepted by the ZOO Kernel and it run as a background "
+"task. Please consult the statusLocation attribtue providen in this document "
+"to get the up-to-date document."
+
+#: service_internal.c:1079
+msgid "No more information available"
+msgstr "No more information available"
+
+#: service_internal.c:1432 service_internal.c:1485
+msgid "No debug message available"
+msgstr "No debug message available"
+
+#: service_internal.c:1546
+msgid "Unable to fetch any result"
+msgstr "Unable to fetch any result"
+
+#: service_internal.c:1587
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following : %s"
+msgstr ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following : %s"
+
+#: service_internal.c:1589
+#, c-format
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+
+#: zoo_service_loader.c:119
+#, c-format
+msgid "ZOO Kernel failed to process your request receiving signal %d = %s"
+msgstr "ZOO Kernel failed to process your request receiving signal %d = %s"
+
+#: zoo_service_loader.c:147 zoo_service_loader.c:280 zoo_service_loader.c:367
+#: zoo_service_loader.c:420 zoo_service_loader.c:547 zoo_service_loader.c:623
+#: zoo_service_loader.c:637 zoo_service_loader.c:664 zoo_service_loader.c:705
+#: zoo_service_loader.c:788 zoo_service_loader.c:806 zoo_service_loader.c:864
+#: zoo_service_loader.c:905 zoo_service_loader.c:952 zoo_service_loader.c:987
+#: zoo_service_loader.c:1005 zoo_service_loader.c:1146
+#: zoo_service_loader.c:1218 zoo_service_loader.c:1238
+#: zoo_service_loader.c:1298 zoo_service_loader.c:1324
+msgid "Unable to allocate memory."
+msgstr "Unable to allocate memory."
+
+#: zoo_service_loader.c:181
+msgid "Parameter <request> was not specified"
+msgstr "Parameter <request> was not specified"
+
+#: zoo_service_loader.c:191 zoo_service_loader.c:402
+msgid ""
+"Unenderstood <request> value. Please check that it was set to "
+"GetCapabilities, DescribeProcess or Execute."
+msgstr ""
+"Unenderstood <request> value. Please check that it was set to "
+"GetCapabilities, DescribeProcess or Execute."
+
+#: zoo_service_loader.c:201
+msgid "Parameter <service> was not specified"
+msgstr "Parameter <service> was not specified"
+
+#: zoo_service_loader.c:210
+msgid "Parameter <version> was not specified"
+msgstr "Parameter <version> was not specified"
+
+#: zoo_service_loader.c:257
+msgid "The specified path doesn't exist."
+msgstr "The specified path doesn't exist."
+
+#: zoo_service_loader.c:311
+msgid "Mandatory <identifier> was not specified"
+msgstr "Mandatory <identifier> was not specified"
+
+#: zoo_service_loader.c:322
+msgid "The specified path path doesn't exist."
+msgstr "The specified path path doesn't exist."
+
+#: zoo_service_loader.c:404
+#, c-format
+msgid "No request found %s"
+msgstr "No request found %s"
+
+#: zoo_service_loader.c:441
+#, c-format
+msgid ""
+"The value for <indetifier> seems to be wrong (%s). Please, ensure that the "
+"process exist using the GetCapabilities request."
+msgstr ""
+"The value for <indetifier> seems to be wrong (%s). Please, ensure that the "
+"process exist using the GetCapabilities request."
+
+#: zoo_service_loader.c:519 zoo_service_loader.c:530
+msgid "Unable to allocate memory"
+msgstr "Unable to allocate memory"
+
+#: zoo_service_loader.c:606
+msgid "Parameter <DataInputs> was not specified"
+msgstr "Parameter <DataInputs> was not specified"
+
+#: service_internal.c:1048
+#, c-format
+msgid "Service \"%s\" run successfully."
+msgstr "Service \"%s\" run successfully."
+
+#: zoo_service_loader.c:1366
+#, c-format
+msgid ""
+"The <%s> argument was not specified in DataInputs but defined as requested "
+"in ZOO ServicesProvider configuration file, please correct your query or the "
+"ZOO Configuration file."
+msgstr ""
+"The <%s> argument was not specified in DataInputs but defined as requested "
+"in ZOO ServicesProvider configuration file, please correct your query or the "
+"ZOO Configuration file."
+
+#: zoo_service_loader.c:1651 zoo_service_loader.c:1871
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO "
+"Kernel.\n"
+msgstr ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO "
+"Kernel.\n"
+
+
+#: zoo_service_loader.c:1700
+msgid "Unable to run the child process properly"
+msgstr "Unable to run the child process properly"

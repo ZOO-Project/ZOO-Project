@@ -64,19 +64,19 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 <PAIRSTART,INITIAL,HORSBALISE,DANSBALISE>{newline}+{whitesp}*			{if (affichetrace==1) printf ("\n\nNEWLINE 2\n") ; BEGIN(INITIAL); return NEWLINE;}
 
-<INITIAL>"<?"[Xx][Mm][Ll]  { if (attentionImpossibleDeTrouverXMLDeclapres == 1 || attentionImpossibleDeTrouverPIapres == 1) { printf("\nerror : a la ligne %d : il y a eut un commentaire ou un PI avant la declaration xml\n",yylineno); exit (10) ; } ; if (affichetrace==1) printf ("\n\nSTARTXMLDECL:%s\n",yytext) ;return STARTXMLDECL;}
+<INITIAL>"<?"[Xx][Mm][Ll]  { if (attentionImpossibleDeTrouverXMLDeclapres == 1 || attentionImpossibleDeTrouverPIapres == 1) { printf("\nerror : LINE %d : comment ot PI before xml declaration\n",yylineno); exit (10) ; } ; if (affichetrace==1) printf ("\n\nSTARTXMLDECL:%s\n",yytext) ;return STARTXMLDECL;}
 
 <INITIAL>"version"{egalevolue}\"1.0\"|"version"{egalevolue}\'1.0\'  {if (affichetrace==1) printf ("\n\nVERSIONDECL:%s\n",yytext) ;return VERSIONDECL;}
-<INITIAL>"version"{egalevolue}\"[^"]*\"|"version"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : a la ligne %d : la version xml n est pas reconnue : %s\n",yylineno,yytext); exit (9) ; }
+<INITIAL>"version"{egalevolue}\"[^"]*\"|"version"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : LINE %d : XML Version not supported : %s\n",yylineno,yytext); exit (9) ; }
 
 
 <INITIAL>"encoding"{egalevolue}\"[Ii][Ss][Oo]"-8859-1"\"|"encoding"{egalevolue}\'[Ii][Ss][Oo]"-8859-1"\'  {if (affichetrace==1) printf ("\n\nENCODINGDECL:%s\n",yytext) ; return ENCODINGDECL;}
-<INITIAL>"encoding"{egalevolue}\"[^"]*\"|"encoding"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : a la ligne %d : la version d encodage n est pas reconnue : %s\n",yylineno,yytext); exit (8) ; }
+<INITIAL>"encoding"{egalevolue}\"[^"]*\"|"encoding"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : LINE %d : encoding version not supported : %s\n",yylineno,yytext); exit (8) ; }
 
 
 <INITIAL>"standalone"{egalevolue}\"yes\"|"standalone"{egalevolue}\'yes\'|"standalone"{egalevolue}\"no\"|"standalone"{egalevolue}\'no\'  {if (affichetrace==1) printf ("\n\nSDDECL:%s\n",yytext) ; return SDDECL;}
 
-<INITIAL>"standalone"{egalevolue}\"[^"]*\"|"standalone"{egalevolue}\'[^']*\'|"standalone"{egalevolue}\"[^"]*\"|"standalone"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : a la ligne %d : la version standalone n est pas reconnue : %s\n",yylineno,yytext); exit (7) ; }
+<INITIAL>"standalone"{egalevolue}\"[^"]*\"|"standalone"{egalevolue}\'[^']*\'|"standalone"{egalevolue}\"[^"]*\"|"standalone"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	printf("\nerror : LINE %d : standalone version not supported : %s\n",yylineno,yytext); exit (7) ; }
 
 
 <INITIAL>"?>"  {if (affichetrace==1) printf ("\n\nENDXMLDECL:%s\n",yytext) ; BEGIN(HORSBALISE);return ENDXMLDECL;}
@@ -110,7 +110,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 <INITIAL,HORSBALISE>"<!--"([^-]|"-"[^-])*"-->"		{attentionImpossibleDeTrouverXMLDeclapres=1; }
 
 
-<INITIAL,DANSBALISE,HORSBALISE>.|\n	{if (affichetrace==1)printf("error : ligne %d : caractere non reconnu '%s'\n",yylineno,yytext); }
+<INITIAL,DANSBALISE,HORSBALISE>.|\n	{if (affichetrace==1)printf("error : LINE %d : character not supported '%s'\n",yylineno,yytext); }
 
 %%
 

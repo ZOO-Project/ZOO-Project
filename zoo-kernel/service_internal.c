@@ -24,6 +24,14 @@
 
 #include "service_internal.h"
 
+void *addLangAttr(xmlNodePtr n,maps *m){
+  map *tmpLmap=getMapFromMaps(m,"main","language");
+  if(tmpLmap!=NULL)
+    xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST tmpLmap->value);
+  else
+    xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en-US");
+}
+
 /* Converts a hex character to its integer value */
 char from_hex(char ch) {
   return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
@@ -280,6 +288,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   ns_xlink=usedNs[xlinkId];
   xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsGetCapabilities_response.xsd"); 
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
+  addLangAttr(n,m);
   
   if(toto1!=NULL){
     map* tmp=getMap(toto1->content,"version");
@@ -511,7 +520,6 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 	if(dcount==0){
 	  xmlAddChild(nc2,nc4);
 	  xmlAddChild(nc1,nc2);
-	  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST buff);
 	  dcount++;
 	}
 	nc4 = xmlNewNode(ns_ows, BAD_CAST "Language");
@@ -589,7 +597,7 @@ xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,char* service,maps* m){
   xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsDescribeProcess_response.xsd");
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
+  addLangAttr(n,m);
 
   xmlDocSetRootElement(doc, n);
 
@@ -953,7 +961,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
+  addLangAttr(n,m);
+
   char tmp[256];
   char url[1024];
   memset(tmp,0,256);
@@ -1045,7 +1054,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   switch(status){
   case SERVICE_SUCCEEDED:
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
-    sprintf(sMsg,"Service \"%s\" run successfully.",serv->name);
+    sprintf(sMsg,_("Service \"%s\" run successfully."),serv->name);
     nc3=xmlNewText(BAD_CAST sMsg);
     xmlAddChild(nc1,nc3);
     break;
@@ -1053,13 +1062,13 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
     tmpStatus=getMapFromMaps(m,"lenv","status");
     xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST tmpStatus->value);
-    sprintf(sMsg,"ZOO Service \"%s\" is currently running. Please, reload this document to get the up-to-date status of the Service.",serv->name);
+    sprintf(sMsg,_("ZOO Service \"%s\" is currently running. Please, reload this document to get the up-to-date status of the Service."),serv->name);
     nc3=xmlNewText(BAD_CAST sMsg);
     xmlAddChild(nc1,nc3);
     break;
   case SERVICE_ACCEPTED:
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
-    sprintf(sMsg,"Service \"%s\" was accepted by the ZOO Kernel and it run as a background task. Please consult the statusLocation attribtue providen in this document to get the up-to-date document.",serv->name);
+    sprintf(sMsg,_("Service \"%s\" was accepted by the ZOO Kernel and it run as a background task. Please consult the statusLocation attribtue providen in this document to get the up-to-date document."),serv->name);
     nc3=xmlNewText(BAD_CAST sMsg);
     xmlAddChild(nc1,nc3);
     break;
@@ -1076,12 +1085,12 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     if(te!=NULL)
       addToMap(errorMap,"text",te->value);
     else
-      addToMap(errorMap,"text","No more information available");
+      addToMap(errorMap,"text",_("No more information available"));
     nc3=createExceptionReportNode(m,errorMap,0);
     xmlAddChild(nc1,nc3);
     break;
   default :
-    printf("error code not know : %i\n",status);
+    printf(_("error code not know : %i\n"),status);
     //exit(1);
     break;
   }
@@ -1249,13 +1258,13 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
   xmlAddChild(nc,nc1);
   // Extract Title required to be first element in the ZCFG file !
   nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-  nc3=xmlNewText(BAD_CAST tmp->value);
+  nc3=xmlNewText(BAD_CAST _ss(tmp->value));
   xmlAddChild(nc2,nc3);  
   xmlAddChild(nc1,nc2);
   // Extract Abstract required to be second element in the ZCFG file !
   tmp=tmp->next;
   nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-  nc3=xmlNewText(BAD_CAST tmp->value);
+  nc3=xmlNewText(BAD_CAST _ss(tmp->value));
   xmlAddChild(nc2,nc3);  
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
@@ -1351,7 +1360,8 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,char* identifier,map* amap
     map* tmp1=getMap(tmp,tmp2[j]);
     if(tmp1!=NULL){
       nc2 = xmlNewNode(ns_ows, BAD_CAST tmp2[j]);
-      xmlAddChild(nc2,xmlNewText(BAD_CAST tmp1->value));
+      fprintf(stderr,"[%s] \n[%s]\n",tmp1->value,_ss(tmp1->value));
+      xmlAddChild(nc2,xmlNewText(BAD_CAST _ss(tmp1->value)));
       xmlAddChild(root,nc2);
     }
   }
@@ -1388,8 +1398,7 @@ void printExceptionReportResponse(maps* m,map* s){
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr n,nc,nc1,nc2;
+  xmlNodePtr n;
 
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
@@ -1404,43 +1413,13 @@ void printExceptionReportResponse(maps* m,map* s){
       printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
   }else
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
-
-  ns=xmlNewNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  n = xmlNewNode(ns, BAD_CAST "ExceptionReport");  
-  ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
-  ns_xlink=xmlNewNs(n,BAD_CAST "http://www.w3.org/1999/xlink",BAD_CAST "xlink");
-  ns_xsi=xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
-  xmlNewProp(n,BAD_CAST "xsi:schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
-
-  nc = xmlNewNode(ns, BAD_CAST "Exception");  
-
-  map* tmp=getMap(s,"code");
-  if(tmp!=NULL)
-    xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST tmp->value);
-  else
-    xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST "NoApplicableCode");
-
-  tmp=getMap(s,"text");
-  nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
-  nc2=NULL;
-  if(tmp!=NULL){
-    xmlNodeSetContent(nc1, BAD_CAST tmp->value);
-  }
-  else{
-    xmlNodeSetContent(nc1, BAD_CAST "No debug message available");
-  }
-  xmlAddChild(nc,nc1);
-  xmlAddChild(n,nc);
+  n=createExceptionReportNode(m,s,1);
   xmlDocSetRootElement(doc, n);
-
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
   printf("%s",xmlbuff);
   fflush(stdout);
   xmlFreeDoc(doc);
   xmlFree(xmlbuff);
-  xmlFreeNs(ns);
   xmlCleanupParser();
 }
 
@@ -1464,7 +1443,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
     ns_xlink=usedNs[xlinkId];
     xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
   }
-  xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en");
+  addLangAttr(n,m);
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
   
   nc = xmlNewNode(ns, BAD_CAST "Exception");
@@ -1482,7 +1461,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
     xmlNodeSetContent(nc1, BAD_CAST tmp->value);
   }
   else{
-    xmlNodeSetContent(nc1, BAD_CAST "No debug message available");
+    xmlNodeSetContent(nc1, BAD_CAST _("No debug message available"));
   }
   xmlAddChild(nc,nc1);
   xmlAddChild(n,nc);
@@ -1543,7 +1522,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
        */
       toto=getMap(request_outputs->content,"value");
       if(toto==NULL){
-	map * errormap = createMap("text","Unable to fetch any result");
+	map * errormap = createMap("text",_("Unable to fetch any result"));
 	addToMap(errormap,"code", "InternalError");
 	printExceptionReportResponse(m,errormap);
 	freeMap(&errormap);
@@ -1584,9 +1563,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       map *lenv;
       lenv=getMapFromMaps(m,"lenv","message");
       if(lenv!=NULL)
-	sprintf(tmp,"Unable to run the Service. The message returned back by the Service was the following : %s",lenv->value);
+	sprintf(tmp,_("Unable to run the Service. The message returned back by the Service was the following : %s"),lenv->value);
       else
-	sprintf(tmp,"Unable to run the Service. No more information was returned back by the Service.");
+	sprintf(tmp,_("Unable to run the Service. No more information was returned back by the Service."));
       errormap = createMap("text",tmp);      
       addToMap(errormap,"code", "InternalError");
       printExceptionReportResponse(m,errormap);

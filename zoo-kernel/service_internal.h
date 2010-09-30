@@ -27,8 +27,13 @@
 
 #pragma once 
 
-#define DEFAULT_SERVICE_URL "http://dev.geolabs.fr/zoo-wps/"
+#define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
 #define TIME_SIZE 40
+
+#include <libintl.h>
+#include <locale.h>
+#define _(String) dgettext ("zoo-kernel",String)
+#define _ss(String) dgettext ("zoo-services",String)
 
 #include <sys/stat.h>
 #include <sys/types.h>

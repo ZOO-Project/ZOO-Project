@@ -1,0 +1,320 @@
+# French translations for PACKAGE package.
+# Copyright (C) 2010 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# root <gerald.fenoy@geolabs.fr>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: zoo-services\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-09-28 12:52+0200\n"
+"PO-Revision-Date: 2010-09-28 12:55+0200\n"
+"Last-Translator: root <gerald.fenoy@geolabs.fr>\n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: locale/.cache/my_service_string_to_translate.c:1
+msgid "Compute boundary."
+msgstr "Calcul le contour."
+
+#: locale/.cache/my_service_string_to_translate.c:2
+msgid "Polygon to compute boundary"
+msgstr "Le polygon à utiliser pour calculer le contour"
+
+#: locale/.cache/my_service_string_to_translate.c:3
+msgid "The geometry created"
+msgstr "La géométrie créée"
+
+#: locale/.cache/my_service_string_to_translate.c:4
+msgid ""
+"A new geometry object is created and returned containing the boundary of the "
+"geometry on which the method is invoked. "
+msgstr ""
+"Un nouvel objet géographique contenant le contour de la géométrie passée en "
+"paramètre est créé et retourné. "
+
+#: locale/.cache/my_service_string_to_translate.c:5
+#: locale/.cache/my_service_string_to_translate.c:12
+#: locale/.cache/my_service_string_to_translate.c:25
+#: locale/.cache/my_service_string_to_translate.c:47
+#: locale/.cache/my_service_string_to_translate.c:62
+msgid "URI to a set of GML that describes the polygon."
+msgstr "Le lien vers un fichier GML décrivant un polygone."
+
+#: locale/.cache/my_service_string_to_translate.c:6
+msgid ""
+"The geometry containing the boundary of the geometry on which the method is "
+"invoked."
+msgstr ""
+"La géométrie contenant le contour de la géométrie passée en paramètre."
+
+#: locale/.cache/my_service_string_to_translate.c:7
+msgid "Create a buffer around a polygon. "
+msgstr "Crée une zone tampon atour du polygone."
+
+#: locale/.cache/my_service_string_to_translate.c:8
+msgid "Polygon to be buffered"
+msgstr "Le Polygone à utiliser"
+
+#: locale/.cache/my_service_string_to_translate.c:9
+msgid "Buffer Distance"
+msgstr "La distance pour créer la zone tampon"
+
+#: locale/.cache/my_service_string_to_translate.c:10
+msgid "Buffered Polygon"
+msgstr "La zone tampon correspondant au polygone "
+
+#: locale/.cache/my_service_string_to_translate.c:11
+msgid ""
+"Create a buffer around a single polygon. Accepts the polygon as GML and "
+"provides GML output for the buffered feature. "
+msgstr ""
+"Crée une zone tampon autour d'un polygone. Prend en entrée un GML et fournit une "
+"chaîne GeoJSON de la zone tampon. "
+
+#: locale/.cache/my_service_string_to_translate.c:13
+msgid "Distance to be used to calculate buffer."
+msgstr "La distance à utiliser pour créer la zone tampon."
+
+#: locale/.cache/my_service_string_to_translate.c:14
+msgid "GML stream describing the buffered polygon feature."
+msgstr "Une chaîne GeoJSON contenant la zone tampon."
+
+#: locale/.cache/my_service_string_to_translate.c:15
+msgid "Get the centroid of a polygon. "
+msgstr "Renvoit le centroid d'un polygone"
+
+#: locale/.cache/my_service_string_to_translate.c:16
+msgid "Polygon to get the centroid"
+msgstr "Le polygone à utiliser pour calculer le centroid"
+
+#: locale/.cache/my_service_string_to_translate.c:17
+msgid "The Centroid"
+msgstr "Le centroid"
+
+#: locale/.cache/my_service_string_to_translate.c:18
+msgid "Compute the geometry centroid."
+msgstr "Calcul le centroid d'une géométrie"
+
+#: locale/.cache/my_service_string_to_translate.c:19
+msgid "The centroid which is not necessarily within the geometry."
+msgstr "Le centroid qui n'est pas nécessairement dans la géométrie."
+
+#: locale/.cache/my_service_string_to_translate.c:20
+msgid "JSON String / GML Entity of the centroid"
+msgstr "La chaîne GeoJSON ou l'entité GML du centroid"
+
+#: locale/.cache/my_service_string_to_translate.c:21
+msgid "Compute convex hull."
+msgstr "Calcul de la partie convexe"
+
+#: locale/.cache/my_service_string_to_translate.c:22
+msgid "Polygon to compute convexhull"
+msgstr "Polygone pour calculer la partie convexe"
+
+#: locale/.cache/my_service_string_to_translate.c:23
+#: locale/.cache/my_service_string_to_translate.c:26
+msgid "The convex hull of the geometry"
+msgstr "La partie convexe de la géométrie"
+
+#: locale/.cache/my_service_string_to_translate.c:24
+msgid ""
+"A new geometry object is created and returned containing the convex hull of "
+"the geometry on which the method is invoked."
+msgstr ""
+"Un nouvel objet géographique est créé et retourné. Il contient la partie convexe de la "
+"géométrie sur laquelle on a appliqué la méthode."
+
+#: locale/.cache/my_service_string_to_translate.c:27
+msgid "Compute difference. . "
+msgstr "Calcul de la différence."
+
+#: locale/.cache/my_service_string_to_translate.c:28
+#: locale/.cache/my_service_string_to_translate.c:36
+#: locale/.cache/my_service_string_to_translate.c:50
+#: locale/.cache/my_service_string_to_translate.c:66
+#: locale/.cache/my_service_string_to_translate.c:74
+msgid "the first geometry "
+msgstr "La première géométrie"
+
+#: locale/.cache/my_service_string_to_translate.c:29
+#: locale/.cache/my_service_string_to_translate.c:37
+#: locale/.cache/my_service_string_to_translate.c:51
+#: locale/.cache/my_service_string_to_translate.c:67
+#: locale/.cache/my_service_string_to_translate.c:75
+msgid "the other geometry"
+msgstr "L'autre géométrie"
+
+#: locale/.cache/my_service_string_to_translate.c:30
+msgid "The difference between two geometries"
+msgstr "La différence entre les deux géométries"
+
+#: locale/.cache/my_service_string_to_translate.c:31
+msgid ""
+"Generates a new geometry which is the region of this geometry with the "
+"region of the other geometry removed."
+msgstr ""
+"Génère une nouvelle géométrie qui contient la région de la géométrie dont on a "
+"supprimé l'autre géométrie."
+
+
+#: locale/.cache/my_service_string_to_translate.c:32
+#: locale/.cache/my_service_string_to_translate.c:40
+#: locale/.cache/my_service_string_to_translate.c:54
+#: locale/.cache/my_service_string_to_translate.c:70
+#: locale/.cache/my_service_string_to_translate.c:78
+msgid "the first geometry to compare against."
+msgstr "La première géométrie utilisée pour la comparaison"
+
+#: locale/.cache/my_service_string_to_translate.c:33
+#: locale/.cache/my_service_string_to_translate.c:41
+#: locale/.cache/my_service_string_to_translate.c:55
+#: locale/.cache/my_service_string_to_translate.c:71
+#: locale/.cache/my_service_string_to_translate.c:79
+msgid "the other geometry to compare against."
+msgstr "L'autre géométrie à comparer."
+
+#: locale/.cache/my_service_string_to_translate.c:34
+msgid "The difference between the two geometries."
+msgstr "La différence entre les deux géométries."
+
+#: locale/.cache/my_service_string_to_translate.c:35
+msgid "Calcul la distance entre deux entites geographique. "
+msgstr "Calcul de la distance entre deux objets géographiques."
+
+#: locale/.cache/my_service_string_to_translate.c:38
+msgid "The distance between two geometries"
+msgstr "La distance entre deux géométries"
+
+#: locale/.cache/my_service_string_to_translate.c:39
+msgid "Calcul de la distance entre deux entites geographique. "
+msgstr "Calcul de la distance entre deux entités géographiques."
+
+#: locale/.cache/my_service_string_to_translate.c:42
+msgid "The shortest distance between the two geometries."
+msgstr "La plus courte distance entre de géométries."
+
+#: locale/.cache/my_service_string_to_translate.c:43
+msgid "Compute geometry area."
+msgstr "Calcul l'aire de la géométrie."
+
+#: locale/.cache/my_service_string_to_translate.c:44
+msgid "Polygon to compute are"
+msgstr "Le polygone à utiliser"
+
+#: locale/.cache/my_service_string_to_translate.c:45
+msgid "Computed Area"
+msgstr "L'aire calculée"
+
+#: locale/.cache/my_service_string_to_translate.c:46
+msgid "Computes the area for a geometry"
+msgstr "Calcul de l'aire d'une géométrie"
+
+#: locale/.cache/my_service_string_to_translate.c:48
+msgid "The Computed Area Value"
+msgstr "La valeur de l'aire calculée"
+
+#: locale/.cache/my_service_string_to_translate.c:49
+msgid "Compute intersection. "
+msgstr "Calcul de l'intersection."
+
+#: locale/.cache/my_service_string_to_translate.c:52
+msgid "Intersection of geometries"
+msgstr "L'intersection des géométries."
+
+#: locale/.cache/my_service_string_to_translate.c:53
+msgid ""
+"Generates a new geometry which is the region of intersection of the two "
+"geometries operated on."
+msgstr ""
+"Crée une nouvelle géométrie qui représente l'intersection des deux géométries avec "
+"lesquelles le service est utilisé."
+
+#: locale/.cache/my_service_string_to_translate.c:56
+msgid ""
+"A new geometry representing the intersection or NULL if there is no "
+"intersection or an error occurs."
+msgstr ""
+"Une nouvelle géométrie représentant l'intersection ou NULL si l'intersection est vide "
+"si une erreur s'est produite."
+
+#: locale/.cache/my_service_string_to_translate.c:57
+msgid "Douglas-Peucker like algorithm"
+msgstr "Algorythme de simplification de type Douglas-Peucker"
+
+#: locale/.cache/my_service_string_to_translate.c:58
+msgid "Polygon to simplify"
+msgstr "Le polygone à simplifier"
+
+#: locale/.cache/my_service_string_to_translate.c:59
+msgid "Tolerance to use."
+msgstr "La tolérance à utliser."
+
+#: locale/.cache/my_service_string_to_translate.c:60
+msgid "The simplified geometry"
+msgstr "La géométrie simplifiée"
+
+#: locale/.cache/my_service_string_to_translate.c:61
+msgid ""
+"Simplifies a geometry, ensuring that the result is a valid geometry having "
+"the same dimension and number of components as the input. The simplification "
+"uses a maximum distance difference algorithm similar to the one used in the "
+"Douglas-Peucker algorithm."
+msgstr ""
+"Simplifie une géométrie, en s'assurant que le résultat soit une géométrie valide "
+"ayant la même dimension et le même nombre de composants que la donnée d'entrée. "
+"La simplification utilise un algorythme similaire à l'algorythme Douglas-Peucker."
+
+#: locale/.cache/my_service_string_to_translate.c:63
+msgid "The approximation tolerance to use."
+msgstr "La valeur approximative de la tolérance à utiliser."
+
+#: locale/.cache/my_service_string_to_translate.c:64
+msgid ""
+"The result has the same number of shells and holes (rings) as the input, in "
+"the same order. The result rings touch at no more than the number of "
+"touching point in the input (although they may touch at fewer points)."
+msgstr ""
+"Le résultat a le même nombre composant que l'entrée, dans le même ordre. "
+
+#: locale/.cache/my_service_string_to_translate.c:65
+msgid "Compute symmetric difference. "
+msgstr "Calcul de la différence symétrique."
+
+#: locale/.cache/my_service_string_to_translate.c:68
+msgid "The resulting geometry"
+msgstr "La géométrie résultat"
+
+#: locale/.cache/my_service_string_to_translate.c:69
+msgid ""
+"Generates a new geometry which is the symmetric difference of this geometry "
+"and the other geometry."
+msgstr ""
+"Crée une nouvelle géométrie qui est la difference symétrique des géométries."
+
+#: locale/.cache/my_service_string_to_translate.c:72
+msgid "The symmetric difference of two geometries"
+msgstr "La différence symmétrique de deux géométries"
+
+#: locale/.cache/my_service_string_to_translate.c:73
+msgid "Compute union. "
+msgstr "Cacul l'union."
+
+#: locale/.cache/my_service_string_to_translate.c:76
+msgid "The union of two geometries"
+msgstr "L'union de deux géométries"
+
+#: locale/.cache/my_service_string_to_translate.c:77
+msgid ""
+"Generates a new geometry which is the region of union of the two geometries "
+"operated on."
+msgstr ""
+"Génère une nouvelle géométrie qui est l'union des deux géométrie passées en "
+"paramètre."
+
+#: locale/.cache/my_service_string_to_translate.c:80
+msgid "The geometry representing the union of the two geometries."
+msgstr "La géométrie représentant l'union des deux géométries."
