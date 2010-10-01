@@ -22,16 +22,12 @@
  * THE SOFTWARE.
  */
 
-#include <libintl.h>
-#include <locale.h>
-#define _(String) dgettext ("zoo-services",String)
-
 #include "cpl_conv.h"
 #include "ogr_api.h"
 #include "ogr_geometry.h"
 #include "geos_c.h"
 #include "service.h"
-
+#include "service_internal.h"
 
 extern "C" {
 #include <libxml/tree.h>
@@ -90,7 +86,7 @@ extern "C" {
     OGRGeometryH res=OGR_G_CreateFromGML(tmp);
     free(tmp);
     if(res==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to call OGR_G_CreatFromGML"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to call OGR_G_CreatFromGML"));
       return NULL;
     }
     else
@@ -110,7 +106,7 @@ extern "C" {
     fprintf(stderr,"Tolerance for Simplify %f",tolerance);
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse the input geometry from InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
     map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
@@ -122,11 +118,11 @@ extern "C" {
         geometry=createGeometryFromGML(conf,tmp->value);
     }
     else{
-      setMapInMaps(conf,"lenv","message",_("Unable to find any geometry for InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to find any geometry for InputPolygon"));
       return SERVICE_FAILED;
     }
     if(geometry==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse the input geometry from InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
     fprintf(stderr,"Create GEOSGeometry object");
@@ -178,7 +174,7 @@ extern "C" {
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse the input geometry from InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
     fprintf(stderr,"Service internal print \n");
@@ -198,7 +194,7 @@ extern "C" {
     else
       geometry=createGeometryFromGML(conf,tmp->value);
     if(geometry==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse the input geometry from InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
     res=(*myFunc)(geometry);
@@ -255,11 +251,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
    OGRGeometryH geometry,res;
    map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
    if(tmp==NULL){
-     setMapInMaps(conf,"lenv","message",_("Unable to fetch input geometry"));
+     setMapInMaps(conf,"lenv","message",_ss("Unable to fetch input geometry"));
      return SERVICE_FAILED;
    }else
      if(strlen(tmp->value)<=0){
-       setMapInMaps(conf,"lenv","message",_("Unable to fetch input geometry"));
+       setMapInMaps(conf,"lenv","message",_ss("Unable to fetch input geometry"));
        return SERVICE_FAILED;
      }
    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
@@ -268,7 +264,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
    else
      geometry=createGeometryFromGML(conf,tmp->value);
    if(geometry==NULL){
-     setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry"));
+     setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry"));
      return SERVICE_FAILED;
    }
    double bufferDistance;
@@ -359,7 +355,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       	geometry1=createGeometryFromGML(conf,tmp->value);
     }
     if(geometry1==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry for InputEntity1."));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity1."));
       fprintf(stderr,"SERVICE FAILED !\n");
       return SERVICE_FAILED;
     }
@@ -389,7 +385,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     }
     fprintf(stderr,"\nService internal print1 InputEntity2 Final\n");
     if(geometry2==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry for InputEntity2."));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity2."));
       fprintf(stderr,"SERVICE FAILED !\n");
       return SERVICE_FAILED;
     }
@@ -465,7 +461,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       	geometry1=createGeometryFromGML(conf,tmp->value);
     }
     if(geometry1==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry for InputEntity1."));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity1."));
       fprintf(stderr,"SERVICE FAILED !\n");
       return SERVICE_FAILED;
     }
@@ -488,7 +484,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       	geometry2=createGeometryFromGML(conf,tmp->value);
     }
     if(geometry2==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry for InputEntity2."));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity2."));
       fprintf(stderr,"SERVICE FAILED !\n");
       return SERVICE_FAILED;
     }
@@ -516,13 +512,13 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     OGRGeometryH geometry;
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(tmp==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry from InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
     fprintf(stderr,"geometry creation %s \n",tmp->value);
     geometry=createGeometryFromGML(conf,tmp->value);
     if(geometry==NULL){
-      setMapInMaps(conf,"lenv","message",_("Unable to parse input geometry from InputPolygon"));
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
     fprintf(stderr,"geometry created %s \n",tmp->value);
