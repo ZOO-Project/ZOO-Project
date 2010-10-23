@@ -112,7 +112,7 @@ int main( int nArgc, char ** papszArgv )
     OGRRegisterAll();
 
 #ifdef ZOO_SERVICE
-	map *tmpMap=NULL;
+    map *tmpMap=NULL;
     char dataPath[1024];
     tmpMap=getMapFromMaps(conf,"main","dataPath");
     if(tmpMap!=NULL)
@@ -124,81 +124,75 @@ int main( int nArgc, char ** papszArgv )
       sprintf(tempPath,"%s",tmpMap->value);
     }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"F","value");
     if(tmpMap!=NULL){
       pszFormat=tmpMap->value;
     }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"DSCO","value");
     if(tmpMap!=NULL){
 	  papszDSCO = CSLAddString(papszDSCO, tmpMap->value );
     }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"LCO","value");
     if(tmpMap!=NULL){
 	  papszLCO = CSLAddString(papszLCO, tmpMap->value );
     }
 
-	tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"LCO","value");
-    if(tmpMap!=NULL){
-	  papszLCO = CSLAddString(papszLCO, tmpMap->value );
-    }
-
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"preserve_fid","value");
     if(tmpMap!=NULL){
 	  bPreserveFID = TRUE;
     }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"skipfailure","value");
     if(tmpMap!=NULL){
 	  bPreserveFID = TRUE;
 	  bSkipFailures = TRUE;
 	  nGroupTransactions = 1; /* #2409 */
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"append","value");
     if(tmpMap!=NULL){
 	  bAppend = TRUE;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"overwrite","value");
     if(tmpMap!=NULL){
 	  bOverwrite = TRUE;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"update","value");
     if(tmpMap!=NULL){
 	  bUpdate = TRUE;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"fid","value");
     if(tmpMap!=NULL){
 	  nFIDToFetch = atoi(tmpMap->value);
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"sql","value");
     if(tmpMap!=NULL){
 	  pszSQLStatement = tmpMap->value;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"nln","value");
     if(tmpMap!=NULL){
 	  pszNewLayerName = tmpMap->value;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"nlt","value");
     if(tmpMap!=NULL){
 	  pszNewLayerName = tmpMap->value;
@@ -242,40 +236,34 @@ int main( int nArgc, char ** papszArgv )
 			  tmpMap->value );
 		  exit( 1 );
 	  }
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"tg","value");
     if(tmpMap!=NULL){
 	  nGroupTransactions = atoi(tmpMap->value);
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"s_srs","value");
     if(tmpMap!=NULL){
 	  pszSourceSRSDef = tmpMap->value;
-	}
+    }
 
-	tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"s_srs","value");
-    if(tmpMap!=NULL){
-	  pszSourceSRSDef = tmpMap->value;
-	}
-
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"a_srs","value");
     if(tmpMap!=NULL){
 	  pszOutputSRSDef = tmpMap->value;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"t_srs","value");
     if(tmpMap!=NULL){
 	  pszOutputSRSDef = tmpMap->value;
 	  bTransform = TRUE;
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"SPAT","value");
     if(tmpMap!=NULL){
       char *tmp=tmpMap->value;
@@ -303,48 +291,42 @@ int main( int nArgc, char ** papszArgv )
         cnt++;
       }
 
-	  OGRLinearRing  oRing;
+      OGRLinearRing  oRing;
+      
+      oRing.addPoint( dfULX, dfULY );
+      oRing.addPoint( dfULX, dfLRY );
+      oRing.addPoint( dfLRX, dfLRY );
+      oRing.addPoint( dfLRX, dfULY );
+      oRing.addPoint( dfULX, dfULY );
+      poSpatialFilter = new OGRPolygon();
+      ((OGRPolygon *) poSpatialFilter)->addRing( &oRing );
+    }
 
-	  oRing.addPoint( dfULX, dfULY );
-	  oRing.addPoint( dfULX, dfLRY );
-	  oRing.addPoint( dfLRX, dfLRY );
-	  oRing.addPoint( dfLRX, dfULY );
-	  oRing.addPoint( dfULX, dfULY );
-	  poSpatialFilter = new OGRPolygon();
-	  ((OGRPolygon *) poSpatialFilter)->addRing( &oRing );
-	}
-
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"where","value");
     if(tmpMap!=NULL){
 	  pszWHERE = tmpMap->value;
-	}
+    }
 
-	tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"where","value");
-    if(tmpMap!=NULL){
-	  pszWHERE = tmpMap->value;
-	}
-
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"select","value");
     if(tmpMap!=NULL){
 	  pszSelect = tmpMap->value;
 	  papszSelFields = CSLTokenizeStringComplex(pszSelect, " ,", 
 		  FALSE, FALSE );
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"segmentize","value");
     if(tmpMap!=NULL){
 	  dfMaxSegmentLength = atof(tmpMap->value);
-	}
+    }
 
-	tmpMap=NULL;
+    tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"segmentize","value");
     if(tmpMap!=NULL){
 	  dfMaxSegmentLength = atof(tmpMap->value);
-	}
+    }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"InputDSN","value");
@@ -357,19 +339,6 @@ int main( int nArgc, char ** papszArgv )
     tmpMap=getMapFromMaps(inputs,"OutputDSN","value");
     if(tmpMap!=NULL){
       pszDestDataSource=(char*)malloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
-      /*char *ext=new char[4];
-      ext="tif";
-      if(strcmp(mtoupper((char*)pszFormat),"AAIGRID")==0)
-        ext="csv";
-      else 
-        if(strcmp(mtoupper((char*)pszFormat),"PNG")==0)
-          ext="png";
-        else
-          if(strcmp(mtoupper((char*)pszFormat),"GIF")==0)
-            ext="gif";
-          else
-            if(strcmp(mtoupper((char*)pszFormat),"JPEG")==0)
-              ext="jpg";*/
       sprintf((char*)pszDestDataSource,"%s/%s",tempPath,tmpMap->value/*,ext*/);
     }
 
@@ -943,7 +912,7 @@ static int TranslateLayer( OGRDataSource *poSrcDS,
                            char **papszSelFields,
                            int bAppend, int eGType, int bOverwrite,
                            double dfMaxSegmentLength)
-
+		
 {
     OGRLayer    *poDstLayer;
     OGRFeatureDefn *poFDefn;
