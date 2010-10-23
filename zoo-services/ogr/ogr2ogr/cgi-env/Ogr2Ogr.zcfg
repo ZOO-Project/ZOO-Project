@@ -1,13 +1,13 @@
 [Ogr2Ogr]
- Title = Convert raster data from one format to another. 
- Abstract = Converts raster data between different formats.
+ Title = Convert vector data from one format to another. 
+ Abstract = Converts vector data between different formats.
  processVersion = 1
  storeSupported = true
  statusSupported = true
  serviceType = C
  serviceProvider = ogr2ogr_service.zo
- <MetaData lang="en">
-   title = My Demo
+ <MetaData>
+   Title = My Demo
  </MetaData>
  <DataInputs>
   [F]
@@ -18,10 +18,9 @@
    <LiteralData>
     DataType = string
     <Default>
-     value = AAIGrid
+     value = ESRI ShapeFile
     </Default>
     <Supported>
-     value = AAIGrid
     </Supported>
    </LiteralData>
   [InputDSN]
@@ -32,24 +31,20 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
     <Supported>
-     value = AAIGrid
     </Supported>
    </LiteralData>
   [OutputDSN]
    Title = The output data source name
-   Abstract = The output data source name to use as source for convertion.
+   Abstract = The full path of the output data source name created.
    minOccurs = 1
    maxOccurs = 1
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
     <Supported>
-     value = AAIGrid
     </Supported>
    </LiteralData>
  </DataInputs>
@@ -60,10 +55,8 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
     <Supported>
-     value = AAIGrid
     </Supported>
    </LiteralData>
  </DataOutputs>  
