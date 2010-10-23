@@ -100,6 +100,7 @@ int main( int nArgc, char ** papszArgv )
 #ifdef ZOO_SERVICE
 	{
 		fprintf(stderr,"Not correct version of the gdal library\n");
+		setMapInMaps(conf,"lenv","message","Unable to check gdal version for ogr2ogr_service.zo");
 		return SERVICE_FAILED;
 	}
 #else
@@ -547,6 +548,7 @@ int main( int nArgc, char ** papszArgv )
 #endif
         Usage();
 #ifdef ZOO_SERVICE
+		setMapInMaps(conf,"lenv","message","Wrong parameter");
 		return SERVICE_FAILED;
 	}
 #endif
@@ -574,6 +576,9 @@ int main( int nArgc, char ** papszArgv )
             fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
         }
 #ifdef ZOO_SERVICE
+		char tmp[1024];
+		sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",pszDataSource);
+		setMapInMaps(conf,"lenv","message",tmp);
 		return SERVICE_FAILED;
 #else
         exit( 1 );
@@ -594,6 +599,9 @@ int main( int nArgc, char ** papszArgv )
                     "Unable to open existing output datasource `%s'.\n",
                     pszDestDataSource );
 #ifdef ZOO_SERVICE
+		char tmp[1024];
+		sprintf(tmp,"Unable to open existing output datasource `%s'.",pszDestDataSource);
+		setMapInMaps(conf,"lenv","message",tmp);
 		return SERVICE_FAILED;
 #else
         exit( 1 );
@@ -636,6 +644,9 @@ int main( int nArgc, char ** papszArgv )
                 fprintf( stderr,  "  -> `%s'\n", poR->GetDriver(iDriver)->GetName() );
             }
 #ifdef ZOO_SERVICE
+			char tmp[1024];
+			sprintf(tmp,"Unable to find driver `%s'.",pszFormat);
+			setMapInMaps(conf,"lenv","message",tmp);
 			return SERVICE_FAILED;
 #else
             exit( 1 );
@@ -647,6 +658,9 @@ int main( int nArgc, char ** papszArgv )
             fprintf( stderr,  "%s driver does not support data source creation.\n",
                     pszFormat );
 #ifdef ZOO_SERVICE
+			char tmp[1024];
+			sprintf(tmp,"%s driver does not support data source creation.",pszFormat);
+			setMapInMaps(conf,"lenv","message",tmp);
 			return SERVICE_FAILED;
 #else
             exit( 1 );
@@ -662,6 +676,9 @@ int main( int nArgc, char ** papszArgv )
             fprintf( stderr,  "%s driver failed to create %s\n", 
                     pszFormat, pszDestDataSource );
 #ifdef ZOO_SERVICE
+			char tmp[1024];
+			sprintf(tmp,"%s driver failed to create %s",pszFormat, pszDestDataSource);
+			setMapInMaps(conf,"lenv","message",tmp);
 			return SERVICE_FAILED;
 #else
             exit( 1 );
@@ -680,6 +697,9 @@ int main( int nArgc, char ** papszArgv )
             fprintf( stderr,  "Failed to process SRS definition: %s\n", 
                     pszOutputSRSDef );
 #ifdef ZOO_SERVICE
+			char tmp[1024];
+			sprintf(tmp,"Failed to process SRS definition: %s",pszOutputSRSDef);
+			setMapInMaps(conf,"lenv","message",tmp);
 			return SERVICE_FAILED;
 #else
             exit( 1 );
@@ -698,6 +718,9 @@ int main( int nArgc, char ** papszArgv )
             fprintf( stderr,  "Failed to process SRS definition: %s\n", 
                     pszSourceSRSDef );
 #ifdef ZOO_SERVICE
+			char tmp[1024];
+			sprintf(tmp,"Failed to process SRS definition: %s",pszOutputSRSDef);
+			setMapInMaps(conf,"lenv","message",tmp);
 			return SERVICE_FAILED;
 #else
             exit( 1 );
@@ -751,6 +774,9 @@ int main( int nArgc, char ** papszArgv )
             fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
                     iLayer );
 #ifdef ZOO_SERVICE
+			char tmp[1024];
+			sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+			setMapInMaps(conf,"lenv","message",tmp);
 			return SERVICE_FAILED;
 #else
 			exit( 1 );
@@ -779,6 +805,9 @@ int main( int nArgc, char ** papszArgv )
                           poLayer->GetLayerDefn()->GetName() );
 
 #ifdef ZOO_SERVICE
+				char tmp[1024];
+				sprintf(tmp,"Terminating translation prematurely after failed of layer %s",poLayer->GetLayerDefn()->GetName() );
+				setMapInMaps(conf,"lenv","message",tmp);
 				return SERVICE_FAILED;
 #else
                 exit( 1 );
