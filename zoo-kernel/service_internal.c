@@ -998,7 +998,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
       else
 	sprintf(currentSid,"%s",tmp_lenv->value);
       if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
-	sprintf(url,"%s/?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;Identifier=GetStatus&amp;DataInputs=sid=%s&amp;RawDataOutput=Result",tmpm1->value,currentSid);
+	sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
       }else{
 	if(strlen(tmpm->value)>0)
 	  if(strcasecmp(tmpm->value,"true")!=0)
@@ -1006,7 +1006,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
 	  else
 	    sprintf(url,"%s/GetStatus/%s",tmpm1->value,currentSid);
 	else
-	  sprintf(url,"%s/?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;Identifier=GetStatus&amp;DataInputs=sid=%s&amp;RawDataOutput=Result",tmpm1->value,currentSid);
+	  sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
       }
     }else{
       map* tmpm2=getMap(tmp_maps->content,"tmpUrl");
