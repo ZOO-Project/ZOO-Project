@@ -76,15 +76,32 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   if (!JS_DefineFunction(cx, global, "ZOOUpdateStatus", JSUpdateStatus, 2, 0))
     return 1;
 
+  map* tmpm1=getMap(request,"metapath");
+  char ntmp[1024];
+  getcwd(ntmp,1024);
+
+  /**
+   * Load the first part of the ZOO-API
+   */
+  char api0[strlen(tmpm1->value)+strlen(ntmp)+15];
+  sprintf(api0,"%s/%sZOO-proj4js.js",ntmp,tmpm1->value);
+  fprintf(stderr,"Trying to load %s\n",api0);
+  JSScript *api_script1=loadZooApiFile(cx,global,api0);
+  fflush(stderr);
+
+  char api1[strlen(tmpm1->value)+strlen(ntmp)+11];
+  sprintf(api1,"%s/%sZOO-api.js",ntmp,tmpm1->value);
+  fprintf(stderr,"Trying to load %s\n",api1);
+  JSScript *api_script2=loadZooApiFile(cx,global,api1);
+  fflush(stderr);
+
   /* Your application code here. This may include JSAPI calls
      to create your own custom JS objects and run scripts. */
   maps* out=*outputs;
   int res=SERVICE_FAILED;
   maps* mc=*main_conf;
-  map* tmpm1=getMap(request,"metapath");
   map* tmpm2=getMap(s->content,"serviceProvider");
-  char ntmp[1024];
-  getcwd(ntmp,1024);
+
   char filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+2];
   sprintf(filename,"%s/%s%s",ntmp,tmpm1->value,tmpm2->value);
   filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+1]=0;
@@ -207,6 +224,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 
   /* Cleanup. */
   JS_DestroyScript(cx, script);
+  JS_DestroyScript(cx, api_script1);
+  JS_DestroyScript(cx, api_script2);
   //JS_MaybeGC(cx);
   // If we use the DestroyContext as requested to release memory then we get 
   // issue getting back the main configuration maps after coming back to the 
@@ -218,6 +237,27 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   fprintf(stderr,"Returned value %d\n",res);
 #endif
   return res;
+}
+
+JSScript * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
+  struct stat api_status;
+  int s=stat(filename, &api_status);
+  if(s==0){
+    jsval rval;
+    FILE *jsfile=fopen(filename,"r");
+    JSBool ok ;
+    JSScript *script = JS_CompileFileHandle(cx, global, filename,jsfile);
+    if(script!=NULL){
+      (void)JS_ExecuteScript(cx, global, script, &rval);
+      fprintf(stderr,"**************\n%s correctly loaded\n**************\n",filename);
+      return script;
+    }
+    else
+      fprintf(stderr,"\n**************\nUnable to run %s\n**************\n",filename);
+  }
+  else
+    fprintf(stderr,"\n**************\nUnable to load %s\n**************\n",filename);
+  return NULL;
 }
 
 JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
