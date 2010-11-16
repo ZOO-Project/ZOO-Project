@@ -1262,13 +1262,16 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
   xmlAddChild(nc2,nc3);  
   xmlAddChild(nc1,nc2);
   // Extract Abstract required to be second element in the ZCFG file !
-  tmp=tmp->next;
-  nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-  nc3=xmlNewText(BAD_CAST _ss(tmp->value));
-  xmlAddChild(nc2,nc3);  
-  xmlAddChild(nc1,nc2);
-  xmlAddChild(nc,nc1);
-  tmp=tmp->next;
+  // For GRASS it can be empty ...
+  if(tmp->next!=NULL){
+    tmp=tmp->next;
+    nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
+    nc3=xmlNewText(BAD_CAST _ss(tmp->value));
+    xmlAddChild(nc2,nc3);  
+    xmlAddChild(nc1,nc2);
+    xmlAddChild(nc,nc1);
+    tmp=tmp->next;
+  }
 
   /**
    * IO type Reference or full Data ?

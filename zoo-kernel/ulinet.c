@@ -234,9 +234,10 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
       break;
     default:
       sprintf(filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
-      printf("file=%s",filename);
+      filename[24]=0;
+      fprintf(stderr,"file=%s",filename);
 #ifdef MSG_LAF_VERBOSE
-      printf("file=%s",filename);
+      fprintf(stderr,"file=%s",filename);
 #endif
       hInternet.filename=filename;
       hInternet.file=fopen(hInternet.filename,"w+");
