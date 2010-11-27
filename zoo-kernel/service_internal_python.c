@@ -200,7 +200,7 @@ PyDictObject* PyDict_FromMap(map* t){
   PyObject* res=PyDict_New( );
   map* tmp=t;
   while(tmp!=NULL){
-    if(strcasecmp(tmp->name,"value")==0){
+    /*if(strcasecmp(tmp->name,"value")==0){
       map* ttmp=getMap(t,"size");
       if(ttmp!=NULL)
 	if(PyDict_SetItem(res,PyString_FromString(tmp->name),PyString_FromStringAndSize(tmp->value,(Py_ssize_t) atoi(ttmp->value)))<0){
@@ -213,7 +213,7 @@ PyDictObject* PyDict_FromMap(map* t){
 	  exit(1);
 	}
     } 
-    else
+    else*/
       if(PyDict_SetItem(res,PyString_FromString(tmp->name),PyString_FromString(tmp->value))<0){
 	fprintf(stderr,"Unable to parse params...");
 	exit(1);
