@@ -27,7 +27,6 @@
 
 static PerlInterpreter *my_perl;
 
-EXTERN_C 
 
 void xs_init(pTHX)
 {
@@ -44,7 +43,7 @@ int map_to_hash(map * m, HV ** hash_map) {
 	HV * tmp = *hash_map;
 	map * tmp_m = m;
 	do {
-		printf("map name %s  value %s \n",m->name,m->value);
+		//printf("map name %s  value %s \n",m->name,m->value);
 
 		if ( NULL == hv_store( tmp, tmp_m->name, strlen(tmp_m->name), sv_2mortal(newSVpv(tmp_m->value, strlen(tmp_m->value))), 0) ) {
 			return 1;
@@ -58,7 +57,7 @@ int map_to_hash(map * m, HV ** hash_map) {
 int maps_to_hash( maps* m, HV ** hash_maps){
 	HV * tmp = *hash_maps;
 	if (m != NULL) {
-		printf("maps name %s \n",m->name);
+		//printf("maps name %s \n",m->name);
 		HV* hash_m = (HV *)sv_2mortal((SV *)newHV());
 		if (map_to_hash(m->content,&hash_m) != 0){
 			return 1;
@@ -82,7 +81,7 @@ int hash_to_map(HV * hh,map ** m){
 	map * tmp = *m;
 	HE * he = hv_iternext(hh);
 	while (he != NULL){
-		printf("key : %s  value : %s \n",HeKEY(he),(char *)SvRV(HeVAL(he)));
+		//fprintf(stderr,"key : %s  value : %s \n",HeKEY(he),(char *)SvRV(HeVAL(he)));
 		tmp->name = HeKEY(he);
 		tmp->value = (char *)SvRV(HeVAL(he));
 		he = hv_iternext(hh);
@@ -110,7 +109,7 @@ int hash_to_maps(HV * hh,maps** m){
 	HE * he = hv_iternext(hh);
 	map *mm;
 	while (he != NULL) {
-		printf("key ===> %s \n",HeKEY(he));
+		//fprintf(stderr,"key ===> %s \n",HeKEY(he));
 		tmp->name = HeKEY(he);
 		hash_to_map((HV *) SvRV(HeVAL(he)),&mm);
 		tmp->content = mm;
@@ -161,10 +160,11 @@ int zoo_perl_support(maps** main_conf,map* request,service* s,maps **real_inputs
 	SPAGAIN;
 	res = POPi;
 	hash_to_maps(h_real_outputs,real_outputs);
+	//dumpMaps(*real_outputs);
 	PUTBACK;
     	FREETMPS;
     	LEAVE;
-	return res;
+	return SERVICE_SUCCEEDED;
 }
 
 	
