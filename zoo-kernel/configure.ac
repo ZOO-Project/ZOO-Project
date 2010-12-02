@@ -268,37 +268,21 @@ AC_SUBST([PERL_FILE])
 
 
 AC_ARG_WITH([java], 
-	[AS_HELP_STRING([--with-java=PATH], [specify an alternative directory for java installation or --with-java=no to disabled java support])], 
-	[JDKHOME="$withval"], [JDKHOME=""])
+	[AS_HELP_STRING([--with-java=PATH], [To enabled java support, specify a JDK_HOME,  disabled by default])], 
+	[JDKHOME="$withval"; JAVA_ENABLED="-DUSE_JAVA"], [JAVA_ENABLED=""])
 
-
-if test "$JDKHOME" != "no";
+if test -z "$JAVA_ENABLED"
 then
-	JAVA_ENABLED="-DUSE_JAVA"
+	JAVA_FILE=""
+else
 	JAVA_FILE="service_internal_java.o"
 	if test "x$JDKHOME" = "x"; 
 	then
-		# JAVA was not specified, so search within the current path
-		#AC_PATH_PROG([JAVACONFIG], [java])
-
-		# If we couldn't find java-config, display a warning
-		if test "x$JDKHOME" = "x"; 
-		then
-			AC_MSG_ERROR([could not find java installation path within the current path. You may need to try re-running configure with a --with-java parameter.])
-		fi
-	else
-		# JAVA was specified; display a message to the user
-		if test "x$JDKHOME" = "xyes"; 
-		then
-			AC_MSG_ERROR([you must specify a parameter to --with-java, e.g. --with-java=/path/to/java])
-		else
-			if test -f $JDKHOME/include/jni.h; 
-			then
-				AC_MSG_RESULT([Using specific java install dir : $JDKHOME])
-			else
-				AC_MSG_ERROR([the specific java install dir $DKHOME does not exist])
-			fi	
-		fi
+		AC_MSG_ERROR([could not find java installation path within the current path. You may need to try re-running configure with a --with-java parameter.])
+	fi	# JAVA was specified; display a message to the user
+	if test "x$JDKHOME" = "xyes"; 
+	then
+		AC_MSG_ERROR([you must specify a parameter to --with-java, e.g. --with-java=/path/to/java])
 	fi
 	# Extract the linker and include flags
 	if test -d "$JDKHOME/jre/lib/i386";
@@ -325,9 +309,6 @@ then
 
 	AC_SUBST([JAVA_CPPFLAGS])
 	AC_SUBST([JAVA_LDFLAGS])
-else
-	JAVA_ENABLED=""
-	JAVA_FILE=""
 fi 
 
 AC_SUBST([JAVA_ENABLED])
@@ -342,71 +323,55 @@ AC_SUBST([JAVA_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([js], 
-	[AS_HELP_STRING([--with-js=PATH], [specify --with-js to enabled js support or --with-js=path-to-js js support is disabled by default ])], 
-	[JSHOME="$withval"], [JSHOME=""])
+	[AS_HELP_STRING([--with-js=PATH], [specify --with-js=path-to-js to enabled js support, specify --with-js on linux debian like, js support is disabled by default ])], 
+	[JSHOME="$withval";JS_ENABLED="-DUSE_JS"], [JS_ENABLED=""])
 
-JS_ENABLED=""
-JS_FILE=""
-
-
-if test "$JSHOME" = "yes"
+if test -z "$JS_ENABLED"
 then
-	JS_ENABLED="-DUSE_JS"
-        JS_FILE="service_internal_js.o"
-
-	#on teste si on est sous debian like 
-	if test -f "/usr/bin/dpkg"
+	JS_FILE=""
+else
+	if test "$JSHOME" = "yes"
 	then
-		if test -n "`dpkg -l | grep libmozjs-dev`"
+        	JS_FILE="service_internal_js.o"
+
+		#on teste si on est sous debian like 
+		if test -f "/usr/bin/dpkg"
 		then
-			JS_CPPFLAGS="-I/usr/include/mozjs/"
-                        JS_LDFLAGS="-L/usr/lib -lmozjs -lm"
-                        JS_LIB="mozjs"
+			if test -n "`dpkg -l | grep libmozjs-dev`"
+			then
+				JS_CPPFLAGS="-I/usr/include/mozjs/"
+                        	JS_LDFLAGS="-L/usr/lib -lmozjs -lm"
+                        	JS_LIB="mozjs"
+			else
+				AC_MSG_ERROR([You must install libmozjs-dev or specify your custom install of libjs])
+			fi
 		else
-			AC_MSG_ERROR([You must install libmozjs-dev or specify your custom install of libjs])
+			AC_MSG_ERROR([You must  specify your custom install of libjs])
 		fi
 	else
-		JS_LIB="js"
-	fi
-	
-	CPPFLAGS_SAVE="$CPPFLAGS"
-        CPPFLAGS="$JS_CPPFLAGS"
-        #AC_CHECK_HEADERS([jsapi.h],
-        #                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
-
-        # Ensure we can link against libjs
-        LIBS_SAVE="$LIBS"
-        LIBS="$JS_LDFLAGS"
-
-        AC_CHECK_LIB([$JS_LIB], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
-
-        AC_SUBST([JS_CPPFLAGS])
-        AC_SUBST([JS_LDFLAGS])
-
-
-else if test  "$JSHOME" != ""
-	then 
-		JS_ENABLED="-DUSE_JS"
-        	JS_FILE="service_internal_js.o"
 		JS_CPPFLAGS="-I$JSHOME/include/js"
                 JS_LDFLAGS="-L$JSHOME/lib -ljs -lm"
                 JS_LIB="js"
 
-		CPPFLAGS_SAVE="$CPPFLAGS"
-        	CPPFLAGS="$JS_CPPFLAGS"
-        	#AC_CHECK_HEADERS([jsapi.h],
-        	#                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
+	fi 
 
-        	# Ensure we can link against libjs
-        	LIBS_SAVE="$LIBS"
-        	LIBS="$JS_LDFLAGS"
+	CPPFLAGS_SAVE="$CPPFLAGS"
+        CPPFLAGS="$JS_CPPFLAGS"
 
-        	AC_CHECK_LIB([$JS_LIB], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
 
-        	AC_SUBST([JS_CPPFLAGS])
-        	AC_SUBST([JS_LDFLAGS])
-	fi
+	#AC_CHECK_HEADERS([jsapi.h],
+        #                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
+
+	
+	LIBS_SAVE="$LIBS"
+        LIBS="$JS_LDFLAGS"
+
+        AC_CHECK_LIB([$JS_LIB], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
+			
+        AC_SUBST([JS_CPPFLAGS])
+        AC_SUBST([JS_LDFLAGS])
 fi
+
 AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
 
