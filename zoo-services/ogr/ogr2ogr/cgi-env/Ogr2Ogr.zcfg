@@ -11,8 +11,8 @@
  </MetaData>
  <DataInputs>
   [F]
-   Title = Format of the input data
-   Abstract = Select the input format.
+   Title = Format of the output data
+   Abstract = Select the output format.
    minOccurs = 0
    maxOccurs = 1
    <LiteralData>
@@ -37,7 +37,7 @@
    </LiteralData>
   [OutputDSN]
    Title = The output data source name
-   Abstract = The full path of the output data source name created.
+   Abstract = The output data name.
    minOccurs = 1
    maxOccurs = 1
    <LiteralData>
