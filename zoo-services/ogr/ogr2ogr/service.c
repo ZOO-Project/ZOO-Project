@@ -78,6 +78,7 @@ int main( int nArgc, char ** papszArgv )
     const char  *pszFormat = "ESRI Shapefile";
     const char  *pszDataSource = NULL;
     const char  *pszDestDataSource = NULL;
+    const char  *pszwebDestData = NULL;
     char        **papszLayers = NULL;
     char        **papszDSCO = NULL, **papszLCO = NULL;
     int         bTransform = FALSE;
@@ -122,6 +123,20 @@ int main( int nArgc, char ** papszArgv )
     tmpMap=getMapFromMaps(conf,"main","tmpPath");
     if(tmpMap!=NULL){
       sprintf(tempPath,"%s",tmpMap->value);
+    }
+    
+    tmpMap=NULL;
+    char serverAddress[1024];
+    tmpMap=getMapFromMaps(conf,"main","serverAddress");
+    if(tmpMap!=NULL){
+      sprintf(serverAddress,"%s",tmpMap->value);
+    }
+    
+    tmpMap=NULL;
+    char tmpurl[1024];
+    tmpMap=getMapFromMaps(conf,"main","tmpurl");
+    if(tmpMap!=NULL){
+      sprintf(tmpurl,"%s",tmpMap->value);
     }
 
     tmpMap=NULL;
@@ -340,6 +355,8 @@ int main( int nArgc, char ** papszArgv )
     if(tmpMap!=NULL){
       pszDestDataSource=(char*)malloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
       sprintf((char*)pszDestDataSource,"%s/%s",tempPath,tmpMap->value/*,ext*/);
+      pszwebDestData=(char*)malloc(sizeof(char)*(strlen(serverAddress)+strlen(tmpurl)+strlen(tmpMap->value)+4));
+      sprintf((char*)pszwebDestData,"%s%s/%s",serverAddress,tmpurl,tmpMap->value/*,ext*/);
     }
 
 #else
@@ -810,7 +827,7 @@ int main( int nArgc, char ** papszArgv )
 #ifdef ZOO_SERVICE
 	outputs=(maps*)malloc(sizeof(maps*));
     outputs->name="GeneratedFile";
-    outputs->content=createMap("value",(char*)pszDestDataSource);
+    outputs->content=createMap("value",(char*)pszwebDestData);
     addMapToMap(&outputs->content,createMap("dataType","string"));
     outputs->next=NULL;
     return SERVICE_SUCCEEDED;
