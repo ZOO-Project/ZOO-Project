@@ -63,7 +63,7 @@ ulinet.o: ulinet.c
 	gcc ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
 
 service_internal.o: service_internal.c service.h
-	gcc ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -c service_internal.c
+	gcc ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
 service_internal_python.o: service_internal_python.c service.h
 	g++ ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c service_internal_python.c
