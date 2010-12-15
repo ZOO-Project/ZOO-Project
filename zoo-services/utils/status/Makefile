@@ -4,7 +4,7 @@ CFLAGS=-I../../../zoo-kernel/ -I./ `xslt-config --cflags` `xml2-config --cflags`
 # JS_LDFLAGS=../../../zoo-kernel/ulinet.o ../../../zoo-kernel/service_internal_js.o
 
 cgi-env/wps_status.zo: service.c
-	g++ ${CFLAGS} -shared -fpic -o cgi-env/wps_status.zo ./service.c ../../../zoo-kernel/service_internal.o ${JS_LDFLAGS} `xml2-config --libs` `xslt-config --libs`
+	g++ ${CFLAGS} -o cgi-env/wps_status.zo ./service.c ../../../zoo-kernel/service_internal.o ${JS_LDFLAGS} `xml2-config --libs` `xslt-config --libs`
 
 clean:
 	rm -f cgi-env/wps_status.zo
