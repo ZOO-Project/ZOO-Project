@@ -345,12 +345,14 @@ void *loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **inpu
 int runRequest(map* request_inputs)
 {
 
+#ifndef USE_GDB
   (void) signal(SIGSEGV,sig_handler);
   (void) signal(SIGTERM,sig_handler);
   (void) signal(SIGINT,sig_handler);
   (void) signal(SIGILL,sig_handler);
   (void) signal(SIGFPE,sig_handler);
   (void) signal(SIGABRT,sig_handler);
+#endif
 
   map* r_inputs=NULL,*tmps=NULL;
   maps* m=NULL;
