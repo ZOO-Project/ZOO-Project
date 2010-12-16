@@ -1492,6 +1492,11 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     toto=getMap(request_outputs->content,"asReference");
     if(toto!=NULL && strcasecmp(toto->value,"true")==0){
       toto=getMap(request_outputs->content,"extension");
+      /* put gml extension if the extension is defined as .js and the result will be a gml file */
+      map* mtype=getMap(request_outputs->content,"mimeType");
+      if (strcasecmp(toto->value,"js")==0 && strcasecmp(mtype->value,"text/xml")==0) {
+	toto->value="gml";
+      }
       map *tmp1=getMapFromMaps(m,"main","tmpPath");
       char *file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
       sprintf(file_name,"%s/%s_%i.%s",tmp1->value,s->name,cpid+100000,toto->value);
