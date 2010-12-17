@@ -163,7 +163,7 @@ extern "C" {
   }
 
 
-  int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometryH (*myFunc)(OGRGeometryH)){
+  int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometryH (*myFunc)(OGRGeometryH),char* schema){
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print\n");
 #endif
@@ -217,10 +217,10 @@ extern "C" {
       else{
 	char *tmpS=OGR_G_ExportToGML(res);
 	setMapInMaps(outputs,"Result","value",tmpS);
-	setMapInMaps(outputs,"Result","mimeType","text/plain");
+	setMapInMaps(outputs,"Result","mimeType","text/xml");
 	setMapInMaps(outputs,"Result","encoding","UTF-8");
+	setMapInMaps(outputs,"Result","schema",schema);
 	free(tmpS);
-
       }
     }else{
       char *tmpS=OGR_G_ExportToJson(res);
@@ -301,14 +301,14 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
   __declspec(dllexport)
 #endif
   int Boundary(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyOne(conf,inputs,outputs,&OGR_G_GetBoundary);
+    return applyOne(conf,inputs,outputs,&OGR_G_GetBoundary,"http://fooa/gml/3.1.0/polygon.xsd");
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
   int ConvexHull(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyOne(conf,inputs,outputs,&OGR_G_ConvexHull);
+    return applyOne(conf,inputs,outputs,&OGR_G_ConvexHull,"http://fooa/gml/3.1.0/polygon.xsd");
   }
 
 
@@ -327,7 +327,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
   __declspec(dllexport)
 #endif
   int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyOne(conf,inputs,outputs,&MY_OGR_G_Centroid);
+    return applyOne(conf,inputs,outputs,&MY_OGR_G_Centroid,"http://fooa/gml/3.1.0/point.xsd");
   }
 
   int applyTwo(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometryH (*myFunc)(OGRGeometryH,OGRGeometryH)){
