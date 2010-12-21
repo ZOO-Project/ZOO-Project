@@ -1,6 +1,6 @@
 [Distance]
- Title = Calcul la distance entre deux entites geographique. 
- Abstract = Calcul de la distance entre deux entites geographique. 
+ Title = Compute the distance between two geometries
+ Abstract = Compute the distance between two geometries
  Profile = urn:ogc:wps:1.0.0:buffer
  processVersion = 2
  storeSupported = true
