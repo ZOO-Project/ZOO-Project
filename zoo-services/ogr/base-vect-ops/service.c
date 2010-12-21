@@ -392,11 +392,33 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     fprintf(stderr,"\nService internal print1\n");
     res=(*myFunc)(geometry1,geometry2);
     fprintf(stderr,"\nService internal print1\n");
+    
+    /* nuova parte */
+    map* tmp2=getMapFromMaps(outputs,"Result","mimeType");
+    if(strncmp(tmp2->value,"application/json",16)==0){
+      char *tmpS=OGR_G_ExportToJson(res);
+      setMapInMaps(outputs,"Result","value",tmpS);
+      setMapInMaps(outputs,"Result","mimeType","text/plain");
+      setMapInMaps(outputs,"Result","encoding","UTF-8");
+      free(tmpS);
+    }
+    else{
+      char *tmpS=OGR_G_ExportToGML(res);
+      setMapInMaps(outputs,"Result","value",tmpS);
+      setMapInMaps(outputs,"Result","mimeType","text/xml");
+      setMapInMaps(outputs,"Result","encoding","UTF-8");
+      setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
+      free(tmpS);
+    }
+    
+    /* vecchia da togliere */
+    /*
     char *tmpS=OGR_G_ExportToJson(res);
     setMapInMaps(outputs,"Result","value",tmpS);
     setMapInMaps(outputs,"Result","mimeType","text/plain");
     setMapInMaps(outputs,"Result","encoding","UTF-8");
     free(tmpS);
+    */
     OGR_G_DestroyGeometry(geometry1);
     OGR_G_DestroyGeometry(geometry2);
     OGR_G_DestroyGeometry(res);
@@ -490,7 +512,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     }
     res=OGR_G_Distance(geometry1,geometry2);    
     char tmpres[100];
-    sprintf(tmpres,"%d",res);
+    sprintf(tmpres,"%f",res);
     setMapInMaps(outputs,"Distance","value",tmpres);
     setMapInMaps(outputs,"Distance","dataType","float");
 #ifdef DEBUG
@@ -528,7 +550,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
      * Filling the outputs
      */
     char tmp1[100];
-    sprintf(tmp1,"%d",res);
+    sprintf(tmp1,"%f",res);
     setMapInMaps(outputs,"Area","value",tmp1);
     setMapInMaps(outputs,"Area","dataType","float");
 #ifdef DEBUG
