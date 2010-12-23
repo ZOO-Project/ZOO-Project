@@ -132,7 +132,7 @@ extern "C" {
   static bool hasKey(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
-      if(strncasecmp(tmp->name,key,strlen(key))==0)
+      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(key))==0)
 	return true;
       tmp=tmp->next;
     }
@@ -145,7 +145,7 @@ extern "C" {
   static maps* getMaps(maps* m,const char *key){
     maps* tmp=m;
     while(tmp!=NULL){
-      if(strncasecmp(tmp->name,key,strlen(key))==0){
+      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(key))==0){
 	return tmp;
       }
       tmp=tmp->next;
@@ -156,7 +156,7 @@ extern "C" {
   static map* getMap(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
-      if(strncasecmp(tmp->name,key,strlen(key))==0){
+      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(key))==0){
 	return tmp;
       }
       tmp=tmp->next;
@@ -238,7 +238,7 @@ extern "C" {
   static bool hasElement(elements* e,char* key){
     elements* tmp=e;
     while(tmp!=NULL){
-      if(strncasecmp(key,tmp->name,strlen(key))==0)
+      if(strlen(tmp->name)==strlen(key) && strncasecmp(key,tmp->name,strlen(key))==0)
 	return true;
       tmp=tmp->next;
     }
@@ -248,7 +248,7 @@ extern "C" {
   static elements* getElements(elements* m,char *key){
     elements* tmp=m;
     while(tmp!=NULL){
-      if(strncasecmp(tmp->name,key,strlen(tmp->name))==0)
+      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(tmp->name))==0)
 	return tmp;
       tmp=tmp->next;
     }
