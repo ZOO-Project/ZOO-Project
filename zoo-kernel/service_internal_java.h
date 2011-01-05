@@ -34,11 +34,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-jobject HashMap_FromMaps(JNIEnv*,maps* t);
-
-maps* mapsFromHashMap(JNIEnv*,jobject t);
-
-int zoo_java_support(maps**,map*,service*,maps**,maps**);
+  jobject HashMap_FromMaps(JNIEnv*,maps*,jclass,jclass,jmethodID);
+  
+  maps* mapsFromHashMap(JNIEnv*,jobject,jclass);
+  
+  int zoo_java_support(maps**,map*,service*,maps**,maps**);
 
 #ifdef __cplusplus
 }

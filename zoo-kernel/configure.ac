@@ -287,10 +287,10 @@ else
 	# Extract the linker and include flags
 	if test -d "$JDKHOME/jre/lib/i386";
 	then
-		JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/server/ -ljvm -lpthread"
+		JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/client/ -ljvm -lpthread"
 		JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
 	else
-		JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
+		JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/client/ -ljvm -lpthread"
                 JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
 	fi
 

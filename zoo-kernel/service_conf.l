@@ -108,7 +108,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 <DANSBALISE>{egalevolue}			{return Eq;}
 
 
-<DANSBALISE>{Name}			{srlval.chaine=strdup(yytext);return ID;}
+<DANSBALISE>{Name}{newline}*			{memmove(srlval.chaine,yytext,(strlen(yytext)+1)*sizeof(char));return ID;}
 
 
 <DANSBALISE>{attvalue}		{return ATTVALUE;}

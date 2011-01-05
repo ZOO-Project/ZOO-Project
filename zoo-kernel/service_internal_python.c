@@ -107,6 +107,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	free(*real_outputs);
 	//*real_inputs=mapsFromPyDict(arg2);
 	//createMapsFromPyDict(real_outputs,arg3);
+	*main_conf=mapsFromPyDict(arg1);
 	*real_outputs=mapsFromPyDict(arg3);
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));

@@ -103,27 +103,31 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #ifdef DEBUG
       fprintf(stderr,"Function successfully loaded\n");
 #endif
+      jclass scHashMapClass,scHashMap_class;
+      jmethodID scHashMap_constructor;
+      scHashMapClass = (*env)->FindClass(env, "java/util/HashMap");
+      scHashMap_class = (*env)->NewGlobalRef(env, scHashMapClass);
+      scHashMap_constructor = (*env)->GetMethodID(env, scHashMap_class, "<init>", "()V");
       /**
        * The 3 standard parameter for each services
        */
-      jobject arg1=HashMap_FromMaps(env,m);
-      jobject arg2=HashMap_FromMaps(env,inputs);
-      jobject arg3=HashMap_FromMaps(env,outputs);
+      jobject arg1=HashMap_FromMaps(env,m,scHashMapClass,scHashMap_class,scHashMap_constructor);
+      jobject arg2=HashMap_FromMaps(env,inputs,scHashMapClass,scHashMap_class,scHashMap_constructor);
+      jobject arg3=HashMap_FromMaps(env,outputs,scHashMapClass,scHashMap_class,scHashMap_constructor);
       jint pValue=0;
 
       pValue=(*env)->CallStaticIntMethod(env,cls,pmid,arg1,arg2,arg3);
       if (pValue != NULL){
 	res=pValue;
-	//inputs=mapsFromHashMap(env,arg2);
-	outputs=mapsFromHashMap(env,arg3);
+	m=mapsFromHashMap(env,arg1,scHashMapClass);
+	*main_conf=m;
+	outputs=mapsFromHashMap(env,arg3,scHashMapClass);
 	*real_outputs=outputs;
 
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", pValue);
 	dumpMaps(inputs);
 	dumpMaps(outputs);
-	/*fprintf(stderr,"printProcessResponse(%i,\"%s\",%i,inputs,outputs);",
-	  getpid(),tmp->value,PyInt_AsLong(pValue));*/
 #endif
       }else{	  
 	/**
@@ -179,13 +183,8 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   return res;
 }
 
-jobject HashMap_FromMaps(JNIEnv *env,maps* t){
-  jclass scHashMapClass,scHashMap_class;
-  jmethodID scHashMap_constructor;
+jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHashMap_class,jmethodID scHashMap_constructor){
   jobject scObject,scObject1;
-  scHashMapClass = (*env)->FindClass(env, "java/util/HashMap");
-  scHashMap_class = (*env)->NewGlobalRef(env, scHashMapClass);
-  scHashMap_constructor = (*env)->GetMethodID(env, scHashMap_class, "<init>", "()V");   
   if(scHashMap_constructor!=NULL){
     scObject = (*env)->NewObject(env, scHashMap_class, scHashMap_constructor);
     jmethodID put_mid = 0;
@@ -203,14 +202,14 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t){
       }
       (*env)->CallObjectMethod(env,scObject, put_mid, (*env)->NewStringUTF(env,tmp->name), scObject1);
       tmp=tmp->next;
-    } 
+    }
     return scObject;
   }
   else
     return NULL;
 }
 
-maps* mapsFromHashMap(JNIEnv *env,jobject t){
+maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 #ifdef DEBUG
   fprintf(stderr,"mapsFromHashMap start\n");
 #endif
@@ -223,12 +222,9 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t){
    *   System.out.println(me.getKey() + " : " + me.getValue() );
    * }
    */
-  jclass scHashMapClass,scHashMap_class,scSetClass,scIteratorClass,scMapEntryClass,scSet_class,scMapClass;
+  jclass scHashMap_class,scSetClass,scIteratorClass,scMapEntryClass,scSet_class,scMapClass;
   jmethodID entrySet_mid,iterator_mid,hasNext_mid,next_mid,getKey_mid,getValue_mid;
   jobject scObject,scObject1;
-  scHashMapClass=(*env)->GetObjectClass(env,t);
-  //scMapClass=(*env)->FindClass(env, "java/util/HashMap");
-  //scHashMapClass = (*env)->FindClass(env, "java/util/HashMap");
   if(scHashMapClass==NULL){
     fprintf(stderr,"Unable to load java.util.HashMap\n");
     return NULL;
@@ -275,27 +271,14 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t){
 
   maps* final_res=NULL;
   map* res=NULL;
-#ifdef DEBUG
-  int i=0;
-#endif
   while((*env)->CallBooleanMethod(env,final_iterator,hasNext_mid)){
-#ifdef DEBUG
-    fprintf(stderr,"mapsFromHashMap loop %d\n",i);
-    i++;
-#endif
     jobject tmp=(*env)->CallObjectMethod(env,final_iterator,next_mid);
 
     jobject imap=(*env)->CallObjectMethod(env,tmp,getValue_mid);
     jobject set=(*env)->CallObjectMethod(env,imap,entrySet_mid);
     jobject iterator=(*env)->CallObjectMethod(env,set,iterator_mid);
-#ifdef DEBUG
-    int j=0;
-#endif
+
     while((*env)->CallBooleanMethod(env,iterator,hasNext_mid)){
-#ifdef DEBUG
-      fprintf(stderr,"mapsFromHashMap internal loop %d\n",j);
-      j++;
-#endif
       jobject tmp1=(*env)->CallObjectMethod(env,iterator,next_mid);
       jobject jk=(*env)->CallObjectMethod(env,tmp1,getKey_mid);
       jobject jv=(*env)->CallObjectMethod(env,tmp1,getValue_mid);
@@ -309,20 +292,23 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t){
       if(res==NULL){
 	res=createMap((*env)->GetStringUTFChars(env, jk, NULL),
 		      (*env)->GetStringUTFChars(env, jv, NULL));
-      }else
+      }else{
 	addToMap(res,(*env)->GetStringUTFChars(env, jk, NULL),
 		 (*env)->GetStringUTFChars(env, jv, NULL));
+      }
     }
     jobject jk=(*env)->CallObjectMethod(env,tmp,getKey_mid);
     maps* cmap=(maps*)malloc(sizeof(maps));
     cmap->name=(*env)->GetStringUTFChars(env, jk, NULL);
+#ifdef DEBUG
+    fprintf(stderr," / %s \n",cmap->name);
+#endif
     cmap->content=res;
     cmap->next=NULL;
-    if(final_res==NULL){
+    if(final_res==NULL)
       final_res=dupMaps(&cmap);
-    }else
+    else
       addMapsToMaps(&final_res,cmap);
-    final_res->next=NULL;
     freeMaps(&cmap);
     free(cmap);
     cmap=NULL;

@@ -132,7 +132,7 @@ extern "C" {
   static bool hasKey(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
-      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(key))==0)
+      if(strcasecmp(tmp->name,key)==0)
 	return true;
       tmp=tmp->next;
     }
@@ -145,7 +145,7 @@ extern "C" {
   static maps* getMaps(maps* m,const char *key){
     maps* tmp=m;
     while(tmp!=NULL){
-      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(key))==0){
+      if(strcasecmp(tmp->name,key)==0){
 	return tmp;
       }
       tmp=tmp->next;
@@ -156,7 +156,7 @@ extern "C" {
   static map* getMap(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
-      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(key))==0){
+      if(strcasecmp(tmp->name,key)==0){
 	return tmp;
       }
       tmp=tmp->next;
@@ -238,7 +238,7 @@ extern "C" {
   static bool hasElement(elements* e,char* key){
     elements* tmp=e;
     while(tmp!=NULL){
-      if(strlen(tmp->name)==strlen(key) && strncasecmp(key,tmp->name,strlen(key))==0)
+      if(strcasecmp(key,tmp->name)==0)
 	return true;
       tmp=tmp->next;
     }
@@ -248,7 +248,7 @@ extern "C" {
   static elements* getElements(elements* m,char *key){
     elements* tmp=m;
     while(tmp!=NULL){
-      if(strlen(tmp->name)==strlen(key) && strncasecmp(tmp->name,key,strlen(tmp->name))==0)
+      if(strcasecmp(tmp->name,key)==0)
 	return tmp;
       tmp=tmp->next;
     }
@@ -259,30 +259,35 @@ extern "C" {
   static void freeIOType(iotype** i){
     iotype* _cursor=*i;
     if(_cursor!=NULL){
-      freeMap(&_cursor->content);
-      free(_cursor->content);
       if(_cursor->next!=NULL){
 	freeIOType(&_cursor->next);
 	free(_cursor->next);
       }
+      freeMap(&_cursor->content);
+      free(_cursor->content);
     }
   }
 
   static void freeElements(elements** e){
     elements* tmp=*e;
     if(tmp!=NULL){
-      free(tmp->name);
+      if(tmp->name!=NULL)
+	free(tmp->name);
       freeMap(&tmp->content);
-      free(tmp->content);
+      if(tmp->content!=NULL)
+	free(tmp->content);
       freeMap(&tmp->metadata);
-      free(tmp->metadata);
-      free(tmp->format);
+      if(tmp->metadata!=NULL)
+	free(tmp->metadata);
+      if(tmp->format!=NULL)
+	free(tmp->format);
       freeIOType(&tmp->defaults);
       if(tmp->defaults!=NULL)
 	free(tmp->defaults);
       freeIOType(&tmp->supported);
-      if(tmp->supported!=NULL)
+      if(tmp->supported!=NULL){
 	free(tmp->supported);
+      }
       freeElements(&tmp->next);
     }
   }
@@ -360,36 +365,48 @@ extern "C" {
 
   static void addMapToIoType(iotype** io,map* mi){
     iotype* tmp=*io;
-    while(tmp!=NULL){
-#ifdef DEBUG
-      fprintf(stderr,">> CURRENT MAP");
-      dumpMap(tmp->content);
-#endif
+    while(tmp->next!=NULL){
       tmp=tmp->next;
     }
-#ifdef DEBUG
-    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-    fflush(stderr);
-#endif
-    tmp=(iotype*)malloc(IOTYPE_SIZE);
-#ifdef DEBUG
-    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-    fflush(stderr);
-#endif
-    tmp->content=NULL;
-#ifdef DEBUG
-    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-    fflush(stderr);
-#endif
-    addMapToMap(&tmp->content,mi);
-#ifdef DEBUG
-    fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-    fflush(stderr);
-#endif
-    dumpMap(tmp->content);
-    tmp->next=NULL;
+    tmp->next=(iotype*)malloc(IOTYPE_SIZE);
+    tmp->next->content=NULL;
+    addMapToMap(&tmp->next->content,mi);
+    tmp->next->next=NULL;
   }
 
+  static bool contains(map* m,map* i){
+    while(i!=NULL){      
+      if(strcasecmp(i->name,"value")!=0 &&
+	 strcasecmp(i->name,"xlink:href")!=0){
+	map *tmp;
+	if(hasKey(m,i->name) && (tmp=getMap(m,i->name))!=NULL && 
+	   strcasecmp(i->value,tmp->value)!=0)
+	  return false;
+      }
+      i=i->next;
+    }
+    return true;
+  }
+
+  static iotype* getIoTypeFromElement(elements* e,char *name, map* values){
+    elements* cursor=e;
+    while(cursor!=NULL){
+      if(strcasecmp(cursor->name,name)==0){
+	if(contains(cursor->defaults->content,values)==true)
+	  return cursor->defaults;
+	else{
+	  iotype* tmp=cursor->supported;
+	  while(tmp!=NULL){
+	    if(contains(tmp->content,values)==true)
+	      return tmp;	    
+	    tmp=tmp->next;
+	  }
+	}
+      }
+      cursor=cursor->next;
+    }
+    return NULL;
+  }
 
   static maps* dupMaps(maps** mo){
     maps* _cursor=*mo;
@@ -433,7 +450,6 @@ extern "C" {
       if(_ztmpm!=NULL){
 	free(_ztmpm->value);
 	_ztmpm->value=strdup(value);
-	dumpMap(_ztmpm);
       }else{
 	addToMap(_tmpm->content,subkey,value);
       }
@@ -501,21 +517,16 @@ extern "C" {
       if(e->supported!=NULL){
 	tmp->supported=(iotype*)malloc(IOTYPE_SIZE);
 	tmp->supported->content=NULL;
-	tmp->supported->next=NULL;
 	addMapToMap(&tmp->supported->content,e->supported->content);
-	iotype *etmp=*(&tmp->supported->next) ;
+	tmp->supported->next=NULL;
 	iotype *tmp2=e->supported->next;
 	while(tmp2!=NULL){
-	  etmp=(iotype*)malloc(IOTYPE_SIZE);
-	  etmp->content=NULL;
-	  addMapToMap(&etmp->content,tmp2->content);
-	  etmp->next=NULL;
+	  addMapToIoType(&tmp->supported,tmp2->content);
 #ifdef DEBUG
 	  fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 	  dumpMap(tmp->defaults->content);
 #endif
 	  tmp2=tmp2->next;
-	  etmp=etmp->next;
 	}
       }
       else
@@ -531,9 +542,7 @@ extern "C" {
     if(_cursor==NULL){
       *m=dupElements(tmp);
     }else{
-      while(_cursor->next!=NULL)
-	_cursor=_cursor->next;
-      _cursor->next=dupElements(tmp);
+      addToElements(&(*m)->next,tmp);
     }
   }
 

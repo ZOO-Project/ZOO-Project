@@ -308,11 +308,10 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   if(tmp4!=NULL){
     map* tmp2=tmp4->content;
     while(tmp2!=NULL){
-      if(strncasecmp(tmp2->name,"keywords",8)!=0 &&
-	 strncasecmp(tmp2->name,"serverAddress",13)!=0 &&
-	 strncasecmp(tmp2->name,"lang",4)!=0 &&
-	 strncasecmp(tmp2->name,"encoding",8)!=0 &&
-	 strncasecmp(tmp2->name,"version",7)!=0){
+      if(strcasecmp(tmp2->name,"abstract")==0 ||
+	 strcasecmp(tmp2->name,"title")==0 ||
+	 strcasecmp(tmp2->name,"accessConstraints")==0 ||
+	 strcasecmp(tmp2->name,"fess")==0){
 	tmp2->name[0]=toupper(tmp2->name[0]);
 	nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
 	xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
@@ -369,6 +368,16 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   tmp4=getMaps(m,"provider");
   if(tmp4!=NULL){
     map* tmp2=tmp4->content;
+    char *tmpAddress[6];
+    tmpAddress[0]="addressDeliveryPoint";
+    tmpAddress[1]="addressCity";
+    tmpAddress[2]="addressAdministrativeArea";
+    tmpAddress[3]="addressPostalCode";
+    tmpAddress[4]="addressCountry";
+    tmpAddress[5]="addressElectronicMailAddress";
+    char *tmpPhone[2];
+    tmpPhone[0]="phoneVoice";
+    tmpPhone[1]="phoneFacsimile";
     while(tmp2!=NULL){
       if(strcmp(tmp2->name,"keywords")!=0 &&
 	 strcmp(tmp2->name,"serverAddress")!=0 &&
@@ -394,21 +403,29 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 	    } 
 	    else 
 	      if(strncmp(tmp2->name,"Phone",5)==0){
-		char *toto=NULL;
-		char *toto1=tmp2->name;
-		toto=strstr(toto1,"Phone");
-		nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+5);
-		xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-		xmlAddChild(nc5,nc1);
+		int j;
+		for(j=0;j<2;j++)
+		  if(strlen(tmp2->name)==strlen(tmpPhone[j]) && strncasecmp(tmp2->name,tmpPhone[j],strlen(tmp2->name))==0){
+		    char *toto=NULL;
+		    char *toto1=tmp2->name;
+		    toto=strstr(toto1,"Phone");
+		    nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+5);
+		    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
+		    xmlAddChild(nc5,nc1);
+		  }
 	      }
 	      else 
 		if(strncmp(tmp2->name,"Address",7)==0){
-		  char *toto=NULL;
-		  char *toto1=tmp2->name;
-		  toto=strstr(toto1,"Address");
-		  nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+7);
-		  xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-		  xmlAddChild(nc6,nc1);
+		  int j;
+		  for(j=0;j<6;j++)
+		    if(strlen(tmp2->name)==strlen(tmpAddress[j]) && strncasecmp(tmp2->name,tmpAddress[j],strlen(tmp2->name))==0){
+		      char *toto=NULL;
+		      char *toto1=tmp2->name;
+		      toto=strstr(toto1,"Address");
+		      nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+7);
+		      xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
+		      xmlAddChild(nc6,nc1);
+		    }
 		}
 	}
       }
@@ -1083,7 +1100,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
       errorMap=createMap("code","NoApplicableCode");
     te=getMapFromMaps(m,"lenv","message");
     if(te!=NULL)
-      addToMap(errorMap,"text",te->value);
+      addToMap(errorMap,"text",_ss(te->value));
     else
       addToMap(errorMap,"text",_("No more information available"));
     nc3=createExceptionReportNode(m,errorMap,0);
@@ -1363,7 +1380,6 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,char* identifier,map* amap
     map* tmp1=getMap(tmp,tmp2[j]);
     if(tmp1!=NULL){
       nc2 = xmlNewNode(ns_ows, BAD_CAST tmp2[j]);
-      fprintf(stderr,"[%s] \n[%s]\n",tmp1->value,_ss(tmp1->value));
       xmlAddChild(nc2,xmlNewText(BAD_CAST _ss(tmp1->value)));
       xmlAddChild(root,nc2);
     }
@@ -1397,7 +1413,6 @@ char* getVersion(maps* m){
 }
 
 void printExceptionReportResponse(maps* m,map* s){
-  
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
@@ -1424,6 +1439,7 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlFreeDoc(doc);
   xmlFree(xmlbuff);
   xmlCleanupParser();
+  zooXmlCleanupNs();
 }
 
 xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
@@ -1435,7 +1451,8 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
 
   maps* tmpMap=getMaps(m,"main");
 
-  ns=xmlNewNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  int nsid=zooXmlAddNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  ns=usedNs[nsid];
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
 
   if(use_ns==1){
@@ -1492,23 +1509,43 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     toto=getMap(request_outputs->content,"asReference");
     if(toto!=NULL && strcasecmp(toto->value,"true")==0){
       toto=getMap(request_outputs->content,"extension");
-      /* put gml extension if the extension is defined as .js and the result will be a gml file */
-      map* mtype=getMap(request_outputs->content,"mimeType");
-      if (strcasecmp(toto->value,"js")==0 && strcasecmp(mtype->value,"text/xml")==0) {
-	toto->value="gml";
-      }
       map *tmp1=getMapFromMaps(m,"main","tmpPath");
-      char *file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
+      char *file_name;
+      bool hasExt=true;
+      if(toto==NULL){
+	// We can fallback to a default list of supported formats using
+	// mimeType information if present here. Maybe we can add more formats
+	// here.
+	// If mimeType was not found, we then set txt as the default extension.
+	map* mtype=getMap(request_outputs->content,"mimeType");
+	if(mtype!=NULL){
+	  if(strcasecmp(mtype->value,"text/xml")==0)
+	    toto=createMap("extension","xml");
+	  else
+	    toto=createMap("extension","txt");
+	}
+	if(toto==NULL)
+	  toto=createMap("extension","txt");
+	hasExt=false;
+      }
+      file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
       sprintf(file_name,"%s/%s_%i.%s",tmp1->value,s->name,cpid+100000,toto->value);
       FILE *ofile=fopen(file_name,"w");
+      if(ofile==NULL)
+	fprintf(stderr,"Unable to create file on disk implying segfault ! \n");
       map *tmp2=getMapFromMaps(m,"main","tmpUrl");
       map *tmp3=getMapFromMaps(m,"main","serverAddress");
-      char *file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
+      char *file_url;
+      file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
       sprintf(file_url,"%s/%s/%s_%i.%s",tmp3->value,tmp2->value,s->name,cpid+100000,toto->value);
       addToMap(request_outputs->content,"Reference",file_url);
+      if(hasExt!=true){
+	freeMap(&toto);
+	free(toto);
+      }
       toto=getMap(request_outputs->content,"value");
-      if(toto!=NULL)
-	fwrite(toto->value,sizeof(char),strlen(toto->value),ofile);
+      if(toto!=NULL && toto->value!=NULL)
+	fwrite(toto->value,1,(strlen(toto->value)+1)*sizeof(char),ofile);
       fclose(ofile);
       free(file_name);
       free(file_url);
@@ -1600,7 +1637,6 @@ char *base64(const unsigned char *input, int length)
 
   BIO_free_all(b64);
 
-  fprintf(stderr,"BASE64 [%s] \n",buff);
   return buff;
 }
 
@@ -1609,6 +1645,10 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
   maps* out1=*out;
   while(tmpInputs!=NULL){
     maps *tmpMaps=getMaps(out1,tmpInputs->name);
+    /*fprintf(stderr,"IN LOOP\n");
+    dumpElements(tmpInputs);
+    dumpMaps(tmpMaps);
+    fprintf(stderr,"/ IN LOOP\n");*/
     if(tmpMaps==NULL){
       map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
       if(strncmp(type,"inputs",6)==0)
@@ -1616,7 +1656,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
 	  return tmpInputs->name;
 	}
       maps* tmpMaps2=(maps*)malloc(MAPS_SIZE);
-      tmpMaps2->name=strdup((char*)tmpInputs->name);
+      tmpMaps2->name=strdup(tmpInputs->name);
       tmpMaps2->content=NULL;
       tmpMaps2->next=NULL;
       iotype* tmpIoType=tmpInputs->defaults;
@@ -1624,9 +1664,11 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
 	addMapToMap(&tmpMaps2->content,tmpIoType->content);
 	tmpIoType=tmpIoType->next;
       }
-      map *tmpMap=getMap(tmpMaps2->content,"value");
-      if(tmpMap==NULL)
-	addToMap(tmpMaps2->content,"value","NULL");
+      if(strncmp(type,"outputs",7)==0){
+	map *tmpMap=getMap(tmpMaps2->content,"value");
+	if(tmpMap==NULL)
+	  addToMap(tmpMaps2->content,"value","NULL");
+      }
       if(out1==NULL){
 	*out=dupMaps(&tmpMaps2);
       }
@@ -1637,21 +1679,24 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
       tmpMaps2=NULL;
     }
     else{
-      map* tmpContent=tmpInputs->defaults->content;
-      
-      map* cval=NULL;
-      
-      while(tmpContent!=NULL){
-	if((cval=getMap(tmpMaps->content,tmpContent->name))==NULL){
+      iotype* tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
+					     tmpMaps->content);
+      if(tmpIoType!=NULL){
+	map* tmpContent=tmpIoType->content;
+	map* cval=NULL;
+
+	while(tmpContent!=NULL){
+	  if((cval=getMap(tmpMaps->content,tmpContent->name))==NULL){
 #ifdef DEBUG
-	  fprintf(stderr,"addDefaultValues %s => %s\n",tmpContent->name,tmpContent->value);
+	    fprintf(stderr,"addDefaultValues %s => %s\n",tmpContent->name,tmpContent->value);
 #endif
-	  if(tmpMaps->content==NULL)
-	    tmpMaps->content=createMap(tmpContent->name,tmpContent->value);
-	  else
-	    addToMap(tmpMaps->content,tmpContent->name,tmpContent->value);
+	      if(tmpMaps->content==NULL)
+		tmpMaps->content=createMap(tmpContent->name,tmpContent->value);
+	      else
+		addToMap(tmpMaps->content,tmpContent->name,tmpContent->value);
+	  }
+	  tmpContent=tmpContent->next;
 	}
-	tmpContent=tmpContent->next;
       }
     }
     tmpInputs=tmpInputs->next;
