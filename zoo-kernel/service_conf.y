@@ -132,7 +132,6 @@ miscetoile
 element
  : STag contentetoile ETag	
 {
-  free($3);
 }
 
 // pour neutre
@@ -209,8 +208,9 @@ STag
 	  my_service->inputs=dupElements(current_element);
 	  my_service->inputs->next=NULL;
 	}
-	else
+	else if(current_element!=NULL && current_element->name!=NULL){
 	  addToElements(&my_service->inputs,current_element);
+	}
 #ifdef DEBUG_SERVICE_CONF
 	fprintf(stderr,"CURRENT_ELEMENT\n");
 	dumpElements(current_element);
@@ -266,7 +266,7 @@ STag
 	    if(current_content!=NULL){
 	      addMapToMap(&current_element->metadata,current_content);
 	      current_element->next=NULL;
-	      current_element->format=$2;
+	      current_element->format=strdup($2);
 	      current_element->defaults=NULL;
 	      current_element->supported=NULL;
 	      freeMap(&current_content);
@@ -279,7 +279,7 @@ STag
 	    free(current_content);
 	    current_element->metadata=NULL;
 	    current_element->next=NULL;
-	    current_element->format=$2;
+	    current_element->format=strdup($2);
 	    current_element->defaults=NULL;
 	    current_element->supported=NULL;
 	  }
@@ -296,17 +296,14 @@ STag
 	      wait_supporteds=true;
 	      if(wait_defaults==true){
 		defaultsc++;
-		freeMap(&current_content);
-		current_content=NULL;
+		/*freeMap(&current_content);
+		  current_content=NULL;*/
 	      }
 	      current_data=5;
 	    }
 #ifdef DEBUG_SERVICE_CONF
   printf("* Identifiant : %s\n",$2);
 #endif
-  /* et on renvoie l'identifiant de balise afin de pouvoir le comparer */
-  /* avec la balise jumelle fermante ! */
-  $$ = $2 ;
 }
  ;
 
@@ -337,7 +334,6 @@ attribute
 #ifdef DEBUG_SERVICE_CONF
   printf ("attribute : %s\n",$1) ;
 #endif
-  free($1);
 }
  ;
 
@@ -390,54 +386,39 @@ ETag
     wait_defaults=false;
     current_content=NULL;
     current_element->supported=NULL;
+    current_element->next=NULL;
   }
   if(strcmp($3,"Supported")==0){
     current_data=previous_data;
     if(current_element->supported==NULL){
-      //addMapToIoType(&current_element->supported,current_content);
-      current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
-      current_element->supported->content=NULL;
-      addMapToMap(&current_element->supported->content,current_content);
-      freeMap(&current_content);
-      free(current_content);
-      current_element->supported->next=NULL;
-      current_content=NULL;
+      if(current_content!=NULL){
+	current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
+	current_element->supported->content=NULL;
+	addMapToMap(&current_element->supported->content,current_content);
+	freeMap(&current_content);
+	free(current_content);
+	current_element->supported->next=NULL;
+	current_content=NULL;
+      }else{
+	current_element->supported=NULL;
+	current_element->next=NULL;
+      }
     }
     else{
-#ifdef DEBUG
-      // Currently we support only one supported format
+#ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"SECOND SUPPORTED FORMAT !!!!\n");
 #endif
-      //addMapToIoType(&current_element->supported,current_content);
-      /*iotype* iotmp=*(&current_element->supported);
-      while(iotmp!=NULL){
-	dumpMap(iotmp->content);
-	iotmp=iotmp->next;
-      }
-      iotmp=(iotype*)malloc(IOTYPE_SIZE);
-      iotmp->content=NULL;
-      addMapToMap(&iotmp->content,current_content);
-      iotmp->next=NULL;
-      dumpElements(current_element);
-      fprintf(stderr,"SECOND SUPPORTED FORMAT MAP START !!!!\n");
-      dumpMap(current_content);
-      fprintf(stderr,"SECOND SUPPORTED FORMAT MAP END !!!!\n");*/
+      addMapToIoType(&current_element->supported,current_content);
       freeMap(&current_content);
       free(current_content);
       current_content=NULL;
-      /*freeMap(&iotmp->content);
-      free(&iotmp->content);
-      free(iotype);*/
-#ifdef DEBUG
-      // Currently we support only one supported format
+#ifdef DEBUG_SERVICE_CONF
+      dumpElements(current_element);
       fprintf(stderr,"SECOND SUPPORTED FORMAT !!!!\n");
 #endif
     }
     current_content=NULL;
   }
-  /* on renvoie l'identifiant de la balise pour pouvoir comparer les 2 */
-  /* /!\ une balise fermante n'a pas d'attributs (c.f. : W3C) */
-  $$ = $3;
 }
  ;
 
@@ -609,8 +590,7 @@ processid
     else
       if(current_data==2){ 
 	if(wait_inputs==true){
-	  fprintf(stderr,"dup INPUTS\n");
-	  if(current_element->name!=NULL){
+	  if(current_element!=NULL && current_element->name!=NULL){
 	    if(my_service->inputs==NULL){
 	      my_service->inputs=dupElements(current_element);
 	      my_service->inputs->next=NULL;
@@ -660,7 +640,6 @@ processid
 	    current_element->next=NULL;
 	  }
 	  wait_inputs=false;
-	  dumpMap(current_content);
 	  current_content=NULL;
 	}
 	else
@@ -754,16 +733,13 @@ int getServiceFromFile(char* file,service** service){
 
   int resultatYYParse = srparse() ;
   
-  if(wait_outputs==true && current_element->name!=NULL){
+  if(wait_outputs==true && current_element!=NULL && current_element->name!=NULL){
     if(my_service->outputs==NULL){      
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAOUTPUTS - 623) DUP current_element\n");
 #endif
       my_service->outputs=dupElements(current_element);
       my_service->outputs->next=NULL;
-      freeElements(&current_element);
-      free(current_element);
-      current_element=NULL;
     }
     else{
 #ifdef DEBUG_SERVICE_CONF
@@ -777,16 +753,17 @@ int getServiceFromFile(char* file,service** service){
     freeElements(&current_element);
     free(current_element);
     current_element=NULL;
+#ifdef DEBUG_SERVICE_CONF
+    fprintf(stderr,"(DATAOUTPUTS - 631) FREE current_element\n");
+#endif
   }
   if(current_element!=NULL){
     freeElements(&current_element);
-    fprintf(stderr,"LINE 709");
     free(current_element);
     current_element=NULL;
   }
   if(current_content!=NULL){
     freeMap(&current_content);
-    fprintf(stderr,"LINE 715");
     free(current_content);
     current_content=NULL;
   }

@@ -176,7 +176,7 @@ void *loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **inpu
     void* so = dlopen(tmps1, RTLD_LAZY);
 #endif
 #ifdef DEBUG
-#ifdef WIN32<
+#ifdef WIN32
     DWORD errstr;
     errstr = GetLastError();
     fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
@@ -339,6 +339,7 @@ void *loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **inpu
 		printExceptionReportResponse(m,tmps);
 		*eres=-1;
 	      }
+  *myMap=m;
   *ioutputs=request_output_real_format;
 }
 
@@ -849,6 +850,9 @@ int runRequest(map* request_inputs)
       free(m);
       free(REQUEST);
       free(SERVICE_URL);
+      InternetCloseHandle(hInternet);
+      freeService(&s1);
+      free(s1);
       return 0;
     }
     j=0;
@@ -1787,7 +1791,8 @@ int runRequest(map* request_inputs)
 
   freeService(&s1);
   free(s1);
-  freeMaps(&m);
+  //For Python language support only
+  //freeMaps(&m);
   free(m);
   
   freeMaps(&request_input_real_format);
