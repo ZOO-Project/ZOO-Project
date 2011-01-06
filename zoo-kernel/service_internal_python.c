@@ -105,8 +105,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	res=PyInt_AsLong(pValue);
 	freeMaps(real_outputs);
 	free(*real_outputs);
-	//*real_inputs=mapsFromPyDict(arg2);
-	//createMapsFromPyDict(real_outputs,arg3);
+	freeMaps(main_conf);
+	free(*main_conf);
 	*main_conf=mapsFromPyDict(arg1);
 	*real_outputs=mapsFromPyDict(arg3);
 #ifdef DEBUG
@@ -133,8 +133,11 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  fprintf(stderr,"EMPTY TRACE ?");
 	trace=NULL;
 	trace=PyObject_Str(ptype);
-	if(PyString_Check(trace))
-	  sprintf(pbt,"%s\nTRACE : %s",strdup(pbt),PyString_AsString(trace));
+	if(PyString_Check(trace)){
+	  char *tpbt=strdup(pbt);
+	  sprintf(pbt,"%s\nTRACE : %s",tpbt,PyString_AsString(trace));
+	  free(tpbt);
+	}
 	else
 	  fprintf(stderr,"EMPTY TRACE ?");
 	PyObject *t;
@@ -147,15 +150,22 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	trace=NULL;
 	trace=PyObject_Str(pValue);
 	if(PyString_Check(trace))
-	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",strdup(pbt),PyString_AsString(trace));
+	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",pbt,PyString_AsString(trace));
 	else
-	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations.",strdup(pbt));
+	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations.",pbt);
 	map* err=createMap("text",pbt);
 	addToMap(err,"code","NoApplicableCode");
 	printExceptionReportResponse(m,err);
+	Py_DECREF(arg1);
+	Py_DECREF(arg2);
+	Py_DECREF(arg3);
 	Py_XDECREF(pFunc);
       	Py_DECREF(pArgs);
 	Py_DECREF(pModule);
+	Py_DECREF(ptraceback);
+	Py_DECREF(ptype);
+	Py_DECREF(pValue);
+	Py_Finalize();
 	exit(-1);
       }
     }
@@ -177,10 +187,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyErr_Print();
     exit(-1);
   } 
-#ifndef DEBUG
-  // Failed when DEBUG is defined
   Py_Finalize();
-#endif
   return res;
 }
 
@@ -188,10 +195,12 @@ PyDictObject* PyDict_FromMaps(maps* t){
   PyObject* res=PyDict_New( );
   maps* tmp=t;
   while(tmp!=NULL){
-    if(PyDict_SetItem(res,PyString_FromString(tmp->name),(PyObject*)PyDict_FromMap(tmp->content))<0){
+    PyObject* subc=PyDict_FromMap(tmp->content);
+    if(PyDict_SetItem(res,PyString_FromString(tmp->name),subc)<0){
       fprintf(stderr,"Unable to parse params...");
       exit(1);
     }
+    Py_DECREF(subc);
     tmp=tmp->next;
   }  
   return (PyDictObject*) res;
@@ -201,27 +210,35 @@ PyDictObject* PyDict_FromMap(map* t){
   PyObject* res=PyDict_New( );
   map* tmp=t;
   map* size=getMap(tmp,"size");
-  dumpMap(t);
   while(tmp!=NULL){
-    fprintf(stderr,"%s => %s\n"),tmp->name,tmp->value;
+    PyObject* name=PyString_FromString(tmp->name);
     if(strcasecmp(tmp->name,"value")==0){
       if(size!=NULL){
-	if(PyDict_SetItem(res,PyString_FromString(tmp->name),PyString_FromStringAndSize(tmp->value,(Py_ssize_t) atoi(size->value)))<0){
+	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
+	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to parse params...");
 	  exit(1);
 	}
+	Py_DECREF(value);
       }
-      else
-	if(PyDict_SetItem(res,PyString_FromString(tmp->name),PyString_FromString(tmp->value))<0){
+      else{
+	PyObject* value=PyString_FromString(tmp->value);
+	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to parse params...");
 	  exit(1);
 	}
-    } 
-    else
-      if(PyDict_SetItem(res,PyString_FromString(tmp->name),PyString_FromString(tmp->value))<0){
+	Py_DECREF(value);
+      }
+    }
+    else{
+      PyObject* value=PyString_FromString(tmp->value);
+      if(PyDict_SetItem(res,name,value)<0){
 	fprintf(stderr,"Unable to parse params...");
 	exit(1);
       }
+      Py_DECREF(value);
+    }
+    Py_DECREF(name);
     tmp=tmp->next;
   }
   return (PyDictObject*) res;
@@ -243,9 +260,6 @@ maps* mapsFromPyDict(PyDictObject* t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-    while(cursor!=NULL){
-      cursor=cursor->next;
-    }
     cursor=(maps*)malloc(MAPS_SIZE);
     cursor->name=PyString_AsString(key);
 #ifdef DEBUG
@@ -254,14 +268,18 @@ maps* mapsFromPyDict(PyDictObject* t){
     cursor->content=mapFromPyDict((PyDictObject*)value);
     cursor->next=NULL;
     if(res==NULL)
-      res=cursor;
+      res=dupMaps(&cursor);
     else
       addMapsToMaps(&res,cursor);
+    freeMap(&cursor->content);
+    free(cursor->content);
+    free(cursor);
 #ifdef DEBUG
     dumpMaps(res);
     fprintf(stderr,">> parsed maps %d\n",i);
 #endif
   }
+  Py_DECREF(list);
   return res;
 }
 

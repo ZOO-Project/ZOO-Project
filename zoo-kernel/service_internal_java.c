@@ -61,7 +61,8 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   options[0].optionString = oclasspath;
   options[1].optionString = "-Djava.compiler=NONE";
 
-  vm_args.version = JNI_VERSION_1_4;
+  vm_args.version = JNI_VERSION_1_2;
+  JNI_GetDefaultJavaVMInitArgs(&vm_args);
   vm_args.options = options;
   vm_args.nOptions = 2;
   vm_args.ignoreUnrecognized = JNI_FALSE;
@@ -283,19 +284,21 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
       jobject jk=(*env)->CallObjectMethod(env,tmp1,getKey_mid);
       jobject jv=(*env)->CallObjectMethod(env,tmp1,getValue_mid);
 
-#ifdef DEBUG
       jstring jkd=(*env)->GetStringUTFChars(env, jk, NULL);
       jstring jvd=(*env)->GetStringUTFChars(env, jv, NULL);
+
+#ifdef DEBUG
       fprintf(stderr,"%s %s\n",jkd,jvd);
 #endif
 
       if(res==NULL){
-	res=createMap((*env)->GetStringUTFChars(env, jk, NULL),
-		      (*env)->GetStringUTFChars(env, jv, NULL));
+	res=createMap(jkd,jvd);
       }else{
-	addToMap(res,(*env)->GetStringUTFChars(env, jk, NULL),
-		 (*env)->GetStringUTFChars(env, jv, NULL));
+	addToMap(res,jkd,jvd);
       }
+      (*env)->ReleaseStringChars(env, jk, jkd);
+      (*env)->ReleaseStringChars(env, jv, jvd);
+
     }
     jobject jk=(*env)->CallObjectMethod(env,tmp,getKey_mid);
     maps* cmap=(maps*)malloc(sizeof(maps));

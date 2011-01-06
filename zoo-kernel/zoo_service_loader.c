@@ -953,19 +953,15 @@ int runRequest(map* request_inputs)
 		InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
 		map* tmpMap=getMap(tmpmaps->content,"value");
 		if(tmpMap!=NULL){
+		  free(tmpMap->value);
 		  tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
 		  memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
 		  tmpMap->value[res.nDataLen]=0;
-		  fprintf(stderr,"%d = %d ?\n",res.nDataLen/sizeof(char),strlen(tmpContent));
-		  if(strlen(tmpContent)!=res.nDataLen/sizeof(char)){
+		  if(strlen(tmpContent)!=res.nDataLen){
 		    char tmp[256];
-		    sprintf(tmp,"%d",res.nDataLen);
+		    sprintf(tmp,"%d",res.nDataLen*sizeof(char));
 		    addToMap(tmpmaps->content,"size",tmp);
 		  }
-		  /*FILE* fd=fopen("/tmp/test.png","w");
-		  fwrite(tmpContent,1,(res.nDataLen)*sizeof(char),fd);
-		  fclose(fd);
-		  dumpMap(tmpMap);*/
 		}
 		free(tmpContent);
 	      }
@@ -981,12 +977,8 @@ int runRequest(map* request_inputs)
 	  request_input_real_format=dupMaps(&tmpmaps);
 	else
 	  addMapsToMaps(&request_input_real_format,tmpmaps);
-	/*freeMap(&tmpmaps->content);
-	free(tmpmaps->content);
-	tmpmaps->content=NULL;*/
 	freeMaps(&tmpmaps);
 	free(tmpmaps);
-	  //}
 	tmpmaps=NULL;
 	free(tmp);
       }
@@ -1804,16 +1796,14 @@ int runRequest(map* request_inputs)
 
   freeService(&s1);
   free(s1);
-  //For Python language support only
-  //freeMaps(&m);
+  freeMaps(&m);
   free(m);
   
   freeMaps(&request_input_real_format);
   free(request_input_real_format);
   
-  /* The following is requested but get issue using with Python support :/ */
-  /* freeMaps(&request_output_real_format);
-     free(request_output_real_format);*/
+  freeMaps(&request_output_real_format);
+  free(request_output_real_format);
   
   free(REQUEST);
   free(SERVICE_URL);
