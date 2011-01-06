@@ -405,7 +405,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 	      if(strncmp(tmp2->name,"Phone",5)==0){
 		int j;
 		for(j=0;j<2;j++)
-		  if(strlen(tmp2->name)==strlen(tmpPhone[j]) && strncasecmp(tmp2->name,tmpPhone[j],strlen(tmp2->name))==0){
+		  if(strcasecmp(tmp2->name,tmpPhone[j])==0){
 		    char *toto=NULL;
 		    char *toto1=tmp2->name;
 		    toto=strstr(toto1,"Phone");
@@ -418,7 +418,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
 		if(strncmp(tmp2->name,"Address",7)==0){
 		  int j;
 		  for(j=0;j<6;j++)
-		    if(strlen(tmp2->name)==strlen(tmpAddress[j]) && strncasecmp(tmp2->name,tmpAddress[j],strlen(tmp2->name))==0){
+		    if(strcasecmp(tmp2->name,tmpAddress[j])==0){
 		      char *toto=NULL;
 		      char *toto1=tmp2->name;
 		      toto=strstr(toto1,"Address");

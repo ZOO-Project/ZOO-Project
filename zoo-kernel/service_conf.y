@@ -296,8 +296,6 @@ STag
 	      wait_supporteds=true;
 	      if(wait_defaults==true){
 		defaultsc++;
-		/*freeMap(&current_content);
-		  current_content=NULL;*/
 	      }
 	      current_data=5;
 	    }
