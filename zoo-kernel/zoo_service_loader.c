@@ -952,8 +952,21 @@ int runRequest(map* request_inputs)
 		size_t dwRead;
 		InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
 		map* tmpMap=getMap(tmpmaps->content,"value");
-		if(tmpMap!=NULL)
-		  tmpMap->value=strdup(tmpContent);
+		if(tmpMap!=NULL){
+		  tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
+		  memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
+		  tmpMap->value[res.nDataLen]=0;
+		  fprintf(stderr,"%d = %d ?\n",res.nDataLen/sizeof(char),strlen(tmpContent));
+		  if(strlen(tmpContent)!=res.nDataLen/sizeof(char)){
+		    char tmp[256];
+		    sprintf(tmp,"%d",res.nDataLen);
+		    addToMap(tmpmaps->content,"size",tmp);
+		  }
+		  /*FILE* fd=fopen("/tmp/test.png","w");
+		  fwrite(tmpContent,1,(res.nDataLen)*sizeof(char),fd);
+		  fclose(fd);
+		  dumpMap(tmpMap);*/
+		}
 		free(tmpContent);
 	      }
 	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
