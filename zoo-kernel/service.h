@@ -417,8 +417,22 @@ extern "C" {
       res->content=NULL;
       res->next=NULL;
       map* mc=_cursor->content;
+      map* tmp=getMap(mc,"size");
+      char* tmpSized=NULL;
+      if(tmp!=NULL){
+	map* tmpV=getMap(mc,"value");
+	tmpSized=(char*)malloc((atoi(tmp->value)+1)*sizeof(char));
+	memmove(tmpSized,tmpV->value,atoi(tmp->value)*sizeof(char));
+      }
       if(mc!=NULL){
 	addMapToMap(&res->content,mc);
+      }
+      if(tmp!=NULL){
+	map* tmpV=getMap(res->content,"value");
+	free(tmpV->value);
+	tmpV->value=(char*)malloc(atoi(tmp->value)*sizeof(char));
+	memmove(tmpV->value,tmpSized,atoi(tmp->value)*sizeof(char));
+	free(tmpSized);
       }
       res->next=dupMaps(&_cursor->next);
     }

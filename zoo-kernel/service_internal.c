@@ -1104,6 +1104,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     else
       addToMap(errorMap,"text",_("No more information available"));
     nc3=createExceptionReportNode(m,errorMap,0);
+    freeMap(&errorMap);
+    free(errorMap);
     xmlAddChild(nc1,nc3);
     break;
   default :
@@ -1326,12 +1328,18 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
        || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0
 			  || strncmp(tmp2->value,"application/",6)==0)) ){
       map* rs=getMap(m->content,"size");
+      bool isSized=true;
       if(rs==NULL){
 	char tmp1[1024];
 	sprintf(tmp1,"%d",strlen(toto->value));
 	rs=createMap("z",tmp1);
+	isSized=false;
       }
       xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
+      if(!isSized){
+	freeMap(&rs);
+	free(rs);
+      }
     }
     else if(tmp!=NULL){
       if(strncmp(tmp->value,"text/js",4)==0 ||
@@ -1645,10 +1653,6 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
   maps* out1=*out;
   while(tmpInputs!=NULL){
     maps *tmpMaps=getMaps(out1,tmpInputs->name);
-    /*fprintf(stderr,"IN LOOP\n");
-    dumpElements(tmpInputs);
-    dumpMaps(tmpMaps);
-    fprintf(stderr,"/ IN LOOP\n");*/
     if(tmpMaps==NULL){
       map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
       if(strncmp(type,"inputs",6)==0)
