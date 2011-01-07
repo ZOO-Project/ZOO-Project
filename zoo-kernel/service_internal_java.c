@@ -47,7 +47,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #endif
   setenv("CLASSPATH",classpath,1);
 
-  JavaVMOption options[2];
+  JavaVMOption options[1];
   JavaVMInitArgs vm_args;
   JavaVM *jvm;
   JNIEnv *env;
@@ -59,12 +59,11 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   int i;
 
   options[0].optionString = oclasspath;
-  options[1].optionString = "-Djava.compiler=NONE";
 
   vm_args.version = JNI_VERSION_1_2;
   JNI_GetDefaultJavaVMInitArgs(&vm_args);
   vm_args.options = options;
-  vm_args.nOptions = 2;
+  vm_args.nOptions = 1;
   vm_args.ignoreUnrecognized = JNI_FALSE;
 
   result = JNI_CreateJavaVM(&jvm,(void **)&env, &vm_args);
