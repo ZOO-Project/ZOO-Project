@@ -195,7 +195,7 @@ PyDictObject* PyDict_FromMaps(maps* t){
   PyObject* res=PyDict_New( );
   maps* tmp=t;
   while(tmp!=NULL){
-    PyObject* subc=PyDict_FromMap(tmp->content);
+    PyObject* subc=(PyObject*)PyDict_FromMap(tmp->content);
     if(PyDict_SetItem(res,PyString_FromString(tmp->name),subc)<0){
       fprintf(stderr,"Unable to parse params...");
       exit(1);
