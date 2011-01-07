@@ -289,6 +289,8 @@ extern "C" {
 	free(tmp->supported);
       }
       freeElements(&tmp->next);
+      if(tmp->next!=NULL)
+	free(tmp->next);
     }
   }
 
@@ -551,9 +553,8 @@ extern "C" {
   }
 
   static void addToElements(elements** m,elements* e){
-    elements* _cursor=*m;
     elements* tmp=e;
-    if(_cursor==NULL){
+    if(*m==NULL){
       *m=dupElements(tmp);
     }else{
       addToElements(&(*m)->next,tmp);

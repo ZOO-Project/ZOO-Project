@@ -175,7 +175,6 @@ STag
 #endif
       freeElements(&current_element);
       free(current_element);
-      current_element=NULL;
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAINPUTS - 186) ALLOCATE current_element\n");
 #endif
@@ -504,7 +503,7 @@ pair: PAIR {  if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){fre
     curr_key=NULL;
   }
   }
-| SPAIR  { curr_key=strdup($1);/*free($1);*/if(debug) fprintf(stderr,"SPAIR FOUND !!\n"); }
+| SPAIR  { curr_key=strdup($1);if(debug) fprintf(stderr,"SPAIR FOUND !!\n"); }
  ;
 
 
@@ -697,15 +696,8 @@ int getServiceFromFile(char* file,service** service){
   fprintf(stderr,"(STARTING)FREE current_element\n");
 #endif
   freeElements(&current_element);
+  free(current_element);
   current_element=NULL;
-#ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(STARTING)FREE my_service\n");
-#endif
-  //freeService(&my_service);
-  //free(my_service);
-#ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(STARTING)FREE my_service done\n");
-#endif
   my_service=NULL;
   scontent=NULL;
 
@@ -725,7 +717,7 @@ int getServiceFromFile(char* file,service** service){
 
   srin = fopen(file,"r");
   if (srin==NULL){
-    fprintf(stderr,"error : le fichier specifie n'existe pas ou n'est pas accessible en lecture\n") ;
+    fprintf(stderr,"error : file not found\n") ;
     return -1;
   }
 
