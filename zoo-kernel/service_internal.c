@@ -808,14 +808,13 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 	xmlAddChild(nc3,nc4);
       }else{
       	xmlAddChild(nc4,nc5);
-	//xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
       }
       _tmp=_tmp->next;
       if(strcmp(e->format,"LiteralData")!=0){
 	xmlAddChild(nc2,nc3);
       }
-      xmlAddChild(nc1,nc2);
     }
+    xmlAddChild(nc1,nc2);
     
     
     e=e->next;
@@ -897,12 +896,12 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
     }
     _tmp=e->supported;
     while(_tmp!=NULL){
-    if(datatype==0){
-      nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
-      nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+      if(datatype==0){
+	nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
+	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
       }
       else
-      nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
+	nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
       tmp1=_tmp->content;
       while(tmp1!=NULL){
 #ifdef DEBUG
