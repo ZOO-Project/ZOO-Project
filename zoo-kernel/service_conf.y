@@ -202,7 +202,7 @@ STag
 	fprintf(stderr,"SERVICE INPUTS\n");
 	dumpElements(my_service->inputs);
 	dumpService(my_service);
-#endif
+#endif	
 	if(my_service->inputs==NULL){
 	  my_service->inputs=dupElements(current_element);
 	  my_service->inputs->next=NULL;
@@ -237,7 +237,7 @@ STag
       }
       wait_outputs=true;
       current_data=2;
-      previous_data=1;
+      previous_data=2;
     }
     else
       if(strncasecmp($2,"MetaData",8)==0){
@@ -586,17 +586,18 @@ processid
     }
     else
       if(current_data==2){ 
-	if(wait_inputs==true){
+	wait_outputs=true;
+	if(wait_inputs){
 	  if(current_element!=NULL && current_element->name!=NULL){
-	    if(my_service->inputs==NULL){
-	      my_service->inputs=dupElements(current_element);
-	      my_service->inputs->next=NULL;
+	    if(my_service->outputs==NULL){
+	      my_service->outputs=dupElements(current_element);
+	      my_service->outputs->next=NULL;
 	    }
 	    else{
 #ifdef DEBUG_SERVICE_CONF
 	      fprintf(stderr,"LAST NAME IN %s (current - %s)\n",$1,current_element->name);
 #endif
-	      addToElements(&my_service->inputs,current_element);
+	      addToElements(&my_service->outputs,current_element);
 	    }
 #ifdef DEBUG_SERVICE_CONF
 	    dumpElements(current_element);
@@ -623,7 +624,7 @@ processid
 	    fprintf(stderr,"(DATAOUTPUTS - 545) SET NAME OF current_element\n");
 #endif
 	    char *cen=strdup($1);
-	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
+	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
 	    cen[strlen(cen)-1]=0;
 	    cen+=1;
 	    sprintf(current_element->name,"%s",cen);
@@ -636,11 +637,23 @@ processid
 	    current_element->supported=NULL;
 	    current_element->next=NULL;
 	  }
-	  wait_inputs=false;
+
 	  current_content=NULL;
 	}
 	else
-	  if(current_element->name==NULL){
+	  if(current_element!=NULL && current_element->name!=NULL){
+	    if(my_service->outputs==NULL)
+	      my_service->outputs=dupElements(current_element);
+	    else
+	      addToElements(&my_service->outputs,current_element);
+	    fprintf(stderr,"ADD TO OUTPUTS Elements\n");
+	    dupElements(current_element);
+
+	    freeElements(&current_element);
+	    free(current_element);
+	    current_element=NULL;
+	  }
+	  else{
 #ifdef DEBUG_SERVICE_CONF
 	    fprintf(stderr,"NAME OUT %s\n",$1);
 	    fprintf(stderr,"(DATAOUTPUTS - 545) SET NAME OF current_element\n");
@@ -662,7 +675,9 @@ processid
 	    current_element->supported=NULL;
 	    current_element->next=NULL;
 	  }
+	wait_inputs=false;
 	wait_outputs=true;
+	//wait_outputs=true;
       }
   }
  }
@@ -723,7 +738,7 @@ int getServiceFromFile(char* file,service** service){
 
   int resultatYYParse = srparse() ;
   
-  if(wait_outputs==true && current_element!=NULL && current_element->name!=NULL){
+  if(wait_outputs && current_element!=NULL && current_element->name!=NULL){
     if(my_service->outputs==NULL){      
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAOUTPUTS - 623) DUP current_element\n");

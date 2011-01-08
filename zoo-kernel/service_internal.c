@@ -1125,11 +1125,11 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     nc = xmlNewNode(ns, BAD_CAST "DataInputs");
     int i;
     maps* mcursor=inputs;
-    elements* scursor=serv->inputs;
+    elements* scursor=NULL;
     while(mcursor!=NULL /*&& scursor!=NULL*/){
+      scursor=getElements(serv->inputs,mcursor->name);
       printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Input");
       mcursor=mcursor->next;
-      //scursor=scursor->next;
     }
     xmlAddChild(n,nc);
     
@@ -1139,11 +1139,11 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
 
     nc = xmlNewNode(ns, BAD_CAST "OutputDefinitions");
     mcursor=outputs;
-    scursor=serv->outputs;
-    while(mcursor!=NULL /*&& scursor!=NULL*/){
+    scursor=NULL;
+    while(mcursor!=NULL){
+      scursor=getElements(serv->outputs,mcursor->name);
       printOutputDefinitions1(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
       mcursor=mcursor->next;
-      //scursor=scursor->next;
     }
     xmlAddChild(n,nc);
   }
@@ -1159,6 +1159,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     maps* mcursor=outputs;
     elements* scursor=serv->outputs;
     while(mcursor!=NULL){
+      scursor=getElements(serv->outputs,mcursor->name);
       printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
       mcursor=mcursor->next;
     }
@@ -1263,31 +1264,47 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
-  map *tmp=e->content;
+  map *tmp=NULL;
+  if(e!=NULL)
+    tmp=e->content;
+  else
+    tmp=m->content;
 #ifdef DEBUG
   dumpMap(tmp);
   dumpElements(e);
 #endif
   nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
-  nc3=xmlNewText(BAD_CAST e->name);
+  if(e!=NULL)
+    nc3=xmlNewText(BAD_CAST e->name);
+  else
+    nc3=xmlNewText(BAD_CAST m->name);
   xmlAddChild(nc2,nc3);
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
   // Extract Title required to be first element in the ZCFG file !
-  nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-  nc3=xmlNewText(BAD_CAST _ss(tmp->value));
-  xmlAddChild(nc2,nc3);  
-  xmlAddChild(nc1,nc2);
-  // Extract Abstract required to be second element in the ZCFG file !
-  // For GRASS it can be empty ...
-  if(tmp->next!=NULL){
-    tmp=tmp->next;
+  bool isTitle=true;
+  if(e!=NULL)
+    tmp=getMap(e->content,"Title");
+  else
+    tmp=getMap(m->content,"Title");
+  
+  if(tmp!=NULL){
+    nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
+    nc3=xmlNewText(BAD_CAST _ss(tmp->value));
+    xmlAddChild(nc2,nc3);  
+    xmlAddChild(nc1,nc2);
+  }
+
+  if(e!=NULL)
+    tmp=getMap(e->content,"Abstract");
+  else
+    tmp=getMap(m->content,"Abstract");
+  if(tmp!=NULL){
     nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
     nc3=xmlNewText(BAD_CAST _ss(tmp->value));
     xmlAddChild(nc2,nc3);  
     xmlAddChild(nc1,nc2);
     xmlAddChild(nc,nc1);
-    tmp=tmp->next;
   }
 
   /**
@@ -1299,13 +1316,22 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
   map *tmpMap=getMap(m->content,"Reference");
   if(tmpMap==NULL){
     nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-    if(strncasecmp(e->format,"LITERALOUTPUT",strlen(e->format))==0)
-      nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
-    else
-      if(strncasecmp(e->format,"COMPLEXOUTPUT",strlen(e->format))==0)
-	nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
+    if(e!=NULL){
+      if(strncasecmp(e->format,"LITERALOUTPUT",strlen(e->format))==0)
+	nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
       else
-	nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
+	if(strncasecmp(e->format,"COMPLEXOUTPUT",strlen(e->format))==0)
+	  nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
+	else
+	  nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
+    }
+    else{
+      map* tmpV=getMapFromMaps(m,"format","value");
+      if(tmpV!=NULL)
+	nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
+      else
+	nc3=xmlNewNode(ns_wps, BAD_CAST "LitteralData");
+    }
     tmp=m->content;
     while(tmp!=NULL){
       if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
@@ -1313,12 +1339,19 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
 	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0 &&
 	 strncasecmp(tmp->name,"status",strlen(tmp->name))!=0 &&
 	 strncasecmp(tmp->name,"storeExecuteResponse",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0)
+	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"format",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"Title",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"Abstract",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"size",strlen(tmp->name))!=0)
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
     }
-    tmp=getMap(e->defaults->content,"mimeType");
+    if(e!=NULL)
+      tmp=getMap(e->defaults->content,"mimeType");
+    else
+      tmp=NULL;
     map* tmp1=getMap(m->content,"encoding");
     map* tmp2=getMap(m->content,"mimeType");
     map* toto=getMap(m->content,"value");
@@ -1356,12 +1389,15 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
     tmp=m->content;
     while(tmp!=NULL){
       if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"reference",strlen(tmp->name))!=0 &&
 	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"abstract",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0 &&
 	 strncasecmp(tmp->name,"status",strlen(tmp->name))!=0 &&
 	 strncasecmp(tmp->name,"storeExecuteResponse",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0)
+	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"format",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"Title",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"Abstract",strlen(tmp->name))!=0 &&
+	 strncasecmp(tmp->name,"size",strlen(tmp->name))!=0)
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
