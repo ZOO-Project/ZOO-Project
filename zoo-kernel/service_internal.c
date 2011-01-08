@@ -1605,9 +1605,17 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   else
     if(res!=SERVICE_FAILED){
       /**
-       * We get the first output only !!
+       * We get the requested output or fallback to the first one if the 
+       * requested one is not present in the resulting outputs maps.
        */
-      toto=getMap(request_outputs->content,"value");
+      maps* tmpI=NULL;
+      map* tmpIV=getMap(request_inputs1,"RawDataOutput");
+      if(tmpIV!=NULL){
+	tmpI=getMaps(request_outputs,tmpIV->value);
+      }
+      if(tmpI==NULL)
+	tmpI=request_outputs;
+      toto=getMap(tmpI->content,"value");
       if(toto==NULL){
 	map * errormap = createMap("text",_("Unable to fetch any result"));
 	addToMap(errormap,"code", "InternalError");
@@ -1616,13 +1624,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	free(errormap);
       }
       char mime[1024];
-      map* mi=getMap(request_outputs->content,"mimeType");
+      map* mi=getMap(tmpI->content,"mimeType");
 #ifdef DEBUG
       fprintf(stderr,"SERVICE OUTPUTS\n");
       dumpMaps(request_outputs);
       fprintf(stderr,"SERVICE OUTPUTS\n");
 #endif
-      map* en=getMap(request_outputs->content,"encoding");
+      map* en=getMap(tmpI->content,"encoding");
       if(mi!=NULL && en!=NULL)
 	sprintf(mime,
 		"Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
@@ -1636,7 +1644,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
       printf("%s",mime);
       if(mi!=NULL && strncmp(mi->value,"image",5)==0){
-	map* rs=getMapFromMaps(request_outputs,request_outputs->name,"size");
+	map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
 	fwrite(toto->value,atoi(rs->value),1,stdout);
       }
       else
