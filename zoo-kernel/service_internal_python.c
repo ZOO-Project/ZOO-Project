@@ -33,10 +33,14 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   map* tmp=NULL;
   tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH");
   char *python_path;
+#ifdef DEBUG
   fprintf(stderr,"PYTHON SUPPORT \n");
+#endif
   fflush(stderr);
   if(tmp!=NULL){
+#ifdef DEBUG
     fprintf(stderr,"PYTHON SUPPORT (%i)\n",strlen(tmp->value));
+#endif
     python_path=(char*)malloc((strlen(tmp->value))*sizeof(char));
     sprintf(python_path,"%s",tmp->value);
   }
