@@ -1159,10 +1159,9 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
     maps* mcursor=outputs;
     elements* scursor=serv->outputs;
-    while(mcursor!=NULL && scursor!=NULL){
+    while(mcursor!=NULL){
       printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
       mcursor=mcursor->next;
-      scursor=scursor->next;
     }
     xmlAddChild(n,nc);
   }
@@ -1532,7 +1531,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  else
 	    toto=createMap("extension","txt");
 	}
-	if(toto==NULL)
+	else
 	  toto=createMap("extension","txt");
 	hasExt=false;
       }
@@ -1648,36 +1647,64 @@ char *base64(const unsigned char *input, int length)
   return buff;
 }
 
-char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
+char* addDefaultValues(maps** out,elements* in,maps* m,int type){
   elements* tmpInputs=in;
   maps* out1=*out;
   while(tmpInputs!=NULL){
     maps *tmpMaps=getMaps(out1,tmpInputs->name);
     if(tmpMaps==NULL){
-      map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
-      if(strncmp(type,"inputs",6)==0)
-	if(tmpMap1!=NULL && atoi(tmpMap1->value)>=1){
-	  return tmpInputs->name;
-	}
       maps* tmpMaps2=(maps*)malloc(MAPS_SIZE);
       tmpMaps2->name=strdup(tmpInputs->name);
       tmpMaps2->content=NULL;
       tmpMaps2->next=NULL;
-      iotype* tmpIoType=tmpInputs->defaults;
-      while(tmpIoType!=NULL){
-	addMapToMap(&tmpMaps2->content,tmpIoType->content);
-	tmpIoType=tmpIoType->next;
+      
+      if(type==0){
+	map* tmpMapMinO=getMap(tmpInputs->content,"minOccurs");
+	if(tmpMapMinO!=NULL)
+	  if(atoi(tmpMapMinO->value)>=1){
+	    freeMaps(&tmpMaps2);
+	    free(tmpMaps2);
+	    return tmpInputs->name;
+	  }
+	  else{
+	    if(tmpMaps2->content==NULL)
+	      tmpMaps2->content=createMap("minOccurs",tmpMapMinO->value);
+	    else
+	      addToMap(tmpMaps2->content,"minOccurs",tmpMapMinO->value);
+	  }
+	map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
+	if(tmpMaxO!=NULL)
+	  if(tmpMaps2->content==NULL)
+	    tmpMaps2->content=createMap("maxOccurs",tmpMaxO->value);
+	  else
+	    addToMap(tmpMaps2->content,"maxOccurs",tmpMaxO->value);
       }
-      if(strncmp(type,"outputs",7)==0){
+
+      iotype* tmpIoType=tmpInputs->defaults;
+      if(tmpIoType!=NULL){
+	map* tmpm=tmpIoType->content;
+	while(tmpm!=NULL){
+	  if(tmpMaps2->content==NULL)
+	    tmpMaps2->content=createMap(tmpm->name,tmpm->value);
+	  else
+	    addToMap(tmpMaps2->content,tmpm->name,tmpm->value);
+	  tmpm=tmpm->next;
+	}
+      }
+      if(type==1){
 	map *tmpMap=getMap(tmpMaps2->content,"value");
 	if(tmpMap==NULL)
 	  addToMap(tmpMaps2->content,"value","NULL");
       }
       if(out1==NULL){
 	*out=dupMaps(&tmpMaps2);
+	out1=*out;
       }
       else
 	addMapsToMaps(&out1,tmpMaps2);
+      freeMap(&tmpMaps2->content);
+      free(tmpMaps2->content);
+      tmpMaps2->content=NULL;
       freeMaps(&tmpMaps2);
       free(tmpMaps2);
       tmpMaps2=NULL;
@@ -1685,6 +1712,24 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
     else{
       iotype* tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
 					     tmpMaps->content);
+
+      if(type==0) {
+	map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
+	if(tmpMap1!=NULL){
+	  if(tmpMaps->content==NULL)
+	    tmpMaps->content=createMap("minOccurs",tmpMap1->value);
+	  else
+	    addToMap(tmpMaps->content,"minOccurs",tmpMap1->value);
+	}
+	map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
+	if(tmpMaxO!=NULL){
+	  if(tmpMaps->content==NULL)
+	    tmpMaps->content=createMap("maxOccurs",tmpMap1->value);
+	  else
+	    addToMap(tmpMaps->content,"maxOccurs",tmpMap1->value);
+	}
+      }
+
       if(tmpIoType!=NULL){
 	map* tmpContent=tmpIoType->content;
 	map* cval=NULL;
@@ -1694,10 +1739,10 @@ char* addDefaultValues(maps** out,elements* in,maps* m,char* type){
 #ifdef DEBUG
 	    fprintf(stderr,"addDefaultValues %s => %s\n",tmpContent->name,tmpContent->value);
 #endif
-	      if(tmpMaps->content==NULL)
-		tmpMaps->content=createMap(tmpContent->name,tmpContent->value);
-	      else
-		addToMap(tmpMaps->content,tmpContent->name,tmpContent->value);
+	    if(tmpMaps->content==NULL)
+	      tmpMaps->content=createMap(tmpContent->name,tmpContent->value);
+	    else
+	      addToMap(tmpMaps->content,tmpContent->name,tmpContent->value);
 	  }
 	  tmpContent=tmpContent->next;
 	}

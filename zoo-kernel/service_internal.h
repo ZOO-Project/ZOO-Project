@@ -103,7 +103,7 @@ extern "C" {
 
   char *base64(const unsigned char*,int);
 
-  char* addDefaultValues(maps**,elements*,maps*,char*);
+  char* addDefaultValues(maps**,elements*,maps*,int);
 
   /*defined in zoo_loader.c*/ 
   int errorException(maps *m, const char *message, const char *errorcode);

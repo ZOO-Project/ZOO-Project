@@ -27,7 +27,6 @@
 extern "C" int yylex();
 extern "C" int crlex();
 
-
 extern "C" {
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
@@ -471,7 +470,7 @@ int runRequest(map* request_inputs)
   if(tmpm!=NULL)
     SERVICE_URL=strdup(tmpm->value);
   else
-    SERVICE_URL=DEFAULT_SERVICE_URL;
+    SERVICE_URL=strdup(DEFAULT_SERVICE_URL);
 
   service* s[100];
   service* s1;
@@ -1613,18 +1612,21 @@ int runRequest(map* request_inputs)
    * Ensure that each requested arguments are present in the request
    * DataInputs and ResponseDocument / RawDataOutput
    */  
-  char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,"inputs");
+  char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,0);
   if(strcmp(dfv,"")!=0){
     char tmps[1024];
     snprintf(tmps,1024,_("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),dfv);
     map* tmpe=createMap("text",tmps);
     addToMap(tmpe,"code","MissingParameterValue");
     printExceptionReportResponse(m,tmpe);
+    freeService(&s1);
+    free(s1);
     freeMap(&tmpe);
     free(tmpe);
     freeMaps(&m);
     free(m);
     free(REQUEST);
+    free(SERVICE_URL);
     freeMaps(&request_input_real_format);
     free(request_input_real_format);
     freeMaps(&request_output_real_format);
@@ -1633,7 +1635,7 @@ int runRequest(map* request_inputs)
     free(tmpmaps);
     return 1;
   }
-  addDefaultValues(&request_output_real_format,s1->outputs,m,"outputs");
+  addDefaultValues(&request_output_real_format,s1->outputs,m,1);
 
 #ifdef DEBUG
   fprintf(stderr,"REQUEST_INPUTS\n");
