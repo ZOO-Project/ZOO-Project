@@ -62,9 +62,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #else
   sprintf(pythonpath,"%s:%s",ntmp,python_path);
 #endif
-  //#ifdef DEBUG
+#ifdef DEBUG
     fprintf(stderr,"PYTHONPATH=%s\n",pythonpath);
-  //#endif
+#endif
 #ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);
 #else
@@ -221,6 +221,7 @@ PyDictObject* PyDict_FromMap(map* t){
 	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to parse params...");
+	  Py_DECREF(value);
 	  exit(1);
 	}
 	Py_DECREF(value);
@@ -229,6 +230,7 @@ PyDictObject* PyDict_FromMap(map* t){
 	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to parse params...");
+	  Py_DECREF(value);
 	  exit(1);
 	}
 	Py_DECREF(value);
@@ -238,6 +240,7 @@ PyDictObject* PyDict_FromMap(map* t){
       PyObject* value=PyString_FromString(tmp->value);
       if(PyDict_SetItem(res,name,value)<0){
 	fprintf(stderr,"Unable to parse params...");
+	Py_DECREF(value);
 	exit(1);
       }
       Py_DECREF(value);
@@ -278,6 +281,8 @@ maps* mapsFromPyDict(PyDictObject* t){
     freeMap(&cursor->content);
     free(cursor->content);
     free(cursor);
+    Py_DECREF(value);
+    Py_DECREF(key);
 #ifdef DEBUG
     dumpMaps(res);
     fprintf(stderr,">> parsed maps %d\n",i);
@@ -292,6 +297,18 @@ map* mapFromPyDict(PyDictObject* t){
   PyObject* list=PyDict_Keys((PyObject*)t);
   int nb=PyList_Size(list);
   int i;
+  int sizeValue=-1;
+  for(i=0;i<nb;i++){
+    PyObject* key=PyList_GetItem(list,i);
+    if(strcmp(PyString_AsString(key),"size")==0){
+      PyObject* value=PyDict_GetItem((PyObject*)t,key);
+      sizeValue=atoi(PyString_AsString(value));
+      Py_DECREF(value);
+      Py_DECREF(key);    
+      break;
+    }
+    Py_DECREF(key);    
+  }
   for(i=0;i<nb;i++){
     PyObject* key=PyList_GetItem(list,i);
     PyObject* value=PyDict_GetItem((PyObject*)t,key);
@@ -299,10 +316,29 @@ map* mapFromPyDict(PyDictObject* t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-    if(res!=NULL)
-      addToMap(res,PyString_AsString(key),PyString_AsString(value));
-    else
-      res=createMap(PyString_AsString(key),PyString_AsString(value));
+    if(sizeValue>=0 && strcmp(PyString_AsString(key),"value")==0){
+      char *buffer=NULL;//(char*)malloc((sizeValue+1)*sizeof(char));
+      Py_ssize_t size;
+      PyString_AsStringAndSize(value,&buffer,&size);
+      if(res!=NULL){
+	addToMap(res,PyString_AsString(key),"");
+      }else{
+	res=createMap(PyString_AsString(key),"");
+      }
+      map* tmpR=getMap(res,"value");
+      free(tmpR->value);
+      tmpR->value=(char*)malloc((sizeValue+1)*sizeof(char));
+      memmove(tmpR->value,buffer,sizeValue*sizeof(char));
+      tmpR->value[sizeValue]=0;
+    }else{
+      if(res!=NULL)
+	addToMap(res,PyString_AsString(key),PyString_AsString(value));
+      else
+	res=createMap(PyString_AsString(key),PyString_AsString(value));
+    }
+    Py_DECREF(value);
+    Py_DECREF(key);
   }
+  Py_DECREF(list);
   return res;
 }
