@@ -196,8 +196,14 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
     while(tmp!=NULL){
       map* tmp1=tmp->content;
       scObject1 = (*env)->NewObject(env, scHashMap_class, scHashMap_constructor);
+      map* sizeV=getMap(tmp1,"size");
       while(tmp1!=NULL){
-	(*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), (*env)->NewStringUTF(env,tmp1->value));
+	if(sizeV!=NULL && strcmp(tmp1->name,"value")==0){
+	  jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sizeV->value));
+	  (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),tmp1->value);
+	  (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), tmpData);
+	}else
+	  (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), (*env)->NewStringUTF(env,tmp1->value));
 	tmp1=tmp1->next;
       }
       (*env)->CallObjectMethod(env,scObject, put_mid, (*env)->NewStringUTF(env,tmp->name), scObject1);
@@ -223,13 +229,21 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
    * }
    */
   jclass scHashMap_class,scSetClass,scIteratorClass,scMapEntryClass,scSet_class,scMapClass;
-  jmethodID entrySet_mid,iterator_mid,hasNext_mid,next_mid,getKey_mid,getValue_mid;
+  jmethodID entrySet_mid,containsKey_mid,get_mid,iterator_mid,hasNext_mid,next_mid,getKey_mid,getValue_mid;
   jobject scObject,scObject1;
   if(scHashMapClass==NULL){
     fprintf(stderr,"Unable to load java.util.HashMap\n");
     return NULL;
   }
   entrySet_mid = (*env)->GetMethodID(env, scHashMapClass, "entrySet", "()Ljava/util/Set;"); 
+  containsKey_mid = (*env)->GetMethodID(env, scHashMapClass, "containsKey", "(Ljava/lang/Object;)Z");
+  get_mid = (*env)->GetMethodID(env, scHashMapClass, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); 
+  if(containsKey_mid==0){
+    fprintf(stderr,"unable to load containsKey from HashMap object (%d) \n",entrySet_mid);
+  }
+  if(get_mid==0){
+    fprintf(stderr,"unable to load get from HashMap object (%d) \n",entrySet_mid);
+  }
   if(entrySet_mid==0){
     fprintf(stderr,"unable to load entrySet from HashMap object (%d) \n",entrySet_mid);
     return NULL;
@@ -278,25 +292,51 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
     jobject set=(*env)->CallObjectMethod(env,imap,entrySet_mid);
     jobject iterator=(*env)->CallObjectMethod(env,set,iterator_mid);
 
+    int size=-1;
+    if((*env)->CallBooleanMethod(env,imap,containsKey_mid,(*env)->NewStringUTF(env,"size"))){
+      jobject sizeV=(*env)->CallObjectMethod(env, imap, get_mid,(*env)->NewStringUTF(env,"size"));
+      jstring sizeVS=(*env)->GetStringUTFChars(env, sizeV, NULL);
+      size=atoi(sizeVS);
+      fprintf(stderr,"SIZE : %s\n",sizeVS);
+    }
+    
     while((*env)->CallBooleanMethod(env,iterator,hasNext_mid)){
       jobject tmp1=(*env)->CallObjectMethod(env,iterator,next_mid);
       jobject jk=(*env)->CallObjectMethod(env,tmp1,getKey_mid);
       jobject jv=(*env)->CallObjectMethod(env,tmp1,getValue_mid);
 
       jstring jkd=(*env)->GetStringUTFChars(env, jk, NULL);
-      jstring jvd=(*env)->GetStringUTFChars(env, jv, NULL);
+      if(size>=0 && strcmp(jkd,"value")==0){
+	fprintf(stderr,"%s\n",jkd);
+	jobject value=(*env)->GetByteArrayElements(env, jv, NULL);
+	if(res==NULL){
+	  res=createMap(jkd,"");
+	}else{
+	  addToMap(res,jkd,"");
+	}
+	fprintf(stderr,"/%s\n",jkd);
+	map* tmpR=getMap(res,"value");
+	free(tmpR->value);
+	tmpR->value=(char*)malloc((size+1)*sizeof(char));
+	memmove(tmpR->value,value,size*sizeof(char));
+	tmpR->value[size]=0;
+	fprintf(stderr,"/%s\n",jkd);
+      }
+      else{
+	jstring jvd=(*env)->GetStringUTFChars(env, jv, NULL);
+	if(res==NULL){
+	  res=createMap(jkd,jvd);
+	}else{
+	  addToMap(res,jkd,jvd);
+	}
+	(*env)->ReleaseStringChars(env, jv, jvd);
+      }
 
 #ifdef DEBUG
       fprintf(stderr,"%s %s\n",jkd,jvd);
 #endif
 
-      if(res==NULL){
-	res=createMap(jkd,jvd);
-      }else{
-	addToMap(res,jkd,jvd);
-      }
       (*env)->ReleaseStringChars(env, jk, jkd);
-      (*env)->ReleaseStringChars(env, jv, jvd);
 
     }
     jobject jk=(*env)->CallObjectMethod(env,tmp,getKey_mid);
