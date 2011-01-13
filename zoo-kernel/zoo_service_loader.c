@@ -1699,6 +1699,31 @@ int runRequest(map* request_inputs)
    * Need to check if we need to fork to load a status enabled 
    */
   r_inputs=NULL;
+  map* store=getMap(request_inputs,"storeExecuteResponse");
+  map* status=getMap(request_inputs,"status");
+  /**
+   * 05-007r7 WPS 1.0.0 page 57 :
+   * 'If status="true" and storeExecuteResponse is "false" then the service 
+   * shall raise an exception.'
+   */
+  if(status!=NULL && strcmp(status->value,"true")==0 && 
+     store!=NULL && strcmp(store->value,"false")==0){
+    errorException(m, _("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."), "InvalidParameterValue");
+    freeService(&s1);
+    free(s1);
+    freeMaps(&m);
+    free(m);
+    
+    freeMaps(&request_input_real_format);
+    free(request_input_real_format);
+    
+    freeMaps(&request_output_real_format);
+    free(request_output_real_format);
+    
+    free(REQUEST);
+    free(SERVICE_URL);
+    return 1;
+  }
   r_inputs=getMap(request_inputs,"storeExecuteResponse");
   int eres=SERVICE_STARTED;
   int cpid=getpid();
@@ -1718,10 +1743,10 @@ int runRequest(map* request_inputs)
   dumpMap(request_inputs);
 #endif
 
-  if(r_inputs!=NULL)
-    if(strcasecmp(r_inputs->value,"false")==0)
-      r_inputs=NULL;
-  if(r_inputs==NULLMAP){
+  if(status!=NULL)
+    if(strcasecmp(status->value,"false")==0)
+      status=NULL;
+  if(status==NULLMAP){
     loadServiceAndRun(&m,s1,request_inputs,&request_input_real_format,&request_output_real_format,&eres);
   }
   else{
