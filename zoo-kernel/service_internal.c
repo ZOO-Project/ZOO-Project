@@ -1334,16 +1334,11 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
     }
     tmp=m->content;
     while(tmp!=NULL){
-      if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"status",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"storeExecuteResponse",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"format",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"Title",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"Abstract",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"size",strlen(tmp->name))!=0)
+      if(strcasecmp(tmp->name,"mimeType")==0 ||
+	 strcasecmp(tmp->name,"encoding")==0 ||
+	 strcasecmp(tmp->name,"schema")==0 ||
+	 strcasecmp(tmp->name,"datatype")==0 ||
+	 strcasecmp(tmp->name,"uom")==0)
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
@@ -1388,16 +1383,11 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
     xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
     tmp=m->content;
     while(tmp!=NULL){
-      if(strncasecmp(tmp->name,"value",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"asReference",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"status",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"storeExecuteResponse",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"extension",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"format",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"Title",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"Abstract",strlen(tmp->name))!=0 &&
-	 strncasecmp(tmp->name,"size",strlen(tmp->name))!=0)
+      if(strcasecmp(tmp->name,"mimeType")==0 ||
+	 strcasecmp(tmp->name,"encoding")==0 ||
+	 strcasecmp(tmp->name,"schema")==0 ||
+	 strcasecmp(tmp->name,"datatype")==0 ||
+	 strcasecmp(tmp->name,"uom")==0)
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
@@ -1548,49 +1538,61 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
     dumpMaps(request_outputs);
 #endif
-    toto=getMap(request_outputs->content,"asReference");
-    if(toto!=NULL && strcasecmp(toto->value,"true")==0){
-      toto=getMap(request_outputs->content,"extension");
-      map *tmp1=getMapFromMaps(m,"main","tmpPath");
-      char *file_name;
-      bool hasExt=true;
-      if(toto==NULL){
-	// We can fallback to a default list of supported formats using
-	// mimeType information if present here. Maybe we can add more formats
-	// here.
-	// If mimeType was not found, we then set txt as the default extension.
-	map* mtype=getMap(request_outputs->content,"mimeType");
-	if(mtype!=NULL){
-	  if(strcasecmp(mtype->value,"text/xml")==0)
-	    toto=createMap("extension","xml");
+    maps* tmpI=request_outputs;
+    while(tmpI!=NULL){
+      toto=getMap(tmpI->content,"asReference");
+      if(toto!=NULL && strcasecmp(toto->value,"true")==0){
+
+	toto=getMap(tmpI->content,"extension");
+	map *tmp1=getMapFromMaps(m,"main","tmpPath");
+	char *file_name;
+	bool hasExt=true;
+	if(toto==NULL){
+	  dumpMaps(tmpI);
+	  // We can fallback to a default list of supported formats using
+	  // mimeType information if present here. Maybe we can add more formats
+	  // here.
+	  // If mimeType was not found, we then set txt as the default extension.
+	  map* mtype=getMap(tmpI->content,"mimeType");
+	  if(mtype!=NULL){
+	    if(strcasecmp(mtype->value,"text/xml")==0)
+	      toto=createMap("extension","xml");
+	    else if(strcasecmp(mtype->value,"application/json")==0)
+	      toto=createMap("extension","js");
+	    else
+	      toto=createMap("extension","txt");
+	  }
 	  else
 	    toto=createMap("extension","txt");
+	  hasExt=false;
 	}
+	file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+strlen(tmpI->name)+13)*sizeof(char));
+	sprintf(file_name,"%s/%s_%s_%i.%s",tmp1->value,s->name,tmpI->name,cpid+100000,toto->value);
+	FILE *ofile=fopen(file_name,"w");
+	if(ofile==NULL)
+	  fprintf(stderr,"Unable to create file on disk implying segfault ! \n");
+	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
+	map *tmp3=getMapFromMaps(m,"main","serverAddress");
+	char *file_url;
+	file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(toto->value)+strlen(tmpI->name)+13)*sizeof(char));
+	sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,toto->value);
+	addToMap(tmpI->content,"Reference",file_url);
+	if(hasExt!=true){
+	  freeMap(&toto);
+	  free(toto);
+	}
+	toto=getMap(tmpI->content,"value");
+	map* size=getMap(tmpI->content,"size");
+	if(size!=NULL && toto!=NULL)
+	  fwrite(toto->value,1,atoi(size->value)*sizeof(char),ofile);
 	else
-	  toto=createMap("extension","txt");
-	hasExt=false;
+	if(toto!=NULL && toto->value!=NULL)
+	  fwrite(toto->value,1,strlen(toto->value)*sizeof(char),ofile);
+	fclose(ofile);
+	free(file_name);
+	free(file_url);
       }
-      file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
-      sprintf(file_name,"%s/%s_%i.%s",tmp1->value,s->name,cpid+100000,toto->value);
-      FILE *ofile=fopen(file_name,"w");
-      if(ofile==NULL)
-	fprintf(stderr,"Unable to create file on disk implying segfault ! \n");
-      map *tmp2=getMapFromMaps(m,"main","tmpUrl");
-      map *tmp3=getMapFromMaps(m,"main","serverAddress");
-      char *file_url;
-      file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(toto->value)+13)*sizeof(char));
-      sprintf(file_url,"%s/%s/%s_%i.%s",tmp3->value,tmp2->value,s->name,cpid+100000,toto->value);
-      addToMap(request_outputs->content,"Reference",file_url);
-      if(hasExt!=true){
-	freeMap(&toto);
-	free(toto);
-      }
-      toto=getMap(request_outputs->content,"value");
-      if(toto!=NULL && toto->value!=NULL)
-	fwrite(toto->value,1,(strlen(toto->value)+1)*sizeof(char),ofile);
-      fclose(ofile);
-      free(file_name);
-      free(file_url);
+      tmpI=tmpI->next;
     }
     map *r_inputs=getMap(s->content,"serviceProvider");
 #ifdef DEBUG
