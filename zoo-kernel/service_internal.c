@@ -307,52 +307,60 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
   maps* tmp4=getMaps(m,"identification");
   if(tmp4!=NULL){
     map* tmp2=tmp4->content;
-    while(tmp2!=NULL){
-      if(strcasecmp(tmp2->name,"abstract")==0 ||
-	 strcasecmp(tmp2->name,"title")==0 ||
-	 strcasecmp(tmp2->name,"accessConstraints")==0 ||
-	 strcasecmp(tmp2->name,"fess")==0){
-	tmp2->name[0]=toupper(tmp2->name[0]);
-	nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	xmlAddChild(nc,nc1);
-      }
-      else
-	if(strcmp(tmp2->name,"keywords")==0){
-	  nc1 = xmlNewNode(ns_ows, BAD_CAST "Keywords");
-	  char *toto=tmp2->value;
-	  char buff[256];
-	  int i=0;
-	  int j=0;
-	  while(toto[i]){
-	    if(toto[i]!=',' && toto[i]!=0){
-	      buff[j]=toto[i];
-	      buff[j+1]=0;
-	      j++;
+    char *orderedFields[5];
+    orderedFields[0]="Title";
+    orderedFields[1]="Abstract";
+    orderedFields[2]="Keywords";
+    orderedFields[3]="Fees";
+    orderedFields[4]="AccessConstraints";
+    int oI=0;
+    for(oI=0;oI<5;oI++)
+      if((tmp2=getMap(tmp4->content,orderedFields[oI]))!=NULL){
+	if(strcasecmp(tmp2->name,"abstract")==0 ||
+	   strcasecmp(tmp2->name,"title")==0 ||
+	   strcasecmp(tmp2->name,"accessConstraints")==0 ||
+	   strcasecmp(tmp2->name,"fees")==0){
+	  tmp2->name[0]=toupper(tmp2->name[0]);
+	  nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
+	  xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
+	  xmlAddChild(nc,nc1);
+	}
+	else
+	  if(strcmp(tmp2->name,"keywords")==0){
+	    nc1 = xmlNewNode(ns_ows, BAD_CAST "Keywords");
+	    char *toto=tmp2->value;
+	    char buff[256];
+	    int i=0;
+	    int j=0;
+	    while(toto[i]){
+	      if(toto[i]!=',' && toto[i]!=0){
+		buff[j]=toto[i];
+		buff[j+1]=0;
+		j++;
+	      }
+	      else{
+		nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
+		xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
+		xmlAddChild(nc1,nc2);
+		j=0;
+	      }
+	      i++;
 	    }
-	    else{
+	    if(strlen(buff)>0){
 	      nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
 	      xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
 	      xmlAddChild(nc1,nc2);
-	      j=0;
 	    }
-	    i++;
+	    xmlAddChild(nc,nc1);
+	    nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceType");
+	    xmlAddChild(nc2,xmlNewText(BAD_CAST "WPS"));
+	    xmlAddChild(nc,nc2);
+	    nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceTypeVersion");
+	    xmlAddChild(nc2,xmlNewText(BAD_CAST "1.0.0"));
+	    xmlAddChild(nc,nc2);	  
 	  }
-	  if(strlen(buff)>0){
-	    nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
-	    xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
-	    xmlAddChild(nc1,nc2);
-	  }
-	  xmlAddChild(nc,nc1);
-	  nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceType");
-	  xmlAddChild(nc2,xmlNewText(BAD_CAST "WPS"));
-	  xmlAddChild(nc,nc2);
-	  nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceTypeVersion");
-	  xmlAddChild(nc2,xmlNewText(BAD_CAST "1.0.0"));
-	  xmlAddChild(nc,nc2);	  
-	}
-      tmp2=tmp2->next;
-    }
+	tmp2=tmp2->next;
+      }
   }
   else{
     fprintf(stderr,"TMP4 NOT FOUND !!");
@@ -378,87 +386,102 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
     char *tmpPhone[2];
     tmpPhone[0]="phoneVoice";
     tmpPhone[1]="phoneFacsimile";
-    while(tmp2!=NULL){
-      if(strcmp(tmp2->name,"keywords")!=0 &&
-	 strcmp(tmp2->name,"serverAddress")!=0 &&
-	 strcmp(tmp2->name,"lang")!=0){
-	tmp2->name[0]=toupper(tmp2->name[0]);
-	if(strcmp(tmp2->name,"ProviderName")==0){
-	  nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	  xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	  xmlAddChild(nc,nc1);
-	}
-	else{
-	  if(strcmp(tmp2->name,"ProviderSite")==0){
+    char *orderedFields[12];
+    orderedFields[0]="providerName";
+    orderedFields[1]="providerSite";
+    orderedFields[2]="individualName";
+    orderedFields[3]="positionName";
+    orderedFields[4]=tmpPhone[0];
+    orderedFields[5]=tmpPhone[1];
+    orderedFields[6]=tmpAddress[0];
+    orderedFields[7]=tmpAddress[1];
+    orderedFields[8]=tmpAddress[2];
+    orderedFields[9]=tmpAddress[3];
+    orderedFields[10]=tmpAddress[4];
+    orderedFields[11]=tmpAddress[5];
+    int oI=0;
+    for(oI=0;oI<12;oI++)
+      if((tmp2=getMap(tmp4->content,orderedFields[oI]))!=NULL){
+	if(strcmp(tmp2->name,"keywords")!=0 &&
+	   strcmp(tmp2->name,"serverAddress")!=0 &&
+	   strcmp(tmp2->name,"lang")!=0){
+	  tmp2->name[0]=toupper(tmp2->name[0]);
+	  if(strcmp(tmp2->name,"ProviderName")==0){
 	    nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	    xmlNewNsProp(nc1,ns_xlink,BAD_CAST "href",BAD_CAST tmp2->value);
+	    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
 	    xmlAddChild(nc,nc1);
-	  } 
-	  else  
-	    if(strcmp(tmp2->name,"IndividualName")==0 || 
-	       strcmp(tmp2->name,"PositionName")==0){
+	  }
+	  else{
+	    if(strcmp(tmp2->name,"ProviderSite")==0){
 	      nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
-	      xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-	      xmlAddChild(nc3,nc1);
+	      xmlNewNsProp(nc1,ns_xlink,BAD_CAST "href",BAD_CAST tmp2->value);
+	      xmlAddChild(nc,nc1);
 	    } 
-	    else 
-	      if(strncmp(tmp2->name,"Phone",5)==0){
-		int j;
-		for(j=0;j<2;j++)
-		  if(strcasecmp(tmp2->name,tmpPhone[j])==0){
-		    char *toto=NULL;
-		    char *toto1=tmp2->name;
-		    toto=strstr(toto1,"Phone");
-		    nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+5);
-		    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-		    xmlAddChild(nc5,nc1);
-		  }
-	      }
+	    else  
+	      if(strcmp(tmp2->name,"IndividualName")==0 || 
+		 strcmp(tmp2->name,"PositionName")==0){
+		nc1 = xmlNewNode(ns_ows, BAD_CAST tmp2->name);
+		xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
+		xmlAddChild(nc3,nc1);
+	      } 
 	      else 
-		if(strncmp(tmp2->name,"Address",7)==0){
+		if(strncmp(tmp2->name,"Phone",5)==0){
 		  int j;
-		  for(j=0;j<6;j++)
-		    if(strcasecmp(tmp2->name,tmpAddress[j])==0){
+		  for(j=0;j<2;j++)
+		    if(strcasecmp(tmp2->name,tmpPhone[j])==0){
 		      char *toto=NULL;
 		      char *toto1=tmp2->name;
-		      toto=strstr(toto1,"Address");
-		      nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+7);
+		      toto=strstr(toto1,"Phone");
+		      nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+5);
 		      xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
-		      xmlAddChild(nc6,nc1);
+		      xmlAddChild(nc5,nc1);
 		    }
 		}
+		else 
+		  if(strncmp(tmp2->name,"Address",7)==0){
+		    int j;
+		    for(j=0;j<6;j++)
+		      if(strcasecmp(tmp2->name,tmpAddress[j])==0){
+			char *toto=NULL;
+			char *toto1=tmp2->name;
+			toto=strstr(toto1,"Address");
+			nc1 = xmlNewNode(ns_ows, BAD_CAST toto1+7);
+			xmlAddChild(nc1,xmlNewText(BAD_CAST tmp2->value));
+			xmlAddChild(nc6,nc1);
+		      }
+		  }
+	  }
 	}
-      }
-      else
-	if(strcmp(tmp2->name,"keywords")==0){
-	  nc1 = xmlNewNode(ns_ows, BAD_CAST "Keywords");
-	  char *toto=tmp2->value;
-	  char buff[256];
-	  int i=0;
-	  int j=0;
-	  while(toto[i]){
-	    if(toto[i]!=',' && toto[i]!=0){
-	      buff[j]=toto[i];
-	      buff[j+1]=0;
-	      j++;
+	else
+	  if(strcmp(tmp2->name,"keywords")==0){
+	    nc1 = xmlNewNode(ns_ows, BAD_CAST "Keywords");
+	    char *toto=tmp2->value;
+	    char buff[256];
+	    int i=0;
+	    int j=0;
+	    while(toto[i]){
+	      if(toto[i]!=',' && toto[i]!=0){
+		buff[j]=toto[i];
+		buff[j+1]=0;
+		j++;
+	      }
+	      else{
+		nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
+		xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
+		xmlAddChild(nc1,nc2);
+		j=0;
+	      }
+	      i++;
 	    }
-	    else{
+	    if(strlen(buff)>0){
 	      nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
 	      xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
 	      xmlAddChild(nc1,nc2);
-	      j=0;
 	    }
-	    i++;
+	    xmlAddChild(nc,nc1);
 	  }
-	  if(strlen(buff)>0){
-	    nc2 = xmlNewNode(ns_ows, BAD_CAST "Keyword");
-	    xmlAddChild(nc2,xmlNewText(BAD_CAST buff));	      
-	    xmlAddChild(nc1,nc2);
-	  }
-	  xmlAddChild(nc,nc1);
-	}
-      tmp2=tmp2->next;
-    }
+	tmp2=tmp2->next;
+      }
   }
   else{
     fprintf(stderr,"TMP4 NOT FOUND !!");
@@ -707,49 +730,57 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
       tmp1=_tmp->content;
       int default1=0;
       xmlNodePtr nc7;
-      while(tmp1!=NULL){
+      char *orderedFields[5];
+      orderedFields[0]="mimeType";
+      orderedFields[1]="encoding";
+      orderedFields[2]="schema";
+      orderedFields[3]="dataType";
+      orderedFields[4]="uom";
+      int oI=0;
+      for(oI=0;oI<5;oI++)
+	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 #ifdef DEBUG
-	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
+	  printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
 #endif
-	if(strncasecmp(tmp1->name,"DataType",8)==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  char tmp[1024];
-	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
-	  xmlAddChild(nc3,nc6);
-	  tmp1=tmp1->next;
-	  continue;
-	}
-	if(strcasecmp(tmp1->name,"asReference")!=0 && 
-	   strcasecmp(tmp1->name,"DataType")!=0 && 
-	   strncasecmp(tmp1->name,"AllowedValues",13)!=0 &&
-	   strcasecmp(tmp1->name,"value")!=0 &&
-	   strcasecmp(tmp1->name,"extension")!=0){
-	  if(datatype==0){
-	    char *tmp2=zCapitalize1(tmp1->name);
-	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	    free(tmp2);
+	  if(strncasecmp(tmp1->name,"DataType",8)==0){
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
+	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	    char tmp[1024];
+	    sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
+	    xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
+	    xmlAddChild(nc3,nc6);
+	    tmp1=tmp1->next;
+	    continue;
+	  }
+	  if(strcasecmp(tmp1->name,"asReference")!=0 && 
+	     strcasecmp(tmp1->name,"DataType")!=0 && 
+	     strncasecmp(tmp1->name,"AllowedValues",13)!=0 &&
+	     strcasecmp(tmp1->name,"value")!=0 &&
+	     strcasecmp(tmp1->name,"extension")!=0){
+	    if(datatype==0){
+	      char *tmp2=zCapitalize1(tmp1->name);
+	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    else{
+	      char *tmp2=zCapitalize(tmp1->name);
+	      nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	    xmlAddChild(nc5,nc6);
 	  }
 	  else{
-	    char *tmp2=zCapitalize(tmp1->name);
-	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	}
-	else{
-	  if(strcmp(tmp1->name,"value")==0){
-	    nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
-	    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
-	    default1=1;
-	  }
-	  if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
-	    nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	    char *token,*saveptr1;
-	    token=strtok_r(tmp1->value,",",&saveptr1);
-	    while(token!=NULL){
+	    if(strcmp(tmp1->name,"value")==0){
+	      nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
+	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
+	      default1=1;
+	    }
+	    if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
+	      nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	      char *token,*saveptr1;
+	      token=strtok_r(tmp1->value,",",&saveptr1);
+	      while(token!=NULL){
 	   	nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
 		char *tmps=strdup(token);
 		tmps[strlen(tmps)]=0;
@@ -757,13 +788,13 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 		fprintf(stderr,"strgin : %s\n",tmps);
 		xmlAddChild(nc6,nc7);
 		token=strtok_r(NULL,",",&saveptr1);
+	      }
+	      xmlAddChild(nc3,nc6);
+	      isAnyValue=-1;
 	    }
-	    xmlAddChild(nc3,nc6);
-	    isAnyValue=-1;
 	  }
+	  tmp1=tmp1->next;
 	}
-	tmp1=tmp1->next;
-      }
       xmlAddChild(nc4,nc5);
       xmlAddChild(nc3,nc4);
       if(datatype==1 && isAnyValue==1){
@@ -777,37 +808,54 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
     xmlAddChild(nc2,nc3);
     
     _tmp=e->supported;
+    int hasSupported=-1;
     while(_tmp!=NULL){
-      if(datatype==0){
-	nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }
-      else{
-	nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
-      }
-      tmp1=_tmp->content;
-      while(tmp1!=NULL){
-	/*if(strcmp(e->format,"LiteralData")==0)
-	  xmlAddChild(nc5,nc6);*/
+      if(hasSupported<0){
 	if(datatype==0){
-	  char *tmp2=zCapitalize1(tmp1->name);
-	  nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	  free(tmp2);
+	  nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
+	  nc5 = xmlNewNode(NULL, BAD_CAST "Format");
 	}
 	else{
-	  char *tmp2=zCapitalize(tmp1->name);	  
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	  free(tmp2);
+	  nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
 	}
-	xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	xmlAddChild(nc5,nc6);
-	tmp1=tmp1->next;
-      }
-      if(datatype==0){
-        xmlAddChild(nc4,nc5);
-	xmlAddChild(nc3,nc4);
+	hasSupported=0;
       }else{
-      	xmlAddChild(nc4,nc5);
+	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+      }
+      tmp1=_tmp->content;
+      char *orderedFields[5];
+      orderedFields[0]="mimeType";
+      orderedFields[1]="encoding";
+      orderedFields[2]="schema";
+      orderedFields[3]="dataType";
+      orderedFields[4]="uom";
+      int oI=0;
+      for(oI=0;oI<5;oI++)
+	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+	  if(datatype==0){
+	    char *tmp2=zCapitalize1(tmp1->name);
+	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
+	  else{
+	    char *tmp2=zCapitalize(tmp1->name);	  
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	    free(tmp2);
+	  }
+	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	  xmlAddChild(nc5,nc6);
+	  tmp1=tmp1->next;
+	}
+      if(hasSupported<=0){
+	if(datatype==0){
+	  xmlAddChild(nc4,nc5);
+	  xmlAddChild(nc3,nc4);
+	}else{
+	  xmlAddChild(nc4,nc5);
+	}
+	hasSupported=1;
+      }else{
+	xmlAddChild(nc4,nc5);
       }
       _tmp=_tmp->next;
       if(strcmp(e->format,"LiteralData")!=0){
@@ -895,42 +943,60 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
       xmlAddChild(nc3,nc4);	    
     }
     _tmp=e->supported;
+    int hasSupported=-1;
     while(_tmp!=NULL){
-      if(datatype==0){
-	nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
+      if(hasSupported<0){
+	if(datatype==0){
+	  nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
+	  nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+	}
+	else
+	  nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
+	hasSupported=0;
+      }else
 	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+      tmp1=_tmp->content;
+      char *orderedFields[5];
+      orderedFields[0]="mimeType";
+      orderedFields[1]="encoding";
+      orderedFields[2]="schema";
+      orderedFields[3]="dataType";
+      orderedFields[4]="uom";
+      int oI=0;
+      for(oI=0;oI<5;oI++)
+	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+#ifdef DEBUG
+	  printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
+#endif
+	  if(strcmp(tmp1->name,"asReference")!=0 && 
+	     strcmp(tmp1->name,"DataType")!=0 &&
+	     strcasecmp(tmp1->name,"extension")!=0){
+	    if(datatype==0){
+	      char *tmp2=zCapitalize1(tmp1->name);
+	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    else{
+	      char *tmp2=zCapitalize(tmp1->name);
+	      nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	    xmlAddChild(nc5,nc6);
+	  }
+	  tmp1=tmp1->next;
+	}
+      _tmp=_tmp->next;
+      if(hasSupported<=0){
+	if(datatype==0){
+	  xmlAddChild(nc4,nc5);
+	  xmlAddChild(nc3,nc4);
+	}else
+	  xmlAddChild(nc4,nc5);
+	hasSupported=1;
       }
       else
-	nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
-      tmp1=_tmp->content;
-      while(tmp1!=NULL){
-#ifdef DEBUG
-	printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
-#endif
-	if(strcmp(tmp1->name,"asReference")!=0 && 
-	   strcmp(tmp1->name,"DataType")!=0 &&
-	   strcasecmp(tmp1->name,"extension")!=0){
-	  if(datatype==0){
-	    char *tmp2=zCapitalize1(tmp1->name);
-	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  else{
-	    char *tmp2=zCapitalize(tmp1->name);
-	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	}
-	tmp1=tmp1->next;
-      }
-      _tmp=_tmp->next;
-      if(datatype==0){
-         xmlAddChild(nc4,nc5);
-         xmlAddChild(nc3,nc4);
-      }else
-      xmlAddChild(nc4,nc5);
+	xmlAddChild(nc4,nc5);
     }
     xmlAddChild(nc2,nc3);
 
