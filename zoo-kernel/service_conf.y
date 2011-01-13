@@ -241,9 +241,9 @@ STag
     }
     else
       if(strncasecmp($2,"MetaData",8)==0){
+	previous_data=current_data;
 	current_data=3;
 	if(current_element!=NULL){
-	  wait_metadata=true;
 #ifdef DEBUG_SERVICE_CONF
 	  fprintf(stderr,"add current_content to current_element->content\n");
 	  fprintf(stderr,"LINE 247");
@@ -251,6 +251,7 @@ STag
 	  addMapToMap(&current_element->content,current_content);
 	  freeMap(&current_content);
 	  free(current_content);
+	  wait_metadata=true;
 	}
 	else{
 	  wait_mainmetadata=true;
@@ -365,6 +366,7 @@ ETag
   }
   if(strcmp($3,"MetaData")==0){
     current_data=previous_data;
+    wait_metadata=true;
   }
   if(strcmp($3,"ComplexData")==0 || strcmp($3,"LiteralData")==0 
      || strcmp($3,"ComplexOutput")==0 || strcmp($3,"LiteralOutput")==0){
