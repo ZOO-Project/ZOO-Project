@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2011 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1342,6 +1342,15 @@ int runRequest(map* request_inputs)
 		}
 	      }
 	      xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
+	      if(mv==NULL){
+		xmlDocPtr doc1=xmlNewDoc(BAD_CAST "1.0");
+		int buffersize;
+		xmlDocSetRootElement(doc1,cur4->xmlChildrenNode);
+		xmlDocDumpFormatMemoryEnc(doc1, &mv, &buffersize, "utf-8", 1);
+		char size[1024];
+		sprintf(size,"%d",buffersize);
+		addToMap(tmpmaps->content,"size",size);
+	      }
 	      addToMap(tmpmaps->content,"value",(char*)mv);
 	      xmlFree(mv);
 	      cur4=cur4->next;

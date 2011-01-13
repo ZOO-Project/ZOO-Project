@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2011 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -336,7 +336,6 @@ map* mapFromPyDict(PyDictObject* t){
       else
 	res=createMap(PyString_AsString(key),PyString_AsString(value));
     }
-    Py_DECREF(value);
     Py_DECREF(key);
   }
   Py_DECREF(list);

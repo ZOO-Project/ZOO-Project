@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2011 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -108,7 +108,7 @@ int cgiMain(){
 #endif
 
   map* tmpMap=NULL;
-    
+
   if(strncmp(cgiContentType,"text/xml",8)==0){
     char *buffer=new char[cgiContentLength+1];
     if(fread(buffer,1,cgiContentLength,cgiIn)){
@@ -143,6 +143,16 @@ int cgiMain(){
     cgiStringArrayFree(array);
   }
 
+  if(strncasecmp(cgiRequestMethod,"post",4)==0 && getMap(tmpMap,"request")==NULL){
+    char *tmpKey=strdup(tmpMap->name);
+    char *tmpValue=strdup(tmpMap->value);
+    freeMap(&tmpMap);
+    free(tmpMap);
+    char* tmpValueFinal=(char*) malloc((strlen(tmpKey)+strlen(tmpValue)+2)*sizeof(char));
+    sprintf(tmpValueFinal,"%s=%s",tmpKey,tmpValue);
+    tmpMap=createMap("request",tmpValueFinal);
+    free(tmpValueFinal);
+  }
   /**
    * In case that the POST method was used, then check if params came in XML
    * format else try to use the attribute "request" which should be the only 
