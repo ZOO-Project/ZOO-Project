@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2011 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1047,8 +1047,10 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
 
   char tmp[256];
   char url[1024];
+  char stored_path[1024];
   memset(tmp,0,256);
-  memset(url,0,256);
+  memset(url,0,1024);
+  memset(stored_path,0,1024);
   maps* tmp_maps=getMaps(m,"main");
   if(tmp_maps!=NULL){
     map* tmpm1=getMap(tmp_maps->content,"serverAddress");
@@ -1098,11 +1100,18 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     }
     if(tmpm1!=NULL)
       sprintf(tmp,"%s/",tmpm1->value);
+    tmpm1=getMapFromMaps(m,"main","TmpPath");
+    sprintf(stored_path,"%s/%s_%i.xml",tmpm1->value,service,pid);
   }
 
+  
+
   xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
-  if(status!=SERVICE_SUCCEEDED && status!=SERVICE_FAILED){
+  map* test=getMap(request,"storeExecuteResponse");
+  bool hasStoredExecuteResponse=false;
+  if(test!=NULL && strcasecmp(test->value,"true")==0){
     xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
+    hasStoredExecuteResponse=true;
   }
 
   nc = xmlNewNode(ns, BAD_CAST "Process");
@@ -1235,6 +1244,16 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   fprintf(stderr,"printProcessResponse 1 202\n");
 #endif
   xmlDocSetRootElement(doc, n);
+  if(hasStoredExecuteResponse){
+    /* We need to write the ExecuteResponse Document somewhere */
+    FILE* output=fopen(stored_path,"w");
+    xmlChar *xmlbuff;
+    int buffersize;
+    xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "UTF-8", 1);
+    fwrite(xmlbuff,1,strlen(xmlbuff)*sizeof(char),output);
+    xmlFree(xmlbuff);
+    fclose(output);
+  }
   printDocument(m,doc,pid);
 
   xmlCleanupParser();
