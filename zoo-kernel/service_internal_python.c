@@ -169,7 +169,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	Py_DECREF(ptraceback);
 	Py_DECREF(ptype);
 	Py_DECREF(pValue);
+#if not(defined(macintosh)) && not(defined(__MACH__) && defined(__APPLE__))
 	Py_Finalize();
+#endif
 	exit(-1);
       }
     }
@@ -191,7 +193,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyErr_Print();
     exit(-1);
   } 
+#if not(defined(macintosh)) && not(defined(__MACH__) && defined(__APPLE__))
   Py_Finalize();
+#endif
   return res;
 }
 
