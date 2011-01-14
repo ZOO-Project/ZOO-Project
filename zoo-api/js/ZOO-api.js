@@ -22,12 +22,47 @@
  * THE SOFTWARE.
  */
 
+/**
+ * Class: ZOO
+ */
 ZOO = {
+  /**
+   * Constant: SERVICE_ACCEPTED
+   * {Integer} used for
+   */
   SERVICE_ACCEPTED: 0,
+  /**
+   * Constant: SERVICE_STARTED
+   * {Integer} used for
+   */
   SERVICE_STARTED: 1,
+  /**
+   * Constant: SERVICE_PAUSED
+   * {Integer} used for
+   */
   SERVICE_PAUSED: 2,
+  /**
+   * Constant: SERVICE_SUCCEEDED
+   * {Integer} used for
+   */
   SERVICE_SUCCEEDED: 3,
+  /**
+   * Constant: SERVICE_FAILED
+   * {Integer} used for
+   */
   SERVICE_FAILED: 4,
+  /** 
+   * Function: removeItem
+   * Remove an object from an array. Iterates through the array
+   *     to find the item, then removes it.
+   *
+   * Parameters:
+   * array - {Array}
+   * item - {Object}
+   * 
+   * Return
+   * {Array} A reference to the array
+   */
   removeItem: function(array, item) {
     for(var i = array.length - 1; i >= 0; i--) {
         if(array[i] == item) {
@@ -36,6 +71,17 @@ ZOO = {
     }
     return array;
   },
+  /** 
+   * Function: indexOf
+   * 
+   * Parameters:
+   * array - {Array}
+   * obj - {Object}
+   * 
+   * Returns:
+   * {Integer} The index at, which the first object was found in the array.
+   *           If not found, returns -1.
+   */
   indexOf: function(array, obj) {
     for(var i=0, len=array.length; i<len; i++) {
       if (array[i] == obj)
@@ -43,6 +89,19 @@ ZOO = {
     }
     return -1;   
   },
+  /**
+   * Function: extend
+   * Copy all properties of a source object to a destination object. Modifies
+   *     the passed in destination object.  Any properties on the source object
+   *     that are set to undefined will not be (re)set on the destination object.
+   *
+   * Parameters:
+   * destination - {Object} The object that will be modified
+   * source - {Object} The object with properties to be set on the destination
+   *
+   * Returns:
+   * {Object} The destination object.
+   */
   extend: function(destination, source) {
     destination = destination || {};
     if(source) {
@@ -54,6 +113,11 @@ ZOO = {
     }
     return destination;
   },
+  /**
+   * Function: Class
+   * Method used to create ZOO classes. Includes support for
+   *     multiple inheritance.
+   */
   Class: function() {
     var Class = function() {
       this.initialize.apply(this, arguments);
@@ -63,7 +127,7 @@ ZOO = {
     for(var i=0; i<arguments.length; ++i) {
       if(typeof arguments[i] == "function") {
         // get the prototype of the superclass
-              parent = arguments[i].prototype;
+        parent = arguments[i].prototype;
       } else {
         // in this case we're extending with the prototype
         parent = arguments[i];
@@ -74,23 +138,80 @@ ZOO = {
 
     return Class;
   },
+  /**
+   * Function: UpdateStatus
+   * Method used to update the status of the process
+   *
+   * Parameters:
+   * env - {Object} The environment object
+   * value - {Float} the status value between 0 to 100
+   */
   UpdateStatus: function(env,value) {
     return ZOOUpdateStatus(env,value);
   }
 };
 
-};
-
+/**
+ * Class: ZOO.String
+ * Contains convenience methods for string manipulation
+ */
 ZOO.String = {
+  /**
+   * Function: startsWith
+   * Test whether a string starts with another string. 
+   * 
+   * Parameters:
+   * str - {String} The string to test.
+   * sub - {Sring} The substring to look for.
+   *  
+   * Returns:
+   * {Boolean} The first string starts with the second.
+   */
   startsWith: function(str, sub) {
     return (str.indexOf(sub) == 0);
   },
+  /**
+   * Function: contains
+   * Test whether a string contains another string.
+   * 
+   * Parameters:
+   * str - {String} The string to test.
+   * sub - {String} The substring to look for.
+   * 
+   * Returns:
+   * {Boolean} The first string contains the second.
+   */
   contains: function(str, sub) {
     return (str.indexOf(sub) != -1);
   },
+  /**
+   * Function: trim
+   * Removes leading and trailing whitespace characters from a string.
+   * 
+   * Parameters:
+   * str - {String} The (potentially) space padded string.  This string is not
+   *     modified.
+   * 
+   * Returns:
+   * {String} A trimmed version of the string with all leading and 
+   *     trailing spaces removed.
+   */
   trim: function(str) {
     return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
   },
+  /**
+   * Function: camelize
+   * Camel-case a hyphenated string. 
+   *     Ex. "chicken-head" becomes "chickenHead", and
+   *     "-chicken-head" becomes "ChickenHead".
+   *
+   * Parameters:
+   * str - {String} The string to be camelized.  The original is not modified.
+   * 
+   * Returns:
+   * {String} The string, camelized
+   *
+   */
   camelize: function(str) {
     var oStringList = str.split('-');
     var camelizedString = oStringList[0];
@@ -100,17 +221,67 @@ ZOO.String = {
     }
     return camelizedString;
   },
+  /**
+   * Property: tokenRegEx
+   * Used to find tokens in a string.
+   * Examples: ${a}, ${a.b.c}, ${a-b}, ${5}
+   */
   tokenRegEx:  /\$\{([\w.]+?)\}/g,
+  /**
+   * Property: numberRegEx
+   * Used to test strings as numbers.
+   */
   numberRegEx: /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/,
+  /**
+   * Function: isNumeric
+   * Determine whether a string contains only a numeric value.
+   *
+   * Examples:
+   * (code)
+   * ZOO.String.isNumeric("6.02e23") // true
+   * ZOO.String.isNumeric("12 dozen") // false
+   * ZOO.String.isNumeric("4") // true
+   * ZOO.String.isNumeric(" 4 ") // false
+   * (end)
+   *
+   * Returns:
+   * {Boolean} String contains only a number.
+   */
   isNumeric: function(value) {
     return ZOO.String.numberRegEx.test(value);
   },
+  /**
+   * Function: numericIf
+   * Converts a string that appears to be a numeric value into a number.
+   * 
+   * Returns
+   * {Number|String} a Number if the passed value is a number, a String
+   *     otherwise. 
+   */
   numericIf: function(value) {
     return ZOO.String.isNumeric(value) ? parseFloat(value) : value;
   }
 };
 
+/**
+ * Class: ZOO.Request
+ * Contains convenience methods for working with ZOORequest which
+ *     replace XMLHttpRequest. Because of we are not in a browser
+ *     JavaScript environment, ZOO Project provides a method to 
+ *     query servers which is based on curl : ZOORequest.
+ */
 ZOO.Request = {
+  /**
+   * Function: GET
+   * Send an HTTP GET request.
+   *
+   * Parameters:
+   * url - {String} The URL to request.
+   * params - {Object} Params to add to the url
+   * 
+   * Returns:
+   * {String} Request result.
+   */
   Get: function(url,params) {
     var paramsArray = [];
     for (var key in params) {
@@ -139,10 +310,23 @@ ZOO.Request = {
     }
     return ZOORequest('GET',url);
   },
+  /**
+   * Function: POST
+   * Send an HTTP POST request.
+   *
+   * Parameters:
+   * url - {String} The URL to request.
+   * body - {String} The request's body to send.
+   * headers - {Object} A key-value object of headers to push to
+   *     the request's head
+   * 
+   * Returns:
+   * {String} Request result.
+   */
   Post: function(url,body,headers) {
     if(!(headers instanceof Array)) {
       var headersArray = [];
-      for (var hname in headers) {
+      for (var name in headers) {
         headersArray.push(name+': '+headers[name]); 
       }
       headers = headersArray;
@@ -151,11 +335,46 @@ ZOO.Request = {
   }
 };
 
+/**
+ * Class: ZOO.Bounds
+ * Instances of this class represent bounding boxes.  Data stored as left,
+ *     bottom, right, top floats. All values are initialized to null,
+ *     however, you should make sure you set them before using the bounds
+ *     for anything.
+ */
 ZOO.Bounds = ZOO.Class({
+  /**
+   * Property: left
+   * {Number} Minimum horizontal coordinate.
+   */
   left: null,
+  /**
+   * Property: bottom
+   * {Number} Minimum vertical coordinate.
+   */
   bottom: null,
+  /**
+   * Property: right
+   * {Number} Maximum horizontal coordinate.
+   */
   right: null,
+  /**
+   * Property: top
+   * {Number} Maximum vertical coordinate.
+   */
   top: null,
+  /**
+   * Constructor: ZOO.Bounds
+   * Construct a new bounds object.
+   *
+   * Parameters:
+   * left - {Number} The left bounds of the box.  Note that for width
+   *        calculations, this is assumed to be less than the right value.
+   * bottom - {Number} The bottom bounds of the box.  Note that for height
+   *          calculations, this is assumed to be more than the top value.
+   * right - {Number} The right bounds.
+   * top - {Number} The top bounds.
+   */
   initialize: function(left, bottom, right, top) {
     if (left != null)
       this.left = parseFloat(left);
@@ -166,10 +385,29 @@ ZOO.Bounds = ZOO.Class({
     if (top != null)
       this.top = parseFloat(top);
   },
+  /**
+   * Method: clone
+   * Create a cloned instance of this bounds.
+   *
+   * Returns:
+   * {<ZOO.Bounds>} A fresh copy of the bounds
+   */
   clone:function() {
     return new ZOO.Bounds(this.left, this.bottom, 
                           this.right, this.top);
   },
+  /**
+   * Method: equals
+   * Test a two bounds for equivalence.
+   *
+   * Parameters:
+   * bounds - {<ZOO.Bounds>}
+   *
+   * Returns:
+   * {Boolean} The passed-in bounds object has the same left,
+   *           right, top, bottom components as this.  Note that if bounds 
+   *           passed in is null, returns false.
+   */
   equals:function(bounds) {
     var equals = false;
     if (bounds != null)
@@ -179,13 +417,37 @@ ZOO.Bounds = ZOO.Class({
                   (this.bottom == bounds.bottom));
     return equals;
   },
+  /** 
+   * Method: toString
+   * 
+   * Returns:
+   * {String} String representation of bounds object. 
+   *          (ex.<i>"left-bottom=(5,42) right-top=(10,45)"</i>)
+   */
   toString:function() {
     return ( "left-bottom=(" + this.left + "," + this.bottom + ")"
               + " right-top=(" + this.right + "," + this.top + ")" );
   },
+  /**
+   * APIMethod: toArray
+   *
+   * Returns:
+   * {Array} array of left, bottom, right, top
+   */
   toArray: function() {
     return [this.left, this.bottom, this.right, this.top];
   },
+  /** 
+   * Method: toBBOX
+   * 
+   * Parameters:
+   * decimal - {Integer} How many significant digits in the bbox coords?
+   *                     Default is 6
+   * 
+   * Returns:
+   * {String} Simple String representation of bounds object.
+   *          (ex. <i>"5,42,10,45"</i>)
+   */
   toBBOX:function(decimal) {
     if (decimal== null)
       decimal = 6; 
@@ -196,6 +458,14 @@ ZOO.Bounds = ZOO.Class({
                Math.round(this.top * mult) / mult;
     return bbox;
   },
+  /**
+   * Method: toGeometry
+   * Create a new polygon geometry based on this bounds.
+   *
+   * Returns:
+   * {<ZOO.Geometry.Polygon>} A new polygon with the coordinates
+   *     of this bounds.
+   */
   toGeometry: function() {
     return new ZOO.Geometry.Polygon([
       new ZOO.Geometry.LinearRing([
@@ -206,18 +476,49 @@ ZOO.Bounds = ZOO.Class({
       ])
     ]);
   },
+  /**
+   * Method: getWidth
+   * 
+   * Returns:
+   * {Float} The width of the bounds
+   */
   getWidth:function() {
     return (this.right - this.left);
   },
+  /**
+   * Method: getHeight
+   * 
+   * Returns:
+   * {Float} The height of the bounds (top minus bottom).
+   */
   getHeight:function() {
     return (this.top - this.bottom);
   },
+  /**
+   * Method: add
+   * 
+   * Parameters:
+   * x - {Float}
+   * y - {Float}
+   * 
+   * Returns:
+   * {<ZOO.Bounds>} A new bounds whose coordinates are the same as
+   *     this, but shifted by the passed-in x and y values.
+   */
   add:function(x, y) {
     if ( (x == null) || (y == null) )
       return null;
     return new ZOO.Bounds(this.left + x, this.bottom + y,
                                  this.right + x, this.top + y);
   },
+  /**
+   * Method: extend
+   * Extend the bounds to include the point, lonlat, or bounds specified.
+   *     Note, this function assumes that left < right and bottom < top.
+   * 
+   * Parameters: 
+   * object - {Object} Can be Point, or Bounds
+   */
   extend:function(object) {
     var bounds = null;
     if (object) {
@@ -243,6 +544,19 @@ ZOO.Bounds = ZOO.Class({
       }
     }
   },
+  /**
+   * APIMethod: contains
+   * 
+   * Parameters:
+   * x - {Float}
+   * y - {Float}
+   * inclusive - {Boolean} Whether or not to include the border.
+   *     Default is true.
+   *
+   * Returns:
+   * {Boolean} Whether or not the passed-in coordinates are within this
+   *     bounds.
+   */
   contains:function(x, y, inclusive) {
      //set default
      if (inclusive == null)
@@ -261,6 +575,21 @@ ZOO.Bounds = ZOO.Class({
                    (y > this.bottom) && (y < this.top));
      return contains;
   },
+  /**
+   * Method: intersectsBounds
+   * Determine whether the target bounds intersects this bounds.  Bounds are
+   *     considered intersecting if any of their edges intersect or if one
+   *     bounds contains the other.
+   * 
+   * Parameters:
+   * bounds - {<ZOO.Bounds>} The target bounds.
+   * inclusive - {Boolean} Treat coincident borders as intersecting.  Default
+   *     is true.  If false, bounds that do not overlap but only touch at the
+   *     border will not be considered as intersecting.
+   *
+   * Returns:
+   * {Boolean} The passed-in bounds object intersects this bounds.
+   */
   intersectsBounds:function(bounds, inclusive) {
     if (inclusive == null)
       inclusive = true;
@@ -292,6 +621,20 @@ ZOO.Bounds = ZOO.Class({
     }
     return intersects;
   },
+  /**
+   * Method: containsBounds
+   * Determine whether the target bounds is contained within this bounds.
+   * 
+   * bounds - {<ZOO.Bounds>} The target bounds.
+   * partial - {Boolean} If any of the target corners is within this bounds
+   *     consider the bounds contained.  Default is false.  If true, the
+   *     entire target bounds must be contained within this bounds.
+   * inclusive - {Boolean} Treat shared edges as contained.  Default is
+   *     true.
+   *
+   * Returns:
+   * {Boolean} The passed-in bounds object is contained within this bounds. 
+   */
   containsBounds:function(bounds, partial, inclusive) {
     if (partial == null)
       partial = false;
@@ -307,9 +650,36 @@ ZOO.Bounds = ZOO.Class({
   CLASS_NAME: 'ZOO.Bounds'
 });
 
+/**
+ * Class: ZOO.Projection
+ * Class for coordinate transforms between coordinate systems.
+ *     Depends on the zoo-proj4js library. zoo-proj4js library 
+ *     is loaded by the ZOO Kernel with zoo-api.
+ */
 ZOO.Projection = ZOO.Class({
+  /**
+   * Property: proj
+   * {Object} Proj4js.Proj instance.
+   */
   proj: null,
+  /**
+   * Property: projCode
+   * {String}
+   */
   projCode: null,
+  /**
+   * Constructor: OpenLayers.Projection
+   * This class offers several methods for interacting with a wrapped 
+   *     zoo-pro4js projection object. 
+   *
+   * Parameters:
+   * projCode - {String} A string identifying the Well Known Identifier for
+   *    the projection.
+   * options - {Object} An optional object to set additional properties.
+   *
+   * Returns:
+   * {<ZOO.Projection>} A projection object.
+   */
   initialize: function(projCode, options) {
     ZOO.extend(this, options);
     this.projCode = projCode;
@@ -317,52 +687,197 @@ ZOO.Projection = ZOO.Class({
       this.proj = new Proj4js.Proj(projCode);
     }
   },
+  /**
+   * Method: getCode
+   * Get the string SRS code.
+   *
+   * Returns:
+   * {String} The SRS code.
+   */
   getCode: function() {
     return this.proj ? this.proj.srsCode : this.projCode;
   },
+  /**
+   * Method: getUnits
+   * Get the units string for the projection -- returns null if 
+   *     zoo-proj4js is not available.
+   *
+   * Returns:
+   * {String} The units abbreviation.
+   */
   getUnits: function() {
     return this.proj ? this.proj.units : null;
   },
+  /**
+   * Method: toString
+   * Convert projection to string (getCode wrapper).
+   *
+   * Returns:
+   * {String} The projection code.
+   */
   toString: function() {
     return this.getCode();
   },
+  /**
+   * Method: equals
+   * Test equality of two projection instances.  Determines equality based
+   *     soley on the projection code.
+   *
+   * Returns:
+   * {Boolean} The two projections are equivalent.
+   */
   equals: function(projection) {
     if (projection && projection.getCode)
       return this.getCode() == projection.getCode();
     else
       return false;
   },
+  /* Method: destroy
+   * Destroy projection object.
+   */
   destroy: function() {
     this.proj = null;
     this.projCode = null;
   },
   CLASS_NAME: 'ZOO.Projection'
 });
+/**
+ * Method: transform
+ * Transform a point coordinate from one projection to another.  Note that
+ *     the input point is transformed in place.
+ * 
+ * Parameters:
+ * point - {{ZOO.Geometry.Point> | Object} An object with x and y
+ *     properties representing coordinates in those dimensions.
+ * sourceProj - {OpenLayers.Projection} Source map coordinate system
+ * destProj - {OpenLayers.Projection} Destination map coordinate system
+ *
+ * Returns:
+ * point - {object} A transformed coordinate.  The original point is modified.
+ */
 ZOO.Projection.transform = function(point, source, dest) {
     if (source.proj && dest.proj)
         point = Proj4js.transform(source.proj, dest.proj, point);
     return point;
 };
 
+/**
+ * Class: ZOO.Format
+ * Base class for format reading/writing a variety of formats. Subclasses
+ *     of ZOO.Format are expected to have read and write methods.
+ */
 ZOO.Format = ZOO.Class({
+  /**
+   * Property: options
+   * {Object} A reference to options passed to the constructor.
+   */
   options:null,
+  /**
+   * Property: externalProjection
+   * {<ZOO.Projection>} When passed a externalProjection and
+   *     internalProjection, the format will reproject the geometries it
+   *     reads or writes. The externalProjection is the projection used by
+   *     the content which is passed into read or which comes out of write.
+   *     In order to reproject, a projection transformation function for the
+   *     specified projections must be available. This support is provided 
+   *     via zoo-proj4js.
+   */
   externalProjection: null,
+  /**
+   * Property: internalProjection
+   * {<ZOO.Projection>} When passed a externalProjection and
+   *     internalProjection, the format will reproject the geometries it
+   *     reads or writes. The internalProjection is the projection used by
+   *     the geometries which are returned by read or which are passed into
+   *     write.  In order to reproject, a projection transformation function
+   *     for the specified projections must be available. This support is 
+   *     provided via zoo-proj4js.
+   */
   internalProjection: null,
+  /**
+   * Property: data
+   * {Object} When <keepData> is true, this is the parsed string sent to
+   *     <read>.
+   */
   data: null,
+  /**
+   * Property: keepData
+   * {Object} Maintain a reference (<data>) to the most recently read data.
+   *     Default is false.
+   */
   keepData: false,
+  /**
+   * Constructor: ZOO.Format
+   * Instances of this class are not useful.  See one of the subclasses.
+   *
+   * Parameters:
+   * options - {Object} An optional object with properties to set on the
+   *           format
+   *
+   * Valid options:
+   * keepData - {Boolean} If true, upon <read>, the data property will be
+   *     set to the parsed object (e.g. the json or xml object).
+   *
+   * Returns:
+   * An instance of ZOO.Format
+   */
   initialize: function(options) {
     ZOO.extend(this, options);
     this.options = options;
   },
+  /**
+   * Method: destroy
+   * Clean up.
+   */
   destroy: function() {
   },
+  /**
+   * Method: read
+   * Read data from a string, and return an object whose type depends on the
+   * subclass. 
+   * 
+   * Parameters:
+   * data - {string} Data to read/parse.
+   *
+   * Returns:
+   * Depends on the subclass
+   */
   read: function(data) {
   },
+  /**
+   * Method: write
+   * Accept an object, and return a string. 
+   *
+   * Parameters:
+   * object - {Object} Object to be serialized
+   *
+   * Returns:
+   * {String} A string representation of the object.
+   */
   write: function(data) {
   },
   CLASS_NAME: 'ZOO.Format'
 });
+/**
+ * Class: ZOO.Format.WKT
+ * Class for reading and writing Well-Known Text. Create a new instance
+ * with the <ZOO.Format.WKT> constructor.
+ * 
+ * Inherits from:
+ *  - <ZOO.Format>
+ */
 ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
+  /**
+   * Constructor: ZOO.Format.WKT
+   * Create a new parser for WKT
+   *
+   * Parameters:
+   * options - {Object} An optional object whose properties will be set on
+   *           this instance
+   *
+   * Returns:
+   * {<ZOO.Format.WKT>} A new WKT parser.
+   */
   initialize: function(options) {
     this.regExes = {
       'typeStr': /^\s*(\w+)\s*\(\s*(.*)\s*\)\s*$/,
@@ -373,6 +888,20 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
     };
     ZOO.Format.prototype.initialize.apply(this, [options]);
   },
+  /**
+   * Method: read
+   * Deserialize a WKT string and return a vector feature or an
+   *     array of vector features.  Supports WKT for POINT, 
+   *     MULTIPOINT, LINESTRING, MULTILINESTRING, POLYGON, 
+   *     MULTIPOLYGON, and GEOMETRYCOLLECTION.
+   *
+   * Parameters:
+   * wkt - {String} A WKT string
+   *
+   * Returns:
+   * {<ZOO.Feature.Vector>|Array} A feature or array of features for
+   *     GEOMETRYCOLLECTION WKT.
+   */
   read: function(wkt) {
     var features, type, str;
     var matches = this.regExes.typeStr.exec(wkt);
@@ -400,6 +929,17 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
     }    
     return features;
   },
+  /**
+   * Method: write
+   * Serialize a feature or array of features into a WKT string.
+   *
+   * Parameters:
+   * features - {<ZOO.Feature.Vector>|Array} A feature or array of
+   *            features
+   *
+   * Returns:
+   * {String} The WKT string representation of the input geometries
+   */
   write: function(features) {
     var collection, geometry, type, data, isCollection;
     if(features.constructor == Array) {
@@ -431,10 +971,25 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
       pieces.push(')');
     return pieces.join('');
   },
+  /**
+   * Object with properties corresponding to the geometry types.
+   * Property values are functions that do the actual data extraction.
+   */
   extract: {
+    /**
+     * Return a space delimited string of point coordinates.
+     * @param {<ZOO.Geometry.Point>} point
+     * @returns {String} A string of coordinates representing the point
+     */
     'point': function(point) {
       return point.x + ' ' + point.y;
     },
+    /**
+     * Return a comma delimited string of point coordinates from a multipoint.
+     * @param {<ZOO.Geometry.MultiPoint>} multipoint
+     * @returns {String} A string of point coordinate strings representing
+     *                  the multipoint
+     */
     'multipoint': function(multipoint) {
       var array = [];
       for(var i=0, len=multipoint.components.length; i<len; ++i) {
@@ -442,6 +997,12 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
       }
       return array.join(',');
     },
+    /**
+     * Return a comma delimited string of point coordinates from a line.
+     * @param {<ZOO.Geometry.LineString>} linestring
+     * @returns {String} A string of point coordinate strings representing
+     *                  the linestring
+     */
     'linestring': function(linestring) {
       var array = [];
       for(var i=0, len=linestring.components.length; i<len; ++i) {
@@ -449,6 +1010,12 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
       }
       return array.join(',');
     },
+    /**
+     * Return a comma delimited string of linestring strings from a multilinestring.
+     * @param {<ZOO.Geometry.MultiLineString>} multilinestring
+     * @returns {String} A string of of linestring strings representing
+     *                  the multilinestring
+     */
     'multilinestring': function(multilinestring) {
       var array = [];
       for(var i=0, len=multilinestring.components.length; i<len; ++i) {
@@ -458,6 +1025,11 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
       }
       return array.join(',');
     },
+    /**
+     * Return a comma delimited string of linear ring arrays from a polygon.
+     * @param {<ZOO.Geometry.Polygon>} polygon
+     * @returns {String} An array of linear ring arrays representing the polygon
+     */
     'polygon': function(polygon) {
       var array = [];
       for(var i=0, len=polygon.components.length; i<len; ++i) {
@@ -467,6 +1039,12 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
       }
       return array.join(',');
     },
+    /**
+     * Return an array of polygon arrays from a multipolygon.
+     * @param {<ZOO.Geometry.MultiPolygon>} multipolygon
+     * @returns {Array} An array of polygon arrays representing
+     *                  the multipolygon
+     */
     'multipolygon': function(multipolygon) {
       var array = [];
       for(var i=0, len=multipolygon.components.length; i<len; ++i) {
@@ -477,13 +1055,27 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
       return array.join(',');
     }
   },
+  /**
+   * Object with properties corresponding to the geometry types.
+   * Property values are functions that do the actual parsing.
+   */
   parse: {
+    /**
+     * Return point feature given a point WKT fragment.
+     * @param {String} str A WKT fragment representing the point
+     * @returns {<ZOO.Feature>} A point feature
+     */
     'point': function(str) {
        var coords = ZOO.String.trim(str).split(this.regExes.spaces);
             return new ZOO.Feature(
                 new ZOO.Geometry.Point(coords[0], coords[1])
             );
     },
+    /**
+     * Return a multipoint feature given a multipoint WKT fragment.
+     * @param {String} A WKT fragment representing the multipoint
+     * @returns {<ZOO.Feature>} A multipoint feature
+     */
     'multipoint': function(str) {
        var points = ZOO.String.trim(str).split(',');
        var components = [];
@@ -494,6 +1086,11 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
            new ZOO.Geometry.MultiPoint(components)
            );
     },
+    /**
+     * Return a linestring feature given a linestring WKT fragment.
+     * @param {String} A WKT fragment representing the linestring
+     * @returns {<ZOO.Feature>} A linestring feature
+     */
     'linestring': function(str) {
       var points = ZOO.String.trim(str).split(',');
       var components = [];
@@ -504,6 +1101,11 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
           new ZOO.Geometry.LineString(components)
           );
     },
+    /**
+     * Return a multilinestring feature given a multilinestring WKT fragment.
+     * @param {String} A WKT fragment representing the multilinestring
+     * @returns {<ZOO.Feature>} A multilinestring feature
+     */
     'multilinestring': function(str) {
       var line;
       var lines = ZOO.String.trim(str).split(this.regExes.parenComma);
@@ -516,6 +1118,11 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
           new ZOO.Geometry.MultiLineString(components)
           );
     },
+    /**
+     * Return a polygon feature given a polygon WKT fragment.
+     * @param {String} A WKT fragment representing the polygon
+     * @returns {<ZOO.Feature>} A polygon feature
+     */
     'polygon': function(str) {
        var ring, linestring, linearring;
        var rings = ZOO.String.trim(str).split(this.regExes.parenComma);
@@ -530,6 +1137,12 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
            new ZOO.Geometry.Polygon(components)
            );
     },
+    /**
+     * Return a multipolygon feature given a multipolygon WKT fragment.
+     * @param {String} A WKT fragment representing the multipolygon
+     * @returns {<ZOO.Feature>} A multipolygon feature
+     * @private
+     */
     'multipolygon': function(str) {
       var polygon;
       var polygons = ZOO.String.trim(str).split(this.regExes.doubleParenComma);
@@ -542,6 +1155,11 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
           new ZOO.Geometry.MultiPolygon(components)
           );
     },
+    /**
+     * Return an array of features given a geometrycollection WKT fragment.
+     * @param {String} A WKT fragment representing the geometrycollection
+     * @returns {Array} An array of ZOO.Feature
+     */
     'geometrycollection': function(str) {
       // separate components of the collection with |
       str = str.replace(/,\s*([A-Za-z])/g, '|$1');
@@ -555,6 +1173,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
   },
   CLASS_NAME: 'ZOO.Format.WKT'
 });
+/**
+ * Class: ZOO.Format.JSON
+ * A parser to read/write JSON safely. Create a new instance with the
+ *     <ZOO.Format.JSON> constructor.
+ *
+ * Inherits from:
+ *  - <OpenLayers.Format>
+ */
 ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
   indent: "    ",
   space: " ",
