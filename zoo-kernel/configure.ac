@@ -1,4 +1,4 @@
-AC_PREREQ([2.63])
+#AC_PREREQ([2.63])
 AC_INIT([ZOO Kernel], [0.0.1], [bugs@zoo-project.org])
 #AM_INIT_AUTOMAKE
 #AC_CONFIG_HEADERS([config.h])
