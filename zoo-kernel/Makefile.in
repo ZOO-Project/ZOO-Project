@@ -1,9 +1,15 @@
+OS:=$(shell uname -s)
+ifeq ($(OS),Darwin)
+	MACOS_LD_FLAGS=-lintl -framework SystemConfiguration -framework CoreFoundation
+	MACOS_CFLAGS=-arch i386 -arch ppc -arch x86_64
+endif
+
 JAVACFLAGS=@JAVA_CPPFLAGS@
 JAVALDFLAGS=@JAVA_LDFLAGS@
 JAVA_ENABLED=@JAVA_ENABLED@
 JAVA_FILE=@JAVA_FILE@
 
-CFLAGS=-I../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+CFLAGS=${MACOS_CFLAGS} -I../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 
 PHPCFLAGS=@PHP_CPPFLAGS@
 PHPLDFLAGS=@PHP_LDFLAGS@
@@ -90,7 +96,7 @@ zoo_service_loader.o: zoo_service_loader.c service.h
 
 zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${PYTHON_FILE}   ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE}
 	g++ -g -O2 -Wall ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS}   ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
-	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -lcurl -L../thirds/cgic206 -lcgic -lcurl ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS} ${PERLLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi -lcrypto
+	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -lcurl -L../thirds/cgic206 -lcgic -lcurl ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS} ${PERLLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi -lcrypto ${MACOS_LD_FLAGS}
 
 install:
 	@echo "##############################################################################"
