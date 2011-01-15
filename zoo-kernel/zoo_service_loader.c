@@ -968,6 +968,7 @@ int runRequest(map* request_inputs)
 		free(tmpContent);
 	      }
 	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
+	    addToMap(tmpmaps->content,"Reference",tmpv1+1);
 	  }
 	  tmpc=strtok(NULL,"@");
 	}

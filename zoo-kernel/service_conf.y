@@ -260,7 +260,8 @@ STag
       }
       else
 	if(strncasecmp($2,"ComplexData",11)==0 || strncasecmp($2,"LiteralData",10)==0
-	   || strncasecmp($2,"ComplexOutput",13)==0 || strncasecmp($2,"LiteralOutput",12)==0){
+	   || strncasecmp($2,"ComplexOutput",13)==0 || strncasecmp($2,"LiteralOutput",12)==0
+	   || strncasecmp($2,"BoundingBoxOutput",13)==0 || strncasecmp($2,"BoundingBoxData",12)==0){
 	  current_data=4;
 	  if(wait_metadata==true){
 	    if(current_content!=NULL){

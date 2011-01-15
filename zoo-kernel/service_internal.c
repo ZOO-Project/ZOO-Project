@@ -697,183 +697,36 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
   }
 
   nc1 = xmlNewNode(NULL, BAD_CAST "DataInputs");
-  
   elements* e=serv->inputs;
-  while(e!=NULL){
-    nc2 = xmlNewNode(NULL, BAD_CAST "Input");
-    tmp1=getMap(e->content,"minOccurs");
-    if(tmp1){
-      xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    }
-    tmp1=getMap(e->content,"maxOccurs");
-    if(tmp1){
-      xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    }
-
-    printDescription(nc2,ns_ows,e->name,e->content);
-
-
-    nc3 = xmlNewNode(NULL, BAD_CAST e->format);
-    iotype* _tmp=e->defaults;
-    int datatype=0;
-    if(_tmp!=NULL){
-      int isAnyValue=1;
-      if(strcmp(e->format,"LiteralData")!=0){
-	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }
-      else{
-	nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
-	datatype=1;
-      }
-      tmp1=_tmp->content;
-      int default1=0;
-      xmlNodePtr nc7;
-      char *orderedFields[5];
-      orderedFields[0]="mimeType";
-      orderedFields[1]="encoding";
-      orderedFields[2]="schema";
-      orderedFields[3]="dataType";
-      orderedFields[4]="uom";
-      int oI=0;
-      for(oI=0;oI<5;oI++)
-	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-#ifdef DEBUG
-	  printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
-#endif
-	  if(strncasecmp(tmp1->name,"DataType",8)==0){
-	    nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
-	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	    char tmp[1024];
-	    sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	    xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
-	    xmlAddChild(nc3,nc6);
-	    tmp1=tmp1->next;
-	    continue;
-	  }
-	  if(strcasecmp(tmp1->name,"asReference")!=0 && 
-	     strcasecmp(tmp1->name,"DataType")!=0 && 
-	     strncasecmp(tmp1->name,"AllowedValues",13)!=0 &&
-	     strcasecmp(tmp1->name,"value")!=0 &&
-	     strcasecmp(tmp1->name,"extension")!=0){
-	    if(datatype==0){
-	      char *tmp2=zCapitalize1(tmp1->name);
-	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	      free(tmp2);
-	    }
-	    else{
-	      char *tmp2=zCapitalize(tmp1->name);
-	      nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	      free(tmp2);
-	    }
-	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	    xmlAddChild(nc5,nc6);
-	  }
-	  else{
-	    if(strcmp(tmp1->name,"value")==0){
-	      nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
-	      default1=1;
-	    }
-	    if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
-	      nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	      char *token,*saveptr1;
-	      token=strtok_r(tmp1->value,",",&saveptr1);
-	      while(token!=NULL){
-	   	nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-		char *tmps=strdup(token);
-		tmps[strlen(tmps)]=0;
-		xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
-		fprintf(stderr,"strgin : %s\n",tmps);
-		xmlAddChild(nc6,nc7);
-		token=strtok_r(NULL,",",&saveptr1);
-	      }
-	      xmlAddChild(nc3,nc6);
-	      isAnyValue=-1;
-	    }
-	  }
-	  tmp1=tmp1->next;
-	}
-      xmlAddChild(nc4,nc5);
-      xmlAddChild(nc3,nc4);
-      if(datatype==1 && isAnyValue==1){
-	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-	if(default1>0)
-	  xmlAddChild(nc3,nc7);
-      }
-      if(datatype==1 && default1>0)
-      	xmlAddChild(nc3,nc7);
-    }
-    xmlAddChild(nc2,nc3);
-    
-    _tmp=e->supported;
-    int hasSupported=-1;
-    while(_tmp!=NULL){
-      if(hasSupported<0){
-	if(datatype==0){
-	  nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
-	  nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-	}
-	else{
-	  nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
-	}
-	hasSupported=0;
-      }else{
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }
-      tmp1=_tmp->content;
-      char *orderedFields[5];
-      orderedFields[0]="mimeType";
-      orderedFields[1]="encoding";
-      orderedFields[2]="schema";
-      orderedFields[3]="dataType";
-      orderedFields[4]="uom";
-      int oI=0;
-      for(oI=0;oI<5;oI++)
-	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-	  if(datatype==0){
-	    char *tmp2=zCapitalize1(tmp1->name);
-	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  else{
-	    char *tmp2=zCapitalize(tmp1->name);	  
-	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	  tmp1=tmp1->next;
-	}
-      if(hasSupported<=0){
-	if(datatype==0){
-	  xmlAddChild(nc4,nc5);
-	  xmlAddChild(nc3,nc4);
-	}else{
-	  xmlAddChild(nc4,nc5);
-	}
-	hasSupported=1;
-      }else{
-	xmlAddChild(nc4,nc5);
-      }
-      _tmp=_tmp->next;
-      if(strcmp(e->format,"LiteralData")!=0){
-	xmlAddChild(nc2,nc3);
-      }
-    }
-    xmlAddChild(nc1,nc2);
-    
-    
-    e=e->next;
-  }
+  printFullDescription(e,"Input",ns_ows,nc1);
   xmlAddChild(nc,nc1);
 
   nc1 = xmlNewNode(NULL, BAD_CAST "ProcessOutputs");
-  
   e=serv->outputs;
+  printFullDescription(e,"Output",ns_ows,nc1);
+  xmlAddChild(nc,nc1);
+
+  xmlAddChild(n,nc);
+
+}
+
+void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
+  char *orderedFields[7];
+  orderedFields[0]="mimeType";
+  orderedFields[1]="encoding";
+  orderedFields[2]="schema";
+  orderedFields[3]="dataType";
+  orderedFields[4]="uom";
+  orderedFields[5]="CRS";
+  orderedFields[6]="value";
+
+  xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7;
+  elements* e=elem;
+  map* tmp1=NULL;
   while(e!=NULL){
-    nc2 = xmlNewNode(NULL, BAD_CAST "Output");
+    int default1=0;
+    int isAnyValue=1;
+    nc2 = xmlNewNode(NULL, BAD_CAST type);
     tmp1=getMap(e->content,"minOccurs");
     if(tmp1){
       xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
@@ -885,13 +738,25 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 
     printDescription(nc2,ns_ows,e->name,e->content);
 
-    if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
-      nc3 = xmlNewNode(NULL, BAD_CAST "LiteralOutput");
-    else
-      if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
+    if(strncmp(type,"Output",6)==0){
+      if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
+	nc3 = xmlNewNode(NULL, BAD_CAST "LiteralOutput");
+      else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
 	nc3 = xmlNewNode(NULL, BAD_CAST "ComplexOutput");
+      else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
+	nc3 = xmlNewNode(NULL, BAD_CAST "BoundingBoxOutput");
       else
 	nc3 = xmlNewNode(NULL, BAD_CAST e->format);
+    }else{
+      if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
+	nc3 = xmlNewNode(NULL, BAD_CAST "LiteralData");
+      else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
+	nc3 = xmlNewNode(NULL, BAD_CAST "ComplexData");
+      else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
+	nc3 = xmlNewNode(NULL, BAD_CAST "BoundingBoxData");
+      else
+	nc3 = xmlNewNode(NULL, BAD_CAST e->format);
+    }
     iotype* _tmp=e->defaults;
     int datatype=0;
     if(_tmp!=NULL){
@@ -901,46 +766,99 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 	nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
 	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
      }
-      else{
-	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-      }
-      tmp1=_tmp->content;
-      while(tmp1!=NULL){
+     else if(strcmp(e->format,"BoundingBoxOutput")==0 ||
+	     strcmp(e->format,"BoundingBoxData")==0){
+       datatype=2;
+       //nc4 = xmlNewNode(NULL, BAD_CAST "BoundingBoxOutput");
+       nc5 = xmlNewNode(NULL, BAD_CAST "Default");
+     }
+     else{
+       nc4 = xmlNewNode(NULL, BAD_CAST "Default");
+       nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+     }
+
+     tmp1=_tmp->content;
+     int avcnt=0;
+     int dcnt=0;
+     int oI=0;
+     for(oI=0;oI<7;oI++)
+       if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+     //while(tmp1!=NULL){
 #ifdef DEBUG
-	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
+	 printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
 #endif
-	if(strncasecmp(tmp1->name,"DataType",8)==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  char tmp[1024];
-	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
-	  xmlAddChild(nc3,nc6);
-	  tmp1=tmp1->next;
-	  datatype=1;
-	  continue;
+	 if(strncasecmp(tmp1->name,"DataType",8)==0){
+	   nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
+	   xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	   char tmp[1024];
+	   sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
+	   xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
+	   xmlAddChild(nc3,nc6);
+	   tmp1=tmp1->next;
+	   datatype=1;
+	   continue;
+	 }
+	 if(strcmp(tmp1->name,"asReference")!=0 &&
+	    strncasecmp(tmp1->name,"DataType",8)!=0 &&
+	    strcasecmp(tmp1->name,"extension")!=0 &&
+	    strcasecmp(tmp1->name,"value")!=0 &&
+	    strncasecmp(tmp1->name,"AllowedValues",13)!=0){
+	   if(datatype!=1){
+	     char *tmp2=zCapitalize1(tmp1->name);
+	     nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	     free(tmp2);
+	   }
+	   else{
+	     char *tmp2=zCapitalize(tmp1->name);
+	     nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	     free(tmp2);
+	   }
+	   xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	   xmlAddChild(nc5,nc6);
+	 }else 
+	   if(strncmp(type,"Input",5)==0){
+	     if(strcmp(tmp1->name,"value")==0){
+	       nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
+	       xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
+	       default1=1;
+	     }
+	     if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
+	       nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	       char *token,*saveptr1;
+	       token=strtok_r(tmp1->value,",",&saveptr1);
+	       while(token!=NULL){
+		 nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+		 char *tmps=strdup(token);
+		 tmps[strlen(tmps)]=0;
+		 xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
+		 fprintf(stderr,"strgin : %s\n",tmps);
+		 xmlAddChild(nc6,nc7);
+		 token=strtok_r(NULL,",",&saveptr1);
+	       }
+	       xmlAddChild(nc3,nc6);
+	       isAnyValue=-1;
+	     }
+	   }
+	 tmp1=tmp1->next;
+	 if(datatype!=2){
+	   xmlAddChild(nc4,nc5);
+	   xmlAddChild(nc3,nc4);
+	 }else{
+	   fprintf(stderr,"OK \n");
+	   xmlAddChild(nc3,nc5);
+	   fprintf(stderr,"OK \n");
+	 }
+	 
+	 if(strncmp(type,"Input",5)==0){
+	   if(datatype==1 && isAnyValue==1 && avcnt==0){
+	     xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	     avcnt++;
+	   }
+	   if(datatype==1 && default1>0){
+	     xmlAddChild(nc3,nc7);
+	   }
 	}
-	if(strcmp(tmp1->name,"asReference")!=0 &&
-	   strncasecmp(tmp1->name,"DataType",8)!=0 &&
-	   strcasecmp(tmp1->name,"extension")!=0){
-	  if(datatype==0){
-	    char *tmp2=zCapitalize1(tmp1->name);
-	    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  else{
-	    char *tmp2=zCapitalize(tmp1->name);
-	    nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc6);
-	}
-	tmp1=tmp1->next;
-      }
-      xmlAddChild(nc4,nc5);
-      xmlAddChild(nc3,nc4);	    
+       }
     }
     _tmp=e->supported;
     int hasSupported=-1;
@@ -954,16 +872,11 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 	  nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
 	hasSupported=0;
       }else
-	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+	if(datatype==0)
+	  nc5 = xmlNewNode(NULL, BAD_CAST "Format");
       tmp1=_tmp->content;
-      char *orderedFields[5];
-      orderedFields[0]="mimeType";
-      orderedFields[1]="encoding";
-      orderedFields[2]="schema";
-      orderedFields[3]="dataType";
-      orderedFields[4]="uom";
       int oI=0;
-      for(oI=0;oI<5;oI++)
+      for(oI=0;oI<6;oI++)
 	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 #ifdef DEBUG
 	  printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
@@ -971,7 +884,7 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 	  if(strcmp(tmp1->name,"asReference")!=0 && 
 	     strcmp(tmp1->name,"DataType")!=0 &&
 	     strcasecmp(tmp1->name,"extension")!=0){
-	    if(datatype==0){
+	    if(datatype!=1){
 	      char *tmp2=zCapitalize1(tmp1->name);
 	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
 	      free(tmp2);
@@ -981,38 +894,57 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 	      nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
 	      free(tmp2);
 	    }
-	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	    xmlAddChild(nc5,nc6);
+	    if(datatype==2){
+	      char *tmpv,*tmps;
+	      tmps=strtok_r(tmp1->value,",",&tmpv);
+	      while(tmps){
+		fprintf(stderr,"Element %s\n",tmps);
+		xmlAddChild(nc6,xmlNewText(BAD_CAST tmps));
+		xmlAddChild(nc5,nc6);
+		tmps=strtok_r(NULL,",",&tmpv);
+		if(tmps){
+		  char *tmp2=zCapitalize1(tmp1->name);
+		  nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+		  free(tmp2);
+		}
+	      }
+	      //free(tmpv);
+	    }
+	    else{
+	      xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	      xmlAddChild(nc5,nc6);
+	    }
 	  }
 	  tmp1=tmp1->next;
 	}
-      _tmp=_tmp->next;
       if(hasSupported<=0){
-	if(datatype==0){
+	if(datatype!=2){
 	  xmlAddChild(nc4,nc5);
 	  xmlAddChild(nc3,nc4);
 	}else
-	  xmlAddChild(nc4,nc5);
+	  xmlAddChild(nc3,nc5);
+	fprintf(stderr,"OK \n");
 	hasSupported=1;
       }
       else
-	xmlAddChild(nc4,nc5);
+	if(datatype!=2){
+	  xmlAddChild(nc4,nc5);
+	}
+	else
+	  xmlAddChild(nc3,nc5);
+      _tmp=_tmp->next;
     }
     xmlAddChild(nc2,nc3);
-
-    xmlAddChild(nc3,nc4);
-      
     
-    xmlAddChild(nc2,nc3);
+    if(datatype!=2){
+      xmlAddChild(nc3,nc4);
+      xmlAddChild(nc2,nc3);
+    }
     
     xmlAddChild(nc1,nc2);
     
     e=e->next;
   }
-  xmlAddChild(nc,nc1);
-
-  xmlAddChild(n,nc);
-
 }
 
 void printProcessResponse(maps* m,map* request, int pid,service* serv,char* service,int status,maps* inputs,maps* outputs){
@@ -1203,7 +1135,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     elements* scursor=NULL;
     while(mcursor!=NULL /*&& scursor!=NULL*/){
       scursor=getElements(serv->inputs,mcursor->name);
-      printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Input");
+      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Input");
       mcursor=mcursor->next;
     }
     xmlAddChild(n,nc);
@@ -1235,7 +1167,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     elements* scursor=serv->outputs;
     while(mcursor!=NULL){
       scursor=getElements(serv->outputs,mcursor->name);
-      printIOType(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
+      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
       mcursor=mcursor->next;
     }
     xmlAddChild(n,nc);
@@ -1244,7 +1176,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
   fprintf(stderr,"printProcessResponse 1 202\n");
 #endif
   xmlDocSetRootElement(doc, n);
-  if(hasStoredExecuteResponse){
+  if(hasStoredExecuteResponse==true){
     /* We need to write the ExecuteResponse Document somewhere */
     FILE* output=fopen(stored_path,"w");
     xmlChar *xmlbuff;
@@ -1346,7 +1278,7 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 
 }
 
-void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
+void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;
@@ -1402,11 +1334,13 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
   if(tmpMap==NULL){
     nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
     if(e!=NULL){
-      if(strncasecmp(e->format,"LITERALOUTPUT",strlen(e->format))==0)
+      if(strncasecmp(e->format,"LiteralOutput",strlen(e->format))==0)
 	nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
       else
-	if(strncasecmp(e->format,"COMPLEXOUTPUT",strlen(e->format))==0)
+	if(strncasecmp(e->format,"ComplexOutput",strlen(e->format))==0)
 	  nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
+	else if(strncasecmp(e->format,"BoundingBoxOutput",strlen(e->format))==0)
+	  nc3=xmlNewNode(ns_wps, BAD_CAST "BoundingBoxData");
 	else
 	  nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
     }
@@ -1416,7 +1350,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
 	nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
       else
 	nc3=xmlNewNode(ns_wps, BAD_CAST "LitteralData");
-    }
+    } 
     tmp=m->content;
     while(tmp!=NULL){
       if(strcasecmp(tmp->name,"mimeType")==0 ||
@@ -1428,44 +1362,58 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,ele
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
     }
-    if(e!=NULL)
-      tmp=getMap(e->defaults->content,"mimeType");
-    else
-      tmp=NULL;
-    map* tmp1=getMap(m->content,"encoding");
-    map* tmp2=getMap(m->content,"mimeType");
-    map* toto=getMap(m->content,"value");
-    if((tmp1!=NULL && strncmp(tmp1->value,"base64",6)==0)
-       || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0
-			  || strncmp(tmp2->value,"application/",6)==0)) ){
-      map* rs=getMap(m->content,"size");
-      bool isSized=true;
-      if(rs==NULL){
-	char tmp1[1024];
-	sprintf(tmp1,"%d",strlen(toto->value));
-	rs=createMap("z",tmp1);
-	isSized=false;
+    if(e!=NULL && e->format!=NULL && strcasecmp(e->format,"BoundingBoxData")==0){
+      map* bb=getMap(m->content,"value");
+      if(bb!=NULL){
+	map* tmpRes=parseBoundingBox(bb->value);
+	printBoundingBox(ns_ows,nc3,tmpRes);
+	freeMap(&tmpRes);
+	free(tmpRes);
       }
-      xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
-      if(!isSized){
-	freeMap(&rs);
-	free(rs);
+    }else{
+      if(e!=NULL)
+	tmp=getMap(e->defaults->content,"mimeType");
+      else
+	tmp=NULL;
+      map* tmp1=getMap(m->content,"encoding");
+      map* tmp2=getMap(m->content,"mimeType");
+      map* toto=getMap(m->content,"value");
+      if((tmp1!=NULL && strncmp(tmp1->value,"base64",6)==0)
+	 || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0 ||
+			    (strncmp(tmp2->value,"application/",12)==0) &&
+			    strncmp(tmp2->value,"application/json",16)!=0))) {
+	map* rs=getMap(m->content,"size");
+	bool isSized=true;
+	if(rs==NULL){
+	  char tmp1[1024];
+	  sprintf(tmp1,"%d",strlen(toto->value));
+	  rs=createMap("z",tmp1);
+	  isSized=false;
+	}
+	xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
+	if(!isSized){
+	  freeMap(&rs);
+	  free(rs);
+	}
       }
-    }
-    else if(tmp!=NULL){
-      if(strncmp(tmp->value,"text/js",4)==0 ||
-	 strncmp(tmp->value,"application/js",14)==0)
-	xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
+      else if(tmp!=NULL){
+	if(strncmp(tmp->value,"text/js",4)==0 ||
+	   strncmp(tmp->value,"application/js",14)==0)
+	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
+	else
+	  xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+	xmlAddChild(nc2,nc3);
+      }
       else
 	xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
-      xmlAddChild(nc2,nc3);
     }
-    else
-      xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
   }
   else{
     nc3=nc2=xmlNewNode(ns_wps, BAD_CAST "Reference");
-    xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
+    if(strcasecmp(type,"Output")==0)
+      xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
+    else
+      xmlNewNsProp(nc3,ns_xlink,BAD_CAST "href",BAD_CAST tmpMap->value);
     tmp=m->content;
     while(tmp!=NULL){
       if(strcasecmp(tmp->name,"mimeType")==0 ||
@@ -1627,13 +1575,23 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     while(tmpI!=NULL){
       toto=getMap(tmpI->content,"asReference");
       if(toto!=NULL && strcasecmp(toto->value,"true")==0){
-
-	toto=getMap(tmpI->content,"extension");
+	elements* in=getElements(s->outputs,tmpI->name);
+	char *format=NULL;
+	if(in!=NULL){
+	  format=strdup(in->format);
+	}else
+	  format=strdup("LiteralData");
+	if(strcasecmp(format,"BoundingBoxData")==0){
+	  addToMap(tmpI->content,"extension","xml");
+	  addToMap(tmpI->content,"mimeType","text/xml");
+	  addToMap(tmpI->content,"encoding","UTF-8");
+	  addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
+	}
+	map *ext=getMap(tmpI->content,"extension");
 	map *tmp1=getMapFromMaps(m,"main","tmpPath");
 	char *file_name;
 	bool hasExt=true;
-	if(toto==NULL){
-	  dumpMaps(tmpI);
+	if(ext==NULL){
 	  // We can fallback to a default list of supported formats using
 	  // mimeType information if present here. Maybe we can add more formats
 	  // here.
@@ -1641,41 +1599,46 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  map* mtype=getMap(tmpI->content,"mimeType");
 	  if(mtype!=NULL){
 	    if(strcasecmp(mtype->value,"text/xml")==0)
-	      toto=createMap("extension","xml");
+	      ext=createMap("extension","xml");
 	    else if(strcasecmp(mtype->value,"application/json")==0)
-	      toto=createMap("extension","js");
+	      ext=createMap("extension","js");
 	    else
-	      toto=createMap("extension","txt");
+	      ext=createMap("extension","txt");
 	  }
 	  else
-	    toto=createMap("extension","txt");
+	    ext=createMap("extension","txt");
 	  hasExt=false;
 	}
-	file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(toto->value)+strlen(tmpI->name)+13)*sizeof(char));
-	sprintf(file_name,"%s/%s_%s_%i.%s",tmp1->value,s->name,tmpI->name,cpid+100000,toto->value);
+	file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
+	sprintf(file_name,"%s/%s_%s_%i.%s",tmp1->value,s->name,tmpI->name,cpid+100000,ext->value);
 	FILE *ofile=fopen(file_name,"w");
 	if(ofile==NULL)
 	  fprintf(stderr,"Unable to create file on disk implying segfault ! \n");
 	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
 	map *tmp3=getMapFromMaps(m,"main","serverAddress");
 	char *file_url;
-	file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(toto->value)+strlen(tmpI->name)+13)*sizeof(char));
-	sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,toto->value);
+	file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
+	sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
 	addToMap(tmpI->content,"Reference",file_url);
 	if(hasExt!=true){
-	  freeMap(&toto);
-	  free(toto);
+	  freeMap(&ext);
+	  free(ext);
 	}
 	toto=getMap(tmpI->content,"value");
-	map* size=getMap(tmpI->content,"size");
-	if(size!=NULL && toto!=NULL)
-	  fwrite(toto->value,1,atoi(size->value)*sizeof(char),ofile);
-	else
-	if(toto!=NULL && toto->value!=NULL)
-	  fwrite(toto->value,1,strlen(toto->value)*sizeof(char),ofile);
+	if(strcasecmp(format,"BoundingBoxData")!=0){
+	  map* size=getMap(tmpI->content,"size");
+	  if(size!=NULL && toto!=NULL)
+	    fwrite(toto->value,1,atoi(size->value)*sizeof(char),ofile);
+	  else
+	    if(toto!=NULL && toto->value!=NULL)
+	      fwrite(toto->value,1,strlen(toto->value)*sizeof(char),ofile);
+	}else{
+	  printBoundingBoxDocument(m,tmpI,ofile);
+	}
+	free(format);
 	fclose(ofile);
 	free(file_name);
-	free(file_url);
+	free(file_url);	
       }
       tmpI=tmpI->next;
     }
@@ -1702,43 +1665,51 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       }
       if(tmpI==NULL)
 	tmpI=request_outputs;
-      toto=getMap(tmpI->content,"value");
-      if(toto==NULL){
-	map * errormap = createMap("text",_("Unable to fetch any result"));
-	addToMap(errormap,"code", "InternalError");
-	printExceptionReportResponse(m,errormap);
-	freeMap(&errormap);
-	free(errormap);
-      }
-      char mime[1024];
-      map* mi=getMap(tmpI->content,"mimeType");
+      elements* e=getElements(s->outputs,tmpI->name);
+      if(e!=NULL && strcasecmp(e->format,"BoundingBoxData")==0){
+	printBoundingBoxDocument(m,tmpI,NULL);
+      }else{
+	toto=getMap(tmpI->content,"value");
+	if(toto==NULL){
+	  char tmpMsg[1024];
+	  sprintf(tmpMsg,_("Wrong RawDataOutput parameter, unable to fetch any result for the name your provided : \"%s\"."),tmpI->name);
+	  map * errormap = createMap("text",tmpMsg);
+	  addToMap(errormap,"code", "InvalidParameterValue");
+	  printExceptionReportResponse(m,errormap);
+	  freeMap(&errormap);
+	  free(errormap);
+	  return 1;
+	}
+	char mime[1024];
+	map* mi=getMap(tmpI->content,"mimeType");
 #ifdef DEBUG
-      fprintf(stderr,"SERVICE OUTPUTS\n");
-      dumpMaps(request_outputs);
-      fprintf(stderr,"SERVICE OUTPUTS\n");
+	fprintf(stderr,"SERVICE OUTPUTS\n");
+	dumpMaps(request_outputs);
+	fprintf(stderr,"SERVICE OUTPUTS\n");
 #endif
-      map* en=getMap(tmpI->content,"encoding");
-      if(mi!=NULL && en!=NULL)
-	sprintf(mime,
-		"Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
-		mi->value,en->value);
-      else
-	if(mi!=NULL)
+	map* en=getMap(tmpI->content,"encoding");
+	if(mi!=NULL && en!=NULL)
 	  sprintf(mime,
-		  "Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
-		  mi->value);
+		  "Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
+		  mi->value,en->value);
 	else
-	  sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-      printf("%s",mime);
-      if(mi!=NULL && strncmp(mi->value,"image",5)==0){
-	map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
-	fwrite(toto->value,atoi(rs->value),1,stdout);
-      }
-      else
-	printf("%s",toto->value);
+	  if(mi!=NULL)
+	    sprintf(mime,
+		    "Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
+		    mi->value);
+	  else
+	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+	printf("%s",mime);
+	if(mi!=NULL && strncmp(mi->value,"image",5)==0){
+	  map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
+	  fwrite(toto->value,atoi(rs->value),1,stdout);
+	}
+	else
+	  printf("%s",toto->value);
 #ifdef DEBUG
-      dumpMap(toto);
+	dumpMap(toto);
 #endif
+      }
     }else{
       char tmp[1024];
       map * errormap;
@@ -1844,6 +1815,10 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 					     tmpMaps->content);
 
       if(type==0) {
+	/**
+	 * In case of an Input maps, then add the minOccurs and maxOccurs to the
+	 * content map.
+	 */
 	map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
 	if(tmpMap1!=NULL){
 	  if(tmpMaps->content==NULL)
@@ -1857,6 +1832,30 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	    tmpMaps->content=createMap("maxOccurs",tmpMap1->value);
 	  else
 	    addToMap(tmpMaps->content,"maxOccurs",tmpMap1->value);
+	}
+	/**
+	 * Parsing BoundingBoxData, fill the following map and then add it to
+	 * the content map of the Input maps: 
+	 * lowerCorner, upperCorner, srs and dimensions
+	 * cf. parseBoundingBox
+	 */
+	if(strcasecmp(tmpInputs->format,"BoundingBoxData")==0){
+	  maps* tmpI=getMaps(*out,tmpInputs->name);
+	  if(tmpI!=NULL){
+	    map* tmpV=getMap(tmpI->content,"value");
+	    if(tmpV!=NULL){
+	      char *tmpVS=strdup(tmpV->value);
+	      map* tmp=parseBoundingBox(tmpVS);
+	      free(tmpVS);
+	      map* tmpC=tmp;
+	      while(tmpC!=NULL){
+		addToMap(tmpMaps->content,tmpC->name,tmpC->value);
+		tmpC=tmpC->next;
+	      }
+	      freeMap(&tmp);
+	      free(tmp);
+	    }
+	  }
 	}
       }
 
@@ -1881,4 +1880,153 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
     tmpInputs=tmpInputs->next;
   }
   return "";
+}
+
+/**
+ * parseBoundingBox : parse a BoundingBox string
+ *
+ * OGC 06-121r3 : 10.2 Bounding box
+ *
+ * value is provided as : lowerCorner,upperCorner,crs,dimension
+ * exemple : 189000,834000,285000,962000,urn:ogc:def:crs:OGC:1.3:CRS84
+ *
+ * Need to create a map to store boundingbox informations :
+ *  - lowerCorner : double,double (minimum within this bounding box)
+ *  - upperCorner : double,double (maximum within this bounding box)
+ *  - crs : URI (Reference to definition of the CRS)
+ *  - dimensions : int 
+ * 
+ * Note : support only 2D bounding box.
+ */
+map* parseBoundingBox(char* value){
+  map *res=NULL;
+  if(value!=NULL){
+    char *cv,*cvp;
+    cv=strtok_r(value,",",&cvp);
+    int cnt=0;
+    int icnt=0;
+    char *currentValue=NULL;
+    while(cv){
+      if(cnt<2)
+	if(currentValue!=NULL){
+	  char *finalValue=(char*)malloc((strlen(currentValue)+strlen(cv)+1)*sizeof(char));
+	  sprintf(finalValue,"%s%s",currentValue,cv);
+	  switch(cnt){
+	  case 0:
+	    res=createMap("lowerCorner",finalValue);
+	    break;
+	  case 1:
+	    addToMap(res,"upperCorner",finalValue);
+	    icnt=-1;
+	    break;
+	  }
+	  cnt++;
+	  free(currentValue);
+	  currentValue=NULL;
+	  free(finalValue);
+	}
+	else{
+	  currentValue=(char*)malloc((strlen(cv)+2)*sizeof(char));
+	  sprintf(currentValue,"%s ",cv);
+	}
+      else
+	if(cnt==2){
+	  addToMap(res,"crs",cv);
+	  cnt++;
+	}
+	else
+	  addToMap(res,"dimensions",cv);
+      icnt++;
+      cv=strtok_r(NULL,",",&cvp);
+    }
+  }
+  return res;
+}
+
+/**
+ * printBoundingBox : fill a BoundingBox node (ows:BoundingBox or 
+ * wps:BoundingBoxData). Set crs and dimensions attributes, add 
+ * Lower/UpperCorner nodes to a pre-existing XML node.
+ */
+void printBoundingBox(xmlNsPtr ns_ows,xmlNodePtr n,map* boundingbox){
+
+  xmlNodePtr bb,lw,uc;
+
+  map* tmp=getMap(boundingbox,"value");
+
+  tmp=getMap(boundingbox,"lowerCorner");
+  if(tmp!=NULL){
+    lw=xmlNewNode(ns_ows,BAD_CAST "LowerCorner");
+    xmlAddChild(lw,xmlNewText(BAD_CAST tmp->value));
+  }
+
+  tmp=getMap(boundingbox,"upperCorner");
+  if(tmp!=NULL){
+    uc=xmlNewNode(ns_ows,BAD_CAST "UpperCorner");
+    xmlAddChild(uc,xmlNewText(BAD_CAST tmp->value));
+  }
+
+  tmp=getMap(boundingbox,"crs");
+  if(tmp!=NULL)
+    xmlNewProp(n,BAD_CAST "crs",BAD_CAST tmp->value);
+
+  tmp=getMap(boundingbox,"dimensions");
+  if(tmp!=NULL)
+    xmlNewProp(n,BAD_CAST "dimensions",BAD_CAST tmp->value);
+
+  xmlAddChild(n,lw);
+  xmlAddChild(n,uc);
+
+}
+
+void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
+  if(file==NULL)
+    rewind(stdout);
+  xmlNodePtr n;
+  xmlDocPtr doc;
+  xmlNsPtr ns_ows,ns_xsi;
+  xmlChar *xmlbuff;
+  int buffersize;
+  char *encoding=getEncoding(m);
+  map *tmp;
+  if(file==NULL){
+    int pid=0;
+    tmp=getMapFromMaps(m,"lenv","sid");
+    if(tmp!=NULL)
+      pid=atoi(tmp->value);
+    if(pid==getpid()){
+      printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+    }
+    fflush(stdout);
+  }
+
+  doc = xmlNewDoc(BAD_CAST "1.0");
+  int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
+  n = xmlNewNode(ns_ows, BAD_CAST "BoundingBox");
+  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1","ows");
+  int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
+  ns_xsi=usedNs[xsiId];
+  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
+  map *tmp1=getMap(boundingbox->content,"value");
+  tmp=parseBoundingBox(tmp1->value);
+  printBoundingBox(ns_ows,n,tmp);
+  xmlDocSetRootElement(doc, n);
+
+  xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
+  if(file==NULL)
+    printf((char *) xmlbuff);
+  else{
+    fprintf(file,"%s",xmlbuff);
+  }
+
+  if(tmp!=NULL){
+    freeMap(&tmp);
+    free(tmp);
+  }
+  xmlFree(xmlbuff);
+  xmlFreeDoc(doc);
+  xmlCleanupParser();
+  zooXmlCleanupNs();
+  
 }
