@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2011 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -94,9 +94,13 @@ extern "C" {
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
   xmlNodePtr printDescribeProcessHeader(xmlDocPtr,char*,maps*);
   void printDescribeProcessForProcess(maps*,xmlNodePtr,service*,int);
+  void printFullDescription(elements*,char*,xmlNsPtr,xmlNodePtr);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,char*,map*);
-  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
+  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
+  map* parseBoundingBox(char*);
+  void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
+  void printBoundingBoxDocument(maps*,maps*,FILE*);
   void printOutputDefinitions1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
   
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
