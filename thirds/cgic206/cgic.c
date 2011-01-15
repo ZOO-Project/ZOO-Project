@@ -198,7 +198,6 @@ int main(int argc, char *argv[]) {
 	if(cgiContentLength==0 && argc>=2){
 		cgiContentLength=strlen(argv[1]);
 	}
-	fprintf(stderr,"%d\n",cgiContentLength);
 	cgiGetenv(&cgiAccept, "HTTP_ACCEPT");
 	cgiGetenv(&cgiUserAgent, "HTTP_USER_AGENT");
 	cgiGetenv(&cgiReferrer, "HTTP_REFERER");

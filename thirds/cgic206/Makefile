@@ -1,8 +1,14 @@
-CFLAGS=-g -Wall
+OS:=$(shell uname -s)
+ifeq ($(OS),Darwin)
+	MACOS_CFLAGS=-arch i386 -arch ppc -arch x86_64
+	LIBS= -L./ -lcgic /usr/lib/libfcgi.dylib
+else
+	LIBS= -L./ -lcgic /usr/lib/libfcgi.a
+endif
+CFLAGS=-g -Wall ${MACOS_CFLAGS}
 CC=gcc
 AR=ar
 RANLIB=ranlib
-LIBS=-L./ -lcgic /usr/lib/libfcgi.a 
 
 all: libcgic.a cgictest.cgi capture
 
