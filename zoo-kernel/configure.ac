@@ -1,7 +1,4 @@
-#AC_PREREQ([2.63])
-AC_INIT([ZOO Kernel], [0.0.1], [bugs@zoo-project.org])
-#AM_INIT_AUTOMAKE
-#AC_CONFIG_HEADERS([config.h])
+AC_INIT([ZOO Kernel], [1.2.0], [bugs@zoo-project.org])
 
 # Checks for programs.
 AC_PROG_YACC
@@ -69,9 +66,6 @@ GDAL_LIBS="`$GDAL_CONFIG --libs`"
 AC_SUBST([GDAL_CFLAGS])
 AC_SUBST([GDAL_LIBS])
 
-
-
-
 # ===========================================================================
 # Detect if libxml2 is installed
 # ===========================================================================
@@ -101,7 +95,6 @@ else
 	fi
 fi
 
-
 # Extract the linker and include flags 
 XML2_LDFLAGS=`$XML2CONFIG --libs`
 XML2_CPPFLAGS=`$XML2CONFIG --cflags`
@@ -120,15 +113,9 @@ AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([could not find libxml2]
 AC_SUBST([XML2_CPPFLAGS])
 AC_SUBST([XML2_LDFLAGS])
 
-
-
-
 # ===========================================================================
 # Detect if python is installed
 # ===========================================================================
-
-
-
 
 AC_ARG_WITH([python], 
 	[AS_HELP_STRING([--with-python=PATH], [To enabled python support or specify an alternative directory for python installation,  disabled by default])], 
@@ -175,9 +162,6 @@ AC_SUBST([PYTHON_FILE])
 # Detect if php is installed
 # ===========================================================================
 
-
-
-
 AC_ARG_WITH([php], 
 	[AS_HELP_STRING([--with-php=PATH], [To enabled php support or specify an alternative directory for php installation,  disabled by default])], 
 	[PHP_PATH="$withval"; PHP_ENABLED="-DUSE_PHP"], [PHP_ENABLED=""])
@@ -219,11 +203,9 @@ fi
 AC_SUBST([PHP_ENABLED])
 AC_SUBST([PHP_FILE])
 
-
 # ===========================================================================
 # Detect if perl is installed
 # ===========================================================================
-
 
 AC_ARG_WITH([perl], 
 	[AS_HELP_STRING([--with-perl=PATH], [To enabled perl support or specify an alternative directory for perl installation,  disabled by default])], 
@@ -265,8 +247,6 @@ AC_SUBST([PERL_FILE])
 # Detect if java is installed
 # ===========================================================================
 
-
-
 AC_ARG_WITH([java], 
 	[AS_HELP_STRING([--with-java=PATH], [To enabled java support, specify a JDK_HOME,  disabled by default])], 
 	[JDKHOME="$withval"; JAVA_ENABLED="-DUSE_JAVA"], [JAVA_ENABLED=""])
@@ -284,14 +264,21 @@ else
 	then
 		AC_MSG_ERROR([you must specify a parameter to --with-java, e.g. --with-java=/path/to/java])
 	fi
+
 	# Extract the linker and include flags
-	if test -d "$JDKHOME/jre/lib/i386";
+	if test "x$JDKHOME" = "xmacos";
 	then
-		JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/client/ -ljvm -lpthread"
-		JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+		JAVA_LDFLAGS="-framework JavaVM"
+		JAVA_CPPFLAGS="-I/Developer//SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
 	else
-		JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/client/ -ljvm -lpthread"
-                JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+		if test -d "$JDKHOME/jre/lib/i386";
+		then
+			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/client/ -ljvm -lpthread"
+			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+		else
+			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/client/ -ljvm -lpthread"
+			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+		fi
 	fi
 
 	# Check headers file (second time we check that in fact)
@@ -303,9 +290,10 @@ else
 	# Ensure we can link against libjava
 	LIBS_SAVE="$LIBS"
 	LIBS="$JAVA_LDFLAGS"
-	# Shouldn't we get java here rather than java5 :) ??
-	AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjava])], [])
-	#AC_CHECK_LIB([jvm], [main], [], [AC_MSG_ERROR([could not find libjava])], [])
+	if test "x$JDKHOME" != "xmacos";
+	then
+		AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjava])], [])
+	fi
 
 	AC_SUBST([JAVA_CPPFLAGS])
 	AC_SUBST([JAVA_LDFLAGS])
@@ -313,10 +301,6 @@ fi
 
 AC_SUBST([JAVA_ENABLED])
 AC_SUBST([JAVA_FILE])
-
-
-
-
 
 # ===========================================================================
 # Detect if spidermonkey is installed
@@ -358,7 +342,6 @@ else
 	CPPFLAGS_SAVE="$CPPFLAGS"
         CPPFLAGS="$JS_CPPFLAGS"
 
-
 	#AC_CHECK_HEADERS([jsapi.h],
         #                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
 
@@ -374,11 +357,6 @@ fi
 
 AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
-
-
-
-
-
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
