@@ -748,8 +748,9 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
       else
 	nc3 = xmlNewNode(NULL, BAD_CAST e->format);
     }else{
-      if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
+      if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0){
 	nc3 = xmlNewNode(NULL, BAD_CAST "LiteralData");
+      }
       else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
 	nc3 = xmlNewNode(NULL, BAD_CAST "ComplexData");
       else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
@@ -759,106 +760,112 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
     }
     iotype* _tmp=e->defaults;
     int datatype=0;
+    bool hasDefault=false;
+    bool hasUOM=false;
     if(_tmp!=NULL){
-     if(strcmp(e->format,"LiteralOutput")==0 ||
-	strcmp(e->format,"LiteralData")==0){
+      if(strcmp(e->format,"LiteralOutput")==0 ||
+	 strcmp(e->format,"LiteralData")==0){
      	datatype=1;
 	nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
 	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
-     }
-     else if(strcmp(e->format,"BoundingBoxOutput")==0 ||
-	     strcmp(e->format,"BoundingBoxData")==0){
-       datatype=2;
-       //nc4 = xmlNewNode(NULL, BAD_CAST "BoundingBoxOutput");
-       nc5 = xmlNewNode(NULL, BAD_CAST "Default");
-     }
-     else{
-       nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-       nc5 = xmlNewNode(NULL, BAD_CAST "Format");
-     }
-
-     tmp1=_tmp->content;
-     int avcnt=0;
-     int dcnt=0;
-     int oI=0;
-     for(oI=0;oI<7;oI++)
-       if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-     //while(tmp1!=NULL){
+      }
+      else if(strcmp(e->format,"BoundingBoxOutput")==0 ||
+	      strcmp(e->format,"BoundingBoxData")==0){
+	datatype=2;
+	//nc4 = xmlNewNode(NULL, BAD_CAST "BoundingBoxOutput");
+	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
+      }
+      else{
+	nc4 = xmlNewNode(NULL, BAD_CAST "Default");
+	nc5 = xmlNewNode(NULL, BAD_CAST "Format");
+      }
+      
+      tmp1=_tmp->content;
+      int avcnt=0;
+      int dcnt=0;
+      int oI=0;
+      for(oI=0;oI<7;oI++)
+	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+	  //while(tmp1!=NULL){
 #ifdef DEBUG
-	 printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
+	  printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
 #endif
-	 if(strncasecmp(tmp1->name,"DataType",8)==0){
-	   nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
-	   xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	   char tmp[1024];
-	   sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	   xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
-	   xmlAddChild(nc3,nc6);
-	   tmp1=tmp1->next;
-	   datatype=1;
-	   continue;
-	 }
-	 if(strcmp(tmp1->name,"asReference")!=0 &&
-	    strncasecmp(tmp1->name,"DataType",8)!=0 &&
-	    strcasecmp(tmp1->name,"extension")!=0 &&
-	    strcasecmp(tmp1->name,"value")!=0 &&
-	    strncasecmp(tmp1->name,"AllowedValues",13)!=0){
-	   if(datatype!=1){
-	     char *tmp2=zCapitalize1(tmp1->name);
-	     nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	     free(tmp2);
-	   }
-	   else{
-	     char *tmp2=zCapitalize(tmp1->name);
-	     nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	     free(tmp2);
-	   }
-	   xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	   xmlAddChild(nc5,nc6);
-	 }else 
-	   if(strncmp(type,"Input",5)==0){
-	     if(strcmp(tmp1->name,"value")==0){
-	       nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
-	       xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
-	       default1=1;
-	     }
-	     if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
-	       nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	       char *token,*saveptr1;
-	       token=strtok_r(tmp1->value,",",&saveptr1);
-	       while(token!=NULL){
-		 nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-		 char *tmps=strdup(token);
-		 tmps[strlen(tmps)]=0;
-		 xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
-		 fprintf(stderr,"strgin : %s\n",tmps);
-		 xmlAddChild(nc6,nc7);
-		 token=strtok_r(NULL,",",&saveptr1);
-	       }
-	       xmlAddChild(nc3,nc6);
-	       isAnyValue=-1;
-	     }
-	   }
-	 tmp1=tmp1->next;
-	 if(datatype!=2){
-	   xmlAddChild(nc4,nc5);
-	   xmlAddChild(nc3,nc4);
-	 }else{
-	   fprintf(stderr,"OK \n");
-	   xmlAddChild(nc3,nc5);
-	   fprintf(stderr,"OK \n");
-	 }
+	  if(strncasecmp(tmp1->name,"DataType",8)==0){
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST "DataType");
+	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	    char tmp[1024];
+	    sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
+	    xmlNewNsProp(nc6,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
+	    xmlAddChild(nc3,nc6);
+	    tmp1=tmp1->next;
+	    datatype=1;
+	    continue;
+	  }
+	  if(strcmp(tmp1->name,"asReference")!=0 &&
+	     strncasecmp(tmp1->name,"DataType",8)!=0 &&
+	     strcasecmp(tmp1->name,"extension")!=0 &&
+	     strcasecmp(tmp1->name,"value")!=0 &&
+	     strncasecmp(tmp1->name,"AllowedValues",13)!=0){
+	    if(datatype!=1){
+	      char *tmp2=zCapitalize1(tmp1->name);
+	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    else{
+	      char *tmp2=zCapitalize(tmp1->name);
+	      nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	    xmlAddChild(nc5,nc6);
+	    hasUOM=true;
+	  }else 
+	    if(strncmp(type,"Input",5)==0){
+	      if(strcmp(tmp1->name,"value")==0){
+		nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
+		xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
+		default1=1;
+	      }
+	      if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
+		nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+		fprintf(stderr,"ALLOWED VALUE %s\n",tmp1->value);
+		char *token,*saveptr1;
+		token=strtok_r(tmp1->value,",",&saveptr1);
+		while(token!=NULL){
+		  nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+		  char *tmps=strdup(token);
+		  tmps[strlen(tmps)]=0;
+		  xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
+		  fprintf(stderr,"strgin : %s\n",tmps);
+		  xmlAddChild(nc6,nc7);
+		  token=strtok_r(NULL,",",&saveptr1);
+		}
+		xmlAddChild(nc3,nc6);
+		isAnyValue=-1;
+	      }
+	      hasDefault=true;
+	    }
+	  tmp1=tmp1->next;
+	  if(datatype!=2){
+	    if(hasUOM==true){
+	      xmlAddChild(nc4,nc5);
+	      xmlAddChild(nc3,nc4);
+	    }
+	  }else{
+	    xmlAddChild(nc3,nc5);
+	  }
 	 
-	 if(strncmp(type,"Input",5)==0){
-	   if(datatype==1 && isAnyValue==1 && avcnt==0){
-	     xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-	     avcnt++;
-	   }
-	   if(datatype==1 && default1>0){
-	     xmlAddChild(nc3,nc7);
-	   }
+	  if(strncmp(type,"Input",5)==0){
+	    if(datatype==1 && isAnyValue==1 && avcnt==0){
+	      xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	      hasDefault=true;
+	      avcnt++;
+	    }
+	    if(datatype==1 && default1>0){
+	      xmlAddChild(nc3,nc7);
+	    }
+	  }
 	}
-       }
     }
     _tmp=e->supported;
     int hasSupported=-1;
@@ -898,7 +905,6 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
 	      char *tmpv,*tmps;
 	      tmps=strtok_r(tmp1->value,",",&tmpv);
 	      while(tmps){
-		fprintf(stderr,"Element %s\n",tmps);
 		xmlAddChild(nc6,xmlNewText(BAD_CAST tmps));
 		xmlAddChild(nc5,nc6);
 		tmps=strtok_r(NULL,",",&tmpv);
@@ -908,7 +914,6 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
 		  free(tmp2);
 		}
 	      }
-	      //free(tmpv);
 	    }
 	    else{
 	      xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
@@ -923,7 +928,6 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
 	  xmlAddChild(nc3,nc4);
 	}else
 	  xmlAddChild(nc3,nc5);
-	fprintf(stderr,"OK \n");
 	hasSupported=1;
       }
       else
@@ -936,9 +940,14 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
     }
     xmlAddChild(nc2,nc3);
     
-    if(datatype!=2){
+    if(datatype!=2 && hasUOM==true){
       xmlAddChild(nc3,nc4);
       xmlAddChild(nc2,nc3);
+    }else if(datatype!=2){
+      if(hasDefault!=true)
+	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+      xmlFreeNodeList(nc5);
+      xmlFreeNodeList(nc4);
     }
     
     xmlAddChild(nc1,nc2);
