@@ -7,7 +7,7 @@
  statusSupported = true
  serviceProvider = hello.js
  serviceType = JS
- <MetaData lang="en">
+ <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
@@ -16,7 +16,7 @@
    Abstract = The name to display in the hello message
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <LiteralData>
@@ -33,7 +33,7 @@
   [result]
    Title = The resulting string
    Abstract = The string created by service.
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <LiteralOutput>

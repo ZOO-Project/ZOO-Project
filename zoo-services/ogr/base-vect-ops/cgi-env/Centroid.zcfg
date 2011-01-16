@@ -7,7 +7,7 @@
  statusSupported = true
  serviceProvider = ogr_service.zo
  serviceType = C
- <MetaData lang="en">
+ <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
@@ -16,7 +16,7 @@
    Abstract = The centroid which is not necessarily within the geometry.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>
@@ -36,7 +36,7 @@
   [Result]
    Title = The Centroid
    Abstract = JSON String / GML Entity of the centroid
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>

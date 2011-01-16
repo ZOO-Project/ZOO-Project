@@ -16,7 +16,7 @@
    Abstract = the first geometry to compare against.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>
@@ -35,7 +35,7 @@
    Abstract = the other geometry to compare against.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>
@@ -54,7 +54,7 @@
   [Result]
    Title = The union of two geometries
    Abstract = The geometry representing the union of the two geometries.
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
     <ComplexData>

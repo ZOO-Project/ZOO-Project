@@ -6,7 +6,7 @@
  statusSupported = true
  serviceType = C
  serviceProvider = gdal_profile_service.zo
- <MetaData lang="en">
+ <MetaData>
    title = My Demo
  </MetaData>
  <DataInputs>
