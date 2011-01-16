@@ -6,7 +6,7 @@
  statusSupported = true
  serviceProvider = wps_status.zo
  serviceType = C
- <MetaData lang="en">
+ <MetaData>
    title = Demo GetStatus request
  </MetaData>
  <DataInputs>
@@ -29,7 +29,7 @@
   [Result]
    Title = ExecuteResponse document
    Abstract = The resulting ExecuteResponse document.
-   <MetaData lang="en">
+   <MetaData>
     title = Demo XSL use case
    </MetaData>   
    <LiteralData>

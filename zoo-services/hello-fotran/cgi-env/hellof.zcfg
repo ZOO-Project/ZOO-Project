@@ -7,7 +7,7 @@
  statusSupported = true
  serviceProvider = driftx_service.zo
  serviceType = C-FORTRAN
- <MetaData lang="en">
+ <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
@@ -16,7 +16,7 @@
    Abstract = The name to display in the welcome message.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <LiteralData>
@@ -34,7 +34,7 @@
   [result]
    Title = The string
    Abstract = The string created by service.
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <LiteralData>

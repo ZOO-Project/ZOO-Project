@@ -6,7 +6,7 @@
  statusSupported = true
  serviceProvider = ogr_sp
  serviceType = Python
- <MetaData lang="en">
+ <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
@@ -15,7 +15,7 @@
    Abstract = URI to a set of GML that describes the polygon.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
    title = Mon test
    </MetaData>
    <ComplexData>
@@ -34,7 +34,7 @@
   [Result]
    Title = The convex hull of the geometry
    Abstract = The convex hull of the geometry
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>

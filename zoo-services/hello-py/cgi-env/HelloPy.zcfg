@@ -6,7 +6,7 @@
  statusSupported = true
  serviceProvider = test_service
  serviceType = Python
- <MetaData lang="en">
+ <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
@@ -15,7 +15,7 @@
    Abstract = The name to display in the welcome message.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = My test
    </MetaData>
    <LiteralData>
@@ -32,7 +32,7 @@
   [Result]
    Title = The welcome message
    Abstract = The welcome message created by service.
-   <MetaData lang="en">
+   <MetaData>
     title = My test
    </MetaData>
    <LiteralData>

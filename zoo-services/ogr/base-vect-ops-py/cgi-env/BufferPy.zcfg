@@ -7,7 +7,7 @@
  statusSupported = true
  serviceProvider = ogr_sp
  serviceType = Python
- <MetaData lang="en">
+ <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
@@ -16,7 +16,7 @@
    Abstract = URI to a set of GML that describes the polygon.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>
@@ -51,7 +51,7 @@
   [Result]
    Title = Buffered Polygon
    Abstract = GML stream describing the buffered polygon feature.
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>

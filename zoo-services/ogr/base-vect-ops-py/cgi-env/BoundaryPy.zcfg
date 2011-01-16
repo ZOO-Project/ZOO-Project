@@ -15,7 +15,7 @@
    Abstract = URI to a set of GML that describes the polygon.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>
@@ -34,7 +34,7 @@
   [Result]
    Title = The geometry created
    Abstract = The geometry containing the boundary of the geometry on which the method is invoked.
-   <MetaData lang="en">
+   <MetaData>
     title = Mon test  
    </MetaData>   
    <ComplexData>
