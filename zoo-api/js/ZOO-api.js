@@ -114,6 +114,69 @@ ZOO = {
     return destination;
   },
   /**
+   * Function: rad
+   * 
+   * Parameters:
+   * x - {Float}
+   * 
+   * Returns:
+   * {Float}
+   */
+  rad: function(x) {return x*Math.PI/180;},
+  /**
+   * Function: distVincenty
+   * Given two objects representing points with geographic coordinates, this
+   *     calculates the distance between those points on the surface of an
+   *     ellipsoid.
+   * 
+   * Parameters:
+   * p1 - {<ZOO.Geometry.Point>} (or any object with both .x, .y properties)
+   * p2 - {<ZOO.Geometry.Point>} (or any object with both .x, .y properties)
+   * 
+   * Returns:
+   * {Float} The distance (in km) between the two input points as measured on an
+   *     ellipsoid.  Note that the input point objects must be in geographic
+   *     coordinates (decimal degrees) and the return distance is in kilometers.
+   */
+  distVincenty: function(p1, p2) {
+    var a = 6378137, b = 6356752.3142,  f = 1/298.257223563;
+    var L = ZOO.rad(p2.x - p1.y);
+    var U1 = Math.atan((1-f) * Math.tan(ZOO.rad(p1.y)));
+    var U2 = Math.atan((1-f) * Math.tan(ZOO.rad(p2.y)));
+    var sinU1 = Math.sin(U1), cosU1 = Math.cos(U1);
+    var sinU2 = Math.sin(U2), cosU2 = Math.cos(U2);
+    var lambda = L, lambdaP = 2*Math.PI;
+    var iterLimit = 20;
+    while (Math.abs(lambda-lambdaP) > 1e-12 && --iterLimit>0) {
+        var sinLambda = Math.sin(lambda), cosLambda = Math.cos(lambda);
+        var sinSigma = Math.sqrt((cosU2*sinLambda) * (cosU2*sinLambda) +
+        (cosU1*sinU2-sinU1*cosU2*cosLambda) * (cosU1*sinU2-sinU1*cosU2*cosLambda));
+        if (sinSigma==0) {
+            return 0;  // co-incident points
+        }
+        var cosSigma = sinU1*sinU2 + cosU1*cosU2*cosLambda;
+        var sigma = Math.atan2(sinSigma, cosSigma);
+        var alpha = Math.asin(cosU1 * cosU2 * sinLambda / sinSigma);
+        var cosSqAlpha = Math.cos(alpha) * Math.cos(alpha);
+        var cos2SigmaM = cosSigma - 2*sinU1*sinU2/cosSqAlpha;
+        var C = f/16*cosSqAlpha*(4+f*(4-3*cosSqAlpha));
+        lambdaP = lambda;
+        lambda = L + (1-C) * f * Math.sin(alpha) *
+        (sigma + C*sinSigma*(cos2SigmaM+C*cosSigma*(-1+2*cos2SigmaM*cos2SigmaM)));
+    }
+    if (iterLimit==0) {
+        return NaN;  // formula failed to converge
+    }
+    var uSq = cosSqAlpha * (a*a - b*b) / (b*b);
+    var A = 1 + uSq/16384*(4096+uSq*(-768+uSq*(320-175*uSq)));
+    var B = uSq/1024 * (256+uSq*(-128+uSq*(74-47*uSq)));
+    var deltaSigma = B*sinSigma*(cos2SigmaM+B/4*(cosSigma*(-1+2*cos2SigmaM*cos2SigmaM)-
+        B/6*cos2SigmaM*(-3+4*sinSigma*sinSigma)*(-3+4*cos2SigmaM*cos2SigmaM)));
+    var s = b*A*(sigma-deltaSigma);
+    var d = s.toFixed(3)/1000; // round to 1mm precision
+    return d;
+  },
+  /**
    * Function: Class
    * Method used to create ZOO classes. Includes support for
    *     multiple inheritance.
@@ -668,7 +731,7 @@ ZOO.Projection = ZOO.Class({
    */
   projCode: null,
   /**
-   * Constructor: OpenLayers.Projection
+   * Constructor: ZOO.Projection
    * This class offers several methods for interacting with a wrapped 
    *     zoo-pro4js projection object. 
    *
@@ -749,8 +812,8 @@ ZOO.Projection = ZOO.Class({
  * Parameters:
  * point - {{ZOO.Geometry.Point> | Object} An object with x and y
  *     properties representing coordinates in those dimensions.
- * sourceProj - {OpenLayers.Projection} Source map coordinate system
- * destProj - {OpenLayers.Projection} Destination map coordinate system
+ * sourceProj - {ZOO.Projection} Source map coordinate system
+ * destProj - {ZOO.Projection} Destination map coordinate system
  *
  * Returns:
  * point - {object} A transformed coordinate.  The original point is modified.
@@ -972,6 +1035,7 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
     return pieces.join('');
   },
   /**
+   * Property: extract
    * Object with properties corresponding to the geometry types.
    * Property values are functions that do the actual data extraction.
    */
@@ -1056,14 +1120,19 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
     }
   },
   /**
+   * Property: parse
    * Object with properties corresponding to the geometry types.
-   * Property values are functions that do the actual parsing.
+   *     Property values are functions that do the actual parsing.
    */
   parse: {
     /**
+     * Method: parse.point
      * Return point feature given a point WKT fragment.
-     * @param {String} str A WKT fragment representing the point
-     * @returns {<ZOO.Feature>} A point feature
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the point
+     * Returns:
+     * {<ZOO.Feature>} A point feature
      */
     'point': function(str) {
        var coords = ZOO.String.trim(str).split(this.regExes.spaces);
@@ -1072,9 +1141,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
             );
     },
     /**
+     * Method: parse.multipoint
      * Return a multipoint feature given a multipoint WKT fragment.
-     * @param {String} A WKT fragment representing the multipoint
-     * @returns {<ZOO.Feature>} A multipoint feature
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the multipoint
+     *
+     * Returns:
+     * {<ZOO.Feature>} A multipoint feature
      */
     'multipoint': function(str) {
        var points = ZOO.String.trim(str).split(',');
@@ -1087,9 +1161,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
            );
     },
     /**
+     * Method: parse.linestring
      * Return a linestring feature given a linestring WKT fragment.
-     * @param {String} A WKT fragment representing the linestring
-     * @returns {<ZOO.Feature>} A linestring feature
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the linestring
+     *
+     * Returns:
+     * {<ZOO.Feature>} A linestring feature
      */
     'linestring': function(str) {
       var points = ZOO.String.trim(str).split(',');
@@ -1102,9 +1181,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
           );
     },
     /**
+     * Method: parse.multilinestring
      * Return a multilinestring feature given a multilinestring WKT fragment.
-     * @param {String} A WKT fragment representing the multilinestring
-     * @returns {<ZOO.Feature>} A multilinestring feature
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the multilinestring
+     *
+     * Returns:
+     * {<ZOO.Feature>} A multilinestring feature
      */
     'multilinestring': function(str) {
       var line;
@@ -1119,9 +1203,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
           );
     },
     /**
+     * Method: parse.polygon
      * Return a polygon feature given a polygon WKT fragment.
-     * @param {String} A WKT fragment representing the polygon
-     * @returns {<ZOO.Feature>} A polygon feature
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the polygon
+     *
+     * Returns:
+     * {<ZOO.Feature>} A polygon feature
      */
     'polygon': function(str) {
        var ring, linestring, linearring;
@@ -1138,10 +1227,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
            );
     },
     /**
+     * Method: parse.multipolygon
      * Return a multipolygon feature given a multipolygon WKT fragment.
-     * @param {String} A WKT fragment representing the multipolygon
-     * @returns {<ZOO.Feature>} A multipolygon feature
-     * @private
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the multipolygon
+     *
+     * Returns:
+     * {<ZOO.Feature>} A multipolygon feature
      */
     'multipolygon': function(str) {
       var polygon;
@@ -1156,9 +1249,14 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
           );
     },
     /**
+     * Method: parse.geometrycollection
      * Return an array of features given a geometrycollection WKT fragment.
-     * @param {String} A WKT fragment representing the geometrycollection
-     * @returns {Array} An array of ZOO.Feature
+     *
+     * Parameters:
+     * str - {String} A WKT fragment representing the geometrycollection
+     *
+     * Returns:
+     * {Array} An array of ZOO.Feature
      */
     'geometrycollection': function(str) {
       // separate components of the collection with |
@@ -1179,23 +1277,91 @@ ZOO.Format.WKT = ZOO.Class(ZOO.Format, {
  *     <ZOO.Format.JSON> constructor.
  *
  * Inherits from:
- *  - <OpenLayers.Format>
+ *  - <ZOO.Format>
  */
 ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
+  /**
+   * Property: indent
+   * {String} For "pretty" printing, the indent string will be used once for
+   *     each indentation level.
+   */
   indent: "    ",
+  /**
+   * Property: space
+   * {String} For "pretty" printing, the space string will be used after
+   *     the ":" separating a name/value pair.
+   */
   space: " ",
+  /**
+   * Property: newline
+   * {String} For "pretty" printing, the newline string will be used at the
+   *     end of each name/value pair or array item.
+   */
   newline: "\n",
+  /**
+   * Property: level
+   * {Integer} For "pretty" printing, this is incremented/decremented during
+   *     serialization.
+   */
   level: 0,
+  /**
+   * Property: pretty
+   * {Boolean} Serialize with extra whitespace for structure.  This is set
+   *     by the <write> method.
+   */
   pretty: false,
+  /**
+   * Constructor: ZOO.Format.JSON
+   * Create a new parser for JSON.
+   *
+   * Parameters:
+   * options - {Object} An optional object whose properties will be set on
+   *     this instance.
+   */
   initialize: function(options) {
     ZOO.Format.prototype.initialize.apply(this, [options]);
   },
+  /**
+   * Method: read
+   * Deserialize a json string.
+   *
+   * Parameters:
+   * json - {String} A JSON string
+   * filter - {Function} A function which will be called for every key and
+   *     value at every level of the final result. Each value will be
+   *     replaced by the result of the filter function. This can be used to
+   *     reform generic objects into instances of classes, or to transform
+   *     date strings into Date objects.
+   *     
+   * Returns:
+   * {Object} An object, array, string, or number .
+   */
   read: function(json, filter) {
+    /**
+     * Parsing happens in three stages. In the first stage, we run the text
+     *     against a regular expression which looks for non-JSON
+     *     characters. We are especially concerned with '()' and 'new'
+     *     because they can cause invocation, and '=' because it can cause
+     *     mutation. But just to be safe, we will reject all unexpected
+     *     characters.
+     */
     try {
       if (/^[\],:{}\s]*$/.test(json.replace(/\\["\\\/bfnrtu]/g, '@').
                           replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
                           replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+        /**
+         * In the second stage we use the eval function to compile the
+         *     text into a JavaScript structure. The '{' operator is
+         *     subject to a syntactic ambiguity in JavaScript - it can
+         *     begin a block or an object literal. We wrap the text in
+         *     parens to eliminate the ambiguity.
+         */
         var object = eval('(' + json + ')');
+        /**
+         * In the optional third stage, we recursively walk the new
+         *     structure, passing each name/value pair to a filter
+         *     function for possible transformation.
+         */
         if(typeof filter === 'function') {
           function walk(k, v) {
             if(v && typeof v === 'object') {
@@ -1219,6 +1385,19 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
     }
     return null;
   },
+  /**
+   * Method: write
+   * Serialize an object into a JSON string.
+   *
+   * Parameters:
+   * value - {String} The object, array, string, number, boolean or date
+   *     to be serialized.
+   * pretty - {Boolean} Structure the output with newlines and indentation.
+   *     Default is false.
+   *
+   * Returns:
+   * {String} The JSON string representation of the input value.
+   */
   write: function(value, pretty) {
     this.pretty = !!pretty;
     var json = null;
@@ -1232,6 +1411,13 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
     }
     return json;
   },
+  /**
+   * Method: writeIndent
+   * Output an indentation string depending on the indentation level.
+   *
+   * Returns:
+   * {String} An appropriate indentation string.
+   */
   writeIndent: function() {
     var pieces = [];
     if(this.pretty) {
@@ -1241,13 +1427,42 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
     }
     return pieces.join('');
   },
+  /**
+   * Method: writeNewline
+   * Output a string representing a newline if in pretty printing mode.
+   *
+   * Returns:
+   * {String} A string representing a new line.
+   */
   writeNewline: function() {
     return (this.pretty) ? this.newline : '';
   },
+  /**
+   * Method: writeSpace
+   * Output a string representing a space if in pretty printing mode.
+   *
+   * Returns:
+   * {String} A space.
+   */
   writeSpace: function() {
     return (this.pretty) ? this.space : '';
   },
+  /**
+   * Property: serialize
+   * Object with properties corresponding to the serializable data types.
+   *     Property values are functions that do the actual serializing.
+   */
   serialize: {
+    /**
+     * Method: serialize.object
+     * Transform an object into a JSON string.
+     *
+     * Parameters:
+     * object - {Object} The object to be serialized.
+     * 
+     * Returns:
+     * {String} A JSON string representing the object.
+     */
     'object': function(object) {
        // three special objects that we want to treat differently
        if(object == null)
@@ -1281,6 +1496,16 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
        pieces.push(this.writeNewline(), this.writeIndent(), '}');
        return pieces.join('');
     },
+    /**
+     * Method: serialize.array
+     * Transform an array into a JSON string.
+     *
+     * Parameters:
+     * array - {Array} The array to be serialized
+     * 
+     * Returns:
+     * {String} A JSON string representing the array.
+     */
     'array': function(array) {
       var json;
       var pieces = ['['];
@@ -1299,6 +1524,16 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
       pieces.push(this.writeNewline(), this.writeIndent(), ']');
       return pieces.join('');
     },
+    /**
+     * Method: serialize.string
+     * Transform a string into a JSON string.
+     *
+     * Parameters:
+     * string - {String} The string to be serialized
+     * 
+     * Returns:
+     * {String} A JSON string representing the string.
+     */
     'string': function(string) {
       var m = {
                 '\b': '\\b',
@@ -1322,12 +1557,42 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
       }
       return '"' + string + '"';
     },
+    /**
+     * Method: serialize.number
+     * Transform a number into a JSON string.
+     *
+     * Parameters:
+     * number - {Number} The number to be serialized.
+     *
+     * Returns:
+     * {String} A JSON string representing the number.
+     */
     'number': function(number) {
       return isFinite(number) ? String(number) : "null";
     },
+    /**
+     * Method: serialize.boolean
+     * Transform a boolean into a JSON string.
+     *
+     * Parameters:
+     * bool - {Boolean} The boolean to be serialized.
+     * 
+     * Returns:
+     * {String} A JSON string representing the boolean.
+     */
     'boolean': function(bool) {
       return String(bool);
     },
+    /**
+     * Method: serialize.date
+     * Transform a date into a JSON string.
+     *
+     * Parameters:
+     * date - {Date} The date to be serialized.
+     * 
+     * Returns:
+     * {String} A JSON string representing the date.
+     */
     'date': function(date) {    
       function format(number) {
         // Format integers to have at least two digits.
@@ -1343,10 +1608,51 @@ ZOO.Format.JSON = ZOO.Class(ZOO.Format, {
   },
   CLASS_NAME: 'ZOO.Format.JSON'
 });
+/**
+ * Class: ZOO.Format.GeoJSON
+ * Read and write GeoJSON. Create a new parser with the
+ *     <ZOO.Format.GeoJSON> constructor.
+ *
+ * Inherits from:
+ *  - <ZOO.Format.JSON>
+ */
 ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
+  /**
+   * Constructor: ZOO.Format.GeoJSON
+   * Create a new parser for GeoJSON.
+   *
+   * Parameters:
+   * options - {Object} An optional object whose properties will be set on
+   *     this instance.
+   */
   initialize: function(options) {
     ZOO.Format.JSON.prototype.initialize.apply(this, [options]);
   },
+  /**
+   * Method: read
+   * Deserialize a GeoJSON string.
+   *
+   * Parameters:
+   * json - {String} A GeoJSON string
+   * type - {String} Optional string that determines the structure of
+   *     the output.  Supported values are "Geometry", "Feature", and
+   *     "FeatureCollection".  If absent or null, a default of
+   *     "FeatureCollection" is assumed.
+   * filter - {Function} A function which will be called for every key and
+   *     value at every level of the final result. Each value will be
+   *     replaced by the result of the filter function. This can be used to
+   *     reform generic objects into instances of classes, or to transform
+   *     date strings into Date objects.
+   *
+   * Returns: 
+   * {Object} The return depends on the value of the type argument. If type
+   *     is "FeatureCollection" (the default), the return will be an array
+   *     of <ZOO.Feature>. If type is "Geometry", the input json
+   *     must represent a single geometry, and the return will be an
+   *     <ZOO.Geometry>.  If type is "Feature", the input json must
+   *     represent a single feature, and the return will be an
+   *     <ZOO.Feature>.
+   */
   read: function(json, type, filter) {
     type = (type) ? type : "FeatureCollection";
     var results = null;
@@ -1356,16 +1662,16 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
     else
       obj = json;
     if(!obj) {
-      //OpenLayers.Console.error("Bad JSON: " + json);
+      //ZOO.Console.error("Bad JSON: " + json);
     } else if(typeof(obj.type) != "string") {
-      //OpenLayers.Console.error("Bad GeoJSON - no type: " + json);
+      //ZOO.Console.error("Bad GeoJSON - no type: " + json);
     } else if(this.isValidType(obj, type)) {
       switch(type) {
         case "Geometry":
           try {
             results = this.parseGeometry(obj);
           } catch(err) {
-            //OpenLayers.Console.error(err);
+            //ZOO.Console.error(err);
           }
           break;
         case "Feature":
@@ -1373,7 +1679,7 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
             results = this.parseFeature(obj);
             results.type = "Feature";
           } catch(err) {
-            //OpenLayers.Console.error(err);
+            //ZOO.Console.error(err);
           }
           break;
         case "FeatureCollection":
@@ -1385,7 +1691,7 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
                 results.push(this.parseFeature(obj));
               } catch(err) {
                 results = null;
-                //OpenLayers.Console.error(err);
+                //ZOO.Console.error(err);
               }
               break;
             case "FeatureCollection":
@@ -1394,7 +1700,7 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
                   results.push(this.parseFeature(obj.features[i]));
                 } catch(err) {
                   results = null;
-                  //OpenLayers.Console.error(err);
+                  //ZOO.Console.error(err);
                 }
               }
               break;
@@ -1404,7 +1710,7 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
                 results.push(new ZOO.Feature(geom));
               } catch(err) {
                 results = null;
-                //OpenLayers.Console.error(err);
+                //ZOO.Console.error(err);
               }
           }
           break;
@@ -1412,6 +1718,13 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
     }
     return results;
   },
+  /**
+   * Method: isValidType
+   * Check if a GeoJSON object is a valid representative of the given type.
+   *
+   * Returns:
+   * {Boolean} The object is valid GeoJSON object of the given type.
+   */
   isValidType: function(obj, type) {
     var valid = false;
     switch(type) {
@@ -1421,7 +1734,7 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
               "Polygon", "MultiPolygon", "Box", "GeometryCollection"],
               obj.type) == -1) {
           // unsupported geometry type
-          //OpenLayers.Console.error("Unsupported geometry type: " +obj.type);
+          //ZOO.Console.error("Unsupported geometry type: " +obj.type);
         } else {
           valid = true;
         }
@@ -1435,11 +1748,22 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
         if(obj.type == type) {
           valid = true;
         } else {
-          //OpenLayers.Console.error("Cannot convert types from " +obj.type + " to " + type);
+          //ZOO.Console.error("Cannot convert types from " +obj.type + " to " + type);
         }
     }
     return valid;
   },
+  /**
+   * Method: parseFeature
+   * Convert a feature object from GeoJSON into an
+   *     <ZOO.Feature>.
+   *
+   * Parameters:
+   * obj - {Object} An object created from a GeoJSON object
+   *
+   * Returns:
+   * {<ZOO.Feature>} A feature.
+   */
   parseFeature: function(obj) {
     var feature, geometry, attributes, bbox;
     attributes = (obj.properties) ? obj.properties : {};
@@ -1457,6 +1781,16 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       feature.fid = obj.id;
     return feature;
   },
+  /**
+   * Method: parseGeometry
+   * Convert a geometry object from GeoJSON into an <ZOO.Geometry>.
+   *
+   * Parameters:
+   * obj - {Object} An object created from a GeoJSON object
+   *
+   * Returns: 
+   * {<ZOO.Geometry>} A geometry.
+   */
   parseGeometry: function(obj) {
     if (obj == null)
       return null;
@@ -1498,13 +1832,40 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
     }                       
     return geometry;
   },
+  /**
+   * Property: parseCoords
+   * Object with properties corresponding to the GeoJSON geometry types.
+   *     Property values are functions that do the actual parsing.
+   */
   parseCoords: {
+    /**
+     * Method: parseCoords.point
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.Point>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Point>} A geometry.
+     */
     "point": function(array) {
       if(array.length != 2) {
         throw "Only 2D points are supported: " + array;
       }
       return new ZOO.Geometry.Point(array[0], array[1]);
     },
+    /**
+     * Method: parseCoords.multipoint
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.MultiPoint>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.MultiPoint>} A geometry.
+     */
     "multipoint": function(array) {
       var points = [];
       var p = null;
@@ -1518,6 +1879,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return new ZOO.Geometry.MultiPoint(points);
     },
+    /**
+     * Method: parseCoords.linestring
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.LineString>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.LineString>} A geometry.
+     */
     "linestring": function(array) {
       var points = [];
       var p = null;
@@ -1531,6 +1903,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return new ZOO.Geometry.LineString(points);
     },
+    /**
+     * Method: parseCoords.multilinestring
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.MultiLineString>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.MultiLineString>} A geometry.
+     */
     "multilinestring": function(array) {
       var lines = [];
       var l = null;
@@ -1544,6 +1927,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return new ZOO.Geometry.MultiLineString(lines);
     },
+    /**
+     * Method: parseCoords.polygon
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.Polygon>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Polygon>} A geometry.
+     */
     "polygon": function(array) {
       var rings = [];
       var r, l;
@@ -1558,6 +1952,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return new ZOO.Geometry.Polygon(rings);
     },
+    /**
+     * Method: parseCoords.multipolygon
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.MultiPolygon>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.MultiPolygon>} A geometry.
+     */
     "multipolygon": function(array) {
       var polys = [];
       var p = null;
@@ -1571,6 +1976,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return new ZOO.Geometry.MultiPolygon(polys);
     },
+    /**
+     * Method: parseCoords.box
+     * Convert a coordinate array from GeoJSON into an
+     *     <ZOO.Geometry.Polygon>.
+     *
+     * Parameters:
+     * array - {Object} The coordinates array from the GeoJSON fragment.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Polygon>} A geometry.
+     */
     "box": function(array) {
       if(array.length != 2) {
         throw "GeoJSON box coordinates must have 2 elements";
@@ -1586,6 +2002,20 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       ]);
     }
   },
+  /**
+   * Method: write
+   * Serialize a feature, geometry, array of features into a GeoJSON string.
+   *
+   * Parameters:
+   * obj - {Object} An <ZOO.Feature>, <ZOO.Geometry>,
+   *     or an array of features.
+   * pretty - {Boolean} Structure the output with newlines and indentation.
+   *     Default is false.
+   *
+   * Returns:
+   * {String} The GeoJSON string representation of the input geometry,
+   *     features, or array of features.
+   */
   write: function(obj, pretty) {
     var geojson = {
       "type": null
@@ -1616,6 +2046,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
     return ZOO.Format.JSON.prototype.write.apply(this,
                                                  [geojson, pretty]);
   },
+  /**
+   * Method: createCRSObject
+   * Create the CRS object for an object.
+   *
+   * Parameters:
+   * object - {<ZOO.Feature>} 
+   *
+   * Returns:
+   * {Object} An object which can be assigned to the crs property
+   * of a GeoJSON object.
+   */
   createCRSObject: function(object) {
     //var proj = object.layer.projection.toString();
     var proj = object.projection.toString();
@@ -1640,7 +2081,22 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
     }
     return crs;
   },
+  /**
+   * Property: extract
+   * Object with properties corresponding to the GeoJSON types.
+   *     Property values are functions that do the actual value extraction.
+   */
   extract: {
+    /**
+     * Method: extract.feature
+     * Return a partial GeoJSON object representing a single feature.
+     *
+     * Parameters:
+     * feature - {<ZOO.Feature>}
+     *
+     * Returns:
+     * {Object} An object representing the point.
+     */
     'feature': function(feature) {
       var geom = this.extract.geometry.apply(this, [feature.geometry]);
       return {
@@ -1650,6 +2106,16 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
         "geometry": geom
       };
     },
+    /**
+     * Method: extract.geometry
+     * Return a GeoJSON object representing a single geometry.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry>}
+     *
+     * Returns:
+     * {Object} An object representing the geometry.
+     */
     'geometry': function(geometry) {
       if (geometry == null)
         return null;
@@ -1673,9 +2139,30 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
         };
       return json;
     },
+    /**
+     * Method: extract.point
+     * Return an array of coordinates from a point.
+     *
+     * Parameters:
+     * point - {<ZOO.Geometry.Point>}
+     *
+     * Returns: 
+     * {Array} An array of coordinates representing the point.
+     */
     'point': function(point) {
       return [point.x, point.y];
     },
+    /**
+     * Method: extract.multipoint
+     * Return an array of coordinates from a multipoint.
+     *
+     * Parameters:
+     * multipoint - {<ZOO.Geometry.MultiPoint>}
+     *
+     * Returns: 
+     * {Array} An array of point coordinate arrays representing
+     *     the multipoint.
+     */
     'multipoint': function(multipoint) {
       var array = [];
       for(var i=0, len=multipoint.components.length; i<len; ++i) {
@@ -1683,6 +2170,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return array;
     },
+    /**
+     * Method: extract.linestring
+     * Return an array of coordinate arrays from a linestring.
+     *
+     * Parameters:
+     * linestring - {<ZOO.Geometry.LineString>}
+     *
+     * Returns:
+     * {Array} An array of coordinate arrays representing
+     *     the linestring.
+     */
     'linestring': function(linestring) {
       var array = [];
       for(var i=0, len=linestring.components.length; i<len; ++i) {
@@ -1690,6 +2188,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return array;
     },
+    /**
+     * Method: extract.multilinestring
+     * Return an array of linestring arrays from a linestring.
+     * 
+     * Parameters:
+     * multilinestring - {<ZOO.Geometry.MultiLineString>}
+     * 
+     * Returns:
+     * {Array} An array of linestring arrays representing
+     *     the multilinestring.
+     */
     'multilinestring': function(multilinestring) {
       var array = [];
       for(var i=0, len=multilinestring.components.length; i<len; ++i) {
@@ -1697,6 +2206,16 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return array;
     },
+    /**
+     * Method: extract.polygon
+     * Return an array of linear ring arrays from a polygon.
+     *
+     * Parameters:
+     * polygon - {<ZOO.Geometry.Polygon>}
+     * 
+     * Returns:
+     * {Array} An array of linear ring arrays representing the polygon.
+     */
     'polygon': function(polygon) {
       var array = [];
       for(var i=0, len=polygon.components.length; i<len; ++i) {
@@ -1704,6 +2223,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return array;
     },
+    /**
+     * Method: extract.multipolygon
+     * Return an array of polygon arrays from a multipolygon.
+     * 
+     * Parameters:
+     * multipolygon - {<ZOO.Geometry.MultiPolygon>}
+     * 
+     * Returns:
+     * {Array} An array of polygon arrays representing
+     *     the multipolygon
+     */
     'multipolygon': function(multipolygon) {
       var array = [];
       for(var i=0, len=multipolygon.components.length; i<len; ++i) {
@@ -1711,6 +2241,17 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
       }
       return array;
     },
+    /**
+     * Method: extract.collection
+     * Return an array of geometries from a geometry collection.
+     * 
+     * Parameters:
+     * collection - {<ZOO.Geometry.Collection>}
+     * 
+     * Returns:
+     * {Array} An array of geometry objects representing the geometry
+     *     collection.
+     */
     'collection': function(collection) {
       var len = collection.components.length;
       var array = new Array(len);
@@ -1724,12 +2265,51 @@ ZOO.Format.GeoJSON = ZOO.Class(ZOO.Format.JSON, {
   },
   CLASS_NAME: 'ZOO.Format.GeoJSON'
 });
+/**
+ * Class: ZOO.Format.KML
+ * Read/Write KML. Create a new instance with the <ZOO.Format.KML>
+ *     constructor. 
+ * 
+ * Inherits from:
+ *  - <ZOO.Format>
+ */
 ZOO.Format.KML = ZOO.Class(ZOO.Format, {
+  /**
+   * Property: kmlns
+   * {String} KML Namespace to use. Defaults to 2.2 namespace.
+   */
   kmlns: "http://www.opengis.net/kml/2.2",
+  /** 
+   * Property: foldersName
+   * {String} Name of the folders.  Default is "ZOO export".
+   *          If set to null, no name element will be created.
+   */
   foldersName: "ZOO export",
+  /** 
+   * Property: foldersDesc
+   * {String} Description of the folders. Default is "Exported on [date]."
+   *          If set to null, no description element will be created.
+   */
   foldersDesc: "Created on " + new Date(),
+  /** 
+   * Property: placemarksDesc
+   * {String} Name of the placemarks.  Default is "No description available".
+   */
   placemarksDesc: "No description available",
+  /**
+   * Property: extractAttributes
+   * {Boolean} Extract attributes from KML.  Default is true.
+   *           Extracting styleUrls requires this to be set to true
+   */
   extractAttributes: true,
+  /**
+   * Constructor: ZOO.Format.KML
+   * Create a new parser for KML.
+   *
+   * Parameters:
+   * options - {Object} An optional object whose properties will be set on
+   *     this instance.
+   */
   initialize: function(options) {
     // compile regular expressions once instead of every time they are used
     this.regExes = {
@@ -1741,8 +2321,20 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
            kmlIconPalette: (/root:\/\/icons\/palette-(\d+)(\.\w+)/),
            straightBracket: (/\$\[(.*?)\]/g)
     };
+    // KML coordinates are always in longlat WGS84
+    this.externalProjection = new ZOO.Projection("EPSG:4326");
     ZOO.Format.prototype.initialize.apply(this, [options]);
   },
+  /**
+   * APIMethod: read
+   * Read data from a string, and return a list of features. 
+   * 
+   * Parameters: 
+   * data    - {String} data to read/parse.
+   *
+   * Returns:
+   * {Array(<ZOO.Feature>)} List of features.
+   */
   read: function(data) {
     this.features = [];
     data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, "");
@@ -1751,6 +2343,16 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     this.parseFeatures(placemarks);
     return this.features;
   },
+  /**
+   * Method: parseFeatures
+   * Loop through all Placemark nodes and parse them.
+   * Will create a list of features
+   * 
+   * Parameters: 
+   * nodes    - {Array} of {E4XElement} data to read/parse.
+   * options  - {Object} Hash of options
+   * 
+   */
   parseFeatures: function(nodes) {
     var features = new Array(nodes.length());
     for(var i=0, len=nodes.length(); i<len; i++) {
@@ -1760,7 +2362,20 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     }
     this.features = this.features.concat(features);
   },
+  /**
+   * Method: parseFeature
+   * This function is the core of the KML parsing code in ZOO.
+   *     It creates the geometries that are then attached to the returned
+   *     feature, and calls parseAttributes() to get attribute data out.
+   *
+   * Parameters:
+   * node - {E4XElement}
+   *
+   * Returns:
+   * {<ZOO.Feature>} A vector feature.
+   */
   parseFeature: function(node) {
+    // only accept one geometry per feature - look for highest "order"
     var order = ["MultiGeometry", "Polygon", "LineString", "Point"];
     var type, nodeList, geometry, parser;
     for(var i=0, len=order.length; i<len; ++i) {
@@ -1775,9 +2390,11 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
                                this.internalProjection); 
           }                       
         }
+        // stop looking for different geometry types
         break;
       }
     }
+    // construct feature (optionally with attributes)
     var attributes;
     if(this.extractAttributes) {
       attributes = this.parseAttributes(node);
@@ -1788,7 +2405,23 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       feature.fid = fid;
     return feature;
   },
+  /**
+   * Property: parseGeometry
+   * Properties of this object are the functions that parse geometries based
+   *     on their type.
+   */
   parseGeometry: {
+    /**
+     * Method: parseGeometry.point
+     * Given a KML node representing a point geometry, create a ZOO
+     *     point geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A KML Point node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Point>} A point geometry.
+     */
     'point': function(node) {
       var coordString = node.*::coordinates.toString();
       coordString = coordString.replace(this.regExes.removeSpace, "");
@@ -1803,6 +2436,17 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       }
       return point;
     },
+    /**
+     * Method: parseGeometry.linestring
+     * Given a KML node representing a linestring geometry, create a
+     *     ZOO linestring geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A KML LineString node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.LineString>} A linestring geometry.
+     */
     'linestring': function(node, ring) {
       var line = null;
       var coordString = node.*::coordinates.toString();
@@ -1837,6 +2481,17 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       }
       return line;
     },
+    /**
+     * Method: parseGeometry.polygon
+     * Given a KML node representing a polygon geometry, create a
+     *     ZOO polygon geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A KML Polygon node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Polygon>} A polygon geometry.
+     */
     'polygon': function(node) {
       var nodeList = node..*::LinearRing;
       var numRings = nodeList.length();
@@ -1856,7 +2511,18 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       }
       return new ZOO.Geometry.Polygon(components);
     },
-    multigeometry: function(node) {
+    /**
+     * Method: parseGeometry.multigeometry
+     * Given a KML node representing a multigeometry, create a
+     *     ZOO geometry collection.
+     *
+     * Parameters:
+     * node - {E4XElement} A KML MultiGeometry node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Collection>} A geometry collection.
+     */
+    'multigeometry': function(node) {
       var child, parser;
       var parts = [];
       var children = node.*::*;
@@ -1871,6 +2537,15 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       return new ZOO.Geometry.Collection(parts);
     }
   },
+  /**
+   * Method: parseAttributes
+   *
+   * Parameters:
+   * node - {E4XElement}
+   *
+   * Returns:
+   * {Object} An attributes object.
+   */
   parseAttributes: function(node) {
     var attributes = {};
     var edNodes = node.*::ExtendedData;
@@ -1893,6 +2568,18 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     }
     return attributes;
   },
+  /**
+   * Method: parseExtendedData
+   * Parse ExtendedData from KML. Limited support for schemas/datatypes.
+   *     See http://code.google.com/apis/kml/documentation/kmlreference.html#extendeddata
+   *     for more information on extendeddata.
+   *
+   * Parameters:
+   * node - {E4XElement}
+   *
+   * Returns:
+   * {Object} An attributes object.
+   */
   parseExtendedData: function(node) {
     var attributes = {};
     var dataNodes = node.*::Data;
@@ -1910,6 +2597,16 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     }
     return attributes;
   },
+  /**
+   * Method: write
+   * Accept Feature Collection, and return a string. 
+   * 
+   * Parameters:
+   * features - {Array(<ZOO.Feature>} An array of features.
+   *
+   * Returns:
+   * {String} A KML string.
+   */
   write: function(features) {
     if(!(features instanceof Array))
       features = [features];
@@ -1918,11 +2615,20 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     folder.name = this.foldersName;
     folder.description = this.foldersDesc;
     for(var i=0, len=features.length; i<len; ++i) {
-      //folder.appendChild(this.createPlacemarkXML(features[i]));
       folder.Placemark[i] = this.createPlacemark(features[i]);
     }
     return kml.toXMLString();
   },
+  /**
+   * Method: createPlacemark
+   * Creates and returns a KML placemark node representing the given feature. 
+   * 
+   * Parameters:
+   * feature - {<ZOO.Feature>}
+   * 
+   * Returns:
+   * {E4XElement}
+   */
   createPlacemark: function(feature) {
     var placemark = new XML('<Placemark xmlns="'+this.kmlns+'"></Placemark>');
     placemark.name = (feature.attributes.name) ?
@@ -1934,6 +2640,16 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     placemark.*[2] = this.buildGeometryNode(feature.geometry);
     return placemark;
   },
+  /**
+   * Method: buildGeometryNode
+   * Builds and returns a KML geometry node with the given geometry.
+   * 
+   * Parameters:
+   * geometry - {<ZOO.Geometry>}
+   * 
+   * Returns:
+   * {E4XElement}
+   */
   buildGeometryNode: function(geometry) {
     if (this.internalProjection && this.externalProjection) {
       geometry = geometry.clone();
@@ -1949,28 +2665,95 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
     }
     return node;
   },
+  /**
+   * Property: buildGeometry
+   * Object containing methods to do the actual geometry node building
+   *     based on geometry type.
+   */
   buildGeometry: {
+    /**
+     * Method: buildGeometry.point
+     * Given a ZOO point geometry, create a KML point.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.Point>} A point geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML point node.
+     */
     'point': function(geometry) {
       var kml = new XML('<Point xmlns="'+this.kmlns+'"></Point>');
       kml.coordinates = this.buildCoordinatesNode(geometry);
       return kml;
     },
+    /**
+     * Method: buildGeometry.multipoint
+     * Given a ZOO multipoint geometry, create a KML
+     *     GeometryCollection.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.MultiPoint>} A multipoint geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML GeometryCollection node.
+     */
     'multipoint': function(geometry) {
       return this.buildGeometry.collection.apply(this, [geometry]);
     },
+    /**
+     * Method: buildGeometry.linestring
+     * Given a ZOO linestring geometry, create a KML linestring.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.LineString>} A linestring geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML linestring node.
+     */
     'linestring': function(geometry) {
       var kml = new XML('<LineString xmlns="'+this.kmlns+'"></LineString>');
       kml.coordinates = this.buildCoordinatesNode(geometry);
       return kml;
     },
+    /**
+     * Method: buildGeometry.multilinestring
+     * Given a ZOO multilinestring geometry, create a KML
+     *     GeometryCollection.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.MultiLineString>} A multilinestring geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML GeometryCollection node.
+     */
     'multilinestring': function(geometry) {
       return this.buildGeometry.collection.apply(this, [geometry]);
     },
+    /**
+     * Method: buildGeometry.linearring
+     * Given a ZOO linearring geometry, create a KML linearring.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.LinearRing>} A linearring geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML linearring node.
+     */
     'linearring': function(geometry) {
       var kml = new XML('<LinearRing xmlns="'+this.kmlns+'"></LinearRing>');
       kml.coordinates = this.buildCoordinatesNode(geometry);
       return kml;
     },
+    /**
+     * Method: buildGeometry.polygon
+     * Given a ZOO polygon geometry, create a KML polygon.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.Polygon>} A polygon geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML polygon node.
+     */
     'polygon': function(geometry) {
       var kml = new XML('<Polygon xmlns="'+this.kmlns+'"></Polygon>');
       var rings = geometry.components;
@@ -1983,9 +2766,30 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       }
       return kml;
     },
+    /**
+     * Method: buildGeometry.multipolygon
+     * Given a ZOO multipolygon geometry, create a KML
+     *     GeometryCollection.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.Point>} A multipolygon geometry.
+     *
+     * Returns:
+     * {E4XElement} A KML GeometryCollection node.
+     */
     'multipolygon': function(geometry) {
       return this.buildGeometry.collection.apply(this, [geometry]);
     },
+    /**
+     * Method: buildGeometry.collection
+     * Given a ZOO geometry collection, create a KML MultiGeometry.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.Collection>} A geometry collection.
+     *
+     * Returns:
+     * {E4XElement} A KML MultiGeometry node.
+     */
     'collection': function(geometry) {
       var kml = new XML('<MultiGeometry xmlns="'+this.kmlns+'"></MultiGeometry>');
       var child;
@@ -1995,6 +2799,17 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
       return kml;
     }
   },
+  /**
+   * Method: buildCoordinatesNode
+   * Builds and returns the KML coordinates node with the given geometry
+   *     <coordinates>...</coordinates>
+   * 
+   * Parameters:
+   * geometry - {<ZOO.Geometry>}
+   * 
+   * Return:
+   * {E4XElement}
+   */
   buildCoordinatesNode: function(geometry) {
     var cooridnates = new XML('<coordinates xmlns="'+this.kmlns+'"></coordinates>');
     var points = geometry.components;
@@ -2016,8 +2831,24 @@ ZOO.Format.KML = ZOO.Class(ZOO.Format, {
   },
   CLASS_NAME: 'ZOO.Format.KML'
 });
+/**
+ * Class: ZOO.Format.GML
+ * Read/Write GML. Create a new instance with the <ZOO.Format.GML>
+ *     constructor.  Supports the GML simple features profile.
+ * 
+ * Inherits from:
+ *  - <ZOO.Format>
+ */
 ZOO.Format.GML = ZOO.Class(ZOO.Format, {
+  /**
+   * Property: schemaLocation
+   * {String} Schema location for a particular minor version.
+   */
   schemaLocation: "http://www.opengis.net/gml http://schemas.opengis.net/gml/2.1.2/feature.xsd",
+  /**
+   * Property: namespaces
+   * {Object} Mapping of namespace aliases to namespace URIs.
+   */
   namespaces: {
     ogr: "http://ogr.maptools.org/",
     gml: "http://www.opengis.net/gml",
@@ -2025,11 +2856,39 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
     xsi: "http://www.w3.org/2001/XMLSchema-instance",
     wfs: "http://www.opengis.net/wfs" // this is a convenience for reading wfs:FeatureCollection
   },
+  /**
+   * Property: defaultPrefix
+   */
   defaultPrefix: 'ogr',
+  /** 
+   * Property: collectionName
+   * {String} Name of featureCollection element.
+   */
   collectionName: "FeatureCollection",
+  /*
+   * Property: featureName
+   * {String} Element name for features. Default is "sql_statement".
+   */
   featureName: "sql_statement",
+  /**
+   * Property: geometryName
+   * {String} Name of geometry element.  Defaults to "geometryProperty".
+   */
   geometryName: "geometryProperty",
+  /**
+   * Property: xy
+   * {Boolean} Order of the GML coordinate true:(x,y) or false:(y,x)
+   * Changing is not recommended, a new Format should be instantiated.
+   */
   xy: true,
+  /**
+   * Constructor: ZOO.Format.GML
+   * Create a new parser for GML.
+   *
+   * Parameters:
+   * options - {Object} An optional object whose properties will be set on
+   *     this instance.
+   */
   initialize: function(options) {
     // compile regular expressions once instead of every time they are used
     this.regExes = {
@@ -2040,6 +2899,16 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
     };
     ZOO.Format.prototype.initialize.apply(this, [options]);
   },
+  /**
+   * Method: read
+   * Read data from a string, and return a list of features. 
+   * 
+   * Parameters:
+   * data - {String} data to read/parse.
+   *
+   * Returns:
+   * {Array(<ZOO.Feature>)} An array of features.
+   */
   read: function(data) {
     this.features = [];
     data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, "");
@@ -2056,6 +2925,15 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
     }
     return features;
   },
+  /**
+   * Method: parseFeature
+   * This function is the core of the GML parsing code in ZOO.
+   *    It creates the geometries that are then attached to the returned
+   *    feature, and calls parseAttributes() to get attribute data out.
+   *    
+   * Parameters:
+   * node - {E4XElement} A GML feature node. 
+   */
   parseFeature: function(node) {
     // only accept one geometry per feature - look for highest "order"
     var gmlns = Namespace(this.namespaces['gml']);
@@ -2075,17 +2953,34 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
                                this.internalProjection); 
           }                       
         }
+        // stop looking for different geometry types
         break;
       }
     }
     var attributes;
     if(this.extractAttributes) {
-      //attributes = this.parseAttributes(node);
+      attributes = this.parseAttributes(node);
     }
     var feature = new ZOO.Feature(geometry, attributes);
     return feature;
   },
+  /**
+   * Property: parseGeometry
+   * Properties of this object are the functions that parse geometries based
+   *     on their type.
+   */
   parseGeometry: {
+    /**
+     * Method: parseGeometry.point
+     * Given a GML node representing a point geometry, create a ZOO
+     *     point geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Point>} A point geometry.
+     */
     'point': function(node) {
       /**
        * Three coordinate variations to consider:
@@ -2130,6 +3025,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       else
         return new ZOO.Geometry.Point(coords[1],coords[0],coords[2]);
     },
+    /**
+     * Method: parseGeometry.multipoint
+     * Given a GML node representing a multipoint geometry, create a
+     *     ZOO multipoint geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.MultiPoint>} A multipoint geometry.
+     */
     'multipoint': function(node) {
       var nodeList = node..*::Point;
       var components = [];
@@ -2143,6 +3049,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return new ZOO.Geometry.MultiPoint(components);
     },
+    /**
+     * Method: parseGeometry.linestring
+     * Given a GML node representing a linestring geometry, create a
+     *     ZOO linestring geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.LineString>} A linestring geometry.
+     */
     'linestring': function(node, ring) {
       /**
        * Two coordinate variations to consider:
@@ -2199,6 +3116,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return line;
     },
+    /**
+     * Method: parseGeometry.multilinestring
+     * Given a GML node representing a multilinestring geometry, create a
+     *     ZOO multilinestring geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.MultiLineString>} A multilinestring geometry.
+     */
     'multilinestring': function(node) {
       var nodeList = node..*::LineString;
       var components = [];
@@ -2212,6 +3140,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return new ZOO.Geometry.MultiLineString(components);
     },
+    /**
+     * Method: parseGeometry.polygon
+     * Given a GML node representing a polygon geometry, create a
+     *     ZOO polygon geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Polygon>} A polygon geometry.
+     */
     'polygon': function(node) {
       nodeList = node..*::LinearRing;
       var components = [];
@@ -2226,6 +3165,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return new ZOO.Geometry.Polygon(components);
     },
+    /**
+     * Method: parseGeometry.multipolygon
+     * Given a GML node representing a multipolygon geometry, create a
+     *     ZOO multipolygon geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.MultiPolygon>} A multipolygon geometry.
+     */
     'multipolygon': function(node) {
       var nodeList = node..*::Polygon;
       var components = [];
@@ -2239,6 +3189,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return new ZOO.Geometry.MultiPolygon(components);
     },
+    /**
+     * Method: parseGeometry.polygon
+     * Given a GML node representing an envelope, create a
+     *     ZOO polygon geometry.
+     *
+     * Parameters:
+     * node - {E4XElement} A GML node.
+     *
+     * Returns:
+     * {<ZOO.Geometry.Polygon>} A polygon geometry.
+     */
     'envelope': function(node) {
       var components = [];
       var coordString;
@@ -2285,6 +3246,47 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       return envelope;
     }
   },
+  /**
+   * Method: parseAttributes
+   *
+   * Parameters:
+   * node - {<E4XElement>}
+   *
+   * Returns:
+   * {Object} An attributes object.
+   */
+  parseAttributes: function(node) {
+    var attributes = {};
+    // assume attributes are children of the first type 1 child
+    var childNode = node.*::*[0];
+    var child, grandchildren;
+    var children = childNode.*::*;
+    for(var i=0, len=children.length(); i<len; ++i) {
+      child = children[i];
+      grandchildren = child..*::*;
+      if(grandchildren.length() == 1) {
+        var name = child.localName();
+        var value = child.toString();
+        if (value) {
+          value = value.replace(this.regExes.trimSpace, "");
+          attributes[name] = value;
+        } else
+          attributes[name] = null;
+      }
+    }
+    return attributes;
+  },
+  /**
+   * Method: write
+   * Generate a GML document string given a list of features. 
+   * 
+   * Parameters:
+   * features - {Array(<ZOO.Feature>)} List of features to
+   *     serialize into a string.
+   *
+   * Returns:
+   * {String} A string representing the GML document.
+   */
   write: function(features) {
     if(!(features instanceof Array)) {
       features = [features];
@@ -2293,11 +3295,21 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
     var name = pfx+':'+this.collectionName;
     var gml = new XML('<'+name+' xmlns:'+pfx+'="'+this.namespaces[pfx]+'" xmlns:gml="'+this.namespaces['gml']+'" xmlns:xsi="'+this.namespaces['xsi']+'" xsi:schemaLocation="'+this.schemaLocation+'"></'+name+'>');
     for(var i=0; i<features.length; i++) {
-      gml.*::*[i] = this.createFeatureXML(features[i]);
+      gml.*::*[i] = this.createFeature(features[i]);
     }
     return gml.toXMLString();
   },
-  createFeatureXML: function(feature) {
+  /** 
+   * Method: createFeature
+   * Accept an ZOO.Feature, and build a GML node for it.
+   *
+   * Parameters:
+   * feature - {<ZOO.Feature>} The feature to be built as GML.
+   *
+   * Returns:
+   * {E4XElement} A node reprensting the feature in GML.
+   */
+  createFeature: function(feature) {
     var pfx = this.defaultPrefix;
     var name = pfx+':'+this.featureName;
     var fid = feature.fid || feature.id;
@@ -2310,6 +3322,15 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
     }
     return gml;
   },
+  /**
+   * Method: buildGeometryNode
+   *
+   * Parameters:
+   * geometry - {<ZOO.Geometry>} The geometry to be built as GML.
+   *
+   * Returns:
+   * {E4XElement} A node reprensting the geometry in GML.
+   */
   buildGeometryNode: function(geometry) {
     if (this.externalProjection && this.internalProjection) {
       geometry = geometry.clone();
@@ -2326,12 +3347,37 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       gml.*::* = builder.apply(this, [geometry]);
     return gml;
   },
+  /**
+   * Property: buildGeometry
+   * Object containing methods to do the actual geometry node building
+   *     based on geometry type.
+   */
   buildGeometry: {
+    /**
+     * Method: buildGeometry.point
+     * Given a ZOO point geometry, create a GML point.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.Point>} A point geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML point node.
+     */
     'point': function(geometry) {
       var gml = new XML('<gml:Point xmlns:gml="'+this.namespaces['gml']+'"></gml:Point>');
       gml.*::*[0] = this.buildCoordinatesNode(geometry);
       return gml;
     },
+    /**
+     * Method: buildGeometry.multipoint
+     * Given a ZOO multipoint geometry, create a GML multipoint.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.MultiPoint>} A multipoint geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML multipoint node.
+     */
     'multipoint': function(geometry) {
       var gml = new XML('<gml:MultiPoint xmlns:gml="'+this.namespaces['gml']+'"></gml:MultiPoint>');
       var points = geometry.components;
@@ -2343,11 +3389,33 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return gml;            
     },
+    /**
+     * Method: buildGeometry.linestring
+     * Given a ZOO linestring geometry, create a GML linestring.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.LineString>} A linestring geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML linestring node.
+     */
     'linestring': function(geometry) {
       var gml = new XML('<gml:LineString xmlns:gml="'+this.namespaces['gml']+'"></gml:LineString>');
       gml.*::*[0] = this.buildCoordinatesNode(geometry);
       return gml;
     },
+    /**
+     * Method: buildGeometry.multilinestring
+     * Given a ZOO multilinestring geometry, create a GML
+     *     multilinestring.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.MultiLineString>} A multilinestring
+     *     geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML multilinestring node.
+     */
     'multilinestring': function(geometry) {
       var gml = new XML('<gml:MultiLineString xmlns:gml="'+this.namespaces['gml']+'"></gml:MultiLineString>');
       var lines = geometry.components;
@@ -2359,11 +3427,31 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return gml;            
     },
+    /**
+     * Method: buildGeometry.linearring
+     * Given a ZOO linearring geometry, create a GML linearring.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.LinearRing>} A linearring geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML linearring node.
+     */
     'linearring': function(geometry) {
       var gml = new XML('<gml:LinearRing xmlns:gml="'+this.namespaces['gml']+'"></gml:LinearRing>');
       gml.*::*[0] = this.buildCoordinatesNode(geometry);
       return gml;
     },
+    /**
+     * Method: buildGeometry.polygon
+     * Given an ZOO polygon geometry, create a GML polygon.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.Polygon>} A polygon geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML polygon node.
+     */
     'polygon': function(geometry) {
       var gml = new XML('<gml:Polygon xmlns:gml="'+this.namespaces['gml']+'"></gml:Polygon>');
       var rings = geometry.components;
@@ -2376,6 +3464,17 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       }
       return gml;
     },
+    /**
+     * Method: buildGeometry.multipolygon
+     * Given a ZOO multipolygon geometry, create a GML multipolygon.
+     *
+     * Parameters:
+     * geometry - {<ZOO.Geometry.MultiPolygon>} A multipolygon
+     *     geometry.
+     *
+     * Returns:
+     * {E4XElement} A GML multipolygon node.
+     */
     'multipolygon': function(geometry) {
       var gml = new XML('<gml:MultiPolygon xmlns:gml="'+this.namespaces['gml']+'"></gml:MultiPolygon>');
       var polys = geometry.components;
@@ -2386,13 +3485,20 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
         gml.*::*[i] = polyMember;
       }
       return gml;            
-    },
-    'bounds': function(bounds) {
-      var gml = new XML('<gml:Box xmlns:gml="'+this.namespaces['gml']+'"></gml:Box>');
-      gml.*::*[0] = this.buildCoordinatesNode(bounds);
-      return gml;
     }
   },
+  /**
+   * Method: buildCoordinatesNode
+   * builds the coordinates XmlNode
+   * (code)
+   * <gml:coordinates decimal="." cs="," ts=" ">...</gml:coordinates>
+   * (end)
+   * Parameters: 
+   * geometry - {<ZOO.Geometry>} 
+   *
+   * Returns:
+   * {E4XElement} created E4XElement
+   */
   buildCoordinatesNode: function(geometry) {
     var parts = [];
     if(geometry instanceof ZOO.Bounds){
@@ -2408,14 +3514,39 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
   },
   CLASS_NAME: 'ZOO.Format.GML'
 });
+/**
+ * Class: ZOO.Format.WPS
+ * Read/Write WPS. Create a new instance with the <ZOO.Format.WPS>
+ *     constructor. Supports only parseExecuteResponse.
+ * 
+ * Inherits from:
+ *  - <ZOO.Format>
+ */
 ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
+  /**
+   * Property: schemaLocation
+   * {String} Schema location for a particular minor version.
+   */
   schemaLocation: "http://www.opengis.net/wps/1.0.0/../wpsExecute_request.xsd",
+  /**
+   * Property: namespaces
+   * {Object} Mapping of namespace aliases to namespace URIs.
+   */
   namespaces: {
     ows: "http://www.opengis.net/ows/1.1",
     wps: "http://www.opengis.net/wps/1.0.0",
     xlink: "http://www.w3.org/1999/xlink",
     xsi: "http://www.w3.org/2001/XMLSchema-instance",
   },
+  /**
+   * Method: read
+   *
+   * Parameters:
+   * data - {String} A WPS xml document
+   *
+   * Returns:
+   * {Object} Execute response.
+   */
   read:function(data) {
     data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, "");
     data = new XML(data);
@@ -2426,6 +3557,15 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
         return null;
     }
   },
+  /**
+   * Method: parseExecuteResponse
+   *
+   * Parameters:
+   * node - {E4XElement} A WPS ExecuteResponse document
+   *
+   * Returns:
+   * {Object} Execute response.
+   */
   parseExecuteResponse: function(node) {
     var outputs = node.*::ProcessOutputs.*::Output;
     if (outputs.length() > 0) {
@@ -2438,7 +3578,21 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
     } else
       return null;
   },
+  /**
+   * Property: parseData
+   * Object containing methods to analyse data response.
+   */
   parseData: {
+    /**
+     * Method: parseData.complexdata
+     * Given an Object representing the WPS complex data response.
+     *
+     * Parameters:
+     * node - {E4XElement} A WPS node.
+     *
+     * Returns:
+     * {Object} A WPS complex data response.
+     */
     'complexdata': function(node) {
       var result = {value:node.toString()};
       if (node.@mimeType.length()>0)
@@ -2449,6 +3603,16 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
         result.schema = node.@schema;
       return result;
     },
+    /**
+     * Method: parseData.literaldata
+     * Given an Object representing the WPS literal data response.
+     *
+     * Parameters:
+     * node - {E4XElement} A WPS node.
+     *
+     * Returns:
+     * {Object} A WPS literal data response.
+     */
     'literaldata': function(node) {
       var result = {value:node.toString()};
       if (node.@dataType.length()>0)
@@ -2461,25 +3625,79 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
   CLASS_NAME: 'ZOO.Format.WPS'
 });
 
-
+/**
+ * Class: ZOO.Feature
+ * Vector features use the ZOO.Geometry classes as geometry description.
+ * They have an 'attributes' property, which is the data object
+ */
 ZOO.Feature = ZOO.Class({
+  /** 
+   * Property: fid 
+   * {String} 
+   */
   fid: null,
+  /** 
+   * Property: geometry 
+   * {<ZOO.Geometry>} 
+   */
   geometry: null,
+  /** 
+   * Property: attributes 
+   * {Object} This object holds arbitrary properties that describe the
+   *     feature.
+   */
   attributes: null,
+  /**
+   * Property: bounds
+   * {<ZOO.Bounds>} The box bounding that feature's geometry, that
+   *     property can be set by an <ZOO.Format> object when
+   *     deserializing the feature, so in most cases it represents an
+   *     information set by the server. 
+   */
   bounds: null,
+  /** 
+   * Constructor: ZOO.Feature
+   * Create a vector feature. 
+   * 
+   * Parameters:
+   * geometry - {<ZOO.Geometry>} The geometry that this feature
+   *     represents.
+   * attributes - {Object} An optional object that will be mapped to the
+   *     <attributes> property. 
+   */
   initialize: function(geometry, attributes) {
     this.geometry = geometry ? geometry : null;
     this.attributes = {};
     if (attributes)
       this.attributes = ZOO.extend(this.attributes,attributes);
   },
+  /** 
+   * Method: destroy
+   * nullify references to prevent circular references and memory leaks
+   */
   destroy: function() {
     this.geometry = null;
   },
+  /**
+   * Method: clone
+   * Create a clone of this vector feature.  Does not set any non-standard
+   *     properties.
+   *
+   * Returns:
+   * {<ZOO.Feature>} An exact clone of this vector feature.
+   */
   clone: function () {
     return new ZOO.Feature(this.geometry ? this.geometry.clone() : null,
             this.attributes);
   },
+  /**
+   * Method: move
+   * Moves the feature and redraws it at its new location
+   *
+   * Parameters:
+   * x - {Float}
+   * y - {Float}
+   */
   move: function(x, y) {
     if(!this.geometry.move)
       return;
@@ -2490,20 +3708,63 @@ ZOO.Feature = ZOO.Class({
   CLASS_NAME: 'ZOO.Feature'
 });
 
+/**
+ * Class: ZOO.Geometry
+ * A Geometry is a description of a geographic object. Create an instance
+ * of this class with the <ZOO.Geometry> constructor. This is a base class,
+ * typical geometry types are described by subclasses of this class.
+ */
 ZOO.Geometry = ZOO.Class({
+  /**
+   * Property: id
+   * {String} A unique identifier for this geometry.
+   */
   id: null,
+  /**
+   * Property: parent
+   * {<ZOO.Geometry>}This is set when a Geometry is added as component
+   * of another geometry
+   */
   parent: null,
+  /**
+   * Property: bounds 
+   * {<ZOO.Bounds>} The bounds of this geometry
+   */
   bounds: null,
+  /**
+   * Constructor: ZOO.Geometry
+   * Creates a geometry object.  
+   */
   initialize: function() {
     //generate unique id
   },
+  /**
+   * Method: destroy
+   * Destroy this geometry.
+   */
   destroy: function() {
     this.id = null;
     this.bounds = null;
   },
+  /**
+   * Method: clone
+   * Create a clone of this geometry.  Does not set any non-standard
+   *     properties of the cloned geometry.
+   * 
+   * Returns:
+   * {<ZOO.Geometry>} An exact clone of this geometry.
+   */
   clone: function() {
     return new ZOO.Geometry();
   },
+  /**
+   * Method: extendBounds
+   * Extend the existing bounds to include the new bounds. 
+   * If geometry's bounds is not yet set, then set a new Bounds.
+   * 
+   * Parameters:
+   * newBounds - {<ZOO.Bounds>} 
+   */
   extendBounds: function(newBounds){
     var bounds = this.getBounds();
     if (!bounds)
@@ -2511,23 +3772,46 @@ ZOO.Geometry = ZOO.Class({
     else
       this.bounds.extend(newBounds);
   },
+  /**
+   * Set the bounds for this Geometry.
+   * 
+   * Parameters:
+   * bounds - {<ZOO.Bounds>} 
+   */
   setBounds: function(bounds) {
     if (bounds)
       this.bounds = bounds.clone();
   },
+  /**
+   * Method: clearBounds
+   * Nullify this components bounds and that of its parent as well.
+   */
   clearBounds: function() {
     this.bounds = null;
     if (this.parent)
       this.parent.clearBounds();
   },
+  /**
+   * Method: getBounds
+   * Get the bounds for this Geometry. If bounds is not set, it 
+   * is calculated again, this makes queries faster.
+   * 
+   * Returns:
+   * {<ZOO.Bounds>}
+   */
   getBounds: function() {
     if (this.bounds == null) {
       this.calculateBounds();
     }
     return this.bounds;
   },
+  /** 
+   * Method: calculateBounds
+   * Recalculate the bounds for the geometry. 
+   */
   calculateBounds: function() {
-    return this.bounds = null;
+    // This should be overridden by subclasses.
+    return this.bounds;
   },
   distanceTo: function(geometry, options) {
   },
@@ -2542,6 +3826,13 @@ ZOO.Geometry = ZOO.Class({
   getCentroid: function() {
     return null;
   },
+  /**
+   * Method: toString
+   * Returns the Well-Known Text representation of a geometry
+   *
+   * Returns:
+   * {String} Well-Known Text
+   */
   toString: function() {
     return ZOO.Format.WKT.prototype.write(
         new ZOO.Feature(this)
@@ -2549,6 +3840,16 @@ ZOO.Geometry = ZOO.Class({
   },
   CLASS_NAME: 'ZOO.Geometry'
 });
+/**
+ * Function: OpenLayers.Geometry.fromWKT
+ * Generate a geometry given a Well-Known Text string.
+ *
+ * Parameters:
+ * wkt - {String} A string representing the geometry in Well-Known Text.
+ *
+ * Returns:
+ * {<ZOO.Geometry>} A geometry of the appropriate class.
+ */
 ZOO.Geometry.fromWKT = function(wkt) {
   var format = arguments.callee.format;
   if(!format) {
@@ -2682,9 +3983,45 @@ ZOO.Geometry.distanceToSegment = function(point, segment) {
     x: x, y: y
   };
 };
+/**
+ * Class: OpenLayers.Geometry.Collection
+ * A Collection is exactly what it sounds like: A collection of different 
+ * Geometries. These are stored in the local parameter <components> (which
+ * can be passed as a parameter to the constructor). 
+ * 
+ * As new geometries are added to the collection, they are NOT cloned. 
+ * When removing geometries, they need to be specified by reference (ie you 
+ * have to pass in the *exact* geometry to be removed).
+ * 
+ * The <getArea> and <getLength> functions here merely iterate through
+ * the components, summing their respective areas and lengths.
+ *
+ * Create a new instance with the <ZOO.Geometry.Collection> constructor.
+ *
+ * Inerhits from:
+ *  - <ZOO.Geometry> 
+ */
 ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
+  /**
+   * Property: components
+   * {Array(<ZOO.Geometry>)} The component parts of this geometry
+   */
   components: null,
+  /**
+   * Property: componentTypes
+   * {Array(String)} An array of class names representing the types of
+   * components that the collection can include.  A null value means the
+   * component types are not restricted.
+   */
   componentTypes: null,
+  /**
+   * Constructor: ZOO.Geometry.Collection
+   * Creates a Geometry Collection -- a list of geoms.
+   *
+   * Parameters: 
+   * components - {Array(<ZOO.Geometry>)} Optional array of geometries
+   *
+   */
   initialize: function (components) {
     ZOO.Geometry.prototype.initialize.apply(this, arguments);
     this.components = [];
@@ -2692,10 +4029,21 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
       this.addComponents(components);
     }
   },
+  /**
+   * Method: destroy
+   * Destroy this geometry.
+   */
   destroy: function () {
     this.components.length = 0;
     this.components = null;
   },
+  /**
+   * Method: clone
+   * Clone this geometry.
+   *
+   * Returns:
+   * {<ZOO.Geometry.Collection>} An exact clone of this collection
+   */
   clone: function() {
     var geometry = eval("new " + this.CLASS_NAME + "()");
     for(var i=0, len=this.components.length; i<len; i++) {
@@ -2703,6 +4051,13 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return geometry;
   },
+  /**
+   * Method: getComponentsString
+   * Get a string representing the components for this collection
+   * 
+   * Returns:
+   * {String} A string representation of the components of this geometry
+   */
   getComponentsString: function(){
     var strings = [];
     for(var i=0, len=this.components.length; i<len; i++) {
@@ -2710,6 +4065,11 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return strings.join(",");
   },
+  /**
+   * Method: calculateBounds
+   * Recalculate the bounds by iterating through the components and 
+   * calling calling extendBounds() on each item.
+   */
   calculateBounds: function() {
     this.bounds = null;
     if ( this.components && this.components.length > 0) {
@@ -2720,6 +4080,13 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return this.bounds
   },
+  /**
+   * APIMethod: addComponents
+   * Add components to this geometry.
+   *
+   * Parameters:
+   * components - {Array(<ZOO.Geometry>)} An array of geometries to add
+   */
   addComponents: function(components){
     if(!(components instanceof Array))
       components = [components];
@@ -2727,6 +4094,20 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
       this.addComponent(components[i]);
     }
   },
+  /**
+   * Method: addComponent
+   * Add a new component (geometry) to the collection.  If this.componentTypes
+   * is set, then the component class name must be in the componentTypes array.
+   *
+   * The bounds cache is reset.
+   * 
+   * Parameters:
+   * component - {<ZOO.Geometry>} A geometry to add
+   * index - {int} Optional index into the array to insert the component
+   *
+   * Returns:
+   * {Boolean} The component geometry was successfully added
+   */
   addComponent: function(component, index) {
     var added = false;
     if(component) {
@@ -2749,6 +4130,13 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return added;
   },
+  /**
+   * Method: removeComponents
+   * Remove components from this geometry.
+   *
+   * Parameters:
+   * components - {Array(<ZOO.Geometry>)} The components to be removed
+   */
   removeComponents: function(components) {
     if(!(components instanceof Array))
       components = [components];
@@ -2756,12 +4144,26 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
       this.removeComponent(components[i]);
     }
   },
+  /**
+   * Method: removeComponent
+   * Remove a component from this geometry.
+   *
+   * Parameters:
+   * component - {<ZOO.Geometry>} 
+   */
   removeComponent: function(component) {      
     ZOO.removeItem(this.components, component);
     // clearBounds() so that it gets recalculated on the next call
     // to this.getBounds();
     this.clearBounds();
   },
+  /**
+   * Method: getLength
+   * Calculate the length of this geometry
+   *
+   * Returns:
+   * {Float} The length of the geometry
+   */
   getLength: function() {
     var length = 0.0;
     for (var i=0, len=this.components.length; i<len; i++) {
@@ -2769,6 +4171,14 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return length;
   },
+  /**
+   * APIMethod: getArea
+   * Calculate the area of this geometry. Note how this function is 
+   * overridden in <ZOO.Geometry.Polygon>.
+   *
+   * Returns:
+   * {Float} The area of the collection by summing its parts
+   */
   getArea: function() {
     var area = 0.0;
     for (var i=0, len=this.components.length; i<len; i++) {
@@ -2776,19 +4186,104 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return area;
   },
+  /** 
+   * APIMethod: getGeodesicArea
+   * Calculate the approximate area of the polygon were it projected onto
+   *     the earth.
+   *
+   * Parameters:
+   * projection - {<ZOO.Projection>} The spatial reference system
+   *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
+   *     assumed.
+   * 
+   * Reference:
+   * Robert. G. Chamberlain and William H. Duquette, "Some Algorithms for
+   *     Polygons on a Sphere", JPL Publication 07-03, Jet Propulsion
+   *     Laboratory, Pasadena, CA, June 2007 http://trs-new.jpl.nasa.gov/dspace/handle/2014/40409
+   *
+   * Returns:
+   * {float} The approximate geodesic area of the geometry in square meters.
+   */
+  getGeodesicArea: function(projection) {
+    var area = 0.0;
+    for(var i=0, len=this.components.length; i<len; i++) {
+      area += this.components[i].getGeodesicArea(projection);
+    }
+    return area;
+  },
+  /**
+   * Method: getCentroid
+   *
+   * Returns:
+   * {<ZOO.Geometry.Point>} The centroid of the collection
+   */
   getCentroid: function() {
     return this.components.length && this.components[0].getCentroid();
   },
+  /**
+   * Method: getGeodesicLength
+   * Calculate the approximate length of the geometry were it projected onto
+   *     the earth.
+   *
+   * projection - {<ZOO.Projection>} The spatial reference system
+   *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
+   *     assumed.
+   * 
+   * Returns:
+   * {Float} The appoximate geodesic length of the geometry in meters.
+   */
+  getGeodesicLength: function(projection) {
+    var length = 0.0;
+    for(var i=0, len=this.components.length; i<len; i++) {
+      length += this.components[i].getGeodesicLength(projection);
+    }
+    return length;
+  },
+  /**
+   * Method: move
+   * Moves a geometry by the given displacement along positive x and y axes.
+   *     This modifies the position of the geometry and clears the cached
+   *     bounds.
+   *
+   * Parameters:
+   * x - {Float} Distance to move geometry in positive x direction. 
+   * y - {Float} Distance to move geometry in positive y direction.
+   */
   move: function(x, y) {
     for(var i=0, len=this.components.length; i<len; i++) {
       this.components[i].move(x, y);
     }
   },
+  /**
+   * Method: rotate
+   * Rotate a geometry around some origin
+   *
+   * Parameters:
+   * angle - {Float} Rotation angle in degrees (measured counterclockwise
+   *                 from the positive x-axis)
+   * origin - {<ZOO.Geometry.Point>} Center point for the rotation
+   */
   rotate: function(angle, origin) {
     for(var i=0, len=this.components.length; i<len; ++i) {
       this.components[i].rotate(angle, origin);
     }
   },
+  /**
+   * Method: resize
+   * Resize a geometry relative to some origin.  Use this method to apply
+   *     a uniform scaling to a geometry.
+   *
+   * Parameters:
+   * scale - {Float} Factor by which to scale the geometry.  A scale of 2
+   *                 doubles the size of the geometry in each dimension
+   *                 (lines, for example, will be twice as long, and polygons
+   *                 will have four times the area).
+   * origin - {<ZOO.Geometry.Point>} Point of origin for resizing
+   * ratio - {Float} Optional x:y ratio for resizing.  Default ratio is 1.
+   * 
+   * Returns:
+   * {ZOO.Geometry} - The current geometry. 
+   */
   resize: function(scale, origin, ratio) {
     for(var i=0; i<this.components.length; ++i) {
       this.components[i].resize(scale, origin, ratio);
@@ -2812,6 +4307,17 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return best;
   },
+  /** 
+   * Method: equals
+   * Determine whether another geometry is equivalent to this one.  Geometries
+   *     are considered equivalent if all components have the same coordinates.
+   * 
+   * Parameters:
+   * geom - {<ZOO.Geometry>} The geometry to test. 
+   *
+   * Returns:
+   * {Boolean} The supplied geometry is equivalent to this geometry.
+   */
   equals: function(geometry) {
     var equivalent = true;
     if(!geometry || !geometry.CLASS_NAME ||
@@ -2829,6 +4335,17 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
       }
     return equivalent;
   },
+  /**
+   * Method: transform
+   * Reproject the components geometry from source to dest.
+   * 
+   * Parameters:
+   * source - {<ZOO.Projection>} 
+   * dest - {<ZOO.Projection>}
+   * 
+   * Returns:
+   * {<ZOO.Geometry>} 
+   */
   transform: function(source, dest) {
     if (source && dest) {
       for (var i=0, len=this.components.length; i<len; i++) {  
@@ -2839,6 +4356,16 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return this;
   },
+  /**
+   * Method: intersects
+   * Determine if the input geometry intersects this one.
+   *
+   * Parameters:
+   * geometry - {<ZOO.Geometry>} Any type of geometry.
+   *
+   * Returns:
+   * {Boolean} The input geometry intersects this one.
+   */
   intersects: function(geometry) {
     var intersect = false;
     for(var i=0, len=this.components.length; i<len; ++ i) {
@@ -2848,6 +4375,19 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
     }
     return intersect;
   },
+  /**
+   * Method: getVertices
+   * Return a list of all points in this geometry.
+   *
+   * Parameters:
+   * nodes - {Boolean} For lines, only return vertices that are
+   *     endpoints.  If false, for lines, only vertices that are not
+   *     endpoints will be returned.  If not provided, all vertices will
+   *     be returned.
+   *
+   * Returns:
+   * {Array} A list of all vertices in the geometry.
+   */
   getVertices: function(nodes) {
     var vertices = [];
     for(var i=0, len=this.components.length; i<len; ++i) {
@@ -2859,21 +4399,55 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
   },
   CLASS_NAME: 'ZOO.Geometry.Collection'
 });
+/**
+ * Class: ZOO.Geometry.Point
+ * Point geometry class. 
+ * 
+ * Inherits from:
+ *  - <ZOO.Geometry> 
+ */
 ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
+  /** 
+   * Property: x 
+   * {float} 
+   */
   x: null,
+  /** 
+   * Property: y 
+   * {float} 
+   */
   y: null,
+  /**
+   * Constructor: ZOO.Geometry.Point
+   * Construct a point geometry.
+   *
+   * Parameters:
+   * x - {float} 
+   * y - {float}
+   * 
+   */
   initialize: function(x, y) {
     ZOO.Geometry.prototype.initialize.apply(this, arguments);
     this.x = parseFloat(x);
     this.y = parseFloat(y);
   },
+  /**
+   * Method: clone
+   * 
+   * Returns:
+   * {<ZOO.Geometry.Point>} An exact clone of this ZOO.Geometry.Point
+   */
   clone: function(obj) {
     if (obj == null)
       obj = new ZOO.Geometry.Point(this.x, this.y);
     // catch any randomly tagged-on properties
-    //OpenLayers.Util.applyDefaults(obj, this);
+    // ZOO.Util.applyDefaults(obj, this);
     return obj;
   },
+  /** 
+   * Method: calculateBounds
+   * Create a new Bounds based on the x/y
+   */
   calculateBounds: function () {
     this.bounds = new ZOO.Bounds(this.x, this.y,
                                         this.x, this.y);
@@ -2903,6 +4477,17 @@ ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
     }
     return result;
   },
+  /** 
+   * Method: equals
+   * Determine whether another geometry is equivalent to this one.  Geometries
+   *     are considered equivalent if all components have the same coordinates.
+   * 
+   * Parameters:
+   * geom - {<ZOO.Geometry.Point>} The geometry to test. 
+   *
+   * Returns:
+   * {Boolean} The supplied geometry is equivalent to this geometry.
+   */
   equals: function(geom) {
     var equals = false;
     if (geom != null)
@@ -2910,14 +4495,40 @@ ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
                 (isNaN(this.x) && isNaN(this.y) && isNaN(geom.x) && isNaN(geom.y)));
     return equals;
   },
+  /**
+   * Method: toShortString
+   *
+   * Returns:
+   * {String} Shortened String representation of Point object. 
+   *         (ex. <i>"5, 42"</i>)
+   */
   toShortString: function() {
     return (this.x + ", " + this.y);
   },
+  /**
+   * Method: move
+   * Moves a geometry by the given displacement along positive x and y axes.
+   *     This modifies the position of the geometry and clears the cached
+   *     bounds.
+   *
+   * Parameters:
+   * x - {Float} Distance to move geometry in positive x direction. 
+   * y - {Float} Distance to move geometry in positive y direction.
+   */
   move: function(x, y) {
     this.x = this.x + x;
     this.y = this.y + y;
     this.clearBounds();
   },
+  /**
+   * Method: rotate
+   * Rotate a point around another.
+   *
+   * Parameters:
+   * angle - {Float} Rotation angle in degrees (measured counterclockwise
+   *                 from the positive x-axis)
+   * origin - {<ZOO.Geometry.Point>} Center point for the rotation
+   */
   rotate: function(angle, origin) {
         angle *= Math.PI / 180;
         var radius = this.distanceTo(origin);
@@ -2926,9 +4537,31 @@ ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
         this.y = origin.y + (radius * Math.sin(theta));
         this.clearBounds();
   },
+  /**
+   * Method: getCentroid
+   *
+   * Returns:
+   * {<ZOO.Geometry.Point>} The centroid of the collection
+   */
   getCentroid: function() {
     return new ZOO.Geometry.Point(this.x, this.y);
   },
+  /**
+   * Method: resize
+   * Resize a point relative to some origin.  For points, this has the effect
+   *     of scaling a vector (from the origin to the point).  This method is
+   *     more useful on geometry collection subclasses.
+   *
+   * Parameters:
+   * scale - {Float} Ratio of the new distance from the origin to the old
+   *                 distance from the origin.  A scale of 2 doubles the
+   *                 distance between the point and origin.
+   * origin - {<ZOO.Geometry.Point>} Point of origin for resizing
+   * ratio - {Float} Optional x:y ratio for resizing.  Default ratio is 1.
+   * 
+   * Returns:
+   * {ZOO.Geometry} - The current geometry. 
+   */
   resize: function(scale, origin, ratio) {
     ratio = (ratio == undefined) ? 1 : ratio;
     this.x = origin.x + (scale * ratio * (this.x - origin.x));
@@ -2936,6 +4569,16 @@ ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
     this.clearBounds();
     return this;
   },
+  /**
+   * Method: intersects
+   * Determine if the input geometry intersects this one.
+   *
+   * Parameters:
+   * geometry - {<ZOO.Geometry>} Any type of geometry.
+   *
+   * Returns:
+   * {Boolean} The input geometry intersects this one.
+   */
   intersects: function(geometry) {
     var intersect = false;
     if(geometry.CLASS_NAME == "ZOO.Geometry.Point") {
@@ -2945,6 +4588,17 @@ ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
     }
     return intersect;
   },
+  /**
+   * Method: transform
+   * Translate the x,y properties of the point from source to dest.
+   * 
+   * Parameters:
+   * source - {<ZOO.Projection>} 
+   * dest - {<ZOO.Projection>}
+   * 
+   * Returns:
+   * {<ZOO.Geometry>} 
+   */
   transform: function(source, dest) {
     if ((source && dest)) {
       ZOO.Projection.transform(
@@ -2953,36 +4607,122 @@ ZOO.Geometry.Point = ZOO.Class(ZOO.Geometry, {
     }       
     return this;
   },
+  /**
+   * Method: getVertices
+   * Return a list of all points in this geometry.
+   *
+   * Parameters:
+   * nodes - {Boolean} For lines, only return vertices that are
+   *     endpoints.  If false, for lines, only vertices that are not
+   *     endpoints will be returned.  If not provided, all vertices will
+   *     be returned.
+   *
+   * Returns:
+   * {Array} A list of all vertices in the geometry.
+   */
   getVertices: function(nodes) {
     return [this];
   },
   CLASS_NAME: 'ZOO.Geometry.Point'
 });
+/**
+ * Class: ZOO.Geometry.Surface
+ * Surface geometry class. 
+ * 
+ * Inherits from:
+ *  - <ZOO.Geometry> 
+ */
 ZOO.Geometry.Surface = ZOO.Class(ZOO.Geometry, {
   initialize: function() {
     ZOO.Geometry.prototype.initialize.apply(this, arguments);
   },
   CLASS_NAME: "ZOO.Geometry.Surface"
 });
+/**
+ * Class: ZOO.Geometry.MultiPoint
+ * MultiPoint is a collection of Points. Create a new instance with the
+ * <ZOO.Geometry.MultiPoint> constructor.
+ *
+ * Inherits from:
+ *  - <ZOO.Geometry.Collection>
+ */
 ZOO.Geometry.MultiPoint = ZOO.Class(
   ZOO.Geometry.Collection, {
+  /**
+   * Property: componentTypes
+   * {Array(String)} An array of class names representing the types of
+   * components that the collection can include.  A null value means the
+   * component types are not restricted.
+   */
   componentTypes: ["ZOO.Geometry.Point"],
+  /**
+   * Constructor: ZOO.Geometry.MultiPoint
+   * Create a new MultiPoint Geometry
+   *
+   * Parameters:
+   * components - {Array(<ZOO.Geometry.Point>)} 
+   *
+   * Returns:
+   * {<ZOO.Geometry.MultiPoint>}
+   */
   initialize: function(components) {
     ZOO.Geometry.Collection.prototype.initialize.apply(this,arguments);
   },
+  /**
+   * Method: addPoint
+   * Wrapper for <ZOO.Geometry.Collection.addComponent>
+   *
+   * Parameters:
+   * point - {<ZOO.Geometry.Point>} Point to be added
+   * index - {Integer} Optional index
+   */
   addPoint: function(point, index) {
     this.addComponent(point, index);
   },
+  /**
+   * Method: removePoint
+   * Wrapper for <ZOO.Geometry.Collection.removeComponent>
+   *
+   * Parameters:
+   * point - {<ZOO.Geometry.Point>} Point to be removed
+   */
   removePoint: function(point){
     this.removeComponent(point);
   },
   CLASS_NAME: "ZOO.Geometry.MultiPoint"
 });
+/**
+ * Class: ZOO.Geometry.Curve
+ * A Curve is a MultiPoint, whose points are assumed to be connected. To 
+ * this end, we provide a "getLength()" function, which iterates through 
+ * the points, summing the distances between them. 
+ * 
+ * Inherits: 
+ *  - <ZOO.Geometry.MultiPoint>
+ */
 ZOO.Geometry.Curve = ZOO.Class(ZOO.Geometry.MultiPoint, {
+  /**
+   * Property: componentTypes
+   * {Array(String)} An array of class names representing the types of 
+   *                 components that the collection can include.  A null 
+   *                 value means the component types are not restricted.
+   */
   componentTypes: ["ZOO.Geometry.Point"],
+  /**
+   * Constructor: ZOO.Geometry.Curve
+   * 
+   * Parameters:
+   * point - {Array(<ZOO.Geometry.Point>)}
+   */
   initialize: function(points) {
     ZOO.Geometry.MultiPoint.prototype.initialize.apply(this,arguments);
   },
+  /**
+   * Method: getLength
+   * 
+   * Returns:
+   * {Float} The length of the curve
+   */
   getLength: function() {
     var length = 0.0;
     if ( this.components && (this.components.length > 1)) {
@@ -2992,16 +4732,89 @@ ZOO.Geometry.Curve = ZOO.Class(ZOO.Geometry.MultiPoint, {
     }
     return length;
   },
+  /**
+     * APIMethod: getGeodesicLength
+     * Calculate the approximate length of the geometry were it projected onto
+     *     the earth.
+     *
+     * projection - {<ZOO.Projection>} The spatial reference system
+     *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
+     *     assumed.
+     * 
+     * Returns:
+     * {Float} The appoximate geodesic length of the geometry in meters.
+     */
+    getGeodesicLength: function(projection) {
+      var geom = this;  // so we can work with a clone if needed
+      if(projection) {
+        var gg = new ZOO.Projection("EPSG:4326");
+        if(!gg.equals(projection)) {
+          geom = this.clone().transform(projection, gg);
+       }
+     }
+     var length = 0.0;
+     if(geom.components && (geom.components.length > 1)) {
+       var p1, p2;
+       for(var i=1, len=geom.components.length; i<len; i++) {
+         p1 = geom.components[i-1];
+         p2 = geom.components[i];
+        // this returns km and requires x/y properties
+        length += ZOO.distVincenty(p1,p2);
+      }
+    }
+    // convert to m
+    return length * 1000;
+  },
   CLASS_NAME: "ZOO.Geometry.Curve"
 });
+/**
+ * Class: ZOO.Geometry.LineString
+ * A LineString is a Curve which, once two points have been added to it, can 
+ * never be less than two points long.
+ * 
+ * Inherits from:
+ *  - <ZOO.Geometry.Curve>
+ */
 ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
+  /**
+   * Constructor: ZOO.Geometry.LineString
+   * Create a new LineString geometry
+   *
+   * Parameters:
+   * points - {Array(<ZOO.Geometry.Point>)} An array of points used to
+   *          generate the linestring
+   *
+   */
   initialize: function(points) {
     ZOO.Geometry.Curve.prototype.initialize.apply(this, arguments);        
   },
+  /**
+   * Method: removeComponent
+   * Only allows removal of a point if there are three or more points in 
+   * the linestring. (otherwise the result would be just a single point)
+   *
+   * Parameters: 
+   * point - {<ZOO.Geometry.Point>} The point to be removed
+   */
   removeComponent: function(point) {
     if ( this.components && (this.components.length > 2))
       ZOO.Geometry.Collection.prototype.removeComponent.apply(this,arguments);
   },
+  /**
+   * Method: intersects
+   * Test for instersection between two geometries.  This is a cheapo
+   *     implementation of the Bently-Ottmann algorigithm.  It doesn't
+   *     really keep track of a sweep line data structure.  It is closer
+   *     to the brute force method, except that segments are sorted and
+   *     potential intersections are only calculated when bounding boxes
+   *     intersect.
+   *
+   * Parameters:
+   * geometry - {<ZOO.Geometry>}
+   *
+   * Returns:
+   * {Boolean} The input geometry intersects this geometry.
+   */
   intersects: function(geometry) {
     var intersect = false;
     var type = geometry.CLASS_NAME;
@@ -3049,6 +4862,15 @@ ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
     }
     return intersect;
   },
+  /**
+   * Method: getSortedSegments
+   *
+   * Returns:
+   * {Array} An array of segment objects.  Segment objects have properties
+   *     x1, y1, x2, and y2.  The start point is represented by x1 and y1.
+   *     The end point is represented by x2 and y2.  Start and end are
+   *     ordered so that x1 < x2.
+   */
   getSortedSegments: function() {
     var numSeg = this.components.length - 1;
     var segments = new Array(numSeg);
@@ -3076,6 +4898,31 @@ ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
     }
     return segments.sort(byX1);
   },
+  /**
+   * Method: splitWithSegment
+   * Split this geometry with the given segment.
+   *
+   * Parameters:
+   * seg - {Object} An object with x1, y1, x2, and y2 properties referencing
+   *     segment endpoint coordinates.
+   * options - {Object} Properties of this object will be used to determine
+   *     how the split is conducted.
+   *
+   * Valid options:
+   * edge - {Boolean} Allow splitting when only edges intersect.  Default is
+   *     true.  If false, a vertex on the source segment must be within the
+   *     tolerance distance of the intersection to be considered a split.
+   * tolerance - {Number} If a non-null value is provided, intersections
+   *     within the tolerance distance of one of the source segment's
+   *     endpoints will be assumed to occur at the endpoint.
+   *
+   * Returns:
+   * {Object} An object with *lines* and *points* properties.  If the given
+   *     segment intersects this linestring, the lines array will reference
+   *     geometries that result from the split.  The points array will contain
+   *     all intersection points.  Intersection points are sorted along the
+   *     segment (in order from x1,y1 to x2,y2).
+   */
   splitWithSegment: function(seg, options) {
     var edge = !(options && options.edge === false);
     var tolerance = options && options.tolerance;
@@ -3136,6 +4983,35 @@ ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
     }
     return result;
   },
+  /**
+   * Method: split
+   * Use this geometry (the source) to attempt to split a target geometry.
+   * 
+   * Parameters:
+   * target - {<ZOO.Geometry>} The target geometry.
+   * options - {Object} Properties of this object will be used to determine
+   *     how the split is conducted.
+   *
+   * Valid options:
+   * mutual - {Boolean} Split the source geometry in addition to the target
+   *     geometry.  Default is false.
+   * edge - {Boolean} Allow splitting when only edges intersect.  Default is
+   *     true.  If false, a vertex on the source must be within the tolerance
+   *     distance of the intersection to be considered a split.
+   * tolerance - {Number} If a non-null value is provided, intersections
+   *     within the tolerance distance of an existing vertex on the source
+   *     will be assumed to occur at the vertex.
+   * 
+   * Returns:
+   * {Array} A list of geometries (of this same type as the target) that
+   *     result from splitting the target with the source geometry.  The
+   *     source and target geometry will remain unmodified.  If no split
+   *     results, null will be returned.  If mutual is true and a split
+   *     results, return will be an array of two arrays - the first will be
+   *     all geometries that result from splitting the source geometry and
+   *     the second will be all geometries that result from splitting the
+   *     target geometry.
+   */
   split: function(target, options) {
     var results = null;
     var mutual = options && options.mutual;
@@ -3204,9 +5080,52 @@ ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
     }
     return results;
   },
+  /**
+   * Method: splitWith
+   * Split this geometry (the target) with the given geometry (the source).
+   *
+   * Parameters:
+   * geometry - {<ZOO.Geometry>} A geometry used to split this
+   *     geometry (the source).
+   * options - {Object} Properties of this object will be used to determine
+   *     how the split is conducted.
+   *
+   * Valid options:
+   * mutual - {Boolean} Split the source geometry in addition to the target
+   *     geometry.  Default is false.
+   * edge - {Boolean} Allow splitting when only edges intersect.  Default is
+   *     true.  If false, a vertex on the source must be within the tolerance
+   *     distance of the intersection to be considered a split.
+   * tolerance - {Number} If a non-null value is provided, intersections
+   *     within the tolerance distance of an existing vertex on the source
+   *     will be assumed to occur at the vertex.
+   * 
+   * Returns:
+   * {Array} A list of geometries (of this same type as the target) that
+   *     result from splitting the target with the source geometry.  The
+   *     source and target geometry will remain unmodified.  If no split
+   *     results, null will be returned.  If mutual is true and a split
+   *     results, return will be an array of two arrays - the first will be
+   *     all geometries that result from splitting the source geometry and
+   *     the second will be all geometries that result from splitting the
+   *     target geometry.
+   */
   splitWith: function(geometry, options) {
     return geometry.split(this, options);
   },
+  /**
+   * Method: getVertices
+   * Return a list of all points in this geometry.
+   *
+   * Parameters:
+   * nodes - {Boolean} For lines, only return vertices that are
+   *     endpoints.  If false, for lines, only vertices that are not
+   *     endpoints will be returned.  If not provided, all vertices will
+   *     be returned.
+   *
+   * Returns:
+   * {Array} A list of all vertices in the geometry.
+   */
   getVertices: function(nodes) {
     var vertices;
     if(nodes === true)
@@ -3322,12 +5241,59 @@ ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
   },
   CLASS_NAME: "ZOO.Geometry.LineString"
 });
+/**
+ * Class: ZOO.Geometry.LinearRing
+ * 
+ * A Linear Ring is a special LineString which is closed. It closes itself 
+ * automatically on every addPoint/removePoint by adding a copy of the first
+ * point as the last point. 
+ * 
+ * Also, as it is the first in the line family to close itself, a getArea()
+ * function is defined to calculate the enclosed area of the linearRing
+ * 
+ * Inherits:
+ *  - <OpenLayers.Geometry.LineString>
+ */
 ZOO.Geometry.LinearRing = ZOO.Class(
   ZOO.Geometry.LineString, {
+  /**
+   * Property: componentTypes
+   * {Array(String)} An array of class names representing the types of 
+   *                 components that the collection can include.  A null 
+   *                 value means the component types are not restricted.
+   */
   componentTypes: ["ZOO.Geometry.Point"],
+  /**
+   * Constructor: OpenLayers.Geometry.LinearRing
+   * Linear rings are constructed with an array of points.  This array
+   *     can represent a closed or open ring.  If the ring is open (the last
+   *     point does not equal the first point), the constructor will close
+   *     the ring.  If the ring is already closed (the last point does equal
+   *     the first point), it will be left closed.
+   * 
+   * Parameters:
+   * points - {Array(<ZOO.Geometry.Point>)} points
+   */
   initialize: function(points) {
     ZOO.Geometry.LineString.prototype.initialize.apply(this,arguments);
   },
+  /**
+   * Method: addComponent
+   * Adds a point to geometry components.  If the point is to be added to
+   *     the end of the components array and it is the same as the last point
+   *     already in that array, the duplicate point is not added.  This has 
+   *     the effect of closing the ring if it is not already closed, and 
+   *     doing the right thing if it is already closed.  This behavior can 
+   *     be overridden by calling the method with a non-null index as the 
+   *     second argument.
+   *
+   * Parameter:
+   * point - {<ZOO.Geometry.Point>}
+   * index - {Integer} Index into the array to insert the component
+   * 
+   * Returns:
+   * {Boolean} Was the Point successfully added?
+   */
   addComponent: function(point, index) {
     var added = false;
     //remove last point
@@ -3341,6 +5307,13 @@ ZOO.Geometry.LinearRing = ZOO.Class(
     ZOO.Geometry.Collection.prototype.addComponent.apply(this,[firstPoint]);
     return added;
   },
+  /**
+   * APIMethod: removeComponent
+   * Removes a point from geometry components.
+   *
+   * Parameters:
+   * point - {<ZOO.Geometry.Point>}
+   */
   removeComponent: function(point) {
     if (this.components.length > 4) {
       //remove last point
@@ -3352,22 +5325,68 @@ ZOO.Geometry.LinearRing = ZOO.Class(
       ZOO.Geometry.Collection.prototype.addComponent.apply(this,[firstPoint]);
     }
   },
+  /**
+   * Method: move
+   * Moves a geometry by the given displacement along positive x and y axes.
+   *     This modifies the position of the geometry and clears the cached
+   *     bounds.
+   *
+   * Parameters:
+   * x - {Float} Distance to move geometry in positive x direction. 
+   * y - {Float} Distance to move geometry in positive y direction.
+   */
   move: function(x, y) {
     for(var i = 0, len=this.components.length; i<len - 1; i++) {
       this.components[i].move(x, y);
     }
   },
+  /**
+   * Method: rotate
+   * Rotate a geometry around some origin
+   *
+   * Parameters:
+   * angle - {Float} Rotation angle in degrees (measured counterclockwise
+   *                 from the positive x-axis)
+   * origin - {<ZOO.Geometry.Point>} Center point for the rotation
+   */
   rotate: function(angle, origin) {
     for(var i=0, len=this.components.length; i<len - 1; ++i) {
       this.components[i].rotate(angle, origin);
     }
   },
+  /**
+   * Method: resize
+   * Resize a geometry relative to some origin.  Use this method to apply
+   *     a uniform scaling to a geometry.
+   *
+   * Parameters:
+   * scale - {Float} Factor by which to scale the geometry.  A scale of 2
+   *                 doubles the size of the geometry in each dimension
+   *                 (lines, for example, will be twice as long, and polygons
+   *                 will have four times the area).
+   * origin - {<ZOO.Geometry.Point>} Point of origin for resizing
+   * ratio - {Float} Optional x:y ratio for resizing.  Default ratio is 1.
+   * 
+   * Returns:
+   * {ZOO.Geometry} - The current geometry. 
+   */
   resize: function(scale, origin, ratio) {
     for(var i=0, len=this.components.length; i<len - 1; ++i) {
       this.components[i].resize(scale, origin, ratio);
     }
     return this;
   },
+  /**
+   * Method: transform
+   * Reproject the components geometry from source to dest.
+   *
+   * Parameters:
+   * source - {<ZOO.Projection>}
+   * dest - {<ZOO.Projection>}
+   * 
+   * Returns:
+   * {<ZOO.Geometry>} 
+   */
   transform: function(source, dest) {
     if (source && dest) {
       for (var i=0, len=this.components.length; i<len - 1; i++) {
@@ -3378,6 +5397,12 @@ ZOO.Geometry.LinearRing = ZOO.Class(
     }
     return this;
   },
+  /**
+   * Method: getCentroid
+   *
+   * Returns:
+   * {<ZOO.Geometry.Point>} The centroid of the ring
+   */
   getCentroid: function() {
     if ( this.components && (this.components.length > 2)) {
       var sumX = 0.0;
@@ -3394,6 +5419,14 @@ ZOO.Geometry.LinearRing = ZOO.Class(
     }
     return new ZOO.Geometry.Point(x, y);
   },
+  /**
+   * Method: getArea
+   * Note - The area is positive if the ring is oriented CW, otherwise
+   *         it will be negative.
+   * 
+   * Returns:
+   * {Float} The signed area for a ring.
+   */
   getArea: function() {
     var area = 0.0;
     if ( this.components && (this.components.length > 2)) {
@@ -3407,6 +5440,62 @@ ZOO.Geometry.LinearRing = ZOO.Class(
     }
     return area;
   },
+  /**
+   * Method: getGeodesicArea
+   * Calculate the approximate area of the polygon were it projected onto
+   *     the earth.  Note that this area will be positive if ring is oriented
+   *     clockwise, otherwise it will be negative.
+   *
+   * Parameters:
+   * projection - {<ZOO.Projection>} The spatial reference system
+   *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
+   *     assumed.
+   * 
+   * Reference:
+   * Robert. G. Chamberlain and William H. Duquette, "Some Algorithms for
+   *     Polygons on a Sphere", JPL Publication 07-03, Jet Propulsion
+   *     Laboratory, Pasadena, CA, June 2007 http://trs-new.jpl.nasa.gov/dspace/handle/2014/40409
+   *
+   * Returns:
+   * {float} The approximate signed geodesic area of the polygon in square
+   *     meters.
+   */
+  getGeodesicArea: function(projection) {
+    var ring = this;  // so we can work with a clone if needed
+    if(projection) {
+      var gg = new ZOO.Projection("EPSG:4326");
+      if(!gg.equals(projection)) {
+        ring = this.clone().transform(projection, gg);
+      }
+    }
+    var area = 0.0;
+    var len = ring.components && ring.components.length;
+    if(len > 2) {
+      var p1, p2;
+      for(var i=0; i<len-1; i++) {
+        p1 = ring.components[i];
+        p2 = ring.components[i+1];
+        area += ZOO.rad(p2.x - p1.x) *
+                (2 + Math.sin(ZOO.rad(p1.y)) +
+                Math.sin(ZOO.rad(p2.y)));
+      }
+      area = area * 6378137.0 * 6378137.0 / 2.0;
+    }
+    return area;
+  },
+  /**
+   * Method: containsPoint
+   * Test if a point is inside a linear ring.  For the case where a point
+   *     is coincident with a linear ring edge, returns 1.  Otherwise,
+   *     returns boolean.
+   *
+   * Parameters:
+   * point - {<ZOO.Geometry.Point>}
+   *
+   * Returns:
+   * {Boolean | Number} The point is inside the linear ring.  Returns 1 if
+   *     the point is coincident with an edge.  Returns boolean otherwise.
+   */
   containsPoint: function(point) {
     var approx = OpenLayers.Number.limitSigDigs;
     var digs = 14;
@@ -3505,9 +5594,25 @@ ZOO.Geometry.LinearRing = ZOO.Class(
   },
   CLASS_NAME: "ZOO.Geometry.LinearRing"
 });
+/**
+ * Class: ZOO.Geometry.MultiLineString
+ * A MultiLineString is a geometry with multiple <ZOO.Geometry.LineString>
+ * components.
+ * 
+ * Inherits from:
+ *  - <ZOO.Geometry.Collection>
+ */
 ZOO.Geometry.MultiLineString = ZOO.Class(
   ZOO.Geometry.Collection, {
   componentTypes: ["ZOO.Geometry.LineString"],
+  /**
+   * Constructor: ZOO.Geometry.MultiLineString
+   * Constructor for a MultiLineString Geometry.
+   *
+   * Parameters: 
+   * components - {Array(<ZOO.Geometry.LineString>)} 
+   *
+   */
   initialize: function(components) {
     ZOO.Geometry.Collection.prototype.initialize.apply(this,arguments);        
   },
@@ -3662,12 +5767,37 @@ ZOO.Geometry.MultiLineString = ZOO.Class(
   },
   CLASS_NAME: "ZOO.Geometry.MultiLineString"
 });
+/**
+ * Class: ZOO.Geometry.Polygon 
+ * Polygon is a collection of <ZOO.Geometry.LinearRing>. 
+ * 
+ * Inherits from:
+ *  - <ZOO.Geometry.Collection> 
+ */
 ZOO.Geometry.Polygon = ZOO.Class(
   ZOO.Geometry.Collection, {
   componentTypes: ["ZOO.Geometry.LinearRing"],
+  /**
+   * Constructor: OpenLayers.Geometry.Polygon
+   * Constructor for a Polygon geometry. 
+   * The first ring (this.component[0])is the outer bounds of the polygon and 
+   * all subsequent rings (this.component[1-n]) are internal holes.
+   *
+   *
+   * Parameters:
+   * components - {Array(<ZOO.Geometry.LinearRing>)} 
+   */
   initialize: function(components) {
     ZOO.Geometry.Collection.prototype.initialize.apply(this,arguments);
   },
+  /** 
+   * Method: getArea
+   * Calculated by subtracting the areas of the internal holes from the 
+   *   area of the outer hole.
+   * 
+   * Returns:
+   * {float} The area of the geometry
+   */
   getArea: function() {
     var area = 0.0;
     if ( this.components && (this.components.length > 0)) {
@@ -3678,6 +5808,46 @@ ZOO.Geometry.Polygon = ZOO.Class(
     }
     return area;
   },
+  /** 
+   * APIMethod: getGeodesicArea
+   * Calculate the approximate area of the polygon were it projected onto
+   *     the earth.
+   *
+   * Parameters:
+   * projection - {<ZOO.Projection>} The spatial reference system
+   *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
+   *     assumed.
+   * 
+   * Reference:
+   * Robert. G. Chamberlain and William H. Duquette, "Some Algorithms for
+   *     Polygons on a Sphere", JPL Publication 07-03, Jet Propulsion
+   *     Laboratory, Pasadena, CA, June 2007 http://trs-new.jpl.nasa.gov/dspace/handle/2014/40409
+   *
+   * Returns:
+   * {float} The approximate geodesic area of the polygon in square meters.
+   */
+  getGeodesicArea: function(projection) {
+    var area = 0.0;
+    if(this.components && (this.components.length > 0)) {
+      area += Math.abs(this.components[0].getGeodesicArea(projection));
+      for(var i=1, len=this.components.length; i<len; i++) {
+          area -= Math.abs(this.components[i].getGeodesicArea(projection));
+      }
+    }
+    return area;
+  },
+  /**
+   * Method: containsPoint
+   * Test if a point is inside a polygon.  Points on a polygon edge are
+   *     considered inside.
+   *
+   * Parameters:
+   * point - {<ZOO.Geometry.Point>}
+   *
+   * Returns:
+   * {Boolean | Number} The point is inside the polygon.  Returns 1 if the
+   *     point is on an edge.  Returns boolean otherwise.
+   */
   containsPoint: function(point) {
     var numRings = this.components.length;
     var contained = false;
@@ -3759,9 +5929,54 @@ ZOO.Geometry.Polygon = ZOO.Class(
   },
   CLASS_NAME: "ZOO.Geometry.Polygon"
 });
+/**
+ * Method: createRegularPolygon
+ * Create a regular polygon around a radius. Useful for creating circles 
+ * and the like.
+ *
+ * Parameters:
+ * origin - {<ZOO.Geometry.Point>} center of polygon.
+ * radius - {Float} distance to vertex, in map units.
+ * sides - {Integer} Number of sides. 20 approximates a circle.
+ * rotation - {Float} original angle of rotation, in degrees.
+ */
+OpenLayers.Geometry.Polygon.createRegularPolygon = function(origin, radius, sides, rotation) {  
+    var angle = Math.PI * ((1/sides) - (1/2));
+    if(rotation) {
+        angle += (rotation / 180) * Math.PI;
+    }
+    var rotatedAngle, x, y;
+    var points = [];
+    for(var i=0; i<sides; ++i) {
+        rotatedAngle = angle + (i * 2 * Math.PI / sides);
+        x = origin.x + (radius * Math.cos(rotatedAngle));
+        y = origin.y + (radius * Math.sin(rotatedAngle));
+        points.push(new ZOO.Geometry.Point(x, y));
+    }
+    var ring = new ZOO.Geometry.LinearRing(points);
+    return new ZOO.Geometry.Polygon([ring]);
+};
+/**
+ * Class: ZOO.Geometry.MultiPolygon
+ * MultiPolygon is a geometry with multiple <ZOO.Geometry.Polygon>
+ * components.  Create a new instance with the <ZOO.Geometry.MultiPolygon>
+ * constructor.
+ * 
+ * Inherits from:
+ *  - <ZOO.Geometry.Collection>
+ */
 ZOO.Geometry.MultiPolygon = ZOO.Class(
   ZOO.Geometry.Collection, {
   componentTypes: ["ZOO.Geometry.Polygon"],
+  /**
+   * Constructor: OpenLayers.Geometry.MultiPolygon
+   * Create a new MultiPolygon geometry
+   *
+   * Parameters:
+   * components - {Array(<ZOO.Geometry.Polygon>)} An array of polygons
+   *              used to generate the MultiPolygon
+   *
+   */
   initialize: function(components) {
     ZOO.Geometry.Collection.prototype.initialize.apply(this,arguments);
   },
