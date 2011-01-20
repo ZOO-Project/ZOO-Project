@@ -5947,7 +5947,7 @@ ZOO.Geometry.Polygon = ZOO.Class(
  * sides - {Integer} Number of sides. 20 approximates a circle.
  * rotation - {Float} original angle of rotation, in degrees.
  */
-OpenLayers.Geometry.Polygon.createRegularPolygon = function(origin, radius, sides, rotation) {  
+ZOO.Geometry.Polygon.createRegularPolygon = function(origin, radius, sides, rotation) {  
     var angle = Math.PI * ((1/sides) - (1/2));
     if(rotation) {
         angle += (rotation / 180) * Math.PI;
