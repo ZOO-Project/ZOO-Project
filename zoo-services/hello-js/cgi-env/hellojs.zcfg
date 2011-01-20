@@ -20,13 +20,10 @@
     title = Mon test  
    </MetaData>   
    <LiteralData>
-    DataType = string
+    dataType = string
     <Default>
      value = Your Name Here
     </Default>
-    <Supported>
-     value = Your Name Here
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -37,11 +34,8 @@
     title = Mon test  
    </MetaData>   
    <LiteralOutput>
-    <Default>
-     datatype = string
-    </Default>
-    <Supported>
      dataType = string
-    </Supported>
+     <Default>
+     </Default>
    </LiteralOutput>
  </DataOutputs>  
