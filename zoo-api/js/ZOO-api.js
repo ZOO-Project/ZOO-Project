@@ -2882,6 +2882,11 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
    */
   xy: true,
   /**
+   * Property: extractAttributes
+   * {Boolean} Could we extract attributes
+   */
+  extractAttributes: true,
+  /**
    * Constructor: ZOO.Format.GML
    * Create a new parser for GML.
    *
@@ -2916,6 +2921,8 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
 
     var gmlns = Namespace(this.namespaces['gml']);
     var featureNodes = data..gmlns::featureMember;
+    if (data.localName() == 'featureMember')
+      featureNodes = data;
     var features = [];
     for(var i=0,len=featureNodes.length(); i<len; i++) {
       var feature = this.parseFeature(featureNodes[i]);
