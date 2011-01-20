@@ -944,7 +944,7 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
       xmlAddChild(nc3,nc4);
       xmlAddChild(nc2,nc3);
     }else if(datatype!=2){
-      if(hasDefault!=true)
+      if(hasDefault!=true && strncmp(type,"Input",5)==0)
 	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
       xmlFreeNodeList(nc5);
       xmlFreeNodeList(nc4);
