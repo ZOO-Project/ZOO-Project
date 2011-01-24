@@ -1137,7 +1137,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
 #endif
 
   map* lineage=getMap(request,"lineage");
-  if(lineage!=NULL){
+  if(lineage!=NULL && strcasecmp(lineage->value,"true")==0){
     nc = xmlNewNode(ns, BAD_CAST "DataInputs");
     int i;
     maps* mcursor=inputs;
