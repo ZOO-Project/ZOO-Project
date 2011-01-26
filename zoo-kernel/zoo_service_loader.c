@@ -1647,6 +1647,8 @@ int runRequest(map* request_inputs)
   }
   addDefaultValues(&request_output_real_format,s1->outputs,m,1);
 
+  ensureDecodedBase64(&request_input_real_format);
+
 #ifdef DEBUG
   fprintf(stderr,"REQUEST_INPUTS\n");
   dumpMaps(request_input_real_format);

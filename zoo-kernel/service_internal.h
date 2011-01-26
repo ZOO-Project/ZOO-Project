@@ -106,6 +106,8 @@ extern "C" {
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
   char *base64(const unsigned char*,int);
+  char *base64d(unsigned char*,int,int*);
+  void ensureDecodedBase64(maps**);
 
   char* addDefaultValues(maps**,elements*,maps*,int);
 
