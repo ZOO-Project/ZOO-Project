@@ -1757,6 +1757,43 @@ char *base64(const unsigned char *input, int length)
   return buff;
 }
 
+char *base64d(unsigned char *input, int length,int* red)
+{
+  BIO *b64, *bmem;
+
+  char *buffer = (char *)malloc(length);
+  memset(buffer, 0, length);
+
+  b64 = BIO_new(BIO_f_base64());
+  bmem = BIO_new_mem_buf(input, length);
+  bmem = BIO_push(b64, bmem);
+
+  *red=BIO_read(bmem, buffer, length);
+
+  BIO_free_all(bmem);
+
+  return buffer;
+}
+
+void ensureDecodedBase64(maps **in){
+  maps* cursor=*in;
+  while(cursor!=NULL){
+    map *tmp=getMap(cursor->content,"encoding");
+    if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
+      tmp=getMap(cursor->content,"value");
+      addToMap(cursor->content,"base64_value",tmp->value);
+      char *s=strdup(tmp->value);
+      free(tmp->value);
+      int size=0;
+      tmp->value=base64d(s,strlen(s),&size);
+      char sizes[1024];
+      sprintf(sizes,"%d",size);
+      addToMap(cursor->content,"size",sizes);
+    }
+    cursor=cursor->next;
+  }
+}
+
 char* addDefaultValues(maps** out,elements* in,maps* m,int type){
   elements* tmpInputs=in;
   maps* out1=*out;
@@ -1801,6 +1838,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	  tmpm=tmpm->next;
 	}
       }
+      addToMap(tmpMaps2->content,"inRequest","false");
       if(type==1){
 	map *tmpMap=getMap(tmpMaps2->content,"value");
 	if(tmpMap==NULL)
@@ -1822,7 +1860,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
     else{
       iotype* tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
 					     tmpMaps->content);
-
+      addToMap(tmpMaps->content,"inRequest","true");
       if(type==0) {
 	/**
 	 * In case of an Input maps, then add the minOccurs and maxOccurs to the
