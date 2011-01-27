@@ -649,9 +649,10 @@ processid
 	      my_service->outputs=dupElements(current_element);
 	    else
 	      addToElements(&my_service->outputs,current_element);
+#ifdef DEBUG_SERVICE_CONF
 	    fprintf(stderr,"ADD TO OUTPUTS Elements\n");
 	    dupElements(current_element);
-
+#endif
 	    freeElements(&current_element);
 	    free(current_element);
 	    current_element=NULL;

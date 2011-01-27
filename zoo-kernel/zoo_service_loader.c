@@ -1621,7 +1621,7 @@ int runRequest(map* request_inputs)
   /**
    * Ensure that each requested arguments are present in the request
    * DataInputs and ResponseDocument / RawDataOutput
-   */  
+   */
   char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,0);
   if(strcmp(dfv,"")!=0){
     char tmps[1024];
@@ -1738,6 +1738,24 @@ int runRequest(map* request_inputs)
   _tmpMaps->content=createMap("sid",tmpBuff);
   _tmpMaps->next=NULL;
   addToMap(_tmpMaps->content,"status","0");
+  if(cgiCookie!=NULL && strlen(cgiCookie)>0){
+    addToMap(_tmpMaps->content,"sessid",strstr(cgiCookie,"=")+1);
+    char session_file_path[1024];
+    map *tmpPath=getMapFromMaps(m,"main","sessPath");
+    if(tmpPath==NULL)
+      tmpPath=getMapFromMaps(m,"main","tmpPath");
+    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
+    maps *tmpSess=(maps*)calloc(1,MAPS_SIZE);
+    struct stat file_status;
+    int istat = stat(session_file_path, &file_status);
+    if(istat==0){
+      conf_read(session_file_path,tmpSess);
+      dumpMaps(tmpSess);
+      addMapsToMaps(&m,tmpSess);
+      freeMaps(&tmpSess);
+    }
+    free(tmpSess);
+  }
   addMapsToMaps(&m,_tmpMaps);
   freeMaps(&_tmpMaps);
   free(_tmpMaps);

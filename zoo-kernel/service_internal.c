@@ -1575,6 +1575,25 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   if(toto!=NULL)
     asRaw=1;
   
+  map *_tmp=getMapFromMaps(m,"lenv","cookie");
+  if(_tmp!=NULL){
+    printf("Set-Cookie: %s\r\n",_tmp->value);
+    maps *tmpSess=getMaps(m,"senv");
+    if(tmpSess!=NULL){
+      char session_file_path[1024];
+      map *tmpPath=getMapFromMaps(m,"main","sessPath");
+      if(tmpPath==NULL)
+	tmpPath=getMapFromMaps(m,"main","tmpPath");
+      char *tmp1=strtok(_tmp->value,";");
+      if(tmp1!=NULL)
+	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
+      else
+	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(_tmp->value,"=")+1);
+      FILE* file=fopen(session_file_path,"w");
+      dumpMapsToFile(tmpSess,file);
+      fclose(file);
+    }
+  }
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
@@ -1860,7 +1879,6 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
     else{
       iotype* tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
 					     tmpMaps->content);
-      addToMap(tmpMaps->content,"inRequest","true");
       if(type==0) {
 	/**
 	 * In case of an Input maps, then add the minOccurs and maxOccurs to the
@@ -1923,6 +1941,10 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	  tmpContent=tmpContent->next;
 	}
       }
+      if(tmpMaps->content==NULL)
+	tmpMaps->content=createMap("inRequest","true");
+      else
+	addToMap(tmpMaps->content,"inRequest","true");
     }
     tmpInputs=tmpInputs->next;
   }
