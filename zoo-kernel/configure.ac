@@ -327,7 +327,7 @@ else
                         	JS_LDFLAGS="-L/usr/lib -lmozjs -lm"
                         	JS_LIB="mozjs"
 			else 
-				XUL_VERSION="`dpkg -l | grep xulrunner-dev | awk '{print $3;}' | sed -e 's/\([[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\).*/\1/'`"
+				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | awk '{print $3;}' | sed -e 's/\([[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\).*/\1/'`"
 				if test -n "$XUL_VERSION"
 				then
 					JS_CPPFLAGS="-I/usr/include/xulrunner-$XUL_VERSION"
