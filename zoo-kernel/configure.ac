@@ -346,9 +346,6 @@ else
                 JS_LIB="js"
 
 	fi 
-	echo "################################"
-	echo $JS_CPPFLAGS
-        echo "##################################"
 	CPPFLAGS_SAVE="$CPPFLAGS"
         CPPFLAGS="$JS_CPPFLAGS"
 
