@@ -102,12 +102,28 @@ extern "C" {
     }
   }
 
+  static void dumpMapToFile(map* t,FILE* file){
+    map* tmp=t;
+    while(tmp!=NULL){
+      fprintf(file,"%s = %s\n",t->name,t->value);
+      tmp=tmp->next;
+    }
+  }
+
   static void dumpMaps(maps* m){
     maps* tmp=m;
     while(tmp!=NULL){
       fprintf(stderr,"MAP => [%s] \n",tmp->name);
       dumpMap(tmp->content);
       tmp=tmp->next;
+    }
+  }
+
+  static void dumpMapsToFile(maps* m,FILE* file){
+    maps* tmp=m;
+    if(tmp!=NULL){
+      fprintf(file,"[%s]\n",tmp->name);
+      dumpMapToFile(tmp->content,file);
     }
   }
 
