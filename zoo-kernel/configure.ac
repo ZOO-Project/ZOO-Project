@@ -326,8 +326,16 @@ else
 				JS_CPPFLAGS="-I/usr/include/mozjs/"
                         	JS_LDFLAGS="-L/usr/lib -lmozjs -lm"
                         	JS_LIB="mozjs"
-			else
-				AC_MSG_ERROR([You must install libmozjs-dev or specify your custom install of libjs])
+			else 
+				XUL_VERSION="`dpkg -l | grep xulrunner-dev | awk '{print $3;}' | sed -e 's/\([[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\).*/\1/'`"
+				if test -n "$XUL_VERSION"
+				then
+					JS_CPPFLAGS="-I/usr/include/xulrunner-$XUL_VERSION"
+					JS_LDFLAGS="-L/usr/lib/xulrunner-$XUL_VERSION -lmozjs -lm"
+					JS_LIB="mozjs"
+				else
+					AC_MSG_ERROR([You must install libmozjs-dev or xulrunner-dev ])
+				fi
 			fi
 		else
 			AC_MSG_ERROR([You must  specify your custom install of libjs])
@@ -338,7 +346,9 @@ else
                 JS_LIB="js"
 
 	fi 
-
+	echo "################################"
+	echo $JS_CPPFLAGS
+        echo "##################################"
 	CPPFLAGS_SAVE="$CPPFLAGS"
         CPPFLAGS="$JS_CPPFLAGS"
 
