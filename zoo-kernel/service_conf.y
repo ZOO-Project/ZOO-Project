@@ -471,17 +471,17 @@ pair: PAIR {  if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){fre
 #ifdef DEBUG_SERVICE_CONF
     fprintf(stderr,"EPAIR FOUND !! \n"); 
     fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
-    fprintf(stderr,"[ZOO: service_conf.y line 482 free(%s)]\n",curr_key);
+    fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
     dumpMap(current_content);
     fflush(stderr);
 #endif
   if(current_content==NULL){
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"[ZOO: service_conf.y line 482 free(%s)]\n",curr_key);
+    fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
 #endif
     current_content=createMap(curr_key,$1);
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"[ZOO: service_conf.y line 482 free(%s)]\n",curr_key);
+    fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
 #endif
     //current_content->next=NULL;
   }
@@ -498,7 +498,7 @@ pair: PAIR {  if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){fre
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"EPAIR FOUND !! \n"); 
   fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
-  fprintf(stderr,"[ZOO: service_conf.y line 505 free(%s)]\n",curr_key);
+  fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
   fflush(stderr);
 #endif
   if(curr_key!=NULL){

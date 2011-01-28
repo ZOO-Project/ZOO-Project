@@ -32,7 +32,7 @@
 size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
   size_t realsize = size * nmemb;
   HINTERNET *psInternet;
-  if(buffer==NULL || strlen((char*)buffer)==0){
+  if(buffer==NULL){
     buffer=NULL;
     return -1;
   }
