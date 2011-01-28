@@ -1858,7 +1858,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	}
       }
       addToMap(tmpMaps2->content,"inRequest","false");
-      if(type==1){
+      if(type==0){
 	map *tmpMap=getMap(tmpMaps2->content,"value");
 	if(tmpMap==NULL)
 	  addToMap(tmpMaps2->content,"value","NULL");
