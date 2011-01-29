@@ -1399,7 +1399,8 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  rs=createMap("z",tmp1);
 	  isSized=false;
 	}
-	xmlAddChild(nc3,xmlNewText(BAD_CAST base64((const unsigned char*)toto->value,atoi(rs->value))));
+
+	xmlAddChild(nc3,xmlNewText(BAD_CAST base64(toto->value, atoi(rs->value))));
 	if(!isSized){
 	  freeMap(&rs);
 	  free(rs);
@@ -1761,13 +1762,14 @@ char *base64(const unsigned char *input, int length)
   BUF_MEM *bptr;
 
   b64 = BIO_new(BIO_f_base64());
+  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
   bmem = BIO_new(BIO_s_mem());
   b64 = BIO_push(b64, bmem);
   BIO_write(b64, input, length);
   BIO_flush(b64);
   BIO_get_mem_ptr(b64, &bptr);
 
-  char *buff = (char *)malloc(bptr->length);
+  char *buff = (char *)malloc((bptr->length)*sizeof(char));
   memcpy(buff, bptr->data, bptr->length-1);
   buff[bptr->length-1] = 0;
 
@@ -1781,16 +1783,17 @@ char *base64d(unsigned char *input, int length,int* red)
   BIO *b64, *bmem;
 
   char *buffer = (char *)malloc(length);
-  memset(buffer, 0, length);
-
-  b64 = BIO_new(BIO_f_base64());
-  bmem = BIO_new_mem_buf(input, length);
-  bmem = BIO_push(b64, bmem);
-
-  *red=BIO_read(bmem, buffer, length);
-
-  BIO_free_all(bmem);
-
+  if(buffer){
+    memset(buffer, 0, length);
+    b64 = BIO_new(BIO_f_base64());
+    if(b64){
+      bmem = BIO_new_mem_buf(input,length);
+      bmem = BIO_push(b64, bmem);
+      *red=BIO_read(bmem, buffer, length);
+      buffer[length-1]=0;
+      BIO_free_all(bmem);
+    }
+  }
   return buffer;
 }
 
@@ -1801,10 +1804,11 @@ void ensureDecodedBase64(maps **in){
     if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
       tmp=getMap(cursor->content,"value");
       addToMap(cursor->content,"base64_value",tmp->value);
+      int size=0;
       char *s=strdup(tmp->value);
       free(tmp->value);
-      int size=0;
       tmp->value=base64d(s,strlen(s),&size);
+      free(s);
       char sizes[1024];
       sprintf(sizes,"%d",size);
       addToMap(cursor->content,"size",sizes);
