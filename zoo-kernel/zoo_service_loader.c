@@ -1342,18 +1342,50 @@ int runRequest(map* request_inputs)
 		  xmlFree(val);
 		}
 	      }
-	      xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
-	      if(mv==NULL){
-		xmlDocPtr doc1=xmlNewDoc(BAD_CAST "1.0");
-		int buffersize;
-		xmlDocSetRootElement(doc1,cur4->xmlChildrenNode);
-		xmlDocDumpFormatMemoryEnc(doc1, &mv, &buffersize, "utf-8", 1);
-		char size[1024];
-		sprintf(size,"%d",buffersize);
-		addToMap(tmpmaps->content,"size",size);
+	      map* test=getMap(tmpmaps->content,"encoding");
+	      if(test==NULL || strcasecmp(test->value,"base64")!=0){
+		xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
+		if(mv==NULL){
+		  xmlDocPtr doc1=xmlNewDoc(BAD_CAST "1.0");
+		  int buffersize;
+		  xmlDocSetRootElement(doc1,cur4->xmlChildrenNode);
+		  xmlDocDumpFormatMemoryEnc(doc1, &mv, &buffersize, "utf-8", 1);
+		  char size[1024];
+		  sprintf(size,"%d",buffersize);
+		  addToMap(tmpmaps->content,"size",size);
+		}
+		addToMap(tmpmaps->content,"value",(char*)mv);
+		xmlFree(mv);
+	      }else{
+		xmlSubstituteEntitiesDefault(1);
+		xmlChar* tmp=xmlNodeListGetString(doc,cur4->xmlChildrenNode,0);
+		addToMap(tmpmaps->content,"value",(char*)tmp);
+		map* tmpv=getMap(tmpmaps->content,"value");
+		char *res=NULL;
+		char *curs=tmpv->value;
+		int i=0;
+		for(int i=0;i<=strlen(tmpv->value)/64;i++) {
+		  if(res==NULL)
+		    res=(char*)malloc(67*sizeof(char));
+		  else
+		    res=(char*)realloc(res,(((i+1)*65)+i)*sizeof(char));
+		  int csize=i*65;
+		  strncpy(res + csize,curs,64);
+		  if(i==xmlStrlen(tmp)/64)
+		    strcat(res,"\n\0");
+		  else{
+		    strncpy(res + (((i+1)*64)+i),"\n\0",2);
+		    curs+=64;
+		  }
+		}
+		free(tmpv->value);
+		tmpv->value=strdup(res);
+		for(int j=0;j<strlen(tmpv->value);j++)
+		  if(tmpv->value[j]==' ')
+		    tmpv->value[j]='+';
+		free(res);
+		xmlFree(tmp);
 	      }
-	      addToMap(tmpmaps->content,"value",(char*)mv);
-	      xmlFree(mv);
 	      cur4=cur4->next;
 	    }
 	  }
@@ -1730,7 +1762,7 @@ int runRequest(map* request_inputs)
   r_inputs=getMap(request_inputs,"storeExecuteResponse");
   int eres=SERVICE_STARTED;
   int cpid=getpid();
-  
+
   maps *_tmpMaps=(maps*)malloc(MAPS_SIZE);
   _tmpMaps->name=strdup("lenv");
   char tmpBuff[100];
@@ -1835,7 +1867,6 @@ int runRequest(map* request_inputs)
       eres=-1;
       errorException(m, _("Unable to run the child process properly"), "InternalError");
     }
-      	
   }
 
 #ifdef DEBUG
