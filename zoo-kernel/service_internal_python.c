@@ -304,26 +304,16 @@ map* mapFromPyDict(PyDictObject* t){
   int sizeValue=-1;
   for(i=0;i<nb;i++){
     PyObject* key=PyList_GetItem(list,i);
-    if(strcmp(PyString_AsString(key),"size")==0){
-      PyObject* value=PyDict_GetItem((PyObject*)t,key);
-      sizeValue=atoi(PyString_AsString(value));
-      Py_DECREF(value);
-      Py_DECREF(key);    
-      break;
-    }
-    Py_DECREF(key);    
-  }
-  for(i=0;i<nb;i++){
-    PyObject* key=PyList_GetItem(list,i);
     PyObject* value=PyDict_GetItem((PyObject*)t,key);
 #ifdef DEBUG
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-    if(sizeValue>=0 && strcmp(PyString_AsString(key),"value")==0){
-      char *buffer=NULL;//(char*)malloc((sizeValue+1)*sizeof(char));
+    if(strcmp(PyString_AsString(key),"value")==0){
+      char *buffer=NULL;
       Py_ssize_t size;
       PyString_AsStringAndSize(value,&buffer,&size);
+      fprintf(stderr,"SIZE %d\n",size);
       if(res!=NULL){
 	addToMap(res,PyString_AsString(key),"");
       }else{
@@ -331,9 +321,12 @@ map* mapFromPyDict(PyDictObject* t){
       }
       map* tmpR=getMap(res,"value");
       free(tmpR->value);
-      tmpR->value=(char*)malloc((sizeValue+1)*sizeof(char));
-      memmove(tmpR->value,buffer,sizeValue*sizeof(char));
-      tmpR->value[sizeValue]=0;
+      tmpR->value=(char*)malloc((size+1)*sizeof(char));
+      memmove(tmpR->value,buffer,size*sizeof(char));
+      tmpR->value[size]=0;
+      char sin[1024];
+      sprintf(sin,"%d",size);
+      addToMap(res,"size",sin);
     }else{
       if(res!=NULL)
 	addToMap(res,PyString_AsString(key),PyString_AsString(value));
