@@ -1357,8 +1357,7 @@ int runRequest(map* request_inputs)
 		addToMap(tmpmaps->content,"value",(char*)mv);
 		xmlFree(mv);
 	      }else{
-		xmlSubstituteEntitiesDefault(1);
-		xmlChar* tmp=xmlNodeListGetString(doc,cur4->xmlChildrenNode,0);
+		xmlChar* tmp=xmlNodeListGetRawString(doc,cur4->xmlChildrenNode,0);
 		addToMap(tmpmaps->content,"value",(char*)tmp);
 		map* tmpv=getMap(tmpmaps->content,"value");
 		char *res=NULL;
@@ -1380,9 +1379,6 @@ int runRequest(map* request_inputs)
 		}
 		free(tmpv->value);
 		tmpv->value=strdup(res);
-		for(int j=0;j<strlen(tmpv->value);j++)
-		  if(tmpv->value[j]==' ')
-		    tmpv->value[j]='+';
 		free(res);
 		xmlFree(tmp);
 	      }

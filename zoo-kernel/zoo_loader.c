@@ -109,7 +109,8 @@ int cgiMain(){
 
   map* tmpMap=NULL;
 
-  if(strncmp(cgiContentType,"text/xml",8)==0){
+  if(strncmp(cgiContentType,"text/xml",8)==0 &&
+     strncasecmp(cgiRequestMethod,"post",4)){
     char *buffer=new char[cgiContentLength+1];
     if(fread(buffer,1,cgiContentLength,cgiIn)){
       buffer[cgiContentLength]=0;
