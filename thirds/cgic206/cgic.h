@@ -139,6 +139,12 @@ extern
 #endif
 int cgiContentLength;
 
+extern 
+#ifdef __cplusplus
+"C" 
+#endif
+int cgiTreatUrlEncoding;
+
 /* Pointer to CGI output. The cgiHeader functions should be used
 	first to output the mime headers; the output HTML
 	page, GIF image or other web document should then be written

@@ -64,6 +64,7 @@ char *cgiContentType = cgiContentTypeData;
 char *cgiMultipartBoundary;
 char *cgiCookie;
 int cgiContentLength;
+int cgiTreatUrlEncoding;
 char *cgiAccept;
 char *cgiUserAgent;
 char *cgiReferrer;
@@ -230,7 +231,9 @@ int main(int argc, char *argv[]) {
 	}	
 
 
+	cgiTreatUrlEncoding=1;
 	if (cgiStrEqNc(cgiRequestMethod, "post")) {
+		cgiTreatUrlEncoding=0;
 #ifdef CGICDEBUG
 		CGICDEBUGSTART
 		fprintf(dout, "POST recognized\n");
@@ -1105,14 +1108,15 @@ cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len) {
 	}
 	while (srcPos < len) {
 		int ch = cp[srcPos];
+		if(cgiTreatUrlEncoding==1)
 		switch (escapeState) {
 			case cgiEscapeRest:
 			if (ch == '%') {
 				escapeState = cgiEscapeFirst;
-			} /*else if (ch == '+') {
+			} else if (ch == '+') {
 				s[dstPos++] = ' ';
-			} */else {
-				s[dstPos++] = ch;	
+			} else {
+				s[dstPos++] = ch;
 			}
 			break;
 			case cgiEscapeFirst:
@@ -1125,6 +1129,8 @@ cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len) {
 			escapeState = cgiEscapeRest;
 			break;
 		}
+		else
+		  s[dstPos++] = ch;
 		srcPos++;
 	}
 	s[dstPos] = '\0';
