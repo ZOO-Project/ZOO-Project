@@ -64,7 +64,6 @@ char *cgiContentType = cgiContentTypeData;
 char *cgiMultipartBoundary;
 char *cgiCookie;
 int cgiContentLength;
-int cgiTreatUrlEncoding;
 char *cgiAccept;
 char *cgiUserAgent;
 char *cgiReferrer;
@@ -74,6 +73,7 @@ FILE *cgiOut;
 
 /* True if CGI environment was restored from a file. */
 static int cgiRestored = 0;
+static int cgiTreatUrlEncoding;
 
 static void cgiGetenv(char **s, char *var);
 
