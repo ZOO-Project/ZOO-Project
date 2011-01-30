@@ -109,16 +109,31 @@ int cgiMain(){
 
   map* tmpMap=NULL;
 
-  if(strncmp(cgiContentType,"text/xml",8)==0 &&
-     strncasecmp(cgiRequestMethod,"post",4)){
+  if(strncmp(cgiContentType,"text/xml",8)==0 || 
+     strncasecmp(cgiRequestMethod,"post",4)==0){
     char *buffer=new char[cgiContentLength+1];
     if(fread(buffer,1,cgiContentLength,cgiIn)){
       buffer[cgiContentLength]=0;
       tmpMap=createMap("request",buffer);
     }else{
-      /* Here we have to return an error message ... */
-      fprintf(stderr, "Unable to read cgi content in zoo_loader.c line %i\n", __LINE__);
-      return 1; 
+      char **array, **arrayStep;
+      if (cgiFormEntries(&array) != cgiFormSuccess) {
+	return 1;
+      }
+      arrayStep = array;
+      while (*arrayStep) {
+	char *value=new char[cgiContentLength];
+	cgiFormStringNoNewlines(*arrayStep, value, cgiContentLength);
+	char* tmpValueFinal=(char*) malloc((strlen(*arrayStep)+strlen(value)+1)*sizeof(char));
+	sprintf(tmpValueFinal,"%s=%s",*arrayStep,value);
+	tmpMap=createMap("request",tmpValueFinal);
+	free(tmpValueFinal);
+#ifdef DEBUG
+	fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,value);
+#endif
+	delete[]value;
+	arrayStep++;
+      }
     }
     delete[]buffer;
   }
@@ -144,16 +159,6 @@ int cgiMain(){
     cgiStringArrayFree(array);
   }
 
-  if(strncasecmp(cgiRequestMethod,"post",4)==0 && getMap(tmpMap,"request")==NULL){
-    char *tmpKey=strdup(tmpMap->name);
-    char *tmpValue=strdup(tmpMap->value);
-    freeMap(&tmpMap);
-    free(tmpMap);
-    char* tmpValueFinal=(char*) malloc((strlen(tmpKey)+strlen(tmpValue)+2)*sizeof(char));
-    sprintf(tmpValueFinal,"%s=%s",tmpKey,tmpValue);
-    tmpMap=createMap("request",tmpValueFinal);
-    free(tmpValueFinal);
-  }
   /**
    * In case that the POST method was used, then check if params came in XML
    * format else try to use the attribute "request" which should be the only 
