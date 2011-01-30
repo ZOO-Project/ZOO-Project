@@ -143,8 +143,7 @@ int main(int argc, char *argv[]) {
 	cgiGetenv(&cgiQueryString, "QUERY_STRING");
 	if(strcmp(cgiQueryString,"")==0 && argc>=2){
 		cgiQueryString=argv[1];
-	}else
-		fprintf(stderr,"cgiQueryString : %s\n",cgiQueryString);
+	}
 	cgiGetenv(&cgiRemoteHost, "REMOTE_HOST");
 	cgiGetenv(&cgiRemoteAddr, "REMOTE_ADDR");
 	cgiGetenv(&cgiAuthType, "AUTH_TYPE");
@@ -1110,9 +1109,9 @@ cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len) {
 			case cgiEscapeRest:
 			if (ch == '%') {
 				escapeState = cgiEscapeFirst;
-			} else if (ch == '+') {
+			} /*else if (ch == '+') {
 				s[dstPos++] = ' ';
-			} else {
+			} */else {
 				s[dstPos++] = ch;	
 			}
 			break;
