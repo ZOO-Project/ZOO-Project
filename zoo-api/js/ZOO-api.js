@@ -3627,6 +3627,20 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
       if (node.@uom.length()>0)
         result.uom = node.@uom;
       return result;
+    },
+    /**
+     * Method: parseData.reference
+     * Given an Object representing the WPS reference response.
+     *
+     * Parameters:
+     * node - {E4XElement} A WPS node.
+     *
+     * Returns:
+     * {Object} A WPS reference response.
+     */
+    'reference': function(node) {
+      var result = {type:'reference',value:node.*::href};
+      return result;
     }
   },
   CLASS_NAME: 'ZOO.Format.WPS'
@@ -3848,7 +3862,7 @@ ZOO.Geometry = ZOO.Class({
   CLASS_NAME: 'ZOO.Geometry'
 });
 /**
- * Function: OpenLayers.Geometry.fromWKT
+ * Function: ZOO.Geometry.fromWKT
  * Generate a geometry given a Well-Known Text string.
  *
  * Parameters:
@@ -3991,7 +4005,7 @@ ZOO.Geometry.distanceToSegment = function(point, segment) {
   };
 };
 /**
- * Class: OpenLayers.Geometry.Collection
+ * Class: ZOO.Geometry.Collection
  * A Collection is exactly what it sounds like: A collection of different 
  * Geometries. These are stored in the local parameter <components> (which
  * can be passed as a parameter to the constructor). 
@@ -5259,7 +5273,7 @@ ZOO.Geometry.LineString = ZOO.Class(ZOO.Geometry.Curve, {
  * function is defined to calculate the enclosed area of the linearRing
  * 
  * Inherits:
- *  - <OpenLayers.Geometry.LineString>
+ *  - <ZOO.Geometry.LineString>
  */
 ZOO.Geometry.LinearRing = ZOO.Class(
   ZOO.Geometry.LineString, {
@@ -5271,7 +5285,7 @@ ZOO.Geometry.LinearRing = ZOO.Class(
    */
   componentTypes: ["ZOO.Geometry.Point"],
   /**
-   * Constructor: OpenLayers.Geometry.LinearRing
+   * Constructor: ZOO.Geometry.LinearRing
    * Linear rings are constructed with an array of points.  This array
    *     can represent a closed or open ring.  If the ring is open (the last
    *     point does not equal the first point), the constructor will close
@@ -5785,7 +5799,7 @@ ZOO.Geometry.Polygon = ZOO.Class(
   ZOO.Geometry.Collection, {
   componentTypes: ["ZOO.Geometry.LinearRing"],
   /**
-   * Constructor: OpenLayers.Geometry.Polygon
+   * Constructor: ZOO.Geometry.Polygon
    * Constructor for a Polygon geometry. 
    * The first ring (this.component[0])is the outer bounds of the polygon and 
    * all subsequent rings (this.component[1-n]) are internal holes.
@@ -5976,7 +5990,7 @@ ZOO.Geometry.MultiPolygon = ZOO.Class(
   ZOO.Geometry.Collection, {
   componentTypes: ["ZOO.Geometry.Polygon"],
   /**
-   * Constructor: OpenLayers.Geometry.MultiPolygon
+   * Constructor: ZOO.Geometry.MultiPolygon
    * Create a new MultiPolygon geometry
    *
    * Parameters:
@@ -5989,21 +6003,62 @@ ZOO.Geometry.MultiPolygon = ZOO.Class(
   },
   CLASS_NAME: "ZOO.Geometry.MultiPolygon"
 });
-
+/**
+ * Class: ZOO.Process
+ * Used to query OGC WPS process defined by its URL and its identifier. 
+ * Usefull for chaining localhost process.
+ */
 ZOO.Process = ZOO.Class({
+  /**
+   * Property: schemaLocation
+   * {String} Schema location for a particular minor version.
+   */
   schemaLocation: "http://www.opengis.net/wps/1.0.0/../wpsExecute_request.xsd",
+  /**
+   * Property: namespaces
+   * {Object} Mapping of namespace aliases to namespace URIs.
+   */
   namespaces: {
     ows: "http://www.opengis.net/ows/1.1",
     wps: "http://www.opengis.net/wps/1.0.0",
     xlink: "http://www.w3.org/1999/xlink",
     xsi: "http://www.w3.org/2001/XMLSchema-instance",
   },
+  /**
+   * Property: url
+   * {String} The OGC's Web PRocessing Service URL, 
+   *          default is http://localhost/zoo.
+   */
   url: 'http://localhost/zoo',
+  /**
+   * Property: identifier
+   * {String} Process identifier in the OGC's Web Processing Service.
+   */
   identifier: null,
+  /**
+   * Constructor: ZOO.Process
+   * Create a new Process
+   *
+   * Parameters:
+   * url - {String} The OGC's Web Processing Service URL.
+   * identifier - {String} The process identifier in the OGC's Web Processing Service.
+   *
+   */
   initialize: function(url,identifier) {
     this.url = url;
     this.identifier = identifier;
   },
+  /**
+   * Method: Execute
+   * Query the OGC's Web PRocessing Servcie to Execute the process.
+   *
+   * Parameters:
+   * inputs - {Object}
+   *
+   * Returns:
+   * {String} The OGC's Web processing Service XML response. The result 
+   *          needs to be interpreted.
+   */
   Execute: function(inputs) {
     if (this.identifier == null)
       return null;
@@ -6012,7 +6067,22 @@ ZOO.Process = ZOO.Class({
     var response = ZOO.Request.Post(this.url,body,['Content-Type: text/xml; charset=UTF-8']);
     return response;
   },
+  /**
+   * Property: buildInput
+   * Object containing methods to build WPS inputs.
+   */
   buildInput: {
+    /**
+     * Method: buildInput.complex
+     * Given an E4XElement representing the WPS complex data input.
+     *
+     * Parameters:
+     * identifier - {String} the input indetifier
+     * data - {Object} A WPS complex data input.
+     *
+     * Returns:
+     * {E4XElement} A WPS Input node.
+     */
     'complex': function(identifier,data) {
       var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:ComplexData>'+data.value+'</wps:ComplexData></wps:Data></wps:Input>');
       input.*::Data.*::ComplexData.@mimeType = data.mimetype ? data.mimetype : 'text/plain';
@@ -6023,9 +6093,31 @@ ZOO.Process = ZOO.Class({
       input = input.toXMLString();
       return input;
     },
+    /**
+     * Method: buildInput.reference
+     * Given an E4XElement representing the WPS reference input.
+     *
+     * Parameters:
+     * identifier - {String} the input indetifier
+     * data - {Object} A WPS reference input.
+     *
+     * Returns:
+     * {E4XElement} A WPS Input node.
+     */
     'reference': function(identifier,data) {
       return '<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Reference xmlns:xlink="'+this.namespaces['xlink']+'" xlink:href="'+data.value.replace('&','&amp;','gi')+'"/></wps:Input>';
     },
+    /**
+     * Method: buildInput.literal
+     * Given an E4XElement representing the WPS literal data input.
+     *
+     * Parameters:
+     * identifier - {String} the input indetifier
+     * data - {Object} A WPS literal data input.
+     *
+     * Returns:
+     * {E4XElement} The WPS Input node.
+     */
     'literal': function(identifier,data) {
       var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:LiteralData>'+data.value+'</wps:LiteralData></wps:Data></wps:Input>');
       if (data.type)
@@ -6036,6 +6128,16 @@ ZOO.Process = ZOO.Class({
       return input;
     }
   },
+  /**
+   * Method: buildDataInputsNode
+   * Method to build the WPS DataInputs element.
+   *
+   * Parameters:
+   * inputs - {Object}
+   *
+   * Returns:
+   * {E4XElement} The WPS DataInputs node for Execute query.
+   */
   buildDataInputsNode:function(inputs){
     var data, builder, inputsArray=[];
     for (var attr in inputs) {
