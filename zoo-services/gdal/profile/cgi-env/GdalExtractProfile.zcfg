@@ -6,7 +6,7 @@
  statusSupported = true
  serviceType = C
  serviceProvider = gdal_profile_service.zo
- <MetaData>
+ <MetaData lang="en">
    title = My Demo
  </MetaData>
  <DataInputs>
@@ -20,8 +20,6 @@
     <Default>
      value = topofr.tif
     </Default>
-    <Supported>
-    </Supported>
    </LiteralData>
   [Geometry]
    Title = The path to calaculate profile

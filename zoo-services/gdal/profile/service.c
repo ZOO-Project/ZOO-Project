@@ -6,7 +6,7 @@
  * Author:   Gérald Fenoy, gerald.fenoy@geolabs.fr
  *
  * ****************************************************************************
- * Copyright (c) 2010, GeoLabs SARL
+ * Copyright (c) 2010-2011, GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -29,6 +29,7 @@
 
 #ifdef ZOO_SERVICE
 #include "service.h"
+#include "service_internal.h"
 #endif
 #include "gdal.h"
 #include "cpl_conv.h"
@@ -60,6 +61,7 @@ int main(int argc,char** argv)
   OGRRegisterAll();
  
   hDataset = GDALOpen( pszFilename, GA_ReadOnly );
+  free(pszFilename);
   if( hDataset != NULL )
     {
       GDALDriverH   hDriver;
@@ -98,11 +100,10 @@ int main(int argc,char** argv)
 	  sprintf(buffer,"{\"type\":\"LineString\",\"coordinates\":[");
 	  length+=strlen(buffer);
 	  for(k=0;k<nbGeom;k++){
-	    OGRGeometryH point;
+	    //OGRGeometryH point;
 	    double prx,pry,prz;
 	    OGR_G_GetPoint(geometry,k,&prx,&pry,&prz);
 	    float *pafScanline;
-	  
 	    pafScanline = (float *) CPLMalloc(sizeof(float));
 	    int px=(int)floor((prx-adfGeoTransform[0])/adfGeoTransform[1]);
 	    int py=(int)floor((pry-adfGeoTransform[3])/adfGeoTransform[5]);
@@ -114,44 +115,59 @@ int main(int argc,char** argv)
 		tmp=(char*) malloc(300*sizeof(char));
 		sprintf(tmp,"GDALRasterIO failed for point (%d,%d)",px,py);
 		setMapInMaps(conf,"lenv","message",_ss(tmp));
+		CPLFree(pafScanline);
+		free(tmp);
 		return SERVICE_FAILED;
 	      }
-	      if(buffer)
-		buffer=(char*)realloc(buffer,(strlen(buffer)+50+1)*sizeof(char));
+	      if(buffer!=NULL){
+		int len=strlen(buffer);
+		buffer=(char*)realloc(buffer,(len+50+1)*sizeof(char));
+	      }
 	      else
 		buffer=(char*)malloc((51)*sizeof(char));
 	      char *tmpValue=(char *)malloc(50*sizeof(char));
 	      sprintf(tmpValue,"[%.6f,%.6f,%.6f]%c",prx,pry,pafScanline[0],(k+1==nbGeom?' ':','));
-	      memcpy(buffer+length,tmpValue,strlen(tmpValue));
+	      strncpy(buffer+length,tmpValue,strlen(tmpValue));
 	      length+=strlen(tmpValue);
+	      buffer[length]=0;
 	      value=pafScanline[0];
+	      free(tmpValue);
 	      //Usefull if we can export 3D JSON string at the end
 	      //OGR_G_SetPoint(geometry,k,prx,pry,pafScanline[0]);	      
 	    }
 	    else{
-	      if(buffer)
+	      if(buffer!=NULL)
 		buffer=(char*)realloc(buffer,(strlen(buffer)+50+1)*sizeof(char));
 	      else
 		buffer=(char*)malloc((51)*sizeof(char));
 	      char *tmpValue=(char *)malloc(50*sizeof(char));
 	      sprintf(tmpValue,"[%.6f,%.6f,%.6f]%c",prx,pry,value,(k+1==nbGeom?' ':','));
-	      memcpy(buffer+length,tmpValue,strlen(tmpValue));
+	      strncpy(buffer+length,tmpValue,strlen(tmpValue));
 	      length+=strlen(tmpValue);
+	      buffer[length]=0;
+	      free(tmpValue);
 	      value=value;
 	    }
+	    CPLFree(pafScanline);
 	    ppx=px;
 	    ppy=py;
 	  }
 	  buffer=(char*)realloc(buffer,(strlen(buffer)+3)*sizeof(char));
 	  char *tmpValue=(char *)malloc(3*sizeof(char));
 	  sprintf(tmpValue,"]}");
-	  memcpy(buffer+length,tmpValue,strlen(tmpValue));
+	  tmpValue[2]=0;
+	  strncpy(buffer+length,tmpValue,strlen(tmpValue));
+	  length+=strlen(tmpValue);
+	  buffer[length]=0;
 #ifdef ZOO_SERVICE
 	  setMapInMaps(outputs,"Profile","value",buffer);
 	  setMapInMaps(outputs,"Profile","mimeType","text/plain");
 #else
 	  fprintf(stderr,"%s\n",buffer);
 #endif
+	  free(buffer);
+	  free(tmpValue);
+	  OGR_G_DestroyGeometry(geometry);
 	}
     }
   else{
@@ -162,8 +178,9 @@ int main(int argc,char** argv)
     printf("Unable to load your raster file %s !\n",argv[1]);
 #endif
   }
-  
+  OGRCleanupAll();
   GDALClose(hDataset);
+  GDALDestroyDriverManager();
 #ifdef ZOO_SERVICE
   return SERVICE_SUCCEEDED;
 #endif
