@@ -22,7 +22,6 @@
    <LiteralData>
     dataType = string
     <Default>
-     value = Your Name Here
     </Default>
    </LiteralData>
  </DataInputs>

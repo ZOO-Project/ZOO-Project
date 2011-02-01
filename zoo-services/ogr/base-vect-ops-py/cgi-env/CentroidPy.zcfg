@@ -23,12 +23,12 @@
     <Default>
      mimeType = text/xml
      encoding = UTF-8
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
     </Default>
     <Supported>
      mimeType = text/xml
      encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
     </Supported>
    </ComplexData>
  </DataInputs>
@@ -41,14 +41,13 @@
    </MetaData>   
    <ComplexData>
     <Default>
-     mimeType = application/json
-     encoding = UTF-8
-    </Default>
-    <Supported>
      mimeType = text/xml
      encoding = UTF-8
-     schema = http://fooa/gml/3.1.0/point.xsd
-     asReference = true	
+     schema = http://schemas.opengis.net/gml/3.1.0/point.xsd
+    </Default>
+    <Supported>
+     mimeType = application/json
+     encoding = UTF-8
     </Supported>
    </ComplexData>
  </DataOutputs>  

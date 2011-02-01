@@ -40,16 +40,15 @@
    </MetaData>   
    <ComplexData>
     <Default>
-     mimeType = application/json
-     encoding = UTF-8
-     extension = js
-     asReference = true	
-    </Default>
-    <Supported>
      mimeType = text/xml
      encoding = UTF-8
      schema = http://fooa/gml/3.1.0/polygon.xsd
      extension = xml
+    </Default>
+    <Supported>
+     mimeType = application/json
+     encoding = UTF-8
+     extension = js
     </Supported>
     <Supported>
      mimeType = text/xml

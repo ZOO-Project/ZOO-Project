@@ -18,11 +18,7 @@
    <LiteralData>
     DataType = string
     <Default>
-     UOM = meters
     </Default>
-    <Supported>
-     UOM = feet
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -32,10 +28,6 @@
    <LiteralOutput>
     DataType = string
     <Default>
-     UOM = meters
     </Default>
-    <Supported>
-     UOM = feet
-    </Supported>
    </LiteralOutput>
  </DataOutputs>  

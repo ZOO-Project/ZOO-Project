@@ -23,12 +23,12 @@
     <Default>
      mimeType = text/xml
      encoding = UTF-8
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
     </Default>
     <Supported>
      mimeType = text/xml
      encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
     </Supported>
    </ComplexData>
   [InputEntity2]
@@ -42,13 +42,13 @@
    <ComplexData>
     <Default>
      mimeType = text/xml
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
      encoding = UTF-8
     </Default>
     <Supported>
      mimeType = text/xml
      encoding = base64
-     schema = http://fooa/gml/3.1.0/polygon.xsd
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
     </Supported>
    </ComplexData>
  </DataInputs>
@@ -61,15 +61,15 @@
    </MetaData>   
     <ComplexData>
      <Default>
-       mimeType = application/json
-       encoding = UTF-8
-       extension = js
-     </Default>
-     <Supported>
       mimeType = text/xml
-      schema = http://fooa/gml/3.1.0/polygon.xsd
+      schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
       encoding = UTF-8
       extension = xml
+     </Default>
+     <Supported>
+      mimeType = application/json
+      encoding = UTF-8
+      extension = js
      </Supported>
     </ComplexData>
  </DataOutputs>  

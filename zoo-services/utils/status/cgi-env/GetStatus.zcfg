@@ -18,11 +18,7 @@
    <LiteralData>
     DataType = integer
     <Default>
-     uom = meters
     </Default>
-    <Supported>
-     uom = feet
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -32,13 +28,16 @@
    <MetaData>
     title = Demo XSL use case
    </MetaData>   
-   <LiteralData>
-    DataType = string
+   <ComplexData>
     <Default>
-     uom = meters
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd
     </Default>
     <Supported>
-     uom = feet
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd
     </Supported>
-   </LiteralData>
+   </ComplexData>
  </DataOutputs>  

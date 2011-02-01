@@ -18,12 +18,7 @@
    <LiteralData>
     DataType = float
     <Default>
-     value = 1.0
-     UOM = meters
     </Default>
-    <Supported>
-     UOM = feet
-    </Supported>
    </LiteralData>
   [B]
    Title = second value
@@ -33,11 +28,7 @@
    <LiteralData>
     DataType = float
     <Default>
-     UOM = meters
     </Default>
-    <Supported>
-     UOM = feet
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -47,10 +38,6 @@
    <LiteralOutput>
     DataType = float
     <Default>
-     UOM = meters
     </Default>
-    <Supported>
-     UOM = feet
-    </Supported>
    </LiteralOutput>
  </DataOutputs>  
