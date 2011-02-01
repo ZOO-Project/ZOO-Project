@@ -29,7 +29,6 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
    </LiteralData>
   [OutputDataSourceName]
@@ -40,7 +39,6 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
    </LiteralData>
  </DataInputs>
@@ -51,7 +49,6 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
    </LiteralData>
  </DataOutputs>  

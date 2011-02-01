@@ -48,7 +48,6 @@
      mimeType = application/json
      encoding = UTF-8
      extension = js
-     asReference = true	
     </Default>
     <Supported>
      mimeType = application/json

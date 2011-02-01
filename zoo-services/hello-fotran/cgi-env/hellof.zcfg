@@ -22,12 +22,7 @@
    <LiteralData>
     DataType = string
     <Default>
-     value = Your Name
-     UOM = meter
     </Default>
-    <Supported>
-     UOM = meter
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -40,10 +35,6 @@
    <LiteralData>
     DataType = string
     <Default>
-     UOM = meter
     </Default>
-    <Supported>
-     UOM = meter
-    </Supported>
    </LiteralData>
  </DataOutputs>  

@@ -18,11 +18,7 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
-    <Supported>
-     value = AAIGrid
-    </Supported>
    </LiteralData>
   [OutputDoc]
    Title = The output data source name
@@ -32,11 +28,7 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
-    <Supported>
-     value = AAIGrid
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -46,10 +38,6 @@
    <LiteralData>
     DataType = string
     <Default>
-     uom = feet
     </Default>	
-    <Supported>
-     value = AAIGrid
-    </Supported>
    </LiteralData>
  </DataOutputs>  
