@@ -168,15 +168,16 @@ STag
       freeMap(&current_content);
       free(current_content);
       current_content=NULL;
+      wait_mainmetadata=false;
     }
     if(current_element==NULL){
 #ifdef DEBUG_SERVICE_CONF
-      fprintf(stderr,"(DATAINPUTS - 184) FREE current_element\n");
+      fprintf(stderr,"(DATAINPUTS - %d) FREE current_element\n",__LINE__);
 #endif
       freeElements(&current_element);
       free(current_element);
 #ifdef DEBUG_SERVICE_CONF
-      fprintf(stderr,"(DATAINPUTS - 186) ALLOCATE current_element\n");
+      fprintf(stderr,"(DATAINPUTS - %d) ALLOCATE current_element\n",__LINE__);
 #endif
       current_element=NULL;
       current_element=(elements*)malloc(ELEMENTS_SIZE);
@@ -196,7 +197,7 @@ STag
     if(strncasecmp($2,"DataOutputs",11)==0){
       if(wait_inputs==true){
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"(DATAOUTPUTS) DUP INPUTS current_element\n");
+	fprintf(stderr,"(DATAOUTPUTS %d) DUP INPUTS current_element\n",__LINE__);
 	fprintf(stderr,"CURRENT_ELEMENT\n");
 	dumpElements(current_element);
 	fprintf(stderr,"SERVICE INPUTS\n");
@@ -224,7 +225,7 @@ STag
       }
       if(current_element==NULL){
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"(DATAOUTPUTS - 206) ALLOCATE current_element (%s)\n",$2);
+	fprintf(stderr,"(DATAOUTPUTS - %d) ALLOCATE current_element (%s)\n",__LINE__,$2);
 #endif
 	current_element=(elements*)malloc(ELEMENTS_SIZE);
 	current_element->name=NULL;
@@ -246,15 +247,21 @@ STag
 	if(current_element!=NULL){
 #ifdef DEBUG_SERVICE_CONF
 	  fprintf(stderr,"add current_content to current_element->content\n");
-	  fprintf(stderr,"LINE 247");
+	  fprintf(stderr,"LINE %d",__LINE__);
 #endif
 	  addMapToMap(&current_element->content,current_content);
 	  freeMap(&current_content);
 	  free(current_content);
-	  wait_metadata=true;
+	  if(previous_data==1 || previous_data==2)
+	    wait_metadata=true;
+	  else
+	    wait_mainmetadata=true;
 	}
 	else{
-	  wait_mainmetadata=true;
+	  if(previous_data==1 || previous_data==2)
+	    wait_metadata=true;
+	  else
+	    wait_mainmetadata=true;
 	}
 	current_content=NULL;
       }
@@ -267,7 +274,9 @@ STag
 	    if(current_content!=NULL){
 	      addMapToMap(&current_element->metadata,current_content);
 	      current_element->next=NULL;
-	      current_element->format=strdup($2);
+	      if($2!=NULL)
+		current_element->format=strdup($2);
+	      
 	      current_element->defaults=NULL;
 	      current_element->supported=NULL;
 	      freeMap(&current_content);
@@ -280,6 +289,7 @@ STag
 	    free(current_content);
 	    current_element->metadata=NULL;
 	    current_element->next=NULL;
+	    if($2!=NULL)
 	    current_element->format=strdup($2);
 	    current_element->defaults=NULL;
 	    current_element->supported=NULL;
@@ -346,7 +356,7 @@ attribute
 // avec un identifiant d'une balise jumelle
 //======================================================
 EmptyElemTag
- : INFCAR ID Attributeetoile SLASH SUPCAR	{/*lattribute.clear();/* voir Stag */}
+ : INFCAR ID Attributeetoile SLASH SUPCAR	{}
  ;
 
 //======================================================
@@ -367,7 +377,6 @@ ETag
   }
   if(strcmp($3,"MetaData")==0){
     current_data=previous_data;
-    wait_metadata=true;
   }
   if(strcmp($3,"ComplexData")==0 || strcmp($3,"LiteralData")==0 
      || strcmp($3,"ComplexOutput")==0 || strcmp($3,"LiteralOutput")==0){
@@ -466,34 +475,36 @@ texteinterbalise
  ;
 //======================================================
 
-pair: PAIR {  if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free(curr_key);curr_key=NULL;} }
+pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free(curr_key);curr_key=NULL;} }
 | EPAIR {
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"EPAIR FOUND !! \n"); 
-    fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
-    fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
-    dumpMap(current_content);
-    fflush(stderr);
+  fprintf(stderr,"EPAIR FOUND !! \n"); 
+  fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
+  fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
+  dumpMap(current_content);
+  fflush(stderr);
 #endif
-  if(current_content==NULL){
+  if($1!=NULL){
+    if(current_content==NULL){
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
+      fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
 #endif
-    current_content=createMap(curr_key,$1);
+      current_content=createMap(curr_key,$1);
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
+      fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
 #endif
-    //current_content->next=NULL;
-  }
-  else{ 
+      //current_content->next=NULL;
+    }
+    else{ 
 #ifdef DEBUG_SERVICE_CONF
-    dumpMap(current_content);
-    fprintf(stderr,"addToMap(current_content,%s,%s) !! \n",curr_key,$1); 
+      dumpMap(current_content);
+      fprintf(stderr,"addToMap(current_content,%s,%s) !! \n",curr_key,$1); 
 #endif
-    addToMap(current_content,curr_key,$1);
+      addToMap(current_content,curr_key,$1);
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"addToMap(current_content,%s,%s) end !! \n",curr_key,$1); 
+      fprintf(stderr,"addToMap(current_content,%s,%s) end !! \n",curr_key,$1); 
 #endif    
+    }
   }
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"EPAIR FOUND !! \n"); 
@@ -506,7 +517,7 @@ pair: PAIR {  if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){fre
     curr_key=NULL;
   }
   }
-| SPAIR  { curr_key=strdup($1);if(debug) fprintf(stderr,"SPAIR FOUND !!\n"); }
+| SPAIR  { if(curr_key!=NULL) {free(curr_key);curr_key=NULL;} if($1!=NULL) curr_key=strdup($1);if(debug) fprintf(stderr,"SPAIR FOUND !!\n"); }
  ;
 
 
@@ -514,17 +525,19 @@ processid
 : ANID  {
   if(data==-1){
     data=1;
-    char *cen=strdup($1);
-    my_service->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
-    cen[strlen(cen)-1]=0;
-    cen+=1;
-    sprintf(my_service->name,"%s",cen);
-    cen-=1;
-    free(cen);
-    my_service->content=NULL;
-    my_service->metadata=NULL;
-    my_service->inputs=NULL;
-    my_service->outputs=NULL;
+    if($1!=NULL){
+      char *cen=strdup($1);
+      my_service->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
+      cen[strlen(cen)-1]=0;
+      cen+=1;
+      sprintf(my_service->name,"%s",cen);
+      cen-=1;
+      free(cen);
+      my_service->content=NULL;
+      my_service->metadata=NULL;
+      my_service->inputs=NULL;
+      my_service->outputs=NULL;
+    }
   } else {
     if(current_data==1){
       if(my_service->content!=NULL && current_element->name!=NULL){
@@ -566,25 +579,27 @@ processid
 #ifdef DEBUG_SERVICE_CONF
 	fprintf(stderr,"(DATAINPUTS - 501) SET NAME OF current_element\n");
 #endif
-	char *cen=strdup($1);
-	current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
-	cen[strlen(cen)-1]=0;
-	cen+=1;
-	sprintf(current_element->name,"%s",cen);
-	cen-=1;
-	free(cen);
+	if($1!=NULL){ 
+	  char *cen=strdup($1);
+	  current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
+	  cen[strlen(cen)-1]=0;
+	  cen+=1;
+	  sprintf(current_element->name,"%s",cen);
+	  cen-=1;
+	  free(cen);
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"NAME IN %s (current - %s)\n",$1,current_element->name);
+	  fprintf(stderr,"NAME IN %s (current - %s)\n",$1,current_element->name);
 #endif
-	current_element->content=NULL;
-	current_element->metadata=NULL;
-	current_element->format=NULL;
-	current_element->defaults=NULL;
-	current_element->supported=NULL;
-	current_element->next=NULL;
+	  current_element->content=NULL;
+	  current_element->metadata=NULL;
+	  current_element->format=NULL;
+	  current_element->defaults=NULL;
+	  current_element->supported=NULL;
+	  current_element->next=NULL;
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"NAME IN %s (current - %s)\n",$1,current_element->name);
+	  fprintf(stderr,"NAME IN %s (current - %s)\n",$1,current_element->name);
 #endif
+	}
       }
     }
     else
@@ -610,7 +625,7 @@ processid
 	    free(current_element);
 	    current_element=NULL;
 #ifdef DEBUG_SERVICE_CONF
-	    fprintf(stderr,"(DATAOUTPUTS) ALLOCATE current_element %s %i\n",__FILE__,__LINE__);
+	    fprintf(stderr,"(DATAOUTPUTS -%d) ALLOCATE current_element %s \n",__LINE__,__FILE__);
 #endif
 	    current_element=(elements*)malloc(ELEMENTS_SIZE);
 	    current_element->name=NULL;
@@ -624,21 +639,23 @@ processid
 	  if(current_element->name==NULL){
 #ifdef DEBUG_SERVICE_CONF
 	    fprintf(stderr,"NAME OUT %s\n",$1);
-	    fprintf(stderr,"(DATAOUTPUTS - 545) SET NAME OF current_element\n");
+	    fprintf(stderr,"(DATAOUTPUTS - %d) SET NAME OF current_element\n",__LINE__);
 #endif
-	    char *cen=strdup($1);
-	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
-	    cen[strlen(cen)-1]=0;
-	    cen+=1;
-	    sprintf(current_element->name,"%s",cen);
-	    cen-=1;
-	    free(cen);
-	    current_element->content=NULL;
-	    current_element->metadata=NULL;
-	    current_element->format=NULL;
-	    current_element->defaults=NULL;
-	    current_element->supported=NULL;
-	    current_element->next=NULL;
+	    if($1!=NULL){ 
+	      char *cen=strdup($1);
+	      current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
+	      cen[strlen(cen)-1]=0;
+	      cen+=1;
+	      sprintf(current_element->name,"%s",cen);
+	      cen-=1;
+	      free(cen);
+	      current_element->content=NULL;
+	      current_element->metadata=NULL;
+	      current_element->format=NULL;
+	      current_element->defaults=NULL;
+	      current_element->supported=NULL;
+	      current_element->next=NULL;
+	    }
 	  }
 
 	  current_content=NULL;
@@ -662,22 +679,24 @@ processid
 	    fprintf(stderr,"NAME OUT %s\n",$1);
 	    fprintf(stderr,"(DATAOUTPUTS - 545) SET NAME OF current_element\n");
 #endif
-	    char *cen=strdup($1);
-	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
-	    cen[strlen(cen)-1]=0;
+	    if($1!=NULL){ 
+	      char *cen=strdup($1);
+	      current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
+	      cen[strlen(cen)-1]=0;
 #ifdef DEBUG
-	    fprintf(stderr,"tmp %s\n",cen);
+	      fprintf(stderr,"tmp %s\n",cen);
 #endif
-	    cen+=1;
-	    sprintf(current_element->name,"%s",cen);
-	    cen-=1;
-	    free(cen);
-	    current_element->content=NULL;
-	    current_element->metadata=NULL;
-	    current_element->format=NULL;
-	    current_element->defaults=NULL;
-	    current_element->supported=NULL;
-	    current_element->next=NULL;
+	      cen+=1;
+	      sprintf(current_element->name,"%s",cen);
+	      cen-=1;
+	      free(cen);
+	      current_element->content=NULL;
+	      current_element->metadata=NULL;
+	      current_element->format=NULL;
+	      current_element->defaults=NULL;
+	      current_element->supported=NULL;
+	      current_element->next=NULL;
+	    }
 	  }
 	wait_inputs=false;
 	wait_outputs=true;
@@ -745,25 +764,25 @@ int getServiceFromFile(char* file,service** service){
   if(wait_outputs && current_element!=NULL && current_element->name!=NULL){
     if(my_service->outputs==NULL){      
 #ifdef DEBUG_SERVICE_CONF
-      fprintf(stderr,"(DATAOUTPUTS - 623) DUP current_element\n");
+      fprintf(stderr,"(DATAOUTPUTS - %d) DUP current_element\n",__LINE__);
 #endif
       my_service->outputs=dupElements(current_element);
       my_service->outputs->next=NULL;
     }
     else{
 #ifdef DEBUG_SERVICE_CONF
-      fprintf(stderr,"(DATAOUTPUTS - 628) COPY current_element\n");
+      fprintf(stderr,"(DATAOUTPUTS - %d) COPY current_element\n",__LINE__);
 #endif
       addToElements(&my_service->outputs,current_element);
     }
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"(DATAOUTPUTS - 631) FREE current_element\n");
+    fprintf(stderr,"(DATAOUTPUTS - %d) FREE current_element\n",__LINE__);
 #endif
     freeElements(&current_element);
     free(current_element);
     current_element=NULL;
 #ifdef DEBUG_SERVICE_CONF
-    fprintf(stderr,"(DATAOUTPUTS - 631) FREE current_element\n");
+    fprintf(stderr,"(DATAOUTPUTS - %d) FREE current_element\n",__LINE__);
 #endif
   }
   if(current_element!=NULL){
