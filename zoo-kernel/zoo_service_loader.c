@@ -102,6 +102,11 @@ xmlXPathObjectPtr extractFromDoc(xmlDocPtr doc,char* search){
   return xpathObj;
 }
 
+void donothing(int sig){
+  fprintf(stderr,"Signal %d after the ZOO-Kernel returned result !\n",sig);
+  exit(0);
+}
+
 void sig_handler(int sig){
   char tmp[100];
   char *ssig;
@@ -1416,13 +1421,23 @@ int runRequest(map* request_inputs)
 #endif
     xmlXPathFreeObject(tmpsptr);
     //xmlFree(tmps);
+    
     tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='ResponseDocument']");
+    bool asRaw=false;
     tmps=tmpsptr->nodesetval;
+    if(tmps->nodeNr==0){
+      tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='RawDataOutput']");
+      tmps=tmpsptr->nodesetval;
+      asRaw=true;
+    }
 #ifdef DEBUG
     fprintf(stderr,"*****%d*****\n",tmps->nodeNr);
 #endif
     for(int k=0;k<tmps->nodeNr;k++){
-      addToMap(request_inputs,"ResponseDocument","");
+      if(asRaw==true)
+	addToMap(request_inputs,"RawDataOutput","");
+      else
+	addToMap(request_inputs,"ResponseDocument","");
       request_output_real_format;
       maps *tmpmaps=NULL;
       xmlNodePtr cur=tmps->nodeTab[k];
@@ -1549,93 +1564,21 @@ int runRequest(map* request_inputs)
       }
       //xmlFree(cur);
       if(request_output_real_format==NULL)
-	request_output_real_format=tmpmaps;
+	request_output_real_format=dupMaps(&tmpmaps);
       else
 	addMapsToMaps(&request_output_real_format,tmpmaps);
 #ifdef DEBUG
       dumpMaps(tmpmaps);
 #endif
+      freeMaps(&tmpmaps);
+      free(tmpmaps);
     }
-    xmlXPathFreeObject(tmpsptr);
-    //xmlFree(tmps);
-    tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='RawDataOutput']");
-    tmps=tmpsptr->nodesetval;
-#ifdef DEBUG
-    fprintf(stderr,"*****%d*****\n",tmps->nodeNr);
-#endif
-    for(int k=0;k<tmps->nodeNr;k++){
-      addToMap(request_inputs,"RawDataOutput","");
-      xmlNodePtr cur1=tmps->nodeTab[k];
-      xmlChar *val;
-      /**
-       * Get every attribute from a Output node
-       * mimeType, encoding, schema, uom, asReference
-       */
-      char *outs[4];
-      outs[0]="mimeType";
-      outs[1]="encoding";
-      outs[2]="schema";
-      outs[3]="uom";
-      for(int l=0;l<4;l++){
-#ifdef DEBUG
-	fprintf(stderr,"*** %s ***\t",outs[l]);
-#endif
-	val=xmlGetProp(cur1,BAD_CAST outs[l]);
-	if(val!=NULL && strlen((char*)val)>0){
-	  if(tmpmaps==NULL){
-	    tmpmaps=(maps*)calloc(1,MAPS_SIZE);
-	    if(tmpmaps == NULL){
-	      return errorException(m, _("Unable to allocate memory."), "InternalError");
-	    }
-	    tmpmaps->name="unknownIdentifier";
-	    tmpmaps->content=createMap(outs[l],(char*)val);
-	    tmpmaps->next=NULL;
-	  }
-	  else
-	    addToMap(tmpmaps->content,outs[l],(char*)val);
-	}
-#ifdef DEBUG
-	fprintf(stderr,"%s\n",val);
-#endif
-	xmlFree(val);
-      }
-	    
-      xmlNodePtr cur2=cur1->children;
-      while(cur2){
-	/**
-	 * Indentifier
-	 */
-	if(xmlStrncasecmp(cur2->name,BAD_CAST "Identifier",xmlStrlen(cur2->name))==0){
-	  val=
-	    xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
-	  if(tmpmaps==NULL){
-	    tmpmaps=(maps*)calloc(1,MAPS_SIZE);
-	    if(tmpmaps == NULL){
-	      return errorException(m, _("Unable to allocate memory."), "InternalError");
-	    }
-	    tmpmaps->name=strdup((char*)val);
-	    tmpmaps->content=NULL;
-	    tmpmaps->next=NULL;
-	  }
-	  else
-	    tmpmaps->name=strdup((char*)val);;
-	  xmlFree(val);
-	}
-	cur2=cur2->next;
-      }
-      if(request_output_real_format==NULL)
-	request_output_real_format=tmpmaps;
-      else
-	addMapsToMaps(&request_output_real_format,tmpmaps);
-#ifdef DEBUG
-      dumpMaps(tmpmaps);
-#endif
-    }
+
     xmlXPathFreeObject(tmpsptr);
     //xmlFree(tmps);
     xmlCleanupParser();
   }
-
+  
   //if(CHECK_INET_HANDLE(hInternet))
   InternetCloseHandle(hInternet);
 
@@ -1874,6 +1817,19 @@ int runRequest(map* request_inputs)
     outputResponse(s1,request_input_real_format,
 		   request_output_real_format,request_inputs,
 		   cpid,m,eres);
+  /**
+   * Ensure that if error occurs when freeing memory, no signal will return
+   * an ExceptionReport document as the result was already returned to the 
+   * client.
+   */
+#ifndef USE_GDB
+  (void) signal(SIGSEGV,donothing);
+  (void) signal(SIGTERM,donothing);
+  (void) signal(SIGINT,donothing);
+  (void) signal(SIGILL,donothing);
+  (void) signal(SIGFPE,donothing);
+  (void) signal(SIGABRT,donothing);
+#endif
 
   if(((int)getpid())!=cpid){
     fclose(stdout);
