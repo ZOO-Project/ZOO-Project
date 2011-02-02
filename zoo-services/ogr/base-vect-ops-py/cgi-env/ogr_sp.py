@@ -6,7 +6,7 @@ import sys
 def createGeometryFromWFS(my_wfs_response):
     doc=libxml2.parseMemory(my_wfs_response,len(my_wfs_response))
     ctxt = doc.xpathNewContext()
-    res=ctxt.xpathEval("/*/*/*/*/*[local-name()='Polygon' or local-name()='MultiPolygon' or local-name()='Point' or local-name()='MultiPoint' or local-name()='MultiLinestring' or local-name()='MultiLinestring' ]")
+    res=ctxt.xpathEval("/*/*/*/*/*[local-name()='Polygon' or local-name()='MultiPolygon' or local-name()='Point' or local-name()='MultiPoint' or local-name()='MultiLineString' or local-name()='LineString' ]")
     geometry=[]
     try:
         for node in res:
@@ -90,7 +90,7 @@ def ConvexHullPy(conf,inputs,outputs):
 
 def BufferPy(conf,inputs,outputs):
     try:
-        bdist=int(inputs["BufferDistance"]["value"])
+        bdist=float(inputs["BufferDistance"]["value"])
     except:
         bdist=10
     geometry=extractInputs(inputs["InputPolygon"])
