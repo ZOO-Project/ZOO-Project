@@ -313,7 +313,6 @@ map* mapFromPyDict(PyDictObject* t){
       char *buffer=NULL;
       Py_ssize_t size;
       PyString_AsStringAndSize(value,&buffer,&size);
-      fprintf(stderr,"SIZE %d\n",size);
       if(res!=NULL){
 	addToMap(res,PyString_AsString(key),"");
       }else{
