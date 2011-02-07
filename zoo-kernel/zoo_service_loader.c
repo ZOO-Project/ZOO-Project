@@ -85,7 +85,7 @@ extern "C" {
 #define _(String) dgettext ("zoo-kernel",String)
 
 
-void *translateChar(char* str,char toReplace,char toReplaceBy){
+void translateChar(char* str,char toReplace,char toReplaceBy){
   int i=0,len=strlen(str);
   for(i=0;i<len;i++){
     if(str[i]==toReplace)
@@ -141,7 +141,7 @@ void sig_handler(int sig){
   exit(0);
 }
 
-void *loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **inputs,maps** ioutputs,int* eres){
+void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **inputs,maps** ioutputs,int* eres){
   char tmps1[1024];
   char ntmp[1024];
   maps *m=*myMap;
