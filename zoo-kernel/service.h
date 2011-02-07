@@ -475,7 +475,7 @@ extern "C" {
   }
 
 
-  static void* setMapInMaps(maps* m,char* key,char* subkey,char *value){
+  static void setMapInMaps(maps* m,char* key,char* subkey,char *value){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
       map* _ztmpm=getMap(_tmpm->content,subkey);
