@@ -341,9 +341,9 @@ else
 			AC_MSG_ERROR([You must  specify your custom install of libjs])
 		fi
 	else
-		JS_CPPFLAGS="-I$JSHOME/include/js"
-                JS_LDFLAGS="-L$JSHOME/lib -ljs -lm"
-                JS_LIB="js"
+		JS_CPPFLAGS="-I$JSHOME/include/"
+                JS_LDFLAGS="-L$JSHOME/lib -lmozjs -lm"
+                JS_LIB="mozjs"
 
 	fi 
 	CPPFLAGS_SAVE="$CPPFLAGS"
