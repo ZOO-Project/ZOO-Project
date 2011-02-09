@@ -216,11 +216,10 @@ if test -z "$PERL_ENABLED"
 then
 	PERL_FILE=""
 else
-	PERLCONFIG="$PERL_PATH/bin/perl"
-	PHP_FILE="service_internal_perl.o"
+	PERL_FILE="service_internal_perl.o"
 	if test  "$PERL_PATH" = "yes"
 	then
-		# PHP was not specified, so search within the current path
+		# Perl was not specified, so search within the current path
 		AC_PATH_PROG([PERLCONFIG], [perl])
 	else
 		PERLCONFIG="$PERL_PATH/bin/perl"
