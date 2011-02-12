@@ -54,28 +54,21 @@ extern "C" {
 
 #define SHMSZ     27
 
-  /**
-   * \struct maps
-   * \brief linked list of map pointer
-   *
-   * Small object to store WPS KVP set.
-   */
-  typedef struct maps{
-    char* name;          
-    struct map* content; 
-    struct maps* next;   
-  } maps;
 
   /**
    * \struct map
    * \brief KVP linked list
    *
    * Deal with WPS KVP (name,value).
+   * A map is defined as:
+   *  - name : a key,
+   *  - value: a value,
+   *  - next : a pointer to the next map if any.
    */
   typedef struct map{
-    char* name;       /* The key */
-    char* value;      /* The value */
-    struct map* next; /* Next couple */
+    char* name;
+    char* value;
+    struct map* next;
   } map;
 
 #ifdef WIN32
@@ -84,6 +77,25 @@ extern "C" {
 #define NULLMAP NULL
 #endif
 
+  /**
+   * \struct maps
+   * \brief linked list of map pointer
+   *
+   * Small object to store WPS KVP set.
+   * Maps is defined as:
+   *  - a name, 
+   *  - a content map,
+   *  - a pointer to the next maps if any.
+   */
+  typedef struct maps{
+    char* name;          
+    struct map* content; 
+    struct maps* next;   
+  } maps;
+
+  /**
+   * \brief Dump a map on stderr
+   */
   static void _dumpMap(map* t){
     if(t!=NULL){
       fprintf(stderr,"[%s] => [%s] \n",t->name,t->value);
@@ -180,7 +192,7 @@ extern "C" {
     return NULL;
   }
 
-  static map* getMapFromMaps(maps* m,char* key,char* subkey){
+  static map* getMapFromMaps(maps* m,const char* key,const char* subkey){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
       map* _ztmpm=getMap(_tmpm->content,subkey);
@@ -223,11 +235,34 @@ extern "C" {
     }
   }
 
+  /**
+   * \brief Not named linked list
+   *
+   * Used to store informations about formats, such as mimeType, encoding ... 
+   *
+   * An iotype is defined as :
+   *  - a content map,
+   *  - a pointer to the next iotype if any.
+   */
   typedef struct iotype{
     struct map* content;
     struct iotype* next;
   } iotype;
 
+  /**
+   * \brief Metadata information about input or output.
+   *
+   * The elements are used to store metadata informations defined in the ZCFG.
+   *
+   * An elements is defined as :
+   *  - a name,
+   *  - a content map,
+   *  - a metadata map,
+   *  - a format (possible values are LiteralData, ComplexData or 
+   * BoundingBoxData),
+   *  - a default iotype,
+   *  - a pointer to the next elements id any.
+   */
   typedef struct elements{
     char* name;
     struct map* content;
@@ -251,7 +286,7 @@ extern "C" {
     struct services* next; 
   } services;
 
-  static bool hasElement(elements* e,char* key){
+  static bool hasElement(elements* e,const char* key){
     elements* tmp=e;
     while(tmp!=NULL){
       if(strcasecmp(key,tmp->name)==0)
@@ -475,7 +510,7 @@ extern "C" {
   }
 
 
-  static void setMapInMaps(maps* m,char* key,char* subkey,char *value){
+  static void setMapInMaps(maps* m,const char* key,const char* subkey,const char *value){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
       map* _ztmpm=getMap(_tmpm->content,subkey);

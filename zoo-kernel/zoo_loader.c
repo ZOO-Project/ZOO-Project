@@ -44,7 +44,7 @@ extern "C" {
 #include <libxml/xpathInternals.h>
 }
 
-xmlXPathObjectPtr extractFromDoc(xmlDocPtr,char*);
+xmlXPathObjectPtr extractFromDoc(xmlDocPtr,const char*);
 int runRequest(map*);
 
 using namespace std;
@@ -191,7 +191,7 @@ int cgiMain(){
       if(tval!=NULL)
 	addToMap(tmpMap,"language",tval);
       
-      char* requests[3];
+      const char* requests[3];
       requests[0]="GetCapabilities";
       requests[1]="DescribeProcess";
       requests[2]="Execute";
@@ -205,7 +205,7 @@ int cgiMain(){
 	  fprintf(stderr,"%i",req->nodeNr);
 #endif
 	  if(req!=NULL && req->nodeNr==1){
-	    t1->value=requests[j];
+	    t1->value=strdup(requests[j]);
 	    j=2;
 	  }
 	  xmlXPathFreeObject(reqptr);

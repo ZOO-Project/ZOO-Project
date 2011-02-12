@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2011 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -117,7 +117,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
       jint pValue=0;
 
       pValue=(*env)->CallStaticIntMethod(env,cls,pmid,arg1,arg2,arg3);
-      if (pValue != NULL){
+      if (pValue != (jint)NULL){
 	res=pValue;
 	m=mapsFromHashMap(env,arg1,scHashMapClass);
 	*main_conf=m;
@@ -232,20 +232,31 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
   jmethodID entrySet_mid,containsKey_mid,get_mid,iterator_mid,hasNext_mid,next_mid,getKey_mid,getValue_mid;
   jobject scObject,scObject1;
   if(scHashMapClass==NULL){
+#ifdef DEBUG
     fprintf(stderr,"Unable to load java.util.HashMap\n");
+#endif
     return NULL;
   }
   entrySet_mid = (*env)->GetMethodID(env, scHashMapClass, "entrySet", "()Ljava/util/Set;"); 
   containsKey_mid = (*env)->GetMethodID(env, scHashMapClass, "containsKey", "(Ljava/lang/Object;)Z");
   get_mid = (*env)->GetMethodID(env, scHashMapClass, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); 
+
   if(containsKey_mid==0){
+#ifdef DEBUG
     fprintf(stderr,"unable to load containsKey from HashMap object (%d) \n",entrySet_mid);
+#endif
+    return NULL;
   }
   if(get_mid==0){
+#ifdef DEBUG
     fprintf(stderr,"unable to load get from HashMap object (%d) \n",entrySet_mid);
+#endif
+    return NULL;
   }
   if(entrySet_mid==0){
+#ifdef DEBUG
     fprintf(stderr,"unable to load entrySet from HashMap object (%d) \n",entrySet_mid);
+#endif
     return NULL;
   }
 #ifdef DEBUG
@@ -295,9 +306,10 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
     int size=-1;
     if((*env)->CallBooleanMethod(env,imap,containsKey_mid,(*env)->NewStringUTF(env,"size"))){
       jobject sizeV=(*env)->CallObjectMethod(env, imap, get_mid,(*env)->NewStringUTF(env,"size"));
-      jstring sizeVS=(*env)->GetStringUTFChars(env, sizeV, NULL);
+      const char* sizeVS=(*env)->GetStringUTFChars(env, sizeV, NULL);
       size=atoi(sizeVS);
       fprintf(stderr,"SIZE : %s\n",sizeVS);
+      (*env)->ReleaseStringUTFChars(env, sizeV, sizeVS);
     }
     
     while((*env)->CallBooleanMethod(env,iterator,hasNext_mid)){
@@ -305,38 +317,38 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
       jobject jk=(*env)->CallObjectMethod(env,tmp1,getKey_mid);
       jobject jv=(*env)->CallObjectMethod(env,tmp1,getValue_mid);
 
-      jstring jkd=(*env)->GetStringUTFChars(env, jk, NULL);
+      const char* jkd=(*env)->GetStringUTFChars(env, jk, NULL);
       if(size>=0 && strcmp(jkd,"value")==0){
-	fprintf(stderr,"%s\n",jkd);
 	jobject value=(*env)->GetByteArrayElements(env, jv, NULL);
 	if(res==NULL){
 	  res=createMap(jkd,"");
 	}else{
 	  addToMap(res,jkd,"");
 	}
-	fprintf(stderr,"/%s\n",jkd);
 	map* tmpR=getMap(res,"value");
 	free(tmpR->value);
 	tmpR->value=(char*)malloc((size+1)*sizeof(char));
 	memmove(tmpR->value,value,size*sizeof(char));
 	tmpR->value[size]=0;
-	fprintf(stderr,"/%s\n",jkd);
+	char tmp[128];
+	sprintf(tmp,"%d",size);
+	addToMap(res,"size",tmp);
       }
       else{
-	jstring jvd=(*env)->GetStringUTFChars(env, jv, NULL);
+	const char* jvd=(*env)->GetStringUTFChars(env, jv, NULL);
 	if(res==NULL){
 	  res=createMap(jkd,jvd);
 	}else{
 	  addToMap(res,jkd,jvd);
 	}
-	(*env)->ReleaseStringChars(env, jv, jvd);
+	(*env)->ReleaseStringUTFChars(env, jv, jvd);
       }
 
 #ifdef DEBUG
       fprintf(stderr,"%s %s\n",jkd,jvd);
 #endif
 
-      (*env)->ReleaseStringChars(env, jk, jkd);
+      (*env)->ReleaseStringUTFChars(env, jk, jkd);
 
     }
     jobject jk=(*env)->CallObjectMethod(env,tmp,getKey_mid);
