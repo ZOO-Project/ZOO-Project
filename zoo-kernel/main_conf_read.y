@@ -24,7 +24,7 @@ static int previous_data=0;
 static int current_data=0;
 using namespace std;
 
-extern void crerror(char *s);
+extern void crerror(const char *s);
 
 void usage(void) ;
 
@@ -303,7 +303,7 @@ processid
 //======================================================
 /* fonction qui affiche l erreur si il y en a une */
 //======================================================
-void crerror(char *s)
+void crerror(const char *s)
 {
   if(debug)
     printf("\nligne %d : %s\n",crlineno,s);
@@ -313,7 +313,7 @@ void crerror(char *s)
 //======================================================
 /* fonction principale : entrée dans le programme */
 //======================================================
-int conf_read(char* file,maps* my_map){
+int conf_read(const char* file,maps* my_map){
   
   crin = fopen(file,"r");
   if (crin==NULL){

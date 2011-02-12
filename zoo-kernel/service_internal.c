@@ -129,7 +129,7 @@ void* updateStatus(maps *conf){
       else{
 	tmpMap=getMapFromMaps(conf,"lenv","status");
 	s1=shm;
-	for(s=tmpMap->value;*s!=NULL;s++)
+	for(s=tmpMap->value;s!=NULL;s++)
 	  *s1++=*s;
 	shmdt((void *)shm);
       }
@@ -215,7 +215,7 @@ char *zCapitalize(char *tmp){
 }
 
 
-int zooXmlSearchForNs(char* name){
+int zooXmlSearchForNs(const char* name){
   int i;
   int res=-1;
   for(i=0;i<nbNs;i++)
@@ -226,7 +226,7 @@ int zooXmlSearchForNs(char* name){
   return res;
 }
 
-int zooXmlAddNs(xmlNodePtr nr,char* url,char* name){
+int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
 #ifdef DEBUG
   fprintf(stderr,"zooXmlAddNs %d \n",nbNs);
 #endif
@@ -265,7 +265,7 @@ void zooXmlCleanupNs(){
   nbNs=0;
 }
 
-xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
+xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m){
 
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr n,nc,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
@@ -617,7 +617,7 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
   }
 }
 
-xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,char* service,maps* m){
+xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,const char* service,maps* m){
 
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr n,nr;
@@ -710,7 +710,7 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 
 }
 
-void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
+void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
   char *orderedFields[7];
   orderedFields[0]="mimeType";
   orderedFields[1]="encoding";
@@ -956,7 +956,7 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
   }
 }
 
-void printProcessResponse(maps* m,map* request, int pid,service* serv,char* service,int status,maps* inputs,maps* outputs){
+void printProcessResponse(maps* m,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr nr,n,nc,nc1,nc2,nc3,pseudor;
   xmlDocPtr doc;
@@ -1216,7 +1216,7 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
    * for demonstration purposes.
    */
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
-  printf((char *) xmlbuff);
+  printf("%s",xmlbuff);
   //fflush(stdout);
   /*
    * Free associated memory.
@@ -1227,7 +1227,7 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
   zooXmlCleanupNs();
 }
 
-void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
+void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,const char* type){
   xmlNodePtr nc1;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;  
@@ -1259,7 +1259,7 @@ void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPt
 
 }
 
-void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,map* m,char* type){
+void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,map* m,const char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;  
@@ -1287,7 +1287,7 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 
 }
 
-void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,char* type){
+void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,const char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;
@@ -1442,7 +1442,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 
 }
 
-void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,char* identifier,map* amap){
+void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map* amap){
   xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "Identifier");
   xmlAddChild(nc2,xmlNewText(BAD_CAST identifier));
   xmlAddChild(root,nc2);
@@ -1707,7 +1707,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  printExceptionReportResponse(m,errormap);
 	  freeMap(&errormap);
 	  free(errormap);
-	  return 1;
+	  return;
 	}
 	char mime[1024];
 	map* mi=getMap(tmpI->content,"mimeType");
@@ -1971,11 +1971,11 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
  * 
  * Note : support only 2D bounding box.
  */
-map* parseBoundingBox(char* value){
+map* parseBoundingBox(const char* value){
   map *res=NULL;
   if(value!=NULL){
     char *cv,*cvp;
-    cv=strtok_r(value,",",&cvp);
+    cv=strtok_r((char*) value,",",&cvp);
     int cnt=0;
     int icnt=0;
     char *currentValue=NULL;
@@ -2088,7 +2088,7 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
 
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
   if(file==NULL)
-    printf((char *) xmlbuff);
+    printf("%s",xmlbuff);
   else{
     fprintf(file,"%s",xmlbuff);
   }

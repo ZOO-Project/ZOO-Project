@@ -35,13 +35,12 @@ static int debug=0;
 static int data=-1;
 static int previous_data=0;
 static int current_data=0;
-static char* myFinalObjectAsJSON="{";
 // namespace
 using namespace std;
 //======================================================
 
 // srerror
-void srerror(char *s);
+void srerror(const char *s);
 //======================================================
 
 // usage ()
@@ -712,7 +711,7 @@ processid
 //======================================================
 /* fonction qui affiche l erreur si il y en a une */
 //======================================================
-void srerror(char *s)
+void srerror(const char *s)
 {
   if(debug)
     fprintf(stderr,"\nligne %d : %s\n",srlineno,s);
@@ -723,7 +722,7 @@ void srerror(char *s)
  * set service given as second parameter with informations extracted from the
  * definition file.
  */
-int getServiceFromFile(char* file,service** service){
+int getServiceFromFile(const char* file,service** service){
 
   freeMap(&previous_content);
   previous_content=NULL;

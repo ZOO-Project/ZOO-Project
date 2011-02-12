@@ -53,8 +53,8 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-extern   int getServiceFromFile(char*,service**);
-extern   int conf_read(char*,maps*);
+extern   int getServiceFromFile(const char*,service**);
+extern   int conf_read(const char*,maps*);
 
 #ifdef USE_JS
 #define XP_UNIX 0
@@ -83,25 +83,25 @@ extern "C" {
   char *url_encode(char *);
   char* getEncoding(maps*);
 
-  int zooXmlSearchForNs(char*);
-  int zooXmlAddNs(xmlNodePtr,char*,char*);
+  int zooXmlSearchForNs(const char*);
+  int zooXmlAddNs(xmlNodePtr,const char*,const char*);
   void zooXmlCleanupNs();
   
   void printExceptionReportResponse(maps*,map*);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
-  void printProcessResponse(maps*,map*,int,service*,char*,int,maps*,maps*);
-  xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,char*,maps*);
+  void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
+  xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,const char*,maps*);
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
-  xmlNodePtr printDescribeProcessHeader(xmlDocPtr,char*,maps*);
+  xmlNodePtr printDescribeProcessHeader(xmlDocPtr,const char*,maps*);
   void printDescribeProcessForProcess(maps*,xmlNodePtr,service*,int);
-  void printFullDescription(elements*,char*,xmlNsPtr,xmlNodePtr);
+  void printFullDescription(elements*,const char*,xmlNsPtr,xmlNodePtr);
   void printDocument(maps*,xmlDocPtr,int);
-  void printDescription(xmlNodePtr,xmlNsPtr,char*,map*);
-  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
-  map* parseBoundingBox(char*);
+  void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*);
+  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
+  map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
   void printBoundingBoxDocument(maps*,maps*,FILE*);
-  void printOutputDefinitions1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,char*);
+  void printOutputDefinitions1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
   
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
