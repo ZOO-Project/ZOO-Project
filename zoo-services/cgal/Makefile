@@ -5,5 +5,5 @@ cgi-env/cgal_service.zo: service.c
 	g++ ${CFLAGS} -shared -fpic -o cgi-env/cgal_service.zo ./service.c -lgdal -lCGAL
 
 clean:
-	rm -f *.zo *.o *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling
+	rm -f cgi-env/*.zo *.o *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling
 	rm -rf service_loader.dSYM
