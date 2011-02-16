@@ -1,4 +1,4 @@
-[Vornoi]
+[Voronoi]
  Title = Voronoi Diagram. 
  Abstract = Computes the edges of Voronoi diagram of a set of data points.
  Profile = urn:ogc:wps:1.0.0:voronoi
