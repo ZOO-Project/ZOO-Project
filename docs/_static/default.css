@@ -257,3 +257,80 @@ div.viewcode-block:target {
     border-top: 1px solid #ac9;
     border-bottom: 1px solid #ac9;
 }
+
+/*  Menu Bar ---------------------------------------- */
+
+ul.topnav {
+	position:relative;
+	top:0;
+	left:0;
+	list-style: none;
+	padding: 0 ;	
+	margin: 0;
+	float: left;
+	width: 100%;
+	height:40px;
+	background: #563404;
+filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#563404', endColorstr='#663e05'); /* for IE */
+background:-webkit-gradient(linear, left top, left bottom, from(#563404), to(#663e05)); /* for webkit browsers */
+background:-moz-linear-gradient(top,  #563404,  #663e05); /* for firefox 3.6+ */
+	font-size: 1.2em;
+}
+ul.topnav li {
+	float: left;
+	margin: 0;	
+	padding: 0 15px 0 0;
+	position: relative; /*--Declare X and Y axis base--*/
+}
+ul.topnav li a{
+	padding: 6px 10px 10px 20px;
+	color: #fff;
+	display: block;
+	text-decoration: none;
+	float: left;
+	
+}
+ul.topnav li a:hover{
+	background: transparent;
+	color:#ffcd0b;
+}
+ul.topnav li span { /*--Drop down trigger styles--*/
+	width: 17px;
+	height: 35px;
+	float: left;
+}
+ul.topnav li span.subhover {background-position: center bottom; cursor: pointer;} /*--Hover effect for trigger--*/
+ul.topnav li ul.subnav {
+	list-style: none;
+	position: absolute; /*--Important - Keeps subnav from affecting main navigation flow--*/
+	left: 20px; top: 35px;
+	margin: 0; padding: 0;
+	display: none;
+	float: left;
+	width: 170px;
+	-moz-border-radius-bottomleft: 5px;
+	-moz-border-radius-bottomright: 5px;
+	-webkit-border-bottom-left-radius: 5px;
+	-webkit-border-bottom-right-radius: 5px;
+	border: 1px solid #663e05;
+	z-index:1000000;
+	
+
+}
+ul.topnav li ul.subnav li{
+	margin: 0; padding: 0;
+
+	clear: both;
+	width: 125px;
+}
+html ul.topnav li ul.subnav li a {
+		font-size:.8em;
+	float: left;
+	width: 155px;
+	background: #663e05;
+	padding:3px 5px 3px 10px ;
+
+}
+html ul.topnav li ul.subnav li a:hover { /*--Hover effect for subnav links--*/
+ 
+}
