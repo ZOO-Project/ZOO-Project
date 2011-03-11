@@ -1,7 +1,7 @@
 Welcome to the ZOO Project
 ==========================
 
-ZOO is a WPS (Web Processing Service) open source project released under a MIT/X-11 style license. 
+ZOO is a WPS (Web Processing Service) open source project released under a :ref:`MIT/X-11 style license <license>`. 
 It provides an OGC WPS compliant developer-friendly framework to create and chain WPS Web services. 
 ZOO is made of three parts:
 

@@ -1,0 +1,15 @@
+{% extends "!layout.html" %}
+
+{% block header %}
+    <img src="_static/images/header-logo.jpg">
+    {{ super() }}
+{% endblock %}
+
+{% block rootrellink %}
+    <li><a href="http://www.zoo-project.org/">Project Homepage</a> &raquo;</li>
+    {{ super() }}
+{% endblock %}
+
+{# put the sidebar before the body #}
+{% block sidebar1 %}{% endblock %}
+{% block sidebar2 %}{{ sidebar() }}{% endblock %}
