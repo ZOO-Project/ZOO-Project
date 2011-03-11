@@ -1,0 +1,30 @@
+.. _download:
+
+ZOO Kernel Download
+===================
+
+ZOO Kernel is open source software available under the terms of the :ref:`MIT/X-11 style license <license>`. 
+Please see details of the ZOO Kernel license at the bottom of this page. Source code can 
+be compliled under Linux, Mac and Windows platforms. The latest ZOO Kernel version is 
+ZOO Kernel 1.0.
+
+Download ZOO Kernel source code
+-------------------------------
+
+`ZOO-Kernel-1.0.tar.bz2 <dl/ZOO-Kernel-1.0.tar.bz2>`__ / `ZOO-Kernel-1.0.zip <dl/ZOO-Kernel-1.0.zip>`__
+
+Or get the source code through SVN :
+
+::
+
+  svn checkout http://svn.zoo-project.org/svn/trunk zoo
+ 
+For registred developers, as the server waiting incoming SSH connexions on the 1046 port, 
+you'll have to edit your ~/.subversion/config file to add a tunnel. Let us name it as 
+zoossh, you can then use the following command :
+
+::
+
+  # sed "s:\[tunnels\]:\[tunnels\]\nzoosvn = /usr/bin/ssh -p 1046:g" -i ~/.subversion/config
+  # svn co svn+zoosvn://svn.zoo-project.org/var/svn/repos/trunk zoo-project
+ 
