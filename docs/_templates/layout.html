@@ -29,10 +29,10 @@ $(document).ready(function(){
 {% endblock %}
 
 {% block header %}
-    <img src="_static/images/header-logo.jpg">
+    <img src="{{ pathto("_static/images/header-logo.jpg", 1) }}">
 
 <ul class="topnav">
-  <li><a href="/site/">Home</a></li>
+  <li><a href="{{ pathto('index') }}">Home</a></li>
   <li><a href="#">ZOO Project</a>
        <ul class="subnav">
 
@@ -53,8 +53,8 @@ $(document).ready(function(){
 
     </ul>
   </li>
-  <li><a href="download.html">Download</a></li>
-  <li><a href="/site/ZooDocumentation">Docs</a></li>
+  <li><a href="{{ pathto('dl/index') }}">Download</a></li>
+  <li><a href="{{ pathto('doc/index') }}">Docs</a></li>
   <li><a href="#">Demos</a>
     <ul class="subnav">
       <li><a href="/site/ZooWebSite/Demo/SpatialTools">ZOO Spatial Tools</a></li>
