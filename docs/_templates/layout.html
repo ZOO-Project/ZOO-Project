@@ -29,8 +29,16 @@ $(document).ready(function(){
 {% endblock %}
 
 {% block header %}
-    <img src="{{ pathto("_static/images/header-logo.jpg", 1) }}">
-
+<!-- Begin Header -->
+<div id="wrapper">
+  	<div id="myheader">
+    	<div class="hleft">
+    	  <h1 class="title">Open WPS Platform</h1>
+    	</div>
+    	<div class="hright">
+    	</div>
+  	</div>
+</div>
 <ul class="topnav">
   <li><a href="{{ pathto('index') }}">Home</a></li>
   <li><a href="#">ZOO Project</a>
@@ -66,10 +74,86 @@ $(document).ready(function(){
     </ul>
   </li>
   <li><a href="/trac">Trac</a></li>
-
 </ul>
+<!-- End Header -->
+    {{ super() }}
+{% endblock %}
 
+{% block footer %}
+<!-- Begin Footer -->
+<div id="footer">
+<div>
 
+<div>
+  <div class="menuContainer">
+    <div class="menuItemList">
+      <a href="{{ pathto('index') }}" shape="rect">Home</a>
+      <br/>
+    </div>
+    <div class="menuItemList">
+      <a href="#" shape="rect">ZOO Project</a>
+
+      <br/>
+      <a href="/site/ZooWebSite/ZooProject/About" shape="rect">About</a>
+      <br/>
+      <a href="/site/ZooWebSite/ZooProject/Tribe" shape="rect">ZOO Tribe</a>
+      <br/>
+      <a href="/site/ZooWebSite/ZooProject/Events" shape="rect">Events</a>
+      <br/>
+
+      <a href="/site/ZooWebSite/ZooProject/Photos" shape="rect">Photos</a>
+      <br/>
+      <a href="/site/ZooWebSite/ZooProject/Contact" shape="rect">Contacts</a>
+      <br/>
+    </div>
+    <div class="menuItemList">
+      <a href="#" shape="rect">Components</a>
+
+      <br/>
+      <a href="/site/ZooWebSite/ZooKernel" shape="rect">ZOO Kernel</a>
+      <br/>
+      <a href="/site/ZooWebSite/ZooServices" shape="rect">ZOO Services</a>
+      <br/>
+      <a href="/site/ZooWebsite/ZooApi" shape="rect">ZOO API</a>
+      <br/>
+
+    </div>
+    <div class="menuItemList">
+      <a href="{{ pathto('dl/index') }}" shape="rect">Download</a>
+      <br/>
+    </div>
+    <div class="menuItemList">
+      <a href="{{ pathto('doc/index') }}" shape="rect">Docs</a>
+      <br/>
+
+    </div>
+    <div class="menuItemList">
+      <a href="#" shape="rect">Demos</a>
+      <br/>
+      <a href="/site/ZooWebSite/Demo/SpatialTools" shape="rect">ZOO Spatial Tools</a>
+      <br/>
+      <a href="/site/ZooWebSite/Demo/WFS-T" shape="rect">ZOO Mapserver WFS-T</a>
+
+      <br/>
+      <a href="/site/ZooWebSite/Demo/GdalProfile" shape="rect">ZOO Elevation Profile</a>
+      <br/>
+      <a href="/site/ZooWebSite/Demo/FormTools" shape="rect">ZOO Form tools</a>
+      <br/>
+    </div>
+    <div class="menuItemList">
+      <a href="/trac" shape="rect">Trac</a>
+
+      <br/>
+    </div>
+  </div>
+  <br style="clear:both"/>
+</div>
+</div>
+<p>
+&copy; Copyright 2011 - <a class="ext-link" href="http://www.zoo-project.org" shape="rect"><span class="icon"> </span>ZOO Project</a> - All Rights Reserved. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> {{sphinx_version}}.
+</p>
+</div>
+<!-- End Footer -->
     {{ super() }}
 {% endblock %}
 
