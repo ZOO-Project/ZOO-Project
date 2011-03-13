@@ -71,6 +71,43 @@ div.sphinxsidebar {
     float: right;
 }
 
+/* -- Custom Sidebar styles ----------------------------------------------------------- */
+
+.categories{
+	background: #563404;
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ee920c', endColorstr='#ffcd0b'); /* for IE */
+        background:-webkit-gradient(linear, left top, left bottom, from(#ee920c), to(#ffcd0b)); /* for webkit browsers */
+        background:-moz-linear-gradient(top,  #ee920c,  #ffcd0b); /* for firefox 3.6+ */
+	font-size: 1.3em;
+	width: 98%;
+	margin-bottom: 1em;
+	border:0;
+	padding:1%;
+	text-shadow: 1px 1px 1px #E0E0E0;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+        border-radius: 5px;
+}
+
+.twitts, .donate {
+    -moz-border-radius: 5px 5px 5px 5px;
+    background: -moz-linear-gradient(center top , #FFFFFF, #FFCD0B) repeat scroll 0 0 transparent;
+    border: 0 none;
+    height: 180px;
+    margin-bottom: 1em;
+    padding: 1%;
+    width: 98%;
+}
+
+p.version{
+color:#FFFFFF;
+text-shadow: none;
+margin:0 0 10px 10px ;
+padding:0;
+}
+
+/* -- End Custom Sidebar styles ----------------------------------------------------------- */
+
 div.sphinxsidebar h3 {
     font-family: 'Verdana, Arial, Helvetica, sans-serif';
     color: #663e05;
