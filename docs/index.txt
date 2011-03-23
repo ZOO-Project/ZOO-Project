@@ -5,10 +5,13 @@ ZOO Official Documentation
 
 This section contains the official ZOO Project documentation.
 
-- :ref:`ZOO Kernel <kernel>` 
-- :ref:`ZOO Services <services>` 
-- :ref:`ZOO API <api>`  
-- :ref:`ZOO Tutorial <tutorial>`
+.. toctree::
+   :maxdepth: 2
+   
+   kernel
+   services
+   api
+   tutorial
 
 ZOO Wiki
 ========
