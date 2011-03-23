@@ -1,18 +1,18 @@
-ZOO Documentation
-=================
+.. _home:
 
-The ZOO Project documentation is under construction. Here are listed the available 
-docs on differents components of the ZOO Project. Feel free to use it and 
-help us to write it !
+ZOO Official Documentation
+==========================
 
-- ZOO Kernel documentation
-- ZOO Services documentation
-- ZOO API documentation 
+This section contains the official ZOO Project documentation.
 
-Workshop
---------
+- :ref:`ZOO Kernel <kernel>` 
+- :ref:`ZOO Services <services>` 
+- :ref:`ZOO API <api>`  
+- :ref:`ZOO Tutorial <tutorial>`
 
-"Practical introduction to ZOO: The Open WPS Platform"
+ZOO Wiki
+========
 
-- Wiki Material in english or in japanese.
-- ODT or PDF Material in english, japanese,  italian.
+Users wishing to contribute steps and documents should use the
+`ZOO Wiki <http://www.zoo-project.org/trac>`__.
+
