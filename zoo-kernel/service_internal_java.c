@@ -344,10 +344,6 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 	(*env)->ReleaseStringUTFChars(env, jv, jvd);
       }
 
-#ifdef DEBUG
-      fprintf(stderr,"%s %s\n",jkd,jvd);
-#endif
-
       (*env)->ReleaseStringUTFChars(env, jk, jkd);
 
     }

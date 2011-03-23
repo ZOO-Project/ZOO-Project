@@ -1158,6 +1158,8 @@ int runRequest(map* request_inputs)
 		  memset(tmp,0,cgiContentLength);
 		  xmlNodePtr cur4=cur3->children;
 		  while(cur4!=NULL){
+		    while(cur4->type!=XML_ELEMENT_NODE)
+		      cur4=cur4->next;
 		    xmlDocPtr bdoc = xmlNewDoc(BAD_CAST "1.0");
 		    bdoc->encoding = xmlCharStrdup ("UTF-8");
 		    xmlDocSetRootElement(bdoc,cur4);
