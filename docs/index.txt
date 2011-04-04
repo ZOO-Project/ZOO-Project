@@ -12,6 +12,7 @@ This section contains the official ZOO Project documentation.
    services/index
    api/index
    tutorial/index
+   community/index
 
 ZOO Wiki
 ========

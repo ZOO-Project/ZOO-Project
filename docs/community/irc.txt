@@ -1,0 +1,7 @@
+.. _community-irc:
+
+ZOO IRC Chat
+============
+
+blah blah
+
