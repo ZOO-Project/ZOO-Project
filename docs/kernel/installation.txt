@@ -1,7 +1,7 @@
 .. _kernel-installation:
 
-ZOO Kernel Installation
-=======================
+Installation
+============
 
 .. contents:: Table of Contents
     :depth: 4
