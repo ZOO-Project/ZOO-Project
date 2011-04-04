@@ -21,16 +21,21 @@ Supported Languages
 ZOO Kernel supports the following programming languages, and let you use them to create 
 new ZOO Services from new or existing code :
 
-========== =============== =======================  ============
-Language   ServiceProvider DataStructure            Return
----------- --------------- -----------------------  ------------
-C / C++    Shared Library  maps* M 	            integer
-Fortran    Shared Library CHARACTER*(1024) M(10,30) integer
-Java 	   Class File 	   HashMap 	            integer
-Python 	   Module File 	   dictionary 	            integer
-PHP 	   Script File 	   Array 	            integer
-Perl 	   Script File 		                    integer
-JavaScript Script file 	   Object or Array 	    Array/Object 
-========== =============== ======================== ============
+============ =================== ========================= ============
+**Language** **ServiceProvider** **DataStructure**         **Return**
+------------ ------------------- ------------------------- ------------
+C / C++      Shared Library      maps* M 	           integer
+Fortran      Shared Library      CHARACTER*(1024) M(10,30) integer
+Java 	     Class File 	 HashMap 	           integer
+Python 	     Module File 	 dictionary 	           integer
+PHP 	     Script File 	 Array 	                   integer
+Perl 	     Script File 		                   integer
+JavaScript   Script file 	 Object or Array 	   Array/Object 
+============ =================== ========================= ============
+
+ZOO Kernel is a WPS Espresso Machine
+------------------------------------
+
+.. image:: ../_static/images/zoo_kernel_scheme.png
 
 
