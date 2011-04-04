@@ -3,17 +3,11 @@
 ZOO Kernel Documentation
 ========================
 
-Here are listed all the available documentation about ZOO Kernel.
+The following sections will assist you with the ZOO Kernel:
 
-Compilation
------------
-
-- :ref:`How to compile and install ZOO-Kernel <kernel-installation>` 
-
-Installation
-------------
-
-- How to install ZOO-Kernel on Debian like distributions (Ubuntu 10.4)
-- How to install ZOO-Kernel on CentOS 5.5.
-- How to configure PHP support 
+.. toctree::
+   :maxdepth: 2
+   
+   introduction
+   installation
 
