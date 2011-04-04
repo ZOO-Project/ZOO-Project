@@ -1,0 +1,36 @@
+.. _kernel-introduction:
+
+ZOO Kernel Introduction
+=======================
+
+ZOO Kernel is a the heart of the ZOO. It is a powerful server-side C Kernel which makes 
+it possible to manage and chain Web services, by loading dynamic libraries and handling 
+them as on-demand Web services. The ZOO Kernel is written in C language, but supports 
+several common programming languages in order to connect to numerous libraries and models.
+
+Using ZOO Kernel as a Web Processing Platform
+---------------------------------------------
+
+ZOO Kernel works with Apache and can communicate with cartographic engines and Web mapping 
+clients. It simply adds the WPS support to your spatial data infrastructure and your 
+Web mapping application !
+
+Supported Languages
+-------------------
+
+ZOO Kernel supports the following programming languages, and let you use them to create 
+new ZOO Services from new or existing code :
+
+========== =============== =======================  ============
+Language   ServiceProvider DataStructure            Return
+---------- --------------- -----------------------  ------------
+C / C++    Shared Library  maps* M 	            integer
+Fortran    Shared Library CHARACTER*(1024) M(10,30) integer
+Java 	   Class File 	   HashMap 	            integer
+Python 	   Module File 	   dictionary 	            integer
+PHP 	   Script File 	   Array 	            integer
+Perl 	   Script File 		                    integer
+JavaScript Script file 	   Object or Array 	    Array/Object 
+========== =============== ======================== ============
+
+
