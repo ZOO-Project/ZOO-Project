@@ -8,10 +8,10 @@ This section contains the official ZOO Project documentation.
 .. toctree::
    :maxdepth: 2
    
+   tutorial/index   
    kernel/index
    services/index
    api/index
-   tutorial/index
    community/index
 
 ZOO Wiki
