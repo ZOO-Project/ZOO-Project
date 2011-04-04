@@ -1,7 +1,7 @@
 .. _kernel-introduction:
 
-ZOO Kernel Introduction
-=======================
+Introduction
+============
 
 ZOO Kernel is a the heart of the ZOO. It is a powerful server-side C Kernel which makes 
 it possible to manage and chain Web services, by loading dynamic libraries and handling 
