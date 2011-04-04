@@ -1,0 +1,29 @@
+.. _services-intro:
+
+Introduction
+============
+
+ZOO Services are example Web services which work with the ZOO Kernel. They are based on various 
+existing Open Source libraries and tend to provide simple Web processing functions such as 
+GIS format conversion, GIS file reprojection, basic spatial operations, basic raster operations...
+
+The available ZOO Services are under development and come without any warranty. They are based 
+on existing code and prove that the ZOO Kernel works with many different codes and languages 
+(please have a look to the ZOO demos !). The ZOO Project team wants to encourage people to use 
+the ZOO Services as a functional basis for Web processing, but above all to provide a source 
+of inspiration to the community for creating new ZOO Services.
+
+What is a ZOO Service?
+----------------------
+
+A ZOO Service is a couple composed of:
+
+- The code you want to turn into a standardized Web service
+- A configuration file (.zcfg) which describes this Web service 
+
+Learn more on ZOO services configuration reading the .zcfg Reference
+
+Example ZOO Services
+--------------------
+
+See ZOO Services examples page 
