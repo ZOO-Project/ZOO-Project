@@ -1,0 +1,114 @@
+.. _services-howtos:
+
+How To Setup ZOO Services
+=========================
+
+ZOO Services are quiet easy to create once you have install ZOO Kernel and that you have 
+chosen a code to turn into a ZOO service. Here are some HelloWorlds in Python, PHP, Java 
+and JavaScript with link to the correpondant .zcfg files.
+
+Python
+------
+
+You'll find here informations needed to deploy your own Python Services Provider.
+
+Python ZCFG requirements
+************************
+
+For each Services providen by your ZOO Python Services Provider, the ZCFG File 
+have to be named as the Python module function name.
+
+The ZCFG file should contain the following :
+
+
+serviceType
+    Python 
+serviceProvider
+    the name of the Python module to use as a ZOO Service Provider. For instance, if your 
+    script, located in the same directory as your ZOO Kernel, was named my_module.py then 
+    you should use my_module (the Python module name) as serviceProvider value in ZCFG file. 
+
+Python Data Structure used
+**************************
+
+The Python module's function to be used as a service have to :
+
+- take three arguments : the main configuration, inputs and outputs maps are passed to the 
+  Python module as  dictionaries.
+- return an integer : corresopnding to the service status code. 
+
+Sample Data Structure
+*********************
+
+In the following you 'll find a sample argument passed to the Python module's function for 
+the two first main configuration file' sections.
+
+::
+
+  main={
+     "main": {"encoding": "utf-8",
+              "version": "1.0.0",
+              "serverAddress": "http://www.zoo-project.org/zoo/",
+              "lang": "fr-FR,en-CA"}, 
+     "identification": {"title": "The Zoo WPS Development Server",
+                        "abstract": "Development version of ZooWPS.",
+                        "fees": "None",
+                        "accessConstraints": "none",
+                        "keywords": "WPS,GIS,buffer"}
+  }
+
+Sample ZOO Python Services Provider
+***********************************
+
+The following code represent a simple ZOO Python Services Provider which provides only one 
+Service, the HelloPy one.
+
+::
+
+  import sys
+  def HelloPy(conf,inputs,outputs):
+     outputs["Result"]["value"]="Hello "+inputs["a"]["value"]+" from Python World !"
+     return 3
+
+PHP
+---
+
+::
+
+  <?
+  function HelloPHP(&$main_conf,&$inputs,&$outputs){
+     $outputs["Result"]["value"]="Hello ".$inputs[S][value]." from PHP world !";
+     return 3;
+  }
+  ?>
+
+Java
+----
+
+::
+
+  import java.util.*;
+  public class HelloJava {
+    public static int HelloWorldJava(HashMap conf,HashMap inputs, HashMap outputs) {
+       HashMap hm1 = new HashMap();
+       hm1.put("dataType","string");
+       HashMap tmp=(HashMap)(inputs.get("S"));
+       java.lang.String v=tmp.get("value").toString();
+       hm1.put("value","Hello "+v+" from JAVA WOrld !");
+       outputs.put("Result",hm1);
+       System.err.println("Hello from JAVA WOrld !");
+       return 3;
+    }
+  }
+
+Javascript
+----------
+
+::
+
+  function hellojs(conf,inputs,outputs){
+     outputs=new Array();
+     outputs[0]={};
+     outputs[0]["result"]["value"]="Hello "+inputs[0]["S"]["value"]+" from JS World !";
+     return Array(3,outputs);
+  }
