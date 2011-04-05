@@ -23,6 +23,12 @@
  */
 
 /**
+ * Copyright 2005-2010 OpenLayers Contributors, released under the Clear BSD
+ * license. Please see http://svn.openlayers.org/trunk/openlayers/license.txt
+ * for the full text of the license.
+ */
+
+/**
  * Class: ZOO
  */
 ZOO = {
