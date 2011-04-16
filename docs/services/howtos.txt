@@ -63,7 +63,7 @@ Sample ZOO Python Services Provider
 The following code represent a simple ZOO Python Services Provider which provides only one 
 Service, the HelloPy one.
 
-::
+.. code-block:: python
 
   import sys
   def HelloPy(conf,inputs,outputs):
@@ -73,7 +73,7 @@ Service, the HelloPy one.
 PHP
 ---
 
-::
+.. code-block:: php
 
   <?
   function HelloPHP(&$main_conf,&$inputs,&$outputs){
@@ -85,7 +85,7 @@ PHP
 Java
 ----
 
-::
+.. code-block:: java
 
   import java.util.*;
   public class HelloJava {
@@ -104,7 +104,7 @@ Java
 Javascript
 ----------
 
-::
+.. code-block:: javascript
 
   function hellojs(conf,inputs,outputs){
      outputs=new Array();
