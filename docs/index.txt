@@ -1,9 +1,19 @@
 .. _home:
 
-ZOO Official Documentation
-==========================
+ZOO 1.2 Documentation
+=====================
 
 This section contains the official ZOO Project documentation.
+
+.. note::
+    The entire documentation is also available as a single
+    `PDF document <./ZOOProject.pdf>`__ |image|  and `ePub document <./ZOOProject.epub>`__
+    
+.. |image| image:: _static/images/pdf.png
+   :height: 15
+   :width: 15
+   :alt: PDF icon
+   :target: /ZOOProject.pdf
 
 .. toctree::
    :maxdepth: 2
@@ -19,4 +29,17 @@ ZOO Wiki
 
 Users wishing to contribute steps and documents should use the
 `ZOO Wiki <http://www.zoo-project.org/trac>`__.
+
+About ZOO Documentation
+=======================
+
+ZOO Documentation is a collaborative process; once users contribute documentation
+through the ZOO Wiki, the Documentation Committee will then review the contributions
+to add them into the official docs.  The committee is currently composed of:
+
+::
+
+  Jeff McKenna
+  Nicolas Bozon
+  Gerald Fenoy
 
