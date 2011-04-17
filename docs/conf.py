@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'ZOO Project'
-copyright = u'2011, Jeff McKenna, Gerald Fenoy, Nicolas Bozon'
+copyright = u'2011, Jeff McKenna, Gérald Fenoy, Nicolas Bozon'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -190,7 +190,7 @@ htmlhelp_basename = 'ZOOProjectdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'ZOOProject.tex', u'ZOO Project Documentation',
-   u'Jeff McKenna, Gerald Fenoy, Nicolas Bozon', 'manual'),
+   u'Jeff McKenna, Gérald Fenoy, Nicolas Bozon', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -223,7 +223,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'zooproject', u'ZOO Project Documentation',
-     [u'Jeff McKenna, Gerald Fenoy, Nicolas Bozon'], 1)
+     [u'Jeff McKenna, Gérald Fenoy, Nicolas Bozon'], 1)
 ]
 
 
@@ -231,9 +231,9 @@ man_pages = [
 
 # Bibliographic Dublin Core info.
 epub_title = u'ZOO Project'
-epub_author = u'Jeff McKenna, Gerald Fenoy, Nicolas Bozon'
-epub_publisher = u'Jeff McKenna, Gerald Fenoy, Nicolas Bozon'
-epub_copyright = u'2011, Jeff McKenna, Gerald Fenoy, Nicolas Bozon'
+epub_author = u'Jeff McKenna, Gérald Fenoy, Nicolas Bozon'
+epub_publisher = u'Jeff McKenna, Gérald Fenoy, Nicolas Bozon'
+epub_copyright = u'2011, Jeff McKenna, Gérald Fenoy, Nicolas Bozon'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
