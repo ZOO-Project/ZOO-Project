@@ -240,11 +240,11 @@ epub_copyright = u'2011, Jeff McKenna, Gérald Fenoy, Nicolas Bozon'
 #epub_language = ''
 
 # The scheme of the identifier. Typical schemes are ISBN or URL.
-#epub_scheme = ''
+epub_scheme = 'URL'
 
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.
-#epub_identifier = ''
+epub_identifier = 'http://zoo-project.org'
 
 # A unique identification for the text.
 #epub_uid = ''
