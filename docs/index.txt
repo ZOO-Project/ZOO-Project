@@ -41,5 +41,5 @@ to add them into the official docs.  The committee is currently composed of:
 
   Jeff McKenna
   Nicolas Bozon
-  Gerald Fenoy
+  Gérald Fenoy
 
