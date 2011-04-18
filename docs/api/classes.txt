@@ -9,7 +9,8 @@ The following classes are available in the ZOO API:
    :maxdepth: 2
    
    zoo
-   zoo-string
+   zoo-bounds  
+   zoo-format
+   zoo-projection   
    zoo-request
-   zoo-bounds
-   zoo-projection 
+   zoo-string   

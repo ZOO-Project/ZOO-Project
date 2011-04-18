@@ -1,0 +1,95 @@
+.. _api-zoo-format:
+
+ZOO.Format
+==========
+
+Base class for format reading/writing a variety of formats.
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`options <options>`
+     - {Object} A reference to options passed to the constructor.
+   * - :ref:`externalProjection <externalProjection>`
+     - {ZOO.Projection} When passed a externalProjection and internalProjection, the format will reproject the geometries it reads or writes.
+   * - :ref:`internalProjection <internalProjection>`
+     - {ZOO.Projection} When passed a externalProjection and internalProjection, the format will reproject the geometries it reads or writes.
+   * - :ref:`data <data>`
+     - {Object} When keepData is true, this is the parsed string sent to read.
+   * - :ref:`keepData <keepData>`
+     - {Object} Maintain a reference (data) to the most recently read data.   
+     
+Functions	
+---------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Format <ZOO.Format>`
+     - Instances of this class are not useful.
+   * - :ref:`destroy <destroy>`
+     - Clean up.
+   * - :ref:`read <read>`
+     - Read data from a string, and return an object whose type depends on the subclass.
+   * - :ref:`data <data>`
+     - {Object} When keepData is true, this is the parsed string sent to read.
+   * - :ref:`write <write>`
+     - Accept an object, and return a string.     
+        
+**Properties**
+
+.. _options:   
+
+options	
+  {Object} A reference to options passed to the constructor.
+  
+.. _externalProjection:   
+
+externalProjection	
+  {ZOO.Projection} When passed a externalProjection and internalProjection, the format will reproject the geometries it reads or writes.
+
+.. _internalProjection:   
+
+internalProjection	
+  {ZOO.Projection} When passed a externalProjection and internalProjection, the format will reproject the geometries it reads or writes.
+
+.. _data:   
+
+data	
+  {Object} When keepData is true, this is the parsed string sent to read.
+
+.. _keepData:   
+
+keepData	
+  {Object} Maintain a reference (data) to the most recently read data.
+
+**Functions**
+
+.. _ZOO.Format:   
+
+ZOO.Format	
+  Instances of this class are not useful.
+  
+.. _destroy:     
+  
+destroy	
+  Clean up.
+
+.. _read:     
+  
+read	
+  Read data from a string, and return an object whose type depends on the subclass.
+
+.. _write:     
+
+write	
+  Accept an object, and return a string.     
