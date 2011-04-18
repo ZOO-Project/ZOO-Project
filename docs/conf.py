@@ -104,7 +104,7 @@ html_theme_options = {
     "linkcolor": "#fc9326",
     "visitedlinkcolor": "#fc9326",    
     "sidebarbgcolor": "white",
-    "relbarbgcolor": "#5e3905"    
+    "relbarbgcolor": "#ffa500"    
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
