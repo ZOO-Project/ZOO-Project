@@ -11,3 +11,5 @@ The following classes are available in the ZOO API:
    zoo
    zoo-string
    zoo-request
+   zoo-bounds
+   zoo-projection 

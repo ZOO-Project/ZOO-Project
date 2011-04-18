@@ -1,0 +1,140 @@
+.. _api-zoo-bounds:
+
+ZOO.Bounds
+==========
+
+Instances of this class represent bounding boxes.
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`left <left>`
+     - {Number} Minimum horizontal coordinate.
+   * - :ref:`bottom <bottom>`
+     - {Number} Minimum vertical coordinate. 
+   * - :ref:`right <right>` 
+     - {Number} Maximum horizontal coordinate.
+   * - :ref:`top <top>`
+     - {Number} Maximum vertical coordinate.   
+     
+Functions
+---------  
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Bounds <ZOO.Bounds>`
+     - Construct a new bounds object.
+   * - :ref:`clone <clone>`
+     - Create a cloned instance of this bounds.
+   * - :ref:`equals <equals>` 
+     - Test a two bounds for equivalence.
+   * - :ref:`toString <toString>`
+     - {String} String representation of bounds object.
+   * - :ref:`toBBOX <toBBOX>`
+     - 
+   * - :ref:`toGeometry <toGeometry>`
+     - Create a new polygon geometry based on this bounds.
+   * - :ref:`getWidth <getWidth>` 
+     - {Float} The width of the bounds
+   * - :ref:`getHeight <getHeight>`
+     - {Float} The height of the bounds (top minus bottom)  
+   * - :ref:`add <add>`
+     - 
+   * - :ref:`extend <extend>`
+     - Extend the bounds to include the point, lonlat, or bounds specified.
+   * - :ref:`intersectsBounds <intersectsBounds>` 
+     - Determine whether the target bounds intersects this bounds.
+   * - :ref:`containsBounds <containsBounds>`
+     - Determine whether the target bounds is contained within this bounds.     
+
+**Properties**
+   
+.. _left:   
+   
+left	
+  {Number} Minimum horizontal coordinate.
+  
+.. _bottom:     
+  
+bottom	
+  {Number} Minimum vertical coordinate.
+
+.. _right:     
+
+right	
+  {Number} Maximum horizontal coordinate.
+
+.. _top:     
+
+top	
+  {Number} Maximum vertical coordinate.
+
+**Functions**
+
+.. _ZOO.Bounds:     
+
+ZOO.Bounds	
+  Construct a new bounds object.
+  
+.. _clone:       
+
+clone	
+  Create a cloned instance of this bounds.
+
+.. _equals:       
+
+equals	
+  Test a two bounds for equivalence.
+
+.. _toString: 
+
+toString	
+  {String} String representation of bounds object.
+  
+.. _toBBOX:   
+  
+toBBOX	
+
+.. _toGeometry:   
+
+toGeometry	
+  Create a new polygon geometry based on this bounds.
+  
+.. _getWidth:     
+
+getWidth	
+  {Float} The width of the bounds
+  
+.. _getHeight:       
+  
+getHeight	
+  {Float} The height of the bounds (top minus bottom)
+
+.. _add:       
+
+add
+
+.. _extend:       
+
+extend	
+  Extend the bounds to include the point, lonlat, or bounds specified.
+  
+.. _intersectsBounds:         
+  
+intersectsBounds	
+  Determine whether the target bounds intersects this bounds.
+ 
+.. _containsBounds:          
+ 
+containsBounds	
+  Determine whether the target bounds is contained within this bounds.
