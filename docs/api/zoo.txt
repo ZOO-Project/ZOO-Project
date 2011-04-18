@@ -29,7 +29,7 @@ Functions
 ---------
 
 .. list-table::
-   :widths: 20 50
+   :widths: 12 50
    :header-rows: 1
 
    * - NAME
