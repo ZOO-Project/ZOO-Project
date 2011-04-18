@@ -1,0 +1,93 @@
+.. _api-zoo-projection:
+
+ZOO.Projection
+==============
+
+Class for coordinate transforms between coordinate systems.
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`proj <proj>`
+     - {Number} Proj4js.Proj instance.
+   * - :ref:`projCode <projCode>`
+     - {String} 
+       
+Functions	
+---------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Projection <ZOO.Projection>`
+     - This class offers several methods for interacting with a wrapped zoo-pro4js projection object.
+   * - :ref:`getCode <getCode>`
+     - Get the string SRS code.
+   * - :ref:`getUnits <getUnits>`
+     - Get the units string for the projection -- returns null if zoo-proj4js is not available.
+   * - :ref:`toString <toString>`
+     - Convert projection to string (getCode wrapper).
+   * - :ref:`equals <equals>`
+     - Test equality of two projection instances.   
+   * - :ref:`destroy <destroy>`
+     - Destroy projection object.
+   * - :ref:`transform <transform>`
+     - Transform a point coordinate from one projection to another.       
+
+**Properties**
+
+.. _proj:   
+
+proj	
+  {Object} Proj4js.Proj instance.
+  
+.. _projCode:     
+  
+projCode	
+  {String}
+
+**Functions**
+
+.. _ZOO.Projection:     
+
+ZOO.Projection	
+  This class offers several methods for interacting with a wrapped zoo-pro4js projection object.
+
+.. _getCode:     
+
+getCode	
+  Get the string SRS code.
+  
+.. _getUnits:       
+
+getUnits	
+  Get the units string for the projection -- returns null if zoo-proj4js is not available.
+
+.. _toString:       
+
+toString	
+  Convert projection to string (getCode wrapper).
+  
+.. _equals:         
+  
+equals	
+  Test equality of two projection instances.
+  
+.. _destroy:           
+  
+destroy	
+  Destroy projection object.
+  
+.. _transform:             
+  
+transform	
+  Transform a point coordinate from one projection to another. 
