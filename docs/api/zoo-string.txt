@@ -1,0 +1,72 @@
+.. _api-zoo-string:
+
+ZOO.String
+==========
+
+Contains convenience methods for string manipulation:
+
+Functions and Properties
+------------------------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`startsWith <startsWith>`
+     - Test whether a string starts with another string.
+   * - :ref:`contains <contains>`
+     - Test whether a string contains another string.  
+   * - :ref:`trim <trim>` 
+     - Removes leading and trailing whitespace characters from a string.
+   * - :ref:`camelize <camelize>`
+     - Camel-case a hyphenated string.    
+   * - :ref:`tokenRegEx <tokenRegEx>`
+     - Used to find tokens in a string.     
+   * - :ref:`numberRegEx <numberRegEx>` 
+     - Used to test strings as numbers.
+   * - :ref:`isNumeric <isNumeric>`
+     - Determine whether a string contains only a numeric value. 
+   * - :ref:`numericIf <numericIf>`
+     - Converts a string that appears to be a numeric value into a number.        
+
+.. _startsWith:
+
+startsWith
+  Test whether a string starts with another string.
+
+.. _contains:
+
+contains	
+  Test whether a string contains another string.
+
+.. _trim:
+
+trim	
+  Removes leading and trailing whitespace characters from a string.
+
+.. _camelize:
+
+camelize	
+  Camel-case a hyphenated string.
+  
+.. _tokenRegEx:  
+  
+tokenRegEx	
+  Used to find tokens in a string.
+  
+.. _numberRegEx:    
+  
+numberRegEx	
+  Used to test strings as numbers.
+  
+.. _isNumeric:  
+  
+isNumeric	
+  Determine whether a string contains only a numeric value.
+  
+.. _numericIf:  
+
+numericIf	
+  Converts a string that appears to be a numeric value into a number.

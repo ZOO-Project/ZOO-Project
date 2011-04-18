@@ -9,3 +9,4 @@ The following classes are available in the ZOO API:
    :maxdepth: 2
    
    zoo
+   zoo-string
