@@ -1,0 +1,30 @@
+.. _api-zoo-request:
+
+ZOO.Request
+===========
+
+Contains convenience methods for working with ZOORequest which replace XMLHttpRequest.
+
+Functions
+---------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`GET <GET>`
+     - Send an HTTP GET request.
+   * - :ref:`POST <POST>`
+     - Send an HTTP POST request. 
+     
+.. _GET:
+
+GET	
+  Send an HTTP GET request.
+
+.. _POST:
+
+POST	
+  Send an HTTP POST request.
