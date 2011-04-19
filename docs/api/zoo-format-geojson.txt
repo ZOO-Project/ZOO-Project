@@ -1,0 +1,241 @@
+.. _api-zoo-format-geojson:
+
+ZOO.Format.GeoJSON
+==================
+
+Read and write GeoJSON.
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Format.GeoJSON <ZOO.Format.GeoJSON>`
+     - Create a new parser for GeoJSON.
+   * - :ref:`read <read>`
+     - Deserialize a GeoJSON string.
+   * - :ref:`isValidType <isValidType>`
+     - Check if a GeoJSON object is a valid representative of the given type.
+   * - :ref:`parseFeature <parseFeature>`
+     - Convert a feature object from GeoJSON into an ZOO.Feature. 
+   * - :ref:`parseGeometry <parseGeometry>`
+     - Convert a geometry object from GeoJSON into an ZOO.Geometry.   
+     
+parseCoords Properties	
+----------------------
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`parseCoords <parseCoords>`
+     - Object with properties corresponding to the GeoJSON geometry types.  
+     
+parseCoords Functions	
+---------------------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`parseCoords.point <parseCoords.point>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.Point.
+   * - :ref:`parseCoords.multipoint <parseCoords.multipoint>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.MultiPoint.
+   * - :ref:`parseCoords.linestring <parseCoords.linestring>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.LineString.
+   * - :ref:`parseCoords.multilinestring <parseCoords.multilinestring>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.MultiLineString.
+   * - :ref:`parseCoords.polygon <parseCoords.polygon>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.Polygon.  
+   * - :ref:`parseCoords.multipolygon <parseCoords.multipolygon>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.MultiPolygon.
+   * - :ref:`parseCoords.box <parseCoords.box>`
+     - Convert a coordinate array from GeoJSON into an ZOO.Geometry.Polygon.
+   * - :ref:`write <write>`
+     - Serialize a feature, geometry, array of features into a GeoJSON string.
+   * - :ref:`createCRSObject <createCRSObject>`
+     - Create the CRS object for an object.     
+     
+extract Properties
+------------------
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`extract <extract>`
+     - Object with properties corresponding to the GeoJSON types.   
+     
+extract Functions	
+-----------------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`extract.feature <extract.feature>`
+     - Return a partial GeoJSON object representing a single feature.
+   * - :ref:`extract.geometry <extract.geometry>`
+     - Return a GeoJSON object representing a single geometry.
+   * - :ref:`extract.point <extract.point>`
+     - Return an array of coordinates from a point.
+   * - :ref:`extract.multipoint <extract.multipoint>`
+     - Return an array of coordinates from a multipoint.  
+   * - :ref:`extract.linestring <extract.linestring>`
+     - Return an array of coordinate arrays from a linestring.
+   * - :ref:`extract.multilinestring <extract.multilinestring>`
+     - Return an array of linestring arrays from a linestring.
+   * - :ref:`extract.polygon <extract.polygon>`
+     - Return an array of linear ring arrays from a polygon.
+   * - :ref:`extract.multipolygon <extract.multipolygon>`
+     - Return an array of polygon arrays from a multipolygon.  
+   * - :ref:`extract.collection <extract.collection>`
+     - Return an array of geometries from a geometry collection.      
+     
+**Functions**	
+  
+.. _ZOO.Format.GeoJSON:                         
+  
+ZOO.Format.GeoJSON	
+  Create a new parser for GeoJSON.
+  
+.. _read:                           
+  
+read	
+  Deserialize a GeoJSON string.
+  
+.. _isValidType:                             
+  
+isValidType	
+  Check if a GeoJSON object is a valid representative of the given type.
+  
+.. _parseFeature:                               
+  
+parseFeature	
+  Convert a feature object from GeoJSON into an ZOO.Feature.
+  
+.. _parseGeometry:                                 
+  
+parseGeometry	
+  Convert a geometry object from GeoJSON into an ZOO.Geometry.
+  
+**parseCoords Properties**
+
+.. _parseCoords:                                 
+
+parseCoords	
+  Object with properties corresponding to the GeoJSON geometry types.
+  
+**parseCoords Functions**
+
+.. _parseCoords.point:                                 
+
+parseCoords.point	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.Point.
+  
+.. _parseCoords.multipoint:                                   
+  
+parseCoords.multipoint	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.MultiPoint.
+  
+.. _parseCoords.linestring:                                     
+  
+parseCoords.linestring	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.LineString.
+  
+.. _parseCoords.multilinestring: 
+  
+parseCoords.multilinestring	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.MultiLineString.
+  
+.. _parseCoords.polygon:  
+  
+parseCoords.polygon	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.Polygon.
+
+.. _parseCoords.multipolygon:  
+
+parseCoords.multipolygon	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.MultiPolygon.
+  
+.. _parseCoords.box:  
+  
+parseCoords.box	
+  Convert a coordinate array from GeoJSON into an ZOO.Geometry.Polygon.
+  
+.. _write:  
+  
+write	
+  Serialize a feature, geometry, array of features into a GeoJSON string.
+  
+.. _createCRSObject:    
+  
+createCRSObject	
+  Create the CRS object for an object.
+  
+**extract Properties**
+
+.. _extract:    
+
+extract	
+  Object with properties corresponding to the GeoJSON types.
+  
+** extract Functions**
+
+.. _extract.feature:    
+
+extract.feature	
+  Return a partial GeoJSON object representing a single feature.
+  
+.. _extract.geometry:      
+  
+extract.geometry	
+  Return a GeoJSON object representing a single geometry.
+  
+.. _extract.point:        
+  
+extract.point	
+  Return an array of coordinates from a point.
+  
+.. _extract.multipoint:          
+  
+extract.multipoint	
+  Return an array of coordinates from a multipoint.
+  
+.. _extract.linestring:            
+  
+extract.linestring	
+  Return an array of coordinate arrays from a linestring.
+  
+.. _extract.multilinestring:              
+  
+extract.multilinestring	
+  Return an array of linestring arrays from a linestring.
+  
+.. _extract.polygon:             
+  
+extract.polygon	
+  Return an array of linear ring arrays from a polygon.
+  
+.. _extract.multipolygon:                 
+  
+extract.multipolygon	
+  Return an array of polygon arrays from a multipolygon.
+  
+.. _extract.collection:  
+  
+extract.collection	
+  Return an array of geometries from a geometry collection.
