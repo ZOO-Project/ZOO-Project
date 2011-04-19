@@ -132,4 +132,12 @@ write
   
     write: function(data)
 
-  Accept an object, and return a string.     
+  Accept an object, and return a string.   
+
+  *Parameters*
+  
+  ``object {Object}`` Object to be serialized
+  
+  *Returns*
+
+  ``{String}`` A string representation of the object.  
