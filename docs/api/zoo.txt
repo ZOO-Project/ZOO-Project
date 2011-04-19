@@ -160,8 +160,8 @@ distVincenty
 
   *Parameters:*
 
-  | ``p1`` :ref:`{ZOO.Geometry.Point} <zoo-geometry-point>` (or any object with both .x, .y properties)
-  | ``p2`` :ref:`{ZOO.Geometry.Point} <zoo-geometry-point>` (or any object with both .x, .y properties)
+  | ``p1`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` (or any object with both .x, .y properties)
+  | ``p2`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` (or any object with both .x, .y properties)
 
 .. _Class:
 
