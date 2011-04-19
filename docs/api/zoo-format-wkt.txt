@@ -1,0 +1,101 @@
+.. _api-zoo-format-wkt:
+
+ZOO.Format.WKT
+==============
+
+Class for reading and writing Well-Known Text. 
+
+Functions and Properties	
+------------------------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Format.WKT <ZOO.Format.WKT>`
+     - Create a new parser for WKT
+   * - :ref:`read <read>`
+     - Deserialize a WKT string and return a vector feature or an array of vector features.
+   * - :ref:`write <write>`
+     - Serialize a feature or array of features into a WKT string.
+   * - :ref:`extract <extract>`
+     - Object with properties corresponding to the geometry types.   
+   * - :ref:`parse <parse>`
+     - Object with properties corresponding to the geometry types.
+   * - :ref:`parse.point <parse.point>`
+     - Return point feature given a point WKT fragment.   
+   * - :ref:`parse.multipoint <parse.multipoint>`
+     - Return a multipoint feature given a multipoint WKT fragment.
+   * - :ref:`parse.linestring <parse.linestring>`
+     - Return a linestring feature given a linestring WKT fragment. 
+   * - :ref:`parse.multilinestring <parse.multilinestring>`
+     - Return a multilinestring feature given a multilinestring WKT fragment.
+   * - :ref:`parse.polygon <parse.polygon>`
+     - Return a polygon feature given a polygon WKT fragment.
+   * - :ref:`parse.multipolygon <parse.multipolygon>`
+     - Return a multipolygon feature given a multipolygon WKT fragment.
+   * - :ref:`parse.geometrycollection <parse.geometrycollection>`
+     - Return an array of features given a geometrycollection WKT fragment.     
+       
+.. _ZOO.Format.WKT:   
+
+ZOO.Format.WKT	
+  Create a new parser for WKT
+  
+.. _read:     
+  
+read	
+  Deserialize a WKT string and return a vector feature or an array of vector features.
+  
+.. _write:       
+  
+write	
+  Serialize a feature or array of features into a WKT string.
+  
+.. _extract:         
+  
+extract	
+  Object with properties corresponding to the geometry types.
+  
+.. _parse:           
+  
+parse	
+  Object with properties corresponding to the geometry types.
+  
+.. _parse.point:             
+  
+parse.point	
+  Return point feature given a point WKT fragment.
+  
+.. _parse.multipoint:               
+  
+parse.multipoint	
+  Return a multipoint feature given a multipoint WKT fragment.
+ 
+.. _parse.linestring:                
+ 
+parse.linestring	
+  Return a linestring feature given a linestring WKT fragment.
+  
+.. _parse.multilinestring:                  
+  
+parse.multilinestring	
+  Return a multilinestring feature given a multilinestring WKT fragment.
+  
+.. _parse.polygon:                  
+  
+parse.polygon	
+  Return a polygon feature given a polygon WKT fragment.
+  
+.. _parse.multipolygon:                    
+  
+parse.multipolygon	
+  Return a multipolygon feature given a multipolygon WKT fragment.
+  
+.. _parse.geometrycollection:                      
+  
+parse.geometrycollection	
+  Return an array of features given a geometrycollection WKT fragment.
+
