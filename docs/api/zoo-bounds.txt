@@ -62,22 +62,22 @@ Functions
 .. _left:   
    
 left	
-  {Number} Minimum horizontal coordinate.
+  ``{Number}`` Minimum horizontal coordinate.
   
 .. _bottom:     
   
 bottom	
-  {Number} Minimum vertical coordinate.
+  ``{Number}`` Minimum vertical coordinate.
 
 .. _right:     
 
 right	
-  {Number} Maximum horizontal coordinate.
+  ``{Number}`` Maximum horizontal coordinate.
 
 .. _top:     
 
 top	
-  {Number} Maximum vertical coordinate.
+  ``{Number}`` Maximum vertical coordinate.
 
 **Functions**
 
