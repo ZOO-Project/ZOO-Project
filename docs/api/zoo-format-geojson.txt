@@ -193,7 +193,7 @@ createCRSObject
 extract	
   Object with properties corresponding to the GeoJSON types.
   
-** extract Functions**
+**extract Functions**
 
 .. _extract.feature:    
 
