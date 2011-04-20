@@ -41,8 +41,8 @@ POST
   *Parameters*
   
   | ``url {String}`` The URL to request.
-  | ``body {String}`` The request’s body to send.
-  | ``headers {Object}`` A key-value object of headers to push to the request’s head
+  | ``body {String}`` The request's body to send.
+  | ``headers {Object}`` A key-value object of headers to push to the request's head
 
   *Returns*
 

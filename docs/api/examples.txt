@@ -23,8 +23,8 @@ ZOO.Process example of use
 In this really short example you can see how to create ZOO.Process class instance and 
 call the Execute method on such an instance. Then you'll just need to return a JavaScript 
 object containing the attributes result and outputs, which I'm sure you already know 
-what is about. The first is about the status of the process (can be ZOO.SERVICE_
-SUCEEDED,ZOO.SERVICE_FAILED ad so on), the last is obviously the resulting maps (take a 
+what is about. The first is about the status of the process (can be ZOO.SERVICE_SUCEEDED,
+ZOO.SERVICE_FAILED and so on), the last is obviously the resulting maps (take a 
 look at the maps internal data structure used by ZOO Kernel in service.h).
 
 ZOO.UpdateStatus
