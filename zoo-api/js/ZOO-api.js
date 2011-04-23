@@ -3203,7 +3203,7 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       return new ZOO.Geometry.MultiPolygon(components);
     },
     /**
-     * Method: parseGeometry.polygon
+     * Method: parseGeometry.envelope
      * Given a GML node representing an envelope, create a
      *     ZOO polygon geometry.
      *
