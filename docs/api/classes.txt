@@ -11,7 +11,8 @@ The following classes are available in the ZOO API:
    zoo
    zoo-bounds  
    zoo-format
-   zoo-format-geojson   
+   zoo-format-geojson 
+   zoo-format-gml   
    zoo-format-json 
    zoo-format-kml
    zoo-format-wkt  
