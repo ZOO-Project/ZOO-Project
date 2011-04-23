@@ -71,10 +71,6 @@ Properties and Functions
    * - :ref:`buildCoordinatesNode <buildCoordinatesNode>`
      - Builds and returns the KML coordinates node with the given geometry <coordinates>...</coordinates> 
 
-
-
-
-
 .. _kmlns:  
   	
 kmlns	
@@ -190,7 +186,6 @@ parseGeometry.polygon
   
 parseGeometry.multigeometry	
   Given a KML node representing a multigeometry, create a ZOO geometry collection.
-
 
   *Parameters*
   
