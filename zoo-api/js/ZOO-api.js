@@ -4095,7 +4095,7 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
   /**
    * Method: calculateBounds
    * Recalculate the bounds by iterating through the components and 
-   * calling calling extendBounds() on each item.
+   * calling extendBounds() on each item.
    */
   calculateBounds: function() {
     this.bounds = null;
