@@ -19,6 +19,7 @@ The following classes are available in the ZOO API:
    zoo-format-wkt  
    zoo-format-wps  
    zoo-geometry  
+   zoo-geometry-collection   
    zoo-projection   
    zoo-request
    zoo-string   
