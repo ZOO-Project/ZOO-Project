@@ -10,6 +10,7 @@ The following classes are available in the ZOO API:
    
    zoo
    zoo-bounds  
+   zoo-feature   
    zoo-format
    zoo-format-geojson 
    zoo-format-gml   

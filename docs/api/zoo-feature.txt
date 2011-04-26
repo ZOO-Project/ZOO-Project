@@ -1,0 +1,49 @@
+.. _api-zoo-feature:
+
+ZOO.Feature
+===========
+
+Vector features use the ZOO.Geometry classes as geometry description.
+
+Functions and Properties	
+------------------------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`fid <fid>`
+     - {String}
+   * - :ref:`geometry <geometry>`
+     - {ZOO.Geometry}
+   * - :ref:`attributes <attributes>`
+     - {Object} This object holds arbitrary properties that describe the feature.
+   * - :ref:`bounds <bounds>`
+     - {ZOO.Bounds} The box bounding that feature's geometry, that property can be set by an ZOO.Format object when deserializing the feature, so in most cases it represents an information set by the server.
+     
+**Properties**
+       
+.. _fid: 
+
+fid	
+  ``{String}``
+  
+.. _geometry:   
+  
+geometry	
+  :ref:`{ZOO.Geometry} <api-zoo-geometry>`
+  
+.. _attributes:     
+  
+attributes	
+  ``{Object}`` This object holds arbitrary properties that describe the feature.
+  
+.. _bounds:       
+  
+bounds	
+  :ref:`{ZOO.Bounds} <api-zoo-bounds>` The box bounding that feature's geometry, that 
+  property can be set by an ZOO.Format object when deserializing the feature, so in most cases 
+  it represents an information set by the server.
+
