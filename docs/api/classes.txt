@@ -17,7 +17,8 @@ The following classes are available in the ZOO API:
    zoo-format-json 
    zoo-format-kml
    zoo-format-wkt  
-   zoo-format-wps   
+   zoo-format-wps  
+   zoo-geometry  
    zoo-projection   
    zoo-request
    zoo-string   
