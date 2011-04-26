@@ -4252,6 +4252,7 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
    * Calculate the approximate length of the geometry were it projected onto
    *     the earth.
    *
+   * Parameters:
    * projection - {<ZOO.Projection>} The spatial reference system
    *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
    *     assumed.
