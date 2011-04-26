@@ -5,11 +5,11 @@ ZOO.Feature
 
 Vector features use the ZOO.Geometry classes as geometry description.
 
-Functions and Properties	
-------------------------
+Properties	
+----------
 
 .. list-table::
-   :widths: 30 50
+   :widths: 12 50
    :header-rows: 1
 
    * - NAME
@@ -22,6 +22,25 @@ Functions and Properties
      - {Object} This object holds arbitrary properties that describe the feature.
    * - :ref:`bounds <bounds>`
      - {ZOO.Bounds} The box bounding that feature's geometry, that property can be set by an ZOO.Format object when deserializing the feature, so in most cases it represents an information set by the server.
+
+Functions	
+---------
+
+.. list-table::
+   :widths: 15 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Feature <ZOO.Feature>`
+     - Create a vector feature.
+   * - :ref:`destroy <destroy>`
+     - nullify references to prevent circular references and memory leaks
+   * - :ref:`clone <clone>`
+     - Create a clone of this vector feature.
+   * - :ref:`move <move>`
+     - Moves the feature and redraws it at its new location
+   
      
 **Properties**
        
@@ -47,3 +66,42 @@ bounds
   property can be set by an ZOO.Format object when deserializing the feature, so in most cases 
   it represents an information set by the server.
 
+**Functions**
+       
+.. _ZOO.Feature: 
+
+ZOO.Feature
+  Create a vector feature.
+
+
+  *Parameters*
+  
+  | ``geometry`` :ref:`{ZOO.Geometry} <api-zoo-geometry>` The geometry that this feature represents.
+  | ``attributes {Object}`` An optional object that will be mapped to the attributes property. 
+  
+.. _destroy:   
+  
+destroy	
+  ::
+  
+    destroy: function()
+
+  nullify references to prevent circular references and memory leaks  
+  
+.. _clone:     
+  
+clone	
+  ::
+  
+    clone: function ()
+
+  Create a clone of this vector feature.  Does not set any non-standard properties.
+
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` An exact clone of this vector feature.  
+  
+.. _move:       
+  
+move	
+  Moves the feature and redraws it at its new location
