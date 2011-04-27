@@ -5,6 +5,10 @@ ZOO.Format.GML
 
 Read/Write GML.
 
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
 Properties and Functions	
 ------------------------
 

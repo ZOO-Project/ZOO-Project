@@ -5,6 +5,10 @@ ZOO.Format.WPS
 
 Read/Write WPS.
 
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
 Functions and Properties	
 ------------------------
 

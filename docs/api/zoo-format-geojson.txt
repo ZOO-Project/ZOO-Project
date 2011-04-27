@@ -5,6 +5,10 @@ ZOO.Format.GeoJSON
 
 Read and write GeoJSON.
 
+Inherits from
+
+- :ref:`ZOO.Format.JSON <api-zoo-format-json>`
+
 Properties	
 ----------
 

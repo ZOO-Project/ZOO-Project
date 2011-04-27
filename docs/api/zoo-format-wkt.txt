@@ -3,7 +3,11 @@
 ZOO.Format.WKT
 ==============
 
-Class for reading and writing Well-Known Text. 
+Class for reading and writing Well-Known Text.
+
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
 
 Functions and Properties	
 ------------------------
