@@ -5,6 +5,10 @@ ZOO.Geometry.Point
 
 Point geometry class.
 
+Inherits from
+
+- :ref:`ZOO.Geometry <api-zoo-geometry>`
+
 Properties	
 ----------
 

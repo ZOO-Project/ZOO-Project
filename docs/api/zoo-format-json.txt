@@ -5,6 +5,10 @@ ZOO.Format.JSON
 
 A parser to read/write JSON safely.
 
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
 Properties	
 ----------
 

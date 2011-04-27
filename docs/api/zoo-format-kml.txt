@@ -5,6 +5,10 @@ ZOO.Format.KML
 
 Read/Write KML.
 
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
 Properties and Functions	
 ------------------------
 

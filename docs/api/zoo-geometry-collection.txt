@@ -3,7 +3,21 @@
 ZOO.Geometry.Collection
 =======================
 
-A Collection is exactly what it sounds like: A collection of different Geometries.
+A Collection is exactly what it sounds like: A collection of different Geometries.  
+These are stored in the local parameter :ref:`components <components>` (which can 
+be passed as a parameter to the constructor).
+
+As new geometries are added to the collection, they are NOT cloned.  When removing geometries, 
+they need to be specified by reference (ie you have to pass in the exact geometry to be removed).
+
+The <getArea> and :ref:`getLength <getLength>` functions here merely iterate through the components, 
+summing their respective areas and lengths.
+
+Create a new instance with the :ref:`ZOO.Geometry.Collection <ZOO.Geometry.Collection>` constructor.
+
+Inherits from
+
+- :ref:`ZOO.Geometry <api-zoo-geometry>`
 
 Properties	
 ----------
