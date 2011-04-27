@@ -20,6 +20,7 @@ The following classes are available in the ZOO API:
    zoo-format-wps  
    zoo-geometry  
    zoo-geometry-collection  
+   zoo-geometry-curve
    zoo-geometry-multipoint   
    zoo-geometry-point 
    zoo-geometry-surface 
