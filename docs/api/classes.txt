@@ -23,6 +23,7 @@ The following classes are available in the ZOO API:
    zoo-geometry-curve
    zoo-geometry-linearring   
    zoo-geometry-linestring   
+   zoo-geometry-multilinestring   
    zoo-geometry-multipoint   
    zoo-geometry-point 
    zoo-geometry-surface 
