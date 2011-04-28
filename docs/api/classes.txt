@@ -29,6 +29,7 @@ The following classes are available in the ZOO API:
    zoo-geometry-point 
    zoo-geometry-polygon   
    zoo-geometry-surface 
+   zoo-process   
    zoo-projection   
    zoo-request
    zoo-string   
