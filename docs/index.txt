@@ -16,7 +16,7 @@ This section contains the official ZOO Project documentation.
    :target: /ZOOProject.pdf
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    tutorial/index   
    kernel/index
