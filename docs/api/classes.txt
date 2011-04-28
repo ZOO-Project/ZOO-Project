@@ -26,6 +26,7 @@ The following classes are available in the ZOO API:
    zoo-geometry-multilinestring   
    zoo-geometry-multipoint   
    zoo-geometry-point 
+   zoo-geometry-polygon   
    zoo-geometry-surface 
    zoo-projection   
    zoo-request

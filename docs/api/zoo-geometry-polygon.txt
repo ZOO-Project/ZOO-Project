@@ -1,0 +1,87 @@
+.. _api-zoo-geometry-polygon:
+
+ZOO.Geometry.Polygon
+====================
+
+Polygon is a collection of :ref:`ZOO.Geometry.LinearRing <api-zoo-geometry-linearring>`.
+
+Inherits from
+
+- :ref:`ZOO.Geometry.Collection <api-zoo-geometry-collection>`
+
+Functions	
+---------
+
+.. list-table::
+   :widths: 15 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION   
+   * - :ref:`ZOO.Geometry.Polygon <ZOO.Geometry.Polygon>`
+     - Constructor for a Polygon geometry.   
+   * - :ref:`getArea <getArea>`
+     - Calculated by subtracting the areas of the internal holes from the area of the outer hole.  
+   * - :ref:`containsPoint <containsPoint>`
+     - Test if a point is inside a polygon.  
+   * - :ref:`createRegularPolygon <createRegularPolygon>`
+     - Create a regular polygon around a radius.       
+     
+.. _ZOO.Geometry.Polygon: 
+
+ZOO.Geometry.Polygon	
+  Constructor for a Polygon geometry.  The first ring (*this.component[0]*) is the outer 
+  bounds of the polygon and all subsequent rings (*this.component[1-n]*) are internal holes.
+
+  *Parameters*
+  
+  ``components`` {Array(:ref:`ZOO.Geometry.LinearRing <api-zoo-geometry-linearring>`)}  
+
+.. _getArea:  
+  
+getArea	
+  ::
+  
+    getArea: function()
+
+  Calculated by subtracting the areas of the internal holes from the area of the outer hole.
+
+  *Returns*
+
+  ``{float}`` The area of the geometry  
+  
+.. _containsPoint:    
+  
+containsPoint	
+  ::
+  
+    containsPoint: function(point)
+
+  Test if a point is inside a polygon.  Points on a polygon edge are considered inside.
+
+  *Parameters*
+  
+  ``point`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>`
+
+  *Returns*
+
+  ``{Boolean | Number}`` The point is inside the polygon.  Returns 1 if the point is on an edge.  Returns boolean otherwise.  
+
+.. _createRegularPolygon:      
+  
+createRegularPolygon	
+  ::
+  
+    ZOO.Geometry.Polygon.createRegularPolygon = function( origin,
+    	                                                  radius,
+                                                          sides,
+    	                                                  rotation	)
+
+  Create a regular polygon around a radius.  Useful for creating circles and the like.
+
+  *Parameters*
+  
+  | ``origin`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` center of polygon.
+  | ``radius {Float}`` distance to vertex, in map units.
+  | ``sides {Integer}`` Number of sides.  20 approximates a circle.
+  | ``rotation {Float}`` original angle of rotation, in degrees.
