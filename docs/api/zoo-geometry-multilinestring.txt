@@ -1,0 +1,31 @@
+.. _api-zoo-geometry-multilinestring:
+
+ZOO.Geometry.MultiLineString
+============================
+
+A MultiLineString is a geometry with multiple ZOO.Geometry.LineString components.
+
+Inherits from
+
+- :ref:`ZOO.Geometry.Collection <api-zoo-geometry-collection>`
+
+Functions	
+---------
+
+.. list-table::
+   :widths: 15 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION   
+   * - :ref:`ZOO.Geometry.MultiLineString <ZOO.Geometry.MultiLineString>`
+     - Constructor for a MultiLineString Geometry.     
+     
+.. _ZOO.Geometry.MultiLineString: 
+
+ZOO.Geometry.MultiLineString	
+  Constructor for a MultiLineString Geometry.
+
+  *Parameters*
+  
+  ``components`` {Array(:ref:`ZOO.Geometry.LineString <api-zoo-geometry-linestring>`)}
