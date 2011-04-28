@@ -21,6 +21,7 @@ The following classes are available in the ZOO API:
    zoo-geometry  
    zoo-geometry-collection  
    zoo-geometry-curve
+   zoo-geometry-linestring   
    zoo-geometry-multipoint   
    zoo-geometry-point 
    zoo-geometry-surface 
