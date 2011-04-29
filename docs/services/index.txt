@@ -9,5 +9,6 @@ The following sections will assist you with ZOO Services:
    :maxdepth: 2
    
    introduction
+   zcfg-reference
    howtos
    examples
