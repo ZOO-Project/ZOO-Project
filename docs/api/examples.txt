@@ -6,7 +6,7 @@ Examples
 In this page you can find some small examples on how to use the JavaScript ZOO-API 
 on the server side.
 
-ZOO-API contains many classes and functions. You can find the description list here.
+ZOO-API contains many classes and functions. You can find the description list :ref:`here <api-classes>`.
 
 ZOO.Process example of use
 --------------------------
