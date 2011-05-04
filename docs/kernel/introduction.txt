@@ -3,9 +3,9 @@
 Introduction
 ============
 
-ZOO Kernel is a the heart of the ZOO. It is a powerful server-side C Kernel which makes 
+ZOO Kernel is the heart of the ZOO. It is a powerful server-side C Kernel which makes 
 it possible to manage and chain Web services, by loading dynamic libraries and handling 
-them as on-demand Web services. The ZOO Kernel is written in C language, but supports 
+them as on-demand Web services. The ZOO Kernel is written in the C language, but supports 
 several common programming languages in order to connect to numerous libraries and models.
 
 Using ZOO Kernel as a Web Processing Platform
@@ -13,25 +13,33 @@ Using ZOO Kernel as a Web Processing Platform
 
 ZOO Kernel works with Apache and can communicate with cartographic engines and Web mapping 
 clients. It simply adds the WPS support to your spatial data infrastructure and your 
-Web mapping application !
+Web mapping application!
+
+.. note::
+   If you'd like some background on the WPS standard, head to: http://www.opengeospatial.org/standards/wps
 
 Supported Languages
 -------------------
 
-ZOO Kernel supports the following programming languages, and let you use them to create 
-new ZOO Services from new or existing code :
+ZOO Kernel supports the following programming languages, and let's you use them to create 
+new ZOO Services from new or existing code:
 
 ============ =================== ========================= ============
 **Language** **ServiceProvider** **DataStructure**         **Return**
 ------------ ------------------- ------------------------- ------------
 C / C++      Shared Library      maps* M 	           integer
 Fortran      Shared Library      CHARACTER*(1024) M(10,30) integer
-Java 	     Class File 	 HashMap 	           integer
-Python 	     Module File 	 dictionary 	           integer
-PHP 	     Script File 	 Array 	                   integer
+Java 	     Class File 	 `HashMap`_ 	           integer
+Python 	     Module File 	 `dictionary`_ 	           integer
+PHP 	     Script File 	 `Array`_ 	           integer
 Perl 	     Script File 		                   integer
-JavaScript   Script file 	 Object or Array 	   Array/Object 
+JavaScript   Script file 	 `Object`_ or Array	   Array/Object 
 ============ =================== ========================= ============
+
+.. _`HashMap`: http://download.oracle.com/javase/6/docs/api/java/util/HashMap.html
+.. _`dictionary`: http://docs.python.org/tutorial/datastructures.html#dictionaries
+.. _`Array`: http://php.net/manual/language.types.array.php
+.. _`Object`: http://www.json.org/
 
 ZOO Kernel is a WPS Espresso Machine
 ------------------------------------
