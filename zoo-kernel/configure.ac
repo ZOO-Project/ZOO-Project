@@ -118,7 +118,7 @@ AC_SUBST([XML2_LDFLAGS])
 # ===========================================================================
 
 AC_ARG_WITH([python], 
-	[AS_HELP_STRING([--with-python=PATH], [To enabled python support or specify an alternative directory for python installation,  disabled by default])], 
+	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
 	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
 
 
@@ -163,7 +163,7 @@ AC_SUBST([PYTHON_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([php], 
-	[AS_HELP_STRING([--with-php=PATH], [To enabled php support or specify an alternative directory for php installation,  disabled by default])], 
+	[AS_HELP_STRING([--with-php=PATH], [To enable php support or specify an alternative directory for php installation,  disabled by default])], 
 	[PHP_PATH="$withval"; PHP_ENABLED="-DUSE_PHP"], [PHP_ENABLED=""])
 
 
@@ -208,7 +208,7 @@ AC_SUBST([PHP_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([perl], 
-	[AS_HELP_STRING([--with-perl=PATH], [To enabled perl support or specify an alternative directory for perl installation,  disabled by default])], 
+	[AS_HELP_STRING([--with-perl=PATH], [To enable perl support or specify an alternative directory for perl installation,  disabled by default])], 
 	[PERL_PATH="$withval"; PERL_ENABLED="-DUSE_PERL"], [PERL_ENABLED=""])
 
 
@@ -247,7 +247,7 @@ AC_SUBST([PERL_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([java], 
-	[AS_HELP_STRING([--with-java=PATH], [To enabled java support, specify a JDK_HOME,  disabled by default])], 
+	[AS_HELP_STRING([--with-java=PATH], [To enable java support, specify a JDK_HOME,  disabled by default])], 
 	[JDKHOME="$withval"; JAVA_ENABLED="-DUSE_JAVA"], [JAVA_ENABLED=""])
 
 if test -z "$JAVA_ENABLED"
@@ -306,7 +306,7 @@ AC_SUBST([JAVA_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([js], 
-	[AS_HELP_STRING([--with-js=PATH], [specify --with-js=path-to-js to enabled js support, specify --with-js on linux debian like, js support is disabled by default ])], 
+	[AS_HELP_STRING([--with-js=PATH], [specify --with-js=path-to-js to enable js support, specify --with-js on linux debian like, js support is disabled by default ])], 
 	[JSHOME="$withval";JS_ENABLED="-DUSE_JS"], [JS_ENABLED=""])
 
 if test -z "$JS_ENABLED"
