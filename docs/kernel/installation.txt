@@ -7,34 +7,98 @@ Installation
     :depth: 4
     :backlinks: top
 
-This page provides documentation on how to compile then install ZOO-Kernel on Unix and Win32 platforms.
+This page provides documentation on how to compile then install the ZOO Kernel on Unix and Win32 platforms.
+
+Obtaining the ZOO Kernel Source
+-------------------------------
+
+Use the following command to get the ZOO Kernel source code through Subversion:
+
+::
+
+  svn checkout http://svn.zoo-project.org/svn/trunk zoo-project
+
+For users which get a developer account, use the following:
+
+::
+
+  sed "s:\[tunnels\]:\[tunnels\]\nzoosvn = /usr/bin/ssh -p 1046:g" -i ~/.subversion/config
+  svn co svn+zoosvn://svn.zoo-project.org/var/svn/repos/trunk zoo-project
+
+The first line of the instruction above defines a specific tunnel to access the svn server through 
+the SSH protocol. Indeed, the ZOO SVN server listens on the 1046 (1024+22) port rather than the default one (22).
+
+Prerequisites
+-------------
+
+The following libraries are required on your system before you can install the ZOO Kernel:
+
+- autoconf (  http://www.gnu.org/software/autoconf/ ) 
+- cgic (  http://www.boutell.com/cgic )
+- cURL (  http://curl.haxx.se )
+- FastCGI (  http://www.fastcgi.com )
+- Flex & Bison (  http://flex.sourceforge.net/  http://www.gnu.org/software/bison/ )
+- libxml2 (  http://xmlsoft.org )
+- OpenSSL (  http://www.openssl.org )
+- Python (  http://www.python.org )
+
+Optional libraries include:
+
+- PHP Embedded (optional) (  http://www.php.net )
+- Java SDK (optional) (  http://java.sun.com )
+- SpiderMonkey (optional) (  http://www.mozilla.org/js/spidermonkey/ ) 
+
+Compile libcgic
+---------------
+
+The first step is to compile libcgic from the ``zoo-project/thirds`` directory. For such a task, please use 
+the following command:
+
+::
+
+  cd thirds/cgic206
+  make
+
+Make sure that a ``libcgic.a`` is created in your ``zoo-project/thirds/cgic206`` directory. If yes, then 
+you can go to the next step.
+
+On Windows, rather than using the make command, please use:
+
+::
+
+  nmake /f makefile.vc. 
+  
+.. warning::
+   If you don't compile libcgic first, and try to compile the ZOO Kernel, you will get an error such as *cannot find -lcgic*
 
 Unix
 ----
 
-For Unix users, ZOO-Kernel comes with a GNU autoconf "configure" script that should take care of (hopefully!) 
+For Unix users, the ZOO Kernel comes with a GNU autoconf "configure" script that should take care of (hopefully!) 
 all compilation issues for you.
 
-The configure script won't work on Windows. See section WIN32 for details on compiling on Windows systems.
+The configure script won't work on Windows. See section :ref:`WIN32 <win32>` for details on compiling 
+on Windows systems. 
 
 For the impatient
 *****************
 
-To build zoo_loader.cgi CGI program with the default options, go to the default options, go to the directory 
-where you extracted the ZOO-Kernel source code package and use the following command:
+To build the ``zoo_loader.cgi`` CGI program with the default options, cd to the directory 
+where you extracted the ZOO Kernel source code package and use the following commands:
 
 ::
 
   $ cd zoo-kernel
+  $ autoconf  
   $ ./configure
   $ make
 
-Unless something went wrong, you should have executables in the current directory for the zoo_loader.cgi 
-CGI program. You can copy the zoo_loader.cgi program and the main.cfg file to your HTTP server's CGI 
+Unless something went wrong, you should have executables in the current directory for the ``zoo_loader.cgi`` 
+CGI program. You can copy the ``zoo_loader.cgi`` program and the ``main.cfg`` file to your HTTP server's CGI 
 directory and start using it.
 
 At this step your ZOO-Kernel should work. Nevertheless, don't forget to correct the main.cfg settings 
-to set tmpPath and tmpUrl to fit your web server configuration.
+to set ``tmpPath`` and ``tmpUrl`` to fit your web server configuration.
 
 Configure Options
 *****************
@@ -45,16 +109,16 @@ Here is the list of available options as returned by *./configure --help*:
 
   --with-gdal-config=FILE specify an alternative gdal-config file
   --with-xml2config=FILE  specify an alternative xml2-config file
-  --with-python=PATH      To enabled python support or specify an alternative
+  --with-python=PATH      To enable python support or specify an alternative
                           directory for python installation, disabled by
                           default
-  --with-php=PATH         To enabled php support or specify an alternative
+  --with-php=PATH         To enable php support or specify an alternative
                           directory for php installation, disabled by default
-  --with-perl=PATH        To enabled perl support or specify an alternative
+  --with-perl=PATH        To enable perl support or specify an alternative
                           directory for perl installation, disabled by default
-  --with-java=PATH        To enabled java support, specify a JDK_HOME,
+  --with-java=PATH        To enable java support, specify a JDK_HOME,
                           disabled by default
-  --with-js=PATH          specify --with-js=path-to-js to enabled js support,
+  --with-js=PATH          specify --with-js=path-to-js to enable js support,
                           specify --with-js on linux debian like, js support
                           is disabled by default
 
@@ -64,7 +128,7 @@ All the options are described in more details below.
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 If your gdal-config program is not found in your PATH then you can use the 
-"*--with-gdal-config*" option to speficy its location. For instance, let suppose that your gdal-config 
+``--with-gdal-config`` option to specify its location. For instance, let's suppose that your gdal-config 
 was installed in /usr/local/bin and this directory is not in your PATH, then you can use 
 the following command:
 
@@ -76,8 +140,8 @@ the following command:
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 If your xml2-config program is not found in your PATH then you can use the 
-"*--with-xml2config*" option to specify its location. For instance, let suppose that 
-your xml2-config was installed in /usr/local/bin end this directory is not in you PATH, 
+``--with-xml2config`` option to specify its location. For instance, let's suppose that 
+your xml2-config was installed in /usr/local/bin and this directory is not in your PATH, 
 then you can use the following command:
 
 ::
@@ -87,126 +151,132 @@ then you can use the following command:
 (Optional) Python Support
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to activate the Python Support for ZOO-Kernel then you will have to use the 
-"*--with-python*" option. If your python-config program is found in your PATH then you 
-don't have to specify the path where Python was installed, so using the following command:
+If you want to activate Python support for the ZOO Kernel then you will have to use the 
+``--with-python`` option. If your python-config program is found in your PATH then you 
+don't have to specify the path where Python was installed, such as:
 
 ::
 
   $ ./configure --with-python
 
-This suppose that python-config is found in your PATH.
+This assumes that python-config is found in your PATH.
 
-In case your python-config is not found in your PATH, then you can set the Python installation 
-directory you are using. For instance, let suppose that you installed Python in /usr/local, 
-then you can use the following command:
+In the case that your python-config is not found in your PATH, then you can specify the Python 
+installation directory you are using. For instance, let's suppose that you installed 
+Python in /usr/local, then you can use the following command:
 
 ::
 
   $ ./configure --with-python=/usr/local
 
-This suppose that /usr/local/bin/python-config exists.
+This assumes that /usr/local/bin/python-config exists.
 
 (Optional) PHP Support
 ^^^^^^^^^^^^^^^^^^^^^^
 
-To be able to activate PHP Support for ZOO-Kernel you'll need to get a local PHP Embedded 
-installation, for more informations about configure options to use to get such kind of PHP 
-installation you can refer to this page :
+To be able to activate PHP support for the ZOO Kernel you'll need to get a local PHP Embedded 
+installation; for more information about the required configure options when compiling PHP you 
+can refer to this page :
 
      http://zoo-project.org/trac/wiki/ZooKernel/Embed/PHP
 
-If you want to activate the PHP Support for ZOO-Kernel then you will have to use the 
-"*--with-php*" option. If your php-config program is found in your PATH then you don't have 
-to specify the path where PHP was installed, so using the following commnd:
+If you want to activate the PHP support for the ZOO Kernel then you will have to use the 
+``--with-php`` option. If your php-config program is found in your PATH then you don't have 
+to specify the path where PHP was installed, then you can use the following commnd:
 
 ::
 
   $ ./configure --with-php
 
-This suppose that php-config is found in your PATH.
+This assumes that php-config is found in your PATH.
 
-In case your php-config is not found in your PATH, then you can set the PHP installation 
-directory you are using. For instance, let suppose that you installed PHP in /usr/local, 
+In the case that your php-config is not found in your PATH, then you can specify the PHP installation 
+directory you are using. For instance, let's suppose that you installed PHP in /usr/local, 
 then you can use the following command:
 
 ::
 
   $ ./configure --with-php=/usr/local
 
-This suppose that /usr/local/bin/php-config exists.
+This assumes that /usr/local/bin/php-config exists.
 
 (Optional) Perl Support
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to activate the Perl Support for ZOO-Kernel then you will have to use the 
-"*--with-perl*" option. If you do not set any value to this option, then perl program will 
-be searched in your PATH. So in such case, you can use the following command:
+If you want to activate Perl support for the ZOO Kernel then you will have to use the 
+``--with-perl`` option. If you do not set any value to this option, then the perl program will 
+be searched in your PATH. So in such a case, you can use the following command:
 
 ::
 
   $ ./configure --with-perl 
 
-This suppose that perl is found in your PATH.
+This assumes that perl is found in your PATH.
 
-In other case, for custom Perl installation, you can set the installation directory. For instance, 
-let suppose that you installed Perl in /usr/local and /usr/local/bin is not in your PATH, 
+In the other case, for custom Perl installations, you can set the installation directory. For instance, 
+let's suppose that you installed Perl in /usr/local and /usr/local/bin is not in your PATH, 
 then you can use the following command:
 
 ::
 
   $ ./configure --with-perl=/usr/local
 
-This suppose that /usr/local/bin/perl exists.
+This assumes that /usr/local/bin/perl exists.
 
 (Optional) Java Support
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to activate the Java Support for ZOO-Kernel then you will have to use the 
-"*--with-java*" option and set the installation path of your Java SDK. For instance, 
-let suppose that your Java SDK was installed in /usr/lib/jvm/java-6-sun-1.6.0.22/ directory, 
+If you want to activate Java support for the ZOO Kernel then you will have to use the 
+``--with-java`` option and set the installation path of your Java SDK. For instance, 
+let's suppose that your Java SDK was installed in the /usr/lib/jvm/java-6-sun-1.6.0.22/ directory, 
 then you can use the following command:
 
 ::
 
   $ ./configure --with-java=/usr/lib/jvm/java-6-sun-1.6.0.22/
 
-This suppose that the include/linux and jre/lib/i386/client/ subdirectories exist in 
+This assumes that the include/linux and jre/lib/i386/client/ subdirectories exist in 
 /usr/lib/jvm/java-6-sun-1.6.0.22/, include/linux contains the jni.h headers file and 
 jre/lib/i386/client/ contains the libjvm.so file.
 
-Note that on MacOS X you only have to set macos as value for the "*--with-java*" option 
-to get the Java Support for ZOO-Kernel activated. So using the following command:
+.. note:: 
+   With Mac OS X you only have to set ``macos`` as the value for the ``--with-java`` option 
+   to activate Java support. For example:
 
-::
+   ::
 
-  $ ./configure --with-java=macos
+     $ ./configure --with-java=macos
 
 (Optional) JavaScript Support
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to activate the JavaScript Support for ZOO-Kernel then you will have to use 
-the "*--with-js*" option. If you are using a "Debian-like" GNU/Linux distribution then 
-dpkg will be used to detect if the required packages was installed and you don't have to 
+If you want to activate JavaScript support for the ZOO Kernel then you will have to use 
+the ``--with-js`` option. If you are using a "Debian-like" GNU/Linux distribution then 
+dpkg will be used to detect if the required packages are installed and you don't have to 
 specify anything here, so you can use the following command:
 
 ::
 
   $ ./configure --with-js 
 
-This suppose that js_api.h and libmozjs.so are found in default directories.
+This assumes that js_api.h and libmozjs.so are found in default directories.
 
-If you get a custom installation of SpiderMonkey or you are not using a Debian packaging 
+If you have a custom installation of SpiderMonkey or you are not using a Debian packaging 
 system, then you'll have to specify the directory where you installed it. For 
-instance, let suppose that you installed your SpiderMonkey in /usr, then you'll 
+instance, let's suppose that you installed your SpiderMonkey in /usr, then you'll 
 have to use the following command:
 
 ::
 
   $ ./configure --with-js=/usr
 
-This suppose that the /usr/include/js exists and contains the js_api.h headers file and 
+This assumes that the /usr/include/js exists and contains the js_api.h headers file and 
 /usr/lib contains libmozjs.so file.
+
+.. _win32:   
+
+OpenSUSE
+********
 
 WIN32
 -----
