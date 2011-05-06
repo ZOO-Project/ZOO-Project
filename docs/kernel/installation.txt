@@ -414,6 +414,8 @@ You can optionally compile then install curl from source :
 
 Compile then install Python :
 
+::
+ 
   wget http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tar.bz2
   tar xjf Python-2.6.6.tar.bz2
   cd Python-2.6.6
@@ -422,6 +424,8 @@ Compile then install Python :
   make install
 
 Compile then install your own GDAL library :
+
+::
 
   wget http://download.osgeo.org/gdal/gdal-1.7.3.tar.gz
   tar xzf gdal-1.7.3.tar.gz
