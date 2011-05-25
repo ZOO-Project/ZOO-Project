@@ -40,12 +40,12 @@ Name		([_:]|[\x41-\x5A]|[\x61-\x7A]|[\xC0-\xD6]|[\xD8-\xF6]|[\xF8-\xFF])(([\x41-
 chardata	[^<]*
 
 attname	[a-zA-Z0-9_\-]+
-attvalue1	[\^\*\+,;@a-zA-Z0-9_\-::.:" "\"\'/\\\(\)]+
+attvalue1	[\^\*\+,;@a-zA-Z0-9_\-::.:" "\"\'/\\\(\)\t\|]+
 
 attvalue		\"[^"]*\"|\'[^']*\'\(\)
 
-whitespace                      [ ]{0,}
-whitesp                      [ ]
+whitespace                      [\t]{0,}|[ ]{0,}
+whitesp                      [\t]|[ ]
 newline                 [\r\n]|[\n]
 newlines                 [\r\n]{1,}|[\n]{1,}
 

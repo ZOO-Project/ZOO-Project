@@ -510,8 +510,8 @@ int runRequest(map* request_inputs)
     else
       n = printGetCapabilitiesHeader(doc,"",m);
     /**
-     * Strange, here we need to close stdout to ensure that no uneeded 
-     * char will be printed (parser issue ?)
+     * Here we need to close stdout to ensure that not supported chars 
+     * has been found in the zcfg and then printed on stdout
      */
     int saved_stdout = dup(fileno(stdout));
     dup2(fileno(stderr),fileno(stdout));
@@ -920,6 +920,20 @@ int runRequest(map* request_inputs)
 	  if(strcmp(tmpn1,"xlink:href")!=0)
 	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
 	  else{
+	    if(strncasecmp(tmpv1+1,"http://",7)!=0 &&
+	       strncasecmp(tmpv1+1,"ftp://",6)!=0){
+	      char emsg[1024];
+	      sprintf(emsg,_("Unable to find a valid protocol to download the remote file %s"),tmpv1+1);
+	      errorException(m,emsg,"InternalError");
+	      freeMaps(&m);
+	      free(m);
+	      free(REQUEST);
+	      free(SERVICE_URL);
+	      InternetCloseHandle(hInternet);
+	      freeService(&s1);
+	      free(s1);
+	      return 0;
+	    }
 #ifdef DEBUG
 	    fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
 #endif
