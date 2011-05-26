@@ -494,6 +494,129 @@ Test your ZOO-Kernel from command line:
   ./zoo_loader.cgi "request=Execute&service=WPS&version=1.0.0&Identifier=HelloPy&DataInputs=a=Djay"
   ./zoo_loader.cgi "request=Execute&service=WPS&version=1.0.0&Identifier=Buffer&DataInputs=BufferDistance=1@datat
 
+Debian / Ubuntu
+***************
+
+.. note::
+   An Ubuntu 10.4 with ZOO virtual image is available at http://www.zoo-project.org/Ubuntu10.4_ZOO.zip
+   (root: ZOO.test)
+
+The following instructions were tested on Debian Squeeze, Ubuntu 10.04 and Ubuntu 10.10
+
+Installation Workflow
+^^^^^^^^^^^^^^^^^^^^^
+
+- install some dependencies
+::
+
+  sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf checkinstall
+
+- download ZOO  source
+
+::
+
+  svn checkout http://svn.zoo-project.org/svn/trunk zoo-project
+
+- install cgic from packages
+
+::
+
+  cd zoo-project/thirds/cgic206/
+
+- change the path of installation
+
+::
+
+  nano Makefile 
+    - LIBS=-L./ -lcgic ../fcgi-2.4.0/libfcgi/.libs/libfcgi.a --> LIBS=/path/to/libfcgi.a
+    - cp libcgic.a  ../../dist/lib --> cp libcgic.a /usr/lib
+    - cp cgic.h  ../../dist//include --> cp cgic.h  /usr/include
+    - @echo libcgic.a is in  ../../dist/lib and cgic.h is in  ../../dist//include. --> @echo libcgic.a is in  /usr/lib and cgic.h is in /usr/include.
+
+- compile
+
+::
+
+  make
+
+- install
+
+::
+
+  sudo make install
+
+- go to kernel path
+
+::
+
+  cd ../../zoo-kernel/
+
+- create configure file
+
+::
+
+  autoconf
+
+- run configure
+
+.. note::
+   In Ubuntu 10.04 libmozjs-dev does not exist, so to use JS you can compile `SpiderMonkey <https://developer.mozilla.org/en/SpiderMonkey>`__ or use the xulrunner-dev package 
+   which includes SpiderMonkey.  
+   For PHP, you must make sure to compile PHP with `--enable-embed <http://www.zoo-project.org/trac/wiki/ZooKernel/Embed/PHP#ConfigureandInstallPHPEmbedlibrary>`__.
+
+::
+
+  ./configure --with-java=/path/to/java
+  
+  to JavaScript with XulRunner SpiderMonkey you have to edit configure file.
+    - JS_CPPFLAGS="-I$JSHOME/include/js" --> JS_CPPFLAGS="-I$JSHOME/include"
+    - JS_LDFLAGS="-L$JSHOME/lib -ljs -lm" --> JS_LDFLAGS="-L$JSHOME/lib -lmozjs -lm"
+    - JS_LIB="js" --> JS_LIB="mozjs"
+    
+  ./configure --with-js=/usr/lib/xulrunner-devel.1.9.2.n
+
+- compile
+
+::
+
+  make zoo_loader.cgi
+
+- copy necessary files into your cgi-bin
+
+::
+
+  sudo cp main.cfg /usr/lib/cgi-bin
+  sudo cp zoo_loader.cgi /usr/lib/cgi-bin
+
+- Install ZOO ServiceProvider
+
+::
+
+  sudo cp ../zoo-services/hello-py/cgi-env/*.zcfg /usr/lib/cgi-bin
+  sudo cp ../zoo-services/hello-py/*.py /usr/lib/cgi-bin/
+
+- change some paths in the main.cfg
+
+::
+
+  sudo nano /usr/lib/cgi-bin/main.cfg
+    - serverAddress = http://127.0.0.1
+    - providerSite = http://127.0.0.1
+
+
+- try the installation
+
+  - http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=GetCapabilities&Version=1.0.0
+  - http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=DescribeProcess&Version=1.0.0&Identifier=HelloPy
+  - http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=Execute&Version=1.0.0&Identifier=HelloPy&DataInputs=a=myname
+
+.. note::
+   If you have some problem in the execute request, add the following to ``main.cfg``: 
+
+   ::
+   
+     [env]
+     PYTHONPATH=<YOUR_PYTHONPATH>
 
 WIN32
 -----
