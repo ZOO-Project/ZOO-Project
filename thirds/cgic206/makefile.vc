@@ -8,7 +8,7 @@ LIBS1=./libcgic.lib
 CFLAGS=/EHa /nologo /DCRT_SECURE_NO_WARNING /MT /W2 /O2 /D "WIN32" \
 	-I $(GEODIR)/include 
 
-all: libcgic.lib cgictest.exe capture.exe
+all: libcgic.lib #cgictest.exe capture.exe 
 
 install: libcgic.lib
 	copy libcgic.lib  $(DESTDIR)\lib
@@ -23,13 +23,13 @@ cgictest.obj: cgictest.c libcgic.lib
 	$(CC) $(CFLAGS) -c cgictest.c
 
 cgictest.exe: cgictest.obj 
-	link cgictest.obj $(LIBS1) /out:cgictest.exe
+	link cgictest.obj $(LIBS) /out:cgictest.exe
 
 cgic.obj: 
 	$(CC) $(CFLAGS) -c cgic.c 
 
 capture.exe: capture.obj libcgic.lib
-	$(CC) $(CFLAGS) capture.c $(LIBS1)
+	$(CC) $(CFLAGS) capture.c $(LIBS)
 
 clean:
 	erase *.obj *.lib *.exe *.manifest

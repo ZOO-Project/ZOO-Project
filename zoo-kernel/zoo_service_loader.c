@@ -202,10 +202,6 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
       fflush(stderr);
 #endif
       if(strncasecmp(r_inputs->value,"C-FORTRAN",9)==0){
-#ifdef WIN32
-	//Strange return value needed here !
-	return 1;
-#endif
 	r_inputs=getMap(request_inputs,"Identifier");
 	char fname[1024];
 	sprintf(fname,"%s_",r_inputs->value);
@@ -283,7 +279,12 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 	fflush(stderr);
 #endif
       }
+#ifdef WIN32
+      *ioutputs=dupMaps(&request_output_real_format);
+      FreeLibrary(so);
+#else
       dlclose(so);
+#endif
     } else {
       /**
        * Unable to load the specified shared library
@@ -344,8 +345,82 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 		*eres=-1;
 	      }
   *myMap=m;
+#ifndef WIN32
   *ioutputs=request_output_real_format;
+#endif
 }
+
+#ifdef WIN32
+/**
+ * createProcess function: create a new process after setting some env variables
+ */
+void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, maps* inputs,maps* outputs){
+  STARTUPINFO si;
+  PROCESS_INFORMATION pi;
+  ZeroMemory( &si, sizeof(si) );
+  si.cb = sizeof(si);
+  ZeroMemory( &pi, sizeof(pi) );
+  char *tmp=(char *)malloc((1024+cgiContentLength)*sizeof(char));
+  char *tmpq=(char *)malloc((1024+cgiContentLength)*sizeof(char));
+  map *req=getMap(request_inputs,"request");
+  map *id=getMap(request_inputs,"identifier");
+  map *di=getMap(request_inputs,"DataInputs");
+
+  char *dataInputsKVP=getMapsAsKVP(inputs,cgiContentLength,0);
+  char *dataOutputsKVP=getMapsAsKVP(outputs,cgiContentLength,1);
+  fprintf(stderr,"DATAINPUTSKVP %s\n",dataInputsKVP);
+  fprintf(stderr,"DATAOUTPUTSKVP %s\n",dataOutputsKVP);
+  map *sid=getMapFromMaps(m,"lenv","sid");
+  map* r_inputs=getMapFromMaps(m,"main","tmpPath");
+  map* r_inputs1=getMap(s1->content,"ServiceProvider");
+  map* r_inputs2=getMap(s1->content,"ResponseDocument");
+  if(r_inputs2==NULL)
+    r_inputs2=getMap(s1->content,"RawDataOutput");
+  map *tmpPath=getMapFromMaps(m,"lenv","cwd");
+
+  if(r_inputs2!=NULL){
+    sprintf(tmp,"\"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",req->value,id->value,dataInputsKVP,r_inputs2->name,r_inputs2->value,sid->value);
+	sprintf(tmpq,"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP);
+  }
+  else{
+    sprintf(tmp,"\"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s\"",req->value,id->value,dataInputsKVP,sid->value);
+    sprintf(tmpq,"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",req->value,id->value,dataInputsKVP,sid->value);
+  }
+
+  char *tmp1=strdup(tmp);
+  sprintf(tmp,"zoo_loader.cgi %s \"%s\"",tmp1,sid->value);
+
+  free(dataInputsKVP);
+  free(dataOutputsKVP);
+  fprintf(stderr,"REQUEST IS : %s \n",tmp);
+  SetEnvironmentVariable("CGISID",TEXT(sid->value));
+  SetEnvironmentVariable("QUERY_STRING",TEXT(tmpq));
+  char clen[1000];
+  sprintf(clen,"%d",strlen(tmpq));
+  SetEnvironmentVariable("CONTENT_LENGTH",TEXT(clen));
+
+  if( !CreateProcess( NULL,             // No module name (use command line)
+		      TEXT(tmp),        // Command line
+		      NULL,             // Process handle not inheritable
+		      NULL,             // Thread handle not inheritable
+		      FALSE,            // Set handle inheritance to FALSE
+		      CREATE_NO_WINDOW, // Apache won't wait until the end
+		      NULL,             // Use parent's environment block
+		      NULL,             // Use parent's starting directory 
+		      &si,              // Pointer to STARTUPINFO struct
+		      &pi )             // Pointer to PROCESS_INFORMATION struct
+      ) 
+    { 
+      fprintf( stderr, "CreateProcess failed (%d).\n", GetLastError() );
+      return ;
+    }else{
+    fprintf( stderr, "CreateProcess successfull (%d).\n\n\n\n", GetLastError() );
+  }
+  CloseHandle( pi.hProcess );
+  CloseHandle( pi.hThread );
+  fprintf(stderr,"CreateProcess finished !\n");
+}
+#endif
 
 int runRequest(map* request_inputs)
 {
@@ -670,14 +745,16 @@ int runRequest(map* request_inputs)
   fprintf(stderr,"Trying to load %s\n", tmps1);
 #endif
   int saved_stdout = dup(fileno(stdout));
-  dup2(fileno(stderr),fileno(stdout));
+    dup2(fileno(stderr),fileno(stdout));
   t=getServiceFromFile(tmps1,&s1);
   fflush(stdout);
   dup2(saved_stdout,fileno(stdout));
   if(t<0){
-    char tmpMsg[2048+strlen(r_inputs->value)];
+    char *tmpMsg=(char*)malloc(2048+strlen(r_inputs->value));
+    
     sprintf(tmpMsg,_("The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),r_inputs->value);
     errorException(m, tmpMsg, "InvalidParameterValue");
+    free(tmpMsg);
     freeService(&s1);
     free(s1);
     freeMaps(&m);
@@ -686,7 +763,7 @@ int runRequest(map* request_inputs)
     free(SERVICE_URL);
     return 0;
   }
-  close(saved_stdout);
+  //close(saved_stdout);
 
 #ifdef DEBUG
   dumpService(s1);
@@ -886,8 +963,14 @@ int runRequest(map* request_inputs)
 	char *tmpv=strstr(tmpc,"=");
 	char tmpn[256];
 	memset(tmpn,0,256);
-	strncpy(tmpn,tmpc,(strlen(tmpc)-strlen(tmpv))*sizeof(char));
-	tmpn[strlen(tmpc)-strlen(tmpv)]=0;
+	if(tmpv!=NULL){
+	  strncpy(tmpn,tmpc,(strlen(tmpc)-strlen(tmpv))*sizeof(char));
+	  tmpn[strlen(tmpc)-strlen(tmpv)]=0;
+	}
+	else{
+	  strncpy(tmpn,tmpc,strlen(tmpc)*sizeof(char));
+	  tmpn[strlen(tmpc)]=0;
+	}
 #ifdef DEBUG
 	fprintf(stderr,"***\n*** %s = %s ***\n",tmpn,tmpv+1);
 #endif
@@ -897,7 +980,10 @@ int runRequest(map* request_inputs)
 	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
 	  tmpmaps->name=strdup(tmpn);
-	  tmpmaps->content=createMap("value",tmpv+1);
+	  if(tmpv!=NULL)
+	    tmpmaps->content=createMap("value",tmpv+1);
+	  else
+	    tmpmaps->content=createMap("value","Reference");
 	  tmpmaps->next=NULL;
 	}
 	tmpc=strtok(NULL,"@");
@@ -911,65 +997,85 @@ int runRequest(map* request_inputs)
 #endif
 	  char tmpn1[1024];
 	  memset(tmpn1,0,1024);
-	  strncpy(tmpn1,tmpc,strlen(tmpc)-strlen(tmpv1));
-	  tmpn1[strlen(tmpc)-strlen(tmpv1)]=0;
+	  if(tmpv1!=NULL){
+	    strncpy(tmpn1,tmpc,strlen(tmpc)-strlen(tmpv1));
+	    tmpn1[strlen(tmpc)-strlen(tmpv1)]=0;
+	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
+	  }
+	  else{
+	    strncpy(tmpn1,tmpc,strlen(tmpc));
+	    tmpn1[strlen(tmpc)]=0;
+	    map* lmap=getLastMap(tmpmaps->content);
+	    char *tmpValue=(char*)calloc((strlen(lmap->value)+strlen(tmpc)+1),sizeof(char));
+	    sprintf(tmpValue,"%s@%s",lmap->value,tmpc);
+	    free(lmap->value);
+	    lmap->value=strdup(tmpValue);
+	    free(tmpValue);
+	    dumpMap(tmpmaps->content);
+	    tmpc=strtok(NULL,"@");
+	    continue;
+	  }
 #ifdef DEBUG
 	  fprintf(stderr,"*** NAME NON URL-ENCODED \n***%s***\n",tmpn1);
 	  fprintf(stderr,"*** VALUE NON URL-ENCODED \n***%s***\n",tmpv1+1);
 #endif
 	  if(strcmp(tmpn1,"xlink:href")!=0)
 	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
-	  else{
-	    if(strncasecmp(tmpv1+1,"http://",7)!=0 &&
-	       strncasecmp(tmpv1+1,"ftp://",6)!=0){
-	      char emsg[1024];
-	      sprintf(emsg,_("Unable to find a valid protocol to download the remote file %s"),tmpv1+1);
-	      errorException(m,emsg,"InternalError");
-	      freeMaps(&m);
-	      free(m);
-	      free(REQUEST);
-	      free(SERVICE_URL);
-	      InternetCloseHandle(hInternet);
-	      freeService(&s1);
-	      free(s1);
-	      return 0;
-	    }
+	  else
+	    if(tmpv1!=NULL){
+	      if(strncasecmp(tmpv1+1,"http://",7)!=0 &&
+		 strncasecmp(tmpv1+1,"ftp://",6)!=0){
+		char emsg[1024];
+		sprintf(emsg,_("Unable to find a valid protocol to download the remote file %s"),tmpv1+1);
+		errorException(m,emsg,"InternalError");
+		freeMaps(&m);
+		free(m);
+		free(REQUEST);
+		free(SERVICE_URL);
+		InternetCloseHandle(hInternet);
+		freeService(&s1);
+		free(s1);
+		return 0;
+	      }
 #ifdef DEBUG
-	    fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
+	      fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
 #endif
 #ifndef WIN32
-	    if(CHECK_INET_HANDLE(hInternet))
+	      if(CHECK_INET_HANDLE(hInternet))
 #endif
-	      {
-		res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
-				    INTERNET_FLAG_NO_CACHE_WRITE,0);
+		{
+		  res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
+				      INTERNET_FLAG_NO_CACHE_WRITE,0);
 #ifdef DEBUG
-		fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
-			tmpv1+1,res.nDataAlloc,res.nDataLen);
+		  fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
+			  tmpv1+1,res.nDataAlloc,res.nDataLen);
 #endif
-		char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
-		if(tmpContent == NULL){
-		  return errorException(m, _("Unable to allocate memory."), "InternalError");
-		}
-		size_t dwRead;
-		InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
-		map* tmpMap=getMap(tmpmaps->content,"value");
-		if(tmpMap!=NULL){
-		  free(tmpMap->value);
-		  tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
-		  memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
-		  tmpMap->value[res.nDataLen]=0;
-		  if(strlen(tmpContent)!=res.nDataLen){
-		    char tmp[256];
-		    sprintf(tmp,"%d",res.nDataLen*sizeof(char));
-		    addToMap(tmpmaps->content,"size",tmp);
+		  char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
+		  if(tmpContent == NULL){
+		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
+		  size_t dwRead;
+		  InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
+		  map* tmpMap=getMap(tmpmaps->content,"value");
+		  if(tmpMap!=NULL){
+		    free(tmpMap->value);
+		    tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
+		    memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
+		    tmpMap->value[res.nDataLen]=0;
+		    if(strlen(tmpContent)!=res.nDataLen){
+		      char tmp[256];
+		      sprintf(tmp,"%d",res.nDataLen*sizeof(char));
+		      addToMap(tmpmaps->content,"size",tmp);
+		    }
+		  }
+		  free(tmpContent);
 		}
-		free(tmpContent);
-	      }
-	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
-	    addToMap(tmpmaps->content,"Reference",tmpv1+1);
-	  }
+	      char *tmpx=url_encode(tmpv1+1);
+	      addToMap(tmpmaps->content,tmpn1,tmpx);
+	      free(tmpx);
+	      addToMap(tmpmaps->content,"Reference",tmpv1+1);
+	      dumpMap(tmpmaps->content);
+	    }
 	  tmpc=strtok(NULL,"@");
 	}
 #ifdef DEBUG
@@ -1131,6 +1237,8 @@ int runRequest(map* request_inputs)
 	    xmlNodePtr cur3=cur2->children;
 	    hInternet.header=NULL;
 	    while(cur3){
+	      while(cur3!=NULL && cur3->type!=XML_ELEMENT_NODE)
+		cur2=cur3->next;
 	      if(xmlStrcasecmp(cur3->name,BAD_CAST "Header")==0 ){
 		const char *ha[2];
 		ha[0]="key";
@@ -1696,6 +1804,7 @@ int runRequest(map* request_inputs)
   _tmpMaps->content=createMap("sid",tmpBuff);
   _tmpMaps->next=NULL;
   addToMap(_tmpMaps->content,"status","0");
+  addToMap(_tmpMaps->content,"cwd",ntmp);
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
     addToMap(_tmpMaps->content,"sessid",strstr(cgiCookie,"=")+1);
     char session_file_path[1024];
@@ -1721,7 +1830,22 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
   dumpMap(request_inputs);
 #endif
-
+#ifdef WIN32
+  char *cgiSidL=NULL;
+  if(getenv("CGISID")!=NULL)
+	addToMap(request_inputs,"cgiSid",getenv("CGISID"));
+  map* test1=getMap(request_inputs,"cgiSid");
+  if(test1!=NULL){
+    cgiSid=test1->value;
+  }
+  if(cgiSid!=NULL){
+    addToMap(request_inputs,"storeExecuteResponse","true");
+    addToMap(request_inputs,"status","true");
+    status=getMap(request_inputs,"status");
+    dumpMap(request_inputs);
+    fprintf(stderr,"cgiSID : %s",cgiSid);
+  }
+#endif
   if(status!=NULL)
     if(strcasecmp(status->value,"false")==0)
       status=NULL;
@@ -1737,7 +1861,15 @@ int runRequest(map* request_inputs)
 #ifndef WIN32
     pid = fork ();
 #else
-    pid = 0;
+    if(cgiSid==NULL){
+      addToMap(request_inputs,"cgSid",cgiSid);
+      createProcess(m,request_inputs,s1,NULL,cpid,request_input_real_format,request_output_real_format);
+      pid = cpid;
+    }else{
+      pid=0;
+      cpid=atoi(cgiSid);
+    }
+    fflush(stderr);
 #endif
     if (pid > 0) {
       /**
@@ -1764,9 +1896,9 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"son pid continue (origin %d) %d ...\n",cpid,getpid());
       fprintf(stderr,"\nFILE TO STORE DATA %s\n",r_inputs->value);
 #endif
+      freopen(flog,"w+",stderr);
       freopen(fbkp , "w+", stdout);
       fclose(stdin);
-      freopen(flog,"w+",stderr);
       free(fbkp);
       free(flog);
       /**
@@ -1777,11 +1909,13 @@ int runRequest(map* request_inputs)
        */
       updateStatus(m);
       printProcessResponse(m,request_inputs,cpid,
-			    s1,r_inputs1->value,SERVICE_STARTED,
-			    request_input_real_format,
-			    request_output_real_format);
+			   s1,r_inputs1->value,SERVICE_STARTED,
+			   request_input_real_format,
+			   request_output_real_format);
+#ifndef WIN32
       fflush(stdout);
       rewind(stdout);
+#endif
 
       loadServiceAndRun(&m,s1,request_inputs,&request_input_real_format,&request_output_real_format,&eres);
 
@@ -1797,13 +1931,14 @@ int runRequest(map* request_inputs)
 
 #ifdef DEBUG
   dumpMaps(request_output_real_format);
-  fprintf(stderr,"Function loaded and returned %d\n",eres);
+  fprintf(stderr,"Function loaded and returned %d\n",*eres);
   fflush(stderr);
 #endif
   if(eres!=-1)
     outputResponse(s1,request_input_real_format,
 		   request_output_real_format,request_inputs,
 		   cpid,m,eres);
+  fflush(stdout);
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 

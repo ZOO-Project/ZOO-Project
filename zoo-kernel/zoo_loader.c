@@ -25,6 +25,9 @@
 #define MALLOC_CHECK_ 0
 #define MALLOC_CHECK 0
 
+#ifdef WIN32
+#include "windows.h"
+#endif
 /**
  * Specific includes
  */
@@ -63,28 +66,6 @@ int errorException(maps *m, const char *message, const char *errorcode)
 
 /* ************************************************************************* */
 
-#ifndef STRTOK_R
-char *
-strtok_r (char *s1, const char *s2, char **lasts)
-{
-  char *ret;
-
-  if (s1 == NULL)
-    s1 = *lasts;
-  while (*s1 && strchr(s2, *s1))
-    ++s1;
-  if (*s1 == '\0')
-    return NULL;
-  ret = s1;
-  while (*s1 && !strchr(s2, *s1))
-    ++s1;
-  if (*s1)
-    *s1++ = '\0';
-  *lasts = s1;
-  return ret;
-}
-
-#endif
 
 #define TRUE 1
 #define FALSE -1

@@ -4,7 +4,7 @@
  processVersion = 1
  storeSupported = true
  statusSupported = true
- serviceProvider = demo_service.zo
+ serviceProvider = test_service.zo
  serviceType = C
  <MetaData>
    title = Demo

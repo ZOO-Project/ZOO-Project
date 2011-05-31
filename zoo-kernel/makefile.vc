@@ -1,15 +1,13 @@
-GEODIR=c:/OSGeo4W
-DESTDIR=c:/OSGeo4W
-TPATH=..\..\..\tools
-TOOLS=$(TPATH)\bin
-CFLAGS=/EHa /nologo /MT /W3 /GX /O2 /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I./ -I..\thirds\dirent-win32 -IC:\OSGeo4W\apps\Python25\include -I$(GEODIR)/include -I$(TPATH)\include -DLINUX_FREE_ISSUE #-DDEBUG
-CC=cl $(CFLAGS)
-CPP=cl /TP $(CFLAGS)
+# WIN32 Makefile tested using VC-9.0
+# Don't forget to set your PATH using the following command :
+# c:\Progam Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars32.bat
+# set PATH=%PATH%;$(TOOLS)
+# using value for TOOLS relative to your local installation
+#
 
-all:  service_loader
+!INCLUDE nmake.opt
 
-service_loader: service.h lex.sr.obj service_conf.tab.obj service_conf.y service_internal_python.obj service_loader.obj main_conf_read.tab.obj lex.cr.obj service_internal.obj
-	cl $(CFLAGS) lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj lex.cr.obj service_internal.obj service_internal_python.obj service_loader.obj -o service_loader -ldl `python-config --libs` `xml2-config --libs` -lfl -lcurl
+all:  zoo_loader.cgi
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	$(TOOLS)\bison -p cr -d main_conf_read.y
@@ -53,8 +51,11 @@ zoo_service_loader.obj: zoo_service_loader.c service.h
 zoo_loader.obj: zoo_loader.c service.h
 	$(CPP) /EHsc /c $(CFLAGS) zoo_loader.c
 
+dirent.obj:
+	$(CPP) /EHsc /c $(CFLAGS) ..\thirds\dirent-win32\dirent.c
+
 zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj service_internal_python.obj ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
-	link zoo_loader.obj dirent.obj service_internal.obj service_internal_python.obj ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi  $(GEODIR)/lib/libfcgi.lib $(GEODIR)/lib/libcurl_imp.lib  $(GEODIR)/apps/Python25/libs/python25.lib $(GEODIR)/lib/libxml2.lib $(GEODIR)/lib/libcgic.lib $(GEODIR)/lib/gdal_i.lib $(TOOLS)\..\lib\libeay32.dll.a $(TOOLS)\..\lib\libcrypto.a $(TOOLS)\..\lib\libssl32.dll.a /machine:i386 
+	link zoo_loader.obj dirent.obj service_internal.obj service_internal_python.obj ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS)
 
 clean:
-	erase -f *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling
+	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling

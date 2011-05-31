@@ -334,7 +334,9 @@ int conf_read(const char* file,maps* my_map){
   }
 
   fclose(crin);
+#ifndef WIN32
   crlex_destroy();
+#endif
 
   return resultatYYParse;
 }

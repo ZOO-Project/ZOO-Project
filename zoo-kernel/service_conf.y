@@ -800,6 +800,8 @@ int getServiceFromFile(const char* file,service** service){
 #endif
   *service=my_service;
 
+#ifndef WIN32
   srlex_destroy();
+#endif
   return resultatYYParse;
 }

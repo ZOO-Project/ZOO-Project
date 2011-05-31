@@ -1,0 +1,12 @@
+ZOODIR=../../../zoo-kernel
+THIRDSDIR=../../../thirds
+!INCLUDE $(ZOODIR)/nmake.opt
+CFLAGS=-DWIN32 -I$(THIRDSDIR)/dirent-win32 -I$(GEODIR)/include -I$(TPATH)/include -I$(ZOODIR)/ -I./ -DLINUX_FREE_ISSUE -DDEBUG
+CPP=cl /TP 
+
+cgi-env/wps_status.zo: service.c
+	$(CPP) $(CFLAGS) /c service.c
+	link /dll /out:cgi-env/wps_status.zo $(ZOODIR)/service_internal.obj $(ZOODIR)/dirent.obj ./service.obj -L$(TPATH)/lib/libssl32.dll.a $(TPATH)/lib/libxslt.lib $(TPATH)/lib/libxml2.lib $(TPATH)/lib/libeay32.dll.a $(TPATH)/lib/libcrypto.a $(TOOLS)/lib/libssl32.dll.a $(LIBINTL_CPATH)/lib/libintl.lib
+
+clean:
+	del /f cgi-env\wps*
