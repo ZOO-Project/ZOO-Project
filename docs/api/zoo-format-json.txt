@@ -1,0 +1,287 @@
+.. _api-zoo-format-json:
+
+ZOO.Format.JSON
+===============
+
+A parser to read/write JSON safely.
+
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`indent <indent>`
+     - {String} For "pretty" printing, the indent string will be used once for each indentation level.
+   * - :ref:`space <space>`
+     - {String} For "pretty" printing, the space string will be used after the ":" separating a name/value pair.
+   * - :ref:`newline <newline>`
+     - {String} For "pretty" printing, the newline string will be used at the end of each name/value pair or array item.
+   * - :ref:`level <level>`
+     - {Integer} For "pretty" printing, this is incremented/decremented during serialization.  
+   * - :ref:`pretty <pretty>`
+     - {Boolean} Serialize with extra whitespace for structure.    
+     
+Functions	
+---------
+
+.. list-table::
+   :widths: 14 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Format.JSON <ZOO.Format.JSON>`
+     - Create a new parser for JSON.
+   * - :ref:`read <read>`
+     - Deserialize a json string.
+   * - :ref:`write <write>`
+     - Serialize an object into a JSON string.
+   * - :ref:`writeIndent <writeIndent>`
+     - Output an indentation string depending on the indentation level.  
+   * - :ref:`writeNewline <writeNewline>`
+     - Output a string representing a newline if in pretty printing mode.   
+   * - :ref:`writeSpace <writeSpace>`
+     - Output a string representing a space if in pretty printing mode. 
+     
+Serialize Properties	
+--------------------
+
+.. list-table::
+   :widths: 14 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`serialize <serialize>`
+     - Object with properties corresponding to the serializable data types. 
+     
+Serialize Functions	
+-------------------
+
+.. list-table::
+   :widths: 14 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`serialize.object <serialize.object>`
+     - Transform an object into a JSON string.
+   * - :ref:`serialize.array <serialize.array>`
+     - Transform an array into a JSON string.
+   * - :ref:`serialize.string <serialize.string>`
+     - Transform a string into a JSON string.
+   * - :ref:`serialize.number <serialize.number>`
+     - Transform a number into a JSON string.  
+   * - :ref:`serialize.boolean <serialize.boolean>`
+     - Transform a boolean into a JSON string.   
+   * - :ref:`serialize.date <serialize.date>`
+     - Transform a date into a JSON string.     
+       
+**Properties**
+
+.. _indent:   
+
+indent	
+  ``{String}`` For "pretty" printing, the indent string will be used once for each indentation level.
+  
+.. _space:     
+  
+space	
+  ``{String}`` For "pretty" printing, the space string will be used after the ":" separating a name/value pair.
+  
+.. _newline:       
+  
+newline	
+  ``{String}`` For "pretty" printing, the newline string will be used at the end of each name/value pair or array item.
+  
+.. _level:        
+  
+level	
+  ``{Integer}`` For "pretty" printing, this is incremented/decremented during serialization.
+  
+.. _pretty:          
+  
+pretty	
+  ``{Boolean}`` Serialize with extra whitespace for structure. This is set by the :ref:`write <write>` method.
+  
+**Functions**
+
+.. _ZOO.Format.JSON:          
+
+ZOO.Format.JSON	
+  Create a new parser for JSON.
+
+  *Parameters*
+  
+  ``options {Object}`` An optional object whose properties will be set on this instance. 
+  
+.. _read:            
+  
+read	
+  ::
+  
+    read: function(json,filter)
+
+  Deserialize a json string.
+
+  *Parameters*
+  
+  | ``json {String}`` A JSON string
+  | ``filter {Function}`` A function which will be called for every key and value at every level of the final result.  Each value will be replaced by the result of the filter function.  This can be used to reform generic objects into instances of classes, or to transform date strings into Date objects.
+
+  *Returns*
+
+  ``{Object}`` An object, array, string, or number.
+  
+.. _write:              
+  
+write	
+  ::
+  
+    write: function(value,pretty)
+
+  Serialize an object into a JSON string.
+
+  *Parameters*
+  
+  | ``value {String}`` The object, array, string, number, boolean or date to be serialized.
+  | ``pretty {Boolean}`` Structure the output with newlines and indentation.  Default is false.
+
+  *Returns*
+
+  ``{String}`` The JSON string representation of the input value.  
+  
+.. _writeIndent:               
+  
+writeIndent	
+  ::
+  
+    writeIndent: function()
+
+  Output an indentation string depending on the indentation level.
+  
+  *Returns*
+
+  ``{String}`` An appropriate indentation string.
+  
+.. _writeNewline:               
+  
+writeNewline	
+  ::
+  
+    writeNewline: function()
+
+  Output a string representing a newline if in pretty printing mode.
+  
+  *Returns*
+
+  ``{String}`` A string representing a new line.
+  
+.. _writeSpace:               
+  
+writeSpace	
+  ::
+  
+    writeSpace: function()
+
+  Output a string representing a space if in pretty printing mode.  
+
+  *Returns*
+
+  ``{String}`` A space.
+  
+**Serialize Properties**
+
+.. _serialize:               
+
+serialize	
+  Object with properties corresponding to the serializable data types. Property 
+  values are functions that do the actual serializing.
+  
+**Serialize Functions**
+
+.. _serialize.object:               
+
+serialize.object	
+  Transform an object into a JSON string.
+
+  *Parameters*
+
+  ``object {Object}`` The object to be serialized.
+  
+  *Returns*
+
+  ``{String}`` A JSON string representing the object. 
+  
+.. _serialize.array:                 
+  
+serialize.array	
+  Transform an array into a JSON string.
+
+  *Parameters*
+  
+  ``array {Array}`` The array to be serialized
+
+  *Returns*
+
+  ``{String}`` A JSON string representing the array. 
+  
+.. _serialize.string:                   
+  
+serialize.string	
+  Transform a string into a JSON string.
+
+  *Parameters*
+  
+  ``string {String}`` The string to be serialized
+
+  *Returns*
+
+  ``{String}`` A JSON string representing the string. 
+  
+.. _serialize.number:                     
+  
+serialize.number	
+  Transform a number into a JSON string.
+
+  *Parameters*
+  
+  ``number {Number}`` The number to be serialized.
+  
+  *Returns*
+
+  ``{String}`` A JSON string representing the number.  
+  
+.. _serialize.boolean:                       
+  
+serialize.boolean	
+  Transform a boolean into a JSON string.
+
+  *Parameters*
+  
+  ``bool {Boolean}`` The boolean to be serialized.
+
+  *Returns*
+
+  ``{String}`` A JSON string representing the boolean. 
+  
+.. _serialize.date:                         
+  
+serialize.date	
+  Transform a date into a JSON string.
+
+  *Parameters*
+  
+  ``date {Date}`` The date to be serialized.
+
+  *Returns*
+
+  ``{String}`` A JSON string representing the date.

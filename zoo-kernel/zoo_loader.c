@@ -25,6 +25,9 @@
 #define MALLOC_CHECK_ 0
 #define MALLOC_CHECK 0
 
+#ifdef WIN32
+#include "windows.h"
+#endif
 /**
  * Specific includes
  */
@@ -44,7 +47,7 @@ extern "C" {
 #include <libxml/xpathInternals.h>
 }
 
-xmlXPathObjectPtr extractFromDoc(xmlDocPtr,char*);
+xmlXPathObjectPtr extractFromDoc(xmlDocPtr,const char*);
 int runRequest(map*);
 
 using namespace std;
@@ -63,28 +66,6 @@ int errorException(maps *m, const char *message, const char *errorcode)
 
 /* ************************************************************************* */
 
-#ifndef STRTOK_R
-char *
-strtok_r (char *s1, const char *s2, char **lasts)
-{
-  char *ret;
-
-  if (s1 == NULL)
-    s1 = *lasts;
-  while (*s1 && strchr(s2, *s1))
-    ++s1;
-  if (*s1 == '\0')
-    return NULL;
-  ret = s1;
-  while (*s1 && !strchr(s2, *s1))
-    ++s1;
-  if (*s1)
-    *s1++ = '\0';
-  *lasts = s1;
-  return ret;
-}
-
-#endif
 
 #define TRUE 1
 #define FALSE -1
@@ -191,7 +172,7 @@ int cgiMain(){
       if(tval!=NULL)
 	addToMap(tmpMap,"language",tval);
       
-      char* requests[3];
+      const char* requests[3];
       requests[0]="GetCapabilities";
       requests[1]="DescribeProcess";
       requests[2]="Execute";
@@ -205,7 +186,7 @@ int cgiMain(){
 	  fprintf(stderr,"%i",req->nodeNr);
 #endif
 	  if(req!=NULL && req->nodeNr==1){
-	    t1->value=requests[j];
+	    t1->value=strdup(requests[j]);
 	    j=2;
 	  }
 	  xmlXPathFreeObject(reqptr);

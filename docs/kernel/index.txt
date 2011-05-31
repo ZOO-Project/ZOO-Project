@@ -1,0 +1,13 @@
+.. _kernel:
+
+ZOO Kernel Documentation
+========================
+
+The following sections will assist you with the ZOO Kernel:
+
+.. toctree::
+   :maxdepth: 2
+   
+   introduction
+   installation
+

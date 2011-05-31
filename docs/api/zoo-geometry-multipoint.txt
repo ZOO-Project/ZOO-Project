@@ -1,0 +1,90 @@
+.. _api-zoo-geometry-multipoint:
+
+ZOO.Geometry.MultiPoint
+=======================
+
+MultiPoint is a collection of Points.  Create a new instance with the 
+:ref:`ZOO.Geometry.MultiPoint <ZOO.Geometry.MultiPoint>` constructor.
+
+Inherits from
+
+- :ref:`ZOO.Geometry.Collection <api-zoo-geometry-collection>`
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`componentTypes <componentTypes>`
+     - {Array(String)} An array of class names representing the types of components that the collection can include.
+
+Functions	
+---------
+
+.. list-table::
+   :widths: 15 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION   
+   * - :ref:`ZOO.Geometry.MultiPoint <ZOO.Geometry.MultiPoint>`
+     - Create a new MultiPoint Geometry
+   * - :ref:`addPoint <addPoint>`
+     - rapper for ZOO.Geometry.Collection.addComponent  
+   * - :ref:`removePoint <removePoint>`
+     - Wrapper for ZOO.Geometry.Collection.removeComponent       
+     
+**Properties**
+       
+.. _componentTypes: 
+
+componentTypes	
+  ``{Array(String)}`` An array of class names representing the types of components that the collection can include.  
+  A null value means the component types are not restricted.
+  
+**Functions**  
+
+.. _ZOO.Geometry.MultiPoint: 
+
+ZOO.Geometry.MultiPoint	
+  Create a new MultiPoint Geometry
+
+
+  *Parameters*
+  
+  ``components`` {Array(:ref:`ZOO.Geometry.Point <api-zoo-geometry-point>`)}
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.MultPoint} <api-zoo-geometry-multipoint>` 
+  
+.. _addPoint:   
+  
+addPoint	
+  ::
+  
+    addPoint: function(point,index)
+
+  Wrapper for :ref:`ZOO.Geometry.Collection.addComponent <addComponent>`
+
+  *Parameters*
+  
+  | ``point`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` Point to be added
+  | ``index {Integer}`` Optional index  
+  
+.. _removePoint:     
+  
+removePoint	
+  ::
+  
+    removePoint: function(point)
+
+  Wrapper for :ref:`ZOO.Geometry.Collection.removeComponent <removeComponent>`
+  
+  *Parameters*
+  
+  ``point`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` Point to be removed

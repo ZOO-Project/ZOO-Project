@@ -1,0 +1,153 @@
+.. _api-zoo-projection:
+
+ZOO.Projection
+==============
+
+Class for coordinate transforms between coordinate systems.
+
+Properties	
+----------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`proj <proj>`
+     - {Number} Proj4js.Proj instance.
+   * - :ref:`projCode <projCode>`
+     - {String} 
+       
+Functions	
+---------
+
+.. list-table::
+   :widths: 12 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Projection <ZOO.Projection>`
+     - This class offers several methods for interacting with a wrapped zoo-pro4js projection object.
+   * - :ref:`getCode <getCode>`
+     - Get the string SRS code.
+   * - :ref:`getUnits <getUnits>`
+     - Get the units string for the projection -- returns null if zoo-proj4js is not available.
+   * - :ref:`toString <toString>`
+     - Convert projection to string (getCode wrapper).
+   * - :ref:`equals <equals>`
+     - Test equality of two projection instances.   
+   * - :ref:`destroy <destroy>`
+     - Destroy projection object.
+   * - :ref:`transform <transform>`
+     - Transform a point coordinate from one projection to another.       
+
+**Properties**
+
+.. _proj:   
+
+proj	
+  ``{Object}`` Proj4js.Proj instance.
+  
+.. _projCode:     
+  
+projCode	
+  ``{String}``
+
+**Functions**
+
+.. _ZOO.Projection:     
+
+ZOO.Projection	
+  This class offers several methods for interacting with a wrapped zoo-pro4js projection object.
+
+  *Parameters*
+  
+  | ``projCode {String}`` A string identifying the Well Known Identifier for the projection.
+  | ``options {Object}`` An optional object to set additional properties.
+
+  *Returns*
+
+  :ref:`{ZOO.Projection} <api-zoo-projection>` A projection object.
+  
+.. _getCode:     
+
+getCode	
+  ::
+  
+    getCode: function()
+
+  Get the string SRS code.
+  
+  *Returns*
+
+  ``{String}`` The SRS code. 
+  
+.. _getUnits:       
+
+getUnits	
+  ::
+  
+    getUnits: function()
+
+  Get the units string for the projection -- returns null if zoo-proj4js is not available.
+
+  *Returns*
+
+  ``{String}`` The units abbreviation.
+  
+.. _toString:       
+
+toString	
+  ::
+  
+    toString: function()
+
+  Convert projection to string (getCode wrapper).
+  
+  *Returns*
+
+  ``{String}`` The projection code.  
+  
+.. _equals:         
+  
+equals	
+  ::
+  
+    equals: function(projection)
+
+  Test equality of two projection instances.  Determines equality based soley on the projection code.
+
+  *Returns*
+
+  ``{Boolean}`` The two projections are equivalent. 
+  
+.. _destroy:           
+  
+destroy	
+  ::
+  
+    destroy: function()
+
+  Destroy projection object. 
+  
+.. _transform:             
+  
+transform	
+  ::
+  
+    ZOO.Projection.transform = function(point,source,dest)
+
+  Transform a point coordinate from one projection to another.  Note that the input point is 
+  transformed in place.
+  
+  *Parameters*
+  
+  | ``point {{ZOO.Geometry.Point> | Object}`` An object with x and y properties representing coordinates in those dimensions.
+  | ``sourceProj {ZOO.Projection}`` Source map coordinate system
+  | ``destProj {ZOO.Projection}`` Destination map coordinate system
+
+  *Returns*
+  
+  ``point {object}`` A transformed coordinate.  The original point is modified.

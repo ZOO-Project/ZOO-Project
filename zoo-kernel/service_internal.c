@@ -24,7 +24,28 @@
 
 #include "service_internal.h"
 
-void *addLangAttr(xmlNodePtr n,maps *m){
+#ifdef WIN32
+char *
+strtok_r (char *s1, const char *s2, char **lasts)
+{
+  char *ret;
+  if (s1 == NULL)
+    s1 = *lasts;
+  while (*s1 && strchr(s2, *s1))
+    ++s1;
+  if (*s1 == '\0')
+    return NULL;
+  ret = s1;
+  while (*s1 && !strchr(s2, *s1))
+    ++s1;
+  if (*s1)
+    *s1++ = '\0';
+  *lasts = s1;
+  return ret;
+}
+#endif
+
+void addLangAttr(xmlNodePtr n,maps *m){
   map *tmpLmap=getMapFromMaps(m,"main","language");
   if(tmpLmap!=NULL)
     xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST tmpLmap->value);
@@ -43,7 +64,115 @@ char to_hex(char code) {
   return hex[code & 15];
 }
 
-void* unhandleStatus(maps *conf){
+#ifdef WIN32
+
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
+
+#define SHMEMSIZE 4096
+
+static LPVOID lpvMemG = NULL;      // pointer to shared memory
+static HANDLE hMapObjectG = NULL;  // handle to file mapping
+
+void updateStatus(maps *conf){
+	fprintf(stderr,"OK Final 1 \n");
+	fflush(stderr);
+	LPWSTR lpszTmp;
+	BOOL fInit;
+	char *s=NULL;
+	map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+	fprintf(stderr,"OK Final 11 \n");
+	fflush(stderr);
+	if(hMapObjectG==NULL)
+	hMapObjectG = CreateFileMapping( 
+		INVALID_HANDLE_VALUE,   // use paging file
+		NULL,                   // default security attributes
+		PAGE_READWRITE,         // read/write access
+		0,                      // size: high 32-bits
+		SHMEMSIZE,              // size: low 32-bits
+		TEXT(tmpMap->value));   // name of map object
+	if (hMapObjectG == NULL){
+		fprintf(stderr,"Unable to create share memory segment %s !! \n",tmpMap->value);
+		return ;
+	}
+	fprintf(stderr,"OK Final 2 \n");
+	fflush(stderr);
+	fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
+	if(lpvMemG==NULL)
+	lpvMemG = MapViewOfFile( 
+		hMapObjectG,     // object to map view of
+		FILE_MAP_WRITE, // read/write access
+		0,              // high offset:  map from
+		0,              // low offset:   beginning
+		0);             // default: map entire file
+	if (lpvMemG == NULL){
+		fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
+		return ;
+	} 
+	fprintf(stderr,"OK Final 3 \n");
+	fflush(stderr);
+	if (fInit)
+		memset(lpvMemG, '\0', SHMEMSIZE);
+	fprintf(stderr,"OK Final 4 \n");
+	fflush(stderr);
+	tmpMap=getMapFromMaps(conf,"lenv","status");
+	lpszTmp = (LPWSTR) lpvMemG;
+	for(s=tmpMap->value;*s!=NULL;s++)
+		*lpszTmp++ = *s;
+	*lpszTmp = '\0'; 
+}
+
+char* getStatus(int pid){
+  LPWSTR lpszBuf=NULL;
+  LPWSTR lpszTmp=NULL;
+  LPVOID lpvMem = NULL;
+  HANDLE hMapObject = NULL;
+  BOOL fIgnore,fInit;
+  char tmp[100];
+  sprintf(tmp,"%i",pid);
+  if(hMapObject==NULL)
+    hMapObject = CreateFileMapping( 
+				   INVALID_HANDLE_VALUE,   // use paging file
+				   NULL,                   // default security attributes
+				   PAGE_READWRITE,         // read/write access
+				   0,                      // size: high 32-bits
+				   4096,                   // size: low 32-bits
+				   TEXT(tmp));   // name of map object
+  if (hMapObject == NULL) 
+    return FALSE;
+  if((GetLastError() != ERROR_ALREADY_EXISTS)){
+    fIgnore = UnmapViewOfFile(lpvMem); 
+    fIgnore = CloseHandle(hMapObject);
+    return "-1";
+  }
+  fInit=TRUE;
+  if(lpvMem==NULL)
+    lpvMem = MapViewOfFile( 
+			   hMapObject,     // object to map view of
+			   FILE_MAP_READ,  // read/write access
+			   0,              // high offset:  map from
+			   0,              // low offset:   beginning
+			   0);             // default: map entire file
+  if (lpvMem == NULL) 
+    return "-1"; 
+  lpszTmp = (LPWSTR) lpvMem;
+  while (*lpszTmp!=NULL)
+    *lpszBuf++ = *lpszTmp++;
+  *lpszBuf = '\0';
+  fIgnore = UnmapViewOfFile(lpvMem); 
+  fIgnore = CloseHandle(hMapObject);
+  return (char*)lpszBuf;
+}
+
+void unhandleStatus(maps *conf){
+  BOOL fIgnore;
+  fIgnore = UnmapViewOfFile(lpvMemG); 
+  fIgnore = CloseHandle(hMapObjectG);
+}
+#else
+void unhandleStatus(maps *conf){
   int shmid,i;
   key_t key;
   void *shm;
@@ -68,6 +197,59 @@ void* unhandleStatus(maps *conf){
     }
   }
 }
+
+void updateStatus(maps *conf){
+  int shmid,i;
+  key_t key;
+  char *shm,*s,*s1;
+  map *tmpMap=NULL;
+  tmpMap=getMapFromMaps(conf,"lenv","sid");
+  if(tmpMap!=NULL){
+    key=atoi(tmpMap->value);
+    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
+#ifdef DEBUG
+      fprintf(stderr,"shmget failed to update value\n");
+#endif
+    }else{
+      if ((shm = (char*) shmat(shmid, NULL, 0)) == (char *) -1) {
+#ifdef DEBUG
+	fprintf(stderr,"shmat failed to update value\n");
+#endif
+      }
+      else{
+	tmpMap=getMapFromMaps(conf,"lenv","status");
+	s1=shm;
+	for(s=tmpMap->value;s!=NULL;s++)
+	  *s1++=*s;
+	shmdt((void *)shm);
+      }
+    }
+  }
+}
+
+char* getStatus(int pid){
+  int shmid,i;
+  key_t key;
+  void *shm;
+  char *s;
+  key=pid;
+  if ((shmid = shmget(key, SHMSZ, 0666)) < 0) {
+#ifdef DEBUG
+    fprintf(stderr,"shmget failed in getStatus\n");
+#endif
+  }else{
+    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+#ifdef DEBUG
+      fprintf(stderr,"shmat failed in getStatus\n");
+#endif
+    }else{
+      return (char*)shm;
+    }
+  }
+  return "-1";
+}
+
+#endif
 
 #ifdef USE_JS
 
@@ -108,56 +290,6 @@ JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 #endif
 
-void* updateStatus(maps *conf){
-  int shmid,i;
-  key_t key;
-  char *shm,*s,*s1;
-  map *tmpMap=NULL;
-  tmpMap=getMapFromMaps(conf,"lenv","sid");
-  if(tmpMap!=NULL){
-    key=atoi(tmpMap->value);
-    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
-#ifdef DEBUG
-      fprintf(stderr,"shmget failed to update value\n");
-#endif
-    }else{
-      if ((shm = (char*) shmat(shmid, NULL, 0)) == (char *) -1) {
-#ifdef DEBUG
-	fprintf(stderr,"shmat failed to update value\n");
-#endif
-      }
-      else{
-	tmpMap=getMapFromMaps(conf,"lenv","status");
-	s1=shm;
-	for(s=tmpMap->value;*s!=NULL;s++)
-	  *s1++=*s;
-	shmdt((void *)shm);
-      }
-    }
-  }
-}
-
-char* getStatus(int pid){
-  int shmid,i;
-  key_t key;
-  void *shm;
-  char *s;
-  key=pid;
-  if ((shmid = shmget(key, SHMSZ, 0666)) < 0) {
-#ifdef DEBUG
-    fprintf(stderr,"shmget failed in getStatus\n");
-#endif
-  }else{
-    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
-#ifdef DEBUG
-      fprintf(stderr,"shmat failed in getStatus\n");
-#endif
-    }else{
-      return (char*)shm;
-    }
-  }
-  return "-1";
-}
 
 
 /* Returns a url-encoded version of str */
@@ -215,7 +347,7 @@ char *zCapitalize(char *tmp){
 }
 
 
-int zooXmlSearchForNs(char* name){
+int zooXmlSearchForNs(const char* name){
   int i;
   int res=-1;
   for(i=0;i<nbNs;i++)
@@ -226,7 +358,7 @@ int zooXmlSearchForNs(char* name){
   return res;
 }
 
-int zooXmlAddNs(xmlNodePtr nr,char* url,char* name){
+int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
 #ifdef DEBUG
   fprintf(stderr,"zooXmlAddNs %d \n",nbNs);
 #endif
@@ -265,7 +397,7 @@ void zooXmlCleanupNs(){
   nbNs=0;
 }
 
-xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,char* service,maps* m){
+xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m){
 
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr n,nc,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
@@ -617,7 +749,7 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
   }
 }
 
-xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,char* service,maps* m){
+xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,const char* service,maps* m){
 
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr n,nr;
@@ -710,7 +842,7 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 
 }
 
-void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
+void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
   char *orderedFields[7];
   orderedFields[0]="mimeType";
   orderedFields[1]="encoding";
@@ -956,7 +1088,7 @@ void printFullDescription(elements *elem,char* type,xmlNsPtr ns_ows,xmlNodePtr n
   }
 }
 
-void printProcessResponse(maps* m,map* request, int pid,service* serv,char* service,int status,maps* inputs,maps* outputs){
+void printProcessResponse(maps* m,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr nr,n,nc,nc1,nc2,nc3,pseudor;
   xmlDocPtr doc;
@@ -1191,7 +1323,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
     xmlChar *xmlbuff;
     int buffersize;
     xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "UTF-8", 1);
-    fwrite(xmlbuff,1,strlen(xmlbuff)*sizeof(char),output);
+    fwrite(xmlbuff,1,xmlStrlen(xmlbuff)*sizeof(char),output);
     xmlFree(xmlbuff);
     fclose(output);
   }
@@ -1203,7 +1335,6 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,char* serv
 
 
 void printDocument(maps* m, xmlDocPtr doc,int pid){
-  rewind(stdout);
   char *encoding=getEncoding(m);
   if(pid==getpid()){
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
@@ -1216,8 +1347,8 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
    * for demonstration purposes.
    */
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
-  printf((char *) xmlbuff);
-  //fflush(stdout);
+  printf("%s",xmlbuff);
+  fflush(stdout);
   /*
    * Free associated memory.
    */
@@ -1227,7 +1358,7 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
   zooXmlCleanupNs();
 }
 
-void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,char* type){
+void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,const char* type){
   xmlNodePtr nc1;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;  
@@ -1259,7 +1390,7 @@ void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPt
 
 }
 
-void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,map* m,char* type){
+void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,map* m,const char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;  
@@ -1287,7 +1418,7 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 
 }
 
-void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,char* type){
+void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,const char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;
@@ -1442,7 +1573,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 
 }
 
-void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,char* identifier,map* amap){
+void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map* amap){
   xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "Identifier");
   xmlAddChild(nc2,xmlNewText(BAD_CAST identifier));
   xmlAddChild(root,nc2);
@@ -1526,7 +1657,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
 
   maps* tmpMap=getMaps(m,"main");
 
-  int nsid=zooXmlAddNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  int nsid=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
   ns=usedNs[nsid];
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
 
@@ -1707,7 +1838,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  printExceptionReportResponse(m,errormap);
 	  freeMap(&errormap);
 	  free(errormap);
-	  return 1;
+	  return;
 	}
 	char mime[1024];
 	map* mi=getMap(tmpI->content,"mimeType");
@@ -1756,7 +1887,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
 }
 
-char *base64(const unsigned char *input, int length)
+char *base64(const char *input, int length)
 {
   BIO *bmem, *b64;
   BUF_MEM *bptr;
@@ -1778,7 +1909,7 @@ char *base64(const unsigned char *input, int length)
   return buff;
 }
 
-char *base64d(unsigned char *input, int length,int* red)
+char *base64d(const char *input, int length,int* red)
 {
   BIO *b64, *bmem;
 
@@ -1787,7 +1918,7 @@ char *base64d(unsigned char *input, int length,int* red)
     memset(buffer, 0, length);
     b64 = BIO_new(BIO_f_base64());
     if(b64){
-      bmem = BIO_new_mem_buf(input,length);
+      bmem = BIO_new_mem_buf((unsigned char*)input,length);
       bmem = BIO_push(b64, bmem);
       *red=BIO_read(bmem, buffer, length);
       buffer[length-1]=0;
@@ -1971,11 +2102,11 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
  * 
  * Note : support only 2D bounding box.
  */
-map* parseBoundingBox(char* value){
+map* parseBoundingBox(const char* value){
   map *res=NULL;
   if(value!=NULL){
     char *cv,*cvp;
-    cv=strtok_r(value,",",&cvp);
+    cv=strtok_r((char*) value,",",&cvp);
     int cnt=0;
     int icnt=0;
     char *currentValue=NULL;
@@ -2077,7 +2208,7 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
   ns_ows=usedNs[owsId];
   n = xmlNewNode(ns_ows, BAD_CAST "BoundingBox");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1","ows");
+  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
   int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
   ns_xsi=usedNs[xsiId];
   xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
@@ -2088,7 +2219,7 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
 
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
   if(file==NULL)
-    printf((char *) xmlbuff);
+    printf("%s",xmlbuff);
   else{
     fprintf(file,"%s",xmlbuff);
   }

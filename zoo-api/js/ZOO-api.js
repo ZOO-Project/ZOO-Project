@@ -23,6 +23,12 @@
  */
 
 /**
+ * Copyright 2005-2010 OpenLayers Contributors, released under the Clear BSD
+ * license. Please see http://svn.openlayers.org/trunk/openlayers/license.txt
+ * for the full text of the license.
+ */
+
+/**
  * Class: ZOO
  */
 ZOO = {
@@ -3197,7 +3203,7 @@ ZOO.Format.GML = ZOO.Class(ZOO.Format, {
       return new ZOO.Geometry.MultiPolygon(components);
     },
     /**
-     * Method: parseGeometry.polygon
+     * Method: parseGeometry.envelope
      * Given a GML node representing an envelope, create a
      *     ZOO polygon geometry.
      *
@@ -4089,7 +4095,7 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
   /**
    * Method: calculateBounds
    * Recalculate the bounds by iterating through the components and 
-   * calling calling extendBounds() on each item.
+   * calling extendBounds() on each item.
    */
   calculateBounds: function() {
     this.bounds = null;
@@ -4246,6 +4252,7 @@ ZOO.Geometry.Collection = ZOO.Class(ZOO.Geometry, {
    * Calculate the approximate length of the geometry were it projected onto
    *     the earth.
    *
+   * Parameters:
    * projection - {<ZOO.Projection>} The spatial reference system
    *     for the geometry coordinates.  If not provided, Geographic/WGS84 is
    *     assumed.

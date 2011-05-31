@@ -1,0 +1,147 @@
+.. _api-zoo-string:
+
+ZOO.String
+==========
+
+Contains convenience methods for string manipulation:
+
+Functions and Properties
+------------------------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`startsWith <startsWith>`
+     - Test whether a string starts with another string.
+   * - :ref:`contains <contains>`
+     - Test whether a string contains another string.  
+   * - :ref:`trim <trim>` 
+     - Removes leading and trailing whitespace characters from a string.
+   * - :ref:`camelize <camelize>`
+     - Camel-case a hyphenated string.    
+   * - :ref:`tokenRegEx <tokenRegEx>`
+     - Used to find tokens in a string.     
+   * - :ref:`numberRegEx <numberRegEx>` 
+     - Used to test strings as numbers.
+   * - :ref:`isNumeric <isNumeric>`
+     - Determine whether a string contains only a numeric value. 
+   * - :ref:`numericIf <numericIf>`
+     - Converts a string that appears to be a numeric value into a number.        
+
+.. _startsWith:
+
+startsWith
+  ::
+  
+    startsWith: function(str,sub)
+
+  Test whether a string starts with another string.
+
+  *Parameters*
+  
+  | ``str {String}`` The string to test.
+  | ``sub {Sring}`` The substring to look for.
+
+  *Returns*
+
+  ``{Boolean}`` The first string starts with the second.
+  
+.. _contains:
+
+contains	
+  ::
+  
+    contains: function(str,sub)
+
+  Test whether a string contains another string.
+
+  *Parameters*
+  
+  | ``str {String}`` The string to test.
+  | ``sub {String}`` The substring to look for.
+
+  *Returns*
+
+  ``{Boolean}`` The first string contains the second.
+  
+.. _trim:
+
+trim	
+  ::
+  
+    trim: function(str)
+
+  Removes leading and trailing whitespace characters from a string.
+
+  *Parameters*
+  
+  ``str	{String}`` The (potentially) space-padded string. This string is not modified.
+
+  *Returns*
+
+  ``{String}`` A trimmed version of the string with all leading and trailing spaces removed.
+
+.. _camelize:
+
+camelize	
+  ::
+  
+    camelize: function(str)
+
+  Camel-case a hyphenated string. Ex. "chicken-head" becomes "chickenHead", and "-chicken-head" becomes "ChickenHead".
+
+  *Parameters*
+  
+  ``str	{String}`` The string to be camelized.  The original is not modified.
+
+  *Returns*
+
+  ``{String}`` The string, camelized  
+  
+.. _tokenRegEx:  
+  
+tokenRegEx	
+  Used to find tokens in a string.  Examples: *${a}, ${a.b.c}, ${a-b}, ${5}*
+  
+.. _numberRegEx:    
+  
+numberRegEx	
+  Used to test strings as numbers.
+  
+.. _isNumeric:  
+  
+isNumeric	
+  ::
+  
+    isNumeric: function(value)
+
+  Determine whether a string contains only a numeric value.
+
+  *Examples*
+
+  ::
+  
+    ZOO.String.isNumeric("6.02e23") // true
+    ZOO.String.isNumeric("12 dozen") // false
+    ZOO.String.isNumeric("4") // true
+    ZOO.String.isNumeric(" 4 ") // false
+
+  *Returns*
+
+  ``{Boolean}`` String contains only a number. 
+  
+.. _numericIf:  
+
+numericIf	
+  ::
+  
+    numericIf: function(value)
+
+  Converts a string that appears to be a numeric value into a number.
+
+  *Returns*
+  
+  ``{Number|String}`` a Number if the passed value is a number, a String otherwise.

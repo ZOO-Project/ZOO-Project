@@ -1,0 +1,115 @@
+.. _environment:
+
+Using ZOO from an OSGeoLive virtual machine
+===========================================
+
+Development Environment Description
+-----------------------------------
+
+`OSGeoLive <http://live.osgeo.org/>`__ is a live DVD and virtual machine based on 
+`Xubuntu <http://www.xubuntu.org/>`__  that allows you to try a 
+wide variety of open source geospatial software without installing anything. It is 
+composed entirely of free software and include ZOO 1.0 this year, for testing purpose.
+
+As already said in introduction, an OSGeoLive virtual machine image disk has been 
+installed on your computer, allowing you to use ZOO Kernel in a development environment 
+directly. Using a virtual machine image disk seems to be the simplest way to use 
+ZOO Kernel and to develop ZOO Services locally, as we can ensure that everything 
+requested for compile C Services and run Python Services is available and ready to use. 
+Every ZOO related material and source code have been placed in */home/user/zoows* directory. 
+We will work inside it during this workshop. As the binary version of ZOO Kernel is 
+already compiled and stored in */home/user/zoows/sources/zoo-kernel*, you only have to 
+copy two important files inside the */usr/lib/cgi-bin directory*: *zoo_loader.cgi*
+and the *main.cfg* in order to make ZOO Kernel available, using the following commands:
+
+::
+
+  sudo cp ~/zoows/sources/zoo-kernel/zoo_loader.cgi /usr/lib/cgi-bin
+  sudo cp ~/zoows/sources/zoo-kernel/main.cfg /usr/lib/cgi-bin
+  
+Please note that we will talk about ZOO Kernel or zoo_loader.cgi script without any 
+distinction during this workshop.
+
+The *main.cfg* file contains metadata informations about the identification and provider 
+but also some important settings. The file is composed of various sections, namely *main*,  
+*identification* and *provider* per default. Obviously, you are free to add new sections 
+to the files if you need them for a specific Service. Nevertheless, you have to know 
+that the env section name is used in a specific way. It lets you define environment 
+variables that your Service requires during its runtime. For instance, if your Service 
+requires to access to a X server running on framebuffer, you can add *DISPLAY=:1* line in 
+your env section to take this specificity into account.
+
+Please have a look to this file. Three important parameters are commented below:
+
+serverAddress
+  The url to access to the ZOO Kernel
+
+tmpPath
+  The full path to store temporary files
+
+tmpUrl
+  The url path relative to serverAddress to access temporary directory.
+
+The values of the *main.cfg* file used from the running virtual machine are the following:
+
+::
+
+  serverAddress=http://localhost/zoo
+  tmpPath=/var/www/temp
+  tmpUrl=../temp/
+
+You could have noticed that the *tmpUrl* is a relative url from *serverAddress*, so it must 
+be a directory. Even if ZOO Kernel can be used with the full url of the zoo_loader.cgi 
+script, for  better readability and fully functional ZOO Kernel, you have to modify the 
+default Apache configuration in order to be able to use the http://localhost/zoo/ url 
+directly.
+
+First, please create a zoo directory in the existing */var/www* which is used by Apache as 
+the DirectoryIndex. Then, please edit the */etc/apache2/sites-available/default* configuration 
+file and add the following lines after the Directory block related to */var/www* directory :
+
+::
+
+  <Directory /var/www/zoo/>
+          Options Indexes FollowSymLinks MultiViews
+          AllowOverride All
+          Order allow,deny
+          allow from all
+  </Directory>
+  
+Now create a small *.htaccess* file in the */var/www/zoo* containing the following lines:
+
+::
+
+  RewriteEngine on
+  RewriteRule (.*)/(.*) /cgi-bin/zoo_loader.cgi?metapath=$1 [L,QSA]
+  RewriteRule (.*) /cgi-bin/zoo_loader.cgi [L,QSA]
+
+For this last file to be taken into account by Apache, you must activate the rewrite 
+Apache module by copying a load file as bellow :
+
+::
+
+  sudo cp /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled/
+
+Now you should be able to access the ZOO Kernel using a simplified by restarting 
+your Apache Web server :
+
+::
+
+  sudo /etc/init.d/apache2 restart
+  
+Two other softwares form the OSGeoLive environment will be used during this workshop. 
+Geoserver will first be used to provide WFS input data for the ZOO Services we are going 
+to develop. The Geoserver sample dataset (United States polygons) will be passed to our 
+service during section 3. So please start the Geoserver using the corresponding launcher 
+in the Servers folder, as illustrated in the following screenshot :
+
+OpenLayers library is also available on the OSGeoLive virtual machine image disk, and it 
+will be used during section 4, for building a simple WPS client application able to query 
+the newly developed ZOO Services. 
+
+As we planned to use OGR C-API and Python module of the GDAL library, we will need the 
+corresponding header files, libraries and associated files. Hopefully everything was 
+already available per default and so ready to use on the OSGeoLive packaging.
+

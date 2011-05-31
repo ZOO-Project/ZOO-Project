@@ -1,0 +1,34 @@
+.. _services-examples:
+
+Service Examples
+================
+
+GDAL ZOO Service
+----------------
+
+The GDAL ZOO Service is based on  GDAL source code and copyright. This ZOO Service 
+aims to provide some basic raster processing operations to your ZOO Kernel installation. 
+Learn more and read documentation on the official `GDAL website <http://www.gdal.org/>`__.
+
+Implemented functions
+*********************
+
+Gdal_Grid
+    creates regular grid from the scattered data
+
+
+Gdal_Translate
+    converts raster data between different formats
+
+
+OGR ZOO Service
+---------------
+
+The OGR ZOO Service is based on  OGR source code and copyright. This ZOO Service aims 
+to provide some basic vector spatial operations to your ZOO Kernel installation. 
+Learn more and read documentation on the official `OGR website <http://www.gdal.org/ogr/index.html>`__.
+
+Implemented functions
+*********************
+
+Base_Vect_Ops
