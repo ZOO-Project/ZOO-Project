@@ -29,19 +29,24 @@ div.document {
 div.documentwrapper {
     float: left;
     width: 100%;
+            background:#707070;
 }
 
 div.bodywrapper {
     margin: 0 0 0 230px;
+
 }
 
 div.body {
-    background-color: #ffffff;
+
+ filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#bababa', endColorstr='#707070'); /* for IE */
+background:-webkit-gradient(linear, left top, left bottom, from(#bababa), to(#707070)); /* for webkit browsers */
+background:-moz-linear-gradient(top,  #bababa,  #707070); /* for firefox 3.6+ */
     color: #333333;
-    padding: 0 20px 30px 20px;
+    padding: 10px 20px 20px 20px;
 }
 div.bodywrapper {
-    margin: 0 230px 0 0;
+    margin: 1em 25% 1em 1em;
 }
 
 div.footer {
@@ -64,11 +69,13 @@ div.related {
 }
 
 div.related a {
+	margin: 0 0 10px;
     color: #ffffff;
 }
 
 div.sphinxsidebar {
     float: right;
+    
 }
 
 /* -- Custom Sidebar styles ----------------------------------------------------------- */
@@ -89,24 +96,31 @@ div.sphinxsidebar {
         border-radius: 5px;
 }
 
-.twitts, .donate {
-    -moz-border-radius: 5px 5px 5px 5px;
+.twitts, .donate, .searchbox {
+    -moz-border-radius: 5px;
+    -webkit-border-radius:5px;
+    border-radius:5px;
     background: -moz-linear-gradient(center top , #FFFFFF, #FFCD0B) repeat scroll 0 0 transparent;
     border: 0 none;
-    height: 180px;
-    margin-bottom: 1em;
+    height: auto;
+    margin-bottom: 10px;
     padding: 1%;
     width: 98%;
 }
 
-p.version{
-color:#FFFFFF;
-text-shadow: none;
-margin:0 0 10px 10px ;
-padding:0;
-}
+
 
 /* -- End Custom Sidebar styles ----------------------------------------------------------- */
+
+div.sphinxsidebar h1, .donate h1, .twitts h1 {
+    font-family: 'Verdana, Arial, Helvetica, sans-serif';
+    color: #663e05;
+    font-size: 1.4em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0;
+    margin:10px 0 10px 10px;
+}
 
 div.sphinxsidebar h3 {
     font-family: 'Verdana, Arial, Helvetica, sans-serif';
@@ -146,6 +160,14 @@ div.sphinxsidebar ul {
 
 div.sphinxsidebar a {
     color: #333333;
+}
+
+
+div.sphinxsidebar a p.version{
+color:#FFFFFF;
+text-shadow: none;
+margin:0 0 10px 10px ;
+padding:0;
 }
 
 div.sphinxsidebar input {
@@ -190,7 +212,12 @@ div.body h6 {
     padding: 3px 0 3px 10px;
 }
 
-div.body h1 { margin-top: 0; font-size: 140%; }
+div.body h1 {
+	font-size: 1.4em;
+	font-family:Verdana;
+	margin: 10px 0 0 0;
+	padding:0;
+	 }
 div.body h2 { font-size: 120%; }
 div.body h3 { font-size: 100%; }
 div.body h4 { font-size: 90%; }
@@ -320,7 +347,7 @@ ul.topnav li {
 	position: relative; /*--Declare X and Y axis base--*/
 }
 ul.topnav li a{
-	padding: 6px 10px 10px 20px;
+	padding: 9px 10px 10px 20px;
 	color: #fff;
 	display: block;
 	text-decoration: none;
@@ -383,7 +410,7 @@ html ul.topnav li ul.subnav li a:hover { /*--Hover effect for subnav links--*/
 #myheader {
  color: #333;
  width: 100%;
- height: 220px;
+ height: 180px;
  margin: 0;
  background: #FFFFFF ;
 filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#fff196'); /* for IE */
@@ -398,8 +425,8 @@ width:380px;
 height:180px;
 background:url(images/zoo-title.png) no-repeat;}
 
-h1.title{width:290px;position:relative;top:115px;left:15px;font-size:1.4em;letter-spacing:2px;color:#727272;text-transform:uppercase;padding:5px;
- background:#999999;
+h1.title{width:290px;position:relative;top:102px;left:15px;font-size:1.4em;letter-spacing:2px;color:#727272;text-transform:uppercase;padding:5px;
+ background:#999999;font-weight:normal;
  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#e0e0e0', endColorstr='#bbbbbb'); /* for IE */
 background:-webkit-gradient(linear, left top, left bottom, from(#e0e0e0), to(#bbbbbb)); /* for webkit browsers */
 background:-moz-linear-gradient(top,  #e0e0e0,  #bbbbbb); /* for firefox 3.6+ */
