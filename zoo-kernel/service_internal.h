@@ -37,8 +37,12 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#else
+#include <direct.h>
+#endif
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
@@ -70,8 +74,8 @@ extern "C" {
   static char* nsName[5];
   static int nbNs=0;
 
-  void* unhandleStatus(maps*);
-  void* updateStatus(maps*);
+  void unhandleStatus(maps*);
+  void updateStatus(maps*);
   char* getStatus(int);
 
 #ifdef USE_JS
@@ -105,8 +109,8 @@ extern "C" {
   
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
-  char *base64(const unsigned char*,int);
-  char *base64d(unsigned char*,int,int*);
+  char *base64(const char*,int);
+  char *base64d(const char*,int,int*);
   void ensureDecodedBase64(maps**);
 
   char* addDefaultValues(maps**,elements*,maps*,int);

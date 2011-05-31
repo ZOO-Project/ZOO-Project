@@ -24,7 +24,28 @@
 
 #include "service_internal.h"
 
-void *addLangAttr(xmlNodePtr n,maps *m){
+#ifdef WIN32
+char *
+strtok_r (char *s1, const char *s2, char **lasts)
+{
+  char *ret;
+  if (s1 == NULL)
+    s1 = *lasts;
+  while (*s1 && strchr(s2, *s1))
+    ++s1;
+  if (*s1 == '\0')
+    return NULL;
+  ret = s1;
+  while (*s1 && !strchr(s2, *s1))
+    ++s1;
+  if (*s1)
+    *s1++ = '\0';
+  *lasts = s1;
+  return ret;
+}
+#endif
+
+void addLangAttr(xmlNodePtr n,maps *m){
   map *tmpLmap=getMapFromMaps(m,"main","language");
   if(tmpLmap!=NULL)
     xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST tmpLmap->value);
@@ -43,7 +64,115 @@ char to_hex(char code) {
   return hex[code & 15];
 }
 
-void* unhandleStatus(maps *conf){
+#ifdef WIN32
+
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
+
+#define SHMEMSIZE 4096
+
+static LPVOID lpvMemG = NULL;      // pointer to shared memory
+static HANDLE hMapObjectG = NULL;  // handle to file mapping
+
+void updateStatus(maps *conf){
+	fprintf(stderr,"OK Final 1 \n");
+	fflush(stderr);
+	LPWSTR lpszTmp;
+	BOOL fInit;
+	char *s=NULL;
+	map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+	fprintf(stderr,"OK Final 11 \n");
+	fflush(stderr);
+	if(hMapObjectG==NULL)
+	hMapObjectG = CreateFileMapping( 
+		INVALID_HANDLE_VALUE,   // use paging file
+		NULL,                   // default security attributes
+		PAGE_READWRITE,         // read/write access
+		0,                      // size: high 32-bits
+		SHMEMSIZE,              // size: low 32-bits
+		TEXT(tmpMap->value));   // name of map object
+	if (hMapObjectG == NULL){
+		fprintf(stderr,"Unable to create share memory segment %s !! \n",tmpMap->value);
+		return ;
+	}
+	fprintf(stderr,"OK Final 2 \n");
+	fflush(stderr);
+	fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
+	if(lpvMemG==NULL)
+	lpvMemG = MapViewOfFile( 
+		hMapObjectG,     // object to map view of
+		FILE_MAP_WRITE, // read/write access
+		0,              // high offset:  map from
+		0,              // low offset:   beginning
+		0);             // default: map entire file
+	if (lpvMemG == NULL){
+		fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
+		return ;
+	} 
+	fprintf(stderr,"OK Final 3 \n");
+	fflush(stderr);
+	if (fInit)
+		memset(lpvMemG, '\0', SHMEMSIZE);
+	fprintf(stderr,"OK Final 4 \n");
+	fflush(stderr);
+	tmpMap=getMapFromMaps(conf,"lenv","status");
+	lpszTmp = (LPWSTR) lpvMemG;
+	for(s=tmpMap->value;*s!=NULL;s++)
+		*lpszTmp++ = *s;
+	*lpszTmp = '\0'; 
+}
+
+char* getStatus(int pid){
+  LPWSTR lpszBuf=NULL;
+  LPWSTR lpszTmp=NULL;
+  LPVOID lpvMem = NULL;
+  HANDLE hMapObject = NULL;
+  BOOL fIgnore,fInit;
+  char tmp[100];
+  sprintf(tmp,"%i",pid);
+  if(hMapObject==NULL)
+    hMapObject = CreateFileMapping( 
+				   INVALID_HANDLE_VALUE,   // use paging file
+				   NULL,                   // default security attributes
+				   PAGE_READWRITE,         // read/write access
+				   0,                      // size: high 32-bits
+				   4096,                   // size: low 32-bits
+				   TEXT(tmp));   // name of map object
+  if (hMapObject == NULL) 
+    return FALSE;
+  if((GetLastError() != ERROR_ALREADY_EXISTS)){
+    fIgnore = UnmapViewOfFile(lpvMem); 
+    fIgnore = CloseHandle(hMapObject);
+    return "-1";
+  }
+  fInit=TRUE;
+  if(lpvMem==NULL)
+    lpvMem = MapViewOfFile( 
+			   hMapObject,     // object to map view of
+			   FILE_MAP_READ,  // read/write access
+			   0,              // high offset:  map from
+			   0,              // low offset:   beginning
+			   0);             // default: map entire file
+  if (lpvMem == NULL) 
+    return "-1"; 
+  lpszTmp = (LPWSTR) lpvMem;
+  while (*lpszTmp!=NULL)
+    *lpszBuf++ = *lpszTmp++;
+  *lpszBuf = '\0';
+  fIgnore = UnmapViewOfFile(lpvMem); 
+  fIgnore = CloseHandle(hMapObject);
+  return (char*)lpszBuf;
+}
+
+void unhandleStatus(maps *conf){
+  BOOL fIgnore;
+  fIgnore = UnmapViewOfFile(lpvMemG); 
+  fIgnore = CloseHandle(hMapObjectG);
+}
+#else
+void unhandleStatus(maps *conf){
   int shmid,i;
   key_t key;
   void *shm;
@@ -69,46 +198,7 @@ void* unhandleStatus(maps *conf){
   }
 }
 
-#ifdef USE_JS
-
-JSBool
-JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-  JS_MaybeGC(cx);
-  char *sid;
-  int istatus=0;
-  char *status=NULL;
-  maps *conf;
-  int i=0;
-  if(argc>2){
-#ifdef JS_DEBUG
-    fprintf(stderr,"Number of arguments used to call the function : %i",argc);
-#endif
-    return JS_FALSE;
-  }
-  conf=mapsFromJSObject(cx,argv[0]);
-  if(JS_ValueToInt32(cx,argv[1],&istatus)==JS_TRUE){
-    char tmpStatus[4];
-    sprintf(tmpStatus,"%i",istatus);
-    tmpStatus[3]=0;
-    status=strdup(tmpStatus);
-  }
-  if(getMapFromMaps(conf,"lenv","status")!=NULL){
-    if(status!=NULL)
-      setMapInMaps(conf,"lenv","status",status);
-    else
-      setMapInMaps(conf,"lenv","status","15");
-    updateStatus(conf);
-  }
-  freeMaps(&conf);
-  free(conf);
-  JS_MaybeGC(cx);
-  return JS_TRUE;
-}
-
-#endif
-
-void* updateStatus(maps *conf){
+void updateStatus(maps *conf){
   int shmid,i;
   key_t key;
   char *shm,*s,*s1;
@@ -158,6 +248,48 @@ char* getStatus(int pid){
   }
   return "-1";
 }
+
+#endif
+
+#ifdef USE_JS
+
+JSBool
+JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  JS_MaybeGC(cx);
+  char *sid;
+  int istatus=0;
+  char *status=NULL;
+  maps *conf;
+  int i=0;
+  if(argc>2){
+#ifdef JS_DEBUG
+    fprintf(stderr,"Number of arguments used to call the function : %i",argc);
+#endif
+    return JS_FALSE;
+  }
+  conf=mapsFromJSObject(cx,argv[0]);
+  if(JS_ValueToInt32(cx,argv[1],&istatus)==JS_TRUE){
+    char tmpStatus[4];
+    sprintf(tmpStatus,"%i",istatus);
+    tmpStatus[3]=0;
+    status=strdup(tmpStatus);
+  }
+  if(getMapFromMaps(conf,"lenv","status")!=NULL){
+    if(status!=NULL)
+      setMapInMaps(conf,"lenv","status",status);
+    else
+      setMapInMaps(conf,"lenv","status","15");
+    updateStatus(conf);
+  }
+  freeMaps(&conf);
+  free(conf);
+  JS_MaybeGC(cx);
+  return JS_TRUE;
+}
+
+#endif
+
 
 
 /* Returns a url-encoded version of str */
@@ -1191,7 +1323,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     xmlChar *xmlbuff;
     int buffersize;
     xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "UTF-8", 1);
-    fwrite(xmlbuff,1,strlen(xmlbuff)*sizeof(char),output);
+    fwrite(xmlbuff,1,xmlStrlen(xmlbuff)*sizeof(char),output);
     xmlFree(xmlbuff);
     fclose(output);
   }
@@ -1203,7 +1335,6 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 
 
 void printDocument(maps* m, xmlDocPtr doc,int pid){
-  rewind(stdout);
   char *encoding=getEncoding(m);
   if(pid==getpid()){
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
@@ -1217,7 +1348,7 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
    */
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
   printf("%s",xmlbuff);
-  //fflush(stdout);
+  fflush(stdout);
   /*
    * Free associated memory.
    */
@@ -1526,7 +1657,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
 
   maps* tmpMap=getMaps(m,"main");
 
-  int nsid=zooXmlAddNs(NULL,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+  int nsid=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
   ns=usedNs[nsid];
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
 
@@ -1756,7 +1887,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
 }
 
-char *base64(const unsigned char *input, int length)
+char *base64(const char *input, int length)
 {
   BIO *bmem, *b64;
   BUF_MEM *bptr;
@@ -1778,7 +1909,7 @@ char *base64(const unsigned char *input, int length)
   return buff;
 }
 
-char *base64d(unsigned char *input, int length,int* red)
+char *base64d(const char *input, int length,int* red)
 {
   BIO *b64, *bmem;
 
@@ -1787,7 +1918,7 @@ char *base64d(unsigned char *input, int length,int* red)
     memset(buffer, 0, length);
     b64 = BIO_new(BIO_f_base64());
     if(b64){
-      bmem = BIO_new_mem_buf(input,length);
+      bmem = BIO_new_mem_buf((unsigned char*)input,length);
       bmem = BIO_push(b64, bmem);
       *red=BIO_read(bmem, buffer, length);
       buffer[length-1]=0;
@@ -2077,7 +2208,7 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
   ns_ows=usedNs[owsId];
   n = xmlNewNode(ns_ows, BAD_CAST "BoundingBox");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1","ows");
+  xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
   int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
   ns_xsi=usedNs[xsiId];
   xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");

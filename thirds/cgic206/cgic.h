@@ -124,6 +124,12 @@ extern
 #endif
 char *cgiCookie;
 
+extern 
+#ifdef __cplusplus
+"C" 
+#endif
+char *cgiSid;
+
 /* A macro providing the same incorrect spelling that is
 	found in the HTTP/CGI specifications */
 #define cgiReferer cgiReferrer

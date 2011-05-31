@@ -27,6 +27,12 @@
 
 #pragma once
 
+#ifdef WIN32
+#define strncasecmp strnicmp
+#define strcasecmp stricmp
+#define snprintf sprintf_s
+#endif 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -192,6 +198,17 @@ extern "C" {
     return NULL;
   }
 
+  static map* getLastMap(map* m){
+    map* tmp=m;
+    while(tmp!=NULL){
+      if(tmp->next==NULL){
+	return tmp;
+      }
+      tmp=tmp->next;
+    }
+    return NULL;
+  }
+
   static map* getMapFromMaps(maps* m,const char* key,const char* subkey){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
@@ -200,6 +217,54 @@ extern "C" {
     }
     else return NULL;
   }
+
+  static char* getMapsAsKVP(maps* m,int length,int type){
+    char *dataInputsKVP=(char*) malloc(length*sizeof(char));
+    maps* curs=m;
+    int i=0;
+    while(curs!=NULL){
+      if(i==0)
+	if(type==0)
+	  sprintf(dataInputsKVP,"%s=",curs->name);
+	else
+	  sprintf(dataInputsKVP,"%s",curs->name);
+      else{
+	char *temp=strdup(dataInputsKVP);
+	if(type==0)
+	  sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
+	else
+	  sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
+	free(temp);
+      }
+      map* icurs=curs->content;
+      if(type==0){
+	map* tmp=getMap(curs->content,"value");
+	char *temp=strdup(dataInputsKVP);
+	if(getMap(m->content,"xlink:href")!=NULL)
+	  sprintf(dataInputsKVP,"%sReference",temp);
+	else
+	  sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
+	free(temp);
+      }
+      int j=0;
+      while(icurs!=NULL){
+	if(strcasecmp(icurs->name,"value")!=0 &&
+	   strcasecmp(icurs->name,"Reference")!=0 &&
+	   strcasecmp(icurs->name,"minOccurs")!=0 &&
+	   strcasecmp(icurs->name,"maxOccurs")!=0 &&
+	   strcasecmp(icurs->name,"inRequest")!=0){
+	  char *itemp=strdup(dataInputsKVP);
+	  sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
+	  free(itemp);
+	}
+	icurs=icurs->next;
+      }
+      curs=curs->next;
+      i++;
+    }
+    return dataInputsKVP;
+  }
+
 
   static void freeMap(map** mo){
     map* _cursor=*mo;
@@ -515,7 +580,8 @@ extern "C" {
     if(_tmpm!=NULL){
       map* _ztmpm=getMap(_tmpm->content,subkey);
       if(_ztmpm!=NULL){
-	free(_ztmpm->value);
+	if(_ztmpm->value!=NULL)
+	  free(_ztmpm->value);
 	_ztmpm->value=strdup(value);
       }else{
 	addToMap(_tmpm->content,subkey,value);
