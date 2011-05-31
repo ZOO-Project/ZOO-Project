@@ -67,6 +67,7 @@ int cgiContentLength;
 char *cgiAccept;
 char *cgiUserAgent;
 char *cgiReferrer;
+char *cgiSid;
 
 FILE *cgiIn;
 FILE *cgiOut;
@@ -142,8 +143,12 @@ int main(int argc, char *argv[]) {
 	cgiGetenv(&cgiPathTranslated, "PATH_TRANSLATED");
 	cgiGetenv(&cgiScriptName, "SCRIPT_NAME");
 	cgiGetenv(&cgiQueryString, "QUERY_STRING");
+	cgiSid=NULL;
 	if(strcmp(cgiQueryString,"")==0 && argc>=2){
 		cgiQueryString=argv[1];
+		if(argc>2){
+		  cgiSid=argv[2];
+		}
 	}
 	cgiGetenv(&cgiRemoteHost, "REMOTE_HOST");
 	cgiGetenv(&cgiRemoteAddr, "REMOTE_ADDR");

@@ -1,0 +1,35 @@
+.. _api-classes:
+
+Classes
+=======
+
+The following classes are available in the ZOO API:
+
+.. toctree::
+   :maxdepth: 2
+   
+   zoo
+   zoo-bounds  
+   zoo-feature   
+   zoo-format
+   zoo-format-geojson 
+   zoo-format-gml   
+   zoo-format-json 
+   zoo-format-kml
+   zoo-format-wkt  
+   zoo-format-wps  
+   zoo-geometry  
+   zoo-geometry-collection  
+   zoo-geometry-curve
+   zoo-geometry-linearring   
+   zoo-geometry-linestring   
+   zoo-geometry-multilinestring   
+   zoo-geometry-multipoint 
+   zoo-geometry-multipolygon   
+   zoo-geometry-point 
+   zoo-geometry-polygon   
+   zoo-geometry-surface 
+   zoo-process   
+   zoo-projection   
+   zoo-request
+   zoo-string   

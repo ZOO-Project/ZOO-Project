@@ -1,0 +1,196 @@
+.. _api-zoo-format-wkt:
+
+ZOO.Format.WKT
+==============
+
+Class for reading and writing Well-Known Text.
+
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
+Functions and Properties	
+------------------------
+
+.. list-table::
+   :widths: 30 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`ZOO.Format.WKT <ZOO.Format.WKT>`
+     - Create a new parser for WKT
+   * - :ref:`read <read>`
+     - Deserialize a WKT string and return a vector feature or an array of vector features.
+   * - :ref:`write <write>`
+     - Serialize a feature or array of features into a WKT string.
+   * - :ref:`extract <extract>`
+     - Object with properties corresponding to the geometry types.   
+   * - :ref:`parse <parse>`
+     - Object with properties corresponding to the geometry types.
+   * - :ref:`parse.point <parse.point>`
+     - Return point feature given a point WKT fragment.   
+   * - :ref:`parse.multipoint <parse.multipoint>`
+     - Return a multipoint feature given a multipoint WKT fragment.
+   * - :ref:`parse.linestring <parse.linestring>`
+     - Return a linestring feature given a linestring WKT fragment. 
+   * - :ref:`parse.multilinestring <parse.multilinestring>`
+     - Return a multilinestring feature given a multilinestring WKT fragment.
+   * - :ref:`parse.polygon <parse.polygon>`
+     - Return a polygon feature given a polygon WKT fragment.
+   * - :ref:`parse.multipolygon <parse.multipolygon>`
+     - Return a multipolygon feature given a multipolygon WKT fragment.
+   * - :ref:`parse.geometrycollection <parse.geometrycollection>`
+     - Return an array of features given a geometrycollection WKT fragment.     
+       
+.. _ZOO.Format.WKT:   
+
+ZOO.Format.WKT	
+  Create a new parser for WKT
+
+  *Parameters*
+  
+  ``options {Object}`` An optional object whose properties will be set on this instance
+
+  *Returns*
+
+  :ref:`{ZOO.Format.WKT} <api-zoo-format-wkt>` A new WKT parser. 
+  
+.. _read:     
+  
+read	
+  ::
+  
+    read: function(wkt)
+
+  Deserialize a WKT string and return a vector feature or an array of vector features.  
+  Supports WKT for POINT, MULTIPOINT, LINESTRING, MULTILINESTRING, POLYGON, MULTIPOLYGON, 
+  and GEOMETRYCOLLECTION.
+  
+  *Parameters*
+  
+  ``wkt	{String}`` A WKT string
+  
+  *Returns*
+
+  {<ZOO.Feature.Vector>|Array} A feature or array of features for GEOMETRYCOLLECTION WKT. 
+  
+.. _write:       
+  
+write	
+  ::
+  
+    write: function(features)
+
+  Serialize a feature or array of features into a WKT string.
+  
+  *Parameters*
+  
+  ``features {<ZOO.Feature.Vector>|Array}`` A feature or array of features
+
+  *Returns*
+
+  ``{String}`` The WKT string representation of the input geometries 
+  
+.. _extract:         
+  
+extract	
+  Object with properties corresponding to the geometry types. Property values are 
+  functions that do the actual data extraction.
+  
+.. _parse:           
+  
+parse	
+  Object with properties corresponding to the geometry types. Property values are 
+  functions that do the actual parsing.
+  
+.. _parse.point:             
+  
+parse.point	
+  Return point feature given a point WKT fragment.
+  
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the point 
+  
+  *Returns*
+  
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A point feature  
+  
+.. _parse.multipoint:               
+  
+parse.multipoint	
+  Return a multipoint feature given a multipoint WKT fragment.
+
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the multipoint
+
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A multipoint feature 
+  
+.. _parse.linestring:                
+ 
+parse.linestring	
+  Return a linestring feature given a linestring WKT fragment.
+
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the linestring
+
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A linestring feature
+  
+.. _parse.multilinestring:                  
+  
+parse.multilinestring	
+  Return a multilinestring feature given a multilinestring WKT fragment.
+  
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the multilinestring
+  
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A multilinestring feature  
+  
+.. _parse.polygon:                  
+  
+parse.polygon	
+  Return a polygon feature given a polygon WKT fragment.
+
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the polygon
+  
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A polygon feature 
+  
+.. _parse.multipolygon:                    
+  
+parse.multipolygon	
+  Return a multipolygon feature given a multipolygon WKT fragment.
+
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the multipolygon
+
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A multipolygon feature  
+  
+.. _parse.geometrycollection:                      
+  
+parse.geometrycollection	
+  Return an array of features given a geometrycollection WKT fragment.
+
+  *Parameters*
+  
+  ``str	{String}`` A WKT fragment representing the geometrycollection
+
+  *Returns*
+
+  ``{Array}`` An array of ZOO.Feature

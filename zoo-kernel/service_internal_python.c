@@ -85,17 +85,17 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     exit(-1);
   }
   pModule = PyImport_Import(pName);
-  int i;
   int res=SERVICE_FAILED;
-  int cpid=getpid();
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
     if (pFunc && PyCallable_Check(pFunc)){
+      PyObject *pValue;
       PyDictObject* arg1=PyDict_FromMaps(m);
       PyDictObject* arg2=PyDict_FromMaps(inputs);
       PyDictObject* arg3=PyDict_FromMaps(outputs);
       PyObject *pArgs=PyTuple_New(3);
-      PyObject *pValue;
+      if (!pArgs)
+	return -1;
       PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
       PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
       PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
@@ -129,7 +129,6 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	PyObject *ptype,*pvalue, *ptraceback;
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	PyObject *trace=PyObject_Str(pvalue);
-	char tb[1024];
 	char pbt[10240];
 	if(PyString_Check(trace))
 	  sprintf(pbt,"TRACE : %s",PyString_AsString(trace));
@@ -144,7 +143,6 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	}
 	else
 	  fprintf(stderr,"EMPTY TRACE ?");
-	PyObject *t;
 	pName = PyString_FromString("traceback");
 	pModule = PyImport_Import(pName);
 	pArgs = PyTuple_New(1);
@@ -301,7 +299,6 @@ map* mapFromPyDict(PyDictObject* t){
   PyObject* list=PyDict_Keys((PyObject*)t);
   int nb=PyList_Size(list);
   int i;
-  int sizeValue=-1;
   for(i=0;i<nb;i++){
     PyObject* key=PyList_GetItem(list,i);
     PyObject* value=PyDict_GetItem((PyObject*)t,key);

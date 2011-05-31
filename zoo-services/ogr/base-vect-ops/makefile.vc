@@ -1,11 +1,12 @@
-GEODIR=c:/OSGeo4W/
-TOOLS=c:/Users/djay/GeoLabs/tools/
-CFLAGS=-I$(GEODIR)/include -I$(TOOLS)/include -I../../../zoo-kernel/ -I./ -DLINUX_FREE_ISSUE -DDEBUG
+ZOODIR=../../../zoo-kernel
+THIRDSDIR=../../../thirds
+!INCLUDE $(ZOODIR)/nmake.opt
+CFLAGS=-I$(GEODIR)/include -I$(TPATH)/include -I$(ZOODIR) -I./ -DLINUX_FREE_ISSUE -DWIN32 #-DDEBUG
 CPP=cl /TP 
 
-cgi-env/service.zo: service.c
+cgi-env/ogr_service.zo: service.c
 	$(CPP) $(CFLAGS) /c service.c
-	link /dll /out:cgi-env/ogr_service.zso ../../../zoo-kernel/service_internal.obj ./service.obj -L$(TOOLS)/lib/libssl32.dll.a $(GEODIR)/lib/libxml2.lib $(GEODIR)/lib/gdal_i.lib $(TOOLS)/lib/libeay32.dll.a $(TOOLS)/lib/libcrypto.a $(TOOLS)/lib/libssl32.dll.a 
+	link /dll /out:cgi-env/ogr_service.zo ../../../zoo-kernel/service_internal.obj ./service.obj -L$(TOOLS)/lib/libssl32.dll.a $(GEODIR)/lib/libxml2.lib $(GEODIR)/lib/gdal_i.lib $(GEODIR)/lib/geos_c_i.lib $(TPATH)/lib/libeay32.dll.a $(TPATH)/lib/libcrypto.a $(TPATH)/lib/libssl32.dll.a $(LIBINTL_CPATH)/lib/libintl.lib 
 
 clean:
-	rm -f cgi-env/ogr_service.zso
+	erase cgi-env\ogr_service.*

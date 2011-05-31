@@ -23,6 +23,13 @@
  */
 
 /**
+ * Author:       Mike Adair madairATdmsolutions.ca
+ *               Richard Greenwood rich@greenwoodmap.com
+ * License:      LGPL as per: http://www.gnu.org/copyleft/lesser.html
+ * $Id: Proj.js 2956 2007-07-09 12:17:52Z steven $
+ */
+
+/**
  * Class: ZOO
  */
 ZOO = {

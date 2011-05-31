@@ -23,6 +23,9 @@
  */
 
 #include "service.h"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 extern "C" {
 #include <libxml/tree.h>
@@ -134,7 +137,11 @@ extern "C" {
 	fprintf(stderr,"Status %s %s\n",tmpMap->value,tmp);
       setMapInMaps(conf,"lenv","status",tmp);
       updateStatus(conf);
+#ifndef WIN32
       sleep(1);
+#else
+      Sleep(1000);
+#endif
       i+=5;
     }
     setMapInMaps(outputs,"Result","value","\"Running long process successfully\"");

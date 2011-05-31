@@ -1,0 +1,446 @@
+.. _api-zoo-format-gml:
+
+ZOO.Format.GML
+==============
+
+Read/Write GML.
+
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
+Properties and Functions	
+------------------------
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`schemaLocation <schemaLocation>`
+     - {String} Schema location for a particular minor version.
+   * - :ref:`namespaces <namespaces>`
+     - {Object} Mapping of namespace aliases to namespace URIs.
+   * - :ref:`defaultPrefix <defaultPrefix>`
+     - 
+   * - :ref:`collectionName <collectionName>`
+     - {String} Name of featureCollection element. 
+   * - :ref:`featureName <featureName>`
+     - {String} Element name for features. 
+   * - :ref:`geometryName <geometryName>`
+     - {String} Name of geometry element.
+   * - :ref:`xy <xy>`
+     - {Boolean} Order of the GML coordinate true:(x,y) or false:(y,x) Changing is not recommended, a new Format should be instantiated.
+   * - :ref:`extractAttributes <extractAttributes>`
+     - {Boolean} Could we extract attributes
+   * - :ref:`ZOO.Format.GML <ZOO.Format.GML>`
+     - Create a new parser for GML.
+   * - :ref:`read <read>`
+     - Read data from a string, and return a list of features. 
+   * - :ref:`parseFeature <parseFeature>`
+     - This function is the core of the GML parsing code in ZOO.
+   * - :ref:`parseGeometry <parseGeometry>`
+     - Properties of this object are the functions that parse geometries based on their type.
+   * - :ref:`parseGeometry.point <parseGeometry.point>`
+     - Given a GML node representing a point geometry, create a ZOO point geometry.  
+   * - :ref:`parseGeometry.multipoint <parseGeometry.multipoint>`
+     - Given a GML node representing a point geometry, create a ZOO multipoint geometry.     
+   * - :ref:`parseGeometry.linestring <parseGeometry.linestring>`
+     - Given a GML node representing a linestring geometry, create a ZOO linestring geometry.
+   * - :ref:`parseGeometry.polygon <parseGeometry.polygon>`
+     - Given a GML node representing a polygon geometry, create a ZOO polygon geometry.
+   * - :ref:`parseGeometry.multigeometry <parseGeometry.multigeometry>`
+     - Given a GML node representing a multigeometry, create a ZOO geometry collection.
+   * - :ref:`parseAttributes <parseAttributes>`
+     -  
+   * - :ref:`parseExtendedData <parseExtendedData>`
+     - Parse ExtendedData from GML.  
+   * - :ref:`write <write>`
+     - Accept Feature Collection, and return a string.
+   * - :ref:`createFeature <createFeature>`
+     - Accept an ZOO.Feature, and build a GML node for it.
+   * - :ref:`buildGeometryNode <buildGeometryNode>`
+     - Builds and returns a GML geometry node with the given geometry.
+   * - :ref:`buildGeometry <buildGeometry>`
+     - Object containing methods to do the actual geometry node building based on geometry type.
+   * - :ref:`buildGeometry.point <buildGeometry.point>`
+     - Given a ZOO point geometry, create a GML point.     
+   * - :ref:`buildGeometry.multipoint <buildGeometry.multipoint>`
+     - Given a ZOO multipoint geometry, create a GML GeometryCollection.
+   * - :ref:`buildGeometry.linestring <buildGeometry.linestring>`
+     -  Given a ZOO linestring geometry, create a GML linestring.
+   * - :ref:`buildGeometry.multilinestring <buildGeometry.multilinestring>`
+     - Given a ZOO multilinestring geometry, create a GML GeometryCollection. 
+   * - :ref:`buildGeometry.linearring <buildGeometry.linearring>`
+     - Given a ZOO linearring geometry, create a GML linearring.
+   * - :ref:`buildGeometry.polygon <buildGeometry.polygon>`
+     - Given a ZOO polygon geometry, create a GML polygon.
+   * - :ref:`buildGeometry.multipolygon <buildGeometry.multipolygon>`
+     - Given a ZOO multipolygon geometry, create a GML GeometryCollection.
+   * - :ref:`buildGeometry.collection <buildGeometry.collection>`
+     - Given a ZOO geometry collection, create a GML MultiGeometry.
+   * - :ref:`buildCoordinatesNode <buildCoordinatesNode>`
+     - builds the coordinates XmlNode 
+
+.. _schemaLocation:  
+  		
+schemaLocation	
+  ``{String}`` Schema location for a particular minor version.
+  
+.. _namespaces:    
+  
+namespaces	
+  ``{Object}`` Mapping of namespace aliases to namespace URIs.
+
+.. _defaultPrefix:    
+
+defaultPrefix
+
+.. _collectionName:    
+
+collectionName	
+  ``{String}`` Name of featureCollection element.
+  
+.. _featureName:      
+  
+featureName	
+  ``{String}`` Element name for features. Default is "sql_statement".
+  
+.. _geometryName:        
+  
+geometryName	
+  ``{String}`` Name of geometry element. Defaults to "geometryProperty".
+  
+.. _xy:          
+  
+xy	
+  ``{Boolean}`` Order of the GML coordinate true:(x,y) or false:(y,x) Changing is not recommended, a new Format should be instantiated.
+
+.. _extractAttributes:          
+
+extractAttributes	
+  ``{Boolean}`` Could we extract attributes
+  
+.. _ZOO.Format.GML:            
+  
+ZOO.Format.GML	
+  Create a new parser for GML.
+
+  *Parameters*
+  
+  ``options {Object}`` An optional object whose properties will be set on this instance.  
+  
+.. _read:              
+  
+read	
+  ::
+  
+    read: function(data)
+
+  Read data from a string, and return a list of features.
+
+  *Parameters*
+  
+  ``data {String}`` data to read/parse.
+
+  *Returns*
+
+  :ref:`{Array(ZOO.Feature)} <api-zoo-feature>` An array of features.  
+  
+.. _parseFeature:  
+  
+parseFeature	
+  ::
+  
+    parseFeature: function(node)
+
+  This function is the core of the GML parsing code in ZOO.  It creates the geometries 
+  that are then attached to the returned feature, and calls parseAttributes() to get 
+  attribute data out.
+  
+  *Parameters*
+  
+  ``node {E4XElement}``
+
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A vector feature.  
+  
+.. _parseGeometry:    
+  
+parseGeometry	
+  Properties of this object are the functions that parse geometries based on their type.
+  
+.. _parseGeometry.point:      
+  
+parseGeometry.point	
+  Given a GML node representing a point geometry, create a ZOO point geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` A point geometry. 
+  
+.. _parseGeometry.multipoint:        
+  
+parseGeometry.multipoint	
+  Given a GML node representing a multipoint geometry, create a ZOO multipoint geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` A multipoint geometry.   
+  
+.. _parseGeometry.linestring:          
+  
+parseGeometry.linestring	
+  Given a GML node representing a linestring geometry, create a ZOO linestring geometry.
+  
+  *Parameters*
+    
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+  
+  :ref:`{ZOO.Geometry.LineString} <api-zoo-geometry-linestring>` A linestring geometry. 
+
+.. _parseGeometry.multilinestring:          
+
+parseGeometry.multilinestring	
+  Given a GML node representing a multilinestring geometry, create a ZOO multilinestring geometry.
+  
+  *Parameters*
+    
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+  
+  :ref:`{ZOO.Geometry.MultiLineString} <api-zoo-geometry-multilinestring>` A multilinestring geometry.   
+
+.. _parseGeometry.polygon:          
+
+parseGeometry.polygon	
+  Given a GML node representing a polygon geometry, create a ZOO polygon geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Polygon} <api-zoo-geometry-polygon>` A polygon geometry.   
+
+.. _parseGeometry.multipolygon:          
+
+parseGeometry.multipolygon	
+  Given a GML node representing a multipolygon geometry, create a ZOO multipolygon geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.MultiPolygon} <api-zoo-geometry-multipolygon>` A multipolygon geometry.  
+
+.. _parseGeometry.envelope:          
+
+parseGeometry.envelope	
+  Given a GML node representing an envelope, create a ZOO polygon geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A GML node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Polygon} <api-zoo-geometry-polygon>` A polygon geometry.  
+
+.. _parseAttributes:          
+
+parseAttributes	
+  ::
+  
+    parseAttributes: function(node)
+
+  *Parameters*
+  
+  ``node {E4XElement}``
+  
+  *Returns*
+
+  ``{Object}`` An attributes object.
+
+.. _write:          
+
+write	
+  ::
+  
+    write: function(features)
+
+  Generate a GML document string given a list of features.
+  
+  *Parameters*
+  
+  ``features`` :ref:`{Array(ZOO.Feature)} <api-zoo-feature>` List of features to serialize into a string.
+
+  *Returns*
+
+  ``{String}`` A string representing the GML document.
+  
+.. _createFeature:          
+
+createFeature	
+  ::
+  
+    createFeature: function(feature)
+
+  Accept an ZOO.Feature, and build a GML node for it.
+  
+  *Parameters*
+  
+  ``feature`` :ref:`{ZOO.Feature} <api-zoo-feature>` The feature to be built as GML.
+  
+  *Returns*
+
+  ``{E4XElement}`` A node reprensting the feature in GML.
+  
+.. _buildGeometryNode:          
+
+buildGeometryNode
+  ::
+  
+    buildGeometryNode: function(geometry)
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry} <api-zoo-geometry>` The geometry to be built as GML.
+  
+  *Returns*
+
+  ``{E4XElement}`` A node reprensting the geometry in GML.
+
+.. _buildGeometry:          
+
+buildGeometry	
+  Object containing methods to do the actual geometry node building based on geometry type.
+
+.. _buildGeometry.point:          
+
+buildGeometry.point	
+  Given a ZOO point geometry, create a GML point.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` A point geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML point node.
+  
+.. _buildGeometry.multipoint:          
+
+buildGeometry.multipoint	
+  Given a ZOO multipoint geometry, create a GML multipoint.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.MultiPoint} <api-zoo-geometry-multipoint>` A multipoint geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML multipoint node.  
+
+.. _buildGeometry.linestring:          
+
+buildGeometry.linestring	
+  Given a ZOO linestring geometry, create a GML linestring.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.LineString} <api-zoo-geometry-linestring>` A linestring geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML linestring node.
+  
+.. _buildGeometry.multilinestring:          
+
+buildGeometry.multilinestring	
+  Given a ZOO multilinestring geometry, create a GML multilinestring.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.MultiLineString} <api-zoo-geometry-multilinestring>` A multilinestring geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML multilinestring node.  
+
+.. _buildGeometry.linearring:          
+
+buildGeometry.linearring	
+  Given a ZOO linearring geometry, create a GML linearring.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.LinearRing} <api-zoo-geometry-linearring>` A linearring geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML linearring node.
+  
+.. _buildGeometry.polygon:          
+
+buildGeometry.polygon	
+  Given an ZOO polygon geometry, create a GML polygon.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.Polygon} <api-zoo-geometry-polygon>` A polygon geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML polygon node.
+  
+.. _buildGeometry.multipolygon:          
+
+buildGeometry.multipolygon	
+  Given a ZOO multipolygon geometry, create a GML multipolygon.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.MultiPolygon} <api-zoo-geometry-multipolygon>` A multipolygon geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A GML multipolygon node.  
+
+.. _buildCoordinatesNode:          
+
+buildCoordinatesNode	
+  ::
+  
+    buildCoordinatesNode: function(geometry)
+
+  builds the coordinates XmlNode
+
+    ::
+    
+      <gml:coordinates decimal="." cs="," ts=" ">...</gml:coordinates>
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry} <api-zoo-geometry>`
+
+  *Returns*
+
+  ``{E4XElement}`` created E4XElement  
+  

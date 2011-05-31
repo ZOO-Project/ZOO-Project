@@ -2,6 +2,9 @@
 
 extern "C" {
 
+#ifdef WIN32
+__declspec(dllexport)
+#endif
   int Multiply(maps*& conf,maps*& inputs,maps*& outputs){
   	fprintf(stderr,"\nService internal print\n");
   	maps* cursor=inputs;

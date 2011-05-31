@@ -42,7 +42,7 @@ extern "C" {
 #include <openssl/buffer.h>
 
   void printExceptionReportResponse(maps*,map*);
-  char *base64(const unsigned char *input, int length);
+  char *base64(const char *input, int length);
 
   OGRGeometryH createGeometryFromGML(maps* conf,char* inputStr){
     xmlInitParser();
@@ -55,10 +55,9 @@ extern "C" {
     xpathCtx = xmlXPathNewContext(doc);
     xpathObj = xmlXPathEvalExpression(BAD_CAST xpathExpr,xpathCtx);
     if(!xpathObj->nodesetval){
-      map* tmp=createMap("text","Unable to parse Input Polygon");
-      addToMap(tmp,"code","InvalidParameterValue");
-      printExceptionReportResponse(conf,tmp);
-      exit(0);
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse Input Polygon"));
+      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
+      return NULL;
     }
     int size = (xpathObj->nodesetval) ? xpathObj->nodesetval->nodeNr : 0;
     /**
@@ -79,7 +78,9 @@ extern "C" {
     xmlFree(xmlbuff);
     xmlFreeDoc(doc);
     xmlFreeDoc(ndoc);
+#ifndef WIN32
     xmlCleanupParser();
+#endif
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print\n Loading the geometry from GML string ...");
 #endif
@@ -93,6 +94,9 @@ extern "C" {
       return res;
   }
 
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
   int Simplify(maps*& conf,maps*& inputs,maps*& outputs){
     maps* cursor=inputs;
     OGRGeometryH geometry,res;
@@ -103,7 +107,9 @@ extern "C" {
     }
     else
       tolerance=atof(tmp0->value);
+#ifdef DEBUG
     fprintf(stderr,"Tolerance for Simplify %f",tolerance);
+#endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
@@ -125,34 +131,42 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
+#ifdef DEBUG
     fprintf(stderr,"Create GEOSGeometry object");
+#endif
     GEOSGeometry* ggeometry=((OGRGeometry *) geometry)->exportToGEOS();
     GEOSGeometry* gres=GEOSTopologyPreserveSimplify(ggeometry,tolerance);
-    res=OGRGeometryFactory::createFromGEOS(gres);
+    res=(OGRGeometryH)OGRGeometryFactory::createFromGEOS(gres);
     tmp1=getMapFromMaps(outputs,"Result","mimeType");
     if(tmp1!=NULL){
       if(strncmp(tmp1->value,"text/js",7)==0 ||
 	 strncmp(tmp1->value,"application/json",16)==0){
 	char *tmpS=OGR_G_ExportToJson(res);
 	setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
 	setMapInMaps(outputs,"Result","mimeType","text/plain");
 	setMapInMaps(outputs,"Result","encoding","UTF-8");
 	free(tmpS);
+#endif
       }
       else{
 	char *tmpS=OGR_G_ExportToGML(res);
 	setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
 	setMapInMaps(outputs,"Result","mimeType","text/xml");
 	setMapInMaps(outputs,"Result","encoding","UTF-8");
 	setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
 	free(tmpS);
+#endif
       }
     }else{
-      char *tmpS=OGR_G_ExportToJson(tmp->value);
+      char *tmpS=OGR_G_ExportToJson(res);
       setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
       setMapInMaps(outputs,"Result","mimeType","text/plain");
       setMapInMaps(outputs,"Result","encoding","UTF-8");
       free(tmpS);
+#endif
     }
     outputs->next=NULL;
     //GEOSFree(ggeometry);
@@ -177,13 +191,17 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
+#ifdef DEBUG
     fprintf(stderr,"Service internal print \n");
     dumpMaps(inputs);
     fprintf(stderr,"/Service internal print \n");
+#endif
     map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+#ifdef DEBUG
     fprintf(stderr,"Service internal print \n");
     dumpMap(tmp1);
     fprintf(stderr,"/Service internal print \n");
+#endif
     if(tmp1!=NULL){
       if(strncmp(tmp1->value,"text/js",7)==0 ||
 	 strncmp(tmp1->value,"application/json",7)==0)
@@ -198,38 +216,48 @@ extern "C" {
       return SERVICE_FAILED;
     }
     res=(*myFunc)(geometry);
+#ifdef DEBUG
     fprintf(stderr,"Service internal print \n");
     dumpMaps(outputs);
     fprintf(stderr,"/Service internal print \n");
+#endif
     map *tmp_2=getMapFromMaps(outputs,"Result","mimeType");
+#ifdef DEBUG
     fprintf(stderr,"Service internal print \n");
     dumpMap(tmp_2);
     fprintf(stderr,"/Service internal print \n");
+#endif
     if(tmp_2!=NULL){
       if(strncmp(tmp_2->value,"text/js",7)==0 ||
 	 strncmp(tmp_2->value,"application/json",16)==0){
 	char *tmpS=OGR_G_ExportToJson(res);
 	setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
 	setMapInMaps(outputs,"Result","mimeType","text/plain");
 	setMapInMaps(outputs,"Result","encoding","UTF-8");
 	free(tmpS);
+#endif
       }
       else{
 	char *tmpS=OGR_G_ExportToGML(res);
 	setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
 	setMapInMaps(outputs,"Result","mimeType","text/xml");
 	setMapInMaps(outputs,"Result","encoding","UTF-8");
 	setMapInMaps(outputs,"Result","schema",schema);
 	free(tmpS);
+#endif
       }
     }else{
       char *tmpS=OGR_G_ExportToJson(res);
       setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
       setMapInMaps(outputs,"Result","mimeType","text/plain");
       setMapInMaps(outputs,"Result","encoding","UTF-8");
       free(tmpS);
+#endif
     }
-    outputs->next=NULL;
+    //outputs->next=NULL;
 #ifdef DEBUG
     dumpMaps(outputs);
     fprintf(stderr,"\nService internal print\n===\n");
@@ -238,9 +266,11 @@ extern "C" {
     OGR_G_DestroyGeometry(geometry);
     //CPLFree(res);
     //CPLFree(geometry);
+#ifdef DEBUG
     fprintf(stderr,"Service internal print \n");
     dumpMaps(outputs);
     fprintf(stderr,"/Service internal print \n");
+#endif
     return SERVICE_SUCCEEDED;
   }
 
@@ -275,23 +305,31 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
    else
      bufferDistance=atof(tmp->value);
    res=OGR_G_Buffer(geometry,bufferDistance,30);
+   dumpMap(tmp);
    tmp1=getMapFromMaps(outputs,"Result","mimeType");
+   dumpMap(tmp);
    if(strncmp(tmp1->value,"application/json",16)==0){
      char *tmpS=OGR_G_ExportToJson(res);
      setMapInMaps(outputs,"Result","value",tmpS);
+     dumpMap(tmp);
+#ifndef WIN32
      setMapInMaps(outputs,"Result","mimeType","text/plain");
      setMapInMaps(outputs,"Result","encoding","UTF-8");
      free(tmpS);
+#endif
    }
    else{
      char *tmpS=OGR_G_ExportToGML(res);
      setMapInMaps(outputs,"Result","value",tmpS);
+     dumpMap(tmp);
+#ifndef WIN32
      free(tmpS);
      setMapInMaps(outputs,"Result","mimeType","text/xml");
      setMapInMaps(outputs,"Result","encoding","UTF-8");
      setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
+#endif
    }
-   outputs->next=NULL;
+   //outputs->next=NULL;
    OGR_G_DestroyGeometry(geometry);
    OGR_G_DestroyGeometry(res);
    return SERVICE_SUCCEEDED;
@@ -334,10 +372,10 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print1\n");
     fflush(stderr);
-#endif
     fprintf(stderr,"\nService internal print1\n");
     dumpMaps(inputs);
     fprintf(stderr,"\nService internal print1\n");
+#endif
 
     maps* cursor=inputs;
     OGRGeometryH geometry1,geometry2;
@@ -356,59 +394,80 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     }
     if(geometry1==NULL){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity1."));
+#ifdef DEBUG
       fprintf(stderr,"SERVICE FAILED !\n");
+#endif
       return SERVICE_FAILED;
     }
+#ifdef DEBUG
     fprintf(stderr,"\nService internal print1 InputEntity1\n");
+#endif
     {
       map* tmp=getMapFromMaps(inputs,"InputEntity2","value");
       map* tmp1=getMapFromMaps(inputs,"InputEntity2","mimeType");
-      //#ifdef DEBUG
+#ifdef DEBUG
       fprintf(stderr,"MY MAP \n[%s] - %i\n",tmp1->value,strncmp(tmp1->value,"application/json",16));
       //dumpMap(tmp);
       fprintf(stderr,"MY MAP\n");
-      ///#endif
       fprintf(stderr,"\nService internal print1 InputEntity2\n");
+#endif
       if(tmp1!=NULL){
         if(strncmp(tmp1->value,"application/json",16)==0){
+#ifdef DEBUG
 	  fprintf(stderr,"\nService internal print1 InputEntity2 as JSON\n");
+#endif
       	  geometry2=OGR_G_CreateGeometryFromJson(tmp->value);
 	}
 	else{
+#ifdef DEBUG
 	  fprintf(stderr,"\nService internal print1 InputEntity2 as GML\n");
+#endif
 	  geometry2=createGeometryFromGML(conf,tmp->value);
 	}
       }
       else
       	geometry2=createGeometryFromGML(conf,tmp->value);
+#ifdef DEBUG
       fprintf(stderr,"\nService internal print1 InputEntity2 PreFinal\n");
+#endif
     }
+#ifdef DEBUG
     fprintf(stderr,"\nService internal print1 InputEntity2 Final\n");
+#endif
     if(geometry2==NULL){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity2."));
+#ifdef DEBUG
       fprintf(stderr,"SERVICE FAILED !\n");
+#endif
       return SERVICE_FAILED;
     }
+#ifdef DEBUG
     fprintf(stderr,"\nService internal print1\n");
+#endif
     res=(*myFunc)(geometry1,geometry2);
+#ifdef DEBUG
     fprintf(stderr,"\nService internal print1\n");
-    
+#endif    
     /* nuova parte */
     map* tmp2=getMapFromMaps(outputs,"Result","mimeType");
     if(strncmp(tmp2->value,"application/json",16)==0){
       char *tmpS=OGR_G_ExportToJson(res);
       setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
       setMapInMaps(outputs,"Result","mimeType","text/plain");
       setMapInMaps(outputs,"Result","encoding","UTF-8");
       free(tmpS);
+#endif
     }
     else{
       char *tmpS=OGR_G_ExportToGML(res);
       setMapInMaps(outputs,"Result","value",tmpS);
+#ifndef WIN32
       setMapInMaps(outputs,"Result","mimeType","text/xml");
       setMapInMaps(outputs,"Result","encoding","UTF-8");
       setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
       free(tmpS);
+#endif
     }
     
     /* vecchia da togliere */

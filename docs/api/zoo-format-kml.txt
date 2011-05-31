@@ -1,0 +1,412 @@
+.. _api-zoo-format-kml:
+
+ZOO.Format.KML
+==============
+
+Read/Write KML.
+
+Inherits from
+
+- :ref:`ZOO.Format <api-zoo-format>`
+
+Properties and Functions	
+------------------------
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - NAME
+     - DESCRIPTION
+   * - :ref:`kmlns <kmlns>`
+     - {String} KML Namespace to use.
+   * - :ref:`foldersName <foldersName>`
+     - {String} Name of the folders.
+   * - :ref:`foldersDesc <foldersDesc>`
+     - {String} Description of the folders.
+   * - :ref:`placemarksDesc <placemarksDesc>`
+     - {String} Name of the placemarks. 
+   * - :ref:`extractAttributes <extractAttributes>`
+     - {Boolean} Extract attributes from KML.   
+   * - :ref:`ZOO.Format.KML <ZOO.Format.KML>`
+     - Create a new parser for KML.
+   * - :ref:`parseFeatures <parseFeatures>`
+     - Loop through all Placemark nodes and parse them.
+   * - :ref:`parseFeature <parseFeature>`
+     - This function is the core of the KML parsing code in ZOO.
+   * - :ref:`parseGeometry <parseGeometry>`
+     - Properties of this object are the functions that parse geometries based on their type.
+   * - :ref:`parseGeometry.point <parseGeometry.point>`
+     - Given a KML node representing a point geometry, create a ZOO point geometry.  
+   * - :ref:`parseGeometry.linestring <parseGeometry.linestring>`
+     - Given a KML node representing a linestring geometry, create a ZOO linestring geometry.
+   * - :ref:`parseGeometry.polygon <parseGeometry.polygon>`
+     - Given a KML node representing a polygon geometry, create a ZOO polygon geometry.
+   * - :ref:`parseGeometry.multigeometry <parseGeometry.multigeometry>`
+     - Given a KML node representing a multigeometry, create a ZOO geometry collection.
+   * - :ref:`parseAttributes <parseAttributes>`
+     -  
+   * - :ref:`parseExtendedData <parseExtendedData>`
+     - Parse ExtendedData from KML.  
+   * - :ref:`write <write>`
+     - Accept Feature Collection, and return a string.
+   * - :ref:`createPlacemark <createPlacemark>`
+     - Creates and returns a KML placemark node representing the given feature.
+   * - :ref:`buildGeometryNode <buildGeometryNode>`
+     - Builds and returns a KML geometry node with the given geometry.
+   * - :ref:`buildGeometry <buildGeometry>`
+     - Object containing methods to do the actual geometry node building based on geometry type.
+   * - :ref:`buildGeometry.point <buildGeometry.point>`
+     - Given a ZOO point geometry, create a KML point.     
+   * - :ref:`buildGeometry.multipoint <buildGeometry.multipoint>`
+     - Given a ZOO multipoint geometry, create a KML GeometryCollection.
+   * - :ref:`buildGeometry.linestring <buildGeometry.linestring>`
+     -  Given a ZOO linestring geometry, create a KML linestring.
+   * - :ref:`buildGeometry.multilinestring <buildGeometry.multilinestring>`
+     - Given a ZOO multilinestring geometry, create a KML GeometryCollection. 
+   * - :ref:`buildGeometry.linearring <buildGeometry.linearring>`
+     - Given a ZOO linearring geometry, create a KML linearring.
+   * - :ref:`buildGeometry.polygon <buildGeometry.polygon>`
+     - Given a ZOO polygon geometry, create a KML polygon.
+   * - :ref:`buildGeometry.multipolygon <buildGeometry.multipolygon>`
+     - Given a ZOO multipolygon geometry, create a KML GeometryCollection.
+   * - :ref:`buildGeometry.collection <buildGeometry.collection>`
+     - Given a ZOO geometry collection, create a KML MultiGeometry.
+   * - :ref:`buildCoordinatesNode <buildCoordinatesNode>`
+     - Builds and returns the KML coordinates node with the given geometry <coordinates>...</coordinates> 
+
+.. _kmlns:  
+  	
+kmlns	
+  ``{String}`` KML Namespace to use. Defaults to 2.2 namespace.
+  
+.. _foldersName:  
+  
+foldersName	
+  ``{String}`` Name of the folders. Default is "ZOO export".  If set to null, no name element will be created.
+  
+.. _foldersDesc:    
+  
+foldersDesc	
+  ``{String}`` Description of the folders. Default is "Exported on [date]."  If set to null, no description element will be created.
+  
+.. _placemarksDesc:      
+  
+placemarksDesc	
+  ``{String}`` Name of the placemarks. Default is "No description available".
+  
+.. _extractAttributes:        
+  
+extractAttributes	
+  ``{Boolean}`` Extract attributes from KML. Default is true.  Extracting styleUrls requires this to be set to true
+  
+.. _ZOO.Format.KML:          
+  
+ZOO.Format.KML	
+  Create a new parser for KML.
+
+  *Parameters*
+  
+  ``options {Object}`` An optional object whose properties will be set on this instance.
+  
+.. _parseFeatures:            
+  
+parseFeatures	
+  ::
+  
+    parseFeatures: function(nodes)
+
+  Loop through all Placemark nodes and parse them.  Will create a list of features
+
+  *Parameters*
+  
+  | ``nodes {Array}`` of {E4XElement} data to read/parse.
+  | ``options {Object}`` Hash of options
+  
+.. _parseFeature:              
+  
+parseFeature	
+  ::
+  
+    parseFeature: function(node)
+
+  This function is the core of the KML parsing code in ZOO.  It creates the geometries 
+  that are then attached to the returned feature, and calls parseAttributes() to get 
+  attribute data out.
+  
+  *Parameters*
+  
+  ``node {E4XElement}``
+
+  *Returns*
+
+  :ref:`{ZOO.Feature} <api-zoo-feature>` A vector feature.  
+  
+.. _parseGeometry:                
+  
+parseGeometry	
+  Properties of this object are the functions that parse geometries based on their type.
+  
+.. _parseGeometry.point:                  
+  
+parseGeometry.point	
+  Given a KML node representing a point geometry, create a ZOO point geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A KML Point node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` A point geometry. 
+  
+.. _parseGeometry.linestring:                    
+  
+parseGeometry.linestring	
+  Given a KML node representing a linestring geometry, create a ZOO linestring geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A KML LineString node.
+
+  *Returns*
+
+  :ref:`{ZOO.Geometry.LineString} <api-zoo-geometry-linestring>` A linestring geometry. 
+  
+.. _parseGeometry.polygon:                      
+  
+parseGeometry.polygon	
+  Given a KML node representing a polygon geometry, create a ZOO polygon geometry.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A KML Polygon node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Polygon} <api-zoo-geometry-polygon>` A polygon geometry. 
+  
+.. _parseGeometry.multigeometry:                        
+  
+parseGeometry.multigeometry	
+  Given a KML node representing a multigeometry, create a ZOO geometry collection.
+
+  *Parameters*
+  
+  ``node {E4XElement}`` A KML MultiGeometry node.
+  
+  *Returns*
+
+  :ref:`{ZOO.Geometry.Collection} <api-zoo-geometry-collection>` A geometry collection.  
+  
+.. _parseAttributes:                          
+  
+parseAttributes	
+  ::
+  
+    parseAttributes: function(node)
+
+  *Parameters*
+  
+  ``node {E4XElement}``
+  
+  *Returns*
+
+  ``{Object}`` An attributes object.
+
+.. _parseExtendedData:
+
+parseExtendedData	
+  ::
+  
+    parseExtendedData: function(node)
+
+  Parse ExtendedData from KML.  Limited support for schemas/datatypes.  See http://code.google.com/apis/kml/documentation/kmlreference.html#extendeddata 
+  for more information on extendeddata.
+  
+  *Parameters*
+  
+  ``node {E4XElement}``
+  
+  *Returns*
+
+  ``{Object}`` An attributes object. 
+  
+.. _write:  
+  
+write	
+  ::
+  
+    write: function(features)
+
+  Accept Feature Collection, and return a string.
+
+  *Parameters*
+  
+  ``features`` :ref:`{Array(ZOO.Feature)} <api-zoo-feature>` An array of features.
+  
+  *Returns*
+
+  ``{String}`` A KML string.  
+  
+.. _createPlacemark:   
+  
+createPlacemark	
+  ::
+  
+    createPlacemark: function(feature)
+
+  Creates and returns a KML placemark node representing the given feature.
+
+  *Parameters*
+  
+  ``feature`` :ref:`{ZOO.Feature} <api-zoo-feature>`
+  
+  *Returns*
+
+  ``{E4XElement}``
+  
+.. _buildGeometryNode:     
+  
+buildGeometryNode	
+  ::
+  
+    buildGeometryNode: function(geometry)
+
+  Builds and returns a KML geometry node with the given geometry.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry} <api-zoo-geometry>`
+
+  *Returns*
+
+  ``{E4XElement}``
+  
+.. _buildGeometry:       
+  
+buildGeometry	
+  Object containing methods to do the actual geometry node building based on geometry type.
+  
+.. _buildGeometry.point:         
+  
+buildGeometry.point	
+  Given a ZOO point geometry, create a KML point.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` A point geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML point node.  
+  
+.. _buildGeometry.multipoint:           
+  
+buildGeometry.multipoint	
+  Given a ZOO multipoint geometry, create a KML GeometryCollection.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.MultiPoint} <api-zoo-geometry-multipoint>` A multipoint geometry.
+  
+  *Returns*
+
+  ``{E4XElement}`` A KML GeometryCollection node. 
+  
+.. _buildGeometry.linestring:             
+  
+buildGeometry.linestring	
+  Given a ZOO linestring geometry, create a KML linestring.
+  
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.LineString} <api-zoo-geometry-linestring>` A linestring geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML linestring node.
+  
+.. _buildGeometry.multilinestring:               
+  
+buildGeometry.multilinestring	
+  Given a ZOO multilinestring geometry, create a KML GeometryCollection.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.MultiLineString} <api-zoo-geometry-multilinestring>` A multilinestring geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML GeometryCollection node. 
+  
+.. _buildGeometry.linearring:                 
+  
+buildGeometry.linearring	
+  Given a ZOO linearring geometry, create a KML linearring.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.LinearRing} <api-zoo-geometry-linearring>` A linearring geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML linearring node.  
+  
+.. _buildGeometry.polygon:                   
+  
+buildGeometry.polygon	
+  Given a ZOO polygon geometry, create a KML polygon.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.Polygon} <api-zoo-geometry-polygon>` A polygon geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML polygon node.  
+  
+.. _buildGeometry.multipolygon:                     
+  
+buildGeometry.multipolygon	
+  Given a ZOO multipolygon geometry, create a KML GeometryCollection.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.Point} <api-zoo-geometry-point>` A multipolygon geometry.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML GeometryCollection node.  
+  
+.. _buildGeometry.collection:                       
+  
+buildGeometry.collection	
+  Given a ZOO geometry collection, create a KML MultiGeometry.
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry.Collection} <api-zoo-geometry-collection>` A geometry collection.
+
+  *Returns*
+
+  ``{E4XElement}`` A KML MultiGeometry node.  
+  
+.. _buildCoordinatesNode:                         
+  
+buildCoordinatesNode	
+  ::
+  
+    buildCoordinatesNode: function(geometry)
+
+  Builds and returns the KML coordinates node with the given geometry <coordinates>...</coordinates>
+
+  *Parameters*
+  
+  ``geometry`` :ref:`{ZOO.Geometry} <api-zoo-geometry>`
+
+  *Return*
+
+  ``{E4XElement}`` 
+  
+  
