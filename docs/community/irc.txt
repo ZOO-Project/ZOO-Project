@@ -1,7 +1,0 @@
-.. _community-irc:
-
-IRC Chat
-========
-
-blah blah
-
