@@ -1,6 +1,0 @@
-.. _community-mailinglist:
-
-Mailing Lists
-=============
-
-blah blah
