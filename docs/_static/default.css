@@ -29,8 +29,8 @@ div.document {
 div.documentwrapper {
     float: left;
     width: 100%;
-            background:#707070;
-}
+    background:#707070;
+ }
 
 div.bodywrapper {
     margin: 0 0 0 230px;
@@ -38,10 +38,7 @@ div.bodywrapper {
 }
 
 div.body {
-
- filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#bababa', endColorstr='#707070'); /* for IE */
-background:-webkit-gradient(linear, left top, left bottom, from(#bababa), to(#707070)); /* for webkit browsers */
-background:-moz-linear-gradient(top,  #bababa,  #707070); /* for firefox 3.6+ */
+background:#FFFFFF;
     color: #333333;
     padding: 10px 20px 20px 20px;
 }
@@ -69,7 +66,7 @@ div.related {
 }
 
 div.related a {
-	margin: 0 0 10px;
+	margin: 0 0 10px 10px;
     color: #ffffff;
 }
 
@@ -87,7 +84,7 @@ div.sphinxsidebar {
         background:-moz-linear-gradient(top,  #ee920c,  #ffcd0b); /* for firefox 3.6+ */
 	font-size: 1.3em;
 	width: 98%;
-	margin-bottom: 1em;
+	margin-bottom: 10px;
 	border:0;
 	padding:1%;
 	text-shadow: 1px 1px 1px #E0E0E0;
@@ -96,7 +93,7 @@ div.sphinxsidebar {
         border-radius: 5px;
 }
 
-.twitts, .donate, .searchbox {
+.twitts, .donate, #searchbox {
     -moz-border-radius: 5px;
     -webkit-border-radius:5px;
     border-radius:5px;
@@ -113,7 +110,7 @@ div.sphinxsidebar {
 /* -- End Custom Sidebar styles ----------------------------------------------------------- */
 
 div.sphinxsidebar h1, .donate h1, .twitts h1 {
-    font-family: 'Verdana, Arial, Helvetica, sans-serif';
+    font-family: Verdana, Arial, Helvetica, sans-serif;
     color: #663e05;
     font-size: 1.4em;
     font-weight: normal;
@@ -123,7 +120,7 @@ div.sphinxsidebar h1, .donate h1, .twitts h1 {
 }
 
 div.sphinxsidebar h3 {
-    font-family: 'Verdana, Arial, Helvetica, sans-serif';
+    font-family: Verdana, Arial, Helvetica, sans-serif;
     color: #663e05;
     font-size: 1.4em;
     font-weight: normal;
