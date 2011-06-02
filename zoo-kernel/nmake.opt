@@ -8,6 +8,6 @@ TOOLS=$(TPATH)\bin
 CC=cl $(CFLAGS)
 CPP=cl /TP $(CFLAGS)
 
-CFLAGS=-DUSE_PYTHON /EHa /nologo /MT /W3 /EHsc /O2 /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I./ -I..\thirds\dirent-win32 -I$(PYTHON_CPATH)\include -I$(GEODIR)/include -ILIBINTL_CPATH\include -I$(TPATH)\include -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+CFLAGS=-DUSE_PYTHON /EHa /nologo /MT /W3 /EHsc /O2 /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I./ -I..\thirds\dirent-win32 -I..\thirds\include -I$(PYTHON_CPATH)\include -I$(GEODIR)/include -ILIBINTL_CPATH\include -I$(TPATH)\include -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 
 LDFLAGS=$(GEODIR)/lib/libfcgi.lib $(GEODIR)/lib/libcurl_imp.lib  $(GEODIR)/apps/Python25/libs/python25.lib $(GEODIR)/lib/libxml2.lib ../thirds/cgic206/libcgic.lib $(GEODIR)/lib/gdal_i.lib $(TOOLS)\..\lib\libeay32.dll.a $(TOOLS)\..\lib\libcrypto.a $(TOOLS)\..\lib\libssl32.dll.a $(TOOLS)\..\lib\libintl.lib /machine:i386 
