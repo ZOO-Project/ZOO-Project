@@ -46,11 +46,7 @@ extern int crlex_destroy(void);
 //======================================================
 /* le type des lval des jetons et des elements non terminaux bison */
 //======================================================
-%union 
-{
-   char * s;
-}
-%union { char* chaine; char* key;char* val;}
+%union { char* s;char* chaine; char* key;char* val;}
 //======================================================
 
 // jetons //
