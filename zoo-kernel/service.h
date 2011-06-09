@@ -548,8 +548,9 @@ extern "C" {
       if(tmp!=NULL){
 	map* tmpV=getMap(res->content,"value");
 	free(tmpV->value);
-	tmpV->value=(char*)malloc(atoi(tmp->value)*sizeof(char));
+	tmpV->value=(char*)malloc((atoi(tmp->value)+1)*sizeof(char));
 	memmove(tmpV->value,tmpSized,atoi(tmp->value)*sizeof(char));
+	tmpV->value[atoi(tmp->value)]=0;
 	free(tmpSized);
       }
       res->next=dupMaps(&_cursor->next);
