@@ -1,0 +1,188 @@
+.. _kernel-installation-mac:
+
+Mac OS X
+========
+
+.. contents:: Table of Contents
+    :depth: 2
+    :backlinks: top
+
+Using the Installer
+-------------------
+
+1. To install a default build of the ZOO-Project on your Mac OS X computer use the `installer <http://www.zoo-project.org/trac/raw-attachment/wiki/ZooDocumentation/ZOOKernel/MacOSX_installation/ZOO-Project-Installer.pkg>`__.
+
+   .. note::
+      The installer assumes that you are using the distributed Apache2 version that comes with your Mac.  The installer will
+      place ZOO-Kernel and ZOO-Services into your cgi-bin at ``/Library/WebServer/CGI-Executables``, and the zoo-demo folder
+      will be placed within your document root at ``/Library/WebServer/Documents``
+
+2. Make sure that your Apache server is running, and then access the ZOO Project Demo at:
+
+      http://localhost/zoo-demo/spatialtools.html
+      
+3. To add additional services, please follow the following intructions to compile your own ZOO Project instance.
+
+Compiling from Source
+---------------------
+
+1. Install `Xcode <http://developer.apple.com/technologies/tools/>`__.
+
+2. Before you start downloading the ZOO-Project source code, you'll need to install some tools required to 
+   compile ZOO-Kernel properly.
+
+   First of all install PROJ, GEOS and GDAL frameworks from `here <http://www.kyngchaos.com/software/frameworks>`__.
+
+   At this step, you should get the following directories on your local hard drive :
+
+   ::
+   
+     /Library/Frameworks/PROJ.framework
+     /Library/Frameworks/GEOS.framework
+     /Library/Frameworks/GDAL.framework
+
+3. Then, create a ``src`` directory and inside that directory download the `gettext source code <http://www.gnu.org/software/gettext/#TOCdownloading>`__ and uncompress it.
+
+   now, compile gettext with the following commands to produce a universal binary :
+
+   ::
+   
+     cd gettext-0.18.1.1
+     CFLAGS="-O -g -arch i386 -arch ppc -arch x86_64"  \
+       LDFLAGS="-arch i386 -arch ppc -arch x86_64"   ./configure
+     make
+     sudo make install
+
+4. Compile and install your ZOO-Kernel
+
+   - Download source from SVN, and use the following command to compile libcgic :
+
+     ::
+     
+       svn co http://svn.zoo-project.org/svn/trunk zoo
+       cd zoo/thirds/cgic206
+       make
+
+   - If you produced the ``libcgic.a`` file, you can run ``autoconf`` and then ``configure`` from zoo-kernel directory.
+
+     ::
+     
+       cd zoo/zoo-kernel
+       autoconf
+       ./configure --with-python --with-java=macos \
+          --with-gdal-config=/Library/Frameworks/GDAL.framework/Versions/1.8/Programs/gdal-config
+
+     Obviously, if you don't need Python or Java support then you should remove the corresponding configure option.
+
+     .. note:: 
+        Note that we used the --with-java=macos configure option. Due to the generic location of the JDK on all 
+        Mac OS X platforms, you don't have to provide its full path.
+
+   - Now, run the following commands to compile and deploy your ZOO-Kernel on your Apache server :
+
+     ::
+     
+       make
+       cp zoo_loader.cgi main.cfg /Library/WebServer/CGI-Executables
+
+     You should be ready to request your ZOO-Kernel installation using the following link :  http://localhost/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS .
+
+     If everything is ok, you can follow the next steps to deploy new Services Providers.
+     
+     .. note::
+        If you are using your own libs (not the default libs on your system) then you must take care to create
+        universal versions of those libs, as the ZOO-Kernel will try to create a universal binary.  If you are
+        not following this advice, you might receive compile errors of ``symbol(s) not found for architecture ppc`` or ``file was built for 
+        unsupported file format which is not the architecture being linked (ppc)``.
+     
+Deploy the OGR Services Provider
+--------------------------------
+
+Requirements
+************
+
+Before your try to use any service, please set the correct path in the ``main.cfg`` for tmpPath and tmpUrl.
+
+You can use the following setup :
+
+::
+
+  tmpPath = /Library/WebServer/Documents/tmp
+  tmpUrl = ../../tmp
+
+Obviously you'll then need to create this directory, using the following command :
+
+::
+
+  mkdir /Library/WebServer/Documents/tmp
+
+C Version
+*********
+
+To compile the base-vect-ops ServicesProvider you'll need to edit the Makefile in *zoo/zoo-services/ogr/base-vect-ops/* 
+directory. Add "-I/Library//Frameworks/GEOS.framework/Versions/3/Headers/" to the CFLAGS value on the first line. 
+To compile, add GDAL framework to the PATH environmenet variable, to ensure that gdal-config tool will be found, 
+run make and then copy cgi-env files in the /Library/WebServer/CGI-Executables directory.
+
+::
+
+  cd zoo/zoo-services/ogr/base-vect-ops/
+  export PATH=$PATH:/Library/Frameworks/GDAL.framework/Versions/1.7/Programs/
+  make
+  cp cgi-env/* /Library/WebServer/CGI-Executables
+
+You can test using this `url <http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=Buffer&DataInputs=BufferDistance=1@datatype=interger;InputPolygon=Reference@xlink:href=http%3A%2F%2Fwww.zoo-project.org%3A8082%2Fgeoserver%2Fows%3FSERVICE%3DWFS%26REQUEST%3DGetFeature%26VERSION%3D1.0.0%26typename%3Dtopp%3Astates%26SRS%3DEPSG%3A4326%26FeatureID%3Dstates.15>`__ 
+if everything is ok with your setup.
+
+Python Version
+**************
+
+**Requirements**
+
+First of all run python from a Terminal.app and try the following import from the python interpreter :
+
+::
+
+  import osgeo.ogr
+  import libxml2
+
+If you get an issue when importing the libxml2 module from your python interpreter then that means you 
+need to install the Python support for the libxml2 library which is already installed on your Mac OS X environment. 
+To accomplish this, you have first to determine what version of libxml2 is installed on your platform, using the following command:
+
+xml2-config --version
+
+Download the source corresponding to your version (i.e. on 10.6.6 you get 2.7.3) from the libxml2  
+`download page <ftp://xmlsoft.org/libxml2/>`__ into your ``src`` directory then uncompress it.
+
+Use the following command to install the python support :
+
+::
+
+  cd src/libxml2-2.7.3/python/
+  python setup.py install
+
+**Deploy OGR Python Services Provider**
+
+- Now copy the ``zoo-services/ogt/base-vect-ops/cgi-env`` files into ``/Library/WebServer/CGI-Executables``.
+
+You can test using this `url <http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=BufferPy&DataInputs=BufferDistance=1@datatype=interger;InputPolygon=Reference@xlink:href=http%3A%2F%2Fwww.zoo-project.org%3A8082%2Fgeoserver%2Fows%3FSERVICE%3DWFS%26REQUEST%3DGetFeature%26VERSION%3D1.0.0%26typename%3Dtopp%3Astates%26SRS%3DEPSG%3A4326%26FeatureID%3Dstates.15>`__ 
+if everything is ok with your setup.
+
+Test using Local Demo Page
+--------------------------
+
+- Download the `OpenLayers <http://openlayers.org>`__ library and uncompress it in your personal Sites directory 
+  (located in your home directory). 
+  
+- Rename the OpenLayers directory as openlayers. 
+
+- Download this `zip archive <http://www.zoo-project.org/trac/raw-attachment/wiki/ZooDocumentation/ZOOKernel/MacOSX_installation/zoo-demo.zip>`__ 
+  and then uncompress it in your personal Sites directory. 
+  
+- Load your local demo pages using urls similar to the following (replacing MyUserName by your MacOS user name) :
+
+    *  http://localhost/~MyUserName/zoo-demo/spatialtools.html
+    *  http://localhost/~MyUserName/zoo-demo/spatialtools-py.html 
+
+
