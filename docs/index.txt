@@ -1,5 +1,8 @@
 .. _home:
 
+ZOO 1.2 Documentation
+=====================
+
 ========================== =============== ================
                        Quick Links
 -----------------------------------------------------------
@@ -33,8 +36,8 @@ ZOO Wiki
 Users wishing to contribute steps and documents should use the
 `ZOO Wiki <http://www.zoo-project.org/trac>`__.  
 
-ZOO 1.2 Documentation
-=====================
+Official Documentation
+======================
 
 This section contains the official ZOO Project documentation.
     
