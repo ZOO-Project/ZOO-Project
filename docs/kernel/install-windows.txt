@@ -44,6 +44,9 @@ Now you should be able to query your local ZOO Kernel.
 Compiling Using Your Own Libraries
 ----------------------------------
 
+.. note::
+   You must be sure to perform the :ref:`prerequisite steps <kernel-installation-prereq>` before compiling the ZOO Kernel.
+
 The following steps are for use with the Microsoft Visual Studio compiler (and tested with MSVC 2008).
 
 1. Make sure the gnuwin32 tools ``bison.exe`` and ``flex.exe`` are found in your path.  You can download the GNUwin32 tools `here <http://www.zoo-project.org/dl/tool-win32.zip>`__.
