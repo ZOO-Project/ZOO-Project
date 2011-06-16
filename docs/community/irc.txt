@@ -30,22 +30,22 @@ monthly meetings through IRC.
 How do I join?
 --------------
 
-`Chatzilla <http://chatzilla.hacksrus.com/>`__ is
-probably the easiest way to get going. Chatzilla works with Mozilla or
-Firefox, and once you have it installed, you can log on to the channel by
-pointing your browser at::
+- `Chatzilla <http://chatzilla.hacksrus.com/>`__ is
+  probably the easiest way to get going. Chatzilla works with Mozilla or
+  Firefox, and once you have it installed, you can log on to the channel by
+  pointing your browser at::
 
-  irc://irc.freenode.net/#zoo-project
+    irc://irc.freenode.net/#zoo-project
 
-There are many other IRC clients available. `This page
-<http://tikiwiki.org/ConnectingToIrc>`__ provides a good listing for many
-different platforms.
+- There are many other IRC clients available. `This page
+  <http://tikiwiki.org/ConnectingToIrc>`__ provides a good listing for many
+  different platforms.
+  
+- You can also connect to IRC directly in your Web browser without a client:
 
-You can also connect to IRC directly in your Web browser without a client:
-
-- goto http://webchat.freenode.net/
-- enter a nickname (usually your first initial plus your last name)
-- in "Channels" enter: zoo-project
-- Connect!
+  - goto http://webchat.freenode.net/
+  - enter a nickname (usually your first initial plus your last name)
+  - in "Channels" enter: zoo-project
+  - Connect!
 
 
