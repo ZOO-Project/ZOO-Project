@@ -3,12 +3,10 @@
 ZOO 1.2 Documentation
 =====================
 
-========================== =============== ================
-                       Quick Links
------------------------------------------------------------
-:ref:`kernel`              :ref:`services` :ref:`api`
-:ref:`kernel-installation` :ref:`tutorial` :ref:`community`  
-========================== =============== ================
+..   csv-table:: Quick Links
+
+    :ref:`kernel`,:ref:`services`,:ref:`api`
+    :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
 
 .. note::
     The entire documentation is also available as a single
