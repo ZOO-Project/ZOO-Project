@@ -1,0 +1,70 @@
+.. _kernel-installation-prereq:
+
+Prerequisites
+=============
+
+.. contents:: Table of Contents
+    :depth: 2
+    :backlinks: top
+
+Obtaining the ZOO Kernel Source
+-------------------------------
+
+Use the following command to get the ZOO Kernel source code through Subversion:
+
+::
+
+  svn checkout http://svn.zoo-project.org/svn/trunk zoo-project
+
+For users which get a developer account, use the following:
+
+::
+
+  sed "s:\[tunnels\]:\[tunnels\]\nzoosvn = /usr/bin/ssh -p 1046:g" -i ~/.subversion/config
+  svn co svn+zoosvn://svn.zoo-project.org/var/svn/repos/trunk zoo-project
+
+The first line of the instruction above defines a specific tunnel to access the svn server through 
+the SSH protocol. Indeed, the ZOO SVN server listens on the 1046 (1024+22) port rather than the default one (22).
+
+Prerequisites
+-------------
+
+The following libraries are required on your system before you can install the ZOO Kernel:
+
+- autoconf (  http://www.gnu.org/software/autoconf/ ) 
+- cgic (  http://www.boutell.com/cgic )
+- cURL (  http://curl.haxx.se )
+- FastCGI (  http://www.fastcgi.com )
+- Flex & Bison (  http://flex.sourceforge.net/  http://www.gnu.org/software/bison/ )
+- libxml2 (  http://xmlsoft.org )
+- OpenSSL (  http://www.openssl.org )
+- Python (  http://www.python.org )
+
+Optional libraries include:
+
+- PHP Embedded (optional) (  http://www.php.net )
+- Java SDK (optional) (  http://java.sun.com )
+- SpiderMonkey (optional) (  http://www.mozilla.org/js/spidermonkey/ ) 
+
+Compile libcgic
+---------------
+
+The first step is to compile libcgic from the ``zoo-project/thirds`` directory. For such a task, please use 
+the following command:
+
+::
+
+  cd thirds/cgic206
+  make
+
+Make sure that a ``libcgic.a`` is created in your ``zoo-project/thirds/cgic206`` directory. If yes, then 
+you can go to the next step.
+
+On Windows, rather than using the make command, please use:
+
+::
+
+  nmake /f makefile.vc. 
+  
+.. warning::
+   If you don't compile libcgic first, and try to compile the ZOO Kernel, you will get an error such as *cannot find -lcgic*
