@@ -10,6 +10,8 @@ Prerequisites
 Obtaining the ZOO Kernel Source
 -------------------------------
 
+.. _svn:
+
 Use the following command to get the ZOO Kernel source code through Subversion:
 
 ::

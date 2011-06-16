@@ -7,7 +7,8 @@ ZOO 1.2 Documentation
 
     :ref:`kernel`,:ref:`services`,:ref:`api`
     :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
-
+    :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
+    :ref:`documentation_development`,,
 .. note::
     The entire documentation is also available as a single
     `PDF document <./ZOOProject.pdf>`__ |image|  and `ePub document <./ZOOProject.epub>`__
@@ -53,6 +54,7 @@ This section contains the official ZOO Project documentation.
    services/index
    api/index
    community/index
+   development/documentation
 
 
 
