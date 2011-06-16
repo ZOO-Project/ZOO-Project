@@ -56,7 +56,19 @@ div.sphinxsidebar {
 
 div.sphinxsidebar ul {
     list-style: none;
-}
+    padding:10px;
+   	background: #FFCD0B;
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#FFCD0B'); /* for IE */
+    background:-webkit-gradient(linear, left top, left bottom, from(#FFFFFF), to(#FFCD0B)); /* for webkit browsers */
+    background: -moz-linear-gradient(center top , #FFFFFF, #FFCD0B) repeat scroll 0 0 transparent;
+     -moz-border-radius-bottomright: 5px;
+border-bottom-right-radius:5px;
+-webkit-border-bottom-right-radius:5px;
+-moz-border-radius-bottomleft: 5px;
+border-bottom-left-radius:5px;
+-webkit-border-bottom-left-radius:5px;
+background:#FFFFFF;
+    }
 
 div.sphinxsidebar ul ul,
 div.sphinxsidebar ul.want-points {
@@ -75,7 +87,7 @@ div.sphinxsidebar form {
 
 div.sphinxsidebar input {
     border: 1px solid #98dbcc;
-    font-family: sans-serif;
+    font-family: Verdana;
     font-size: 1em;
 }
 
@@ -429,7 +441,7 @@ dl.glossary dt {
 }
 
 .guilabel, .menuselection {
-    font-family: sans-serif;
+    font-family: verdana;
 }
 
 .accelerator {
@@ -508,6 +520,11 @@ div.body div.math p {
 span.eqno {
     float: right;
 }
+
+  div.footer {
+        padding:0;
+        margin:0;
+    }
 
 /* -- printout stylesheet --------------------------------------------------- */
 
