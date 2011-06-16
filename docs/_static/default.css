@@ -49,13 +49,17 @@ div.bodywrapper {
     margin: 1em 25% 1em 1em;
 }
 
+
 div.footer {
-    color: #646464;
+    color: #333333;
     width: 100%;
-    padding: 9px 0 9px 0;
+    padding:0;
     text-align: center;
-    font-size: 75%;
+    font-size:12px;
 }
+
+#footer p{padding:10px 0 5px 0;}
+
 
 div.footer a {
     color: #646464;
@@ -410,7 +414,7 @@ html ul.topnav li ul.subnav li a {
 	float: left;
 	width: 155px;
 	background: #663e05;
-	padding:3px 5px 3px 10px ;
+	padding:5px 5px 3px 10px ;
 
 }
 html ul.topnav li ul.subnav li a:hover { /*--Hover effect for subnav links--*/
