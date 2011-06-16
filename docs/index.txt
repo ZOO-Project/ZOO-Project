@@ -7,7 +7,6 @@ ZOO 1.2 Documentation
 
     :ref:`kernel`,:ref:`services`,:ref:`api`
     :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
-    :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
     :ref:`documentation_development`,,
 .. note::
     The entire documentation is also available as a single
