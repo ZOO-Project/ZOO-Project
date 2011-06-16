@@ -115,7 +115,7 @@ html_theme_options = {
 html_title = "ZOO Project " + release + " documentation"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-html_short_title = "ZOO Project"
+html_short_title = "ZOO Docs"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
