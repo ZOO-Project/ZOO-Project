@@ -208,7 +208,7 @@ latex_logo = './_static/images/zoo-banner-large.png'
 #latex_show_urls = False
 
 # Additional stuff for the LaTeX preamble.
-latex_preamble = '\setcounter{tocdepth}{2}'
+latex_preamble = '\setcounter{tocdepth}{3}'
 
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
