@@ -29,7 +29,10 @@ div.document {
 div.documentwrapper {
     float: left;
     width: 100%;
-    background:#707070;
+     background:#bababa;
+ filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#bababa', endColorstr='#707070'); /* for IE */
+background:-webkit-gradient(linear, left top, left bottom, from(#bababa), to(#707070)); /* for webkit browsers */
+background:-moz-linear-gradient(top,  #bababa,  #707070); /* for firefox 3.6+ */
  }
 
 div.bodywrapper {
