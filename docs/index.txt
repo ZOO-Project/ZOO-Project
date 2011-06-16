@@ -23,8 +23,8 @@ to add them into the official docs.  The committee is currently composed of:
 
 ::
 
-  Gérald Fenoy (gerald.fenoy at geolabs.fr)
   Nicolas Bozon (nicolas.bozon at gmail.com)
+  Gérald Fenoy (gerald.fenoy at geolabs.fr)
   Jeff McKenna (jmckenna at gatewaygeomatics.com)
   
 The committee would like to thank the early contributors to the documentation: ``Luca Delucchi`` and
