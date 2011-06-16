@@ -1,13 +1,42 @@
 .. _home:
 
-ZOO 1.2 Documentation
-=====================
-
-This section contains the official ZOO Project documentation.
+========================== =============== ================
+                       Quick Links
+-----------------------------------------------------------
+:ref:`kernel`              :ref:`services` :ref:`api`
+:ref:`kernel-installation` :ref:`tutorial` :ref:`community`  
+========================== =============== ================
 
 .. note::
     The entire documentation is also available as a single
     `PDF document <./ZOOProject.pdf>`__ |image|  and `ePub document <./ZOOProject.epub>`__
+
+About ZOO Documentation
+=======================
+
+ZOO Documentation is a collaborative process; once users contribute documentation
+through the ZOO Wiki, the Documentation Committee will then review the contributions
+to add them into the official docs.  The committee is currently composed of:
+
+::
+
+  Gérald Fenoy (gerald.fenoy at geolabs.fr)
+  Nicolas Bozon (nicolas.bozon at gmail.com)
+  Jeff McKenna (jmckenna at gatewaygeomatics.com)
+  
+The committee would like to thank the early contributors to the documentation: ``Luca Delucchi`` and
+``René-Luc D'Hont``.
+  
+ZOO Wiki
+========
+
+Users wishing to contribute steps and documents should use the
+`ZOO Wiki <http://www.zoo-project.org/trac>`__.  
+
+ZOO 1.2 Documentation
+=====================
+
+This section contains the official ZOO Project documentation.
     
 .. |image| image:: _static/images/pdf.png
    :height: 15
@@ -24,22 +53,5 @@ This section contains the official ZOO Project documentation.
    api/index
    community/index
 
-ZOO Wiki
-========
 
-Users wishing to contribute steps and documents should use the
-`ZOO Wiki <http://www.zoo-project.org/trac>`__.
-
-About ZOO Documentation
-=======================
-
-ZOO Documentation is a collaborative process; once users contribute documentation
-through the ZOO Wiki, the Documentation Committee will then review the contributions
-to add them into the official docs.  The committee is currently composed of:
-
-::
-
-  Jeff McKenna
-  Nicolas Bozon
-  Gérald Fenoy
 
