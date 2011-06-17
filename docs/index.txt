@@ -7,7 +7,7 @@ ZOO 1.2 Documentation
 
     :ref:`kernel`,:ref:`services`,:ref:`api`
     :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
-    :ref:`documentation_development`,,
+    `Search mailing list <http://zoo-discuss.1049523.n5.nabble.com/>`__,:ref:`documentation_development`,
 .. note::
     The entire documentation is also available as a single
     `PDF document <./ZOOProject.pdf>`__ |image|  and `ePub document <./ZOOProject.epub>`__
