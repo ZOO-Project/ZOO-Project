@@ -491,13 +491,15 @@ background:-moz-linear-gradient(top,  #ffcd0b, #ee920c  ); /* for firefox 3.6+ *
 	text-align: center;
 	margin: 0;
 	padding:10px 0 10px 0;
+	color: #676561;
+	font-size: 12px;
 }
 
 #footer a{
-	color: #646464;
+	color: #663e05;
 	font-weight: bold;
-	font-size: 12px;
 	text-decoration: none;
+	font-size: 14px;
 }
 
 #footer .icon{
