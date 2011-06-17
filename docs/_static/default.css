@@ -150,6 +150,8 @@ border-top-right-radius:5px;
 border-top-left-radius:5px;
 -webkit-border-top-left-radius:5px;
 background:#FFFFFF;
+display:block;
+padding:5px;
 }
 
 div.sphinxsidebar h4 {
@@ -414,7 +416,7 @@ html ul.topnav li ul.subnav li a {
 	float: left;
 	width: 155px;
 	background: #663e05;
-	padding:5px 5px 3px 10px ;
+	padding:5px 5px 7px 10px ;
 
 }
 html ul.topnav li ul.subnav li a:hover { /*--Hover effect for subnav links--*/
@@ -488,12 +490,13 @@ background:-moz-linear-gradient(top,  #ffcd0b, #ee920c  ); /* for firefox 3.6+ *
 	padding: 0;
 	text-align: center;
 	margin: 0;
+	padding:10px 0 10px 0;
 }
 
 #footer a{
-	color: #563404;
+	color: #646464;
 	font-weight: bold;
-	font-size: 14px;
+	font-size: 12px;
 	text-decoration: none;
 }
 
