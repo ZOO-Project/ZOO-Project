@@ -6,8 +6,8 @@ ZOO 1.2 Documentation
 ..   csv-table:: Quick Links
 
     :ref:`kernel`,:ref:`services`,:ref:`api`
-    :ref:`kernel-installation`,:ref:`tutorial`,:ref:`community`
-    `Search mailing list <http://zoo-discuss.1049523.n5.nabble.com/>`__,:ref:`documentation_development`,
+    :ref:`kernel-installation`,:ref:`community`,`Search mailing list <http://zoo-discuss.1049523.n5.nabble.com/>`__
+    :ref:`documentation_development`,,
 .. note::
     The entire documentation is also available as a single
     `PDF document <./ZOOProject.pdf>`__ |image|  and `ePub document <./ZOOProject.epub>`__
@@ -48,7 +48,6 @@ This section contains the official ZOO Project documentation.
 .. toctree::
    :maxdepth: 3
    
-   tutorial/index   
    kernel/index
    services/index
    api/index
