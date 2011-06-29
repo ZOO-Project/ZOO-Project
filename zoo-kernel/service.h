@@ -123,6 +123,7 @@ extern "C" {
   static void dumpMapToFile(map* t,FILE* file){
     map* tmp=t;
     while(tmp!=NULL){
+      fprintf(stderr,"%s = %s\n",tmp->name,tmp->value);
       fprintf(file,"%s = %s\n",tmp->name,tmp->value);
       tmp=tmp->next;
     }
@@ -137,12 +138,15 @@ extern "C" {
     }
   }
 
-  static void dumpMapsToFile(maps* m,FILE* file){
+  static void dumpMapsToFile(maps* m,char* file_path){
+    FILE* file=fopen(file_path,"w");
     maps* tmp=m;
     if(tmp!=NULL){
       fprintf(file,"[%s]\n",tmp->name);
       dumpMapToFile(tmp->content,file);
+      fflush(file);
     }
+    fclose(file);
   }
 
   static map* createMap(const char* name,const char* value){
