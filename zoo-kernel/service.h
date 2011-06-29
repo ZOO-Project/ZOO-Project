@@ -123,7 +123,7 @@ extern "C" {
   static void dumpMapToFile(map* t,FILE* file){
     map* tmp=t;
     while(tmp!=NULL){
-      fprintf(file,"%s = %s\n",t->name,t->value);
+      fprintf(file,"%s = %s\n",tmp->name,tmp->value);
       tmp=tmp->next;
     }
   }
