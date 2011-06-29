@@ -1811,7 +1811,12 @@ int runRequest(map* request_inputs)
     map *tmpPath=getMapFromMaps(m,"main","sessPath");
     if(tmpPath==NULL)
       tmpPath=getMapFromMaps(m,"main","tmpPath");
-    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
+    char *tmp1=strtok(cgiCookie,";");
+    if(tmp1!=NULL)
+      sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
+    else
+      sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
+
     maps *tmpSess=(maps*)calloc(1,MAPS_SIZE);
     struct stat file_status;
     int istat = stat(session_file_path, &file_status);
