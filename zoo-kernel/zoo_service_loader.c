@@ -1820,7 +1820,7 @@ int runRequest(map* request_inputs)
     maps *tmpSess=(maps*)calloc(1,MAPS_SIZE);
     struct stat file_status;
     int istat = stat(session_file_path, &file_status);
-    if(istat==0){
+    if(istat==0 && file_status.st_size>0){
       conf_read(session_file_path,tmpSess);
       dumpMaps(tmpSess);
       addMapsToMaps(&m,tmpSess);

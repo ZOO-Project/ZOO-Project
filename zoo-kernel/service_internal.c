@@ -1721,9 +1721,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
       else
 	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(_tmp->value,"=")+1);
-      FILE* file=fopen(session_file_path,"w");
-      dumpMapsToFile(tmpSess,file);
-      fclose(file);
+      dumpMapsToFile(tmpSess,session_file_path);
     }
   }
   if(asRaw==0){
