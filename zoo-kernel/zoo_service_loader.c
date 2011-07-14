@@ -763,7 +763,7 @@ int runRequest(map* request_inputs)
     free(SERVICE_URL);
     return 0;
   }
-  //close(saved_stdout);
+  close(saved_stdout);
 
 #ifdef DEBUG
   dumpService(s1);
