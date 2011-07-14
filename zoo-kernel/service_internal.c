@@ -172,6 +172,7 @@ void unhandleStatus(maps *conf){
   fIgnore = CloseHandle(hMapObjectG);
 }
 #else
+
 void unhandleStatus(maps *conf){
   int shmid,i;
   key_t key;
@@ -208,7 +209,7 @@ void updateStatus(maps *conf){
     key=atoi(tmpMap->value);
     if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
 #ifdef DEBUG
-      fprintf(stderr,"shmget failed to update value\n");
+      fprintf(stderr,"shmget failed to create new Shared memory segment\n");
 #endif
     }else{
       if ((shm = (char*) shmat(shmid, NULL, 0)) == (char *) -1) {
@@ -219,8 +220,10 @@ void updateStatus(maps *conf){
       else{
 	tmpMap=getMapFromMaps(conf,"lenv","status");
 	s1=shm;
-	for(s=tmpMap->value;s!=NULL;s++)
+	for(s=tmpMap->value;*s!=NULL && *s!=0;s++){
 	  *s1++=*s;
+	}
+	*s1=NULL;
 	shmdt((void *)shm);
       }
     }
