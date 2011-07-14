@@ -25,14 +25,26 @@ to add them into the official docs.  The committee is currently composed of:
   Gérald Fenoy (gerald.fenoy at geolabs.fr)
   Jeff McKenna (jmckenna at gatewaygeomatics.com)
   
-The committee would like to thank the early contributors to the documentation: ``Luca Delucchi`` and
-``René-Luc D'Hont``.
+The committee would like to thank the early contributors to the documentation: ``Luca Delucchi``,
+``René-Luc D'Hont``,  ``Angelos Tzotsos``.
   
 ZOO Wiki
 ========
 
 Users wishing to contribute steps and documents should use the
 `ZOO Wiki <http://www.zoo-project.org/trac>`__.  
+
+
+Workshop
+======================
+
+This section contains the ZOO-project workshop
+
+.. toctree::
+   :maxdepth: 1
+
+   workshop/2010/index
+
 
 Official Documentation
 ======================
