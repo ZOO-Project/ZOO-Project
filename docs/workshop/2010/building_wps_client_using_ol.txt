@@ -1,18 +1,22 @@
 .. _building_wps_client_using_ol:
 
 Building a WPS client using OpenLayers
-###############################
+######################################
 
 .. contents:: Table of Contents
     :depth: 5
     :backlinks: top
 
-The next step of our workshop is to connect to the OGR Services we have created from an OpenLayers map. This will allow to apply single or multiple geometries processes on user-selected polygons and to display the new generated geometries. 
+The next step of our workshop is to connect to the OGR Services we have created 
+from an OpenLayers map. This will allow to apply single or multiple geometries 
+processes on user-selected polygons and to display the new generated geometries. 
 
 Creating a simple map showing the dataset as WMS
-******************************************************
+************************************************
 
-OpenLayers is also included in OSGeoLive default distribution, so it is convenient to use it for our needs. Please open ``/var/www/zoo-ogr.html`` using your favorite text editor and paste the following HTML snippet: 
+OpenLayers is also included in OSGeoLive default distribution, so it is convenient 
+to use it for our needs. Please open ``/var/www/zoo-ogr.html`` using your favorite 
+text editor and paste the following HTML snippet: 
 
 .. code-block:: guess
 
@@ -31,7 +35,8 @@ OpenLayers is also included in OSGeoLive default distribution, so it is convenie
      </body>
     </html>
 
-The following JavaScript code must then be added in a ``<script></script>`` section within the ``<head>`` one. This will setup a map showing the japanese regions data as WMS. 
+The following JavaScript code must then be added in a ``<script></script>`` section within the 
+``<head>`` one. This will setup a map showing the japanese regions data as WMS. 
 
 .. code-block:: guess
 
@@ -64,7 +69,9 @@ The following JavaScript code must then be added in a ``<script></script>`` sect
       map.setCenter(new OpenLayers.LonLat(138,33.5),5);
     }
 
-Once done, please save your HTML file as ``zoo-ogr.html`` in your workshop directory, then copy it in ``/var/www`` and visualize it with your favorite Web browser using this link :  ``http://localhost/zoo-ogr.html``. You should obtain a map centered on the Japan with the WMS layer activated. 
+Once done, please save your HTML file as ``zoo-ogr.html`` in your workshop directory, 
+then copy it in ``/var/www`` and visualize it with your favorite Web browser using this link :  
+``http://localhost/zoo-ogr.html``. You should obtain a map centered on the Japan with the WMS layer activated. 
 
 .. image:: ./images/OL-JP-1.png
    :width: 356px
@@ -72,9 +79,12 @@ Once done, please save your HTML file as ``zoo-ogr.html`` in your workshop direc
    :align: center
 
 Fetching the data layer as WFS and adding selection controls
-****************************************************************
+************************************************************
 
-Before accessing the displayed data via WFS, you first have to create new vector layers dedicated to host the several interactions we are going to create. Please add the following lines within the ``init()`` function, and do not forget to add the newly created layer in the map.addLayers method: 
+Before accessing the displayed data via WFS, you first have to create new vector layers 
+dedicated to host the several interactions we are going to create. Please add the following 
+lines within the ``init()`` function, and do not forget to add the newly created layer in 
+the map.addLayers method: 
 
 .. code-block:: guess
 
@@ -95,7 +105,9 @@ Before accessing the displayed data via WFS, you first have to create new vector
     
     map.addLayers([layer, select, hover, multi]);
 
-Then, you can now access the data by creating new controls to select polygons, as the following. Please note that ``OpenLayers.Protocol.WFS.fromWMSLayer`` is used to access geometries and that several state of selection are declared and append to the control variable. 
+Then, you can now access the data by creating new controls to select polygons, as the 
+following. Please note that ``OpenLayers.Protocol.WFS.fromWMSLayer`` is used to access 
+geometries and that several state of selection are declared and append to the control variable. 
 
 .. code-block:: guess
 
@@ -121,7 +133,8 @@ Then, you can now access the data by creating new controls to select polygons, a
     map.addControl(control);
     control.activate();
 
-Please save your HTML file again. You should now be able to select a polygon only by clicking on it. The selected polygon should appear in blue color. 
+Please save your HTML file again. You should now be able to select a polygon only by 
+clicking on it. The selected polygon should appear in blue color. 
 
 .. image:: ./images/OL-JP-2.png
    :width: 356px
@@ -129,9 +142,12 @@ Please save your HTML file again. You should now be able to select a polygon onl
    :align: center
 
 Calling the single geometry services from JavaScript
-*******************************************************
+****************************************************
 
-Now that everything is setup, we can go on and call our OGR ZOO services with JavaScript. Please add the following lines after the ``init()`` function, which will call the single geometry processes. You can notice that we use a specific ``parseMapServerId`` function which let us remove the unecessary white space returned as fid value. 
+Now that everything is setup, we can go on and call our OGR ZOO services with JavaScript. 
+Please add the following lines after the ``init()`` function, which will call the single 
+geometry processes. You can notice that we use a specific ``parseMapServerId`` function 
+which let us remove the unecessary white space returned as fid value. 
 
 .. code-block:: guess
 
@@ -174,7 +190,9 @@ Now that everything is setup, we can go on and call our OGR ZOO services with Ja
     }
 
 
-Then, some specific buttons must be added in the HTML, in order to be able to call the different processes we just declared. You can add them on top of the map by writing the following lines before the ``<div id="map"></div>``. 
+Then, some specific buttons must be added in the HTML, in order to be able to call 
+the different processes we just declared. You can add them on top of the map by writing 
+the following lines before the ``<div id="map"></div>``. 
 
 .. code-block:: guess
 
@@ -197,7 +215,9 @@ Then, some specific buttons must be added in the HTML, in order to be able to ca
      </ul>
     </div>
 
-Save your HTML file again. You should now be able to select a polygon and to launch a Buffer, ConvexHull, Boundary or Centroid on it by clicking one of the button. The result of the process should appear as GeoJSON layer on the map, in orange color. 
+Save your HTML file again. You should now be able to select a polygon and to launch a Buffer, 
+ConvexHull, Boundary or Centroid on it by clicking one of the button. The result of the 
+process should appear as GeoJSON layer on the map, in orange color. 
 
 .. image:: ./images/OL-JP-3.png
    :width: 536px
@@ -205,9 +225,11 @@ Save your HTML file again. You should now be able to select a polygon and to lau
    :align: center
 
 Calling the multiples geometries processes from JavaScript
-**************************************************************
+**********************************************************
 
-Using the same technique, you can now write a function dedicated to the multiple geometries processes. Please add the following lines after the ``simpleProcessing()`` function, we will guide you during the exercise in section 5 on how to create such a function. 
+Using the same technique, you can now write a function dedicated to the multiple geometries 
+processes. Please add the following lines after the ``simpleProcessing()`` function, we will 
+guide you during the exercise in section 5 on how to create such a function. 
 
 .. code-block:: guess
 
@@ -260,9 +282,13 @@ Using the same technique, you can now write a function dedicated to the multiple
       request.send(params);
     }
 
-Note that this time we didn't use the GET method to request the ZOO Kernel but a XML POST. We did that because if you use the GET method you will get error due to the HTTP GET method limitation based on the length of your request. Using JSON string representing the geometry will make your request longer.
+Note that this time we didn't use the GET method to request the ZOO Kernel but a XML POST. 
+We did that because if you use the GET method you will get error due to the HTTP GET method 
+limitation based on the length of your request. Using JSON string representing the geometry 
+will make your request longer.
 
-Once you get the functions to call your multiple geometries processes, you' must add some buttons to fire the request call. Here is the HTML code to add to your current ``zoo-ogr.html`` file : 
+Once you get the functions to call your multiple geometries processes, you' must add some 
+buttons to fire the request call. Here is the HTML code to add to your current ``zoo-ogr.html`` file : 
 
 .. code-block:: guess
 
@@ -282,7 +308,8 @@ Once you get the functions to call your multiple geometries processes, you' must
       </li>
     </ul>
 
-Please reload the page. You should then be able to run your multiple geometries services and you should get results displayed in red as shown by the following screenshots : 
+Please reload the page. You should then be able to run your multiple geometries services and 
+you should get results displayed in red as shown by the following screenshots : 
 
 
 .. image:: ./images/OL-JP-4.png
@@ -298,4 +325,5 @@ Please reload the page. You should then be able to run your multiple geometries 
    :width: 406px
    :height: 140px
    
-It seems that something is missing in your Services Provider to get the same results … The multiple geometries Services ! This is what we are going to do together in the next section. 
+It seems that something is missing in your Services Provider to get the same results … 
+The multiple geometries Services ! This is what we are going to do together in the next section. 
