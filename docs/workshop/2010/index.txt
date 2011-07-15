@@ -1,8 +1,8 @@
 .. _workshop-foss4g-japan-2010:
 
-##########################################
-Practical introduction to ZOO: The Open WPS Platform
-##########################################
+####################################################
+Practical Introduction to ZOO: The Open WPS Platform
+####################################################
 
 :Author:  Gérald Fenoy, Nicolas Bozon
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com
