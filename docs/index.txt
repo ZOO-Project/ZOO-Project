@@ -34,18 +34,6 @@ ZOO Wiki
 Users wishing to contribute steps and documents should use the
 `ZOO Wiki <http://www.zoo-project.org/trac>`__.  
 
-
-Workshop
-======================
-
-This section contains the ZOO-project workshop
-
-.. toctree::
-   :maxdepth: 1
-
-   workshop/2010/index
-
-
 Official Documentation
 ======================
 
@@ -63,6 +51,7 @@ This section contains the official ZOO Project documentation.
    kernel/index
    services/index
    api/index
+   workshop/2010/index
    community/index
    development/documentation
 
