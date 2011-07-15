@@ -65,7 +65,7 @@
    Title = The symmetric difference between two geometries
    Abstract = The symmetric difference between the two geometries.
    <MetaData>
-    Title = Symmetric Difference  
+    title = Symmetric Difference  
    </MetaData>   
     <ComplexData>
      <Default>
