@@ -20,12 +20,12 @@ ZOO.Process example of use
      return {result: ZOO.SERVICE_SUCCEEDED, outputs: [ {name:"Result", value: myExecuteResult} ] };
   }
 
-In this really short example you can see how to create ZOO.Process class instance and 
+In this really short example you can see how to create ``ZOO.Process`` class instance and 
 call the Execute method on such an instance. Then you'll just need to return a JavaScript 
 object containing the attributes result and outputs, which I'm sure you already know 
-what is about. The first is about the status of the process (can be ZOO.SERVICE_SUCEEDED,
-ZOO.SERVICE_FAILED and so on), the last is obviously the resulting maps (take a 
-look at the maps internal data structure used by ZOO Kernel in service.h).
+what is about. The first is about the status of the process (can be ``ZOO.SERVICE_SUCEEDED``,
+``ZOO.SERVICE_FAILED`` and so on), the last is obviously the resulting maps (take a 
+look at the maps internal data structure used by ZOO Kernel in ``service.h``).
 
 ZOO.UpdateStatus
 ----------------
@@ -47,8 +47,8 @@ ZOO.UpdateStatus
      return SampleService(conf,inputs,outputs);
   }
 
-You can see in this sample code how to use the ZOOUpdateStatus function to update the 
+You can see in this sample code how to use the ``ZOOUpdateStatus`` function to update the 
 current status of your running process. This information will be really helpfull when the 
-ZOO Kernel will run your JavaScript Service in background mode (if the user set to true 
-the storeExecuteResponse parameter in his request).
+ZOO Kernel will run your JavaScript Service in background mode (if the user set to ``true`` 
+the ``storeExecuteResponse`` parameter in his request).
 

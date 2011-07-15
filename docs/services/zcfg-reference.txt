@@ -30,7 +30,7 @@ of the ZCFG file without the "``.zcfg``" extension.
 
 You can see below a description of the main metadata information:
 
-.. code-block:: guess
+.. code-block:: none
    :linenos:
 
    [Name of your service]
@@ -58,7 +58,7 @@ Each input is defined as :
 
 A typical list of inputs (``<DataInputs>``) look like the following:
 
-.. code-block:: guess
+.. code-block:: none
    :linenos:
    
    <DataInputs>
@@ -85,7 +85,7 @@ The list of outputs is very similar to a list of inputs except it is specified a
 
 A typical ``<DataOutputs>`` node looks like the following:
 
-.. code-block:: guess
+.. code-block:: none
    :linenos:
    
    <DataOutputs>
