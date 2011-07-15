@@ -674,7 +674,8 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"\n#######%s\n########\n",buff1);
 #endif
 	while ((dp = readdir(dirp)) != NULL)
-	  if(strcmp(dp->d_name,buff)==0){
+	  if((strcasecmp("all.zcfg",buff)==0 && strstr(dp->d_name,".zcfg")>0)
+	     || strcasecmp(dp->d_name,buff)==0){
 	    memset(buff1,0,1024);
 	    snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
 	    s1=(service*)calloc(1,SERVICE_SIZE);
