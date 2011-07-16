@@ -3,6 +3,11 @@
 Service Examples
 ================
 
+:Last Updated: $Date$
+:Id:    $Id$
+:Author: $Author$
+:HeadURL: $HeadURL$
+
 GDAL ZOO Service
 ----------------
 

@@ -3,6 +3,11 @@
 How To Setup ZOO Services
 =========================
 
+:Last Updated: $Date$
+:Id:    $Id$
+:Author: $Author$
+:HeadURL: $HeadURL$
+
 ZOO Services are quiet easy to create once you have install ZOO Kernel and that you have 
 chosen a code to turn into a ZOO service. Here are some HelloWorlds in Python, PHP, Java 
 and JavaScript with link to the correpondant .zcfg files.
