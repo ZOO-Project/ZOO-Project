@@ -30,8 +30,14 @@ to add them into the official docs.  The committee is currently composed of:
   Gérald Fenoy (gerald.fenoy at geolabs.fr)
   Jeff McKenna (jmckenna at gatewaygeomatics.com)
   
-The committee would like to thank the early contributors to the documentation: ``Luca Delucchi``,
-``René-Luc D'Hont``,  ``Angelos Tzotsos``.
+A special thank to the ZOO-Project sponsors and knwoledge partners for their support.
+  
+The committee would like to thank ``Venkatesh Raghavan`` for his help on promoting ZOO Workshop in many places.
+
+The committee would like to thank ``Hirofumi Hayashi`` and ``Daisuke Yoshida`` for their help and japanese translation effort for the ZOO-Project Worshop 2010.
+  
+The committee would also like to thank the early contributors to the documentation: ``Luca Delucchi``, ``René-Luc D'Hont``,  ``Angelos Tzotsos`` and ``Guillaume Sueur``.
+
   
 ZOO Wiki
 ========
