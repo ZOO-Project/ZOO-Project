@@ -79,7 +79,7 @@ echo ""
 #
 # Tests for Execute using KVP and POST requests
 #
-for i in ir_o ir_o_async ir_or ir_or_async irb_o irb_o_async irb_or irb_or_async; 
+for i in ijson_o igml_o ir_o ir_o_async ir_or ir_or_async irb_o irb_o_async irb_or irb_or_async; 
 do
     cat requests/${i}.xml | sed "s:ServiceName:${ServiceName}:g" > tmp/${i}1.xml
     if [ -z "$(echo $i | grep async)" ]; then
