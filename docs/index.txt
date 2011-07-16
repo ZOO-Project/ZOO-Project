@@ -5,6 +5,8 @@ ZOO 1.2 Documentation
 
 :Last Updated: $Date$
 :Id:    $Id$
+:Author: $Author$
+:HeadURL: $HeadURL$
 
 ..   csv-table:: Quick Links
 
