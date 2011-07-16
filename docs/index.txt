@@ -3,6 +3,9 @@
 ZOO 1.2 Documentation
 =====================
 
+:Last Updated: $Date$
+:Id:    $Id$
+
 ..   csv-table:: Quick Links
 
     :ref:`kernel`,:ref:`services`,:ref:`api`
