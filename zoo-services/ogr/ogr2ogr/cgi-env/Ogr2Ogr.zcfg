@@ -7,7 +7,7 @@
  serviceType = C
  serviceProvider = ogr2ogr_service.zo
  <MetaData>
-   Title = My Demo
+   title = My Demo
  </MetaData>
  <DataInputs>
   [F]

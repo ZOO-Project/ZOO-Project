@@ -57,6 +57,8 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
+#include "cgic.h"
+
 extern   int getServiceFromFile(const char*,service**);
 extern   int conf_read(const char*,maps*);
 
