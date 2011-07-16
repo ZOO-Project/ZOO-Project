@@ -71,11 +71,15 @@ extern "C" {
     if(dirp!=NULL){
       char tmp[128];
       sprintf(tmp,"_%s.xml",tmpMap->value);
-      while ((dp = readdir(dirp)) != NULL)
+      while ((dp = readdir(dirp)) != NULL){
+#ifdef DEBUG
+	fprintf(stderr,"File : %s searched : %s\n",dp->d_name,tmp);
+#endif
 	if(strstr(dp->d_name,tmp)!=0){
 	  sprintf(fileName,"%s/%s",tmpTmap->value,dp->d_name);
 	  hasFile=1;
 	}
+      }
     }else{
       char tmp[1024];
       snprintf(tmp,1024,_ss("GetStatus was unable to use the tmpPath value set in main.cfg file as directory %s."),tmpTmap->value);

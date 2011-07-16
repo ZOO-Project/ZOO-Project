@@ -1,0 +1,19 @@
+<wps:Execute service="WPS" version="1.0.0" xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wps/1.0.0 ../wpsExecute_request.xsd">
+<ows:Identifier>ServiceName</ows:Identifier>
+<wps:DataInputs>
+<wps:Input>
+<ows:Identifier>InputPolygon</ows:Identifier>
+<ows:Title>Playground area</ows:Title>
+<wps:Data>
+<wps:ComplexData mimeType="application/json">{"type":"Polygon","coordinates":[[[-102.036758,36.988972],[-106.860657,36.989491],[-109.047821,36.996643],[-109.055199,38.24493],[-109.052864,39.518196],[-109.050591,40.210545],[-109.047638,40.998474],[-107.918037,41.00341],[-104.051201,41.003227],[-102.620789,41.000225],[-102.047279,40.998077],[-102.04557,40.697323],[-102.036758,36.988972]]]}</wps:ComplexData>
+</wps:Data>
+</wps:Input>
+</wps:DataInputs>
+<wps:ResponseForm>
+<wps:ResponseDocument>
+<wps:Output>
+<ows:Identifier>Result</ows:Identifier>
+</wps:Output>
+</wps:ResponseDocument>
+</wps:ResponseForm>
+</wps:Execute>

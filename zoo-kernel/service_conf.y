@@ -355,7 +355,24 @@ attribute
 // avec un identifiant d'une balise jumelle
 //======================================================
 EmptyElemTag
- : INFCAR ID Attributeetoile SLASH SUPCAR	{}
+ : INFCAR ID Attributeetoile SLASH SUPCAR	{
+   if(strncasecmp($2,"Default",7)==0){
+     wait_defaults=false;
+     current_data=previous_data;
+     if(current_element->defaults==NULL){
+       current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+       current_element->defaults->content=NULL;
+     }
+     addMapToMap(&current_element->defaults->content,current_content);
+     freeMap(&current_content);
+     free(current_content);
+     current_element->defaults->next=NULL;
+     wait_defaults=false;
+     current_content=NULL;
+     current_element->supported=NULL;
+     current_element->next=NULL;
+   }
+ }
  ;
 
 //======================================================
