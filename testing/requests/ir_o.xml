@@ -1,0 +1,17 @@
+<wps:Execute service="WPS" version="1.0.0" xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wps/1.0.0 ../wpsExecute_request.xsd">
+<ows:Identifier>ServiceName</ows:Identifier>
+<wps:DataInputs>
+<wps:Input>
+<ows:Identifier>InputPolygon</ows:Identifier>
+<ows:Title>Playground area</ows:Title>
+<wps:Reference xlink:href="http://www.zoo-project.org:8082/geoserver/ows?SERVICE=WFS&amp;REQUEST=GetFeature&amp;VERSION=1.0.0&amp;typename=topp:states&amp;SRS=EPSG:4326&amp;FeatureID=states.15" />
+</wps:Input>
+</wps:DataInputs>
+<wps:ResponseForm>
+<wps:ResponseDocument>
+<wps:Output>
+<ows:Identifier>Result</ows:Identifier>
+</wps:Output>
+</wps:ResponseDocument>
+</wps:ResponseForm>
+</wps:Execute>

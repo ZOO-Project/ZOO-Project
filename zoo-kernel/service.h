@@ -123,7 +123,8 @@ extern "C" {
   static void dumpMapToFile(map* t,FILE* file){
     map* tmp=t;
     while(tmp!=NULL){
-      fprintf(file,"%s = %s\n",t->name,t->value);
+      fprintf(stderr,"%s = %s\n",tmp->name,tmp->value);
+      fprintf(file,"%s = %s\n",tmp->name,tmp->value);
       tmp=tmp->next;
     }
   }
@@ -137,12 +138,15 @@ extern "C" {
     }
   }
 
-  static void dumpMapsToFile(maps* m,FILE* file){
+  static void dumpMapsToFile(maps* m,char* file_path){
+    FILE* file=fopen(file_path,"w");
     maps* tmp=m;
     if(tmp!=NULL){
       fprintf(file,"[%s]\n",tmp->name);
       dumpMapToFile(tmp->content,file);
+      fflush(file);
     }
+    fclose(file);
   }
 
   static map* createMap(const char* name,const char* value){
@@ -548,8 +552,9 @@ extern "C" {
       if(tmp!=NULL){
 	map* tmpV=getMap(res->content,"value");
 	free(tmpV->value);
-	tmpV->value=(char*)malloc(atoi(tmp->value)*sizeof(char));
+	tmpV->value=(char*)malloc((atoi(tmp->value)+1)*sizeof(char));
 	memmove(tmpV->value,tmpSized,atoi(tmp->value)*sizeof(char));
+	tmpV->value[atoi(tmp->value)]=0;
 	free(tmpSized);
       }
       res->next=dupMaps(&_cursor->next);
