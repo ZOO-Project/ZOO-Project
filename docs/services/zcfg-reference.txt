@@ -1,7 +1,12 @@
 .. _services-zcfg:
     
 ZCFG : the ZOO Service Configuration File
-=========================================    
+=========================================  
+
+:Last Updated: $Date$
+:Id:    $Id$
+:Author: $Author$
+:HeadURL: $HeadURL$  
 
 .. contents:: Table of Contents
     :depth: 3

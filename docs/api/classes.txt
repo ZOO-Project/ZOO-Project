@@ -3,6 +3,11 @@
 Classes
 =======
 
+:Last Updated: $Date$
+:Id:    $Id$
+:Author: $Author$
+:HeadURL: $HeadURL$
+
 The following classes are available in the ZOO API:
 
 .. toctree::

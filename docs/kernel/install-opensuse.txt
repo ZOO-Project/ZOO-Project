@@ -3,6 +3,11 @@
 OpenSUSE
 ========
 
+:Last Updated: $Date$
+:Id:    $Id$
+:Author: $Author$
+:HeadURL: $HeadURL$
+
 .. contents:: Table of Contents
     :depth: 2
     :backlinks: top
