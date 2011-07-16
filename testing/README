@@ -1,0 +1,30 @@
+Please use the following syntaxe:
+
+  ./run.sh <WPSInstance> <ServiceName>
+
+where <WPSInstance> should be the url to a WPS Server and <ServiceName> should 
+be the service name you want to run tests with.
+
+For instance to test the Buffer service on a localhost WPS server, use the 
+following command:
+
+  ./run.sh http://localhost/cgi-bin/zoo_loader.cgi Buffer
+
+
+Important note:  sometimes XML validation failed because xmllint is unable to download
+a file required to validate. In such case, you can use the file /etc/xml/catalog on your
+local machine to use a local copy of the missing file.
+
+For instance, in case xml.xsd can't be downloaded, then you can download a copy using
+this url http://www.w3.org/2001/xml.xsd, store it in /etc/schemas directory and then 
+use the following /etc/xml/catalog file:
+
+<?xml version="1.0"?>
+<!DOCTYPE catalog PUBLIC "-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN" "http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd">
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+<rewriteSystem systemIdStartString="http://www.w3.org/2001/xml.xsd"
+                rewritePrefix="file:///etc/schemas/xml.xsd" />
+</catalog>
+
+Obviously, you can do similar manipulation for the OGC schemas to use local files 
+rather than downloading them for each tests.

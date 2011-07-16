@@ -1,0 +1,39 @@
+[Xml2Pdf]
+ Title = Convert raster data from one format to another. 
+ Abstract = Converts raster data between different formats.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = Python
+ serviceProvider = oo_service
+ <DataInputs>
+  [doc]
+   Title = The input Open Document Text
+   Abstract = The input Open Document Text including all required Styles
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default/>
+   </LiteralData>
+  [xml]
+   Title = The input XML file
+   Abstract = The input XML file to convert.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default/>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Document]
+   Title = The resulting file
+   Abstract = The file content resulting of the convertion from XML to PDF
+   <ComplexData>
+    <Default>
+     mimeType=application/pdf
+     extension=pdf
+    </Default>	
+   </ComplexData>
+ </DataOutputs>  

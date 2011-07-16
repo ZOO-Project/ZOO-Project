@@ -674,7 +674,8 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"\n#######%s\n########\n",buff1);
 #endif
 	while ((dp = readdir(dirp)) != NULL)
-	  if(strcmp(dp->d_name,buff)==0){
+	  if((strcasecmp("all.zcfg",buff)==0 && strstr(dp->d_name,".zcfg")>0)
+	     || strcasecmp(dp->d_name,buff)==0){
 	    memset(buff1,0,1024);
 	    snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
 	    s1=(service*)calloc(1,SERVICE_SIZE);
@@ -763,7 +764,7 @@ int runRequest(map* request_inputs)
     free(SERVICE_URL);
     return 0;
   }
-  //close(saved_stdout);
+  close(saved_stdout);
 
 #ifdef DEBUG
   dumpService(s1);
@@ -1811,11 +1812,16 @@ int runRequest(map* request_inputs)
     map *tmpPath=getMapFromMaps(m,"main","sessPath");
     if(tmpPath==NULL)
       tmpPath=getMapFromMaps(m,"main","tmpPath");
-    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
+    char *tmp1=strtok(cgiCookie,";");
+    if(tmp1!=NULL)
+      sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
+    else
+      sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
+
     maps *tmpSess=(maps*)calloc(1,MAPS_SIZE);
     struct stat file_status;
     int istat = stat(session_file_path, &file_status);
-    if(istat==0){
+    if(istat==0 && file_status.st_size>0){
       conf_read(session_file_path,tmpSess);
       dumpMaps(tmpSess);
       addMapsToMaps(&m,tmpSess);

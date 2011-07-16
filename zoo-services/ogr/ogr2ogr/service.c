@@ -94,7 +94,7 @@ int main( int nArgc, char ** papszArgv )
     char        **papszSelFields = NULL;
     const char  *pszSQLStatement = NULL;
     int         eGType = -2;
-    double       dfMaxSegmentLength = 0;
+    double      dfMaxSegmentLength = 0;
 
     /* Check strict compilation and runtime library version as we use C++ API */
     if (! GDAL_CHECK_VERSION("ogr2ogr"))
@@ -177,12 +177,9 @@ int main( int nArgc, char ** papszArgv )
 	  bAppend = TRUE;
     }
 
-    tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"overwrite","value");
-    if(tmpMap!=NULL){
-	  bOverwrite = TRUE;
-    }
-
+    /* if exist, overwrite the data with the same name */
+    bOverwrite = TRUE;
+    
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"update","value");
     if(tmpMap!=NULL){
@@ -825,11 +822,7 @@ int main( int nArgc, char ** papszArgv )
 #endif
     
 #ifdef ZOO_SERVICE
-	outputs=(maps*)malloc(sizeof(maps*));
-    outputs->name="GeneratedFile";
     outputs->content=createMap("value",(char*)pszwebDestData);
-    addMapToMap(&outputs->content,createMap("dataType","string"));
-    outputs->next=NULL;
     return SERVICE_SUCCEEDED;
 #else
 	return 0;
