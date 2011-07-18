@@ -6066,13 +6066,45 @@ ZOO.Process = ZOO.Class({
    * {String} The OGC's Web processing Service XML response. The result 
    *          needs to be interpreted.
    */
-  Execute: function(inputs) {
+  Execute: function(inputs,outputs) {
     if (this.identifier == null)
       return null;
-    var body = new XML('<wps:Execute service="WPS" version="1.0.0" xmlns:wps="'+this.namespaces['wps']+'" xmlns:ows="'+this.namespaces['ows']+'" xmlns:xlink="'+this.namespaces['xlink']+'" xmlns:xsi="'+this.namespaces['xsi']+'" xsi:schemaLocation="'+this.schemaLocation+'"><ows:Identifier>'+this.identifier+'</ows:Identifier>'+this.buildDataInputsNode(inputs)+'</wps:Execute>');
+    var body = new XML('<wps:Execute service="WPS" version="1.0.0" xmlns:wps="'+this.namespaces['wps']+'" xmlns:ows="'+this.namespaces['ows']+'" xmlns:xlink="'+this.namespaces['xlink']+'" xmlns:xsi="'+this.namespaces['xsi']+'" xsi:schemaLocation="'+this.schemaLocation+'"><ows:Identifier>'+this.identifier+'</ows:Identifier>'+this.buildDataInputsNode(inputs)+this.buildDataOutputsNode(outputs)+'</wps:Execute>');
     body = body.toXMLString();
     var response = ZOO.Request.Post(this.url,body,['Content-Type: text/xml; charset=UTF-8']);
     return response;
+  },
+  buildOutput:{
+    /**
+     * Method: buildOutput.ResponseDocument
+     * Given an E4XElement representing the WPS ResponseDocument output.
+     *
+     * Parameters:
+     * identifier - {String} the input indetifier
+     * data - {Object} A WPS complex data input.
+     *
+     * Returns:
+     * {E4XElement} A WPS Input node.
+     */
+    'ResponseDocument': function(identifier,obj) {
+      var output = new XML('<wps:ResponseForm xmlns:wps="'+this.namespaces['wps']+'"><wps:ResponseDocument><wps:Output'+(obj["mimeType"]?' mimeType="'+obj["mimeType"]+'" ':'')+(obj["encoding"]?' encoding="'+obj["encoding"]+'" ':'')+(obj["asReference"]?' asReference="'+obj["asReference"]+'" ':'')+'><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier></wps:Output></wps:ResponseDocument></wps:ResponseForm>');
+      if (obj.encoding)
+        output.*::Data.*::ComplexData.@encoding = obj.encoding;
+      if (obj.schema)
+        output.*::Data.*::ComplexData.@schema = obj.schema;
+      output = output.toXMLString();
+      return output;
+    },
+    'RawDataOutput': function(identifier,obj) {
+      var output = new XML('<wps:ResponseForm xmlns:wps="'+this.namespaces['wps']+'"><wps:RawDataOutput><wps:Output '+(obj["mimeType"]?' mimeType="'+obj["mimeType"]+'" ':'')+(obj["encoding"]?' encoding="'+obj["encoding"]+'" ':'')+'><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier></wps:Output></wps:RawDataOutput></wps:ResponseForm>');
+      if (obj.encoding)
+        output.*::Data.*::ComplexData.@encoding = obj.encoding;
+      if (obj.schema)
+        output.*::Data.*::ComplexData.@schema = obj.schema;
+      output = output.toXMLString();
+      return output;
+    }
+
   },
   /**
    * Property: buildInput
@@ -6092,7 +6124,7 @@ ZOO.Process = ZOO.Class({
      */
     'complex': function(identifier,data) {
       var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:ComplexData>'+data.value+'</wps:ComplexData></wps:Data></wps:Input>');
-      input.*::Data.*::ComplexData.@mimeType = data.mimetype ? data.mimetype : 'text/plain';
+      input.*::Data.*::ComplexData.@mimeType = data.mimetype ? data.mimetype : 'application/json';
       if (data.encoding)
         input.*::Data.*::ComplexData.@encoding = data.encoding;
       if (data.schema)
@@ -6159,5 +6191,22 @@ ZOO.Process = ZOO.Class({
     }
     return '<wps:DataInputs xmlns:wps="'+this.namespaces['wps']+'">'+inputsArray.join('\n')+'</wps:DataInputs>';
   },
+
+  buildDataOutputsNode:function(outputs){
+    var data, builder, outputsArray=[];
+    for (var attr in outputs) {
+      data = outputs[attr];
+      builder = this.buildOutput[data.type];
+      /*if (data.mimetype || data.type == 'complex')
+        builder = this.buildInput['complex'];
+      else if (data.type == 'reference' || data.type == 'url')
+        builder = this.buildInput['reference'];
+      else
+      builder = this.buildInput['literal'];*/
+      outputsArray.push(builder.apply(this,[attr,data]));
+    }
+    return outputsArray.join('\n');
+  },
+
   CLASS_NAME: "ZOO.Process"
 });

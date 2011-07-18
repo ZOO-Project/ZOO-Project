@@ -51,7 +51,7 @@ extern "C" {
   
   int zoo_js_support(maps**,map*,service*,maps **,maps **);
 
-  JSScript *loadZooApiFile(JSContext*,JSObject*,char*);
+  JSObject *loadZooApiFile(JSContext*,JSObject*,char*);
 
 #ifdef __cplusplus
 }

@@ -1631,7 +1631,7 @@ int runRequest(map* request_inputs)
 	      /**
 	       * Title, Asbtract
 	       */
-	      if(xmlStrncasecmp(cur2->name,BAD_CAST "Title",xmlStrlen(cur2->name))==0 ||
+	      else if(xmlStrncasecmp(cur2->name,BAD_CAST "Title",xmlStrlen(cur2->name))==0 ||
 		 xmlStrncasecmp(cur2->name,BAD_CAST "Abstract",xmlStrlen(cur2->name))==0){
 		xmlChar *val=
 		  xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);

@@ -384,7 +384,7 @@ char* JSValToChar(JSContext* context, jsval* arg) {
   size_t len;
   jsmsg = JS_ValueToString(context,*arg);
   len = JS_GetStringLength(jsmsg);
-  tmp = JS_GetStringBytes(jsmsg);
+  tmp = JS_EncodeString(context,jsmsg);
   c = (char*)malloc((len+1)*sizeof(char));
   c[len] = '\0';
   int i;
@@ -434,8 +434,9 @@ HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
 }
 
 JSBool
-JSRequest(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+JSRequest(JSContext *cx, uintN argc, jsval *argv1)
 {
+  jsval *argv = JS_ARGV(cx,argv1);
   HINTERNET hInternet;
   char *url;
   char *method;
@@ -487,7 +488,7 @@ JSRequest(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 #ifdef ULINET_DEBUG
   fprintf(stderr,"content downloaded (%d) (%s) \n",dwRead,tmpValue);
 #endif
-  *rval=STRING_TO_JSVAL(JS_NewString(cx,tmpValue,strlen(tmpValue)));
+  JS_SET_RVAL(cx, argv1,STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpValue,strlen(tmpValue))));
   free(url);
   if(argc>=2)
     free(method);
