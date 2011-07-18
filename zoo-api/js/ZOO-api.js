@@ -6197,12 +6197,6 @@ ZOO.Process = ZOO.Class({
     for (var attr in outputs) {
       data = outputs[attr];
       builder = this.buildOutput[data.type];
-      /*if (data.mimetype || data.type == 'complex')
-        builder = this.buildInput['complex'];
-      else if (data.type == 'reference' || data.type == 'url')
-        builder = this.buildInput['reference'];
-      else
-      builder = this.buildInput['literal'];*/
       outputsArray.push(builder.apply(this,[attr,data]));
     }
     return outputsArray.join('\n');
