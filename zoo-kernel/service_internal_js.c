@@ -394,9 +394,9 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	  JSObject *nvp2=JSVAL_NULL;
 	  jsmsg1 = JS_ValueToString(cx,nvp1j);
 	  len1 = JS_GetStringLength(jsmsg1);
-	  //#ifdef JS_DEBUG
+#ifdef JS_DEBUG
 	  fprintf(stderr,"JSVAL NVP1J IS OBJECT %s = %s\n",JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
-	  //#endif
+#endif
 	  if(strcasecmp(JS_EncodeString(cx,jsmsg1),"[object Object]")==0){
 	    tres->name=strdup(JS_EncodeString(cx,jsmsg));
 	    tres->content=mapFromJSObject(cx,nvp1j);
@@ -418,9 +418,9 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 #endif
 
       }
-      //#ifdef JS_DEBUG
+#ifdef JS_DEBUG
       dumpMaps(tres);
-      //#endif
+#endif
       if(res==NULL)
 	res=dupMaps(&tres);
       else
@@ -431,9 +431,9 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 
     }
   }
-  //#ifdef JS_DEBUG
+#ifdef JS_DEBUG
   dumpMaps(res);
-  //#endif
+#endif
   return res;
 }
 
