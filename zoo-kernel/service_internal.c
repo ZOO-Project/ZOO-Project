@@ -257,8 +257,9 @@ char* getStatus(int pid){
 #ifdef USE_JS
 
 JSBool
-JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
 {
+  jsval *argv = JS_ARGV(cx,argv1);
   JS_MaybeGC(cx);
   char *sid;
   int istatus=0;
@@ -279,8 +280,11 @@ JSUpdateStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     status=strdup(tmpStatus);
   }
   if(getMapFromMaps(conf,"lenv","status")!=NULL){
-    if(status!=NULL)
+    fprintf(stderr,"STATUS RETURNED : %s\n",status);
+    if(status!=NULL){
       setMapInMaps(conf,"lenv","status",status);
+      free(status);
+    }
     else
       setMapInMaps(conf,"lenv","status","15");
     updateStatus(conf);

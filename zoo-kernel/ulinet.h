@@ -137,7 +137,7 @@ int InternetReadFile(HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRe
 bool InternetGetCookie(LPCTSTR lpszUrl,LPCTSTR lpszCookieName,LPTSTR lpszCookieData,LPDWORD lpdwSize);
 
 #ifdef USE_JS
-JSBool JSRequest(JSContext*, JSObject*, uintN, jsval*, jsval*);
+JSBool JSRequest(JSContext*, uintN, jsval*);
 #endif
 
 #ifdef __cplusplus

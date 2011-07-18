@@ -82,7 +82,7 @@ extern "C" {
 
 #ifdef USE_JS
   char* JSValToChar(JSContext*,jsval*);
-  JSBool JSUpdateStatus(JSContext*,JSObject*,uintN,jsval *,jsval *);
+  JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
 #endif
   
   void URLDecode(char *);
