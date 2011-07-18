@@ -1012,7 +1012,6 @@ int runRequest(map* request_inputs)
 	    free(lmap->value);
 	    lmap->value=strdup(tmpValue);
 	    free(tmpValue);
-	    dumpMap(tmpmaps->content);
 	    tmpc=strtok(NULL,"@");
 	    continue;
 	  }
@@ -1075,7 +1074,6 @@ int runRequest(map* request_inputs)
 	      addToMap(tmpmaps->content,tmpn1,tmpx);
 	      free(tmpx);
 	      addToMap(tmpmaps->content,"Reference",tmpv1+1);
-	      dumpMap(tmpmaps->content);
 	    }
 	  tmpc=strtok(NULL,"@");
 	}
@@ -1823,7 +1821,6 @@ int runRequest(map* request_inputs)
     int istat = stat(session_file_path, &file_status);
     if(istat==0 && file_status.st_size>0){
       conf_read(session_file_path,tmpSess);
-      dumpMaps(tmpSess);
       addMapsToMaps(&m,tmpSess);
       freeMaps(&tmpSess);
     }
@@ -1848,7 +1845,6 @@ int runRequest(map* request_inputs)
     addToMap(request_inputs,"storeExecuteResponse","true");
     addToMap(request_inputs,"status","true");
     status=getMap(request_inputs,"status");
-    dumpMap(request_inputs);
     fprintf(stderr,"cgiSID : %s",cgiSid);
   }
 #endif
