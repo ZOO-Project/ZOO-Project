@@ -6123,7 +6123,7 @@ ZOO.Process = ZOO.Class({
      * {E4XElement} A WPS Input node.
      */
     'complex': function(identifier,data) {
-      var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:ComplexData>'+data.value+'</wps:ComplexData></wps:Data></wps:Input>');
+      var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:ComplexData><![CDATA['+data.value+']]></wps:ComplexData></wps:Data></wps:Input>');
       input.*::Data.*::ComplexData.@mimeType = data.mimetype ? data.mimetype : 'application/json';
       if (data.encoding)
         input.*::Data.*::ComplexData.@encoding = data.encoding;
