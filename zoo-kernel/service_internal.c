@@ -1528,7 +1528,9 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       if((tmp1!=NULL && strncmp(tmp1->value,"base64",6)==0)
 	 || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0 ||
 			    (strncmp(tmp2->value,"application/",12)==0) &&
-			    strncmp(tmp2->value,"application/json",16)!=0))) {
+			    strncmp(tmp2->value,"application/json",16)!=0&&
+			    strncmp(tmp2->value,"application/vnd.google-earth.kml",32)!=0)
+	     )) {
 	map* rs=getMap(m->content,"size");
 	bool isSized=true;
 	if(rs==NULL){
@@ -1767,6 +1769,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      ext=createMap("extension","xml");
 	    else if(strcasecmp(mtype->value,"application/json")==0)
 	      ext=createMap("extension","js");
+	    else if(strncmp(mtype->value,"application/vnd.google-earth.kml",32)!=0)
+	      ext=createMap("extension","kml");
 	    else
 	      ext=createMap("extension","txt");
 	  }
