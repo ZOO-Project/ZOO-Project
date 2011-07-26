@@ -492,6 +492,11 @@ int runRequest(map* request_inputs)
   bind_textdomain_codeset("zoo-services","UTF-8");
   textdomain("zoo-services");
 
+  map* lsoap=getMap(request_inputs,"soap");
+  if(lsoap!=NULL && strcasecmp(lsoap->value,"true")==0)
+    setMapInMaps(m,"main","isSoap","true");
+  else
+    setMapInMaps(m,"main","isSoap","false");
 
   /**
    * Check for minimum inputs
@@ -1040,39 +1045,60 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
 	      fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
 #endif
+	      char *tmpx=url_encode(tmpv1+1);
+	      addToMap(tmpmaps->content,tmpn1,tmpx);
+	      
 #ifndef WIN32
 	      if(CHECK_INET_HANDLE(hInternet))
 #endif
 		{
-		  res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
-				      INTERNET_FLAG_NO_CACHE_WRITE,0);
-#ifdef DEBUG
-		  fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
-			  tmpv1+1,res.nDataAlloc,res.nDataLen);
-#endif
-		  char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
-		  if(tmpContent == NULL){
-		    return errorException(m, _("Unable to allocate memory."), "InternalError");
-		  }
-		  size_t dwRead;
-		  InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
-		  map* tmpMap=getMap(tmpmaps->content,"value");
-		  if(tmpMap!=NULL){
-		    free(tmpMap->value);
-		    tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
-		    memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
-		    tmpMap->value[res.nDataLen]=0;
-		    if(strlen(tmpContent)!=res.nDataLen){
-		      char tmp[256];
-		      sprintf(tmp,"%d",res.nDataLen*sizeof(char));
-		      addToMap(tmpmaps->content,"size",tmp);
+		  char* cached=isInCache(m,tmpv1+1);
+		  if(cached!=NULL){
+		    fprintf(stderr,"Use cached file: %s\n",cached);
+		    struct stat f_status;
+		    int s=stat(cached, &f_status);
+		    if(s==0){
+		      map* tmpMap=getMap(tmpmaps->content,"value");
+		      char* fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+		      FILE* f=fopen(cached,"r");
+		      fread(fcontent,sizeof(char),f_status.st_size,f);
+		      free(tmpMap->value);
+		      tmpMap->value=(char*)malloc((f_status.st_size+1)*sizeof(char));
+		      memmove(tmpMap->value,fcontent,(f_status.st_size)*sizeof(char)); 
+		      free(fcontent);
 		    }
+		  }else{
+		    res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
+					INTERNET_FLAG_NO_CACHE_WRITE,0);
+#ifdef DEBUG
+		    fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
+			    tmpv1+1,res.nDataAlloc,res.nDataLen);
+#endif
+		    char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
+		    if(tmpContent == NULL){
+		      return errorException(m, _("Unable to allocate memory."), "InternalError");
+		    }
+		    size_t dwRead;
+		    InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
+		    map* tmpMap=getMap(tmpmaps->content,"value");
+		    if(tmpMap!=NULL){
+		      free(tmpMap->value);
+		      tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
+		      memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
+		      tmpMap->value[res.nDataLen]=0;
+		      if(strlen(tmpContent)!=res.nDataLen){
+			char tmp[256];
+			sprintf(tmp,"%d",res.nDataLen*sizeof(char));
+			addToMap(tmpmaps->content,"size",tmp);
+		      }
+		      addToCache(m,tmpv1+1,tmpContent,res.nDataLen);
+		    }
+		    free(tmpContent);
 		  }
-		  free(tmpContent);
 		}
-	      char *tmpx=url_encode(tmpv1+1);
-	      addToMap(tmpmaps->content,tmpn1,tmpx);
-	      free(tmpx);
+	      char *tmpx1=url_encode(tmpv1+1);
+	      addToMap(tmpmaps->content,tmpn1,tmpx1);
+	      free(tmpx1);
 	      addToMap(tmpmaps->content,"Reference",tmpv1+1);
 	    }
 	  tmpc=strtok(NULL,"@");
@@ -1412,12 +1438,12 @@ int runRequest(map* request_inputs)
 		      addToMap(tmpmaps->content,list[l],(char*)val);
 		    else
 		      tmpmaps->content=createMap(list[l],(char*)val);
-		  }
 #ifdef DEBUG
-		  fprintf(stderr,"%s\n",val);
+		    fprintf(stderr,"%s\n",val);
 #endif
+		  }
 		  xmlFree(val);
-		  free(list[l]);
+		  free(list[l]);		  
 		}
 	      }
 	      else if(xmlStrcasecmp(cur4->name, BAD_CAST "ComplexData")==0){
@@ -1431,7 +1457,7 @@ int runRequest(map* request_inputs)
 		coms[2]="schema";
 		for(int l=0;l<3;l++){
 #ifdef DEBUG
-		  fprintf(stderr,"*** ComplexData %s ***",coms[l]);
+		  fprintf(stderr,"*** ComplexData %s ***\n",coms[l]);
 #endif
 		  xmlChar *val=xmlGetProp(cur4,BAD_CAST coms[l]);
 		  if(val!=NULL && strlen((char*)val)>0){
@@ -1439,20 +1465,35 @@ int runRequest(map* request_inputs)
 		      addToMap(tmpmaps->content,coms[l],(char*)val);
 		    else
 		      tmpmaps->content=createMap(coms[l],(char*)val);
-		  }
 #ifdef DEBUG
-		  fprintf(stderr,"%s\n",val);
+		    fprintf(stderr,"%s\n",val);
 #endif
+		  }
 		  xmlFree(val);
 		}
 	      }
+
 	      map* test=getMap(tmpmaps->content,"encoding");
-	      if(test==NULL || strcasecmp(test->value,"base64")!=0){
+	      if(test==NULL){
+		if(tmpmaps->content!=NULL)
+		  addToMap(tmpmaps->content,"encoding","utf-8");
+		else
+		  tmpmaps->content=createMap("encoding","utf-8");
+		test=getMap(tmpmaps->content,"encoding");
+	      }
+
+	      if(strcasecmp(test->value,"base64")!=0){
 		xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
-		if(mv==NULL){
+		map* ltmp=getMap(tmpmaps->content,"mimeType");
+		if(mv==NULL || 
+		   (xmlStrcasecmp(cur4->name, BAD_CAST "ComplexData")==0 &&
+		    (ltmp==NULL || strncasecmp(ltmp->value,"text/xml",8)==0) )){
 		  xmlDocPtr doc1=xmlNewDoc(BAD_CAST "1.0");
 		  int buffersize;
-		  xmlDocSetRootElement(doc1,cur4->xmlChildrenNode);
+		  xmlNodePtr cur5=cur4->children;
+		  while(cur5!=NULL &&cur5->type!=XML_ELEMENT_NODE)
+		    cur5=cur5->next;
+		  xmlDocSetRootElement(doc1,cur5);
 		  xmlDocDumpFormatMemoryEnc(doc1, &mv, &buffersize, "utf-8", 1);
 		  char size[1024];
 		  sprintf(size,"%d",buffersize);
@@ -1577,7 +1618,52 @@ int runRequest(map* request_inputs)
 	}
 	xmlNodePtr cur1=cur->children;
 	while(cur1){
-	  if(xmlStrncasecmp(cur1->name,BAD_CAST "Output",xmlStrlen(cur1->name))==0){
+	  /**
+	   * Indentifier
+	   */
+	  if(xmlStrncasecmp(cur1->name,BAD_CAST "Identifier",xmlStrlen(cur1->name))==0){
+	    xmlChar *val=
+	      xmlNodeListGetString(doc,cur1->xmlChildrenNode,1);
+	    if(tmpmaps==NULL){
+	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      if(tmpmaps == NULL){
+		return errorException(m, _("Unable to allocate memory."), "InternalError");
+	      }
+	      tmpmaps->name=strdup((char*)val);
+	      tmpmaps->content=NULL;
+	      tmpmaps->next=NULL;
+	    }
+	    else
+	      tmpmaps->name=strdup((char*)val);;
+	    xmlFree(val);
+	  }
+	  /**
+	   * Title, Asbtract
+	   */
+	  else if(xmlStrncasecmp(cur1->name,BAD_CAST "Title",xmlStrlen(cur1->name))==0 ||
+		  xmlStrncasecmp(cur1->name,BAD_CAST "Abstract",xmlStrlen(cur1->name))==0){
+	    xmlChar *val=
+	      xmlNodeListGetString(doc,cur1->xmlChildrenNode,1);
+	    if(tmpmaps==NULL){
+	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      if(tmpmaps == NULL){
+		return errorException(m, _("Unable to allocate memory."), "InternalError");
+	      }
+	      tmpmaps->name=strdup("missingIndetifier");
+	      tmpmaps->content=createMap((char*)cur1->name,(char*)val);
+	      tmpmaps->next=NULL;
+	    }
+	    else{
+	      if(tmpmaps->content!=NULL)
+		addToMap(tmpmaps->content,
+			 (char*)cur1->name,(char*)val);
+	      else
+		tmpmaps->content=
+		  createMap((char*)cur1->name,(char*)val);
+	    }
+	    xmlFree(val);
+	  }
+	  else if(xmlStrncasecmp(cur1->name,BAD_CAST "Output",xmlStrlen(cur1->name))==0){
 	    /**
 	     * Get every attribute from a Output node
 	     * mimeType, encoding, schema, uom, asReference
@@ -1681,6 +1767,7 @@ int runRequest(map* request_inputs)
   dumpMaps(request_input_real_format);
   dumpMaps(request_output_real_format);
   dumpMap(request_inputs);
+  fprintf(stderr,"\n%i\n",i);
 #endif
 
   /**
@@ -1688,9 +1775,15 @@ int runRequest(map* request_inputs)
    * DataInputs and ResponseDocument / RawDataOutput
    */
   char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,0);
-  if(strcmp(dfv,"")!=0){
+  char *dfv1=addDefaultValues(&request_output_real_format,s1->outputs,m,1);
+  if(strcmp(dfv1,"")!=0 || strcmp(dfv,"")!=0){
     char tmps[1024];
-    snprintf(tmps,1024,_("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),dfv);
+    if(strcmp(dfv,"")!=0){
+      snprintf(tmps,1024,_("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),dfv);
+    }
+    else if(strcmp(dfv1,"")!=0){
+      snprintf(tmps,1024,_("The <%s> argument was specified as Output identifier but not defined in the ZOO Configuration File. Please, correct your query or the ZOO Configuration File."),dfv1);
+    }
     map* tmpe=createMap("text",tmps);
     addToMap(tmpe,"code","MissingParameterValue");
     printExceptionReportResponse(m,tmpe);
@@ -1710,7 +1803,6 @@ int runRequest(map* request_inputs)
     free(tmpmaps);
     return 1;
   }
-  addDefaultValues(&request_output_real_format,s1->outputs,m,1);
 
   ensureDecodedBase64(&request_input_real_format);
 
@@ -1804,6 +1896,11 @@ int runRequest(map* request_inputs)
   _tmpMaps->next=NULL;
   addToMap(_tmpMaps->content,"status","0");
   addToMap(_tmpMaps->content,"cwd",ntmp);
+  map* ltmp=getMap(request_inputs,"soap");
+  if(ltmp!=NULL)
+    addToMap(_tmpMaps->content,"soap",ltmp->value);
+  else
+    addToMap(_tmpMaps->content,"soap","false");
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
     addToMap(_tmpMaps->content,"sessid",strstr(cgiCookie,"=")+1);
     char session_file_path[1024];

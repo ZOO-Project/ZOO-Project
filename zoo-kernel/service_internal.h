@@ -71,9 +71,11 @@ extern   int conf_read(const char*,maps*);
 extern "C" {
 #endif
 #include <libxml/parser.h>
+#include <libxml/xpath.h>
+
   static char* SERVICE_URL;
-  static xmlNsPtr usedNs[5];
-  static char* nsName[5];
+  static xmlNsPtr usedNs[10];
+  static char* nsName[10];
   static int nbNs=0;
 
   void unhandleStatus(maps*);
@@ -120,6 +122,11 @@ extern "C" {
   /*defined in zoo_loader.c*/ 
   int errorException(maps *m, const char *message, const char *errorcode);
 
+  int checkForSoapEnvelope(xmlDocPtr);
+
+  void addToCache(maps*,char*,char*,int);
+  char* isInCache(maps*,char*);
+  
 #ifdef __cplusplus
 }
 #endif
