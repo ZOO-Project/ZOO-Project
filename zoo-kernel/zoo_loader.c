@@ -47,6 +47,8 @@ extern "C" {
 #include <libxml/xpathInternals.h>
 }
 
+#include "service_internal.h"
+
 xmlXPathObjectPtr extractFromDoc(xmlDocPtr,const char*);
 int runRequest(map*);
 
@@ -84,7 +86,7 @@ int cgiMain(){
   
 #ifdef DEBUG
   fprintf (stderr, "Addr:%s\n", cgiRemoteAddr); 
-  fprintf (stderr, "RequestMethod:%s\n", cgiRequestMethod); 
+  fprintf (stderr, "RequestMethod: (%s) %d %d\n", cgiRequestMethod,strncasecmp(cgiRequestMethod,"post",4),strncmp(cgiContentType,"text/xml",8)==0 || strncasecmp(cgiRequestMethod,"post",4)==0); 
   fprintf (stderr, "Request: %s\n", cgiQueryString);
 #endif
 
@@ -92,31 +94,63 @@ int cgiMain(){
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
      strncasecmp(cgiRequestMethod,"post",4)==0){
-    char *buffer=new char[cgiContentLength+1];
-    if(fread(buffer,1,cgiContentLength,cgiIn)){
-      buffer[cgiContentLength]=0;
-      tmpMap=createMap("request",buffer);
+    if(cgiContentLength==NULL){
+       cgiContentLength=0;
+       char *buffer=new char[2];
+       char *res=NULL;
+       int r=0;
+       while(r=fread(buffer,sizeof(char),1,cgiIn)){
+	 cgiContentLength+=r;
+	 if(res==NULL){
+	   res=(char*)malloc(1*sizeof(char));
+	   sprintf(res,"%s",buffer);
+	 }
+	 else{
+	   res=(char*)realloc(res,(cgiContentLength+1)*sizeof(char));
+	   char *tmp=strdup(res);
+	   sprintf(res,"%s%s",tmp,buffer);
+	   free(tmp);
+	 }
+       }
+       tmpMap=createMap("request",res);
     }else{
-      char **array, **arrayStep;
-      if (cgiFormEntries(&array) != cgiFormSuccess) {
-	return 1;
-      }
-      arrayStep = array;
-      while (*arrayStep) {
-	char *value=new char[cgiContentLength];
-	cgiFormStringNoNewlines(*arrayStep, value, cgiContentLength);
-	char* tmpValueFinal=(char*) malloc((strlen(*arrayStep)+strlen(value)+1)*sizeof(char));
-	sprintf(tmpValueFinal,"%s=%s",*arrayStep,value);
-	tmpMap=createMap("request",tmpValueFinal);
-	free(tmpValueFinal);
+      char *buffer=new char[cgiContentLength+1];
+      if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
+	buffer[cgiContentLength]=0;
+	tmpMap=createMap("request",buffer);
+	dumpMap(tmpMap);
+      }else{
+	buffer[0]=0;
+	char **array, **arrayStep;
+	if (cgiFormEntries(&array) != cgiFormSuccess) {
+	  return 1;
+	}
+	arrayStep = array;
+	while (*arrayStep) {
+	  char *ivalue=new char[cgiContentLength];
+	  cgiFormStringNoNewlines(*arrayStep, ivalue, cgiContentLength);
+	  char* tmpValueFinal=(char*) malloc((strlen(*arrayStep)+strlen(ivalue)+1)*sizeof(char));
+	  sprintf(tmpValueFinal,"%s=%s",*arrayStep,ivalue);
+	  if(strlen(buffer)==0){
+	    sprintf(buffer,"%s",tmpValueFinal);
+	  }else{
+	    char *tmp=strdup(buffer);
+	    sprintf(buffer,"%s&%s",tmp,tmpValueFinal);
+	    free(tmp);
+	  }
+	  
+	  sprintf(tmpValueFinal,"%s=%s",*arrayStep,ivalue);
+	  free(tmpValueFinal);
 #ifdef DEBUG
-	fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,value);
+	  fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,ivalue);
 #endif
-	delete[]value;
-	arrayStep++;
+	  delete[]ivalue;
+	  arrayStep++;
+	}
+	tmpMap=createMap("request",buffer);
       }
+      delete[]buffer;
     }
-    delete[]buffer;
   }
   else{
     char **array, **arrayStep;
@@ -161,6 +195,30 @@ int cgiMain(){
       addToMap(tmpMap,"xrequest",t1->value);
       xmlInitParser();
       xmlDocPtr doc = xmlParseMemory(t1->value,cgiContentLength);
+
+
+      {
+	xmlXPathObjectPtr reqptr=extractFromDoc(doc,"/*[local-name()='Envelope']/*[local-name()='Body']/*");
+	if(reqptr!=NULL){
+	  xmlNodeSet* req=reqptr->nodesetval;
+	  if(req!=NULL && req->nodeNr==1){
+	    addToMap(tmpMap,"soap","true");
+	    int k=0;
+	    for(k;k < req->nodeNr;k++){
+	      xmlNsPtr ns=xmlNewNs(req->nodeTab[k],BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
+	      xmlDocSetRootElement(doc, req->nodeTab[k]);
+	      xmlChar *xmlbuff;
+	      int buffersize;
+	      xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "utf-8", 1);
+	      addToMap(tmpMap,"xrequest",(char*)xmlbuff);
+	      char *tmp=(char*)xmlbuff;
+	      fprintf(stderr,"%s\n",tmp);
+	      xmlFree(xmlbuff);
+	    }
+	  }
+	}
+      }
+
       xmlNodePtr cur = xmlDocGetRootElement(doc);
       char *tval;
       tval=NULL;
@@ -171,13 +229,9 @@ int cgiMain(){
       tval = (char*) xmlGetProp(cur,BAD_CAST "language");
       if(tval!=NULL)
 	addToMap(tmpMap,"language",tval);
-      
-      const char* requests[3];
-      requests[0]="GetCapabilities";
-      requests[1]="DescribeProcess";
-      requests[2]="Execute";
+      const char* requests[3]={"GetCapabilities","DescribeProcess","Execute"};
       for(int j=0;j<3;j++){
-	char tt[35];
+	char tt[128];
 	sprintf(tt,"/*[local-name()='%s']",requests[j]);
 	xmlXPathObjectPtr reqptr=extractFromDoc(doc,tt);
 	if(reqptr!=NULL){

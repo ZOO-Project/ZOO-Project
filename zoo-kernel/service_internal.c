@@ -370,6 +370,7 @@ int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
   fprintf(stderr,"zooXmlAddNs %d \n",nbNs);
 #endif
   int currId=-1;
+  int currNode=-1;
   if(nbNs==0){
     nbNs++;
     currId=0;
@@ -402,6 +403,30 @@ void zooXmlCleanupNs(){
     nbNs--;
   }
   nbNs=0;
+}
+
+xmlNodePtr soapEnvelope(maps* conf,xmlNodePtr n){
+  map* soap=getMapFromMaps(conf,"main","isSoap");
+  if(soap!=NULL && strcasecmp(soap->value,"true")==0){
+    int lNbNs=nbNs;
+    nsName[lNbNs]=strdup("soap");
+    usedNs[lNbNs]=xmlNewNs(NULL,BAD_CAST "http://www.w3.org/2003/05/soap-envelope",BAD_CAST "soap");
+    nbNs++;
+    xmlNodePtr nr = xmlNewNode(usedNs[lNbNs], BAD_CAST "Envelope");
+    nsName[nbNs]=strdup("soap");
+    usedNs[nbNs]=xmlNewNs(nr,BAD_CAST "http://www.w3.org/2003/05/soap-envelope",BAD_CAST "soap");
+    nbNs++;
+    nsName[nbNs]=strdup("xsi");
+    usedNs[nbNs]=xmlNewNs(nr,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
+    nbNs++;
+    xmlNsPtr ns_xsi=usedNs[nbNs-1];
+    xmlNewNsProp(nr,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.w3.org/2003/05/soap-envelope http://www.w3.org/2003/05/soap-envelope");
+    xmlNodePtr nr1 = xmlNewNode(usedNs[lNbNs], BAD_CAST "Body");
+    xmlAddChild(nr1,n);
+    xmlAddChild(nr,nr1);
+    return nr;
+  }else
+    return n;
 }
 
 xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m){
@@ -718,7 +743,8 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m)
   xmlAddChild(nc1,nc3);
   xmlAddChild(n,nc1);
   
-  xmlDocSetRootElement(doc, n);
+  xmlNodePtr fn=soapEnvelope(m,n);
+  xmlDocSetRootElement(doc, fn);
   //xmlFreeNs(ns);
   free(SERVICE_URL);
   return nc;
@@ -778,7 +804,8 @@ xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,const char* service,maps* m)
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
   addLangAttr(n,m);
 
-  xmlDocSetRootElement(doc, n);
+  xmlNodePtr fn=soapEnvelope(m,n);
+  xmlDocSetRootElement(doc, fn);
 
   return n;
 }
@@ -1006,7 +1033,11 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	  }
 	}
     }
+
     _tmp=e->supported;
+    if(_tmp==NULL && datatype==0)
+      _tmp=e->defaults;
+
     int hasSupported=-1;
     while(_tmp!=NULL){
       if(hasSupported<0){
@@ -1096,29 +1127,30 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 }
 
 void printProcessResponse(maps* m,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
+  xmlNsPtr ns,ns1,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr nr,n,nc,nc1,nc2,nc3,pseudor;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
   int buffersize;
   time_t time1;  
   time(&time1);
+  nr=NULL;
   /**
    * Create the document and its temporary root.
    */
   doc = xmlNewDoc(BAD_CAST "1.0");
   int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
   ns=usedNs[wpsId];
-  
+
   n = xmlNewNode(ns, BAD_CAST "ExecuteResponse");
+  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
   int owsId=zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
   ns_ows=usedNs[owsId];
   int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
   ns_xlink=usedNs[xlinkId];
   int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
   ns_xsi=usedNs[xsiId];
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-
+  
   xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd");
   
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
@@ -1162,7 +1194,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       else
 	sprintf(currentSid,"%s",tmp_lenv->value);
       if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
-	sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
+	sprintf(url,"%s?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
       }else{
 	if(strlen(tmpm->value)>0)
 	  if(strcasecmp(tmpm->value,"true")!=0)
@@ -1179,7 +1211,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       }
     }
     if(tmpm1!=NULL)
-      sprintf(tmp,"%s/",tmpm1->value);
+      sprintf(tmp,"%s",tmpm1->value);
     tmpm1=getMapFromMaps(m,"main","TmpPath");
     sprintf(stored_path,"%s/%s_%i.xml",tmpm1->value,service,pid);
   }
@@ -1315,7 +1347,9 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     elements* scursor=serv->outputs;
     while(mcursor!=NULL){
       scursor=getElements(serv->outputs,mcursor->name);
-      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+      if(scursor!=NULL){
+	printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+      }
       mcursor=mcursor->next;
     }
     xmlAddChild(n,nc);
@@ -1323,7 +1357,9 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 #ifdef DEBUG
   fprintf(stderr,"printProcessResponse 1 202\n");
 #endif
-  xmlDocSetRootElement(doc, n);
+  nr=soapEnvelope(m,n);
+  xmlDocSetRootElement(doc, nr);
+
   if(hasStoredExecuteResponse==true){
     /* We need to write the ExecuteResponse Document somewhere */
     FILE* output=fopen(stored_path,"w");
@@ -1536,7 +1572,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	if(rs==NULL){
 	  char tmp1[1024];
 	  sprintf(tmp1,"%d",strlen(toto->value));
-	  rs=createMap("z",tmp1);
+	  rs=createMap("size",tmp1);
 	  isSized=false;
 	}
 
@@ -1546,12 +1582,21 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  free(rs);
 	}
       }
-      else if(tmp!=NULL){
-	if(strncmp(tmp->value,"text/js",4)==0 ||
-	   strncmp(tmp->value,"application/js",14)==0)
+      else if(tmp2!=NULL){
+	if(strncmp(tmp2->value,"text/js",7)==0 ||
+	   strncmp(tmp2->value,"application/json",16)==0)
 	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
-	else
-	  xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+	else{
+	  if(strncmp(tmp2->value,"text/xml",8)==0 ||
+	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)!=0){
+	    xmlDocPtr doc =
+	      xmlParseMemory(BAD_CAST toto->value,strlen(BAD_CAST toto->value));
+	    xmlNodePtr ir = xmlDocGetRootElement(doc);
+	    xmlAddChild(nc3,ir);
+	  }
+	  else
+	    xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+	}
 	xmlAddChild(nc2,nc3);
       }
       else
@@ -1960,6 +2005,14 @@ void ensureDecodedBase64(maps **in){
 char* addDefaultValues(maps** out,elements* in,maps* m,int type){
   elements* tmpInputs=in;
   maps* out1=*out;
+  if(type==1){
+    while(out1!=NULL){
+      if(getElements(in,out1->name)==NULL)
+	return out1->name;
+      out1=out1->next;
+    }
+    out1=*out;
+  }
   while(tmpInputs!=NULL){
     maps *tmpMaps=getMaps(out1,tmpInputs->name);
     if(tmpMaps==NULL){
@@ -2089,6 +2142,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	tmpMaps->content=createMap("inRequest","true");
       else
 	addToMap(tmpMaps->content,"inRequest","true");
+
     }
     tmpInputs=tmpInputs->next;
   }
@@ -2242,4 +2296,78 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   xmlCleanupParser();
   zooXmlCleanupNs();
   
+}
+
+/**
+ * Cache a file for a given request
+ */
+void addToCache(maps* conf,char* request,char* content,int length){
+  map* tmp=getMapFromMaps(conf,"main","cacheDir");
+  if(tmp!=NULL){
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+6));
+    sprintf(fname,"%s/list",tmp->value);
+    fprintf(stderr,"Cache list : %s\n",fname);
+    fflush(stderr);
+    struct stat f_status;
+    int s=stat(fname, &f_status);
+    /**
+     * If the file does not exist, create it
+     */
+    if(s<0){
+      FILE* f=fopen(fname,"w+");
+      if(f)
+	fclose(f);
+      s=stat(fname, &f_status);
+    }
+    if(f_status.st_size>=0){
+      FILE* f=fopen(fname,"a+");
+      char* foname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+64));
+      sprintf(foname,"%s/%d.zca",tmp->value,f_status.st_size);
+      fprintf(stderr,"Cache file : %s\n",foname);
+      fflush(stderr);
+      FILE* fo=fopen(foname,"w+");
+      char *fcontent=(char*)malloc(sizeof(char)*(strlen(foname)+strlen(request)+3));
+      sprintf(fcontent,"%s|%s\n",request,foname);
+
+      fwrite(fcontent,sizeof(char),strlen(fcontent),f);
+      fwrite(content,sizeof(char),length,fo);
+      fclose(f);
+      fclose(fo);
+    }
+  }
+}
+
+char* isInCache(maps* conf,char* request){
+  map* tmp=getMapFromMaps(conf,"main","cacheDir");
+  if(tmp!=NULL){
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+6));
+    sprintf(fname,"%s/list",tmp->value);
+    struct stat f_status;
+    int s=stat(fname, &f_status);
+    if(s==0){
+      char* fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+      FILE* f=fopen(fname,"r");
+      fread(fcontent,sizeof(char),f_status.st_size,f);
+      char *tmp,*svt;
+      tmp=strtok_r(fcontent,"\n",&svt);
+      int lin=0;
+      while(tmp!=NULL){
+	char *tmp1,*svt1;
+	tmp1=strtok_r(tmp,"|",&svt1);
+	int hv=-1;
+	while(tmp1!=NULL){
+	  fprintf(stderr,"%s %s\n",tmp1,request);
+	  if(hv>0)
+	    return tmp1;
+	  if(strcasecmp(tmp1,request)==0)
+	    hv=1;
+	  tmp1=strtok_r(NULL,"|",&svt1);
+	}
+	lin++;
+	tmp = strtok_r(NULL,"\n",&svt);
+      }
+      fclose(f);
+    }
+  }
+  return NULL;
 }
