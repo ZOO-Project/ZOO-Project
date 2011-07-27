@@ -58,6 +58,7 @@
 #include <openssl/buffer.h>
 
 #include "cgic.h"
+#include "ulinet.h"
 
 extern   int getServiceFromFile(const char*,service**);
 extern   int conf_read(const char*,maps*);
@@ -126,6 +127,7 @@ extern "C" {
 
   void addToCache(maps*,char*,char*,int);
   char* isInCache(maps*,char*);
+  void loadRemoteFile(maps*,map*,HINTERNET,char*);
   
 #ifdef __cplusplus
 }

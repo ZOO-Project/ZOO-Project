@@ -1052,49 +1052,7 @@ int runRequest(map* request_inputs)
 	      if(CHECK_INET_HANDLE(hInternet))
 #endif
 		{
-		  char* cached=isInCache(m,tmpv1+1);
-		  if(cached!=NULL){
-		    fprintf(stderr,"Use cached file: %s\n",cached);
-		    struct stat f_status;
-		    int s=stat(cached, &f_status);
-		    if(s==0){
-		      map* tmpMap=getMap(tmpmaps->content,"value");
-		      char* fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-		      FILE* f=fopen(cached,"r");
-		      fread(fcontent,sizeof(char),f_status.st_size,f);
-		      free(tmpMap->value);
-		      tmpMap->value=(char*)malloc((f_status.st_size+1)*sizeof(char));
-		      memmove(tmpMap->value,fcontent,(f_status.st_size)*sizeof(char)); 
-		      free(fcontent);
-		    }
-		  }else{
-		    res=InternetOpenUrl(hInternet,tmpv1+1,NULL,0,
-					INTERNET_FLAG_NO_CACHE_WRITE,0);
-#ifdef DEBUG
-		    fprintf(stderr,"(%s) content-length : %d,,res.nDataAlloc %d \n",
-			    tmpv1+1,res.nDataAlloc,res.nDataLen);
-#endif
-		    char* tmpContent=(char*)calloc((res.nDataLen+1),sizeof(char));
-		    if(tmpContent == NULL){
-		      return errorException(m, _("Unable to allocate memory."), "InternalError");
-		    }
-		    size_t dwRead;
-		    InternetReadFile(res, (LPVOID)tmpContent,res.nDataLen, &dwRead);
-		    map* tmpMap=getMap(tmpmaps->content,"value");
-		    if(tmpMap!=NULL){
-		      free(tmpMap->value);
-		      tmpMap->value=(char*)malloc((res.nDataLen+1)*sizeof(char));
-		      memmove(tmpMap->value,tmpContent,(res.nDataLen)*sizeof(char));
-		      tmpMap->value[res.nDataLen]=0;
-		      if(strlen(tmpContent)!=res.nDataLen){
-			char tmp[256];
-			sprintf(tmp,"%d",res.nDataLen*sizeof(char));
-			addToMap(tmpmaps->content,"size",tmp);
-		      }
-		      addToCache(m,tmpv1+1,tmpContent,res.nDataLen);
-		    }
-		    free(tmpContent);
-		  }
+		  loadRemoteFile(m,tmpmaps->content,hInternet,tmpv1+1);
 		}
 	      char *tmpx1=url_encode(tmpv1+1);
 	      addToMap(tmpmaps->content,tmpn1,tmpx1);
@@ -1236,18 +1194,7 @@ int runRequest(map* request_inputs)
 		if(l==4){
 		  if(!(ltmp!=NULL && strcmp(ltmp->value,"POST")==0)
 		     && CHECK_INET_HANDLE(hInternet)){
-		    res=InternetOpenUrl(hInternet,(char*)val,NULL,0,
-					INTERNET_FLAG_NO_CACHE_WRITE,0);
-		    char* tmpContent=
-		      (char*)calloc((res.nDataLen+1),sizeof(char));
-		    if(tmpContent == NULL){
-		      return errorException(m, _("Unable to allocate memory."), "InternalError");
-		    }
-		    size_t dwRead;
-		    InternetReadFile(res, (LPVOID)tmpContent,
-				     res.nDataLen, &dwRead);
-		    tmpContent[res.nDataLen]=0;
-		    addToMap(tmpmaps->content,"value",tmpContent);
+		    loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val);
 		  }
 		}
 	      }

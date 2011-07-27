@@ -2298,6 +2298,7 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   
 }
 
+
 /**
  * Cache a file for a given request
  */
@@ -2371,3 +2372,48 @@ char* isInCache(maps* conf,char* request){
   }
   return NULL;
 }
+
+/**
+ * loadRemoteFile:
+ * Try to load file from cache or download a remote file if not in cache
+ */
+void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
+  HINTERNET res;
+  char* fcontent;
+  char* cached=isInCache(m,url);
+  int fsize;
+  if(cached!=NULL){
+    fprintf(stderr,"Use cached file: %s\n",cached);
+    struct stat f_status;
+    int s=stat(cached, &f_status);
+    if(s==0){
+      fprintf(stderr,"Use cached file: %s\n",cached);
+      fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+      FILE* f=fopen(cached,"r");
+      fread(fcontent,sizeof(char),f_status.st_size,f);
+      fsize=f_status.st_size;
+    }
+  }else{
+    res=InternetOpenUrl(hInternet,url,NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
+    fcontent=(char*)calloc((res.nDataLen+1),sizeof(char));
+    if(fcontent == NULL){
+      return errorException(m, _("Unable to allocate memory."), "InternalError");
+    }
+    size_t dwRead;
+    InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
+    fcontent[res.nDataLen]=0;
+    fsize=res.nDataLen;
+  }
+  map* tmpMap=getMapOrEmpty(content,"value");
+  free(tmpMap->value);
+  tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
+  memcpy(tmpMap->value,fcontent,(fsize)*sizeof(char)); 
+  char ltmp1[256];
+  sprintf(ltmp1,"%d",fsize);
+  addToMap(content,"size",ltmp1);
+  if(cached==NULL)
+    addToCache(m,url,fcontent,fsize);
+  dumpMap(content);
+  free(fcontent);
+}
+

@@ -202,6 +202,7 @@ extern "C" {
     return NULL;
   }
 
+
   static map* getLastMap(map* m){
     map* tmp=m;
     while(tmp!=NULL){
@@ -494,6 +495,16 @@ extern "C" {
     tmp->next->content=NULL;
     addMapToMap(&tmp->next->content,mi);
     tmp->next->next=NULL;
+  }
+
+  static map* getMapOrEmpty(map* m,const char *key){
+    map* tmp=m;
+    map* tmpMap=getMap(tmp,key);
+    if(tmpMap==NULL){
+      addToMap(tmp,key,"");
+      tmpMap=getMap(tmp,key);
+    }
+    return tmpMap;
   }
 
   static bool contains(map* m,map* i){
