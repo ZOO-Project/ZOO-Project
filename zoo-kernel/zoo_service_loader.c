@@ -451,18 +451,8 @@ int runRequest(map* request_inputs)
 #else
   _getcwd(ntmp,1024);
 #endif
-  r_inputs=getMap(request_inputs,"metapath");
-  if(r_inputs==NULL){
-    if(request_inputs==NULL)
-      request_inputs=createMap("metapath","");
-    else
-      addToMap(request_inputs,"metapath","");
-#ifdef DEBUG
-    fprintf(stderr,"ADD METAPATH\n");
-    dumpMap(request_inputs);
-#endif
-    r_inputs=getMap(request_inputs,"metapath");
-  }
+  r_inputs=getMapOrFill(request_inputs,"metapath","");
+
   char conf_file[10240];
   snprintf(conf_file,10240,"%s/%s/main.cfg",ntmp,r_inputs->value);
   conf_read(conf_file,m);
@@ -1398,10 +1388,7 @@ int runRequest(map* request_inputs)
 		 * Get every attribute from a Reference node
 		 * mimeType, encoding, schema
 		 */
-		const char *coms[3];
-		coms[0]="mimeType";
-		coms[1]="encoding";
-		coms[2]="schema";
+		const char *coms[3]={"mimeType","encoding","schema"};
 		for(int l=0;l<3;l++){
 #ifdef DEBUG
 		  fprintf(stderr,"*** ComplexData %s ***\n",coms[l]);
@@ -1432,6 +1419,7 @@ int runRequest(map* request_inputs)
 	      if(strcasecmp(test->value,"base64")!=0){
 		xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
 		map* ltmp=getMap(tmpmaps->content,"mimeType");
+		dumpMap(ltmp);
 		if(mv==NULL || 
 		   (xmlStrcasecmp(cur4->name, BAD_CAST "ComplexData")==0 &&
 		    (ltmp==NULL || strncasecmp(ltmp->value,"text/xml",8)==0) )){

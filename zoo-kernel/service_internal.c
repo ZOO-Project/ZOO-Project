@@ -2383,11 +2383,9 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   char* cached=isInCache(m,url);
   int fsize;
   if(cached!=NULL){
-    fprintf(stderr,"Use cached file: %s\n",cached);
     struct stat f_status;
     int s=stat(cached, &f_status);
     if(s==0){
-      fprintf(stderr,"Use cached file: %s\n",cached);
       fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
       FILE* f=fopen(cached,"r");
       fread(fcontent,sizeof(char),f_status.st_size,f);
@@ -2404,7 +2402,7 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     fcontent[res.nDataLen]=0;
     fsize=res.nDataLen;
   }
-  map* tmpMap=getMapOrEmpty(content,"value");
+  map* tmpMap=getMapOrFill(content,"value","");
   free(tmpMap->value);
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
   memcpy(tmpMap->value,fcontent,(fsize)*sizeof(char)); 
