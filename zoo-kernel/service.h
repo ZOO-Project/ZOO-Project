@@ -497,11 +497,11 @@ extern "C" {
     tmp->next->next=NULL;
   }
 
-  static map* getMapOrEmpty(map* m,const char *key){
+  static map* getMapOrFill(map* m,const char *key,char* value){
     map* tmp=m;
     map* tmpMap=getMap(tmp,key);
     if(tmpMap==NULL){
-      addToMap(tmp,key,"");
+      addToMap(tmp,key,value);
       tmpMap=getMap(tmp,key);
     }
     return tmpMap;
