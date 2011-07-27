@@ -1164,12 +1164,7 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
 	    fprintf(stderr,"REFERENCE\n");
 #endif
-	    const char *refs[5];
-	    refs[0]="mimeType";
-	    refs[1]="encoding";
-	    refs[2]="schema";
-	    refs[3]="method";
-	    refs[4]="href";
+	    const char *refs[5]={"mimeType","encoding","schema","method","href"};
 	    for(int l=0;l<5;l++){
 #ifdef DEBUG
 	      fprintf(stderr,"*** %s ***",refs[l]);
@@ -1529,10 +1524,7 @@ int runRequest(map* request_inputs)
 	 * Get every attribute from a LiteralData node
 	 * storeExecuteResponse, lineage, status
 	 */
-	const char *ress[3];
-	ress[0]="storeExecuteResponse";
-	ress[1]="lineage";
-	ress[2]="status";
+	const char *ress[3]={"storeExecuteResponse","lineage","status"};
 	xmlChar *val;
 	for(int l=0;l<3;l++){
 #ifdef DEBUG
@@ -1603,12 +1595,7 @@ int runRequest(map* request_inputs)
 	     * Get every attribute from a Output node
 	     * mimeType, encoding, schema, uom, asReference
 	     */
-	    const char *outs[5];
-	    outs[0]="mimeType";
-	    outs[1]="encoding";
-	    outs[2]="schema";
-	    outs[3]="uom";
-	    outs[4]="asReference";
+	    const char *outs[5]={"mimeType","encoding","schema","uom","asReference"};
 	    for(int l=0;l<5;l++){
 #ifdef DEBUG
 	      fprintf(stderr,"*** %s ***\t",outs[l]);

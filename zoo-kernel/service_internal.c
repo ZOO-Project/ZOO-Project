@@ -1035,7 +1035,7 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
     }
 
     _tmp=e->supported;
-    if(_tmp==NULL && datatype==0)
+    if(_tmp==NULL)
       _tmp=e->defaults;
 
     int hasSupported=-1;
