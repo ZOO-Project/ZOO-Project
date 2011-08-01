@@ -121,19 +121,23 @@ AC_ARG_WITH([python],
 	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
 	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
 
+AC_ARG_WITH([python-version], 
+	[AS_HELP_STRING([--with-python-version=NUMBER], [To enable python support using a speficific version of python])], 
+	[PYTHON_VERS="$withval"], [PYTHON_VERS=""])
+
 
 if test -z "$PYTHON_ENABLED"
 then
 	PYTHON_FILE=""
 else
-	PYTHONCONFIG="$PYTHON_PATH/bin/python-config"
+	PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
 	PYTHON_FILE="service_internal_python.o"
 	if test  "$PYTHON_PATH" = "yes"
 	then
 		# PHP was not specified, so search within the current path
-		AC_PATH_PROG([PYTHONCONFIG], [python-config])
+		AC_PATH_PROG([PYTHONCONFIG], [python${PYTHON_VERS}-config])
 	else
-		PYTHONCONFIG="$PYTHON_PATH/bin/python-config"
+		PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
 	fi
 
 	# Extract the linker and include flags 
@@ -365,5 +369,5 @@ AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
 
 AC_CONFIG_FILES([Makefile])
-#AC_CONFIG_FILES([ZOOMakefile.opts])
+AC_CONFIG_FILES([ZOOMakefile.opts])
 AC_OUTPUT

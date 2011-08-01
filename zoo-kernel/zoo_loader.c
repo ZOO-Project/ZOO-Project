@@ -54,21 +54,6 @@ int runRequest(map*);
 
 using namespace std;
 
-/* ************************************************************************* */
-
-int errorException(maps *m, const char *message, const char *errorcode) 
-{
-  map* errormap = createMap("text", message);
-  addToMap(errormap,"code", errorcode);
-  printExceptionReportResponse(m,errormap);
-  freeMap(&errormap);
-  free(errormap);
-  return -1;
-}
-
-/* ************************************************************************* */
-
-
 #define TRUE 1
 #define FALSE -1
 

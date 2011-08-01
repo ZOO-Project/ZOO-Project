@@ -501,7 +501,10 @@ extern "C" {
     map* tmp=m;
     map* tmpMap=getMap(tmp,key);
     if(tmpMap==NULL){
-      addToMap(tmp,key,value);
+      if(tmp!=NULL)
+	addToMap(tmp,key,value);
+      else
+	tmp=createMap(key,value);
       tmpMap=getMap(tmp,key);
     }
     return tmpMap;

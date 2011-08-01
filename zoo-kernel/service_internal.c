@@ -1116,8 +1116,6 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
     }else if(datatype!=2){
       if(hasDefault!=true && strncmp(type,"Input",5)==0)
 	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-      xmlFreeNodeList(nc5);
-      xmlFreeNodeList(nc4);
     }
     
     xmlAddChild(nc1,nc2);
@@ -2415,3 +2413,12 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   free(fcontent);
 }
 
+int errorException(maps *m, const char *message, const char *errorcode) 
+{
+  map* errormap = createMap("text", message);
+  addToMap(errormap,"code", errorcode);
+  printExceptionReportResponse(m,errormap);
+  freeMap(&errormap);
+  free(errormap);
+  return -1;
+}

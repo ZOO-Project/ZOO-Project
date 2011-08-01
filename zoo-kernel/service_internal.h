@@ -120,7 +120,6 @@ extern "C" {
 
   char* addDefaultValues(maps**,elements*,maps*,int);
 
-  /*defined in zoo_loader.c*/ 
   int errorException(maps *m, const char *message, const char *errorcode);
 
   int checkForSoapEnvelope(xmlDocPtr);
