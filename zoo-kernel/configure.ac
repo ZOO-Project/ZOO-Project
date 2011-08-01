@@ -121,8 +121,8 @@ AC_ARG_WITH([python],
 	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
 	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
 
-AC_ARG_WITH([python-version], 
-	[AS_HELP_STRING([--with-python-version=NUMBER], [To enable python support using a speficific version of python])], 
+AC_ARG_WITH([pyvers], 
+	[AS_HELP_STRING([--with-pyvers=NUM], [To use a specific python version])], 
 	[PYTHON_VERS="$withval"], [PYTHON_VERS=""])
 
 
