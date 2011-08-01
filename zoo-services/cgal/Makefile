@@ -1,9 +1,10 @@
-CFLAGS=-I../../zoo-kernel/ -I./ `xml2-config --cflags` `python-config --cflags` -DLINUX_FREE_ISSUE #-DDEBUG
+ZRPATH=../../..
+include ${ZRPATH}/zoo-kernel/ZOOMakefile.opts
+CFLAGS=${ZOO_CFLAGS} ${XML2CFLAGS} ${GDAL_CFLAGS} ${PYTHONCFLAGS} -DLINUX_FREE_ISSUE #-DDEBUG
 CC=gcc
 
 cgi-env/cgal_service.zo: service.c
-	g++ ${CFLAGS} -shared -fpic -o cgi-env/cgal_service.zo ./service.c -lgdal -lCGAL
+	g++ ${CFLAGS} -shared -fpic -o cgi-env/cgal_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS} -lCGAL
 
 clean:
-	rm -f cgi-env/*.zo *.o *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling
-	rm -rf service_loader.dSYM
+	rm -f cgi-env/*.zo

@@ -1,7 +1,7 @@
 OS:=$(shell uname -s)
 ifeq ($(OS),Darwin)
 	MACOS_LD_FLAGS=-lintl -framework SystemConfiguration -framework CoreFoundation
-	MACOS_CFLAGS=-arch i386 -arch ppc -arch x86_64
+	MACOS_CFLAGS=-arch $(shell uname -m)
 endif
 
 JAVACFLAGS=@JAVA_CPPFLAGS@

@@ -1,0 +1,25 @@
+OS:=$(shell uname -s)
+ifeq ($(OS),Darwin)
+	MACOS_LD_FLAGS=-lintl
+	MACOS_LD_NET_FLAGS=-framework SystemConfiguration -framework CoreFoundation
+	MACOS_CFLAGS=-arch $(shell uname -m)
+endif
+
+GDAL_CFLAGS=@GDAL_CFLAGS@
+GDAL_LIBS=@GDAL_LIBS@
+
+XML2CFLAGS=@XML2_CPPFLAGS@
+XML2LDFLAGS=@XML2_LDFLAGS@
+
+PYTHONCFLAGS=@PYTHON_CPPFLAGS@
+PYTHONLDFLAGS=@PYTHON_LDFLAGS@
+
+JS_ENABLED=@JS_ENABLED@
+JSCFLAGS=@JS_CPPFLAGS@
+JSLDFLAGS=@JS_LDFLAGS@
+ifeq ($(JS_ENABLED),-DUSE_JS)
+     JS_LDFLAGS=${ZRPATH}/zoo-kernel/ulinet.o ${ZRPATH}/zoo-kernel/service_internal_js.o -lcurl 
+endif
+
+ZOO_CFLAGS=-I${ZRPATH}/thirds/cgic206/ -I${ZRPATH}/zoo-kernel/
+ZOO_LDFLAGS=-lcrypto
