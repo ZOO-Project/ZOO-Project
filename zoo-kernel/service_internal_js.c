@@ -71,12 +71,13 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   if (cx == NULL){
     return 1;
   }
-  JS_SetOptions(cx, JSOPTION_VAROBJFIX | JSOPTION_JIT | JSOPTION_METHODJIT);
+  JS_SetOptions(cx, JSOPTION_VAROBJFIX | JSOPTION_JIT );//| JSOPTION_METHODJIT);
   JS_SetVersion(cx, JSVERSION_LATEST);
   JS_SetErrorReporter(cx, reportError);
 
   /* Create the global object. */
-  global = JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
+  //global = JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
+  global = JS_NewObject(cx, &global_class, NULL,NULL);
 
   /* Populate the global object with the standard globals,
      like Object and Array. */
