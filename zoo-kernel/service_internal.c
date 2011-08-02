@@ -1035,7 +1035,8 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
     }
 
     _tmp=e->supported;
-    if(_tmp==NULL)
+    dumpMap(e->defaults->content);
+    if(_tmp==NULL && (getMap(e->defaults->content,"uom")!=NULL || datatype!=1))
       _tmp=e->defaults;
 
     int hasSupported=-1;
