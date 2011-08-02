@@ -97,7 +97,10 @@ int cgiMain(){
 	   free(tmp);
 	 }
        }
-       tmpMap=createMap("request",res);
+       if(res==NULL){
+	 return errorException(NULL,"ZOO-Kernel failed to process your request cause the request was emtpty.","InternalError");
+       }else
+	 tmpMap=createMap("request",res);
     }else{
       char *buffer=new char[cgiContentLength+1];
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
