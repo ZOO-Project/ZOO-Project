@@ -330,7 +330,7 @@ else
                         	JS_LDFLAGS="-L/usr/lib -lmozjs185 -lm"
                         	JS_LIB="mozjs185"
 			else 
-				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | awk '{print $3;}' | cut -d'+' -f1`"
+				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | head -1| awk '{print $3;}' | cut -d'+' -f1`"
 				if test -n "$XUL_VERSION"
 				then
 					JS_CPPFLAGS="-I/usr/include/xulrunner-$XUL_VERSION"
@@ -359,7 +359,7 @@ else
 	LIBS_SAVE="$LIBS"
         LIBS="$JS_LDFLAGS"
 
-        AC_CHECK_LIB([$JS_LIB], [JS_NewCompartmentAndGlobalObject,JS_CompileFile,JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
+        AC_CHECK_LIB([$JS_LIB], [JS_CompileFile,JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
 			
         AC_SUBST([JS_CPPFLAGS])
         AC_SUBST([JS_LDFLAGS])
