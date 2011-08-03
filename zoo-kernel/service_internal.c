@@ -2402,6 +2402,7 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     addToCache(m,url,fcontent,fsize);
   dumpMap(content);
   free(fcontent);
+  free(cached);
 }
 
 int errorException(maps *m, const char *message, const char *errorcode) 
