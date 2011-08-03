@@ -2298,6 +2298,28 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
 }
 
 
+unsigned char* getMd5(char* url){
+  EVP_MD_CTX md5ctx;
+  unsigned char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
+  unsigned char result[EVP_MAX_MD_SIZE];
+  unsigned int len;
+  EVP_DigestInit(&md5ctx, EVP_md5());
+  EVP_DigestUpdate(&md5ctx, url, strlen(url));
+  EVP_DigestFinal_ex(&md5ctx,result,&len);
+  EVP_MD_CTX_cleanup(&md5ctx);
+  int i;
+  for(i = 0; i < len; i++){
+    if(i>0){
+      char *tmp=strdup(fresult);
+      sprintf(fresult,"%s%02x", tmp,result[i]);
+      free(tmp);
+    }
+    else
+      sprintf(fresult,"%02x",result[i]);
+  }
+  return fresult;
+}
+
 /**
  * Cache a file for a given request
  */
@@ -2306,8 +2328,10 @@ void addToCache(maps* conf,char* request,char* content,int length){
   if(tmp!=NULL){
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+6));
     sprintf(fname,"%s/list",tmp->value);
+#ifdef DEBUG
     fprintf(stderr,"Cache list : %s\n",fname);
     fflush(stderr);
+#endif
     struct stat f_status;
     int s=stat(fname, &f_status);
     /**
@@ -2321,14 +2345,21 @@ void addToCache(maps* conf,char* request,char* content,int length){
     }
     if(f_status.st_size>=0){
       FILE* f=fopen(fname,"a+");
-      char* foname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+64));
-      sprintf(foname,"%s/%d.zca",tmp->value,f_status.st_size);
+      char* foname=(char*)malloc(sizeof(char)*65);
+      char* fonames=(char*)malloc(sizeof(char)*(strlen(tmp->value)+70));
+      sprintf(foname,"%d",f_status.st_size);
+      sprintf(fonames,"%s/%s.zca",tmp->value,foname);
+#ifdef DEBUG
       fprintf(stderr,"Cache file : %s\n",foname);
       fflush(stderr);
-      FILE* fo=fopen(foname,"w+");
+#endif
+      FILE* fo=fopen(fonames,"w+");
       char *fcontent=(char*)malloc(sizeof(char)*(strlen(foname)+strlen(request)+3));
-      sprintf(fcontent,"%s|%s\n",request,foname);
-
+      unsigned char* md5str=getMd5(request);
+      sprintf(fcontent,"%s|%s\n",md5str,foname);
+      free(md5str);
+      free(foname);
+      free(fonames);      
       fwrite(fcontent,sizeof(char),strlen(fcontent),f);
       fwrite(content,sizeof(char),length,fo);
       fclose(f);
@@ -2338,10 +2369,14 @@ void addToCache(maps* conf,char* request,char* content,int length){
 }
 
 char* isInCache(maps* conf,char* request){
-  map* tmp=getMapFromMaps(conf,"main","cacheDir");
-  if(tmp!=NULL){
-    char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+6));
-    sprintf(fname,"%s/list",tmp->value);
+  map* tmpM=getMapFromMaps(conf,"main","cacheDir");
+  if(tmpM!=NULL){
+    unsigned char* md5str=getMd5(request);
+#ifdef DEBUG
+    fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
+#endif
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+6));
+    sprintf(fname,"%s/list",tmpM->value);
     struct stat f_status;
     int s=stat(fname, &f_status);
     if(s==0){
@@ -2357,9 +2392,18 @@ char* isInCache(maps* conf,char* request){
 	int hv=-1;
 	while(tmp1!=NULL){
 	  fprintf(stderr,"%s %s\n",tmp1,request);
-	  if(hv>0)
-	    return tmp1;
-	  if(strcasecmp(tmp1,request)==0)
+	  if(hv>0){
+	    char* foname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+68));
+	    sprintf(foname,"%s/%s.zca",tmpM->value,tmp1);
+	    free(md5str);
+	    free(fname);
+	    free(fcontent);
+#ifdef DEBUG
+	    fprintf(stderr,"Cache file : %s\n",foname);
+#endif
+	    return foname;
+	  }
+	  if(strcasecmp(tmp1,md5str)==0)
 	    hv=1;
 	  tmp1=strtok_r(NULL,"|",&svt1);
 	}
@@ -2367,7 +2411,10 @@ char* isInCache(maps* conf,char* request){
 	tmp = strtok_r(NULL,"\n",&svt);
       }
       fclose(f);
-    }
+      free(fcontent);
+    } 
+    free(md5str);
+    free(fname);
   }
   return NULL;
 }

@@ -52,6 +52,7 @@
 #endif
 #include "service.h"
 #include <openssl/sha.h>
+#include <openssl/md5.h>
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
