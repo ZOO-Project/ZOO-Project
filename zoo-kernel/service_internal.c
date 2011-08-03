@@ -2326,43 +2326,20 @@ unsigned char* getMd5(char* url){
 void addToCache(maps* conf,char* request,char* content,int length){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
   if(tmp!=NULL){
-    char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+6));
-    sprintf(fname,"%s/list",tmp->value);
+    unsigned char* md5str=getMd5(request);
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
+    sprintf(fname,"%s/%s.zca",tmp->value,md5str);
 #ifdef DEBUG
     fprintf(stderr,"Cache list : %s\n",fname);
     fflush(stderr);
 #endif
     struct stat f_status;
     int s=stat(fname, &f_status);
-    /**
-     * If the file does not exist, create it
-     */
-    if(s<0){
-      FILE* f=fopen(fname,"w+");
-      if(f)
-	fclose(f);
-      s=stat(fname, &f_status);
-    }
-    if(f_status.st_size>=0){
-      FILE* f=fopen(fname,"a+");
-      char* foname=(char*)malloc(sizeof(char)*65);
-      char* fonames=(char*)malloc(sizeof(char)*(strlen(tmp->value)+70));
-      sprintf(foname,"%d",f_status.st_size);
-      sprintf(fonames,"%s/%s.zca",tmp->value,foname);
-#ifdef DEBUG
-      fprintf(stderr,"Cache file : %s\n",foname);
-      fflush(stderr);
-#endif
-      FILE* fo=fopen(fonames,"w+");
-      char *fcontent=(char*)malloc(sizeof(char)*(strlen(foname)+strlen(request)+3));
-      unsigned char* md5str=getMd5(request);
-      sprintf(fcontent,"%s|%s\n",md5str,foname);
-      free(md5str);
-      free(foname);
-      free(fonames);      
-      fwrite(fcontent,sizeof(char),strlen(fcontent),f);
+    if(f_status.st_size>0){
+      FILE* fo=fopen(fname,"w+");
       fwrite(content,sizeof(char),length,fo);
-      fclose(f);
+      free(md5str);
+      free(fname);
       fclose(fo);
     }
   }
@@ -2375,44 +2352,15 @@ char* isInCache(maps* conf,char* request){
 #ifdef DEBUG
     fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
 #endif
-    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+6));
-    sprintf(fname,"%s/list",tmpM->value);
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+38));
+    sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
     struct stat f_status;
     int s=stat(fname, &f_status);
-    if(s==0){
-      char* fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-      FILE* f=fopen(fname,"r");
-      fread(fcontent,sizeof(char),f_status.st_size,f);
-      char *tmp,*svt;
-      tmp=strtok_r(fcontent,"\n",&svt);
-      int lin=0;
-      while(tmp!=NULL){
-	char *tmp1,*svt1;
-	tmp1=strtok_r(tmp,"|",&svt1);
-	int hv=-1;
-	while(tmp1!=NULL){
-	  fprintf(stderr,"%s %s\n",tmp1,request);
-	  if(hv>0){
-	    char* foname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+68));
-	    sprintf(foname,"%s/%s.zca",tmpM->value,tmp1);
-	    free(md5str);
-	    free(fname);
-	    free(fcontent);
-#ifdef DEBUG
-	    fprintf(stderr,"Cache file : %s\n",foname);
-#endif
-	    return foname;
-	  }
-	  if(strcasecmp(tmp1,md5str)==0)
-	    hv=1;
-	  tmp1=strtok_r(NULL,"|",&svt1);
-	}
-	lin++;
-	tmp = strtok_r(NULL,"\n",&svt);
-      }
-      fclose(f);
-      free(fcontent);
-    } 
+    if(s==0 && f_status.st_size>0){
+      free(md5str);
+      free(fname);
+      return fname;
+    }
     free(md5str);
     free(fname);
   }
