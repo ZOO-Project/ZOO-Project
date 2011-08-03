@@ -2333,15 +2333,11 @@ void addToCache(maps* conf,char* request,char* content,int length){
     fprintf(stderr,"Cache list : %s\n",fname);
     fflush(stderr);
 #endif
-    struct stat f_status;
-    int s=stat(fname, &f_status);
-    if(f_status.st_size>0){
-      FILE* fo=fopen(fname,"w+");
-      fwrite(content,sizeof(char),length,fo);
-      free(md5str);
-      free(fname);
-      fclose(fo);
-    }
+    FILE* fo=fopen(fname,"w+");
+    fwrite(content,sizeof(char),length,fo);
+    fclose(fo);
+    free(md5str);
+    free(fname);
   }
 }
 
@@ -2358,7 +2354,6 @@ char* isInCache(maps* conf,char* request){
     int s=stat(fname, &f_status);
     if(s==0 && f_status.st_size>0){
       free(md5str);
-      free(fname);
       return fname;
     }
     free(md5str);
