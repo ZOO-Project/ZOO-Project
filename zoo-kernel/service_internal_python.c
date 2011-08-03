@@ -73,7 +73,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   free(python_path);
   free(pythonpath);
 
+  PyThreadState *mainstate;
+  PyEval_InitThreads();
   Py_Initialize();
+  mainstate = PyThreadState_Swap(NULL);
+  PyEval_ReleaseLock();
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
   PyObject *pName, *pModule, *pFunc;
   tmp=getMap(s->content,"serviceProvider");
   if(tmp!=NULL)
@@ -118,13 +124,6 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	dumpMaps(inputs);
 	dumpMaps(outputs);
 #endif
-	Py_DECREF(arg1);
-	Py_DECREF(arg2);
-	Py_DECREF(arg3);
-      	Py_DECREF(pArgs);
-	Py_DECREF(pValue);
-	Py_XDECREF(pFunc);
-	Py_DECREF(pModule);
       }else{	  
 	PyObject *ptype,*pvalue, *ptraceback;
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
@@ -158,29 +157,15 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	map* err=createMap("text",pbt);
 	addToMap(err,"code","NoApplicableCode");
 	printExceptionReportResponse(m,err);
-	Py_DECREF(arg1);
-	Py_DECREF(arg2);
-	Py_DECREF(arg3);
-	Py_XDECREF(pFunc);
-      	Py_DECREF(pArgs);
-	Py_DECREF(pModule);
-	Py_DECREF(ptraceback);
-	Py_DECREF(ptype);
-	Py_DECREF(pValue);
-#if not(defined(macintosh)) && not(defined(__MACH__) && defined(__APPLE__))
-	Py_Finalize();
-#endif
-	exit(-1);
+	res=-1;
       }
     }
     else{
       char tmpS[1024];
-      sprintf(tmpS, "Cannot find the %s function int the %s file.\n", s->name, tmp->value);
+      sprintf(tmpS, "Cannot find the %s function in the %s file.\n", s->name, tmp->value);
       map* tmps=createMap("text",tmpS);
       printExceptionReportResponse(m,tmps);
-      Py_XDECREF(pFunc);
-      Py_DECREF(pModule);
-      exit(-1);
+      res=-1;
     }
   } else{
     char tmpS[1024];
@@ -189,11 +174,14 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     printExceptionReportResponse(m,tmps);
     if (PyErr_Occurred())
       PyErr_Print();
-    exit(-1);
+    PyErr_Clear();
+    res=-1;
+    //exit(-1);
   } 
-#if not(defined(macintosh)) && not(defined(__MACH__) && defined(__APPLE__))
+  PyGILState_Release(gstate);
+  PyEval_AcquireLock();
+  PyThreadState_Swap(mainstate);
   Py_Finalize();
-#endif
   return res;
 }
 
@@ -201,12 +189,13 @@ PyDictObject* PyDict_FromMaps(maps* t){
   PyObject* res=PyDict_New( );
   maps* tmp=t;
   while(tmp!=NULL){
-    PyObject* subc=(PyObject*)PyDict_FromMap(tmp->content);
-    if(PyDict_SetItem(res,PyString_FromString(tmp->name),subc)<0){
-      fprintf(stderr,"Unable to parse params...");
-      exit(1);
+    PyObject* value=(PyObject*)PyDict_FromMap(tmp->content);
+    PyObject* name=PyString_FromString(tmp->name);
+    if(PyDict_SetItem(res,name,value)<0){
+      fprintf(stderr,"Unable to set map value ...");
+      return NULL;
     }
-    Py_DECREF(subc);
+    Py_DECREF(name);
     tmp=tmp->next;
   }  
   return (PyDictObject*) res;
@@ -222,30 +211,24 @@ PyDictObject* PyDict_FromMap(map* t){
       if(size!=NULL){
 	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
-	  fprintf(stderr,"Unable to parse params...");
-	  Py_DECREF(value);
-	  exit(1);
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
 	}
-	Py_DECREF(value);
       }
       else{
 	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
-	  fprintf(stderr,"Unable to parse params...");
-	  Py_DECREF(value);
-	  exit(1);
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
 	}
-	Py_DECREF(value);
       }
     }
     else{
       PyObject* value=PyString_FromString(tmp->value);
       if(PyDict_SetItem(res,name,value)<0){
-	fprintf(stderr,"Unable to parse params...");
-	Py_DECREF(value);
-	exit(1);
+	fprintf(stderr,"Unable to set key value pair...");
+	return NULL;
       }
-      Py_DECREF(value);
     }
     Py_DECREF(name);
     tmp=tmp->next;
@@ -271,10 +254,10 @@ maps* mapsFromPyDict(PyDictObject* t){
 #endif
     cursor=(maps*)malloc(MAPS_SIZE);
     cursor->name=PyString_AsString(key);
-#ifdef DEBUG
-    dumpMap(mapFromPyDict((PyDictObject*)value));
-#endif
     cursor->content=mapFromPyDict((PyDictObject*)value);
+#ifdef DEBUG
+    dumpMap(cursor->content);
+#endif
     cursor->next=NULL;
     if(res==NULL)
       res=dupMaps(&cursor);
@@ -283,14 +266,11 @@ maps* mapsFromPyDict(PyDictObject* t){
     freeMap(&cursor->content);
     free(cursor->content);
     free(cursor);
-    Py_DECREF(value);
-    Py_DECREF(key);
 #ifdef DEBUG
     dumpMaps(res);
     fprintf(stderr,">> parsed maps %d\n",i);
 #endif
   }
-  Py_DECREF(list);
   return res;
 }
 
@@ -329,8 +309,6 @@ map* mapFromPyDict(PyDictObject* t){
       else
 	res=createMap(PyString_AsString(key),PyString_AsString(value));
     }
-    Py_DECREF(key);
   }
-  Py_DECREF(list);
   return res;
 }
