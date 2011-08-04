@@ -721,74 +721,76 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       sprintf(tmpI,"%s_interval",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
 
-      /**
-       * Classify one band raster pixel value using regular interval
-       */
-      int _tmpColors[10][3]={
-	{102,153,204},
-	{51,102,153},
-	{102,102,204},
-	{51,204,0},
-	{153,255,102},
-	{204,255,102},
-	{102,204,153},
-	{255,69,64},
-	{255,192,115},
-	{255,201,115}
-      };
-
-      if(nBandsI==1){
-	double delta=adfCMinMax[1]-adfCMinMax[0];
-	double interval=delta/10;
-	double cstep=adfCMinMax[0];
-	for(i=0;i<10;i++){
-	  /**
-	   * Create a new class
-	   */
-	  if(msGrowLayerClasses(myLayer) == NULL)
-	    return;
-	  if(initClass((myLayer->class[myLayer->numclasses])) == -1)
-	    return;
-	  myLayer->class[myLayer->numclasses]->type = myLayer->type;
-	  if(msGrowClassStyles(myLayer->class[myLayer->numclasses]) == NULL)
-	    return ;
-	  if(initStyle(myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]) == -1)
-	    return;
-
-	  /**
-	   * Set class name
-	   */
-	  char className[7];
-	  sprintf(className,"class%d",i);
-	  myLayer->class[myLayer->numclasses]->name=strdup(className);
-
-	  /**
-	   * Set expression
-	   */
-	  char expression[1024];
-	  if(i+1<10)
-	    sprintf(expression,"([pixel]>=%.3f AND [pixel]<%.3f)",cstep,cstep+interval);
-	  else
-	    sprintf(expression,"([pixel]>=%.3f AND [pixel]<=%.3f)",cstep,cstep+interval);
-	  msLoadExpressionString(&myLayer->class[myLayer->numclasses]->expression,expression);
-
-	  /**
-	   * Set color
-	   */
-	  myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
-	  myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
-	  myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
-	  cstep+=interval;
-	  myLayer->class[myLayer->numclasses]->numstyles++;
-	  myLayer->numclasses++;
-	
+      map* test=getMap(output->content,"msClassify");
+      if(test!=NULL && strncasecmp(test->value,"true",4)==0){
+	/**
+	 * Classify one band raster pixel value using regular interval
+	 */
+	int _tmpColors[10][3]={
+	  {102,153,204},
+	  {51,102,153},
+	  {102,102,204},
+	  {51,204,0},
+	  {153,255,102},
+	  {204,255,102},
+	  {102,204,153},
+	  {255,69,64},
+	  {255,192,115},
+	  {255,201,115}
+	};
+	  
+	if(nBandsI==1){
+	  double delta=adfCMinMax[1]-adfCMinMax[0];
+	  double interval=delta/10;
+	  double cstep=adfCMinMax[0];
+	  for(i=0;i<10;i++){
+	    /**
+	     * Create a new class
+	     */
+	    if(msGrowLayerClasses(myLayer) == NULL)
+	      return;
+	    if(initClass((myLayer->class[myLayer->numclasses])) == -1)
+	      return;
+	    myLayer->class[myLayer->numclasses]->type = myLayer->type;
+	    if(msGrowClassStyles(myLayer->class[myLayer->numclasses]) == NULL)
+	      return ;
+	    if(initStyle(myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]) == -1)
+	      return;
+	    
+	    /**
+	     * Set class name
+	     */
+	    char className[7];
+	    sprintf(className,"class%d",i);
+	    myLayer->class[myLayer->numclasses]->name=strdup(className);
+	    
+	    /**
+	     * Set expression
+	     */
+	    char expression[1024];
+	    if(i+1<10)
+	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<%.3f)",cstep,cstep+interval);
+	    else
+	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<=%.3f)",cstep,cstep+interval);
+	    msLoadExpressionString(&myLayer->class[myLayer->numclasses]->expression,expression);
+	    
+	    /**
+	     * Set color
+	     */
+	    myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
+	    myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
+	    myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
+	    cstep+=interval;
+	    myLayer->class[myLayer->numclasses]->numstyles++;
+	    myLayer->numclasses++;
+	    
+	  }
+	  
+	  char tmpMm[100];
+	  sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
+	  
 	}
-      
-	char tmpMm[100];
-	sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
-
       }
-
     }
     if( strlen(GDALGetRasterUnitType(hBand)) > 0 ){
       char tmpU[21];
