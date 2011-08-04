@@ -513,7 +513,9 @@ extern "C" {
   static bool contains(map* m,map* i){
     while(i!=NULL){      
       if(strcasecmp(i->name,"value")!=0 &&
-	 strcasecmp(i->name,"xlink:href")!=0){
+	 strcasecmp(i->name,"xlink:href")!=0 &&
+	 strcasecmp(i->name,"useMapServer")!=0 &&
+	 strcasecmp(i->name,"asReference")!=0){
 	map *tmp;
 	if(hasKey(m,i->name) && (tmp=getMap(m,i->name))!=NULL && 
 	   strcasecmp(i->value,tmp->value)!=0)
