@@ -1,4 +1,4 @@
-AC_INIT([ZOO Kernel], [1.2.0], [bugs@zoo-project.org])
+AC_INIT([ZOO Kernel], [1.3.0], [bugs@zoo-project.org])
 
 # Checks for programs.
 AC_PROG_YACC
@@ -112,6 +112,52 @@ AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([could not find libxml2]
 
 AC_SUBST([XML2_CPPFLAGS])
 AC_SUBST([XML2_LDFLAGS])
+
+#============================================================================
+# Detect if mapserver is installed
+#============================================================================
+
+AC_ARG_WITH([mapserver], 
+       [AS_HELP_STRING([--with-mapserver=PATH], [specify the path for MapServer compiled source tree])], 
+       [MS_SRC_PATH="$withval"], [MS_SRC_PATH=""])
+if test -z $MS_SRC_PATH;
+then
+       AC_PATH_PROG([MS_SRC_PATH], [mapserver])
+       if test "x$MS_SRC_PATH" = "xmacos";
+       then
+               AC_MSG_RESULT([Using MacOSX Framework for MapServer])
+       else
+               if test -d $MS_SRC_PATH; 
+               then
+                       AC_MSG_ERROR([could not find the MapServer source tree. You may need to try re-running configure with a --with-mapserver parameter.])
+               fi
+       fi      
+else
+       if test "x$MS_SRC_PATH" = "xmacos";
+       then
+               MS_LDFLAGS="/Library/Frameworks/MapServer.framework//Versions/6.0/MapServer -lintl"
+               MS_CPPFLAGS="-DUSE_MS `/Library/Frameworks/MapServer.framework/Programs/mapserver-config --includes` -I/Library/Frameworks/MapServer.framework/Versions/Current/Headers/ -I../mapserver "
+               AC_MSG_WARN([Please make sure that ../mapserver exists and contains MapServer source tree])
+               AC_MSG_RESULT([Using MacOS X Framework for MapServer])
+       else
+               if test -d $MS_SRC_PATH; then
+                       MS_LDFLAGS="-L$MS_SRC_PATH -lmapserver `$MS_SRC_PATH/mapserver-config --libs`"
+                       MS_CPPFLAGS="-DUSE_MS `$MS_SRC_PATH/mapserver-config --includes` `$MS_SRC_PATH/mapserver-config --cflags` -I$MS_SRC_PATH "
+               
+                       AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
+               else
+                       AC_MSG_ERROR([the user-specified mapserver-config file $MS_SRC_PATH does not exist])
+               fi
+       fi
+       MS_FILE="service_internal_ms.o"
+fi
+
+MS_CFLAGS="$MS_CPPFLAGS"
+MS_LIBS="$MS_LDFLAGS"
+
+AC_SUBST([MS_CFLAGS])
+AC_SUBST([MS_LIBS])
+AC_SUBST([MS_FILE])
 
 # ===========================================================================
 # Detect if python is installed

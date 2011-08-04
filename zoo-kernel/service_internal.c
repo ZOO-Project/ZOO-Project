@@ -1533,13 +1533,26 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	nc3=xmlNewNode(ns_wps, BAD_CAST "LitteralData");
     } 
     tmp=m->content;
+#ifdef USE_MS
+    map* testMap=getMap(tmp,"requestedMimeType");
+#endif
     while(tmp!=NULL){
       if(strcasecmp(tmp->name,"mimeType")==0 ||
 	 strcasecmp(tmp->name,"encoding")==0 ||
 	 strcasecmp(tmp->name,"schema")==0 ||
 	 strcasecmp(tmp->name,"datatype")==0 ||
 	 strcasecmp(tmp->name,"uom")==0)
+#ifdef USE_MS
+	if(testMap==NULL || (testMap!=NULL && strncasecmp(testMap->value,"text/xml",8)==0))
+#endif
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+#ifdef USE_MS
+      if(strcasecmp(tmp->name,"mimeType")==0)
+	if(testMap!=NULL)
+	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST testMap->value);
+	else 
+	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+#endif
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
     }
@@ -1556,6 +1569,27 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	tmp=getMap(e->defaults->content,"mimeType");
       else
 	tmp=NULL;
+#ifdef USE_MS
+      /**
+       * In case of OGC WebServices output use, as the data was requested
+       * with asReference=false we have to download the resulting OWS request
+       * stored in the Reference map value.
+       */
+      map* testMap=getMap(m->content,"requestedMimeType");
+      if(testMap!=NULL){
+	HINTERNET hInternet;
+	hInternet=InternetOpen(
+#ifndef WIN32
+			       (LPCTSTR)
+#endif
+			       "ZooWPSClient\0",
+			       INTERNET_OPEN_TYPE_PRECONFIG,
+			       NULL,NULL, 0);
+	testMap=getMap(m->content,"Reference");
+	loadRemoteFile(m,m->content,hInternet,testMap->value);
+	InternetCloseHandle(hInternet);
+      }
+#endif
       map* tmp1=getMap(m->content,"encoding");
       map* tmp2=getMap(m->content,"mimeType");
       map* toto=getMap(m->content,"value");
@@ -1602,18 +1636,29 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     }
   }
   else{
+    tmpMap=getMap(m->content,"Reference");
     nc3=nc2=xmlNewNode(ns_wps, BAD_CAST "Reference");
     if(strcasecmp(type,"Output")==0)
       xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
     else
       xmlNewNsProp(nc3,ns_xlink,BAD_CAST "href",BAD_CAST tmpMap->value);
     tmp=m->content;
+#ifdef USE_MS
+    map* testMap=getMap(tmp,"requestedMimeType");
+#endif
     while(tmp!=NULL){
       if(strcasecmp(tmp->name,"mimeType")==0 ||
 	 strcasecmp(tmp->name,"encoding")==0 ||
 	 strcasecmp(tmp->name,"schema")==0 ||
 	 strcasecmp(tmp->name,"datatype")==0 ||
 	 strcasecmp(tmp->name,"uom")==0)
+#ifdef USE_MS
+	if(testMap!=NULL  && strncasecmp(testMap->value,"text/xml",8)!=0){
+	  if(strcasecmp(tmp->name,"mimeType")==0)
+	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST testMap->value);
+	}
+	else
+#endif
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
@@ -1783,8 +1828,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #endif
     maps* tmpI=request_outputs;
     while(tmpI!=NULL){
+#ifdef USE_MS
+      map* testMap=getMap(tmpI->content,"useMapserver");
+#endif
       toto=getMap(tmpI->content,"asReference");
+#ifdef USE_MS
+      if(toto!=NULL && strcasecmp(toto->value,"true")==0 && testMap==NULL){
+#else
       if(toto!=NULL && strcasecmp(toto->value,"true")==0){
+#endif
 	elements* in=getElements(s->outputs,tmpI->name);
 	char *format=NULL;
 	if(in!=NULL){
@@ -1852,6 +1904,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	free(file_name);
 	free(file_url);	
       }
+#ifdef USE_MS
+      else{
+	if(testMap!=NULL){
+	  setReferenceUrl(m,tmpI);
+	}
+      }
+#endif
       tmpI=tmpI->next;
     }
     map *r_inputs=getMap(s->content,"serviceProvider");
@@ -2135,6 +2194,31 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	  }
 	  tmpContent=tmpContent->next;
 	}
+#ifdef USE_MS
+	/**
+	 * check for useMapServer presence
+	 */
+	map* tmpCheck=getMap(tmpIoType->content,"useMapServer");
+	if(tmpCheck!=NULL){
+	  // Get the default value
+	  tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,NULL);
+	  tmpCheck=getMap(tmpMaps->content,"mimeType");
+	  addToMap(tmpMaps->content,"requestedMimeType",tmpCheck->value);
+	  map* cursor=tmpIoType->content;
+	  while(cursor!=NULL){
+	    addToMap(tmpMaps->content,cursor->name,cursor->value);
+	    cursor=cursor->next;
+	  }
+	  
+	  cursor=tmpInputs->content;
+	  while(cursor!=NULL){
+	    if(strcasecmp(cursor->name,"Title")==0 ||
+	       strcasecmp(cursor->name,"Abstract")==0)
+	      addToMap(tmpMaps->content,cursor->name,cursor->value);
+           cursor=cursor->next;
+	  }
+	}
+#endif
       }
       if(tmpMaps->content==NULL)
 	tmpMaps->content=createMap("inRequest","true");
