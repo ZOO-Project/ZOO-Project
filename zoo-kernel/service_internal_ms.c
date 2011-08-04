@@ -348,7 +348,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       VSIFReadL(vsifcontent,1,size,vsif);
       char *fpath=(char*) malloc((strlen(sdsName)+strlen(demo[1])+2)*sizeof(char));
       sprintf(fpath,"%s/%s",sdsName,demo[i]);
-      int f=open(fpath,O_WRONLY|O_CREAT);
+      int f=open(fpath,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
       write(f,vsifcontent,size);
       close(f);
       chmod(fpath,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH);
