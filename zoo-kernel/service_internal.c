@@ -1035,7 +1035,6 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
     }
 
     _tmp=e->supported;
-    dumpMap(e->defaults->content);
     if(_tmp==NULL && (getMap(e->defaults->content,"uom")!=NULL || datatype!=1))
       _tmp=e->defaults;
 
@@ -2400,7 +2399,6 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   addToMap(content,"size",ltmp1);
   if(cached==NULL)
     addToCache(m,url,fcontent,fsize);
-  dumpMap(content);
   free(fcontent);
   free(cached);
 }
