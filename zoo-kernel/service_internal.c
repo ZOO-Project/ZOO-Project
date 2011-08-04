@@ -1543,15 +1543,17 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	 strcasecmp(tmp->name,"datatype")==0 ||
 	 strcasecmp(tmp->name,"uom")==0)
 #ifdef USE_MS
-	if(testMap==NULL || (testMap!=NULL && strncasecmp(testMap->value,"text/xml",8)==0))
+	if(testMap==NULL || (testMap!=NULL && strncasecmp(testMap->value,"text/xml",8)==0)){
 #endif
 	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 #ifdef USE_MS
-      if(strcasecmp(tmp->name,"mimeType")==0)
-	if(testMap!=NULL)
-	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST testMap->value);
-	else 
-	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	}
+      else
+	if(strcasecmp(tmp->name,"mimeType")==0)
+	  if(testMap!=NULL)
+	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST testMap->value);
+	  else 
+	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 #endif
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
