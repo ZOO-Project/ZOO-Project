@@ -106,7 +106,6 @@ int cgiMain(){
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
-	dumpMap(tmpMap);
       }else{
 	buffer[0]=0;
 	char **array, **arrayStep;

@@ -1414,7 +1414,6 @@ int runRequest(map* request_inputs)
 	      if(strcasecmp(test->value,"base64")!=0){
 		xmlChar* mv=xmlNodeListGetString(doc,cur4->xmlChildrenNode,1);
 		map* ltmp=getMap(tmpmaps->content,"mimeType");
-		dumpMap(ltmp);
 		if(mv==NULL || 
 		   (xmlStrcasecmp(cur4->name, BAD_CAST "ComplexData")==0 &&
 		    (ltmp==NULL || strncasecmp(ltmp->value,"text/xml",8)==0) )){
