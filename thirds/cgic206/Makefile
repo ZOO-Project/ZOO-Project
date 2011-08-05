@@ -1,6 +1,6 @@
 OS:=$(shell uname -s)
 ifeq ($(OS),Darwin)
-	MACOS_CFLAGS=-arch i386 -arch ppc -arch x86_64
+	MACOS_CFLAGS=-arch $(shell uname -m)
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.dylib
 else
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.a

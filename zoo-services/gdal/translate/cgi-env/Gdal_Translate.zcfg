@@ -7,7 +7,7 @@
  serviceType = C
  serviceProvider = gdal_service.zo
  <MetaData>
-   Test = My Demo
+   title = My Demo
  </MetaData>
  <DataInputs>
   [Format]
@@ -18,7 +18,7 @@
    <LiteralData>
     DataType = string
     <Default>
-     value = AAIGrid
+     value = demo.tif
     </Default>
    </LiteralData>
   [InputDSN]

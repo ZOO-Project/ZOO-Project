@@ -52,12 +52,14 @@
 #endif
 #include "service.h"
 #include <openssl/sha.h>
+#include <openssl/md5.h>
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
 #include "cgic.h"
+#include "ulinet.h"
 
 extern   int getServiceFromFile(const char*,service**);
 extern   int conf_read(const char*,maps*);
@@ -71,9 +73,11 @@ extern   int conf_read(const char*,maps*);
 extern "C" {
 #endif
 #include <libxml/parser.h>
+#include <libxml/xpath.h>
+
   static char* SERVICE_URL;
-  static xmlNsPtr usedNs[5];
-  static char* nsName[5];
+  static xmlNsPtr usedNs[10];
+  static char* nsName[10];
   static int nbNs=0;
 
   void unhandleStatus(maps*);
@@ -82,7 +86,7 @@ extern "C" {
 
 #ifdef USE_JS
   char* JSValToChar(JSContext*,jsval*);
-  JSBool JSUpdateStatus(JSContext*,JSObject*,uintN,jsval *,jsval *);
+  JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
 #endif
   
   void URLDecode(char *);
@@ -117,9 +121,14 @@ extern "C" {
 
   char* addDefaultValues(maps**,elements*,maps*,int);
 
-  /*defined in zoo_loader.c*/ 
   int errorException(maps *m, const char *message, const char *errorcode);
 
+  int checkForSoapEnvelope(xmlDocPtr);
+
+  void addToCache(maps*,char*,char*,int);
+  char* isInCache(maps*,char*);
+  void loadRemoteFile(maps*,map*,HINTERNET,char*);
+  
 #ifdef __cplusplus
 }
 #endif

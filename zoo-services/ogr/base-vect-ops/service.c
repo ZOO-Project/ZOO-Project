@@ -43,6 +43,7 @@ extern "C" {
 
   void printExceptionReportResponse(maps*,map*);
   char *base64(const char *input, int length);
+  int errorException(maps *m, const char *message, const char *errorcode);
 
   OGRGeometryH createGeometryFromGML(maps* conf,char* inputStr){
     xmlInitParser();

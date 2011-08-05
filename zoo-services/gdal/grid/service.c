@@ -878,16 +878,16 @@ int main( int argc, char ** argv )
       pszDest=(char*)malloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
       char *ext=new char[4];
       ext="tif";
-      if(strcmp(mtoupper((char*)pszFormat),"AAIGRID")==0)
+      if(strncasecmp(pszFormat,"AAIGRID",7)==0)
         ext="csv";
       else 
-        if(strcmp(mtoupper((char*)pszFormat),"PNG")==0)
+        if(strncasecmp(pszFormat,"PNG",3)==0)
           ext="png";
         else
-          if(strcmp(mtoupper((char*)pszFormat),"GIF")==0)
+          if(strncasecmp(pszFormat,"GIF",3)==0)
             ext="gif";
           else
-            if(strcmp(mtoupper((char*)pszFormat),"JPEG")==0)
+            if(strncasecmp(pszFormat,"JPEG",4)==0)
               ext="jpg";
       sprintf((char*)pszDest,"%s/%s.%s",tempPath,tmpMap->value,ext);
     }
