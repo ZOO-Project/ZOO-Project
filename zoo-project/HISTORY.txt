@@ -1,0 +1,36 @@
+Version 1.2.0-rc3
+
+  * add basic SOAP Envelope support (ticket #49)
+  * support request when Content-Length header is not set by the client (ticket #57)
+  * fix issue when POST request is empty (ticket #45)
+  * add minimalist cache system (ticket #51)
+  * fix Python support (ticket #29)
+
+Verseion 1.2.0-rc2
+
+  * fix for process to run in background
+  * add support for ALL identifier for !DescribeProcess
+  * add a small test suite in the testing directory to test ogr base-vect-ops
+  * big fix for storage of Session maps on disk
+  * support for {{{<Default />}}} node in ZCFG files
+  * fastcgi version now support both !GetCapabilities and !DescribeProcess requests
+
+Version 1.2.0-rc1
+
+  * add WIN32 support
+  * add GRASS support through wps-grass-bridge
+  * add languages support using libintl 
+  * binary support for inputs and outputs for both JAVA and Python
+  * automatic loading of ZOO-API and proj4js files (if present in the ZOO-Kernel directory) when loading JS Service Provider 
+  * numerous memory leaks removed
+  * add PERL support
+  * enhance speed for JAVA support 
+  * enhance POST request support
+  * add !BoundingBoxData support
+  * Python support is now optional as other languages
+  * add lenv section before running the service to store informations runtime specific 
+  * add COOKIE support and {{{senv}}} section to store informations session specific
+  * add {{{USE_GDB}}} compilation flag to remove signal handling for debuging purpose
+  * enhance base64 support when included in and XML POST request
+  * return !ExceptionReport when no protocol was specified for xlink:href value
+
