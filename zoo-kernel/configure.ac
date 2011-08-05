@@ -121,19 +121,23 @@ AC_ARG_WITH([python],
 	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
 	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
 
+AC_ARG_WITH([pyvers], 
+	[AS_HELP_STRING([--with-pyvers=NUM], [To use a specific python version])], 
+	[PYTHON_VERS="$withval"], [PYTHON_VERS=""])
+
 
 if test -z "$PYTHON_ENABLED"
 then
 	PYTHON_FILE=""
 else
-	PYTHONCONFIG="$PYTHON_PATH/bin/python-config"
+	PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
 	PYTHON_FILE="service_internal_python.o"
 	if test  "$PYTHON_PATH" = "yes"
 	then
 		# PHP was not specified, so search within the current path
-		AC_PATH_PROG([PYTHONCONFIG], [python-config])
+		AC_PATH_PROG([PYTHONCONFIG], [python${PYTHON_VERS}-config])
 	else
-		PYTHONCONFIG="$PYTHON_PATH/bin/python-config"
+		PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
 	fi
 
 	# Extract the linker and include flags 
@@ -313,36 +317,36 @@ if test -z "$JS_ENABLED"
 then
 	JS_FILE=""
 else
+	JS_FILE="service_internal_js.o"
 	if test "$JSHOME" = "yes"
 	then
-        	JS_FILE="service_internal_js.o"
 
 		#on teste si on est sous debian like 
 		if test -f "/usr/bin/dpkg"
 		then
-			if test -n "`dpkg -l | grep libmozjs-dev`"
+			if test -n "`dpkg -l | grep libmozjs185-dev`"
 			then
-				JS_CPPFLAGS="-I/usr/include/mozjs/"
-                        	JS_LDFLAGS="-L/usr/lib -lmozjs -lm"
-                        	JS_LIB="mozjs"
+				JS_CPPFLAGS="-I/usr/include/js/"
+                        	JS_LDFLAGS="-L/usr/lib -lmozjs185 -lm"
+                        	JS_LIB="mozjs185"
 			else 
-				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | awk '{print $3;}' | sed -e 's/\([[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\.[[0-9]]\{1,2\}\).*/\1/'`"
+				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | head -1| awk '{print $3;}' | cut -d'+' -f1`"
 				if test -n "$XUL_VERSION"
 				then
 					JS_CPPFLAGS="-I/usr/include/xulrunner-$XUL_VERSION"
 					JS_LDFLAGS="-L/usr/lib/xulrunner-$XUL_VERSION -lmozjs -lm"
 					JS_LIB="mozjs"
 				else
-					AC_MSG_ERROR([You must install libmozjs-dev or xulrunner-dev ])
+					AC_MSG_ERROR([You must install libmozjs185-dev or xulrunner-dev ])
 				fi
 			fi
 		else
-			AC_MSG_ERROR([You must  specify your custom install of libjs])
+			AC_MSG_ERROR([You must  specify your custom install of libmozjs185])
 		fi
 	else
-		JS_CPPFLAGS="-I$JSHOME/include/"
-                JS_LDFLAGS="-L$JSHOME/lib -lmozjs -lm"
-                JS_LIB="mozjs"
+		JS_CPPFLAGS="-I$JSHOME/include/js/"
+                JS_LDFLAGS="-L$JSHOME/lib -lmozjs185 -lm"
+                JS_LIB="mozjs185"
 
 	fi 
 	CPPFLAGS_SAVE="$CPPFLAGS"
@@ -355,7 +359,7 @@ else
 	LIBS_SAVE="$LIBS"
         LIBS="$JS_LDFLAGS"
 
-        AC_CHECK_LIB([$JS_LIB], [JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
+        AC_CHECK_LIB([$JS_LIB], [JS_CompileFile,JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
 			
         AC_SUBST([JS_CPPFLAGS])
         AC_SUBST([JS_LDFLAGS])
@@ -365,4 +369,5 @@ AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([ZOOMakefile.opts])
 AC_OUTPUT
