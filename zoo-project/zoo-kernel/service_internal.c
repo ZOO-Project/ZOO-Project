@@ -1866,8 +1866,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      ext=createMap("extension","xml");
 	    else if(strcasecmp(mtype->value,"application/json")==0)
 	      ext=createMap("extension","js");
-	    else if(strncmp(mtype->value,"application/vnd.google-earth.kml",32)!=0)
+	    else if(strncmp(mtype->value,"application/vnd.google-earth.kml",32)==0)
 	      ext=createMap("extension","kml");
+	    else if(strncmp(mtype->value,"image/",6)==0)
+	      ext=createMap("extension",strstr(mtype->value,"/")+1);
 	    else
 	      ext=createMap("extension","txt");
 	  }
