@@ -120,18 +120,11 @@ AC_SUBST([XML2_LDFLAGS])
 AC_ARG_WITH([mapserver], 
        [AS_HELP_STRING([--with-mapserver=PATH], [specify the path for MapServer compiled source tree])], 
        [MS_SRC_PATH="$withval"], [MS_SRC_PATH=""])
+
 if test -z $MS_SRC_PATH;
 then
-       AC_PATH_PROG([MS_SRC_PATH], [mapserver])
-       if test "x$MS_SRC_PATH" = "xmacos";
-       then
-               AC_MSG_RESULT([Using MacOSX Framework for MapServer])
-       else
-               if test -d $MS_SRC_PATH; 
-               then
-                       AC_MSG_ERROR([could not find the MapServer source tree. You may need to try re-running configure with a --with-mapserver parameter.])
-               fi
-       fi      
+	MS_CPPFLAGS=""
+	MS_LDFLAGS=""
 else
        if test "x$MS_SRC_PATH" = "xmacos";
        then
