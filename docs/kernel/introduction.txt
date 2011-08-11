@@ -3,10 +3,8 @@
 Introduction
 ============
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
 
 ZOO Kernel is the heart of the ZOO. It is a powerful server-side C Kernel which makes 
 it possible to manage and chain Web services, by loading dynamic libraries and handling 
