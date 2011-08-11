@@ -3,7 +3,7 @@
 How To Setup ZOO Services
 =========================
 
-:Authors: Nicolas Bozon, GÃ©rald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
 
 ZOO Services are quite easy to create once you have installed the ZOO Kernel and have 
