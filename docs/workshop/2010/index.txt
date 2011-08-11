@@ -24,41 +24,69 @@ Sponsored By
 **************
 
 .. image:: ../../_static/images/geolabs-logo.png
-   :target: http://www.geolabs.fr/
+   :width: 156px
+   :height: 60px 
+   :target: http://www.geolabs.fr/  
 
 .. image:: ../../_static/images/apptech-logo.png
-   :target: http://www.apptec.co.jp/
+   :width: 200px
+   :height: 60px
+   :target: http://www.apptec.co.jp/   
 
 .. image:: ../../_static/images/neogeo-logo.png
-   :target: http://www-neogeo-online.net/
+   :width: 156px
+   :height: 60px 
+   :target: http://www-neogeo-online.net/  
+   
+.
 
 .. image:: ../../_static/images/3liz-logo.png
-   :target: http://www.3liz.com/
+   :width: 156px
+   :height: 60px
+   :target: http://www.3liz.com/   
 
 .. image:: ../../_static/images/gateway-logo.png
-   :target: http://www.gatewaygeomatics.com/
+   :width: 200px
+   :height: 60px
+   :target: http://www.gatewaygeomatics.com/   
 
 *******************************************
 Special Thanks To Our Knowledge Partners
 *******************************************
 
 .. image:: ../../_static/images/ocu-logo.png
+   :width: 200px
+   :height: 50px
    :target: http://www.osaka-cu.ac.jp/english/
 
 .. image:: ../../_static/images/logo-fem.png
-    :target: http://www.fondazioneedmundmach.it/
+   :width: 260px
+   :height: 50px
+   :target: http://www.fondazioneedmundmach.it/
+   
+.
 
 .. image:: ../../_static/images/polimi-logo.png
-    :target: http://geomatica.como.polimi.it/
+   :width: 200px
+   :height: 50px
+   :target: http://geomatica.como.polimi.it/
 
 .. image:: ../../_static/images/gucas-logo.png
-    :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
+   :width: 200px
+   :height: 50px
+   :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
+   
+.
 
 .. image:: ../../_static/images/cumtb-logo.png
-    :target: http://www.cumtb.edu.cn/
+   :width: 200px
+   :height: 50px
+   :target: http://www.cumtb.edu.cn/
 
 .. image:: ../../_static/images/logo-supsi.png
-    :target: http://www.supsi.ch/home.html
+   :width: 260px
+   :height: 50px
+   :target: http://www.supsi.ch/home.html
 
 ****************************
 Workshop Table of Contents
