@@ -3,7 +3,7 @@
 Prerequisites
 =============
 
-:Authors: Nicolas Bozon, G�rald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, GÃ©rald Fenoy, Jeff McKenna
 :Last Updated: $Date$
 
 .. contents:: Table of Contents
