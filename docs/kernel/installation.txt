@@ -3,10 +3,8 @@
 Installation
 ============
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
 
 This page provides documentation on how to compile then install the ZOO Kernel on Unix, Windows, and Mac OS X platforms.
 

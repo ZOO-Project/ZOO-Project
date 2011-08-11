@@ -3,10 +3,8 @@
 Prerequisites
 =============
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
 
 .. contents:: Table of Contents
     :depth: 2
