@@ -3,7 +3,7 @@
 ZCFG : the ZOO Service Configuration File
 =========================================  
 
-:Authors: Nicolas Bozon, GÃ©rald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$ 
 
 .. contents:: Table of Contents
