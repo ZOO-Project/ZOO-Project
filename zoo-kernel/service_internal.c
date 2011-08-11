@@ -1586,7 +1586,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
 	else{
 	  if(strncmp(tmp2->value,"text/xml",8)==0 ||
-	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)!=0){
+	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)==0){
 	    xmlDocPtr doc =
 	      xmlParseMemory(BAD_CAST toto->value,strlen(BAD_CAST toto->value));
 	    xmlNodePtr ir = xmlDocGetRootElement(doc);
@@ -1812,8 +1812,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      ext=createMap("extension","xml");
 	    else if(strcasecmp(mtype->value,"application/json")==0)
 	      ext=createMap("extension","js");
-	    else if(strncmp(mtype->value,"application/vnd.google-earth.kml",32)!=0)
+	    else if(strncmp(mtype->value,"application/vnd.google-earth.kml",32)==0)
 	      ext=createMap("extension","kml");
+	    else if(strncmp(mtype->value,"image/",6)==0) 
+	      ext=createMap("extension",strstr(mtype->value,"/")+1); 
 	    else
 	      ext=createMap("extension","txt");
 	  }
