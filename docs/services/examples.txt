@@ -3,10 +3,16 @@
 Service Examples
 ================
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
+
+ZOO Services are quite easy to create once you have installed the ZOO Kernel and have 
+chosen code (in the language of your choice) to turn into a ZOO service. Here are some 
+HelloWorlds with links to their corresponding ``.zcfg`` files.
+
+.. contents:: Table of Contents
+    :depth: 3
+    :backlinks: top
 
 GDAL ZOO Service
 ----------------

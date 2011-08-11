@@ -3,25 +3,28 @@
 How To Setup ZOO Services
 =========================
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
 
-ZOO Services are quiet easy to create once you have install ZOO Kernel and that you have 
-chosen a code to turn into a ZOO service. Here are some HelloWorlds in Python, PHP, Java 
-and JavaScript with link to the correpondant .zcfg files.
+ZOO Services are quite easy to create once you have installed the ZOO Kernel and have 
+chosen code (in the language of your choice) to turn into a ZOO service. Here are some 
+HelloWorlds in Python, PHP, Java  and JavaScript with links to their corresponding 
+``.zcfg`` files.
+
+.. contents:: Table of Contents
+    :depth: 3
+    :backlinks: top
 
 Python
 ------
 
-You'll find here informations needed to deploy your own Python Services Provider.
+You'll find here information needed to deploy your own Python Services Provider.
 
 Python ZCFG requirements
 ************************
 
-For each Services providen by your ZOO Python Services Provider, the ZCFG File 
-have to be named as the Python module function name.
+.. Note:: For each Service provided by your ZOO Python Services Provider, the ZCFG File 
+          must be named the same as the Python module function name.
 
 The ZCFG file should contain the following :
 
@@ -29,23 +32,23 @@ The ZCFG file should contain the following :
 serviceType
     Python 
 serviceProvider
-    the name of the Python module to use as a ZOO Service Provider. For instance, if your 
-    script, located in the same directory as your ZOO Kernel, was named my_module.py then 
-    you should use my_module (the Python module name) as serviceProvider value in ZCFG file. 
+    The name of the Python module to use as a ZOO Service Provider. For instance, if your 
+    script, located in the same directory as your ZOO Kernel, was named ``my_module.py`` then 
+    you should use ``my_module`` (the Python module name) for the serviceProvider value in ZCFG file. 
 
 Python Data Structure used
 **************************
 
-The Python module's function to be used as a service have to :
+The Python module's function to be used as a service must:
 
 - take three arguments : the main configuration, inputs and outputs maps are passed to the 
-  Python module as  dictionaries.
-- return an integer : corresopnding to the service status code. 
+  Python module as dictionaries.
+- return an integer : corresponding to the service status code. 
 
 Sample Data Structure
 *********************
 
-In the following you 'll find a sample argument passed to the Python module's function for 
+In the following you'll find a sample argument passed to the Python module's function for 
 the two first main configuration file' sections.
 
 ::
@@ -65,7 +68,7 @@ the two first main configuration file' sections.
 Sample ZOO Python Services Provider
 ***********************************
 
-The following code represent a simple ZOO Python Services Provider which provides only one 
+The following code represents a simple ZOO Python Services Provider which provides only one 
 Service, the HelloPy one.
 
 .. code-block:: python
