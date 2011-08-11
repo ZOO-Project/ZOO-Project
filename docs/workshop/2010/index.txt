@@ -4,7 +4,7 @@
 Workshop: Practical Introduction to ZOO: The Open WPS Platform
 ##############################################################
 
-:Author:  Nicolas Bozon, GÃ©rald Fenoy
+:Author:  Nicolas Bozon, Gérald Fenoy
 :Last Updated: $Date$
 
 ****************************************
