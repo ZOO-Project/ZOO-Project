@@ -3,9 +3,8 @@
 Documentation Development Guide
 ===============================
 
-:Author:  Jeff McKenna
-:Contact: jmckenna at gatewaygeomatics.com
-:Last Updated: 2011-06-16
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Last Updated: $Date$
 
 .. contents:: Table of Contents
     :depth: 2
