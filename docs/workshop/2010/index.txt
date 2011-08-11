@@ -38,7 +38,9 @@ Sponsored By
    :height: 60px 
    :target: http://www-neogeo-online.net/  
    
-.
+.. raw:: latex
+
+   \\
 
 .. image:: ../../_static/images/3liz-logo.png
    :width: 156px
@@ -64,7 +66,9 @@ Special Thanks To Our Knowledge Partners
    :height: 50px
    :target: http://www.fondazioneedmundmach.it/
    
-.
+.. raw:: latex
+
+   \\
 
 .. image:: ../../_static/images/polimi-logo.png
    :width: 200px
@@ -76,7 +80,9 @@ Special Thanks To Our Knowledge Partners
    :height: 50px
    :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
    
-.
+.. raw:: latex
+
+   \\
 
 .. image:: ../../_static/images/cumtb-logo.png
    :width: 200px
