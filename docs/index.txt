@@ -3,10 +3,8 @@
 ZOO 1.2 Documentation
 =====================
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
 
 Quick Links
 ===========
