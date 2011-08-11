@@ -10,5 +10,4 @@ The following sections will assist you with ZOO Services:
    
    introduction
    zcfg-reference
-   howtos
    examples
