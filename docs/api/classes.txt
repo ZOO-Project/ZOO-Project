@@ -3,10 +3,8 @@
 Classes
 =======
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date$
-:Id:    $Id$
-:Author: $Author$
-:HeadURL: $HeadURL$
 
 The following classes are available in the ZOO API:
 
