@@ -1622,7 +1622,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
 	else{
 	  if(strncmp(tmp2->value,"text/xml",8)==0 ||
-	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)!=0){
+	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)==0){
 	    xmlDocPtr doc =
 	      xmlParseMemory(BAD_CAST toto->value,strlen(BAD_CAST toto->value));
 	    xmlNodePtr ir = xmlDocGetRootElement(doc);
