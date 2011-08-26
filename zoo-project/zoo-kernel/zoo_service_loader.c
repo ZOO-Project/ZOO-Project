@@ -923,8 +923,17 @@ int runRequest(map* request_inputs)
     /**
      * Put each DataInputs into the inputs_as_text array
      */
+    char *tmp1=strdup(cursor_input);
     char * pToken;
     pToken=strtok(cursor_input,";");
+    if(pToken!=NULL && strncasecmp(pToken,tmp1,strlen(tmp1))==0){
+      char* tmp2=url_decode(tmp1);
+      snprintf(cursor_input,(strlen(tmp2)+1)*sizeof(char),"%s",tmp2);
+      free(tmp2);
+      pToken=strtok(cursor_input,";");
+    }
+    free(tmp1);
+
     char** inputs_as_text=(char**)calloc(100,sizeof(char*));
     if(inputs_as_text == NULL){
       return errorException(m, _("Unable to allocate memory."), "InternalError");
@@ -1018,8 +1027,9 @@ int runRequest(map* request_inputs)
 	    addToMap(tmpmaps->content,tmpn1,tmpv1+1);
 	  else
 	    if(tmpv1!=NULL){
-	      if(strncasecmp(tmpv1+1,"http://",7)!=0 &&
-		 strncasecmp(tmpv1+1,"ftp://",6)!=0){
+	      char *tmpx2=url_decode(tmpv1+1);
+	      if(strncasecmp(tmpx2,"http://",7)!=0 &&
+		 strncasecmp(tmpx2,"ftp://",6)!=0){
 		char emsg[1024];
 		sprintf(emsg,_("Unable to find a valid protocol to download the remote file %s"),tmpv1+1);
 		errorException(m,emsg,"InternalError");
@@ -1035,18 +1045,15 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
 	      fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
 #endif
-	      char *tmpx=url_encode(tmpv1+1);
-	      addToMap(tmpmaps->content,tmpn1,tmpx);
+	      addToMap(tmpmaps->content,tmpn1,tmpx2);
 	      
 #ifndef WIN32
 	      if(CHECK_INET_HANDLE(hInternet))
 #endif
 		{
-		  loadRemoteFile(m,tmpmaps->content,hInternet,tmpv1+1);
+		  loadRemoteFile(m,tmpmaps->content,hInternet,tmpx2);
 		}
-	      char *tmpx1=url_encode(tmpv1+1);
-	      addToMap(tmpmaps->content,tmpn1,tmpx1);
-	      free(tmpx1);
+	      free(tmpx2);
 	      addToMap(tmpmaps->content,"Reference",tmpv1+1);
 	    }
 	  tmpc=strtok(NULL,"@");

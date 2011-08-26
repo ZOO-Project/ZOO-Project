@@ -91,6 +91,7 @@ extern "C" {
   
   void URLDecode(char *);
   char *url_encode(char *);
+  char *url_decode(char *);
   char* getEncoding(maps*);
 
   int zooXmlSearchForNs(const char*);
