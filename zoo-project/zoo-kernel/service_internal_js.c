@@ -76,8 +76,11 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   JS_SetErrorReporter(cx, reportError);
 
   /* Create the global object. */
-  //global = JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
-  global = JS_NewObject(cx, &global_class, NULL,NULL);
+  //#ifdef JS_NewCompartmentAndGlobalObject
+  global = JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
+  //#else
+  //global = JS_NewObject(cx, &global_class, NULL,NULL);
+  //#endif
 
   /* Populate the global object with the standard globals,
      like Object and Array. */
@@ -283,19 +286,20 @@ JSObject * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
 }
 
 JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
-  JSObject *res = JS_NewArrayObject(cx, 0, NULL);
+
+  JSObject* res=JS_NewObject(cx, NULL, NULL, NULL);
+  //JSObject *res = JS_NewArrayObject(cx, 0, NULL);
   if(res==NULL)
     fprintf(stderr,"Array Object is NULL!\n");
   maps* tmp=t;
+
   while(tmp!=NULL){
     jsuint len;
     JSObject* res1=JS_NewObject(cx, NULL, NULL, NULL);
     JSObject *pval=JSObject_FromMap(cx,tmp->content);
     jsval pvalj=OBJECT_TO_JSVAL(pval);
-    JS_SetProperty(cx, res1, tmp->name, &pvalj);
-    JS_GetArrayLength(cx, res, &len);
-    jsval res1j = OBJECT_TO_JSVAL(res1);
-    JS_SetElement(cx,res,len,&res1j);
+    JS_SetProperty(cx, res, tmp->name, &pvalj);
+
 #ifdef JS_DEBUG
     fprintf(stderr,"Length of the Array %d, element : %s added \n",len,tmp->name);
 #endif

@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
 	}	
 
 
-	cgiTreatUrlEncoding=1;
+	cgiTreatUrlEncoding=0;
 	if (cgiStrEqNc(cgiRequestMethod, "post")) {
 		cgiTreatUrlEncoding=0;
 #ifdef CGICDEBUG
