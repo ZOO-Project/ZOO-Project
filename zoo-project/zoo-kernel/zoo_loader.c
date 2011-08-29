@@ -281,6 +281,28 @@ int cgiMain(){
       xmlFreeDoc(doc);
       xmlCleanupParser();
     }
+
+    char *token,*saveptr;
+    token=strtok_r(cgiQueryString,"&",&saveptr);
+    while(token!=NULL){
+      char *token1,*saveptr1;
+      char *name=NULL;
+      char *value=NULL;
+      token1=strtok_r(token,"=",&saveptr1);
+      while(token1!=NULL){
+	if(name==NULL)
+	  name=strdup(token1);
+	else
+	  value=strdup(token1);
+	token1=strtok_r(NULL,"=",&saveptr1);
+      }
+      if(strcasecmp(name,"metapath")==0)
+	addToMap(tmpMap,name,value);
+      free(name);
+      free(value);
+      token=strtok_r(NULL,"&",&saveptr);
+    }
+    
   }
 
   runRequest(tmpMap);

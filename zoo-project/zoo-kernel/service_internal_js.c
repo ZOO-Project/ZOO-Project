@@ -102,8 +102,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   /**
    * Load the first part of the ZOO-API
    */
-  char api0[strlen(tmpm1->value)+strlen(ntmp)+15];
-  sprintf(api0,"%s/%sZOO-proj4js.js",ntmp,tmpm1->value);
+  char api0[strlen(tmpm1->value)+strlen(ntmp)+16];
+  sprintf(api0,"%s/%s/ZOO-proj4js.js",ntmp,tmpm1->value);
 #ifdef JS_DEBUG
   fprintf(stderr,"Trying to load %s\n",api0);
 #endif
@@ -111,7 +111,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   fflush(stderr);
 
   char api1[strlen(tmpm1->value)+strlen(ntmp)+11];
-  sprintf(api1,"%s/%sZOO-api.js",ntmp,tmpm1->value);
+  sprintf(api1,"%s/%s/ZOO-api.js",ntmp,tmpm1->value);
 #ifdef JS_DEBUG
   fprintf(stderr,"Trying to load %s\n",api1);
 #endif
@@ -125,9 +125,9 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   maps* mc=*main_conf;
   map* tmpm2=getMap(s->content,"serviceProvider");
 
-  char filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+2];
-  sprintf(filename,"%s/%s%s",ntmp,tmpm1->value,tmpm2->value);
-  filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+1]=0;
+  char filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+3];
+  sprintf(filename,"%s/%s/%s",ntmp,tmpm1->value,tmpm2->value);
+  filename[strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+2]=0;
 #ifdef JS_DEBUG
   fprintf(stderr,"FILENAME %s\n",filename);
 #endif
