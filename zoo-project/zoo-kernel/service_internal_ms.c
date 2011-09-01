@@ -169,7 +169,8 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
   OGRSpatialReferenceH  hSRS;
   map* msSrs=NULL;
   hSRS = OSRNewSpatialReference(NULL);
-  if( OSRImportFromWkt( hSRS, &pszProjection ) == CE_None ){
+  if( pszProjection!=NULL && strlen(pszProjection)>1 &&
+      OSRImportFromWkt( hSRS, &pszProjection ) == CE_None ){
     char *proj4Str=NULL;
     if(OSRGetAuthorityName(hSRS,NULL)!=NULL && OSRGetAuthorityCode(hSRS,NULL)!=NULL){
       char tmpSrs[20];
@@ -229,7 +230,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	addToMap(output->content,"crs_isGeographic","true");
       }
       msLoadProjectionStringEPSG(&m->projection,msSrs->value);
-      msLoadProjectionStringEPSG(&myLayer,msSrs->value);
+      msLoadProjectionStringEPSG(&myLayer->projection,msSrs->value);
       char tmpSrs[128];
       sprintf(tmpSrs,"%s EPSG:4326 EPSG:900913",msSrs);
       msInsertHashTable(&(m->web.metadata),"ows_srs",tmpSrs);
@@ -240,7 +241,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	addToMap(output->content,"crs_isGeographic","true");
       }
       msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
-      msLoadProjectionStringEPSG(&myLayer,"EPSG:4326");
+      msLoadProjectionStringEPSG(&myLayer->projection,"EPSG:4326");
       msInsertHashTable(&(m->web.metadata),"ows_srs","EPSG:4326 EPSG:900913");
       msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
     }
@@ -586,7 +587,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     return -1;
   }
 #ifdef DEBUGMS
-  fprintf(stderr,"Accessing the DataSource \n");
+  fprintf(stderr,"Accessing the DataSource %s\n",__LINE__);
 #endif
 
   /**
