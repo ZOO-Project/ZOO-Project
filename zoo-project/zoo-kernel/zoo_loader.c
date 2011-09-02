@@ -75,6 +75,7 @@ int cgiMain(){
   fprintf (stderr, "Request: %s\n", cgiQueryString);
 #endif
 
+  char *strQuery=strdup(cgiQueryString);
   map* tmpMap=NULL;
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
@@ -106,6 +107,7 @@ int cgiMain(){
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
+	fprintf(stderr,"%s\n",tmpMap->value);
       }else{
 	buffer[0]=0;
 	char **array, **arrayStep;
@@ -140,6 +142,7 @@ int cgiMain(){
     }
   }
   else{
+    dumpMap(tmpMap);
     char **array, **arrayStep;
     if (cgiFormEntries(&array) != cgiFormSuccess) {
       return 1;
@@ -178,7 +181,7 @@ int cgiMain(){
      * Store the original XML request in xrequest map
      */
     map* t1=getMap(tmpMap,"request");
-    if(t1!=NULL){
+    if(t1!=NULL && strncasecmp(t1->value,"<",1)==0){
       addToMap(tmpMap,"xrequest",t1->value);
       xmlInitParser();
       xmlDocPtr doc = xmlParseMemory(t1->value,cgiContentLength);
@@ -280,6 +283,10 @@ int cgiMain(){
       xmlFree(tval);
       xmlFreeDoc(doc);
       xmlCleanupParser();
+    }else{
+      freeMap(&tmpMap);
+      free(tmpMap);
+      tmpMap=createMap("not_valid","true");
     }
 
     char *token,*saveptr;
@@ -296,14 +303,23 @@ int cgiMain(){
 	  value=strdup(token1);
 	token1=strtok_r(NULL,"=",&saveptr1);
       }
-      if(strcasecmp(name,"metapath")==0)
-	addToMap(tmpMap,name,value);
+      addToMap(tmpMap,name,value);
       free(name);
       free(value);
+      name=NULL;
+      value=NULL;
       token=strtok_r(NULL,"&",&saveptr);
     }
     
   }
+
+
+  if(strncasecmp(cgiContentType,"multipart/form-data",19)==0){
+      map* tmp=getMap(tmpMap,"dataInputs");
+      if(tmp!=NULL){
+	addToMap(tmpMap,"dataInputs",strstr(strQuery,"dataInputs=")+11);
+      }
+    }
 
   runRequest(tmpMap);
 
