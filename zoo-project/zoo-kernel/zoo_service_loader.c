@@ -741,7 +741,7 @@ int runRequest(map* request_inputs)
   fprintf(stderr,"Trying to load %s\n", tmps1);
 #endif
   int saved_stdout = dup(fileno(stdout));
-    dup2(fileno(stderr),fileno(stdout));
+  dup2(fileno(stderr),fileno(stdout));
   t=getServiceFromFile(tmps1,&s1);
   fflush(stdout);
   dup2(saved_stdout,fileno(stdout));
@@ -1644,7 +1644,7 @@ int runRequest(map* request_inputs)
 	       * Title, Asbtract
 	       */
 	      else if(xmlStrncasecmp(cur2->name,BAD_CAST "Title",xmlStrlen(cur2->name))==0 ||
-		 xmlStrncasecmp(cur2->name,BAD_CAST "Abstract",xmlStrlen(cur2->name))==0){
+		      xmlStrncasecmp(cur2->name,BAD_CAST "Abstract",xmlStrlen(cur2->name))==0){
 		xmlChar *val=
 		  xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 		if(tmpmaps==NULL){
@@ -1730,6 +1730,61 @@ int runRequest(map* request_inputs)
     freeMaps(&tmpmaps);
     free(tmpmaps);
     return 1;
+  }
+
+  maps* tmpReqI=request_input_real_format;
+  while(tmpReqI!=NULL){
+    char name[1024];
+    if(getMap(tmpReqI->content,"isFile")!=NULL){
+      if (cgiFormFileName(tmpReqI->name, name, sizeof(name)) == cgiFormSuccess) {
+	int BufferLen=1024;
+	cgiFilePtr file;
+	int targetFile;
+	mode_t mode;
+	char storageNameOnServer[2048];
+	char fileNameOnServer[64];
+	char contentType[1024];
+	char buffer[BufferLen];
+	char *tmpStr=NULL;
+	int size;
+	int got,t;
+	map *path=getMapFromMaps(m,"main","tmpPath");
+	cgiFormFileSize(tmpReqI->name, &size);
+	cgiFormFileContentType(tmpReqI->name, contentType, sizeof(contentType));
+	if (cgiFormFileOpen(tmpReqI->name, &file) == cgiFormSuccess) {
+	  t=-1;
+	  while(1){
+	    tmpStr=strstr(name+t+1,"\\");
+	    if(NULL==tmpStr)
+	      tmpStr=strstr(name+t+1,"/");
+	    if(NULL!=tmpStr)
+	      t=(int)(tmpStr-name);
+	    else
+	      break;
+	  }
+	  strcpy(fileNameOnServer,name+t+1);
+	  
+	  sprintf(storageNameOnServer,"%s/%s",path->value,fileNameOnServer);
+	  fprintf(stderr,"Name on server %s\n",storageNameOnServer);
+	  fprintf(stderr,"fileNameOnServer: %s\n",fileNameOnServer);
+	  mode=S_IRWXU|S_IRGRP|S_IROTH;
+	  targetFile = open (storageNameOnServer,O_RDWR|O_CREAT|O_TRUNC,mode);
+	  if(targetFile<0){
+	    fprintf(stderr,"could not create the new file,%s\n",fileNameOnServer);	    
+	  }else{
+	    while (cgiFormFileRead(file, buffer, BufferLen, &got) ==cgiFormSuccess){
+	      if(got>0)
+		write(targetFile,buffer,got);
+	    }
+	  }
+	  addToMap(tmpReqI->content,"lref",storageNameOnServer);
+	  cgiFormFileClose(file);
+	  close(targetFile);
+	  fprintf(stderr,"File \"%s\" has been uploaded",fileNameOnServer);
+	}
+      }
+    }
+    tmpReqI=tmpReqI->next;
   }
 
   ensureDecodedBase64(&request_input_real_format);
@@ -1861,7 +1916,7 @@ int runRequest(map* request_inputs)
 #ifdef WIN32
   char *cgiSidL=NULL;
   if(getenv("CGISID")!=NULL)
-	addToMap(request_inputs,"cgiSid",getenv("CGISID"));
+    addToMap(request_inputs,"cgiSid",getenv("CGISID"));
   map* test1=getMap(request_inputs,"cgiSid");
   if(test1!=NULL){
     cgiSid=test1->value;
@@ -1958,8 +2013,6 @@ int runRequest(map* request_inputs)
 
 #ifdef DEBUG
   dumpMaps(request_output_real_format);
-  fprintf(stderr,"Function loaded and returned %d\n",*eres);
-  fflush(stderr);
 #endif
   if(eres!=-1)
     outputResponse(s1,request_input_real_format,
