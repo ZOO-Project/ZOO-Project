@@ -137,11 +137,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	trace=PyObject_Str(ptype);
 	if(PyString_Check(trace)){
 	  char *tpbt=strdup(pbt);
-	  sprintf(pbt,"%s\nTRACE : %s",tpbt,PyString_AsString(trace));
+	  sprintf(pbt,"%s\n%s",tpbt,PyString_AsString(trace));
 	  free(tpbt);
 	}
 	else
 	  fprintf(stderr,"EMPTY TRACE ?");
+	
+	char *tpbt=strdup(pbt);
 	pName = PyString_FromString("traceback");
 	pModule = PyImport_Import(pName);
 	pArgs = PyTuple_New(1);
@@ -151,9 +153,10 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	trace=NULL;
 	trace=PyObject_Str(pValue);
 	if(PyString_Check(trace))
-	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",pbt,PyString_AsString(trace));
+	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",tpbt,PyString_AsString(trace));
 	else
-	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations.",pbt);
+	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations. %s",tpbt);
+	free(tpbt);
 	map* err=createMap("text",pbt);
 	addToMap(err,"code","NoApplicableCode");
 	printExceptionReportResponse(m,err);
