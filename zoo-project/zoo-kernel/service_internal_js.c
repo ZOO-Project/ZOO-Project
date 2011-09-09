@@ -328,14 +328,66 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
   maps *tres=NULL;
   jsint oi=0;
   JSObject* tt=JSVAL_TO_OBJECT(t);
-#ifdef JS_DEBUG
-  fprintf(stderr,"Is finally an array ?\n");
   if(JS_IsArrayObject(cx,tt)){
+#ifdef JS_DEBUG
     fprintf(stderr,"Is finally an array !\n");
+#endif
   }
-  else
+  else{
+#ifdef JS_DEBUG
     fprintf(stderr,"Is not an array !\n");
 #endif
+    JSIdArray *idp=JS_Enumerate(cx,tt);
+    if(idp!=NULL) {
+      int index;
+      jsdouble argNum;
+#ifdef JS_DEBUG
+      fprintf(stderr,"Properties length :  %d \n",idp->length);
+#endif
+      
+      for (index=0,argNum=idp->length;index<argNum;index++) { 
+	jsval id = idp->vector[index];
+	jsval vp;
+	JSString* str; 
+	JS_IdToValue(cx,id,&vp);
+	char *c, *tmp;
+	JSString *jsmsg;
+	size_t len1;
+	jsmsg = JS_ValueToString(cx,vp);
+	len1 = JS_GetStringLength(jsmsg);
+
+	tres=(maps*)malloc(MAPS_SIZE);
+	tres->name=strdup(JS_EncodeString(cx,jsmsg));
+	tres->content=NULL;
+	tres->next=NULL;
+
+	jsval nvp=JSVAL_NULL;
+	if((JS_GetProperty(cx, JSVAL_TO_OBJECT(tt), JS_EncodeString(cx,jsmsg), &nvp)==JS_FALSE)){
+#ifdef JS_DEBUG
+	  fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,JS_EncodeString(cx,jsmsg));
+#endif
+	}
+	
+	JSObject *nvp1=JSVAL_NULL;
+	JS_ValueToObject(cx,nvp,&nvp1);
+	jsval nvp1j=OBJECT_TO_JSVAL(nvp1);
+	if(JSVAL_IS_OBJECT(nvp1j)){
+	  tres->content=mapFromJSObject(cx,nvp1j);
+	}
+
+	if(res==NULL)
+	  res=dupMaps(&tres);
+	else
+	  addMapsToMaps(&res,tres);
+	freeMaps(&tres);
+	free(tres);
+	tres=NULL;
+	
+	
+      }
+    }
+  }
+
   jsint len;
   JSBool hasLen=JS_GetArrayLength(cx, tt, &len);
   if(hasLen==JS_FALSE){
