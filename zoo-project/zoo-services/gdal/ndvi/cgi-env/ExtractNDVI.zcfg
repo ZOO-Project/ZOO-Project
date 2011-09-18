@@ -1,0 +1,57 @@
+[ExtractNDVI]
+ Title = Normalized Difference Vegetation Index. 
+ Abstract = Create raster file containing the Normalized Difference Vegetation Index. 
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = ndvi
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [raster]
+   Title = The raster file to be used
+   Abstract = URI to a raster file that contains the mentionned two bands.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = image/tiff
+    </Default>
+   </ComplexData>
+  [red]
+   Title = The red band number
+   Abstract = The RED band number to use.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = int
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [nir]
+   Title = The NIR band number
+   Abstract = The NIR band number to use.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = int
+    <Default>
+     value = 2
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [raster]
+   Title = The resulting raster
+   Abstract = A single band raster containing the NDVI of the original raster using formula : (NIR - RED) / (NIR + RED) .
+   <ComplexData>
+    <Default>
+     mimeType = image/tiff
+     extension = tif
+    </Default>
+   </ComplexData>
+ </DataOutputs>  
