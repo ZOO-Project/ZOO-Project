@@ -2,6 +2,8 @@ Version 1.3.0-dev
 
   * Support for dataInputs URLEncoded and xlink:href (ticket #62)
   * Use the same object structure for JavaScript arguments than for Python
+  * Add the Normalized Difference Vegetation Index service
+  * Add importScripts function to JavaScript support (ticket #66)
 
 Version 1.2.0-rc3
 
