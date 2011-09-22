@@ -41,6 +41,37 @@ JSAlert(JSContext *cx, uintN argc, jsval *argv1)
   return JS_TRUE;
 }
 
+JSBool 
+JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
+{
+  map* request = JS_GetContextPrivate(cx);
+  map* tmpm1=getMap(request,"metapath");
+  JS_MaybeGC(cx);
+
+  char ntmp[1024];
+  getcwd(ntmp,1024);
+
+  jsval *argv = JS_ARGV(cx,argv1);
+  int i=0;
+  JS_MaybeGC(cx);
+  for(i=0;i<argc;i++){
+    JSString* jsmsg = JS_ValueToString(cx,argv[i]);
+    char *filename = JSValToChar(cx,&argv[i]);
+    char api0[strlen(tmpm1->value)+strlen(ntmp)+strlen(filename)+2];
+    sprintf(api0,"%s/%s/%s",ntmp,tmpm1->value,filename);
+#ifdef JS_DEBUG
+    fprintf(stderr,"Trying to load %s\n",api0);
+#endif
+    JSObject *api_script1=loadZooApiFile(cx,JS_GetGlobalObject(cx),api0);
+    fflush(stderr);
+  }
+  JS_MaybeGC(cx);
+  JS_SET_RVAL(cx, argv1, JSVAL_VOID);
+  
+  return JS_TRUE;
+}
+
+
 int zoo_js_support(maps** main_conf,map* request,service* s,
 		   maps **inputs,maps **outputs)
 {
@@ -93,8 +124,16 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   if (!JS_DefineFunction(cx, global, "ZOOUpdateStatus", JSUpdateStatus, 2, 0))
     return 1;
   if (!JS_DefineFunction(cx, global, "alert", JSAlert, 2, 0))
+    return 1;  
+  if (!JS_DefineFunction(cx, global, "importScripts", JSLoadScripts, 1, 0))
     return 1;
 
+  /**
+   * Add private context object
+   */
+  void* cxPrivate = request;
+  JS_SetContextPrivate(cx,cxPrivate);
+    
   map* tmpm1=getMap(request,"metapath");
   char ntmp[1024];
   getcwd(ntmp,1024);
