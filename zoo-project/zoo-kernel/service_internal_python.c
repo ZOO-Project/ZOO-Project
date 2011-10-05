@@ -137,7 +137,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	trace=PyObject_Str(ptype);
 	if(PyString_Check(trace)){
 	  char *tpbt=strdup(pbt);
-	  sprintf(pbt,"%s\n%s",tpbt,PyString_AsString(trace));
+	  sprintf(pbt,"%s\n%s\0",tpbt,PyString_AsString(trace));
 	  free(tpbt);
 	}
 	else
