@@ -3,7 +3,7 @@
 Debian / Ubuntu
 ===============
 
-:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna, Luca Delucchi
 :Last Updated: $Date$
 
 .. contents:: Table of Contents
@@ -37,16 +37,6 @@ Installation Workflow
 
   cd zoo-project/thirds/cgic206/
 
-- change the path of installation
-
-::
-
-  nano Makefile 
-    - LIBS=-L./ -lcgic ../fcgi-2.4.0/libfcgi/.libs/libfcgi.a --> LIBS=/path/to/libfcgi.a
-    - cp libcgic.a  ../../dist/lib --> cp libcgic.a /usr/lib
-    - cp cgic.h  ../../dist//include --> cp cgic.h  /usr/include
-    - @echo libcgic.a is in  ../../dist/lib and cgic.h is in  ../../dist//include. --> @echo libcgic.a is in  /usr/lib and cgic.h is in /usr/include.
-
 - compile
 
 ::
@@ -73,21 +63,24 @@ Installation Workflow
 
 - run configure
 
-.. note::
-   In Ubuntu 10.04 libmozjs-dev does not exist, so to use JS you can compile `SpiderMonkey <https://developer.mozilla.org/en/SpiderMonkey>`__ or use the xulrunner-dev package 
-   which includes SpiderMonkey.  
-   For PHP, you must make sure to compile PHP with `--enable-embed <http://www.zoo-project.org/trac/wiki/ZooKernel/Embed/PHP#ConfigureandInstallPHPEmbedlibrary>`__.
-
 ::
 
   ./configure --with-java=/path/to/java
+  ./configure --with-python
+
+.. note::
+   In Ubuntu 10.04 libmozjs-dev does not exist, so to use JS you can compile SpiderMonkey or use the xulrunner-dev package which includes SpiderMonkey. 
+   For PHP, you must make sure to compile PHP with `--enable-embed <http://www.zoo-project.org/trac/wiki/ZooKernel/Embed/PHP#ConfigureandInstallPHPEmbedlibrary>`__.
+
+- to use JavaScript with XulRunner SpiderMonkey you have to create a link of libmozjs.so.
+
+::
   
-  to JavaScript with XulRunner SpiderMonkey you have to edit configure file.
-    - JS_CPPFLAGS="-I$JSHOME/include/js" --> JS_CPPFLAGS="-I$JSHOME/include"
-    - JS_LDFLAGS="-L$JSHOME/lib -ljs -lm" --> JS_LDFLAGS="-L$JSHOME/lib -lmozjs -lm"
-    - JS_LIB="js" --> JS_LIB="mozjs"
-    
-  ./configure --with-js=/usr/lib/xulrunner-devel.1.9.2.n
+  ln -s /usr/lib/xulrunner-1.9.2.23/libmozjs.so /usr/lib/
+  
+  ./configure --with-js
+  
+
 
 - compile
 
@@ -102,7 +95,7 @@ Installation Workflow
   sudo cp main.cfg /usr/lib/cgi-bin
   sudo cp zoo_loader.cgi /usr/lib/cgi-bin
 
-- Install ZOO ServiceProvider
+- install ZOO ServiceProvider (in this case we try Python service)
 
 ::
 
