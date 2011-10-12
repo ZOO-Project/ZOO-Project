@@ -333,6 +333,89 @@ ZOO.String = {
 };
 
 /**
+ * Class: ZOO.Class
+ * Object for creating CLASS
+ */
+ZOO.Class = function() {
+  var len = arguments.length;
+  var P = arguments[0];
+  var F = arguments[len-1];
+  var C = typeof F.initialize == "function" ?
+    F.initialize :
+    function(){ P.prototype.initialize.apply(this, arguments); };
+
+  if (len > 1) {
+    var newArgs = [C, P].concat(
+          Array.prototype.slice.call(arguments).slice(1, len-1), F);
+    ZOO.inherit.apply(null, newArgs);
+  } else {
+    C.prototype = F;
+  }
+  return C;
+};
+/**
+ * Function: create
+ * Function for creating CLASS
+ */
+ZOO.Class.create = function() {
+  return function() {
+    if (arguments && arguments[0] != ZOO.Class.isPrototype) {
+      this.initialize.apply(this, arguments);
+    }
+  };
+};
+/**
+ * Function: inherit
+ * Function for inheriting CLASS
+ */
+ZOO.Class.inherit = function (P) {
+  var C = function() {
+   P.call(this);
+  };
+  var newArgs = [C].concat(Array.prototype.slice.call(arguments));
+  ZOO.inherit.apply(null, newArgs);
+  return C.prototype;
+};
+/**
+ * Function: inherit
+ * Function for inheriting CLASS
+ */
+ZOO.inherit = function(C, P) {
+  var F = function() {};
+  F.prototype = P.prototype;
+  C.prototype = new F;
+  var i, l, o;
+  for(i=2, l=arguments.length; i<l; i++) {
+    o = arguments[i];
+    if(typeof o === "function") {
+      o = o.prototype;
+    }
+    ZOO.Util.extend(C.prototype, o);
+  }
+};
+/**
+ * Class: ZOO.Util
+ * Object for utilities
+ */
+ZOO.Util = ZOO.Util || {};
+/**
+ * Function: extend
+ * Function for extending object
+ */
+ZOO.Util.extend = function(destination, source) {
+  destination = destination || {};
+  if (source) {
+    for (var property in source) {
+      var value = source[property];
+      if (value !== undefined) {
+        destination[property] = value;
+      }
+    }
+  }
+  return destination;
+};
+
+/**
  * Class: ZOO.Request
  * Contains convenience methods for working with ZOORequest which
  *     replace XMLHttpRequest. Because of we are not in a browser
@@ -6123,8 +6206,11 @@ ZOO.Process = ZOO.Class({
      * {E4XElement} A WPS Input node.
      */
     'complex': function(identifier,data) {
-      var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:ComplexData><![CDATA['+data.value+']]></wps:ComplexData></wps:Data></wps:Input>');
-      input.*::Data.*::ComplexData.@mimeType = data.mimetype ? data.mimetype : 'application/json';
+      var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier>'+(data.value?'<wps:Data><wps:ComplexData><![CDATA['+data.value+']]></wps:ComplexData></wps:Data>':(data.xlink?'<wps:Reference xmlns:xlink="'+this.namespaces['xlink']+'" xlink:href="'+data.xlink+'" mimeType="'+data.mimeType+'" />':''))+'</wps:Input>');
+      if(data.xlink)
+	input.*::Reference.@mimeType = data.mimetype ? data.mimetype : 'application/json';
+      else
+	input.*::Data.*::ComplexData.@mimeType = data.mimetype ? data.mimetype : 'application/json';
       if (data.encoding)
         input.*::Data.*::ComplexData.@encoding = data.encoding;
       if (data.schema)

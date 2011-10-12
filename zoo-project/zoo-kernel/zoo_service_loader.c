@@ -1885,17 +1885,30 @@ int runRequest(map* request_inputs)
   else
     addToMap(_tmpMaps->content,"soap","false");
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
-    addToMap(_tmpMaps->content,"sessid",strstr(cgiCookie,"=")+1);
+    char *tcook=strdup(cgiCookie);
+    if(strstr(cgiCookie,";")>0){
+      char *token,*saveptr;
+      token=strtok_r(cgiCookie,";",&saveptr);
+      while(token!=NULL){
+	if(strcasestr(token,"ID")!=NULL){
+	  if(tcook!=NULL)
+	    free(tcook);
+	  tcook=strdup(token);
+	}
+	token=strtok_r(NULL,";",&saveptr);
+      }
+    }
+    addToMap(_tmpMaps->content,"sessid",strstr(tcook,"=")+1);
     char session_file_path[1024];
     map *tmpPath=getMapFromMaps(m,"main","sessPath");
     if(tmpPath==NULL)
       tmpPath=getMapFromMaps(m,"main","tmpPath");
-    char *tmp1=strtok(cgiCookie,";");
+    char *tmp1=strtok(tcook,";");
     if(tmp1!=NULL)
       sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
     else
       sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
-
+    free(tcook);
     maps *tmpSess=(maps*)calloc(1,MAPS_SIZE);
     struct stat file_status;
     int istat = stat(session_file_path, &file_status);
