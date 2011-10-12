@@ -43,11 +43,6 @@ Installation Workflow
 
   make
 
-- install
-
-::
-
-  sudo make install
 
 - go to kernel path
 
@@ -69,17 +64,25 @@ Installation Workflow
   ./configure --with-python
 
 .. note::
-   In Ubuntu 10.04 libmozjs-dev does not exist, so to use JS you can compile SpiderMonkey or use the xulrunner-dev package which includes SpiderMonkey. 
+   In Ubuntu 10.04 libmozjs-dev does not exist, so to use JavaScript you can compile SpiderMonkey (remember to put /usr/local/lib in a file inside /etc/ld.so.conf.d/). 
    For PHP, you must make sure to compile PHP with `--enable-embed <http://www.zoo-project.org/trac/wiki/ZooKernel/Embed/PHP#ConfigureandInstallPHPEmbedlibrary>`__.
 
-- to use JavaScript with XulRunner SpiderMonkey you have to create a link of libmozjs.so.
+- to use JavaScript with compiled SpiderMonkey.
 
 ::
-  
-  ln -s /usr/lib/xulrunner-1.9.2.23/libmozjs.so /usr/lib/
-  
-  ./configure --with-js
-  
+   
+  sudo echo "/usr/local/lib" > /etc/ld.so.conf.d/libmoz185.conf
+  sudo ldconfig
+  ./configure --with-js=/usr/local
+
+
+- to use JavaScript with Xulrunner .
+
+::
+   
+  sudo echo "/usr/lib/xulrunner-dev" > /etc/ld.so.conf.d/libmoz185.conf
+  sudo ldconfig
+  ./configure --with-js=/usr/lib/xulrunner-dev
 
 
 - compile
@@ -118,7 +121,7 @@ Installation Workflow
   - http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=Execute&Version=1.0.0&Identifier=HelloPy&DataInputs=a=myname
 
 .. note::
-   If you have some problem in the execute request, add the following to ``main.cfg``: 
+   If you have some problem in the execute request using Python service, add the following to ``main.cfg``: 
 
    ::
    
