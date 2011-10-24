@@ -116,7 +116,7 @@ Javascript
 
   function hellojs(conf,inputs,outputs){
      outputs=new Array();
-     outputs[0]={};
-     outputs[0]["result"]["value"]="Hello "+inputs[0]["S"]["value"]+" from JS World !";
+     outputs={};
+     outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from JS World !";
      return Array(3,outputs);
   }
