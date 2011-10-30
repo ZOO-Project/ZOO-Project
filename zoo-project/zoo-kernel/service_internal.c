@@ -2478,6 +2478,9 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     fcontent[res.nDataLen]=0;
     fsize=res.nDataLen;
   }
+  if(fsize==0){
+    return errorException(m, _("Unable to download the file."), "InternalError");
+  }
   map* tmpMap=getMapOrFill(content,"value","");
   free(tmpMap->value);
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
