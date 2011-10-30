@@ -485,6 +485,12 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
   char* tmpValue=(char*)malloc((res.nDataLen+1)*sizeof(char));
   size_t dwRead;
   InternetReadFile(res,(LPVOID)tmpValue,res.nDataLen,&dwRead);
+  fprintf(stderr,"content downloaded (%d) (%s) \n",dwRead,tmpValue);
+  if(dwRead==0){
+    JS_SET_RVAL(cx, argv1,STRING_TO_JSVAL(JS_NewStringCopyN(cx,"Unable to access the file.",strlen("Unable to access the file."))));
+    return JS_TRUE;
+  }
+
 #ifdef ULINET_DEBUG
   fprintf(stderr,"content downloaded (%d) (%s) \n",dwRead,tmpValue);
 #endif

@@ -767,7 +767,7 @@ int runRequest(map* request_inputs)
   int j;
   
   /**
-   * Create the input maps data structure
+   * Create the input and output maps data structure
    */
   int i=0;
   HINTERNET hInternet;
@@ -985,8 +985,11 @@ int runRequest(map* request_inputs)
 	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
 	  tmpmaps->name=strdup(tmpn);
-	  if(tmpv!=NULL)
-	    tmpmaps->content=createMap("value",tmpv+1);
+	  if(tmpv!=NULL){
+	    char *tmpvf=url_decode(tmpv+1);
+	    tmpmaps->content=createMap("value",tmpvf);
+	    free(tmpvf);
+	  }
 	  else
 	    tmpmaps->content=createMap("value","Reference");
 	  tmpmaps->next=NULL;
