@@ -1,9 +1,14 @@
 OS:=$(shell uname -s)
+CPU:=$(shell uname -m)
 ifeq ($(OS),Darwin)
 	MACOS_CFLAGS=-arch x86_64
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.dylib
 else
+ifeq ($(CPU),x86_64)
+	LIBS= -L./ -lcgic /usr/lib64/libfcgi.so
+else
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.a
+endif
 endif
 CFLAGS=-g -Wall ${MACOS_CFLAGS}
 CC=gcc
@@ -13,9 +18,10 @@ RANLIB=ranlib
 all: libcgic.a cgictest.cgi capture
 
 install: libcgic.a
+	mkdir -p ../../dist/lib
 	cp libcgic.a  ../../dist/lib
-	cp cgic.h  ../../dist//include
-	@echo libcgic.a is in  ../../dist/lib and cgic.h is in  ../../dist//include.
+	cp cgic.h  ../../dist/include
+	@echo libcgic.a is in  ../../dist/lib/ and cgic.h is in  ../../dist/include/
 
 libcgic.a: cgic.o cgic.h
 	rm -f libcgic.a
