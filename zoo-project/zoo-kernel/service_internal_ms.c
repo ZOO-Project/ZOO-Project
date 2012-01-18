@@ -178,8 +178,13 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	      OSRGetAuthorityName(hSRS,NULL),OSRGetAuthorityCode(hSRS,NULL));
       msLoadProjectionStringEPSG(&m->projection,tmpSrs);
       msLoadProjectionStringEPSG(&myLayer->projection,tmpSrs);
-      msInsertHashTable(&(m->web.metadata), "ows_srs", tmpSrs);
-      msInsertHashTable(&(myLayer->metadata), "ows_srs", tmpSrs);
+      
+      char tmpSrss[256];
+      fprintf(tmpSrss,"EPSG:4326 EPSG:900913 %s",tmpSrs);
+
+      msInsertHashTable(&(m->web.metadata), "ows_srs", tmpSrss);
+      msInsertHashTable(&(myLayer->metadata), "ows_srs", tmpSrss);
+
 #ifdef DEBUGMS
       fprintf(stderr,"isGeo %b\n\n",OSRIsGeographic(hSRS)==TRUE);
 #endif
@@ -197,8 +202,8 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 #ifdef DEBUGMS
 	fprintf(stderr,"PROJ (%s)\n",proj4Str);
 #endif
-	msLoadProjectionString(&m->projection,proj4Str);	  
-	msLoadProjectionString(&myLayer->projection,proj4Str);
+	msLoadProjectionString(&(m->projection),proj4Str);
+	msLoadProjectionString(&(myLayer->projection),proj4Str);
 	if(output!=NULL){ 
 	  if(OSRIsGeographic(hSRS)==TRUE)
 	    addToMap(output->content,"crs_isGeographic","true");
