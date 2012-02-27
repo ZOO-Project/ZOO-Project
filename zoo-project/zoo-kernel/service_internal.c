@@ -1807,8 +1807,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     asRaw=1;
   
   map *_tmp=getMapFromMaps(m,"lenv","cookie");
+  map *_tmp1=getMapFromMaps(m,"lenv","sessid");
   if(_tmp!=NULL){
     printf("Set-Cookie: %s\r\n",_tmp->value);
+    printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
     maps *tmpSess=getMaps(m,"senv");
     if(tmpSess!=NULL){
       char session_file_path[1024];
