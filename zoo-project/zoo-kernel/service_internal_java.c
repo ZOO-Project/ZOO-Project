@@ -51,6 +51,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   }
 #ifdef DEBUG
   fprintf(stderr,"CLASSPATH=%s\n",classpath);
+  fprintf(stderr,"(%s)\n",oclasspath);
 #endif
   setenv("CLASSPATH",classpath,1);
 
