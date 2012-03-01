@@ -46,7 +46,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     if(cclasspath!=NULL)
       sprintf(classpath,"%s:%s",ntmp,cclasspath);
     else
-      sprintf(classpath,"%s/%s/",ntmp,tmp->value);
+      sprintf(classpath,"%s",ntmp);
     sprintf(oclasspath,"-Djava.class.path=%s",classpath);
   }
 #ifdef DEBUG
