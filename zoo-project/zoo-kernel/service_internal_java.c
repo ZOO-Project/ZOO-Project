@@ -34,13 +34,20 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   char classpath[2048];
   char oclasspath[2068];
   int res=SERVICE_FAILED;
+  char *cclasspath=getenv("CLASSPATH");
   if(tmp!=NULL){
-    sprintf(classpath,"%s/%s/:$CLASSPATH",ntmp,tmp->value);
-    sprintf(oclasspath,"-Djava.class.path=%s/%s",ntmp,tmp->value);
+    if(cclasspath!=NULL)
+      sprintf(classpath,"%s/%s/:%s",ntmp,tmp->value,cclasspath);
+    else
+      sprintf(classpath,"%s/%s/",ntmp,tmp->value);
+    sprintf(oclasspath,"-Djava.class.path=%s",classpath);
   }
   else{
-    sprintf(classpath,"%s:$CLASSPATH",ntmp);
-    sprintf(oclasspath,"-Djava.class.path=%s",ntmp);
+    if(cclasspath!=NULL)
+      sprintf(classpath,"%s:%s",ntmp,cclasspath);
+    else
+      sprintf(classpath,"%s/%s/",ntmp,tmp->value);
+    sprintf(oclasspath,"-Djava.class.path=%s",classpath);
   }
 #ifdef DEBUG
   fprintf(stderr,"CLASSPATH=%s\n",classpath);
@@ -58,10 +65,10 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   jclass cls,cls_gr;
   int i;
 
-  options[0].optionString = oclasspath;
+  options[0].optionString = strdup(oclasspath);
 
-  vm_args.version = JNI_VERSION_1_2;
   JNI_GetDefaultJavaVMInitArgs(&vm_args);
+  vm_args.version = JNI_VERSION_1_6;
   vm_args.options = options;
   vm_args.nOptions = 1;
   vm_args.ignoreUnrecognized = JNI_FALSE;
@@ -88,7 +95,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     freeMap(&err);
     free(err);
     (*jvm)->DestroyJavaVM(jvm);
-    return 1;
+    return -1;
   }
 #ifdef DEBUG
   else{
