@@ -31,29 +31,27 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   char ntmp[1024];
   getcwd(ntmp,1024);
   map* tmp=getMap(request,"metapath");
-  char classpath[2048];
-  char oclasspath[2068];
+  char *classpath;
+  char *oclasspath;
   int res=SERVICE_FAILED;
   char *cclasspath=getenv("CLASSPATH");
   if(tmp!=NULL){
-    if(cclasspath!=NULL)
+    if(cclasspath!=NULL){
+      classpath=(char*) malloc((strlen(ntmp)+strlen(tmp->value)+strlen(cclasspath)+4)*sizeof(char));
+      oclasspath=(char*) malloc((strlen(ntmp)+strlen(tmp->value)+strlen(cclasspath)+22)*sizeof(char));
       sprintf(classpath,"%s/%s/:%s",ntmp,tmp->value,cclasspath);
-    else
+    }
+    else{
+      classpath=(char*) malloc((strlen(ntmp)+strlen(tmp->value)+3)*sizeof(char));
+      oclasspath=(char*) malloc((strlen(ntmp)+strlen(tmp->value)+21)*sizeof(char));
       sprintf(classpath,"%s/%s/",ntmp,tmp->value);
-    sprintf(oclasspath,"-Djava.class.path=%s",classpath);
-  }
-  else{
-    if(cclasspath!=NULL)
-      sprintf(classpath,"%s:%s",ntmp,cclasspath);
-    else
-      sprintf(classpath,"%s",ntmp);
+    }
     sprintf(oclasspath,"-Djava.class.path=%s",classpath);
   }
 #ifdef DEBUG
   fprintf(stderr,"CLASSPATH=%s\n",classpath);
   fprintf(stderr,"(%s)\n",oclasspath);
 #endif
-  setenv("CLASSPATH",classpath,1);
 
   JavaVMOption options[1];
   JavaVMInitArgs vm_args;
