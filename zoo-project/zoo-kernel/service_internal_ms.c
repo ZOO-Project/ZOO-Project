@@ -180,7 +180,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       msLoadProjectionStringEPSG(&myLayer->projection,tmpSrs);
       
       char tmpSrss[256];
-      fprintf(tmpSrss,"EPSG:4326 EPSG:900913 %s",tmpSrs);
+      sprintf(tmpSrss,"EPSG:4326 EPSG:900913 %s",tmpSrs);
 
       msInsertHashTable(&(m->web.metadata), "ows_srs", tmpSrss);
       msInsertHashTable(&(myLayer->metadata), "ows_srs", tmpSrss);
