@@ -124,7 +124,10 @@ void setReferenceUrl(maps* m,maps* tmpI){
 
   char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(format->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
 
-  if(proto>0)
+  if(proto>0){
+    map* test=getMap(tmpI->content,"real_extent");
+    if(test!=NULL)
+	extent=test;
     sprintf(webService_url,
 	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
 	    msUrl->value,
@@ -139,7 +142,11 @@ void setReferenceUrl(maps* m,maps* tmpI){
 	    extent->value,
 	    crs->value
 	    );
-  else
+  }
+  else{
+    map* test=getMap(tmpI->content,"real_extent_reverse");
+    if(test!=NULL)
+	extent=test;
     sprintf(webService_url,
 	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
 	    msUrl->value,
@@ -156,6 +163,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
 	    extent->value,
 	    crs->value
 	    );
+  }
   addToMap(tmpI->content,"Reference",webService_url);
 
 }
@@ -223,6 +231,9 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       }
       msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913");
       msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
+
+      addToMap(output->content,"real_extent","true");
+
     }
   }
   else{
@@ -269,14 +280,38 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
   msInsertHashTable(&(myLayer->metadata), "ows_extent", tmpExtent);
   
   if(output!=NULL){
-    sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
-    map* isGeo=getMap(output->content,"crs_isGeographic");
-    fprintf(stderr,"isGeo = %s\n",isGeo->value);
-    if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
-      sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
-    addToMap(output->content,"wms_extent",tmpExtent); 
-    sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",minX,minY,maxX,maxY);
-    addToMap(output->content,"wcs_extent",tmpExtent);
+    map* test=getMap(output->content,"real_extent");
+    if(test!=NULL){
+      pointObj min, max;
+      projectionObj tempSrs;
+      
+      min.x = m->extent.minx;
+      min.y = m->extent.miny;
+      max.x = m->extent.maxx;
+      max.y = m->extent.maxy;
+      char tmpSrsStr[1024];
+      
+      msInitProjection(&tempSrs);
+      msLoadProjectionStringEPSG(&tempSrs,"EPSG:4326");
+      
+      msProjectPoint(&(m->projection),&tempSrs,&min);
+      msProjectPoint(&m->projection,&tempSrs,&max);
+      
+      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.y,min.x,max.y,max.x);
+      addToMap(output->content,"wms_extent",tmpExtent);
+      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
+      addToMap(output->content,"wcs_extent",tmpExtent);
+      
+    }else{
+      sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
+      map* isGeo=getMap(output->content,"crs_isGeographic");
+      fprintf(stderr,"isGeo = %s\n",isGeo->value);
+      if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
+	sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+      addToMap(output->content,"wms_extent",tmpExtent); 
+      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",minX,minY,maxX,maxY);
+      addToMap(output->content,"wcs_extent",tmpExtent); 
+    }
   }
 
   setMapSize(output,minX,minY,maxX,maxY);
