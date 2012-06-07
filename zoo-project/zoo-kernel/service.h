@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2012 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -595,6 +595,99 @@ extern "C" {
     }
   }
 
+  static map* getMapArray(map* m,char* key,int index){
+    char tmp[1024];
+    if(index>0)
+      sprintf(tmp,"%s_%d",key,index);
+    else
+      sprintf(tmp,key);
+#ifdef DEBUG
+    fprintf(stderr,"** KEY %s\n",tmp);
+#endif
+    map* tmpMap=getMap(m,tmp);
+#ifdef DEBUG
+    if(tmpMap!=NULL)
+      dumpMap(tmpMap);
+#endif
+    return tmpMap;
+  }
+
+
+  static void setMapArray(map* m,char* key,int index,char* value){
+    char tmp[1024];
+    if(index>0)
+      sprintf(tmp,"%s_%d",key,index);
+    else
+      sprintf(tmp,key);
+    map* tmpSize=getMapArray(m,"size",index);
+    if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
+      fprintf(stderr,"%s\n",tmpSize->value);
+      map* ptr=getMapOrFill(m,tmp,"");
+      free(ptr->value);
+      ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
+      memcpy(ptr->value,value,atoi(tmpSize->value)); 
+    }
+    else
+      addToMap(m,tmp,value);
+  }
+
+  static map* getMapType(map* mt){
+    map* tmap=getMap(mt,"mimeType");
+    if(tmap==NULL){
+      tmap=getMap(mt,"dataType");
+      if(tmap==NULL){
+	tmap=getMap(mt,"CRS");
+      }
+    }
+    dumpMap(tmap);
+    return tmap;
+  }
+
+  static int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
+    maps* tmp=mi;
+    maps* _cursor=*mo;
+    maps* tmpMaps=getMaps(_cursor,tmp->name);
+
+    if(tmpMaps==NULL)
+      return -1;
+
+    map* tmpLength=getMap(tmpMaps->content,"length");
+    char tmpLen[10];
+    int len=1;
+    if(tmpLength!=NULL){
+      len=atoi(tmpLength->value);
+    }
+
+    map* tmpValI=getMap(tmp->content,"value");
+    char *tmpV[8]={
+      "size",
+      "value",
+      "uom",
+      "Reference",
+      "xlink:href",
+      typ,
+      "schema",
+      "encoding"
+    };
+    sprintf(tmpLen,"%d",len+1);
+    addToMap(_cursor->content,"length",tmpLen);
+    int i=0;
+    map* tmpSizeI=getMap(tmp->content,tmpV[i]);
+    for(0;i<8;i++){
+      map* tmpVI=getMap(tmp->content,tmpV[i]);
+      if(tmpVI!=NULL){
+	fprintf(stderr,"%s = %s\n",tmpV[i],tmpVI->value);
+	if(i<5)
+	  setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
+	else
+	  if(strncasecmp(tmpV[5],"mimeType",8)==0)
+	    setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
+      }
+    }
+    
+    addToMap(_cursor->content,"isArray","true");
+    return 0;
+  }
 
   static void setMapInMaps(maps* m,const char* key,const char* subkey,const char *value){
     maps* _tmpm=getMaps(m,key);

@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2012 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -351,13 +351,52 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
   JSObject* res=JS_NewObject(cx, NULL, NULL, NULL);
   jsval resf =  OBJECT_TO_JSVAL(res);
   map* tmpm=t;
+  map* isArray=getMap(t,"isArray");
+  map* isBinary=getMap(t,"size");
+  map* tmap=getMapType(t);
+  if(tmap==NULL)
+    fprintf(stderr,"tmap is null !\n");
+  else
+    fprintf(stderr,"tmap is not null ! (%s = %s)\n",tmap->name,tmap->value);
+
+  /* Avoid gesture of binary content which failed due to strlen function use */
+  if(isBinary!=NULL){
+    return res;
+  }
   while(tmpm!=NULL){
-    jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
-    JS_SetProperty(cx, res, tmpm->name,&jsstr);
+    if(isArray==NULL || strncasecmp(tmpm->name,"value",5)!=0 || 
+       (tmap!=NULL && strncasecmp(tmpm->name,tmap->name,strlen(tmap->name))!=0)){
+      jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
+      JS_SetProperty(cx, res, tmpm->name,&jsstr);
 #ifdef JS_DEBUG
-    fprintf(stderr,"%s => %s\n",tmpm->name,tmpm->value);
+      fprintf(stderr,"%s => %s\n",tmpm->name,tmpm->value);
 #endif
+    }
     tmpm=tmpm->next;
+  }
+  if(isArray!=NULL){
+    map* len=getMap(t,"length");
+    int cnt=atoi(len->value);
+    JSObject* values=JS_NewArrayObject( cx, cnt, NULL );
+    JSObject* mvalues=JS_NewArrayObject( cx, cnt, NULL );
+    map *tmpm1,*tmpm2;
+    int i=0;
+    for(i=0;i<cnt;i++){
+      tmpm1=getMapArray(t,"value",i);
+      tmpm2=getMapArray(t,tmap->name,i);
+      if(tmpm1!=NULL){
+	jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm1->value,strlen(tmpm1->value)));
+	JS_SetElement( cx, values, i, &jsstr );
+      }
+      if(tmpm2!=NULL){
+	jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm2->value,strlen(tmpm2->value)));
+	JS_SetElement( cx, mvalues, i, &jsstr );
+      }
+    }
+    jsval jvalues=OBJECT_TO_JSVAL(values);
+    jsval jmvalues=OBJECT_TO_JSVAL(mvalues);
+    JS_SetProperty(cx, res,"value",&jvalues);
+    JS_SetProperty(cx, res,tmap->name,&jmvalues);
   }
   return res;
 }
