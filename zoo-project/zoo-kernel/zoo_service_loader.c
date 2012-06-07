@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2011 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2012 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -91,6 +91,47 @@ void translateChar(char* str,char toReplace,char toReplaceBy){
     if(str[i]==toReplace)
       str[i]=toReplaceBy;
   }
+}
+
+/**
+ * Create (or append to) an array valued maps
+ * value = "["",""]"
+ */
+int appendMapsToMaps(maps* m,maps* mo,maps* mi,elements* elem){
+
+  map* tmap=getMapType(mo->content);
+  if(tmap==NULL){
+    tmap=getMapType(elem->defaults->content);
+  }
+
+  map* testMap=getMap(elem->content,"maxOccurs");
+  if(testMap!=NULL){
+    if(strncasecmp(testMap->value,"unbounded",9)!=0 && atoi(testMap->value)>1){
+      if(addMapsArrayToMaps(&mo,mi,tmap->name)<0){
+	char emsg[1024];
+	sprintf(emsg,_("You set maximum occurences for <%s> as %i but you tried to use it more than the limit you set. Please correct your ZCFG file or your request."),mi->name,atoi(testMap->value));
+	errorException(m,emsg,"InternalError");
+	return -1;
+      }
+    }else{
+      if(strncasecmp(testMap->value,"unbounded",9)==0){
+	if(addMapsArrayToMaps(&mo,mi,tmap->name)<0){
+	  char emsg[1024];
+	  map* tmpMap=getMap(mi->content,"length");
+	  sprintf(emsg,_("ZOO-Kernel was unable to load your data for %s position %s."),mi->name,tmpMap->value);
+	  errorException(m,emsg,"InternalError");
+	  return -1;
+	}
+      }
+      else{
+	char emsg[1024];
+	sprintf(emsg,_("You set maximum occurences for <%s> to one but you tried to use it more than once. Please correct your ZCFG file or your request."),mi->name);
+	errorException(m,emsg,"InternalError");
+	return -1;
+      }
+    }
+  }
+  return 0;
 }
 
 xmlXPathObjectPtr extractFromDoc(xmlDocPtr doc,const char* search){
@@ -1067,8 +1108,26 @@ int runRequest(map* request_inputs)
 #endif
 	if(request_input_real_format==NULL)
 	  request_input_real_format=dupMaps(&tmpmaps);
-	else
-	  addMapsToMaps(&request_input_real_format,tmpmaps);
+	else{
+	  maps* testPresence=getMaps(request_input_real_format,tmpmaps->name);
+	  if(testPresence!=NULL){
+	    elements* elem=getElements(s1->inputs,tmpmaps->name);
+	    if(elem!=NULL){
+	      if(appendMapsToMaps(m,request_input_real_format,tmpmaps,elem)<0){
+		freeMaps(&m);
+		free(m);
+		free(REQUEST);
+		free(SERVICE_URL);
+		InternetCloseHandle(hInternet);
+		freeService(&s1);
+		free(s1);
+		return 0;
+	      }
+	    }
+	  }
+	  else
+	    addMapsToMaps(&request_input_real_format,tmpmaps);
+	}
 	freeMaps(&tmpmaps);
 	free(tmpmaps);
 	tmpmaps=NULL;
@@ -1478,7 +1537,27 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"ADD MAPS TO REQUEST MAPS !\n");
 	fflush(stderr);
 #endif
-	addMapsToMaps(&request_input_real_format,tmpmaps);
+
+	{
+	  maps* testPresence=getMaps(request_input_real_format,tmpmaps->name);
+	  if(testPresence!=NULL){
+	    elements* elem=getElements(s1->inputs,tmpmaps->name);
+	    if(elem!=NULL){
+	      if(appendMapsToMaps(m,request_input_real_format,tmpmaps,elem)<0){
+		freeMaps(&m);
+		free(m);
+		free(REQUEST);
+		free(SERVICE_URL);
+		InternetCloseHandle(hInternet);
+		freeService(&s1);
+		free(s1);
+		return 0;
+	      }
+	    }
+	  }
+	  else
+	    addMapsToMaps(&request_input_real_format,tmpmaps);
+	}
 	
 #ifdef DEBUG
 	fprintf(stderr,"******TMPMAPS*****\n");

@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2011 GeoLabs SARL
+ * Copyright (c) 2009-2012 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -2187,7 +2187,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
       if(tmpIoType!=NULL){
 	map* tmpContent=tmpIoType->content;
 	map* cval=NULL;
-
+	int hasPassed=-1;
 	while(tmpContent!=NULL){
 	  if((cval=getMap(tmpMaps->content,tmpContent->name))==NULL){
 #ifdef DEBUG
@@ -2197,6 +2197,24 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	      tmpMaps->content=createMap(tmpContent->name,tmpContent->value);
 	    else
 	      addToMap(tmpMaps->content,tmpContent->name,tmpContent->value);
+	    
+	    if(hasPassed<0 && type==0 && getMap(tmpMaps->content,"isArray")!=NULL){
+	      map* length=getMap(tmpMaps->content,"length");
+	      int i;
+	      char *tcn=strdup(tmpContent->name);
+	      for(i=1;i<atoi(length->value);i++){
+		dumpMap(tmpMaps->content);
+		fprintf(stderr,"addDefaultValues %s_%d => %s\n",tcn,i,tmpContent->value);
+		int len=strlen(tcn);
+		char *tmp1=malloc((len+10)*sizeof(char));
+		sprintf(tmp1,"%s_%d",tcn,i);
+		fprintf(stderr,"addDefaultValues %s => %s\n",tmp1,tmpContent->value);
+		addToMap(tmpMaps->content,tmp1,tmpContent->value);
+		free(tmp1);
+		hasPassed=1;
+	      }
+	      free(tcn);
+	    }
 	  }
 	  tmpContent=tmpContent->next;
 	}
@@ -2483,10 +2501,13 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   if(fsize==0){
     return errorException(m, _("Unable to download the file."), "InternalError");
   }
+
   map* tmpMap=getMapOrFill(content,"value","");
+    
   free(tmpMap->value);
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
-  memcpy(tmpMap->value,fcontent,(fsize)*sizeof(char)); 
+  memcpy(tmpMap->value,fcontent,(fsize)*sizeof(char));
+
   char ltmp1[256];
   sprintf(ltmp1,"%d",fsize);
   addToMap(content,"size",ltmp1);

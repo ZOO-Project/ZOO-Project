@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2011 GeoLabs SARL
+ * Copyright (c) 2009-2012 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -200,15 +200,63 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 				  "Ljava/lang/Object;");
     maps* tmp=t;
     while(tmp!=NULL){
+      map* tmap=getMapType(tmp->content);
       map* tmp1=tmp->content;
       scObject1 = (*env)->NewObject(env, scHashMap_class, scHashMap_constructor);
       map* sizeV=getMap(tmp1,"size");
+      map* isArray=getMap(tmp1,"isArray");
+      map* alen=getMap(tmp1,"length");
       while(tmp1!=NULL){
-	if(sizeV!=NULL && strcmp(tmp1->name,"value")==0){
-	  jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sizeV->value));
-	  (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),tmp1->value);
-	  (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), tmpData);
-	}else
+	if(strcmp(tmp1->name,"value")==0){
+	  if(isArray==NULL){
+	    if(sizeV!=NULL && strcmp(tmp1->name,"value")==0){
+	      jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sizeV->value));
+	      (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),tmp1->value);
+	      (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), tmpData);
+	    }else
+	      (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), (*env)->NewStringUTF(env,tmp1->value));
+	  }
+	  else{
+	    int alen1=atoi(alen->value);
+	    fprintf(stderr,"LENGTH %d \n",alen1);
+	    
+	    jclass scArrayListClass,scArrayList_class;
+	    jmethodID scArrayList_constructor;
+	    jobject scObject2,scObject3,scObject4;
+	    scArrayListClass = (*env)->FindClass(env, "java/util/ArrayList");
+	    scArrayList_class = (*env)->NewGlobalRef(env, scArrayListClass);
+	    scArrayList_constructor = (*env)->GetMethodID(env, scArrayList_class, "<init>", "()V");
+	    jmethodID add_mid = 0;
+	    scObject2 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
+	    scObject3 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
+	    scObject4 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
+
+	    add_mid = (*env)->GetMethodID(env,scArrayListClass,
+					  "add","(Ljava/lang/Object;)Z");
+	    
+	    int i;
+	    
+	    for(i=0;i<alen1;i++){
+	      map* vMap=getMapArray(tmp->content,"value",i);	    
+	      map* sMap=getMapArray(tmp->content,"size",i);
+	      map* mMap=getMapArray(tmp->content,tmap->value,i);
+	      
+	      if(sMap!=NULL && vMap!=NULL && strncmp(vMap->name,"value",5)==0){
+		jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sMap->value));
+		(*env)->SetByteArrayRegion(env,tmpData,0,atoi(sMap->value),vMap->value);
+		(*env)->CallObjectMethod(env,scObject2, add_mid, tmpData);
+	      }else{
+		jobject tmpData=(*env)->NewStringUTF(env,vMap->value);
+		(*env)->CallObjectMethod(env,scObject2, add_mid, tmpData);
+	      }
+	      
+	    }
+	    
+	    (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), scObject2);
+	    
+	  }
+	}
+	else
 	  (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), (*env)->NewStringUTF(env,tmp1->value));
 	tmp1=tmp1->next;
       }

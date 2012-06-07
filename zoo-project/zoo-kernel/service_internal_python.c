@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2011 GeoLabs SARL
+ * Copyright (c) 2009-2012 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -207,11 +207,78 @@ PyDictObject* PyDict_FromMaps(maps* t){
 PyDictObject* PyDict_FromMap(map* t){
   PyObject* res=PyDict_New( );
   map* tmp=t;
+  int hasSize=0;
+  map* isArray=getMap(tmp,"isArray");
   map* size=getMap(tmp,"size");
+  map* tmap=getMapType(tmp);
   while(tmp!=NULL){
     PyObject* name=PyString_FromString(tmp->name);
-    if(strcasecmp(tmp->name,"value")==0){
-      if(size!=NULL){
+    if(strcasecmp(tmp->name,"value")==0) {
+      if(isArray!=NULL){
+	map* len=getMap(tmp,"length");
+	int cnt=atoi(len->value);
+	PyObject* value=PyList_New(cnt);
+	PyObject* mvalue=PyList_New(cnt);
+	PyObject* svalue=PyList_New(cnt);
+
+	for(int i=0;i<cnt;i++){
+	  
+	  map* vMap=getMapArray(tmp,"value",i);	    
+	  map* sMap=getMapArray(tmp,"size",i);
+
+	  if(vMap!=NULL){
+	    
+	    PyObject* lvalue;
+	    PyObject* lsvalue;
+	    if(sMap==NULL){
+	      lvalue=PyString_FromString(vMap->value);
+	      lsvalue=Py_None;
+	    }
+	    else{
+	      lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
+	      lsvalue=PyString_FromString(sMap->value);
+	      hasSize=1;
+	    }
+
+	    if(PyList_SetItem(value,i,lvalue)<0){
+	      fprintf(stderr,"Unable to set key value pair...");
+	      return NULL;
+	    } 
+	    if(PyList_SetItem(svalue,i,lsvalue)<0){
+	      fprintf(stderr,"Unable to set key value pair...");
+	      return NULL;
+	    } 
+	  }
+	  
+	  map* mMap=getMapArray(tmp,tmap->name,i);
+	  PyObject* lmvalue;
+	  if(mMap!=NULL){
+	    lmvalue=PyString_FromString(mMap->value);
+	  }else
+	    lmvalue=Py_None;
+	  
+	  if(PyList_SetItem(mvalue,i,lmvalue)<0){
+	      fprintf(stderr,"Unable to set key value pair...");
+	      return NULL;
+	  } 
+	  
+	}
+
+	if(PyDict_SetItem(res,name,value)<0){
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
+	}
+	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
+	}
+	if(hasSize>0)
+	  if(PyDict_SetItem(res,PyString_FromString("size"),svalue)<0){
+	    fprintf(stderr,"Unable to set key value pair...");
+	    return NULL;
+	  }
+      }
+      else if(size!=NULL){
 	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
@@ -227,10 +294,12 @@ PyDictObject* PyDict_FromMap(map* t){
       }
     }
     else{
-      PyObject* value=PyString_FromString(tmp->value);
-      if(PyDict_SetItem(res,name,value)<0){
-	fprintf(stderr,"Unable to set key value pair...");
-	return NULL;
+      if(PyDict_GetItem(res,name)==NULL){
+	PyObject* value=PyString_FromString(tmp->value);
+	if(PyDict_SetItem(res,name,value)<0){
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
+	}
       }
     }
     Py_DECREF(name);

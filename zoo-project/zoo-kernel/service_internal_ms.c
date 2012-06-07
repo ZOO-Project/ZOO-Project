@@ -125,9 +125,6 @@ void setReferenceUrl(maps* m,maps* tmpI){
   char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(format->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
 
   if(proto>0){
-    map* test=getMap(tmpI->content,"real_extent");
-    if(test!=NULL)
-	extent=test;
     sprintf(webService_url,
 	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
 	    msUrl->value,
@@ -144,9 +141,6 @@ void setReferenceUrl(maps* m,maps* tmpI){
 	    );
   }
   else{
-    map* test=getMap(tmpI->content,"real_extent_reverse");
-    if(test!=NULL)
-	extent=test;
     sprintf(webService_url,
 	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
 	    msUrl->value,
@@ -280,38 +274,47 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
   msInsertHashTable(&(myLayer->metadata), "ows_extent", tmpExtent);
   
   if(output!=NULL){
+
     map* test=getMap(output->content,"real_extent");
     if(test!=NULL){
       pointObj min, max;
       projectionObj tempSrs;
-      
+
       min.x = m->extent.minx;
       min.y = m->extent.miny;
       max.x = m->extent.maxx;
       max.y = m->extent.maxy;
       char tmpSrsStr[1024];
-      
+
+
       msInitProjection(&tempSrs);
       msLoadProjectionStringEPSG(&tempSrs,"EPSG:4326");
-      
+
       msProjectPoint(&(m->projection),&tempSrs,&min);
       msProjectPoint(&m->projection,&tempSrs,&max);
       
       sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.y,min.x,max.y,max.x);
+      map* isGeo=getMap(output->content,"crs_isGeographic");
+      fprintf(stderr,"isGeo = %s\n",isGeo->value);
+      if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
+        sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
       addToMap(output->content,"wms_extent",tmpExtent);
-      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
+      sprintf(tmpSrsStr,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
       addToMap(output->content,"wcs_extent",tmpExtent);
-      
+      dumpMap(output->content);
+
     }else{
       sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
       map* isGeo=getMap(output->content,"crs_isGeographic");
       fprintf(stderr,"isGeo = %s\n",isGeo->value);
       if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
-	sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+        sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
       addToMap(output->content,"wms_extent",tmpExtent); 
       sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",minX,minY,maxX,maxY);
-      addToMap(output->content,"wcs_extent",tmpExtent); 
+      addToMap(output->content,"wcs_extent",tmpExtent);
+      
     }
+
   }
 
   setMapSize(output,minX,minY,maxX,maxY);
@@ -857,10 +860,16 @@ void outputMapfile(maps* conf,maps* outputs){
   /**
    * Firs store the value on disk
    */
+  map* mime=getMap(outputs->content,"mimeType");
+  char *ext="data";
+  if(mime!=NULL)
+    if(strncasecmp(mime->value,"application/json",16)==0)
+      ext="json";
+  
   map* tmpMap=getMapFromMaps(conf,"main","dataPath");
   map* sidMap=getMapFromMaps(conf,"lenv","sid");
   char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
-  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.data",tmpMap->value,outputs->name,sidMap->value);
+  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext);
   int f=open(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   map* sizeMap=getMap(outputs->content,"size");
   map* vData=getMap(outputs->content,"value");
