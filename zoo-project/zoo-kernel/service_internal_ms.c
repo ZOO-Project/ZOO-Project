@@ -222,11 +222,11 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       }
       if(output!=NULL){
 	addToMap(output->content,"crs","EPSG:4326");
+        addToMap(output->content,"real_extent","true");
       }
       msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913");
       msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
 
-      addToMap(output->content,"real_extent","true");
 
     }
   }
