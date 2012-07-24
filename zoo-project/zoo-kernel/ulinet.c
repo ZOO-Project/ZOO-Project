@@ -260,6 +260,7 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
     curl_easy_setopt(hInternet.handle,CURLOPT_POST,1);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
+    curl_easy_setopt(hInternet.handle,CURLOPT_VERBOSE,1);
 #endif
     curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDS,lpszHeaders);
     //curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);

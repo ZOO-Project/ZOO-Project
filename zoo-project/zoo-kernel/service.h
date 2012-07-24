@@ -700,6 +700,14 @@ extern "C" {
       }else{
 	addToMap(_tmpm->content,subkey,value);
       }
+    }else{
+      maps *tmp=(maps*)malloc(MAPS_SIZE);
+      tmp->name=strdup(key);
+      tmp->content=createMap(subkey,value);
+      tmp->next=NULL;
+      addMapsToMaps(&m,tmp);
+      freeMaps(&tmp);
+      free(tmp);
     }
   }
 
