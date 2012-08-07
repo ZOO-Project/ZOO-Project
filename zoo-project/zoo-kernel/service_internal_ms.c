@@ -174,7 +174,8 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
   if( pszProjection!=NULL && strlen(pszProjection)>1 &&
       OSRImportFromWkt( hSRS, &pszProjection ) == CE_None ){
     char *proj4Str=NULL;
-    if(OSRGetAuthorityName(hSRS,NULL)!=NULL && OSRGetAuthorityCode(hSRS,NULL)!=NULL){
+    if(OSRGetAuthorityName(hSRS,NULL)!=NULL && 
+       OSRGetAuthorityCode(hSRS,NULL)!=NULL){
       char tmpSrs[20];
       sprintf(tmpSrs,"%s:%s",
 	      OSRGetAuthorityName(hSRS,NULL),OSRGetAuthorityCode(hSRS,NULL));
@@ -235,10 +236,6 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       msSrs=getMap(output->content,"msSrs");
     }
     if(msSrs!=NULL){
-      if(output!=NULL){
-	addToMap(output->content,"crs",msSrs->value);
-	addToMap(output->content,"crs_isGeographic","true");
-      }
       msLoadProjectionStringEPSG(&m->projection,msSrs->value);
       msLoadProjectionStringEPSG(&myLayer->projection,msSrs->value);
       char tmpSrs[128];
@@ -246,14 +243,14 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       msInsertHashTable(&(m->web.metadata),"ows_srs",tmpSrs);
       msInsertHashTable(&(myLayer->metadata),"ows_srs",tmpSrs);
     }else{
-      if(output!=NULL){
-	addToMap(output->content,"crs","EPSG:4326");
-	addToMap(output->content,"crs_isGeographic","true");
-      }
       msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
       msLoadProjectionStringEPSG(&myLayer->projection,"EPSG:4326");
       msInsertHashTable(&(m->web.metadata),"ows_srs","EPSG:4326 EPSG:900913");
       msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
+    }
+    if(output!=NULL){
+      addToMap(output->content,"crs",msSrs->value);
+      addToMap(output->content,"crs_isGeographic","true");
     }
   }
 

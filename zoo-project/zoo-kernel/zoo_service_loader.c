@@ -98,13 +98,24 @@ void translateChar(char* str,char toReplace,char toReplaceBy){
  * value = "["",""]"
  */
 int appendMapsToMaps(maps* m,maps* mo,maps* mi,elements* elem){
-
-  map* tmap=getMapType(mo->content);
+  maps* tmpMaps=getMaps(mo,mi->name);
+  map* tmap=getMapType(tmpMaps->content);
+  elements* el=getElements(elem,mi->name);
+  int hasEl=1;
+  if(el==NULL)
+    hasEl=-1;
   if(tmap==NULL){
-    tmap=getMapType(elem->defaults->content);
+    if(hasEl>0)
+      tmap=getMapType(el->defaults->content);      
   }
 
-  map* testMap=getMap(elem->content,"maxOccurs");
+  map* testMap=NULL;
+  if(hasEl>0){
+    testMap=getMap(el->content,"maxOccurs");
+  }else{
+    testMap=createMap("maxOccurs","unbounded");
+  }
+
   if(testMap!=NULL){
     if(strncasecmp(testMap->value,"unbounded",9)!=0 && atoi(testMap->value)>1){
       if(addMapsArrayToMaps(&mo,mi,tmap->name)<0){
@@ -115,6 +126,10 @@ int appendMapsToMaps(maps* m,maps* mo,maps* mi,elements* elem){
       }
     }else{
       if(strncasecmp(testMap->value,"unbounded",9)==0){
+	if(hasEl<0){
+	  freeMap(&testMap);
+	  free(testMap);
+	}
 	if(addMapsArrayToMaps(&mo,mi,tmap->name)<0){
 	  char emsg[1024];
 	  map* tmpMap=getMap(mi->content,"length");

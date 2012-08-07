@@ -644,14 +644,13 @@ extern "C" {
   }
 
   static int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
-    maps* tmp=mi;
-    maps* _cursor=*mo;
-    maps* tmpMaps=getMaps(_cursor,tmp->name);
+    maps* tmp=mi;    
+    maps* _cursor=getMaps(*mo,tmp->name);
 
-    if(tmpMaps==NULL)
+    if(_cursor==NULL)
       return -1;
 
-    map* tmpLength=getMap(tmpMaps->content,"length");
+    map* tmpLength=getMap(_cursor->content,"length");
     char tmpLen[10];
     int len=1;
     if(tmpLength!=NULL){
