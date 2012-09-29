@@ -27,6 +27,13 @@
 #include "service_internal_ms.h"
 #endif
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE -1
+#endif
+
 void addLangAttr(xmlNodePtr n,maps *m){
   map *tmpLmap=getMapFromMaps(m,"main","language");
   if(tmpLmap!=NULL)
