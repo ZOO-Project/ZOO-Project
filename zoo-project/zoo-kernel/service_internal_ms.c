@@ -76,7 +76,7 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
 }
 
 void setReferenceUrl(maps* m,maps* tmpI){
-  dumpMaps(tmpI);
+  //dumpMaps(tmpI);
   outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   map *msOgcVersion=getMapFromMaps(m,"main","msOgcVersion");
@@ -298,7 +298,7 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
       addToMap(output->content,"wms_extent",tmpExtent);
       sprintf(tmpSrsStr,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
       addToMap(output->content,"wcs_extent",tmpExtent);
-      dumpMap(output->content);
+      //dumpMap(output->content);
 
     }else{
       sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
@@ -330,7 +330,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
    * Try to load the file as ZIP
    */
 
-  OGRDataSourceH *poDS1 = NULL;
+  OGRDataSourceH poDS1 = NULL;
   OGRSFDriverH *poDriver1 = NULL;
   char *dsName=(char*)malloc((8+strlen(pszDataSource)+1)*sizeof(char));
   char *odsName=strdup(pszDataSource);
@@ -372,7 +372,11 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     fprintf(stderr,"The DataSource is a  ZIP File\n");
     char** demo=VSIReadDir(dsName);
     int i=0;
-    mkdir(sdsName,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH );
+    mkdir(sdsName
+#ifndef WIN32
+		,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH 
+#endif
+		);
     while(demo[i]!=NULL){
       fprintf(stderr,"ZIP File content : %s\n",demo[i]);
       char *tmpDs=(char*)malloc((strlen(dsName)+strlen(demo[i])+2)*sizeof(char));
@@ -413,7 +417,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
   }
 
-  OGRDataSourceH *poDS = NULL;
+  OGRDataSourceH poDS = NULL;
   OGRSFDriverH *poDriver = NULL;
   poDS = OGROpen( pszDataSource, FALSE, poDriver );
   if( poDS == NULL ){
@@ -431,7 +435,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
   int iLayer = 0;
   for( iLayer=0; iLayer < OGR_DS_GetLayerCount(poDS); iLayer++ ){
-    OGRLayerH *poLayer = OGR_DS_GetLayer(poDS,iLayer);
+    OGRLayerH poLayer = OGR_DS_GetLayer(poDS,iLayer);
 
     if( poLayer == NULL ){
 #ifdef DEBUGMS
@@ -529,13 +533,13 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     /**
      * Detect the FID column or use the first attribute field as FID
      */
-    char *fid=OGR_L_GetFIDColumn(poLayer);
+    char *fid=(char*)OGR_L_GetFIDColumn(poLayer);
     if(strlen(fid)==0){
       OGRFeatureDefnH def=OGR_L_GetLayerDefn(poLayer);
       int fIndex=0;
       for(fIndex=0;fIndex<OGR_FD_GetFieldCount(def);fIndex++){
 	OGRFieldDefnH fdef=OGR_FD_GetFieldDefn(def,fIndex);
-	fid=OGR_Fld_GetNameRef(fdef);
+	fid=(char*)OGR_Fld_GetNameRef(fdef);
 	break;
       }
     }
@@ -549,48 +553,48 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       msInsertHashTable(&(myLayer->metadata), "ows_title", "Default Title");
 
     if(msGrowLayerClasses(myLayer) == NULL)
-      return;
-    if(initClass((myLayer->class[myLayer->numclasses])) == -1)
-      return;
-    myLayer->class[myLayer->numclasses]->type = myLayer->type;
-    if(msGrowClassStyles(myLayer->class[myLayer->numclasses]) == NULL)
-      return ;
-    if(initStyle(myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]) == -1)
-      return;
+      return -1;
+    if(initClass((myLayer->_class[myLayer->numclasses])) == -1)
+      return -1;
+    myLayer->_class[myLayer->numclasses]->type = myLayer->type;
+    if(msGrowClassStyles(myLayer->_class[myLayer->numclasses]) == NULL)
+      return -1;
+    if(initStyle(myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]) == -1)
+      return -1;
 
     /**
      * Apply msStyle else fallback to the default style
      */
     tmpMap=getMap(output->content,"msStyle");
     if(tmpMap!=NULL)
-      msUpdateStyleFromString(myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles],tmpMap->value,0);
+      msUpdateStyleFromString(myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles],tmpMap->value,0);
     else{
       /**
        * Set style
        */
-      myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.red=125;
-      myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.green=125;
-      myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.blue=255;
-      myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
-      myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
-      myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
+      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.red=125;
+      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.green=125;
+      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.blue=255;
+      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
+      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
+      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
 
       /**
        * Set specific style depending on type
        */
       if(myLayer->type == MS_LAYER_POLYGON)
-	myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->width=3;
+	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->width=3;
       if(myLayer->type == MS_LAYER_LINE){
-	myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->width=3;
-	myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
+	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->width=3;
+	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
       }
       if(myLayer->type == MS_LAYER_POINT){
-	myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->symbol=1;
-	myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->size=15;
+	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->symbol=1;
+	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->size=15;
       }
 
     }
-    myLayer->class[myLayer->numclasses]->numstyles++;
+    myLayer->_class[myLayer->numclasses]->numstyles++;
     myLayer->numclasses++;
     m->layerorder[m->numlayers] = m->numlayers;
     m->numlayers++;
@@ -605,7 +609,6 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
 
 int tryGdal(maps* conf,maps* output,mapObj* m){
-
   map* tmpMap=getMap(output->content,"storage");
   char *pszFilename=tmpMap->value;
   GDALDatasetH hDataset;
@@ -789,21 +792,21 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	     * Create a new class
 	     */
 	    if(msGrowLayerClasses(myLayer) == NULL)
-	      return;
-	    if(initClass((myLayer->class[myLayer->numclasses])) == -1)
-	      return;
-	    myLayer->class[myLayer->numclasses]->type = myLayer->type;
-	    if(msGrowClassStyles(myLayer->class[myLayer->numclasses]) == NULL)
-	      return ;
-	    if(initStyle(myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]) == -1)
-	      return;
+	      return -1;
+	    if(initClass((myLayer->_class[myLayer->numclasses])) == -1)
+	      return -1;
+	    myLayer->_class[myLayer->numclasses]->type = myLayer->type;
+	    if(msGrowClassStyles(myLayer->_class[myLayer->numclasses]) == NULL)
+	      return -1;
+	    if(initStyle(myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]) == -1)
+	      return -1;
 	    
 	    /**
 	     * Set class name
 	     */
 	    char className[7];
 	    sprintf(className,"class%d",i);
-	    myLayer->class[myLayer->numclasses]->name=strdup(className);
+	    myLayer->_class[myLayer->numclasses]->name=strdup(className);
 	    
 	    /**
 	     * Set expression
@@ -813,16 +816,16 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<%.3f)",cstep,cstep+interval);
 	    else
 	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<=%.3f)",cstep,cstep+interval);
-	    msLoadExpressionString(&myLayer->class[myLayer->numclasses]->expression,expression);
+	    msLoadExpressionString(&myLayer->_class[myLayer->numclasses]->expression,expression);
 	    
 	    /**
 	     * Set color
 	     */
-	    myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
-	    myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
-	    myLayer->class[myLayer->numclasses]->styles[myLayer->class[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
+	    myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
+	    myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
+	    myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
 	    cstep+=interval;
-	    myLayer->class[myLayer->numclasses]->numstyles++;
+	    myLayer->_class[myLayer->numclasses]->numstyles++;
 	    myLayer->numclasses++;
 	    
 	  }
@@ -975,6 +978,19 @@ void outputMapfile(maps* conf,maps* outputs){
     cursor=cursor->next;
   }
 
+  /*
+   * Set mapserver PROJ_LIB/GDAL_DATA or any other config parameter from 
+   * the main.cfg [mapserver] section if any
+   */
+  maps *tmp3=getMaps(conf,"mapserver");
+  if(tmp3!=NULL){
+    map* tmp4=tmp3->content;
+    while(tmp4!=NULL){
+      msSetConfigOption(myMap,tmp4->name,tmp4->value);
+      tmp4=tmp4->next;
+    }
+  }
+
   /**
    * Set a ows_rootlayer_title,  
    */
@@ -1005,7 +1021,7 @@ void outputMapfile(maps* conf,maps* outputs){
 
   if(tryOgr(conf,outputs,myMap)<0)
     if(tryGdal(conf,outputs,myMap)<0)
-      return NULL;
+      return ;
 
   tmp1=getMapFromMaps(conf,"main","dataPath");
   char *tmpPath=(char*)malloc((13+strlen(tmp1->value))*sizeof(char));

@@ -27,14 +27,11 @@
 
 #pragma once 
 
-#define XP_UNIX 0
-
 #include "service.h"
 #include "service_internal.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "jsapi.h"
 #include "ulinet.h"
 
 #ifdef __cplusplus

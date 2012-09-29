@@ -25,18 +25,21 @@
 #define MALLOC_CHECK_ 0
 #define MALLOC_CHECK 0
 
-#ifdef WIN32
-#include "windows.h"
-#endif
 /**
  * Specific includes
  */
+#ifndef WIN32
 #include "fcgio.h"
 #include "fcgi_config.h" 
 #include "fcgi_stdio.h"
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 #include "service_internal.h"
+#ifdef WIN32
+#include "windows.h"
+#define strtok_r strtok_s
+#endif
 
 extern "C" {
 #include "cgic.h"
@@ -54,8 +57,12 @@ int runRequest(map*);
 
 using namespace std;
 
+#ifndef TRUE
 #define TRUE 1
+#endif
+#ifndef FALSE
 #define FALSE -1
+#endif
 
 int cgiMain(){
   /**
@@ -67,9 +74,6 @@ int cgiMain(){
   fprintf(cgiOut,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
   fprintf(cgiOut,"Welcome on ZOO verbose debuging mode \r\n\r\n");
   fflush(cgiOut);
-#endif
-  
-#ifdef DEBUG
   fprintf (stderr, "Addr:%s\n", cgiRemoteAddr); 
   fprintf (stderr, "RequestMethod: (%s) %d %d\n", cgiRequestMethod,strncasecmp(cgiRequestMethod,"post",4),strncmp(cgiContentType,"text/xml",8)==0 || strncasecmp(cgiRequestMethod,"post",4)==0); 
   fprintf (stderr, "Request: %s\n", cgiQueryString);
@@ -142,7 +146,9 @@ int cgiMain(){
     }
   }
   else{
+#ifdef DEBUG
     dumpMap(tmpMap);
+#endif
     char **array, **arrayStep;
     if (cgiFormEntries(&array) != cgiFormSuccess) {
       return 1;

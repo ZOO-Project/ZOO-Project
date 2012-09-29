@@ -42,9 +42,11 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 
+#ifndef WIN32
 #define bool int
 #define true 1
 #define false -1
+#endif
 
 #define SERVICE_ACCEPTED 0
 #define SERVICE_STARTED 1
@@ -106,7 +108,7 @@ extern "C" {
     if(t!=NULL){
       fprintf(stderr,"[%s] => [%s] \n",t->name,t->value);
       fflush(stderr);
-    }else{
+	}else{
       fprintf(stderr,"NULL\n");
       fflush(stderr);
     }
@@ -123,7 +125,9 @@ extern "C" {
   static void dumpMapToFile(map* t,FILE* file){
     map* tmp=t;
     while(tmp!=NULL){
+#ifdef DEBUG
       fprintf(stderr,"%s = %s\n",tmp->name,tmp->value);
+#endif
       fprintf(file,"%s = %s\n",tmp->name,tmp->value);
       tmp=tmp->next;
     }
@@ -621,7 +625,9 @@ extern "C" {
       sprintf(tmp,key);
     map* tmpSize=getMapArray(m,"size",index);
     if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
+#ifdef DEBUG
       fprintf(stderr,"%s\n",tmpSize->value);
+#endif
       map* ptr=getMapOrFill(m,tmp,"");
       free(ptr->value);
       ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
@@ -639,7 +645,9 @@ extern "C" {
 	tmap=getMap(mt,"CRS");
       }
     }
-    dumpMap(tmap);
+#ifdef DEBUG
+	dumpMap(tmap);
+#endif
     return tmap;
   }
 
@@ -675,7 +683,9 @@ extern "C" {
     for(0;i<8;i++){
       map* tmpVI=getMap(tmp->content,tmpV[i]);
       if(tmpVI!=NULL){
+#ifdef DEBUG
 	fprintf(stderr,"%s = %s\n",tmpV[i],tmpVI->value);
+#endif
 	if(i<5)
 	  setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
 	else

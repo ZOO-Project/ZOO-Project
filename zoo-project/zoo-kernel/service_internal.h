@@ -65,7 +65,11 @@ extern   int getServiceFromFile(const char*,service**);
 extern   int conf_read(const char*,maps*);
 
 #ifdef USE_JS
+#ifdef WIN32
+#define XP_WIN 1
+#else
 #define XP_UNIX 0
+#endif
 #include "service_internal_js.h"
 #endif
 
@@ -128,7 +132,7 @@ extern "C" {
 
   void addToCache(maps*,char*,char*,int);
   char* isInCache(maps*,char*);
-  void loadRemoteFile(maps*,map*,HINTERNET,char*);
+  int loadRemoteFile(maps*,map*,HINTERNET,char*);
   
 #ifdef __cplusplus
 }

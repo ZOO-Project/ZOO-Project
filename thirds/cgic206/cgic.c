@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 	cgiGetenv(&cgiScriptName, "SCRIPT_NAME");
 	cgiGetenv(&cgiQueryString, "QUERY_STRING");
 	cgiSid=NULL;
-	if(strcmp(cgiQueryString,"")==0 && argc>=2){
+	if(cgiQueryString!=NULL && argc>=2){
 		cgiQueryString=argv[1];
 		if(argc>2){
 		  cgiSid=argv[2];

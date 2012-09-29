@@ -77,10 +77,31 @@ extern "C" {
 #else
 #include <windows.h>
 #include <direct.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#define pid_t int;
 #endif
 #include <fcntl.h>
 #include <time.h>
 #include <stdarg.h>
+
+#ifdef WIN32
+extern "C" {
+__declspec(dllexport) char *strcasestr(char const *a, char const *b) { 
+    char *x=_strdup(a); 
+    char *y=_strdup(b); 
+
+    x=_strlwr(x); 
+    y=_strlwr(y); 
+    char *pos = strstr(x, y); 
+    char *ret = pos == NULL ? NULL : (char *)(a + (pos-x)); 
+    free(x); 
+    free(y); 
+    return ret; 
+} 
+}
+#endif
 
 #define _(String) dgettext ("zoo-kernel",String)
 
@@ -217,7 +238,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
   fprintf(stderr,"LOAD A %s SERVICE PROVIDER \n",r_inputs->value);
   fflush(stderr);
 #endif
-  if(strncasecmp(r_inputs->value,"C",1)==0){
+  if(strlen(r_inputs->value)==1 && strncasecmp(r_inputs->value,"C",1)==0){
     r_inputs=getMap(request_inputs,"metapath");
     if(r_inputs!=NULL)
       sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
@@ -401,9 +422,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 		*eres=-1;
 	      }
   *myMap=m;
-#ifndef WIN32
   *ioutputs=request_output_real_format;
-#endif
 }
 
 #ifdef WIN32
@@ -520,7 +539,17 @@ int runRequest(map* request_inputs)
 
   bindtextdomain ("zoo-kernel","/usr/share/locale/");
   bindtextdomain ("zoo-services","/usr/share/locale/");
-  
+
+  /**
+   * Manage our own error log file (usefull to separate standard apache debug
+   * messages from the ZOO-Kernel ones but also for IIS users to avoid wrong 
+   * headers messages returned by the CGI due to wrong redirection of stderr)
+   */
+  FILE * fstde=NULL;
+  map* fstdem=getMapFromMaps(m,"main","logPath");
+  if(fstdem!=NULL)
+	fstde = freopen(fstdem->value, "a+", stderr) ;
+
   if((r_inputs=getMap(request_inputs,"language"))!=NULL){
     char *tmp=strdup(r_inputs->value);
     translateChar(tmp,'-','_');
@@ -1828,7 +1857,6 @@ int runRequest(map* request_inputs)
     free(tmpmaps);
     return 1;
   }
-
   maps* tmpReqI=request_input_real_format;
   while(tmpReqI!=NULL){
     char name[1024];
@@ -1841,7 +1869,7 @@ int runRequest(map* request_inputs)
 	char storageNameOnServer[2048];
 	char fileNameOnServer[64];
 	char contentType[1024];
-	char buffer[BufferLen];
+	char buffer[1024];
 	char *tmpStr=NULL;
 	int size;
 	int got,t;
@@ -1865,7 +1893,7 @@ int runRequest(map* request_inputs)
 	  fprintf(stderr,"Name on server %s\n",storageNameOnServer);
 	  fprintf(stderr,"fileNameOnServer: %s\n",fileNameOnServer);
 	  mode=S_IRWXU|S_IRGRP|S_IROTH;
-	  targetFile = open (storageNameOnServer,O_RDWR|O_CREAT|O_TRUNC,mode);
+	  targetFile = open (storageNameOnServer,O_RDWR|O_CREAT|O_TRUNC,S_IRWXU|S_IRGRP|S_IROTH);
 	  if(targetFile<0){
 	    fprintf(stderr,"could not create the new file,%s\n",fileNameOnServer);	    
 	  }else{
@@ -1911,14 +1939,17 @@ int runRequest(map* request_inputs)
       }
 #ifdef DEBUG
       fflush(stderr);
-      fprintf(stderr,"setting variable... %s\n",
+      fprintf(stderr,"setting variable... %s\n",(
 #endif
 	      SetEnvironmentVariable(mapcs->name,mapcs->value)
 #ifdef DEBUG
-	      ? "OK" : "FAILED");
+	      ==0)? "OK" : "FAILED");
 #else
       ;
 #endif
+	  char* toto=(char*)malloc((strlen(mapcs->name)+strlen(mapcs->value)+2)*sizeof(char));
+      sprintf(toto,"%s=%s",mapcs->name,mapcs->value);
+	  putenv(toto);
 #ifdef DEBUG
       fflush(stderr);
 #endif
@@ -2035,17 +2066,17 @@ int runRequest(map* request_inputs)
     addToMap(request_inputs,"storeExecuteResponse","true");
     addToMap(request_inputs,"status","true");
     status=getMap(request_inputs,"status");
-    fprintf(stderr,"cgiSID : %s",cgiSid);
+    //fprintf(stderr,"cgiSID : %s",cgiSid);
   }
 #endif
   if(status!=NULL)
     if(strcasecmp(status->value,"false")==0)
-      status=NULL;
+      status=NULLMAP;
   if(status==NULLMAP){
     loadServiceAndRun(&m,s1,request_inputs,&request_input_real_format,&request_output_real_format,&eres);
   }
   else{
-    pid_t   pid;
+    int   pid;
 #ifdef DEBUG
     fprintf(stderr,"\nPID : %d\n",cpid);
 #endif
@@ -2170,3 +2201,4 @@ int runRequest(map* request_inputs)
 
   return 0;
 }
+

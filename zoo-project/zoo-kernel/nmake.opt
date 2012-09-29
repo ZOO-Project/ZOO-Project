@@ -1,13 +1,41 @@
 LIBINTL_CPATH=..\..\..\
-PYTHON_CPATH=..\..\..\
+PYTHON_CPATH=..\..\..\Python-2.7.3
 TPATH=..\..\..\tools
-GEODIR=c:/OSGeo4W
-DESTDIR=c:/OSGeo4W
+#GEODIR=c:/OSGeo4W
+#DESTDIR=c:/OSGeo4W
 TOOLS=$(TPATH)\bin
 
 CC=cl $(CFLAGS)
 CPP=cl /TP $(CFLAGS)
 
-CFLAGS=-DUSE_PYTHON /EHa /nologo /MT /W3 /EHsc /O2 /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I./ -I..\..\thirds\dirent-win32 -I..\..\thirds\include -I$(PYTHON_CPATH)\include -I$(GEODIR)/include -ILIBINTL_CPATH\include -I$(TPATH)\include -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+!IFDEF JS_DIR
+JS_CFLAGS=-DXP_WIN -DUSE_JS -I$(JS_DIR)
+JS_LDFLAGS=$(JS_DIR)/mozjs185-1.0.lib
+JS_FILE=service_internal_js.obj
+!ENDIF
 
-LDFLAGS=$(GEODIR)/lib/libfcgi.lib $(GEODIR)/lib/libcurl_imp.lib  $(GEODIR)/apps/Python25/libs/python25.lib $(GEODIR)/lib/libxml2.lib ../../thirds/cgic206/libcgic.lib $(GEODIR)/lib/gdal_i.lib $(TOOLS)\..\lib\libeay32.dll.a $(TOOLS)\..\lib\libcrypto.a $(TOOLS)\..\lib\libssl32.dll.a $(TOOLS)\..\lib\libintl.lib /machine:i386 
+!IFDEF MS_DIR
+MS_CFLAGS=-DUSE_MS -I$(MS_DIR)
+MS_LDFLAGS=$(MS_DIR)/mapserver_i.lib
+MS_FILE=service_internal_ms.obj
+!ENDIF
+
+!IFDEF JDK_DIR
+JAVA_CFLAGS=-DJAVA7 -DUSE_JAVA -I"$(JDK_DIR)\include" -I"$(JDK_DIR)\include\win32"
+JAVA_LDFLAGS="$(JDK_DIR)/lib/jvm.lib"
+JAVA_FILE=service_internal_java.obj
+!ENDIF
+
+!IFDEF PY_DIR
+PY_CFLAGS=-DUSE_PYTHON -I$(PY_DIR)\Include -I$(PY_DIR)\PC
+PY_LDFLAGS=$(PY_LIBRARY) 
+PY_FILE=service_internal_python.obj
+!ENDIF
+
+!IFNDEF ZOOK_DIR
+ZOOK_DIR=.
+!ENDIF
+
+CFLAGS=-SPOST_DEBUG $(CFLAGS1) /nologo /MD /W3 /EHsc /O2 /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I$(ZOOK_DIR) -I./ $(JAVA_CFLAGS) -I$(TROOT)..\..\thirds\dirent-win32 -I$(INTL_DIR) -I$(CURL_DIR)\include -I$(XML2_DIR)\include -I$(GDAL_DIR)\port $(JS_CFLAGS) -I$(GDAL_DIR)\ogr -I$(GDAL_DIR)\gcore -I$(GD_DIR) -I$(ICONV_DIR) -I$(TROOT)..\..\thirds\include -I$(TROOT)..\..\thirds\cgic206 -I$(PYTHON_CPATH)\include -I$(SSL_DIR)/inc32 -I$(FCGI_DIR)\include $(PY_CFLAGS) -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+
+LDFLAGS=$(FCGI_LIBRARY) $(CURL_LIBRARY) $(PY_LDFLAGS) $(XML2_LIBRARY) $(TROOT)../../thirds/cgic206/libcgic.lib $(SSL_DIR)/out32dll/libeay32.lib $(JAVA_LDFLAGS) $(SSL_DIR)/out32dll/ssleay32.lib $(MS_LDFLAGS) $(INTL_DIR)/intl.lib $(XML2_DIR)/win32/bin.msvc/libxml2.lib $(GDAL_DIR)/gdal_i.lib $(CURL_DIR)/lib/libcurl.lib $(JS_LDFLAGS) /machine:i386

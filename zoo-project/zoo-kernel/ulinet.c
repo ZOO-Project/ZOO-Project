@@ -374,21 +374,23 @@ bool InternetGetCookie(LPCTSTR lpszUrl,LPCTSTR lpszCookieName,LPTSTR lpszCookieD
 }
 
 #ifdef USE_JS
+#define XP_WIN 1
 #include "jsapi.h"
 
 char* JSValToChar(JSContext* context, jsval* arg) {
+  char *c;
+  char *tmp;
+  JSString *jsmsg;
+  size_t len;
+  int i;
   if(!JSVAL_IS_STRING(*arg)) {
     return NULL;
   }
-  char *c, *tmp;
-  JSString *jsmsg;
-  size_t len;
   jsmsg = JS_ValueToString(context,*arg);
   len = JS_GetStringLength(jsmsg);
   tmp = JS_EncodeString(context,jsmsg);
   c = (char*)malloc((len+1)*sizeof(char));
   c[len] = '\0';
-  int i;
 #ifdef ULINET_DEBUG
   fprintf(stderr,"%d \n",len);
 #endif
@@ -404,6 +406,8 @@ char* JSValToChar(JSContext* context, jsval* arg) {
 
 HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
   jsuint length=0;
+  jsint i=0;
+  char *tmp1;
 #ifdef ULINET_DEBUG
   fprintf(stderr,"setHeader\n");
 #endif
@@ -415,12 +419,11 @@ HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
 #ifdef ULINET_DEBUG
     fprintf(stderr,"header is an array of %d elements\n",length);
 #endif
-    jsint i=0;
     handle.header=NULL;
     for(i=0;i<length;i++){
       jsval tmp;
       JS_GetElement(cx,header,i,&tmp);
-      char *tmp1=JSValToChar(cx,&tmp);
+      tmp1=JSValToChar(cx,&tmp);
 #ifdef ULINET_DEBUG
       fprintf(stderr,"Element of array n° %d, value : %s\n",i,tmp1);
 #endif
@@ -439,15 +442,20 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
 {
   jsval *argv = JS_ARGV(cx,argv1);
   HINTERNET hInternet;
+  HINTERNET res;
+  HINTERNET res1;
+  JSObject *header;
   char *url;
   char *method;
+  char* tmpValue;
+  size_t dwRead;
+  int i=0;
   JS_MaybeGC(cx);
   hInternet=InternetOpen((LPCTSTR)"ZooWPSClient\0",
 			 INTERNET_OPEN_TYPE_PRECONFIG,
 			 NULL,NULL, 0);
   if(!CHECK_INET_HANDLE(hInternet))
     return JS_FALSE;
-  int i=0;
   if(argc>=2){
     method=JSValToChar(cx,&argv[0]);
     url=JSValToChar(cx,&argv[1]);
@@ -456,12 +464,10 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     method=strdup("GET");
     url=JSValToChar(cx,argv);
   }
-  HINTERNET res;
   if(argc==4){
     char *body;
     body=JSValToChar(cx,&argv[2]);
-    JSObject *header=JSVAL_TO_OBJECT(argv[3]);
-    HINTERNET res1;
+    header=JSVAL_TO_OBJECT(argv[3]);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"URL (%s) \nBODY (%s)\n",url,body);
 #endif
@@ -483,8 +489,7 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     res=InternetOpenUrl(hInternet,url,NULL,0,
 			INTERNET_FLAG_NO_CACHE_WRITE,0);
   }
-  char* tmpValue=(char*)malloc((res.nDataLen+1)*sizeof(char));
-  size_t dwRead;
+  tmpValue=(char*)malloc((res.nDataLen+1)*sizeof(char));
   InternetReadFile(res,(LPVOID)tmpValue,res.nDataLen,&dwRead);
   fprintf(stderr,"content downloaded (%d) (%s) \n",dwRead,tmpValue);
   if(dwRead==0){
