@@ -10,25 +10,25 @@
 all:  zoo_loader.cgi
 
 main_conf_read.tab.c: main_conf_read.y service.h
-	$(TOOLS)\bison -p cr -d main_conf_read.y
+	bison -p cr -d main_conf_read.y
 
 main_conf_read.tab.obj: main_conf_read.tab.c service.h
 	$(CPP) /EHsc $(CFLAGS) main_conf_read.tab.c /c
 
 lex.cr.c: main_conf_read.y main_conf_read.l main_conf_read.tab.c service.h
-	$(TOOLS)\flex -Pcr main_conf_read.l
+	flex -Pcr main_conf_read.l
 
 lex.cr.obj: lex.cr.c service.h
 	$(CPP) $(CFLAGS) /c lex.cr.c
 
 service_conf.tab.c: service_conf.y service.h
-	$(TOOLS)\bison -p sr -d service_conf.y
+	bison -p sr -d service_conf.y
 
 service_conf.tab.obj: service_conf.tab.c service.h
 	$(CPP) $(CFLAGS) service_conf.tab.c /c
 
 lex.sr.c: service_conf.y service_conf.l service_conf.tab.c service.h
-	$(TOOLS)\flex -Psr service_conf.l
+	flex -Psr service_conf.l
 
 lex.sr.obj: lex.sr.c service.h
 	$(CPP) $(CFLAGS) /c lex.sr.c
@@ -36,8 +36,17 @@ lex.sr.obj: lex.sr.c service.h
 service_internal.obj: service_internal.c
 	$(CPP) $(CFLAGS) /c service_internal.c
 
+service_internal_js.obj: service_internal_js.c service.h
+	$(CPP) /c $(CFLAGS) service_internal_js.c
+
+service_internal_java.obj: service_internal_java.c service.h
+	$(CPP) /c $(CFLAGS) service_internal_java.c
+
 service_internal_python.obj: service_internal_python.c service.h
 	$(CPP) /c $(CFLAGS) service_internal_python.c
+
+service_internal_ms.obj: service_internal_ms.c service.h
+	$(CPP) /c $(CFLAGS) service_internal_ms.c
 
 service_internal_java.obj: service_internal_java.c service.h
 	$(CPP) /c $(CFLAGS) $(CJFLAGS) service_internal_java.c
@@ -54,8 +63,8 @@ zoo_loader.obj: zoo_loader.c service.h
 dirent.obj:
 	$(CPP) /EHsc /c $(CFLAGS) ..\..\thirds\dirent-win32\dirent.c
 
-zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj service_internal_python.obj ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
-	link zoo_loader.obj dirent.obj service_internal.obj service_internal_python.obj ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS)
+zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
+	link zoo_loader.obj dirent.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS)
 
 clean:
 	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling

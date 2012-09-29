@@ -30,7 +30,7 @@ chardata	[^<]*
 
 attname	[a-zA-Z0-9_\-:]+
 
-attvalue1	[\*,@a-zA-Z0-9_\-.:" "\"\'/\\\(\)\+\x41-\xff]+
+attvalue1	[\*,;@a-zA-Z0-9_\-.:" "\"\'/\\\(\)\+\x41-\xff]+
 
 attvalue		\"[^"]*\"|\'[^']*\'
 

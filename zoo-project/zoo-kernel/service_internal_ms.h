@@ -6,13 +6,21 @@
 #include "service_internal.h"
 #include "service.h"
 #include "cpl_conv.h"
+#include "cpl_multiproc.h"
 #include "ogr_api.h"
 #include "gdal.h"
 #include "ogr_srs_api.h"
 #include "ulinet.h"
+#ifdef WIN32
+#include <unistd.h>
+#endif
 
 #include <mapserver.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+  //#include <mapserver.h>
   /**
    * Map composed by a main.cfg maps name as key and the corresponding 
    * MapServer Mafile Metadata name to use
@@ -40,6 +48,9 @@
    * Create a MapFile for WMS, WFS or WCS Service output
    */
   void outputMapfile(maps* conf,maps* outputs);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 #endif

@@ -23,26 +23,8 @@
  */
 
 #include "service_internal.h"
-
-#ifdef WIN32
-char *
-strtok_r (char *s1, const char *s2, char **lasts)
-{
-  char *ret;
-  if (s1 == NULL)
-    s1 = *lasts;
-  while (*s1 && strchr(s2, *s1))
-    ++s1;
-  if (*s1 == '\0')
-    return NULL;
-  ret = s1;
-  while (*s1 && !strchr(s2, *s1))
-    ++s1;
-  if (*s1)
-    *s1++ = '\0';
-  *lasts = s1;
-  return ret;
-}
+#ifdef USE_MS
+#include "service_internal_ms.h"
 #endif
 
 void addLangAttr(xmlNodePtr n,maps *m){
@@ -1214,7 +1196,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     sprintf(stored_path,"%s/%s_%i.xml",tmpm1->value,service,pid);
   }
 
-  
+
 
   xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
   map* test=getMap(request,"storeExecuteResponse");
@@ -1231,7 +1213,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
   
   printDescription(nc,ns_ows,serv->name,serv->content);
-  fflush(stderr);
+  //fflush(stderr);
 
   xmlAddChild(n,nc);
 
@@ -1352,6 +1334,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     }
     xmlAddChild(n,nc);
   }
+
 #ifdef DEBUG
   fprintf(stderr,"printProcessResponse 1 202\n");
 #endif
@@ -1480,7 +1463,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
   // Extract Title required to be first element in the ZCFG file !
-  bool isTitle=true;
+  bool isTitle=TRUE;
   if(e!=NULL)
     tmp=getMap(e->content,"Title");
   else
@@ -1624,7 +1607,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  if(strncmp(tmp2->value,"text/xml",8)==0 ||
 	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)==0){
 	    xmlDocPtr doc =
-	      xmlParseMemory(BAD_CAST toto->value,strlen(BAD_CAST toto->value));
+	      xmlParseMemory(toto->value,strlen(toto->value));
 	    xmlNodePtr ir = xmlDocGetRootElement(doc);
 	    xmlAddChild(nc3,ir);
 	  }
@@ -1633,8 +1616,9 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	}
 	xmlAddChild(nc2,nc3);
       }
-      else
-	xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+      else{
+		  xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+	  }
     }
   }
   else{
@@ -1666,7 +1650,6 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       xmlAddChild(nc2,nc3);
     }
   }
-
   xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
 
@@ -1825,6 +1808,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       dumpMapsToFile(tmpSess,session_file_path);
     }
   }
+
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
@@ -1833,7 +1817,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     maps* tmpI=request_outputs;
     while(tmpI!=NULL){
 #ifdef USE_MS
-      map* testMap=getMap(tmpI->content,"useMapserver");
+      map* testMap=getMap(tmpI->content,"useMapserver");	
 #endif
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
@@ -2203,12 +2187,16 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	      int i;
 	      char *tcn=strdup(tmpContent->name);
 	      for(i=1;i<atoi(length->value);i++){
+#ifdef DEBUG
 		dumpMap(tmpMaps->content);
 		fprintf(stderr,"addDefaultValues %s_%d => %s\n",tcn,i,tmpContent->value);
-		int len=strlen(tcn);
-		char *tmp1=malloc((len+10)*sizeof(char));
+#endif
+		int len=strlen((char*) tcn);
+		char *tmp1=(char *)malloc((len+10)*sizeof(char));
 		sprintf(tmp1,"%s_%d",tcn,i);
+#ifdef DEBUG
 		fprintf(stderr,"addDefaultValues %s => %s\n",tmp1,tmpContent->value);
+#endif
 		addToMap(tmpMaps->content,tmp1,tmpContent->value);
 		free(tmp1);
 		hasPassed=1;
@@ -2405,9 +2393,9 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
 }
 
 
-unsigned char* getMd5(char* url){
+char* getMd5(char* url){
   EVP_MD_CTX md5ctx;
-  unsigned char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
+  char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
   unsigned char result[EVP_MAX_MD_SIZE];
   unsigned int len;
   EVP_DigestInit(&md5ctx, EVP_md5());
@@ -2433,7 +2421,7 @@ unsigned char* getMd5(char* url){
 void addToCache(maps* conf,char* request,char* content,int length){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
   if(tmp!=NULL){
-    unsigned char* md5str=getMd5(request);
+    char* md5str=getMd5(request);
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
     sprintf(fname,"%s/%s.zca",tmp->value,md5str);
 #ifdef DEBUG
@@ -2451,7 +2439,7 @@ void addToCache(maps* conf,char* request,char* content,int length){
 char* isInCache(maps* conf,char* request){
   map* tmpM=getMapFromMaps(conf,"main","cacheDir");
   if(tmpM!=NULL){
-    unsigned char* md5str=getMd5(request);
+    char* md5str=getMd5(request);
 #ifdef DEBUG
     fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
 #endif
@@ -2473,7 +2461,7 @@ char* isInCache(maps* conf,char* request){
  * loadRemoteFile:
  * Try to load file from cache or download a remote file if not in cache
  */
-void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
+int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   HINTERNET res;
   char* fcontent;
   char* cached=isInCache(m,url);
@@ -2515,6 +2503,7 @@ void loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     addToCache(m,url,fcontent,fsize);
   free(fcontent);
   free(cached);
+  return 0;
 }
 
 int errorException(maps *m, const char *message, const char *errorcode) 

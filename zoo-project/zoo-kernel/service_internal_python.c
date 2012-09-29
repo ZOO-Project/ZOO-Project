@@ -69,6 +69,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   setenv("PYTHONPATH",pythonpath,1);
 #else
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
+  char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
+  sprintf(toto,"PYTHONPATH=%s",pythonpath);
+  putenv(toto);
 #endif
   free(python_path);
   free(pythonpath);
@@ -122,7 +125,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
 	dumpMaps(inputs);
-	dumpMaps(outputs);
+	dumpMaps(*real_outputs);
 #endif
       }else{	  
 	PyObject *ptype,*pvalue, *ptraceback;
