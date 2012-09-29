@@ -1099,8 +1099,8 @@ int runRequest(map* request_inputs)
 	    strncpy(tmpn1,tmpc,strlen(tmpc));
 	    tmpn1[strlen(tmpc)]=0;
 	    map* lmap=getLastMap(tmpmaps->content);
-	    char *tmpValue=(char*)calloc((strlen(lmap->value)+strlen(tmpc)+1),sizeof(char));
-	    sprintf(tmpValue,"%s@%s",lmap->value,tmpc);
+	    char *tmpValue=(char*)calloc((strlen(tmpv)+strlen(tmpc)+1),sizeof(char));
+	    sprintf(tmpValue,"%s@%s",tmpv+1,tmpc);
 	    free(lmap->value);
 	    lmap->value=strdup(tmpValue);
 	    free(tmpValue);
