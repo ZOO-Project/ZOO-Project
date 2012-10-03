@@ -48,9 +48,6 @@ service_internal_python.obj: service_internal_python.c service.h
 service_internal_ms.obj: service_internal_ms.c service.h
 	$(CPP) /c $(CFLAGS) service_internal_ms.c
 
-service_internal_java.obj: service_internal_java.c service.h
-	$(CPP) /c $(CFLAGS) $(CJFLAGS) service_internal_java.c
-
 service_loader.obj: service_loader.c service.h
 	$(CPP) /c $(CFLAGS)  service_loader.c
 

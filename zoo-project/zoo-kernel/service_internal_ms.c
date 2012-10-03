@@ -623,14 +623,14 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   hDataset = GDALOpen( pszFilename, GA_ReadOnly );
   if( hDataset == NULL ){
 #ifdef DEBUGMS
-    fprintf(stderr,"Unable to access the DataSource \n");
+    fprintf(stderr,"Unable to access the DataSource %s \n",pszFilename);
 #endif
     setMapInMaps(conf,"lenv","message","gdalinfo failed - unable to open");
     GDALDestroyDriverManager();
     return -1;
   }
 #ifdef DEBUGMS
-  fprintf(stderr,"Accessing the DataSource %s\n",__LINE__);
+    fprintf(stderr,"Accessing the DataSource %s %d\n",pszFilename,__LINE__);
 #endif
 
   /**
@@ -676,7 +676,8 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Set projection using Authority Code and Name if available or fallback to 
    * proj4 definition if available or fallback to default EPSG:4326
    */
-  if( GDALGetProjectionRef( hDataset ) != NULL ){
+  const char *tRef=GDALGetProjectionRef( hDataset );
+  if( tRef != NULL && strlen(tRef)>0 ){
     OGRSpatialReferenceH  hSRS;
     char *pszProjection;
     pszProjection = (char *) GDALGetProjectionRef( hDataset );
@@ -684,7 +685,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     fprintf(stderr,"Accessing the DataSource %s\n",GDALGetProjectionRef( hDataset ));
 #endif
     setSrsInformations(output,m,myLayer,pszProjection);
-  }
+    }
 
 
   /**
