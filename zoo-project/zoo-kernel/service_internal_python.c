@@ -24,6 +24,33 @@
 
 #include "service_internal_python.h"
 
+static PyObject* ZooError;
+
+PyMethodDef zooMethods[] = {
+  {"update_status", PythonUpdateStatus, METH_VARARGS, "Update status percentage of a running process."},
+  {NULL, NULL, 0, NULL} /* tempt not the blade, all fear the sentinel */
+};
+
+PyMODINIT_FUNC init_zoo(){
+  PyObject *tmp,*d;
+  PyObject* module = Py_InitModule("zoo", zooMethods);
+  if (module == NULL)
+    return;
+  
+  d = PyModule_GetDict(module);
+  tmp = PyInt_FromLong(3);
+  PyDict_SetItemString(d, "SERVICE_SUCCEEDED", tmp);
+  Py_DECREF(tmp);
+
+  tmp = PyInt_FromLong(4);
+  PyDict_SetItemString(d, "SERVICE_FAILED", tmp);
+  Py_DECREF(tmp);
+
+  ZooError = PyErr_NewException("zoo.error", NULL, NULL);
+  Py_INCREF(ZooError);
+  PyModule_AddObject(module, "error", ZooError);
+}
+
 int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
@@ -79,6 +106,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyThreadState *mainstate;
   PyEval_InitThreads();
   Py_Initialize();
+  init_zoo();
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
   PyGILState_STATE gstate;
@@ -386,4 +414,51 @@ map* mapFromPyDict(PyDictObject* t){
     }
   }
   return res;
+}
+
+PyObject*
+PythonUpdateStatus(PyObject* self, PyObject* args)
+{
+  maps* conf;
+  PyObject* confdict;
+  int istatus;
+  char* status;
+  if (!PyArg_ParseTuple(args, "O!i", &PyDict_Type, &confdict, &istatus)){
+#ifdef DEBUG
+    fprintf(stderr,"Incorrect arguments to update status function");
+#endif
+    return NULL;
+  }
+  if (istatus < 0 || istatus > 100){
+     PyErr_SetString(ZooError, "Status must be a percentage.");
+     return NULL;
+  }else{
+     char tmpStatus[4];
+     snprintf(tmpStatus, 4, "%i", istatus);
+     status = strdup(tmpStatus);
+  }
+  /* now update the map */
+  {
+    PyObject* lenv = PyMapping_GetItemString(confdict, "lenv");
+    if (lenv && PyMapping_Check(lenv)){
+      PyObject* valobj = PyString_FromString(status);
+      PyMapping_SetItemString(lenv, "status", valobj);
+      Py_DECREF(valobj);
+    }
+    Py_DECREF(lenv);
+  }
+  conf = mapsFromPyDict((PyDictObject*)confdict);
+  if (getMapFromMaps(conf,"lenv","status") != NULL){
+    fprintf(stderr,"STATUS RETURNED : %s\n",status);
+    if(status!=NULL){
+      setMapInMaps(conf,"lenv","status",status);
+      free(status);
+    }
+    else
+      setMapInMaps(conf,"lenv","status","15");
+    updateStatus(conf);
+  }
+  freeMaps(&conf);
+  free(conf);
+  Py_RETURN_NONE;
 }
