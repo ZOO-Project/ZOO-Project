@@ -66,8 +66,6 @@ extern "C" {
 #include "service_internal_perl.h"
 #endif
 
-
-
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
@@ -632,7 +630,6 @@ int runRequest(map* request_inputs)
 
   service* s1;
   int scount=0;
-
 #ifdef DEBUG
   dumpMap(r_inputs);
 #endif
@@ -1139,7 +1136,16 @@ int runRequest(map* request_inputs)
 	      if(CHECK_INET_HANDLE(hInternet))
 #endif
 		{
-		  loadRemoteFile(m,tmpmaps->content,hInternet,tmpx2);
+		  if(loadRemoteFile(m,tmpmaps->content,hInternet,tmpx2)<0){
+		    freeMaps(&m);
+		    free(m);
+		    free(REQUEST);
+		    free(SERVICE_URL);
+		    InternetCloseHandle(hInternet);
+		    freeService(&s1);
+		    free(s1);
+		    return 0;
+		  }
 		}
 	      free(tmpx2);
 	      addToMap(tmpmaps->content,"Reference",tmpv1+1);
@@ -1292,7 +1298,16 @@ int runRequest(map* request_inputs)
 		if(l==4){
 		  if(!(ltmp!=NULL && strcmp(ltmp->value,"POST")==0)
 		     && CHECK_INET_HANDLE(hInternet)){
-		    loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val);
+		    if(loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val)){
+		      freeMaps(&m);
+		      free(m);
+		      free(REQUEST);
+		      free(SERVICE_URL);
+		      InternetCloseHandle(hInternet);
+		      freeService(&s1);
+		      free(s1);
+		      return 0;
+		    }
 		  }
 		}
 	      }
