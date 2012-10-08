@@ -5,21 +5,30 @@
  storeSupported = true
  statusSupported = true
  serviceType = C
- serviceProvider = gdal_service.zo
+ serviceProvider = translate_service.zo
  <MetaData>
    title = My Demo
  </MetaData>
  <DataInputs>
   [Format]
    Title = Format of the output data
-   Abstract = Select the output format.
+   Abstract = Select the output format by usig short name of the format (use gda-config --formats for list of available formats on your platform).
    minOccurs = 0
    maxOccurs = 1
    <LiteralData>
     DataType = string
     <Default>
-     value = demo.tif
+     value = GTiff
     </Default>
+   </LiteralData>
+  [GCP]
+   Title = Ground Point Control
+   Abstract = Ground Point Control in the form : pixel,line,eating,northing(,elev).
+   minOccurs = 0
+   maxOccurs = unbounded
+   <LiteralData>
+    DataType = string
+    <Default />
    </LiteralData>
   [InputDSN]
    Title = The input data source name
@@ -28,22 +37,20 @@
    maxOccurs = 1
    <LiteralData>
     DataType = string
-    <Default>
-    </Default>	
+    <Default />
    </LiteralData>
-  [OutputDataSourceName]
+  [OutputDSN]
    Title = The output data source name
    Abstract = The output data source name to use as source for convertion.
    minOccurs = 1
    maxOccurs = 1
    <LiteralData>
     DataType = string
-    <Default>
-    </Default>	
+    <Default />
    </LiteralData>
  </DataInputs>
  <DataOutputs>
-  [OutputedDataSourceName]
+  [Result]
    Title = The resulting converted file
    Abstract = The file name resulting of the convertion
    <LiteralData>

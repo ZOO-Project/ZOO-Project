@@ -1,0 +1,129 @@
+[Gdal_Warp]
+ Title = GDAL Warp Tool
+ Abstract = The gdalwarp utility is an image mosaicing, reprojection and warping utility. The program can reproject to any supported projection, and can also apply GCPs stored with the image if the image is "raw" with control information.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = C
+ serviceProvider = warp_service.zo
+ <DataInputs>
+  [Format]
+   Title = Format of the output data
+   Abstract = Select the output format by usig short name of the format (use gda-config --formats for list of available formats on your platform).
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     value = GTiff
+    </Default>
+   </LiteralData>
+  [InputDSN]
+   Title = The input data source name
+   Abstract = The input data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [OutputDSN]
+   Title = The output data source name
+   Abstract = The output data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [s_srs]
+   Title = The source Spatial reference Set
+   Abstract = The coordinate systems that can be passed are anything supported by the OGRSpatialReference.SetFromUserInput() call, which includes EPSG PCS and GCSes (ie. EPSG:4296), PROJ.4 declarations (as above), or the name of a .prf file containing well known text.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [t_srs]
+   Title = The target Spatial reference Set
+   Abstract = The coordinate systems that can be passed are anything supported by the OGRSpatialReference.SetFromUserInput() call, which includes EPSG PCS and GCSes (ie. EPSG:4296), PROJ.4 declarations (as above), or the name of a .prf file containing well known text.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [tps]
+   Title = Thin Plate Spline
+   Abstract = Force use of thin plate spline transformer based on available GCPs
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default />
+   </LiteralData>
+  [geoloc]
+   Title = Geolocation
+   Abstract = Force use of Geolocation Arrays
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default />
+   </LiteralData>
+  [rpc]
+   Title = RPCs
+   Abstract =  Force use of RPCs
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default />
+   </LiteralData>
+  [r]
+   Title = Resampling method to use
+   Abstract = Available methods are: near (nearest neighbour resampling - default, fastest algorithm, worst interpolation quality), bilinear, cubic, cubicspline, lanczos (Lanczos windowed sinc resampling)
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default />
+   </LiteralData>
+  [order]
+   Title = The order of polynomial used for warping (1 to 3)
+   Abstract = The default is to select a polynomial order based on the number of GCPs.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     value=1
+    </Default>
+    <Supported>
+     value=2
+    </Supported>
+    <Supported>
+     value=3
+    </Supported>
+   </LiteralData>
+  [te]
+   Title = xmin,ymin,xmax,ymax
+   Abstract = set georeferenced extents of output file to be created (in target SRS).
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting converted file
+   Abstract = The file name resulting of the convertion
+   <LiteralData>
+    DataType = string
+    <Default>
+    </Default>	
+   </LiteralData>
+ </DataOutputs>  
