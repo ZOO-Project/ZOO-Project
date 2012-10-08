@@ -32,15 +32,13 @@
 #include "cpl_string.h"
 #include "gdal_priv.h"
 #include "ogr_spatialref.h"
-#include "vrtdataset.h"
+#include "vrt/vrtdataset.h"
 
 #include "service.h"
-
 
 CPL_CVSID("$Id$");
 
 extern "C" {
-
 
   static void AttachMetadata( GDALDatasetH, char ** );
   static int bSubCall = FALSE;
@@ -49,11 +47,12 @@ extern "C" {
   /*                          Gdal_Translate()                            */
   /************************************************************************/
 
+#ifdef WIN32
+__declspec(dllexport)
+#endif
   int Gdal_Translate(maps*& conf,maps*& inputs,maps*& outputs)
   {
-    
-    fprintf(stderr,"STARTING GDAL TRANSLATE\n");
-    fflush(stderr);
+
 
     GDALDatasetH	hDataset, hOutDS;
     int			i;
@@ -96,7 +95,6 @@ extern "C" {
     /*      Register standard GDAL drivers, and process generic GDAL     */
     /* ----------------------------------------------------------------- */
     GDALAllRegister();
-
     /* ----------------------------------------------------------------- */
     /* Extract Format, InputDSN, OutputDSN parameters                    */
     /* ----------------------------------------------------------------- */
@@ -123,13 +121,13 @@ extern "C" {
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"InputDSN","value");
     if(tmpMap!=NULL){
-      pszSource=(char*)malloc(sizeof(char)*(strlen(dataPath)+strlen(tmpMap->value)+4));
-      sprintf((char*)pszSource,"%s/%s.tif",dataPath,tmpMap->value);
+      pszSource=(char*)CPLMalloc(sizeof(char)*(strlen(dataPath)+strlen(tmpMap->value)+4));
+      sprintf((char*)pszSource,"%s/%s",dataPath,tmpMap->value);
     }
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"OutputDSN","value");
     if(tmpMap!=NULL){
-      pszDest=(char*)malloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
+      pszDest=(char*)CPLMalloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
       char *ext=new char[4];
       ext="tif";
       if(strncasecmp(pszFormat,"AAIGRID",7)==0)
@@ -167,24 +165,110 @@ extern "C" {
 	  dfLRY = atof(t);
 	  break;
 	}
-	fprintf(stderr,"%s\n\n",t);
-	fprintf(stderr,"%f - %f - %f - %f\n\n",dfULX,dfULY,dfLRX,dfLRY);
 	t=strtok(NULL,",");
 	cnt++;
       }
     }
+
+    tmpMap=NULL;
+    tmpMap=getMapFromMaps(inputs,"GCP","value");
+    if(tmpMap!=NULL){
+      map* length=getMapFromMaps(inputs,"GCP","length");
+      int len=0;
+      if(length){
+	len=atoi(length->value);
+	int i;
+	maps* currentMaps=getMaps(inputs,"GCP");
+	for(i=0;i<len;i++){
+	  char* endptr = NULL;
+	  /* -gcp pixel line easting northing [elev] */
+	  
+	  nGCPCount++;
+	  pasGCPs = (GDAL_GCP *) 
+	    realloc( pasGCPs, sizeof(GDAL_GCP) * nGCPCount );
+	  GDALInitGCPs( 1, pasGCPs + nGCPCount - 1 );
+
+	  map* currentMap=getMapArray(currentMaps->content,"value",i);
+
+	  char* tmpV=strdup(currentMap->value);
+	  char *res=strtok(tmpV,",");
+	  int j=0;
+	  while(res!=NULL){
+	    switch(j){
+	    case 0:
+	      pasGCPs[nGCPCount-1].dfGCPPixel = CPLAtofM(res);
+	      break;
+	    case 1:
+	      pasGCPs[nGCPCount-1].dfGCPLine = CPLAtofM(res);
+	      break;
+	    case 2:
+	      pasGCPs[nGCPCount-1].dfGCPX = CPLAtofM(res);
+	      break;
+	    case 3:
+	      pasGCPs[nGCPCount-1].dfGCPY = CPLAtofM(res);
+	      break;
+	    case 4:
+	      if(res!=NULL && (strtod(res, &endptr) != 0.0 || res[0] == '0'))
+		if (endptr && *endptr == 0)
+		  pasGCPs[nGCPCount-1].dfGCPZ = CPLAtofM(res);
+	      break;
+	    }
+	    res=strtok(NULL,",");
+	    j++;
+	  }
+	}
+      }else{
+	char* endptr = NULL;
+	/* -gcp pixel line easting northing [elev] */
+	
+	nGCPCount++;
+	pasGCPs = (GDAL_GCP *) 
+	  realloc( pasGCPs, sizeof(GDAL_GCP) * nGCPCount );
+	GDALInitGCPs( 1, pasGCPs + nGCPCount - 1 );
+	
+	char* tmpV=strdup(tmpMap->value);
+	char *res=strtok(tmpV,",");
+	int j=0;
+	while(res!=NULL){
+	  switch(j){
+	  case 0:
+	    pasGCPs[nGCPCount-1].dfGCPPixel = CPLAtofM(res);
+	    break;
+	  case 1:
+	    pasGCPs[nGCPCount-1].dfGCPLine = CPLAtofM(res);
+	    break;
+	  case 2:
+	    pasGCPs[nGCPCount-1].dfGCPX = CPLAtofM(res);
+	    break;
+	  case 3:
+	    pasGCPs[nGCPCount-1].dfGCPY = CPLAtofM(res);
+	    break;
+	  case 4:
+	    if(res!=NULL && (CPLStrtod(res, &endptr) != 0.0 || res[0] == '0'))
+	      if (endptr && *endptr == 0)
+		pasGCPs[nGCPCount-1].dfGCPZ = CPLAtofM(res);
+	    break;
+	  }	    
+	  res=strtok(NULL,",");
+	  j++;
+	}
+      }
+    }
+
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"SRS","value");
     if(tmpMap!=NULL){
       OGRSpatialReference oOutputSRS;
       if( oOutputSRS.SetFromUserInput( tmpMap->value ) != OGRERR_NONE )
 	{
-	  fprintf( stderr, "Failed to process SRS definition: %s\n", 
+	  char *msg=(char*)CPLMalloc(100*sizeof(char));
+	  sprintf( msg, "Failed to process SRS definition: %s\n", 
 		   tmpMap->value );
-	    /**
-	     * Avoiding GDALDestroyDriverManager() call
-	     */
-	  exit( 1 );
+	  setMapInMaps(conf,"lenv","message",msg);
+	  /**
+	   * Avoiding GDALDestroyDriverManager() call
+	   */
+	  return SERVICE_FAILED;
 	}
       oOutputSRS.exportToWkt( &pszOutputSRS );
     }
@@ -212,8 +296,6 @@ extern "C" {
 	  exit( 2 );
 	}
     }
-    fprintf(stderr,"==%s %s %s %==\n",pszFormat,pszSource,pszDest);
-    fflush(stderr);
 
     if( pszDest == NULL ){
 	fprintf(stderr,"exit line 416");
@@ -241,15 +323,13 @@ extern "C" {
     hDataset = GDALOpenShared( pszSource, GA_ReadOnly );
     
     if( hDataset == NULL ){
-        fprintf( stderr,
-                 "GDALOpen failed - %d\n%s\n",
-                 CPLGetLastErrorNo(), CPLGetLastErrorMsg() );
-	fflush(stderr);
-	/**
-	 * Avoiding GDALDestroyDriverManager() call
-	 */
-        exit( 1 );
-      }
+      char *msg=(char*) CPLMalloc(1024*sizeof(char));
+      sprintf( msg,
+	       "GDALOpen failed - %d\n%s\n",
+	       CPLGetLastErrorNo(), CPLGetLastErrorMsg() );
+      setMapInMaps(conf,"lenv","message",msg);
+      return SERVICE_FAILED;
+    }
 
     /* ----------------------------------------------------------------- */
     /*      Handle subdatasets.                                          */
@@ -258,9 +338,10 @@ extern "C" {
         && CSLCount(GDALGetMetadata( hDataset, "SUBDATASETS" )) > 0 
         && GDALGetRasterCount(hDataset) == 0 )
       {
-        fprintf( stderr,
+	char *msg=(char*) CPLMalloc(1024*sizeof(char));
+        sprintf( msg,
                  "Input file contains subdatasets. Please, select one of them for reading.\n" );
-	fflush(stderr);
+	setMapInMaps(conf,"lenv","message",msg);
         GDALClose( hDataset );
 	/**
 	 * Avoiding GDALDestroyDriverManager() call
@@ -287,7 +368,7 @@ extern "C" {
 	  }
         
         bSubCall = bOldSubCall;
-        CPLFree( pszSubDest );
+        free( pszSubDest );
 
         GDALClose( hDataset );
 
@@ -309,7 +390,7 @@ extern "C" {
     nRasterYSize = GDALGetRasterYSize( hDataset );
 
     if( !bQuiet )
-      printf( "Input file size is %d, %d\n", nRasterXSize, nRasterYSize );
+      fprintf( stderr, "Input file size is %d, %d\n", nRasterXSize, nRasterYSize );
 
     if( anSrcWin[2] == 0 && anSrcWin[3] == 0 ){
         anSrcWin[2] = nRasterXSize;
@@ -374,7 +455,7 @@ extern "C" {
                      "The -projwin option was used, but the geotransform is\n"
                      "rotated.  This configuration is not supported.\n" );
             GDALClose( hDataset );
-            CPLFree( panBandList );
+            free( panBandList );
 	    fflush(stderr);
 	    /**
 	     * Avoiding GDALDestroyDriverManager() call
@@ -438,8 +519,8 @@ extern "C" {
       {
         int	iDr;
         
-        printf( "Output driver `%s' not recognised.\n", pszFormat );
-        printf( "The following format drivers are configured and support output:\n" );
+	char* msg=(char*) CPLMalloc(4096*sizeof(char));
+	sprintf(msg,"Output driver `%s' not recognised.\nThe following format drivers are configured and support output:\n",pszFormat);
         for( iDr = 0; iDr < GDALGetDriverCount(); iDr++ )
 	  {
             GDALDriverH hDriver = GDALGetDriver(iDr);
@@ -448,21 +529,23 @@ extern "C" {
                 || GDALGetMetadataItem( hDriver, GDAL_DCAP_CREATECOPY,
                                         NULL ) != NULL )
 	      {
-                printf( "  %s: %s\n",
+		fprintf(stderr,msg);
+		char *tmp=strdup(msg);
+                sprintf( msg,"%s  %s: %s\n",tmp,
                         GDALGetDriverShortName( hDriver  ),
                         GDALGetDriverLongName( hDriver ) );
+		free(tmp);
 	      }
 	  }
-        printf( "\n" );
-        
+	setMapInMaps(conf,"lenv","message",msg);
         GDALClose( hDataset );
-        CPLFree( panBandList );
+        free( panBandList );
 	fflush(stderr);
 	/**
 	 * Avoiding GDALDestroyDriverManager() call
 	 */
         CSLDestroy( papszCreateOptions );
-        exit( 1 );
+        return 4;
       }
 
     /* ----------------------------------------------------------------- */
@@ -471,19 +554,22 @@ extern "C" {
     /*   this entire program to use virtual datasets to construct a      */
     /*   virtual input source to copy from.                              */
     /* ----------------------------------------------------------------- */
+    int bSpatialArrangementPreserved = (
+           anSrcWin[0] == 0 && anSrcWin[1] == 0
+        && anSrcWin[2] == GDALGetRasterXSize(hDataset)
+        && anSrcWin[3] == GDALGetRasterYSize(hDataset)
+        && pszOXSize == NULL && pszOYSize == NULL );
+
     if( eOutputType == GDT_Unknown 
         && !bScale && CSLCount(papszMetadataOptions) == 0 && bDefBands 
-        && anSrcWin[0] == 0 && anSrcWin[1] == 0 
-        && anSrcWin[2] == GDALGetRasterXSize(hDataset)
-        && anSrcWin[3] == GDALGetRasterYSize(hDataset) 
-        && pszOXSize == NULL && pszOYSize == NULL 
+        && bSpatialArrangementPreserved
         && nGCPCount == 0 && !bGotBounds
         && pszOutputSRS == NULL && !bSetNoData
         && nRGBExpand == 0)
       {
         
         hOutDS = GDALCreateCopy( hDriver, pszDest, hDataset, 
-                                 bStrict, papszCreateOptions, 
+                                 FALSE, (char**)0, 
                                  pfnProgress, NULL );
 
         if( hOutDS != NULL )
@@ -491,7 +577,7 @@ extern "C" {
         
         GDALClose( hDataset );
 
-        CPLFree( panBandList );
+        free( panBandList );
 
         if( !bSubCall )
 	  {
@@ -500,17 +586,20 @@ extern "C" {
 	     * Avoiding GDALDestroyDriverManager() call
 	     */
 	  }
+	fprintf(stderr,"==%s %s %s %d==\n",pszFormat,pszSource,pszDest,__LINE__);
+	fflush(stderr);
 
         CSLDestroy( papszCreateOptions );
-	outputs=(maps*)malloc(sizeof(maps*));
-	outputs->name="OutputedPolygon";
-	outputs->content=createMap("value",(char*)pszDest);
-	outputs->next=NULL;
-	
+	fprintf(stderr,"==%s %s %s %d==\n",pszFormat,pszSource,pszDest,__LINE__);
+	fflush(stderr);
+	//outputs=(maps*)CPLMalloc(sizeof(maps*));
+	//outputs->name="OutputedPolygon";
+	//outputs->content=createMap("value",(char*)pszDest);
+	//outputs->next=NULL;
+	dumpMaps(outputs);
+	setMapInMaps(outputs,"Result","value",(char*)pszDest);
 	return SERVICE_SUCCEEDED;
       }
-    fprintf(stderr,"==%s %s %s %==\n",pszFormat,pszSource,pszDest);
-    fflush(stderr);
 
     /* ----------------------------------------------------------------- */
     /*      Establish some parameters.                                   */
@@ -527,8 +616,6 @@ extern "C" {
         nOYSize = (int) ((pszOYSize[strlen(pszOYSize)-1]=='%' 
                           ? atof(pszOYSize)/100*anSrcWin[3] : atoi(pszOYSize)));
       }
-    fprintf(stderr,"==%s %s %s %==\n",pszFormat,pszSource,pszDest);
-    fflush(stderr);
 
     /* ================================================================= */
     /*      Create a virtual dataset.                                    */
@@ -594,7 +681,7 @@ extern "C" {
         poVDS->SetGCPs( nGCPCount, pasGCPs, pszGCPProjection );
 
         GDALDeinitGCPs( nGCPCount, pasGCPs );
-        CPLFree( pasGCPs );
+        free( pasGCPs );
       }
 
     else if( GDALGetGCPCount( hDataset ) > 0 )
@@ -616,7 +703,7 @@ extern "C" {
                         GDALGetGCPProjection( hDataset ) );
 
         GDALDeinitGCPs( nGCPs, pasGCPs );
-        CPLFree( pasGCPs );
+        free( pasGCPs );
       }
 
     /* ----------------------------------------------------------------- */
@@ -624,8 +711,6 @@ extern "C" {
     /* ----------------------------------------------------------------- */
     poVDS->SetMetadata( ((GDALDataset*)hDataset)->GetMetadata() );
     AttachMetadata( (GDALDatasetH) poVDS, papszMetadataOptions );
-    fprintf(stderr,"Transfer generally applicable metadata.\n");
-    fflush(stderr);
 
     /* ----------------------------------------------------------------- */
     /*      Transfer metadata that remains valid if the spatial          */
@@ -663,7 +748,7 @@ extern "C" {
 	      {
                 fprintf(stderr, "Error : band %d has no color table\n", panBandList[0]);
                 GDALClose( hDataset );
-                CPLFree( panBandList );
+                free( panBandList );
 		fflush(stderr);
 		/**
 		 * Avoiding GDALDestroyDriverManager() call
@@ -759,12 +844,9 @@ extern "C" {
     /* ----------------------------------------------------------------- */
     /*      Write to the output file using CopyCreate().                 */
     /* ----------------------------------------------------------------- */
-    fprintf(stderr,"DEBUG pszDest %s\n",pszDest);
     hOutDS = GDALCreateCopy( hDriver, pszDest, (GDALDatasetH) poVDS,
                              bStrict, papszCreateOptions, 
                              pfnProgress, NULL );
-    fprintf(stderr,"DEBUG pszDest %s\n",pszDest);
-    fflush(stderr);
 
     if( hOutDS != NULL )
       {
@@ -772,12 +854,12 @@ extern "C" {
       }
     
     GDALClose( (GDALDatasetH) poVDS );
-        
+         
     GDALClose( hDataset );
-
-    CPLFree( panBandList );
+   
+    free( panBandList );
     
-    CPLFree( pszOutputSRS );
+    free( pszOutputSRS );
 
     if( !bSubCall )
       {
@@ -790,10 +872,7 @@ extern "C" {
 
     CSLDestroy( papszCreateOptions );
     
-    outputs=(maps*)malloc(sizeof(maps*));
-    outputs->name="OutputedPolygon";
-    outputs->content=createMap("value",(char*)pszDest);
-    outputs->next=NULL;
+    setMapInMaps(outputs,"Result","value",(char*)pszDest);
 
     return SERVICE_SUCCEEDED;
   }
@@ -816,7 +895,7 @@ extern "C" {
         
         pszValue = CPLParseNameValue( papszMetadataOptions[i], &pszKey );
         GDALSetMetadataItem(hDS,pszKey,pszValue,NULL);
-        CPLFree( pszKey );
+        free( pszKey );
       }
 
     CSLDestroy( papszMetadataOptions );
