@@ -1,5 +1,9 @@
 #ifdef USE_MS
-
+#ifndef WIN32
+#define CLASS class
+#else
+#define CLASS _class
+#endif
 #include "service_internal_ms.h"
 
 /**
@@ -554,12 +558,12 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
     if(msGrowLayerClasses(myLayer) == NULL)
       return -1;
-    if(initClass((myLayer->_class[myLayer->numclasses])) == -1)
+    if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
       return -1;
-    myLayer->_class[myLayer->numclasses]->type = myLayer->type;
-    if(msGrowClassStyles(myLayer->_class[myLayer->numclasses]) == NULL)
+    myLayer->CLASS[myLayer->numclasses]->type = myLayer->type;
+    if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
       return -1;
-    if(initStyle(myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]) == -1)
+    if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
       return -1;
 
     /**
@@ -567,34 +571,34 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
      */
     tmpMap=getMap(output->content,"msStyle");
     if(tmpMap!=NULL)
-      msUpdateStyleFromString(myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles],tmpMap->value,0);
+      msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
     else{
       /**
        * Set style
        */
-      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.red=125;
-      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.green=125;
-      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.blue=255;
-      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
-      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
-      myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
+      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=125;
+      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=125;
+      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=255;
+      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
+      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
+      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
 
       /**
        * Set specific style depending on type
        */
       if(myLayer->type == MS_LAYER_POLYGON)
-	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->width=3;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
       if(myLayer->type == MS_LAYER_LINE){
-	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->width=3;
-	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
       }
       if(myLayer->type == MS_LAYER_POINT){
-	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->symbol=1;
-	myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->size=15;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->symbol=1;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->size=15;
       }
 
     }
-    myLayer->_class[myLayer->numclasses]->numstyles++;
+    myLayer->CLASS[myLayer->numclasses]->numstyles++;
     myLayer->numclasses++;
     m->layerorder[m->numlayers] = m->numlayers;
     m->numlayers++;
@@ -794,12 +798,12 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	     */
 	    if(msGrowLayerClasses(myLayer) == NULL)
 	      return -1;
-	    if(initClass((myLayer->_class[myLayer->numclasses])) == -1)
+	    if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
 	      return -1;
-	    myLayer->_class[myLayer->numclasses]->type = myLayer->type;
-	    if(msGrowClassStyles(myLayer->_class[myLayer->numclasses]) == NULL)
+	    myLayer->CLASS[myLayer->numclasses]->type = myLayer->type;
+	    if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
 	      return -1;
-	    if(initStyle(myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]) == -1)
+	    if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
 	      return -1;
 	    
 	    /**
@@ -807,7 +811,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	     */
 	    char className[7];
 	    sprintf(className,"class%d",i);
-	    myLayer->_class[myLayer->numclasses]->name=strdup(className);
+	    myLayer->CLASS[myLayer->numclasses]->name=strdup(className);
 	    
 	    /**
 	     * Set expression
@@ -817,16 +821,16 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<%.3f)",cstep,cstep+interval);
 	    else
 	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<=%.3f)",cstep,cstep+interval);
-	    msLoadExpressionString(&myLayer->_class[myLayer->numclasses]->expression,expression);
+	    msLoadExpressionString(&myLayer->CLASS[myLayer->numclasses]->expression,expression);
 	    
 	    /**
 	     * Set color
 	     */
-	    myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
-	    myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
-	    myLayer->_class[myLayer->numclasses]->styles[myLayer->_class[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
+	    myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
+	    myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
+	    myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
 	    cstep+=interval;
-	    myLayer->_class[myLayer->numclasses]->numstyles++;
+	    myLayer->CLASS[myLayer->numclasses]->numstyles++;
 	    myLayer->numclasses++;
 	    
 	  }

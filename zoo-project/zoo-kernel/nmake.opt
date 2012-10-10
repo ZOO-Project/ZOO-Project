@@ -9,7 +9,7 @@ JS_FILE=service_internal_js.obj
 !ENDIF
 
 !IFDEF MS_DIR
-MS_CFLAGS=-DUSE_MS -I$(MS_DIR)
+MS_CFLAGS=-DUSE_MS -I$(MS_DIR) /DNEED_STRCASESTR 
 MS_LDFLAGS=$(MS_DIR)/mapserver_i.lib
 MS_FILE=service_internal_ms.obj
 !ENDIF

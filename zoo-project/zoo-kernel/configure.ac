@@ -174,7 +174,12 @@ else
 	if test  "$PYTHON_PATH" = "yes"
 	then
 		# PHP was not specified, so search within the current path
+		PYTHONCFG_PATH=`which python${PYTHON_VERS}-config`
+		if test -z "${PYTHONCFG_PATH}" ; then
+		AC_PATH_PROG([PYTHONCONFIG], [python-config-${PYTHON_VERS}])
+		else
 		AC_PATH_PROG([PYTHONCONFIG], [python${PYTHON_VERS}-config])
+		fi
 	else
 		PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
 	fi

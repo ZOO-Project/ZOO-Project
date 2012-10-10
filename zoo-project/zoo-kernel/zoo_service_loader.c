@@ -86,18 +86,23 @@ extern "C" {
 
 #ifdef WIN32
 extern "C" {
-__declspec(dllexport) char *strcasestr(char const *a, char const *b) { 
-    char *x=_strdup(a); 
-    char *y=_strdup(b); 
-
-    x=_strlwr(x); 
-    y=_strlwr(y); 
-    char *pos = strstr(x, y); 
-    char *ret = pos == NULL ? NULL : (char *)(a + (pos-x)); 
-    free(x); 
-    free(y); 
-    return ret; 
-} 
+  __declspec(dllexport) char *strcasestr(char const *a, char const *b)
+#ifndef USE_MS
+ { 
+  char *x=_strdup(a); 
+  char *y=_strdup(b); 
+  
+  x=_strlwr(x); 
+  y=_strlwr(y); 
+  char *pos = strstr(x, y); 
+  char *ret = pos == NULL ? NULL : (char *)(a + (pos-x)); 
+  free(x); 
+  free(y); 
+  return ret; 
+ };
+#else
+  ;
+#endif
 }
 #endif
 
