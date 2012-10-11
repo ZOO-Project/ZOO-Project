@@ -39,6 +39,9 @@
 extern "C" {
 #endif
 
+#ifdef WIN32
+__declspec(dllexport)
+#endif
 #ifdef ZOO_SERVICE
 int GdalExtractProfile(maps*& conf,maps*& inputs,maps*& outputs)
 #else
@@ -81,14 +84,14 @@ int main(int argc,char** argv)
         adfMinMax[0] = GDALGetRasterMinimum( hBand, &bGotMin );
         adfMinMax[1] = GDALGetRasterMaximum( hBand, &bGotMax );
         if( ! (bGotMin && bGotMax) )
-            GDALComputeRasterMinMax( hBand, TRUE, adfMinMax );
-
+	  GDALComputeRasterMinMax( hBand, TRUE, adfMinMax );
 #ifdef ZOO_SERVICE
 	  tmp1=getMapFromMaps(inputs,"Geometry","value");
 	  OGRGeometryH geometry=OGR_G_CreateGeometryFromJson(tmp1->value);
 #else
 	  OGRGeometryH geometry=OGR_G_CreateGeometryFromJson(argv[2]);
 #endif
+
 	  OGR_G_Segmentize(geometry, adfGeoTransform[1]);
 	  int nbGeom=OGR_G_GetPointCount(geometry);
 	  int k=0;
