@@ -170,9 +170,10 @@ __declspec(dllexport)
       }
     }
 
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"GCP","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
       map* length=getMapFromMaps(inputs,"GCP","length");
       int len=0;
       if(length){
@@ -255,6 +256,7 @@ __declspec(dllexport)
       }
     }
 
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"SRS","value");
     if(tmpMap!=NULL){
@@ -297,6 +299,7 @@ __declspec(dllexport)
 	}
     }
 
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     if( pszDest == NULL ){
 	fprintf(stderr,"exit line 416");
 	fflush(stderr);
@@ -306,6 +309,7 @@ __declspec(dllexport)
         exit( 10 );
       }
 
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     if ( strcmp(pszSource, pszDest) == 0)
       {
         fprintf(stderr, "Source and destination datasets must be different.\n");
@@ -316,11 +320,13 @@ __declspec(dllexport)
         exit( 1 );
       }
 
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     /* ----------------------------------------------------------------- */
     /*      Attempt to open source file.                                 */
     /* ----------------------------------------------------------------- */
 
     hDataset = GDALOpenShared( pszSource, GA_ReadOnly );
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     
     if( hDataset == NULL ){
       char *msg=(char*) CPLMalloc(1024*sizeof(char));
@@ -331,6 +337,7 @@ __declspec(dllexport)
       return SERVICE_FAILED;
     }
 
+    fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     /* ----------------------------------------------------------------- */
     /*      Handle subdatasets.                                          */
     /* ----------------------------------------------------------------- */
