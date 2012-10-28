@@ -34,6 +34,17 @@
 #define FALSE -1
 #endif
 
+void printHeaders(maps* m){
+  maps *_tmp=getMaps(m,"headers");
+  if(_tmp!=NULL){
+    map* _tmp1=_tmp->content;
+    while(_tmp1!=NULL){
+      printf("%s: %s\r\n",_tmp1->name,_tmp1->value);
+      _tmp1=_tmp1->next;
+    }
+  }
+}
+
 void addLangAttr(xmlNodePtr n,maps *m){
   map *tmpLmap=getMapFromMaps(m,"main","language");
   if(tmpLmap!=NULL)
@@ -1816,6 +1827,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
   }
 
+  printHeaders(m);
+
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
@@ -2477,8 +2490,9 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     struct stat f_status;
     int s=stat(cached, &f_status);
     if(s==0){
+      fprintf(stderr,"FILE SIZE (%d)\n",f_status.st_size/1024);
       fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-      FILE* f=fopen(cached,"r");
+      FILE* f=fopen(cached,"rb");
       fread(fcontent,sizeof(char),f_status.st_size,f);
       fsize=f_status.st_size;
     }

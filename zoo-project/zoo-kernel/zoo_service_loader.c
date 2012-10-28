@@ -1837,11 +1837,13 @@ int runRequest(map* request_inputs)
   InternetCloseHandle(hInternet);
 
 #ifdef DEBUG
-  fprintf(stderr,"\n%i\n",i);
+  fprintf(stderr,"\n%d\n",__LINE__);
+  fflush(stderr);
   dumpMaps(request_input_real_format);
   dumpMaps(request_output_real_format);
   dumpMap(request_inputs);
-  fprintf(stderr,"\n%i\n",i);
+  fprintf(stderr,"\n%d\n",__LINE__);
+  fflush(stderr);
 #endif
 
   /**
@@ -1910,12 +1912,17 @@ int runRequest(map* request_inputs)
 	  strcpy(fileNameOnServer,name+t+1);
 	  
 	  sprintf(storageNameOnServer,"%s/%s",path->value,fileNameOnServer);
+	  printf("\n\nName on server %s\n",storageNameOnServer);
+#ifdef DEBUG
 	  fprintf(stderr,"Name on server %s\n",storageNameOnServer);
 	  fprintf(stderr,"fileNameOnServer: %s\n",fileNameOnServer);
+#endif
 	  mode=S_IRWXU|S_IRGRP|S_IROTH;
 	  targetFile = open (storageNameOnServer,O_RDWR|O_CREAT|O_TRUNC,S_IRWXU|S_IRGRP|S_IROTH);
 	  if(targetFile<0){
+#ifdef DEBUG
 	    fprintf(stderr,"could not create the new file,%s\n",fileNameOnServer);	    
+#endif
 	  }else{
 	    while (cgiFormFileRead(file, buffer, BufferLen, &got) ==cgiFormSuccess){
 	      if(got>0)
@@ -1925,7 +1932,9 @@ int runRequest(map* request_inputs)
 	  addToMap(tmpReqI->content,"lref",storageNameOnServer);
 	  cgiFormFileClose(file);
 	  close(targetFile);
+#ifdef DEBUG
 	  fprintf(stderr,"File \"%s\" has been uploaded",fileNameOnServer);
+#endif
 	}
       }
     }

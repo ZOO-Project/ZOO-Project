@@ -28,9 +28,11 @@
 #pragma once
 
 #ifdef WIN32
-#define strncasecmp strnicmp
-#define strcasecmp stricmp
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#ifndef snprintf
 #define snprintf sprintf_s
+#endif
 #endif 
 
 #ifdef __cplusplus
@@ -62,6 +64,13 @@ extern "C" {
 
 #define SHMSZ     27
 
+
+#ifdef DEBUG_STACK
+  void debugStack(const char* file,const int line){
+    int stack;
+    fprintf(stderr,"stack %p (%s: %d) \n",&stack,file,line);
+  }
+#endif
 
   /**
    * \struct map

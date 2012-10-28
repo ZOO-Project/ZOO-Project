@@ -292,7 +292,7 @@ int InternetReadFile(HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRe
   }
   else{
     memset(lpBuffer,0,hInternet.nDataLen+1);
-    memcpy( lpBuffer, hInternet.pabyData, hInternet.nDataLen );
+    memcpy(lpBuffer, hInternet.pabyData, hInternet.nDataLen );
     dwDataSize=hInternet.nDataLen;
     free( hInternet.pabyData );
     hInternet.pabyData=NULL;

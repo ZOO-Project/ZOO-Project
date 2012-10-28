@@ -84,6 +84,7 @@ int cgiMain(){
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
      strncasecmp(cgiRequestMethod,"post",4)==0){
+    //fprintf(stderr,"length %d\n",cgiContentLength);
     if(cgiContentLength==NULL){
        cgiContentLength=0;
        char *buffer=new char[2];
@@ -111,7 +112,7 @@ int cgiMain(){
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
-	fprintf(stderr,"%s\n",tmpMap->value);
+	//fprintf(stderr,"%s\n",tmpMap->value);
       }else{
 	buffer[0]=0;
 	char **array, **arrayStep;
