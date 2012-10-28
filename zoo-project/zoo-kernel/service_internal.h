@@ -58,7 +58,7 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-#include "cgic.h"
+//#include "cgic.h"
 #include "ulinet.h"
 
 extern   int getServiceFromFile(const char*,service**);
@@ -84,6 +84,7 @@ extern "C" {
   static char* nsName[10];
   static int nbNs=0;
 
+  void printHeaders(maps*);
   void unhandleStatus(maps*);
   void updateStatus(maps*);
   char* getStatus(int);
