@@ -127,6 +127,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     return 1;
   if (!JS_DefineFunction(cx, global, "ZOORequest", JSRequest, 4, 0))
     return 1;
+  if (!JS_DefineFunction(cx, global, "ZOOTranslate", JSTranslate, 4, 0))
+    return 1;
   if (!JS_DefineFunction(cx, global, "ZOOUpdateStatus", JSUpdateStatus, 2, 0))
     return 1;
   if (!JS_DefineFunction(cx, global, "alert", JSAlert, 2, 0))
@@ -701,6 +703,17 @@ HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
     fprintf(stderr,"not an array !!!!!!!\n");
   }
   return handle;
+}
+
+JSBool
+JSTranslate(JSContext *cx, uintN argc, jsval *argv1)
+{
+  jsval *argv = JS_ARGV(cx,argv1);
+  char *str=JSValToChar(cx,&argv[0]);
+  char *tmpValue=_ss(str);
+  JS_SET_RVAL(cx, argv1,STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpValue,strlen(tmpValue))));  
+  JS_MaybeGC(cx);
+  return JS_TRUE;
 }
 
 JSBool

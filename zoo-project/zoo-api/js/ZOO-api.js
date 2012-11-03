@@ -415,6 +415,10 @@ ZOO.Util.extend = function(destination, source) {
   return destination;
 };
 
+ZOO._=function(str){
+    return ZOOTranslate(str);
+};
+
 /**
  * Class: ZOO.Request
  * Contains convenience methods for working with ZOORequest which

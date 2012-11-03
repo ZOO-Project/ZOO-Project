@@ -43,6 +43,7 @@ extern "C" {
   JSObject* JSObject_FromMap(JSContext *,map*);
   maps* mapsFromJSObject(JSContext *,jsval);
   map* mapFromJSObject(JSContext *,jsval);
+  JSBool JSTranslate(JSContext*, uintN, jsval*);
   JSBool JSRequest(JSContext*, uintN, jsval*);
 
   void reportError(JSContext *cx, const char *message, JSErrorReport *report);
