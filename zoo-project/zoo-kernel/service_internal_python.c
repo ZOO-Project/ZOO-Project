@@ -27,6 +27,7 @@
 static PyObject* ZooError;
 
 PyMethodDef zooMethods[] = {
+  {"_", PythonTranslate, METH_VARARGS, "Translate a string using the zoo-services textdomain."},
   {"update_status", PythonUpdateStatus, METH_VARARGS, "Update status percentage of a running process."},
   {NULL, NULL, 0, NULL} /* tempt not the blade, all fear the sentinel */
 };
@@ -414,6 +415,19 @@ map* mapFromPyDict(PyDictObject* t){
     }
   }
   return res;
+}
+
+PyObject*
+PythonTranslate(PyObject* self, PyObject* args)
+{
+  char *str;
+  if (!PyArg_ParseTuple(args, "s", &str)){
+#ifdef DEBUG
+    fprintf(stderr,"Incorrect arguments to update status function");
+#endif
+    return NULL;
+  }
+  return PyString_FromString(_ss(str));
 }
 
 PyObject*
