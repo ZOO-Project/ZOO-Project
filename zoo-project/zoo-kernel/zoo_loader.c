@@ -77,6 +77,7 @@ int cgiMain(){
   fprintf (stderr, "Addr:%s\n", cgiRemoteAddr); 
   fprintf (stderr, "RequestMethod: (%s) %d %d\n", cgiRequestMethod,strncasecmp(cgiRequestMethod,"post",4),strncmp(cgiContentType,"text/xml",8)==0 || strncasecmp(cgiRequestMethod,"post",4)==0); 
   fprintf (stderr, "Request: %s\n", cgiQueryString);
+  fflush(stderr);
 #endif
 
   char *strQuery=strdup(cgiQueryString);
@@ -84,7 +85,6 @@ int cgiMain(){
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
      strncasecmp(cgiRequestMethod,"post",4)==0){
-    //fprintf(stderr,"length %d\n",cgiContentLength);
     if(cgiContentLength==NULL){
        cgiContentLength=0;
        char *buffer=new char[2];
@@ -103,16 +103,17 @@ int cgiMain(){
 	   free(tmp);
 	 }
        }
-       if(res==NULL){
+       if(res==NULL && (strQuery==NULL || strlen(strQuery)==0)){
 	 return errorException(NULL,"ZOO-Kernel failed to process your request cause the request was emtpty.","InternalError");
-       }else
-	 tmpMap=createMap("request",res);
+       }else{
+	 if(strQuery==NULL || strlen(strQuery)==0)
+	   tmpMap=createMap("request",res);
+       }
     }else{
       char *buffer=new char[cgiContentLength+1];
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
-	//fprintf(stderr,"%s\n",tmpMap->value);
       }else{
 	buffer[0]=0;
 	char **array, **arrayStep;
@@ -132,8 +133,6 @@ int cgiMain(){
 	    sprintf(buffer,"%s&%s",tmp,tmpValueFinal);
 	    free(tmp);
 	  }
-	  
-	  sprintf(tmpValueFinal,"%s=%s",*arrayStep,ivalue);
 	  free(tmpValueFinal);
 #ifdef DEBUG
 	  fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,ivalue);
@@ -320,13 +319,12 @@ int cgiMain(){
     
   }
 
-
   if(strncasecmp(cgiContentType,"multipart/form-data",19)==0){
-      map* tmp=getMap(tmpMap,"dataInputs");
-      if(tmp!=NULL){
-	addToMap(tmpMap,"dataInputs",strstr(strQuery,"dataInputs=")+11);
-      }
+    map* tmp=getMap(tmpMap,"dataInputs");
+    if(tmp!=NULL){
+      addToMap(tmpMap,"dataInputs",strstr(strQuery,"dataInputs=")+11);
     }
+  }
 
   runRequest(tmpMap);
 

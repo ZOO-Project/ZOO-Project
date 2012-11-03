@@ -27,6 +27,8 @@
 extern "C" int yylex();
 extern "C" int crlex();
 
+#include "cgic.h"
+
 extern "C" {
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
@@ -35,7 +37,6 @@ extern "C" {
 #include <libxml/xpathInternals.h>
 }
 
-#include "cgic.h"
 #include "ulinet.h"
 
 #include <libintl.h>
@@ -107,6 +108,7 @@ extern "C" {
 #endif
 
 #define _(String) dgettext ("zoo-kernel",String)
+#define __(String) dgettext ("zoo-service",String)
 
 
 void translateChar(char* str,char toReplace,char toReplaceBy){
@@ -540,8 +542,14 @@ int runRequest(map* request_inputs)
   fprintf(stderr, "***** END MAPS\n");
 #endif
 
-  bindtextdomain ("zoo-kernel","/usr/share/locale/");
-  bindtextdomain ("zoo-services","/usr/share/locale/");
+  map *getPath=getMapFromMaps(m,"main","gettextPath");
+  if(getPath!=NULL){
+    bindtextdomain ("zoo-kernel",getPath->value);
+    bindtextdomain ("zoo-services",getPath->value);    
+  }else{
+    bindtextdomain ("zoo-kernel","/usr/share/locale/");
+    bindtextdomain ("zoo-services","/usr/share/locale/");
+  }
 
   /**
    * Manage our own error log file (usefull to separate standard apache debug
@@ -553,15 +561,28 @@ int runRequest(map* request_inputs)
   if(fstdem!=NULL)
 	fstde = freopen(fstdem->value, "a+", stderr) ;
 
-  if((r_inputs=getMap(request_inputs,"language"))!=NULL){
+  r_inputs=getMap(request_inputs,"language");
+  if(r_inputs==NULL)
+    r_inputs=getMapFromMaps(m,"main","language");
+  if(r_inputs!=NULL){
     char *tmp=strdup(r_inputs->value);
+    setMapInMaps(m,"main","language",tmp);
     translateChar(tmp,'-','_');
     setlocale (LC_ALL, tmp);
+#ifdef WIN32
+    char tmp1[12];
+    sprintf(tmp1,"LC_ALL=%s",tmp);
+    putenv(tmp1);
+#endif
     free(tmp);
-    setMapInMaps(m,"main","language",r_inputs->value);
   }
   else{
     setlocale (LC_ALL, "en_US");
+#ifdef WIN32
+    char tmp1[12];
+    sprintf(tmp1,"LC_ALL=en_US");
+    putenv(tmp1);
+#endif
     setMapInMaps(m,"main","language","en-US");
   }
   setlocale (LC_NUMERIC, "en_US");

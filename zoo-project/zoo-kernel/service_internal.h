@@ -58,7 +58,7 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-//#include "cgic.h"
+#include "cgic.h"
 #include "ulinet.h"
 
 extern   int getServiceFromFile(const char*,service**);

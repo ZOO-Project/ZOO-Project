@@ -44,6 +44,7 @@ map* mapFromPyDict(PyDictObject* t);
 
 int zoo_python_support(maps**,map*,service*,maps**,maps**);
 
+PyObject* PythonTranslate(PyObject*, PyObject*);
 PyObject* PythonUpdateStatus(PyObject*, PyObject*);
 
 #endif
