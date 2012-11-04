@@ -1205,7 +1205,10 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     }else{
       map* tmpm2=getMap(tmp_maps->content,"tmpUrl");
       if(tmpm1!=NULL && tmpm2!=NULL){
-	sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,pid);
+	if(strncasecmp(tmpm2->value,"http://",7)==0){
+	  sprintf(url,"%s/%s_%i.xml",tmpm2->value,service,pid);
+	}else
+	  sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,pid);
       }
     }
     if(tmpm1!=NULL)
@@ -1891,8 +1894,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
 	map *tmp3=getMapFromMaps(m,"main","serverAddress");
 	char *file_url;
-	file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
-	sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
+	if(strncasecmp(tmp2->value,"http://",7)==0){
+	  file_url=(char*)malloc((strlen(tmp2->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
+	  sprintf(file_url,"%s/%s_%s_%i.%s",tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
+	}else{
+	  file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
+	  sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
+	}
 	addToMap(tmpI->content,"Reference",file_url);
 	if(hasExt!=true){
 	  freeMap(&ext);
@@ -2523,7 +2531,8 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   if(cached==NULL)
     addToCache(m,url,fcontent,fsize);
   free(fcontent);
-  free(cached);
+  if(cached!=NULL)
+    free(cached);
   return 0;
 }
 
