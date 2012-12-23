@@ -1,5 +1,5 @@
 #ifndef DIRENT_INCLUDED
-#define DIRENT_INCLUDED
+#define DIRENT_INCLUDED 1
 
 /*
 

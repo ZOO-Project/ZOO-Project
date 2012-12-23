@@ -1,3 +1,27 @@
+/**
+ * Author : Gérald FENOY
+ *
+ *  Copyright 2010-2011 Fondazione Edmund Mach. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 #ifdef USE_MS
 #ifndef WIN32
 #define CLASS class
@@ -555,7 +579,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       msInsertHashTable(&(myLayer->metadata), "ows_title", tmpMap->value);
     else
       msInsertHashTable(&(myLayer->metadata), "ows_title", "Default Title");
-
+    
     if(msGrowLayerClasses(myLayer) == NULL)
       return -1;
     if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
@@ -565,7 +589,6 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       return -1;
     if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
       return -1;
-
     /**
      * Apply msStyle else fallback to the default style
      */
@@ -582,7 +605,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
       myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
       myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
-
+      
       /**
        * Set specific style depending on type
        */
@@ -596,10 +619,11 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->symbol=1;
 	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->size=15;
       }
-
+      
     }
     myLayer->CLASS[myLayer->numclasses]->numstyles++;
     myLayer->numclasses++;
+    
     m->layerorder[m->numlayers] = m->numlayers;
     m->numlayers++;
 
