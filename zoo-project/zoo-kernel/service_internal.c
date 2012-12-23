@@ -1346,10 +1346,18 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
     maps* mcursor=outputs;
     elements* scursor=serv->outputs;
+    map* testResponse=getMap(request,"RawDataOutput");
+    if(testResponse==NULL)
+      testResponse=getMap(request,"ResponseDocument");
     while(mcursor!=NULL){
+      map* tmp0=getMap(mcursor->content,"inRequest");
       scursor=getElements(serv->outputs,mcursor->name);
       if(scursor!=NULL){
-	printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+	if(testResponse==NULL)
+	  printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+	else
+	  if(strncmp(tmp0->value,"true",4)==0)
+	    printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
       }
       mcursor=mcursor->next;
     }
@@ -1598,7 +1606,12 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 #endif
       map* tmp1=getMap(m->content,"encoding");
       map* tmp2=getMap(m->content,"mimeType");
-      map* toto=getMap(m->content,"value");
+      map* tmp3=getMap(m->content,"value");
+      int hasValue=1;
+      if(tmp3==NULL){
+	tmp3=createMap("value","");
+	hasValue=-1;
+      }
       if((tmp1!=NULL && strncmp(tmp1->value,"base64",6)==0)
 	 || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0 ||
 			    (strncmp(tmp2->value,"application/",12)==0) &&
@@ -1609,12 +1622,12 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	bool isSized=true;
 	if(rs==NULL){
 	  char tmp1[1024];
-	  sprintf(tmp1,"%d",strlen(toto->value));
+	  sprintf(tmp1,"%d",strlen(tmp3->value));
 	  rs=createMap("size",tmp1);
 	  isSized=false;
 	}
 
-	xmlAddChild(nc3,xmlNewText(BAD_CAST base64(toto->value, atoi(rs->value))));
+	xmlAddChild(nc3,xmlNewText(BAD_CAST base64(tmp3->value, atoi(rs->value))));
 	if(!isSized){
 	  freeMap(&rs);
 	  free(rs);
@@ -1623,23 +1636,27 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       else if(tmp2!=NULL){
 	if(strncmp(tmp2->value,"text/js",7)==0 ||
 	   strncmp(tmp2->value,"application/json",16)==0)
-	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST toto->value,strlen(toto->value)));
+	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST tmp3->value,strlen(tmp3->value)));
 	else{
 	  if(strncmp(tmp2->value,"text/xml",8)==0 ||
 	     strncmp(tmp2->value,"application/vnd.google-earth.kml",32)==0){
 	    xmlDocPtr doc =
-	      xmlParseMemory(toto->value,strlen(toto->value));
+	      xmlParseMemory(tmp3->value,strlen(tmp3->value));
 	    xmlNodePtr ir = xmlDocGetRootElement(doc);
 	    xmlAddChild(nc3,ir);
 	  }
 	  else
-	    xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
+	    xmlAddChild(nc3,xmlNewText(BAD_CAST tmp3->value));
 	}
 	xmlAddChild(nc2,nc3);
       }
       else{
-		  xmlAddChild(nc3,xmlNewText(BAD_CAST toto->value));
-	  }
+	xmlAddChild(nc3,xmlNewText(BAD_CAST tmp3->value));
+      }
+      if(hasValue<0){
+	freeMap(&tmp3);
+	free(tmp3);
+      }
     }
   }
   else{
@@ -1810,26 +1827,39 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   if(toto!=NULL)
     asRaw=1;
   
-  map *_tmp=getMapFromMaps(m,"lenv","cookie");
-  map *_tmp1=getMapFromMaps(m,"lenv","sessid");
-  if(_tmp!=NULL){
-    printf("Set-Cookie: %s\r\n",_tmp->value);
-    printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
-    maps *tmpSess=getMaps(m,"senv");
-    if(tmpSess!=NULL){
-      char session_file_path[1024];
-      map *tmpPath=getMapFromMaps(m,"main","sessPath");
-      if(tmpPath==NULL)
-	tmpPath=getMapFromMaps(m,"main","tmpPath");
+  maps* tmpSess=getMaps(m,"senv");
+  if(tmpSess!=NULL){
+    map *_tmp=getMapFromMaps(m,"lenv","cookie");
+    char* sessId;
+    if(_tmp!=NULL){
+      printf("Set-Cookie: %s\r\n",_tmp->value);
+      printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
+      char session_file_path[100];
       char *tmp1=strtok(_tmp->value,";");
       if(tmp1!=NULL)
-	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
+	sprintf(session_file_path,"%s",strstr(tmp1,"=")+1);
       else
-	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(_tmp->value,"=")+1);
-      dumpMapsToFile(tmpSess,session_file_path);
+	sprintf(session_file_path,"%s",strstr(_tmp->value,"=")+1);
+      sessId=strdup(session_file_path);
+    }else{
+      maps* t=getMaps(m,"senv");
+      map*p=t->content;
+      while(p!=NULL){
+	if(strstr(p->name,"ID")!=NULL){
+	  sessId=strdup(p->value);
+	  break;
+	}
+	p=p->next;
+      }
     }
+    char session_file_path[1024];
+    map *tmpPath=getMapFromMaps(m,"main","sessPath");
+    if(tmpPath==NULL)
+      tmpPath=getMapFromMaps(m,"main","tmpPath");
+    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,sessId);
+    dumpMapsToFile(tmpSess,session_file_path);
   }
-
+  
   printHeaders(m);
 
   if(asRaw==0){
@@ -2471,7 +2501,7 @@ char* isInCache(maps* conf,char* request){
 #ifdef DEBUG
     fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
 #endif
-    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+38));
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+50));
     sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
     struct stat f_status;
     int s=stat(fname, &f_status);
@@ -2494,22 +2524,24 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   char* fcontent;
   char* cached=isInCache(m,url);
   int fsize;
+  int hasF=-1;
   if(cached!=NULL){
     struct stat f_status;
     int s=stat(cached, &f_status);
     if(s==0){
-      fprintf(stderr,"FILE SIZE (%d)\n",f_status.st_size/1024);
       fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
       FILE* f=fopen(cached,"rb");
       fread(fcontent,sizeof(char),f_status.st_size,f);
       fsize=f_status.st_size;
+      hasF=1;
     }
   }else{
     res=InternetOpenUrl(hInternet,url,NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
-    fcontent=(char*)calloc((res.nDataLen+1),sizeof(char));
+    fcontent=(char*)malloc((res.nDataLen+1)*sizeof(char));
     if(fcontent == NULL){
       return errorException(m, _("Unable to allocate memory."), "InternalError");
     }
+    hasF=1;
     size_t dwRead;
     InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
     fcontent[res.nDataLen]=0;
@@ -2523,16 +2555,20 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     
   free(tmpMap->value);
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
+  if(tmpMap->value==NULL)
+    fprintf(stderr,"Unable to allocate memory!\n");
   memcpy(tmpMap->value,fcontent,(fsize)*sizeof(char));
-
+  
   char ltmp1[256];
   sprintf(ltmp1,"%d",fsize);
   addToMap(content,"size",ltmp1);
   if(cached==NULL)
     addToCache(m,url,fcontent,fsize);
-  free(fcontent);
-  if(cached!=NULL)
+  else{
+    if(hasF)
+      free(fcontent);
     free(cached);
+  }
   return 0;
 }
 

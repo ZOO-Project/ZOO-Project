@@ -23,6 +23,10 @@
 #define CGICDEBUGEND
 #endif /* CGICDEBUG */
 
+#ifdef WIN32
+#define _INC_STDIO
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>

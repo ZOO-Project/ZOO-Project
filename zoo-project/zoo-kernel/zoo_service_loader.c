@@ -774,7 +774,7 @@ int runRequest(map* request_inputs)
 	snprintf(buff,256,"%s.zcfg",tmps);
 	memset(buff1,0,1024);
 #ifdef DEBUG
-	fprintf(stderr,"\n#######%s\n########\n",buff1);
+	printf("\n#######%s\n########\n",buff1);
 #endif
 	while ((dp = readdir(dirp)) != NULL)
 	  if((strcasecmp("all.zcfg",buff)==0 && strstr(dp->d_name,".zcfg")>0)
@@ -783,10 +783,11 @@ int runRequest(map* request_inputs)
 	    snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
 	    s1=(service*)calloc(1,SERVICE_SIZE);
 	    if(s1 == NULL){
+	      dup2(saved_stdout,fileno(stdout));
 	      return errorException(m, _("Unable to allocate memory."),"InternalError");
 	    }
 #ifdef DEBUG
-	    fprintf(stderr,"#################\n%s\n#################\n",buff1);
+	    printf("#################\n%s\n#################\n",buff1);
 #endif
 	    t=getServiceFromFile(buff1,&s1);
 #ifdef DEBUG
@@ -1324,7 +1325,7 @@ int runRequest(map* request_inputs)
 		if(l==4){
 		  if(!(ltmp!=NULL && strcmp(ltmp->value,"POST")==0)
 		     && CHECK_INET_HANDLE(hInternet)){
-		    if(loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val)){
+		    if(loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val)!=0){
 		      freeMaps(&m);
 		      free(m);
 		      free(REQUEST);

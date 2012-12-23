@@ -32,6 +32,8 @@
 #define strcasecmp _stricmp
 #ifndef snprintf
 #define snprintf sprintf_s
+#else
+
 #endif
 #endif 
 
@@ -48,6 +50,8 @@ extern "C" {
 #define bool int
 #define true 1
 #define false -1
+#else
+  //#include <stdbool.h>
 #endif
 
 #define SERVICE_ACCEPTED 0
@@ -613,7 +617,7 @@ extern "C" {
     if(index>0)
       sprintf(tmp,"%s_%d",key,index);
     else
-      sprintf(tmp,key);
+      sprintf(tmp,"%s",key);
 #ifdef DEBUG
     fprintf(stderr,"** KEY %s\n",tmp);
 #endif
@@ -631,7 +635,7 @@ extern "C" {
     if(index>0)
       sprintf(tmp,"%s_%d",key,index);
     else
-      sprintf(tmp,key);
+      sprintf(tmp,"%s",key);
     map* tmpSize=getMapArray(m,"size",index);
     if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
 #ifdef DEBUG

@@ -150,6 +150,10 @@ element
 STag
 : INFCAR ID Attributeetoile SUPCAR
 {
+#ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"(%s %d) %s\n",__FILE__,__LINE__,$2);
+  fflush(stderr);
+#endif
   if(my_service->content==NULL){
 #ifdef DEBUG_SERVICE_CONF
     fprintf(stderr,"NO CONTENT\n");
@@ -225,6 +229,7 @@ STag
       if(current_element==NULL){
 #ifdef DEBUG_SERVICE_CONF
 	fprintf(stderr,"(DATAOUTPUTS - %d) ALLOCATE current_element (%s)\n",__LINE__,$2);
+	fflush(stderr);
 #endif
 	current_element=(elements*)malloc(ELEMENTS_SIZE);
 	current_element->name=NULL;
@@ -271,6 +276,10 @@ STag
 	  current_data=4;
 	  if(wait_metadata==true){
 	    if(current_content!=NULL){
+#ifdef DEBUG_SERVICE_CONF
+	      fprintf(stderr,"add current_content to current_element->content\n");
+	      fprintf(stderr,"LINE %d",__LINE__);
+#endif
 	      addMapToMap(&current_element->metadata,current_content);
 	      current_element->next=NULL;
 	      if($2!=NULL)
@@ -289,7 +298,7 @@ STag
 	    current_element->metadata=NULL;
 	    current_element->next=NULL;
 	    if($2!=NULL)
-	    current_element->format=strdup($2);
+	      current_element->format=strdup($2);
 	    current_element->defaults=NULL;
 	    current_element->supported=NULL;
 	  }
@@ -311,6 +320,7 @@ STag
 	    }
 #ifdef DEBUG_SERVICE_CONF
   printf("* Identifiant : %s\n",$2);
+  fflush(stdout);
 #endif
 }
  ;
@@ -356,6 +366,9 @@ attribute
 //======================================================
 EmptyElemTag
  : INFCAR ID Attributeetoile SLASH SUPCAR	{
+#ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
+#endif
    if(strncasecmp($2,"Default",7)==0){
      wait_defaults=false;
      current_data=previous_data;
@@ -385,6 +398,9 @@ EmptyElemTag
 ETag
  : INFCAR SLASH ID SUPCAR
 {
+#ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
+#endif
   if(strcmp($3,"DataInputs")==0){
     current_data=1;
   }
@@ -494,6 +510,7 @@ texteinterbalise
 pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free(curr_key);curr_key=NULL;} }
 | EPAIR {
 #ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
   fprintf(stderr,"EPAIR FOUND !! \n"); 
   fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
   fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
@@ -509,7 +526,6 @@ pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
 #endif
-      //current_content->next=NULL;
     }
     else{ 
 #ifdef DEBUG_SERVICE_CONF
@@ -523,9 +539,9 @@ pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free
     }
   }
 #ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"EPAIR FOUND !! \n"); 
   fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
   fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
+  dumpMap(current_content);
   fflush(stderr);
 #endif
   if(curr_key!=NULL){
@@ -539,6 +555,9 @@ pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free
 
 processid
 : ANID  {
+#ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
+#endif
   if(data==-1){
     data=1;
     if($1!=NULL){
@@ -689,15 +708,29 @@ processid
 	    freeElements(&current_element);
 	    free(current_element);
 	    current_element=NULL;
+	    current_element=(elements*)malloc(ELEMENTS_SIZE);
+	    char *cen=strdup($1);
+	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
+	    cen[strlen(cen)-1]=0;
+	    cen+=1;
+	    sprintf(current_element->name,"%s",cen);
+	    cen-=1;
+	    free(cen);
+	    current_element->content=NULL;
+	    current_element->metadata=NULL;
+	    current_element->format=NULL;
+	    current_element->defaults=NULL;
+	    current_element->supported=NULL;
+	    current_element->next=NULL;
 	  }
 	  else{
 #ifdef DEBUG_SERVICE_CONF
 	    fprintf(stderr,"NAME OUT %s\n",$1);
-	    fprintf(stderr,"(DATAOUTPUTS - 545) SET NAME OF current_element\n");
+	    fprintf(stderr,"(DATAOUTPUTS - %d) SET NAME OF current_element %s\n",__LINE__,$1);
 #endif
 	    if($1!=NULL){ 
 	      char *cen=strdup($1);
-	      current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
+	      current_element->name=(char*)malloc((strlen(cen))*sizeof(char*));
 	      cen[strlen(cen)-1]=0;
 #ifdef DEBUG
 	      fprintf(stderr,"tmp %s\n",cen);
