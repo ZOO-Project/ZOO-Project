@@ -82,7 +82,10 @@ int cgiMain(){
   fflush(stderr);
 #endif
 
-  char *strQuery=strdup(cgiQueryString);
+  
+  char *strQuery=NULL;
+  if(cgiQueryString!=NULL)
+    strQuery=strdup(cgiQueryString);
   map* tmpMap=NULL;
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
@@ -92,7 +95,7 @@ int cgiMain(){
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
-       while(r=fread(buffer,sizeof(char),1,cgiIn)){
+       while((r=fread(buffer,sizeof(char),1,cgiIn))){
 	 cgiContentLength+=r;
 	 if(res==NULL){
 	   res=(char*)malloc(1*sizeof(char));
@@ -114,7 +117,7 @@ int cgiMain(){
     }else{
       char *buffer=new char[cgiContentLength+1];
       int r=0;
-      if((r=fread(buffer,sizeof(char),cgiContentLength,cgiIn))!=0){
+      if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>=0){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
       }else{
@@ -195,7 +198,6 @@ int cgiMain(){
       xmlInitParser();
       xmlDocPtr doc = xmlParseMemory(t1->value,cgiContentLength);
 
-
       {
 	xmlXPathObjectPtr reqptr=extractFromDoc(doc,"/*[local-name()='Envelope']/*[local-name()='Body']/*");
 	if(reqptr!=NULL){
@@ -243,7 +245,6 @@ int cgiMain(){
 	  }
 	  xmlXPathFreeObject(reqptr);
 	}
-	//xmlFree(req);
       }
       if(strncasecmp(t1->value,"GetCapabilities",15)==0){
 	xmlXPathObjectPtr versptr=extractFromDoc(doc,"/*/*/*[local-name()='Version']");
@@ -251,14 +252,12 @@ int cgiMain(){
 	xmlChar* content=xmlNodeListGetString(doc, vers->nodeTab[0]->xmlChildrenNode,1);
 	addToMap(tmpMap,"version",(char*)content);
 	xmlXPathFreeObject(versptr);
-	//xmlFree(vers);
 	xmlFree(content);
       }else{
 	tval=NULL;
 	tval = (char*) xmlGetProp(cur,BAD_CAST "version");
 	if(tval!=NULL)
 	  addToMap(tmpMap,"version",tval);
-	xmlFree(tval);
 	tval = (char*) xmlGetProp(cur,BAD_CAST "language");
 	if(tval!=NULL)
 	  addToMap(tmpMap,"language",tval);
@@ -286,9 +285,7 @@ int cgiMain(){
 	    free(identifiers);
 	  }
 	}
-	//xmlFree(id);
       }
-      xmlFree(tval);
       xmlFreeDoc(doc);
       xmlCleanupParser();
     }else{
@@ -328,6 +325,8 @@ int cgiMain(){
     }
   }
 
+  if(strQuery!=NULL)
+    free(strQuery);
   runRequest(tmpMap);
 
   /** 
