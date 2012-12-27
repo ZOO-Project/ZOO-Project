@@ -521,7 +521,7 @@ int runRequest(map* request_inputs)
   /**
    * Parsing service specfic configuration file
    */
-  m=(maps*)calloc(1,MAPS_SIZE);
+  m=(maps*)malloc(MAPS_SIZE);
   if(m == NULL){
     return errorException(m, _("Unable to allocate memory."), "InternalError");
   }
@@ -532,6 +532,7 @@ int runRequest(map* request_inputs)
   _getcwd(ntmp,1024);
 #endif
   r_inputs=getMapOrFill(request_inputs,"metapath","");
+
 
   char conf_file[10240];
   snprintf(conf_file,10240,"%s/%s/main.cfg",ntmp,r_inputs->value);
@@ -550,6 +551,7 @@ int runRequest(map* request_inputs)
     bindtextdomain ("zoo-kernel","/usr/share/locale/");
     bindtextdomain ("zoo-services","/usr/share/locale/");
   }
+
 
   /**
    * Manage our own error log file (usefull to separate standard apache debug
@@ -596,6 +598,7 @@ int runRequest(map* request_inputs)
     setMapInMaps(m,"main","isSoap","true");
   else
     setMapInMaps(m,"main","isSoap","false");
+
 
   /**
    * Check for minimum inputs
@@ -697,7 +700,7 @@ int runRequest(map* request_inputs)
       if(strstr(dp->d_name,".zcfg")!=0){
 	memset(tmps1,0,1024);
 	snprintf(tmps1,1024,"%s/%s",conf_dir,dp->d_name);
-	s1=(service*)calloc(1,SERVICE_SIZE);
+	s1=(service*)malloc(SERVICE_SIZE);
 	if(s1 == NULL){ 
 	  return errorException(m, _("Unable to allocate memory."),"InternalError");
 	}
@@ -781,7 +784,7 @@ int runRequest(map* request_inputs)
 	     || strcasecmp(dp->d_name,buff)==0){
 	    memset(buff1,0,1024);
 	    snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
-	    s1=(service*)calloc(1,SERVICE_SIZE);
+	    s1=(service*)malloc(SERVICE_SIZE);
 	    if(s1 == NULL){
 	      dup2(saved_stdout,fileno(stdout));
 	      return errorException(m, _("Unable to allocate memory."),"InternalError");
@@ -829,7 +832,7 @@ int runRequest(map* request_inputs)
   }
   
   s1=NULL;
-  s1=(service*)calloc(1,SERVICE_SIZE);
+  s1=(service*)malloc(SERVICE_SIZE);
   if(s1 == NULL){
     freeMaps(&m);
     free(m);
@@ -875,6 +878,7 @@ int runRequest(map* request_inputs)
 #endif
   int j;
   
+
   /**
    * Create the input and output maps data structure
    */
@@ -930,7 +934,7 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"OUTPUT [%s]\n",cursor_output);
 #endif
       pToken=strtok(cursor_output,";");
-      char** outputs_as_text=(char**)calloc(128,sizeof(char*));
+      char** outputs_as_text=(char**)malloc(128*sizeof(char*));
       if(outputs_as_text == NULL) {
 	return errorException(m, _("Unable to allocate memory"), "InternalError");
       }
@@ -941,7 +945,7 @@ int runRequest(map* request_inputs)
 	fflush(stderr);
 	fprintf(stderr,"***%s***\n",pToken);
 #endif
-	outputs_as_text[i]=(char*)calloc(strlen(pToken)+1,sizeof(char));
+	outputs_as_text[i]=(char*)malloc((strlen(pToken)+1)*sizeof(char));
 	if(outputs_as_text[i] == NULL) {
 	  return errorException(m, _("Unable to allocate memory"), "InternalError");
 	}
@@ -958,7 +962,7 @@ int runRequest(map* request_inputs)
 	while(tmpc!=NULL){
 	  if(k==0){
 	    if(tmp_output==NULL){
-	      tmp_output=(maps*)calloc(1,MAPS_SIZE);
+	      tmp_output=(maps*)malloc(MAPS_SIZE);
 	      if(tmp_output == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
@@ -1043,7 +1047,7 @@ int runRequest(map* request_inputs)
     }
     free(tmp1);
 
-    char** inputs_as_text=(char**)calloc(100,sizeof(char*));
+    char** inputs_as_text=(char**)malloc(100*sizeof(char*));
     if(inputs_as_text == NULL){
       return errorException(m, _("Unable to allocate memory."), "InternalError");
     }
@@ -1056,7 +1060,7 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
       fprintf(stderr,"***%s***\n",pToken);
 #endif
-      inputs_as_text[i]=(char*)calloc(strlen(pToken)+1,sizeof(char));
+      inputs_as_text[i]=(char*)malloc((strlen(pToken)+1)*sizeof(char));
       snprintf(inputs_as_text[i],strlen(pToken)+1,"%s",pToken);
       if(inputs_as_text[i] == NULL){
 	return errorException(m, _("Unable to allocate memory."), "InternalError");
@@ -1089,7 +1093,7 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"***\n*** %s = %s ***\n",tmpn,tmpv+1);
 #endif
 	if(tmpmaps==NULL){
-	  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	  tmpmaps=(maps*)malloc(MAPS_SIZE);
 	  if(tmpmaps == NULL){
 	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
@@ -1123,7 +1127,7 @@ int runRequest(map* request_inputs)
 	    strncpy(tmpn1,tmpc,strlen(tmpc));
 	    tmpn1[strlen(tmpc)]=0;
 	    map* lmap=getLastMap(tmpmaps->content);
-	    char *tmpValue=(char*)calloc((strlen(tmpv)+strlen(tmpc)+1),sizeof(char));
+	    char *tmpValue=(char*)malloc((strlen(tmpv)+strlen(tmpc)+1)*sizeof(char));
 	    sprintf(tmpValue,"%s@%s",tmpv+1,tmpc);
 	    free(lmap->value);
 	    lmap->value=strdup(tmpValue);
@@ -1259,7 +1263,7 @@ int runRequest(map* request_inputs)
 	  if(xmlStrncasecmp(cur2->name,BAD_CAST "Identifier",xmlStrlen(cur2->name))==0){
 	    xmlChar *val= xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 	    if(tmpmaps==NULL){
-	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
@@ -1277,7 +1281,7 @@ int runRequest(map* request_inputs)
 	    xmlChar *val=
 	      xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 	    if(tmpmaps==NULL){
-	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
@@ -1364,10 +1368,10 @@ int runRequest(map* request_inputs)
 		  fprintf(stderr,"%s = %s\n",ha[hai],(char*)val);
 #endif
 		  if(hai==0){
-		    key=(char*)calloc((1+strlen((char*)val)),sizeof(char));
+		    key=(char*)malloc((1+strlen((char*)val))*sizeof(char));
 		    snprintf(key,1+strlen((char*)val),"%s",(char*)val);
 		  }else{
-		    has=(char*)calloc((3+strlen((char*)val)+strlen(key)),sizeof(char));
+		    has=(char*)malloc((3+strlen((char*)val)+strlen(key))*sizeof(char));
 		    if(has == NULL){
 		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
@@ -1416,7 +1420,7 @@ int runRequest(map* request_inputs)
 #endif
 		    res=InternetOpenUrl(hInternet,btmp->value,tmp,strlen(tmp),
 					INTERNET_FLAG_NO_CACHE_WRITE,0);
-		    char* tmpContent = (char*)calloc((res.nDataLen+1),sizeof(char));
+		    char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
 		    if(tmpContent == NULL){
 		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
@@ -1451,7 +1455,7 @@ int runRequest(map* request_inputs)
 		    res1=InternetOpenUrl(bInternet,(char*)val,NULL,0,
 					 INTERNET_FLAG_NO_CACHE_WRITE,0);
 		    char* tmp=
-		      (char*)calloc((res1.nDataLen+1),sizeof(char));
+		      (char*)malloc((res1.nDataLen+1)*sizeof(char));
 		    if(tmp == NULL){
 		      return errorException(m, _("Unable to allocate memory."), "InternalError");
 		    }
@@ -1469,7 +1473,7 @@ int runRequest(map* request_inputs)
 		      res=InternetOpenUrl(hInternet,btmp->value,tmp,
 					  strlen(tmp),
 					  INTERNET_FLAG_NO_CACHE_WRITE,0);
-		      char* tmpContent = (char*)calloc((res.nDataLen+1),sizeof(char));
+		      char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
 		      if(tmpContent == NULL){
 			return errorException(m, _("Unable to allocate memory."), "InternalError");
 		      }
@@ -1687,11 +1691,12 @@ int runRequest(map* request_inputs)
 	 * A specific responseDocument node.
 	 */
 	if(tmpmaps==NULL){
-	  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	  tmpmaps=(maps*)malloc(MAPS_SIZE);
 	  if(tmpmaps == NULL){
 	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
 	  tmpmaps->name=strdup("unknownIdentifier");
+	  tmpmaps->content=NULL;
 	  tmpmaps->next=NULL;
 	}
 	/**
@@ -1718,6 +1723,8 @@ int runRequest(map* request_inputs)
 	  xmlFree(val);
 	}
 	xmlNodePtr cur1=cur->children;
+	while(cur1!=NULL && cur1->type != XML_ELEMENT_NODE)
+	  cur1=cur1->next;
 	while(cur1){
 	  /**
 	   * Indentifier
@@ -1726,7 +1733,7 @@ int runRequest(map* request_inputs)
 	    xmlChar *val=
 	      xmlNodeListGetString(doc,cur1->xmlChildrenNode,1);
 	    if(tmpmaps==NULL){
-	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
@@ -1746,7 +1753,7 @@ int runRequest(map* request_inputs)
 	    xmlChar *val=
 	      xmlNodeListGetString(doc,cur1->xmlChildrenNode,1);
 	    if(tmpmaps==NULL){
-	      tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
@@ -1786,7 +1793,6 @@ int runRequest(map* request_inputs)
 #endif
 	      xmlFree(val);
 	    }
-	    
 	    xmlNodePtr cur2=cur1->children;
 	    while(cur2){
 	      /**
@@ -1796,7 +1802,7 @@ int runRequest(map* request_inputs)
 		xmlChar *val=
 		  xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 		if(tmpmaps==NULL){
-		  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+		  tmpmaps=(maps*)malloc(MAPS_SIZE);
 		  if(tmpmaps == NULL){
 		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
@@ -1819,7 +1825,7 @@ int runRequest(map* request_inputs)
 		xmlChar *val=
 		  xmlNodeListGetString(doc,cur2->xmlChildrenNode,1);
 		if(tmpmaps==NULL){
-		  tmpmaps=(maps*)calloc(1,MAPS_SIZE);
+		  tmpmaps=(maps*)malloc(MAPS_SIZE);
 		  if(tmpmaps == NULL){
 		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
@@ -1857,7 +1863,6 @@ int runRequest(map* request_inputs)
 	tmpmaps=NULL;
       }
     }
-
     xmlXPathFreeObject(tmpsptr);
     xmlCleanupParser();
   }
@@ -2095,7 +2100,7 @@ int runRequest(map* request_inputs)
     else
       sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
     free(tcook);
-    maps *tmpSess=(maps*)calloc(1,MAPS_SIZE);
+    maps *tmpSess=(maps*)malloc(MAPS_SIZE);
     struct stat file_status;
     int istat = stat(session_file_path, &file_status);
     if(istat==0 && file_status.st_size>0){
