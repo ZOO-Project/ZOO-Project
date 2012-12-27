@@ -77,6 +77,8 @@ int cgiMain(){
   fprintf (stderr, "Addr:%s\n", cgiRemoteAddr); 
   fprintf (stderr, "RequestMethod: (%s) %d %d\n", cgiRequestMethod,strncasecmp(cgiRequestMethod,"post",4),strncmp(cgiContentType,"text/xml",8)==0 || strncasecmp(cgiRequestMethod,"post",4)==0); 
   fprintf (stderr, "Request: %s\n", cgiQueryString);
+  fprintf (stderr, "ContentType: %s\n", cgiContentType);
+  fprintf (stderr, "ContentLength: %d\n", cgiContentLength);
   fflush(stderr);
 #endif
 
@@ -111,7 +113,8 @@ int cgiMain(){
        }
     }else{
       char *buffer=new char[cgiContentLength+1];
-      if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)){
+      int r=0;
+      if((r=fread(buffer,sizeof(char),cgiContentLength,cgiIn))!=0){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
       }else{
@@ -208,7 +211,6 @@ int cgiMain(){
 	      xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "utf-8", 1);
 	      addToMap(tmpMap,"xrequest",(char*)xmlbuff);
 	      char *tmp=(char*)xmlbuff;
-	      fprintf(stderr,"%s\n",tmp);
 	      xmlFree(xmlbuff);
 	    }
 	  }
