@@ -1804,8 +1804,11 @@ int runRequest(map* request_inputs)
 		  tmpmaps->content=NULL;
 		  tmpmaps->next=NULL;
 		}
-		else
+		else{
+		  if(tmpmaps->name!=NULL)
+		    free(tmpmaps->name);
 		  tmpmaps->name=strdup((char*)val);;
+		}
 		xmlFree(val);
 	      }
 	      /**
@@ -1834,21 +1837,25 @@ int runRequest(map* request_inputs)
 		}
 		xmlFree(val);
 	      }
+	      if(request_output_real_format==NULL)
+		request_output_real_format=dupMaps(&tmpmaps);
+	      else
+		addMapsToMaps(&request_output_real_format,tmpmaps);
 	      cur2=cur2->next;
+	      while(cur2!=NULL && cur2->type != XML_ELEMENT_NODE)
+		cur2=cur2->next;
 	    }
 	  }
 	  cur1=cur1->next;
+	  while(cur1!=NULL && cur1->type != XML_ELEMENT_NODE)
+	    cur1=cur1->next;
 	}
       }
-      if(request_output_real_format==NULL)
-	request_output_real_format=dupMaps(&tmpmaps);
-      else
-	addMapsToMaps(&request_output_real_format,tmpmaps);
-#ifdef DEBUG
-      dumpMaps(tmpmaps);
-#endif
-      freeMaps(&tmpmaps);
-      free(tmpmaps);
+      if(tmpmaps!=NULL){
+	freeMaps(&tmpmaps);
+	free(tmpmaps);
+	tmpmaps=NULL;
+      }
     }
 
     xmlXPathFreeObject(tmpsptr);
