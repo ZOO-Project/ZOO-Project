@@ -4,20 +4,27 @@ import osgeo.gdal
 import libxml2
 import os
 import sys
+import zoo
 
 def readFileFromBuffer(data,ext):
-    geometry=[]
-    osgeo.gdal.FileFromMemBuffer('/vsimem//temp1'+ext,data)
-    ds = osgeo.ogr.Open('/vsimem//temp1'+ext)
-    lyr = ds.GetLayer(0)
-    feat = lyr.GetNextFeature()
-    while feat is not None:
-        geometry+=[feat.Clone()]
-        feat.Destroy()
+    try:
+        geometry=[]
+        print >> sys.stderr,'/vsimem//temp1'+ext
+        #print >> sys.stderr,data
+        osgeo.gdal.FileFromMemBuffer('/vsimem//temp1'+ext,data)
+        ds = osgeo.ogr.Open('/vsimem//temp1'+ext)
+        lyr = ds.GetLayer(0)
         feat = lyr.GetNextFeature()
-    ds.Destroy()
-    osgeo.gdal.Unlink('/vsimem//temp1'+ext)
-    return geometry
+        while feat is not None:
+            geometry+=[feat.Clone()]
+            feat.Destroy()
+            feat = lyr.GetNextFeature()
+        ds.Destroy()
+        osgeo.gdal.Unlink('/vsimem//temp1'+ext)
+        return geometry
+    except Exception,e:
+        print >> sys.stderr,e
+        return []
 
 def buildFeatureFromGeomtry(conf,geom,driverName,ext):
     drv = osgeo.ogr.GetDriverByName( driverName )
@@ -40,7 +47,11 @@ def createGeometryFromWFS(conf,my_wfs_response):
         geom=None
     try:
         if geom is None:
-            return readFileFromBuffer(my_wfs_response,"")
+            if not(conf["lenv"].has_key("cnt")):
+                conf["lenv"]["cnt"]=0
+            else:
+                conf["lenv"]["cnt"]+=1
+            return readFileFromBuffer(my_wfs_response,str(conf["lenv"]["cnt"]))
         else:
             return buildFeatureFromGeomtry(conf,geom,"GML","xml")
     except:
@@ -75,6 +86,16 @@ def outputResult(conf,obj,geom):
     lyr = ds.CreateLayer( "Result", None, osgeo.ogr.wkbUnknown )
     i=0
     while i < len(geom):
+        if i==0 and driverName!="GeoJSON":
+            poDstFDefn=geom[i].GetDefnRef()
+            if poDstFDefn is not None:
+                nDstFieldCount = poDstFDefn.GetFieldCount()
+                for iField in range(nDstFieldCount):
+                    poSrcFieldDefn = poDstFDefn.GetFieldDefn(iField)
+                    oFieldDefn = osgeo.ogr.FieldDefn(poSrcFieldDefn.GetNameRef(),poSrcFieldDefn.GetType())
+                    oFieldDefn.SetWidth( poSrcFieldDefn.GetWidth() )
+                    oFieldDefn.SetPrecision( poSrcFieldDefn.GetPrecision() )
+                    lyr.CreateField( oFieldDefn )
         lyr.CreateFeature(geom[i])
         geom[i].Destroy()
         i+=1
@@ -89,14 +110,12 @@ def outputResult(conf,obj,geom):
     osgeo.gdal.Unlink("/vsimem/store"+conf["lenv"]["sid"]+extension[0])
 
 def BufferPy(conf,inputs,outputs):
-    print >> sys.stderr, inputs
-    print >> sys.stderr, outputs
+    print >> sys.stderr, "Starting service ..."
     try:
         bdist=float(inputs["BufferDistance"]["value"])
     except:
         bdist=1
     print >> sys.stderr, bdist
-    
     geometry=extractInputs(conf,inputs["InputPolygon"])
     i=0
     rgeometries=[]
@@ -111,7 +130,7 @@ def BufferPy(conf,inputs,outputs):
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
     i=0
-    return 3
+    return zoo.SERVICE_SUCCEEDED
 
 def BoundaryPy(conf,inputs,outputs):
     geometry=extractInputs(conf,inputs["InputPolygon"])
@@ -126,7 +145,7 @@ def BoundaryPy(conf,inputs,outputs):
         geometry[i].Destroy()
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
-    return 3
+    return zoo.SERVICE_SUCCEEDED
 
 def CentroidPy(conf,inputs,outputs):
     geometry=extractInputs(conf,inputs["InputPolygon"])
@@ -143,7 +162,7 @@ def CentroidPy(conf,inputs,outputs):
         geometry[i].Destroy()
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
-    return 3
+    return zoo.SUCCEEDED
 
 def ConvexHullPy(conf,inputs,outputs):
     geometry=extractInputs(conf,inputs["InputPolygon"])
@@ -157,7 +176,7 @@ def ConvexHullPy(conf,inputs,outputs):
         geometry[i].Destroy()
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
-    return 3
+    return zoo.SUCCEEDED
 
 
 
@@ -197,10 +216,12 @@ def UnionPy(conf,inputs,outputs):
 def IntersectionPy(conf,inputs,outputs):
 
     geometry1=extractInputs(conf,inputs["InputEntity1"])
-    print >> sys.stderr,inputs["InputEntity2"]
     geometry2=extractInputs(conf,inputs["InputEntity2"])
 
+    print >> sys.stderr,str(len(geometry1))+" "+str(len(geometry2))
+
     rgeometries=[]
+    fids=[]
     i=0
     while i < len(geometry1):
         j=0
@@ -210,8 +231,11 @@ def IntersectionPy(conf,inputs,outputs):
             #resg=resg.Intersection(geometry1[i].GetGeometryRef())
             resg=geometry1[i].GetGeometryRef().Intersection(resg)
             tmp.SetGeometryDirectly(resg)
-            if not(resg.IsEmpty()):
+            if resg is not None and not(resg.IsEmpty()) and fids.count(tmp.GetFID())==0:
                 rgeometries+=[tmp]
+                fids+=[tmp.GetFID()]
+            else:
+                tmp.Destroy()
             j+=1
         geometry1[i].Destroy()
         i+=1
