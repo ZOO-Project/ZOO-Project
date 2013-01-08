@@ -26,7 +26,9 @@
 #define ZOO_SERVICE_INTERNAL_JS_H 1
 
 #pragma once 
-
+#ifdef WIN32
+#include <wchar.h>
+#endif
 #include "service.h"
 #include "service_internal.h"
 #include <sys/types.h>

@@ -1744,6 +1744,7 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlChar *xmlbuff;
   xmlNodePtr n;
 
+  printHeaders(m);
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
   char *encoding=getEncoding(tmpMap);
@@ -1898,7 +1899,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  // We can fallback to a default list of supported formats using
 	  // mimeType information if present here. Maybe we can add more formats
 	  // here.
-	  // If mimeType was not found, we then set txt as the default extension.
+	  // If mimeType was not found, we then set txt as the default extension
 	  map* mtype=getMap(tmpI->content,"mimeType");
 	  if(mtype!=NULL){
 	    if(strcasecmp(mtype->value,"text/xml")==0)
@@ -1918,7 +1919,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	}
 	file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
 	sprintf(file_name,"%s/%s_%s_%i.%s",tmp1->value,s->name,tmpI->name,cpid+100000,ext->value);
-	FILE *ofile=fopen(file_name,"w");
+	FILE *ofile=fopen(file_name,"wb");
 	if(ofile==NULL)
 	  fprintf(stderr,"Unable to create file on disk implying segfault ! \n");
 	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
@@ -1999,6 +2000,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  free(errormap);
 	  return;
 	}
+	map* fname=getMapFromMaps(tmpI,tmpI->name,"filename");
+	if(fname!=NULL)
+	  printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+	map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
+	if(rs!=NULL)
+	  printf("Content-Length: %s\r\n",rs->value);
+
 	char mime[1024];
 	map* mi=getMap(tmpI->content,"mimeType");
 #ifdef DEBUG
@@ -2019,12 +2027,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  else
 	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
 	printf("%s",mime);
-	if(mi!=NULL && strncmp(mi->value,"image",5)==0){
-	  map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
+	if(rs!=NULL)
 	  fwrite(toto->value,atoi(rs->value),1,stdout);
-	}
 	else
-	  printf("%s",toto->value);
+	  fwrite(toto->value,strlen(toto->value),1,stdout);
 #ifdef DEBUG
 	dumpMap(toto);
 #endif
