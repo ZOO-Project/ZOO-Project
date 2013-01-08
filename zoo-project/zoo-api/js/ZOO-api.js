@@ -6158,7 +6158,11 @@ ZOO.Process = ZOO.Class({
       return null;
     var body = new XML('<wps:Execute service="WPS" version="1.0.0" xmlns:wps="'+this.namespaces['wps']+'" xmlns:ows="'+this.namespaces['ows']+'" xmlns:xlink="'+this.namespaces['xlink']+'" xmlns:xsi="'+this.namespaces['xsi']+'" xsi:schemaLocation="'+this.schemaLocation+'"><ows:Identifier>'+this.identifier+'</ows:Identifier>'+this.buildDataInputsNode(inputs)+this.buildDataOutputsNode(outputs)+'</wps:Execute>');
     body = body.toXMLString();
-    var response = ZOO.Request.Post(this.url,body,['Content-Type: text/xml; charset=UTF-8']);
+    var headers=['Content-Type: text/xml; charset=UTF-8'];
+      if(arguments.length>2){
+	headers[headers.length]=arguments[2];
+      }
+    var response = ZOO.Request.Post(this.url,body,headers);
     return response;
   },
   buildOutput:{
@@ -6248,13 +6252,27 @@ ZOO.Process = ZOO.Class({
      * {E4XElement} The WPS Input node.
      */
     'literal': function(identifier,data) {
-      var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:LiteralData>'+data.value+'</wps:LiteralData></wps:Data></wps:Input>');
+	if(data && !eval(data["isArray"])){
+	    var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:LiteralData>'+data.value+'</wps:LiteralData></wps:Data></wps:Input>');
       if (data.type)
         input.*::Data.*::LiteralData.@dataType = data.type;
       if (data.uom)
         input.*::Data.*::LiteralData.@uom = data.uom;
       input = input.toXMLString();
       return input;
+	}else if(data){
+	    var inputf="";
+	    for(i=0;i<parseInt(data["length"]);i++){
+		var input = new XML('<wps:Input xmlns:wps="'+this.namespaces['wps']+'"><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier><wps:Data><wps:LiteralData>'+data.value[i]+'</wps:LiteralData></wps:Data></wps:Input>');
+		if (data.type)
+		    input.*::Data.*::LiteralData.@dataType = data.type;
+		if (data.uom)
+		    input.*::Data.*::LiteralData.@uom = data.uom;
+		inputf += input.toXMLString();
+	    }
+	    return inputf;
+	}
+	
     }
   },
   /**
@@ -6271,9 +6289,9 @@ ZOO.Process = ZOO.Class({
     var data, builder, inputsArray=[];
     for (var attr in inputs) {
       data = inputs[attr];
-      if (data.mimetype || data.type == 'complex')
+	if (data && (data.mimetype || data.type == 'complex'))
         builder = this.buildInput['complex'];
-      else if (data.type == 'reference' || data.type == 'url')
+	else if (data && (data.type == 'reference' || data.type == 'url'))
         builder = this.buildInput['reference'];
       else
         builder = this.buildInput['literal'];

@@ -24,6 +24,10 @@
 
 #include "service_internal.h"
 
+#ifndef JSCLASS_GLOBAL_FLAGS
+#define JSCLSAS_GLOBAL_FLAGS 0
+#endif
+
 static char dbg[1024];
 
 JSBool
@@ -80,7 +84,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   maps* _outputs=*outputs;
 
   /* The class of the global object. */
-  JSClass global_class = {
+  JSClass global_class= {
     "global", JSCLASS_GLOBAL_FLAGS,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
@@ -98,11 +102,11 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     return 1;
   
   /* Create a context. */
-  cx = JS_NewContext(rt,8192);
+  cx = JS_NewContext(rt,81920);
   if (cx == NULL){
     return 1;
   }
-  JS_SetOptions(cx, JSOPTION_VAROBJFIX | JSOPTION_JIT );//| JSOPTION_METHODJIT);
+  JS_SetOptions(cx, JSOPTION_VAROBJFIX | JSOPTION_JIT | JSOPTION_METHODJIT);
   JS_SetVersion(cx, JSVERSION_LATEST);
   JS_SetErrorReporter(cx, reportError);
 
@@ -110,7 +114,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   //#ifdef JS_NewCompartmentAndGlobalObject
   global = JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
   //#else
-  //global = JS_NewObject(cx, &global_class, NULL,NULL);
+  //global = JS_NewObject(cx, &global_class, 0,0);
   //#endif
 
   /* Populate the global object with the standard globals,
@@ -149,7 +153,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   /**
    * Load the first part of the ZOO-API
    */
-  char *api0=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+16);
+  char *api0=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+17);
   sprintf(api0,"%s/%s/ZOO-proj4js.js",ntmp,tmpm1->value);
 #ifdef JS_DEBUG
   fprintf(stderr,"Trying to load %s\n",api0);
@@ -157,7 +161,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   JSObject *api_script1=loadZooApiFile(cx,global,api0);
   fflush(stderr);
 
-  char *api1=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+11);
+  char *api1=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+13);
   sprintf(api1,"%s/%s/ZOO-api.js",ntmp,tmpm1->value);
 #ifdef JS_DEBUG
   fprintf(stderr,"Trying to load %s\n",api1);
@@ -199,6 +203,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     JS_ShutDown();
     exit(-1);
   }
+
   /* Call a function in obj's scope. */
   jsval argv[3];
   JSObject *jsargv1=JSObject_FromMaps(cx,*main_conf);
@@ -263,18 +268,32 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 #ifdef JS_DEBUG
     fprintf(stderr," * %d * \n",res);
 #endif
-    jsval tmp2;
-    JSBool hasElement=JS_GetElement(cx,d,1,&tmp2);
-    if(hasElement==JS_TRUE){
-	  freeMaps(outputs);
-	  free(*outputs);
-      *outputs=mapsFromJSObject(cx,tmp2);
+    if(res==SERVICE_SUCCEEDED){
+      jsval tmp2;
+      JSBool hasElement=JS_GetElement(cx,d,1,&tmp2);
+      if(hasElement==JS_TRUE){
+	freeMaps(outputs);
+	free(*outputs);
+	*outputs=mapsFromJSObject(cx,tmp2);
+      }
+    }else{
+      jsval tmp3;
+      JSBool hasConf=JS_GetElement(cx,d,1,&tmp3);
+      if(hasConf==JS_TRUE){
+	freeMaps(main_conf);
+	free(*main_conf);
+	*main_conf=mapsFromJSObject(cx,tmp3);
+      }
     }
+
   }
   else{
 #ifdef JS_DEBUG
-    fprintf(stderr,"The serice didn't return an array !\n");
+    fprintf(stderr,"The service didn't return an array !\n");
 #endif
+    /**
+     * Extract result
+     */
     jsval tmp1;
     JSBool hasResult=JS_GetProperty(cx,d,"result",&tmp1);
     res=JSVAL_TO_INT(tmp1);
@@ -282,22 +301,47 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 #ifdef JS_DEBUG
     fprintf(stderr," * %d * \n",res);
 #endif
+    /**
+     * Extract outputs when available.
+     */
     jsval tmp2;
     JSBool hasElement=JS_GetProperty(cx,d,"outputs",&tmp2);
+    if(!JSVAL_IS_VOID(tmp2) && hasElement==JS_TRUE){
+      freeMaps(outputs);
+      free(*outputs);    
+      *outputs=mapsFromJSObject(cx,tmp2);
+    }
+    JS_MaybeGC(cx);
 #ifdef JS_DEBUG
-    if(!hasElement)
+    if(JSVAL_IS_VOID(tmp2))
       fprintf(stderr,"No outputs property returned\n");
-    if(JS_IsArrayObject(cx,JSVAL_TO_OBJECT(tmp2)))
-      fprintf(stderr,"outputs is array an as expected\n");
-    else
-      fprintf(stderr,"outputs is not an array as expected\n");
+    else{
+      if(JS_IsArrayObject(cx,JSVAL_TO_OBJECT(tmp2)))
+	fprintf(stderr,"outputs is an array as expected\n");
+      else
+	fprintf(stderr,"outputs is not an array as expected\n");
+    }
+    JS_MaybeGC(cx);
 #endif
-    *outputs=mapsFromJSObject(cx,tmp2);
+
+    /**
+     * Extract conf when available.
+     */
+    jsval tmp3;
+    JSBool hasConf=JS_GetProperty(cx,d,"conf",&tmp3);
+    if(!JSVAL_IS_VOID(tmp3) && hasConf==JS_TRUE){
+      freeMaps(main_conf);
+      free(*main_conf);
+      *main_conf=mapsFromJSObject(cx,tmp3);
+    }
+    JS_MaybeGC(cx);
+
 #ifdef JS_DEBUG
     dumpMaps(*outputs);
 #endif
   }
   /* Cleanup. */
+  JS_MaybeGC(cx);
   JS_DestroyContext(cx);
   JS_DestroyRuntime(rt);
   JS_ShutDown();
@@ -478,12 +522,10 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 
   jsuint len;
   JSBool hasLen=JS_GetArrayLength(cx, tt, &len);
+#ifdef JS_DEBUG
   if(hasLen==JS_FALSE){
-#ifdef JS_DEBUG
     fprintf(stderr,"outputs array is empty\n");
-#endif
   }
-#ifdef JS_DEBUG
   fprintf(stderr,"outputs array length : %d\n",len);
 #endif
   for(oi=0;oi < len;oi++){
@@ -693,6 +735,7 @@ HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
       JS_GetElement(cx,header,i,&tmp);
       tmp1=JSValToChar(cx,&tmp);
 #ifdef ULINET_DEBUG
+      curl_easy_setopt(handle.handle,CURLOPT_VERBOSE,1);
       fprintf(stderr,"Element of array n° %d, value : %s\n",i,tmp1);
 #endif
       handle.header=curl_slist_append(handle.header, tmp1);

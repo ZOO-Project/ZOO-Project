@@ -11,6 +11,10 @@ Version 1.3.0-dev
   * Add Python ZOO-API to access ZOO-Kernel internel functions
   * Add a [headers] section in main.cfg file to add specifics to header returned
   * Add support for multiple outputs for both GET and POST requests
+  * Add Content-Length to the headers if the result is sized
+  * Add Content-Disposition to the headers if the result contains a filename
+  * Add support for sending headers through JS ZOO-api
+  * Add support for multi-valued inputs in JS ZOO-api
 
 Version 1.2.0-rc3
 
