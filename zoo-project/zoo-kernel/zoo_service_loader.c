@@ -430,6 +430,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
   *ioutputs=request_output_real_format;
 }
 
+
 #ifdef WIN32
 /**
  * createProcess function: create a new process after setting some env variables
@@ -448,31 +449,45 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
 
   char *dataInputsKVP=getMapsAsKVP(inputs,cgiContentLength,0);
   char *dataOutputsKVP=getMapsAsKVP(outputs,cgiContentLength,1);
+#ifdef DEBUG
   fprintf(stderr,"DATAINPUTSKVP %s\n",dataInputsKVP);
   fprintf(stderr,"DATAOUTPUTSKVP %s\n",dataOutputsKVP);
+#endif
   map *sid=getMapFromMaps(m,"lenv","sid");
   map* r_inputs=getMapFromMaps(m,"main","tmpPath");
-  map* r_inputs1=getMap(s1->content,"ServiceProvider");
+  map* r_inputs1=getMap(request_inputs,"metapath");
+  int hasIn=-1;
+  if(r_inputs1==NULL){
+    r_inputs1=createMap("metapath","");
+    hasIn=1;
+  }
   map* r_inputs2=getMap(s1->content,"ResponseDocument");
   if(r_inputs2==NULL)
     r_inputs2=getMap(s1->content,"RawDataOutput");
   map *tmpPath=getMapFromMaps(m,"lenv","cwd");
 
   if(r_inputs2!=NULL){
-    sprintf(tmp,"\"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",req->value,id->value,dataInputsKVP,r_inputs2->name,r_inputs2->value,sid->value);
-	sprintf(tmpq,"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP);
+    sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,r_inputs2->value,sid->value);
+    sprintf(tmpq,"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP);
   }
   else{
-    sprintf(tmp,"\"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s\"",req->value,id->value,dataInputsKVP,sid->value);
-    sprintf(tmpq,"request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",req->value,id->value,dataInputsKVP,sid->value);
+    sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,sid->value);
+    sprintf(tmpq,"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",r_inputs1->value,req->value,id->value,dataInputsKVP,sid->value);
   }
-
+  
+  if(hasIn>0){
+    freeMap(&r_inputs1);
+    free(r_inputs1);
+  }
   char *tmp1=strdup(tmp);
   sprintf(tmp,"zoo_loader.cgi %s \"%s\"",tmp1,sid->value);
-
+  
   free(dataInputsKVP);
   free(dataOutputsKVP);
+  //printf("REQUEST IS : %s \n",tmp);
+#ifdef DEBUG
   fprintf(stderr,"REQUEST IS : %s \n",tmp);
+#endif
   SetEnvironmentVariable("CGISID",TEXT(sid->value));
   SetEnvironmentVariable("QUERY_STRING",TEXT(tmpq));
   char clen[1000];
@@ -491,14 +506,23 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
 		      &pi )             // Pointer to PROCESS_INFORMATION struct
       ) 
     { 
+      //printf("CreateProcess failed (%d).\n",GetLastError() );
+#ifdef DEBUG
       fprintf( stderr, "CreateProcess failed (%d).\n", GetLastError() );
+#endif
       return ;
     }else{
+    //printf("CreateProcess successfull (%d).\n",GetLastError() );
+#ifdef DEBUG
     fprintf( stderr, "CreateProcess successfull (%d).\n\n\n\n", GetLastError() );
+#endif
   }
   CloseHandle( pi.hProcess );
   CloseHandle( pi.hThread );
+  //printf("CreateProcess finished !\n");
+#ifdef DEBUG
   fprintf(stderr,"CreateProcess finished !\n");
+#endif
 }
 #endif
 
@@ -1700,8 +1724,7 @@ int runRequest(map* request_inputs)
 	  tmpmaps->next=NULL;
 	}
 	/**
-	 * Get every attribute from a LiteralData node
-	 * storeExecuteResponse, lineage, status
+	 * Get every attribute: storeExecuteResponse, lineage, status
 	 */
 	const char *ress[3]={"storeExecuteResponse","lineage","status"};
 	xmlChar *val;
@@ -1741,8 +1764,10 @@ int runRequest(map* request_inputs)
 	      tmpmaps->content=NULL;
 	      tmpmaps->next=NULL;
 	    }
-	    else
-	      tmpmaps->name=strdup((char*)val);;
+	    else{
+	      //free(tmpmaps->name);
+	      tmpmaps->name=strdup((char*)val);
+	    }
 	    xmlFree(val);
 	  }
 	  /**
@@ -1763,11 +1788,9 @@ int runRequest(map* request_inputs)
 	    }
 	    else{
 	      if(tmpmaps->content!=NULL)
-		addToMap(tmpmaps->content,
-			 (char*)cur1->name,(char*)val);
+		addToMap(tmpmaps->content,(char*)cur1->name,(char*)val);
 	      else
-		tmpmaps->content=
-		  createMap((char*)cur1->name,(char*)val);
+		tmpmaps->content=createMap((char*)cur1->name,(char*)val);
 	    }
 	    xmlFree(val);
 	  }
@@ -1794,6 +1817,8 @@ int runRequest(map* request_inputs)
 	      xmlFree(val);
 	    }
 	    xmlNodePtr cur2=cur1->children;
+	    while(cur2!=NULL && cur2->type != XML_ELEMENT_NODE)
+	      cur2=cur2->next;
 	    while(cur2){
 	      /**
 	       * Indentifier
@@ -2124,14 +2149,16 @@ int runRequest(map* request_inputs)
   map* test1=getMap(request_inputs,"cgiSid");
   if(test1!=NULL){
     cgiSid=test1->value;
-  }
-  if(cgiSid!=NULL){
     addToMap(request_inputs,"storeExecuteResponse","true");
     addToMap(request_inputs,"status","true");
+    setMapInMaps(m,"lenv","sid",test1->value);
     status=getMap(request_inputs,"status");
-    //fprintf(stderr,"cgiSID : %s",cgiSid);
+    printf("cgiSid %s\n",cgiSid);
   }
 #endif
+  int hrstd=-1;
+  char *fbkp,*fbkp1;
+  FILE *f0,*f1;
   if(status!=NULL)
     if(strcasecmp(status->value,"false")==0)
       status=NULLMAP;
@@ -2148,14 +2175,15 @@ int runRequest(map* request_inputs)
     pid = fork ();
 #else
     if(cgiSid==NULL){
-      addToMap(request_inputs,"cgSid",cgiSid);
       createProcess(m,request_inputs,s1,NULL,cpid,request_input_real_format,request_output_real_format);
       pid = cpid;
     }else{
       pid=0;
       cpid=atoi(cgiSid);
+      printf("cgiSid %s\n",cgiSid);
     }
-    fflush(stderr);
+    //printf("pid cpid %d %d\n",pid,cpid);
+    //fflush(stderr);
 #endif
     if (pid > 0) {
       /**
@@ -2173,9 +2201,9 @@ int runRequest(map* request_inputs)
        */
       r_inputs=getMapFromMaps(m,"main","tmpPath");
       map* r_inputs1=getMap(s1->content,"ServiceProvider");
-      char* fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+100)*sizeof(char));
+      fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+1024)*sizeof(char));
       sprintf(fbkp,"%s/%s_%d.xml",r_inputs->value,r_inputs1->value,cpid);
-      char* flog=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+100)*sizeof(char));
+      char* flog=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+1024)*sizeof(char));
       sprintf(flog,"%s/%s_%d_error.log",r_inputs->value,r_inputs1->value,cpid);
 #ifdef DEBUG
       fprintf(stderr,"RUN IN BACKGROUND MODE \n");
@@ -2183,9 +2211,8 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"\nFILE TO STORE DATA %s\n",r_inputs->value);
 #endif
       freopen(flog,"w+",stderr);
-      freopen(fbkp , "w+", stdout);
+      f0=freopen(fbkp , "w+", stdout);
       fclose(stdin);
-      free(fbkp);
       free(flog);
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
@@ -2193,7 +2220,6 @@ int runRequest(map* request_inputs)
        * The rewind stdout to restart writing from the bgining of the file,
        * this way the data will be updated at the end of the process run.
        */
-      updateStatus(m);
       printProcessResponse(m,request_inputs,cpid,
 			   s1,r_inputs1->value,SERVICE_STARTED,
 			   request_input_real_format,
@@ -2201,10 +2227,12 @@ int runRequest(map* request_inputs)
 #ifndef WIN32
       fflush(stdout);
       rewind(stdout);
+#else
 #endif
-
+      fbkp1=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+1024)*sizeof(char));
+      sprintf(fbkp1,"%s/%s_final_%d.xml",r_inputs->value,r_inputs1->value,cpid);
+      f1=freopen(fbkp1 , "w+", stdout);
       loadServiceAndRun(&m,s1,request_inputs,&request_input_real_format,&request_output_real_format,&eres);
-
     } else {
       /**
        * error server don't accept the process need to output a valid 
@@ -2241,6 +2269,23 @@ int runRequest(map* request_inputs)
     fclose(stdout);
     fclose(stderr);
     unhandleStatus(m);
+    /**
+     * Dump back the final file fbkp1 to fbkp
+     */
+    fclose(f0);
+    fclose(f1);
+    FILE* f2=fopen(fbkp1,"rb");
+    FILE* f3=fopen(fbkp,"wb+");
+    free(fbkp);
+    free(fbkp1);
+    fseek(f2,0,SEEK_END);
+    long flen=ftell(f2);
+    fseek(f2,0,SEEK_SET);
+    char *tmps1=(char*)malloc((flen+1)*sizeof(char));
+    fread(tmps1,flen,1,f2);
+    fwrite(tmps1,1,flen,f3);
+    fclose(f2);
+    fclose(f3);
   }
 
   freeService(&s1);

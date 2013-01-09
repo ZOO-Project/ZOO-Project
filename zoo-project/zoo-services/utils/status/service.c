@@ -23,9 +23,7 @@
  */
 
 #include "service.h"
-#ifdef WIN32
-#include <windows.h>
-#endif
+#include "service_internal.h"
 
 extern "C" {
 #include <libxml/tree.h>
@@ -39,7 +37,6 @@ extern "C" {
 #include <libxslt/xsltutils.h>
 
 #include <dirent.h>
-#include "service_internal.h"
 
   /**
    * GetStatus ZOO Service :
@@ -75,9 +72,10 @@ extern "C" {
 #ifdef DEBUG
 	fprintf(stderr,"File : %s searched : %s\n",dp->d_name,tmp);
 #endif
-	if(strstr(dp->d_name,tmp)!=0){
+	if(strstr(dp->d_name,"final_")==0 && strstr(dp->d_name,tmp)!=0){
 	  sprintf(fileName,"%s/%s",tmpTmap->value,dp->d_name);
 	  hasFile=1;
+	  break;
 	}
       }
     }else{
@@ -108,8 +106,6 @@ extern "C" {
       int buffersize;
       xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
       setMapInMaps(outputs,"Result","value",(char*)xmlbuff);
-      setMapInMaps(outputs,"Result","mimeType","text/xml");
-      setMapInMaps(outputs,"Result","encoding","UTF-8");
       xmlFree(xmlbuff);
     }
     else{

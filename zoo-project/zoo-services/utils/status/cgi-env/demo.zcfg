@@ -1,0 +1,32 @@
+[demo]
+ Title = Demo long process. 
+ Abstract = This service doesn't do anything except taking its time to return an error message, it demonstrates how to use the update_status function of the Python ZOO-API from your services code.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = service
+ serviceType = Python
+ <DataInputs>
+  [sid]
+   Title = Service ID
+   Abstract = A ZOO Service ID (unused).
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    dataType = integer
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = ExecuteResponse document
+   Abstract = The resulting ExecuteResponse document.
+   <MetaData>
+    title = Demo XSL use case
+   </MetaData>   
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataOutputs>  
