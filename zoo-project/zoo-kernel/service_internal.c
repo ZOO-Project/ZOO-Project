@@ -77,51 +77,41 @@ static LPVOID lpvMemG = NULL;      // pointer to shared memory
 static HANDLE hMapObjectG = NULL;  // handle to file mapping
 
 void updateStatus(maps *conf){
-	fprintf(stderr,"OK Final 1 \n");
-	fflush(stderr);
-	LPWSTR lpszTmp;
-	BOOL fInit;
-	char *s=NULL;
-	map *tmpMap=getMapFromMaps(conf,"lenv","sid");
-	fprintf(stderr,"OK Final 11 \n");
-	fflush(stderr);
-	if(hMapObjectG==NULL)
-	hMapObjectG = CreateFileMapping( 
-		INVALID_HANDLE_VALUE,   // use paging file
-		NULL,                   // default security attributes
-		PAGE_READWRITE,         // read/write access
-		0,                      // size: high 32-bits
-		SHMEMSIZE,              // size: low 32-bits
-		TEXT(tmpMap->value));   // name of map object
-	if (hMapObjectG == NULL){
-		fprintf(stderr,"Unable to create share memory segment %s !! \n",tmpMap->value);
-		return ;
-	}
-	fprintf(stderr,"OK Final 2 \n");
-	fflush(stderr);
-	fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
-	if(lpvMemG==NULL)
-	lpvMemG = MapViewOfFile( 
-		hMapObjectG,     // object to map view of
-		FILE_MAP_WRITE, // read/write access
-		0,              // high offset:  map from
-		0,              // low offset:   beginning
-		0);             // default: map entire file
-	if (lpvMemG == NULL){
-		fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
-		return ;
-	} 
-	fprintf(stderr,"OK Final 3 \n");
-	fflush(stderr);
-	if (fInit)
-		memset(lpvMemG, '\0', SHMEMSIZE);
-	fprintf(stderr,"OK Final 4 \n");
-	fflush(stderr);
-	tmpMap=getMapFromMaps(conf,"lenv","status");
-	lpszTmp = (LPWSTR) lpvMemG;
-	for(s=tmpMap->value;*s!=NULL;s++)
-		*lpszTmp++ = *s;
-	*lpszTmp = '\0'; 
+  LPWSTR lpszTmp;
+  BOOL fInit;
+  char *s=NULL;
+  map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+  if(hMapObjectG==NULL)
+    hMapObjectG = CreateFileMapping( 
+				    INVALID_HANDLE_VALUE,   // use paging file
+				    NULL,                   // default security attributes
+				    PAGE_READWRITE,         // read/write access
+				    0,                      // size: high 32-bits
+				    SHMEMSIZE,              // size: low 32-bits
+				    TEXT(tmpMap->value));   // name of map object
+  if (hMapObjectG == NULL){
+    fprintf(stderr,"Unable to create share memory segment %s !! \n",tmpMap->value);
+    return ;
+  }
+  fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
+  if(lpvMemG==NULL)
+    lpvMemG = MapViewOfFile( 
+			    hMapObjectG,     // object to map view of
+			    FILE_MAP_WRITE, // read/write access
+			    0,              // high offset:  map from
+			    0,              // low offset:   beginning
+			    0);             // default: map entire file
+  if (lpvMemG == NULL){
+    fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
+    return ;
+  } 
+  if (fInit)
+    memset(lpvMemG, '\0', SHMEMSIZE);
+  tmpMap=getMapFromMaps(conf,"lenv","status");
+  lpszTmp = (LPWSTR) lpvMemG;
+  for(s=tmpMap->value;*s!=NULL;s++)
+    *lpszTmp++ = *s;
+  *lpszTmp = '\0'; 
 }
 
 char* getStatus(int pid){
@@ -158,12 +148,7 @@ char* getStatus(int pid){
   if (lpvMem == NULL) 
     return "-1"; 
   lpszTmp = (LPWSTR) lpvMem;
-  while (*lpszTmp!=NULL)
-    *lpszBuf++ = *lpszTmp++;
-  *lpszBuf = '\0';
-  fIgnore = UnmapViewOfFile(lpvMem); 
-  fIgnore = CloseHandle(hMapObject);
-  return (char*)lpszBuf;
+  return (char*)lpszTmp;
 }
 
 void unhandleStatus(maps *conf){
@@ -1390,6 +1375,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 void printDocument(maps* m, xmlDocPtr doc,int pid){
   char *encoding=getEncoding(m);
   if(pid==getpid()){
+    printHeaders(m);
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
   }
   fflush(stdout);
@@ -1744,18 +1730,21 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlChar *xmlbuff;
   xmlNodePtr n;
 
-  printHeaders(m);
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
   char *encoding=getEncoding(tmpMap);
   if(m!=NULL){
     map *tmpSid=getMapFromMaps(m,"lenv","sid");
     if(tmpSid!=NULL){
-      if( getpid()==atoi(tmpSid->value) )
+      if( getpid()==atoi(tmpSid->value) ){
+	printHeaders(m);
 	printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+      }
     }
-    else
+    else{
+      printHeaders(m);
       printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+    }
   }else
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
   n=createExceptionReportNode(m,s,1);
@@ -1861,8 +1850,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     dumpMapsToFile(tmpSess,session_file_path);
   }
   
-  printHeaders(m);
-
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
@@ -2006,7 +1993,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
 	if(rs!=NULL)
 	  printf("Content-Length: %s\r\n",rs->value);
-
+	printHeaders(m);
 	char mime[1024];
 	map* mi=getMap(tmpI->content,"mimeType");
 #ifdef DEBUG

@@ -102,7 +102,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     return 1;
   
   /* Create a context. */
-  cx = JS_NewContext(rt,81920);
+  cx = JS_NewContext(rt,8192);
   if (cx == NULL){
     return 1;
   }
