@@ -1908,8 +1908,16 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
 	sprintf(file_name,"%s/%s_%s_%i.%s",tmp1->value,s->name,tmpI->name,cpid+100000,ext->value);
 	FILE *ofile=fopen(file_name,"wb");
-	if(ofile==NULL)
-	  fprintf(stderr,"Unable to create file on disk implying segfault ! \n");
+	if(ofile==NULL){
+	  char tmpMsg[1024];
+	  sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the final result."),tmpI->name);
+	  map * errormap = createMap("text",tmpMsg);
+	  addToMap(errormap,"code", "InternalError");
+	  printExceptionReportResponse(m,errormap);
+	  freeMap(&errormap);
+	  free(errormap);
+	  return;
+	}
 	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
 	map *tmp3=getMapFromMaps(m,"main","serverAddress");
 	char *file_url;
