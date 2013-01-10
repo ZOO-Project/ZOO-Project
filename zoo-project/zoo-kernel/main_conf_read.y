@@ -313,7 +313,6 @@ int conf_read(const char* file,maps* my_map){
   
   crin = fopen(file,"r");
   if (crin==NULL){
-    printf("error : le fichier specifie n'existe pas ou n'est pas accessible en lecture\n") ;
     return 2 ;
   }
 

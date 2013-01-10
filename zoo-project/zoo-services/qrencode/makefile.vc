@@ -1,0 +1,23 @@
+TROOT= $(ZOOK_DIR)
+!INCLUDE $(ZOOK_DIR)/nmake.opt
+
+FILES=$(ZOOK_DIR)/service_internal.obj $(ZOOK_DIR)/ulinet.obj 
+!IFDEF JS_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(JS_FILE)
+!ENDIF
+!IFDEF JDK_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(JAVA_FILE)
+!ENDIF
+!IFDEF PY_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(PY_FILE)
+!ENDIF
+!IFDEF MS_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(MS_FILE)
+!ENDIF
+
+qrencode.zo: qrenc-service.c
+	$(CPP) -Ivc8\qrcode /DOGR_ENABLED /D_CRT_NONSTDC_NO_DEPRECATE -DWIN32 -DZOO_SERVICE_PROVIDER -I$(GDAL_DIR)/frmts/ -I$(GDAL_DIR)/alg/ $(CFLAGS) -I$(PNG_DIR) /c qrenc-service.c
+	link /dll /out:cgi-env/qrencode.zo  $(FILES) ./qrenc-service.obj $(LDFLAGS) $(PNG_DIR)/libpng15.lib $(QRENCODE_DIR)vc8/.build/Release-Lib/qrcodelib.lib /FORCE:MULTIPLE /NODEFAULTLIB:library
+
+clean:
+	erase qrencode.zo

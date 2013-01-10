@@ -560,7 +560,11 @@ int runRequest(map* request_inputs)
 
   char conf_file[10240];
   snprintf(conf_file,10240,"%s/%s/main.cfg",ntmp,r_inputs->value);
-  conf_read(conf_file,m);
+  if(conf_read(conf_file,m)==2){
+    errorException(NULL, _("Unable to load the main.cfg file."),"InternalError");
+    free(m);
+    return 1;
+  }
 #ifdef DEBUG
   fprintf(stderr, "***** BEGIN MAPS\n"); 
   dumpMaps(m);
@@ -634,7 +638,6 @@ int runRequest(map* request_inputs)
     free(m);
     freeMap(&request_inputs);
     free(request_inputs);
-    free(REQUEST);
     return 1;
   }
   else{
@@ -837,10 +840,6 @@ int runRequest(map* request_inputs)
       free(REQUEST);
       free(SERVICE_URL);
       fflush(stdout);
-#ifndef LINUX_FREE_ISSUE
-      if(s1)
-	free(s1);
-#endif
       return 0;
     }
     else
@@ -850,6 +849,11 @@ int runRequest(map* request_inputs)
 	fprintf(stderr,"No request found %s",REQUEST);
 #endif	
 	closedir(dirp);
+	freeMaps(&m);
+	free(m);
+	free(REQUEST);
+	free(SERVICE_URL);
+	fflush(stdout);
 	return 0;
       }
     closedir(dirp);

@@ -1,0 +1,63 @@
+[QREncode]
+ Title = Encode a string into its QR Code
+ Abstract = Multiply two values and stor the result in Result.
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qrencode.zo
+ serviceType = C
+ <DataInputs>
+  [Text]
+   Title = the input string
+   Abstract = The string to encode using QREncode.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default>
+     uom = meters
+    </Default>
+    <Supported>
+     uom = feet
+    </Supported>
+   </LiteralData>
+  [fgcolor]
+   Title = the input string
+   Abstract = The string (RRGGBBAA) for for foreground color.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default />
+   </LiteralData>
+  [bgcolor]
+   Title = the input string
+   Abstract = The string (RRGGBBAA) for for background color.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default />
+   </LiteralData>
+  [size]
+   Title = the image size
+   Abstract = The generated image size.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    dataType = integer
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [QR]
+   Title = the QR Code image 
+   Abstract = The QRCode corresponding to the string encoded.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+       <Default>
+            mimeType = image/png
+       </Default>
+   </ComplexData>
+ </DataOutputs>  
