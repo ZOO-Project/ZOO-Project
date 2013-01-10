@@ -1745,8 +1745,9 @@ void printExceptionReportResponse(maps* m,map* s){
       printHeaders(m);
       printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
     }
-  }else
+  }else{
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+  }
   n=createExceptionReportNode(m,s,1);
   xmlDocSetRootElement(doc, n);
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
@@ -2015,9 +2016,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
 	printf("%s",mime);
 	if(rs!=NULL)
-	  fwrite(toto->value,atoi(rs->value),1,stdout);
+	  fwrite(toto->value,1,atoi(rs->value),stdout);
 	else
-	  fwrite(toto->value,strlen(toto->value),1,stdout);
+	  fwrite(toto->value,1,strlen(toto->value),stdout);
 #ifdef DEBUG
 	dumpMap(toto);
 #endif
