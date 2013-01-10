@@ -1848,7 +1848,21 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     if(tmpPath==NULL)
       tmpPath=getMapFromMaps(m,"main","tmpPath");
     sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,sessId);
-    dumpMapsToFile(tmpSess,session_file_path);
+    FILE* teste=fopen(session_file_path,"w");
+    if(teste==NULL){
+      char tmpMsg[1024];
+      sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the session maps."),session_file_path);
+      map * errormap = createMap("text",tmpMsg);
+      addToMap(errormap,"code", "InternalError");
+      printExceptionReportResponse(m,errormap);
+      freeMap(&errormap);
+      free(errormap);
+      return;
+    }
+    else{
+      fclose(teste);
+      dumpMapsToFile(tmpSess,session_file_path);
+    }
   }
   
   if(asRaw==0){
@@ -1910,7 +1924,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	FILE *ofile=fopen(file_name,"wb");
 	if(ofile==NULL){
 	  char tmpMsg[1024];
-	  sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the final result."),tmpI->name);
+	  sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the %s final result."),file_name,tmpI->name);
 	  map * errormap = createMap("text",tmpMsg);
 	  addToMap(errormap,"code", "InternalError");
 	  printExceptionReportResponse(m,errormap);
@@ -1929,7 +1943,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
 	}
 	addToMap(tmpI->content,"Reference",file_url);
-	if(hasExt!=true){
+	if(!hasExt){
 	  freeMap(&ext);
 	  free(ext);
 	}

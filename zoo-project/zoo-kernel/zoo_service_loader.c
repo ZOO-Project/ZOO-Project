@@ -2136,6 +2136,20 @@ int runRequest(map* request_inputs)
       conf_read(session_file_path,tmpSess);
       addMapsToMaps(&m,tmpSess);
       freeMaps(&tmpSess);
+    }else{
+      errorException(m, _("Unable to read your session file."), "InternalError");
+      freeMaps(&tmpSess);
+      freeService(&s1);
+      free(s1);
+      freeMaps(&m);
+      free(m);
+      freeMaps(&request_input_real_format);
+      free(request_input_real_format);
+      freeMaps(&request_output_real_format);
+      free(request_output_real_format);
+      free(REQUEST);
+      free(SERVICE_URL);
+      return 1;
     }
     free(tmpSess);
   }
