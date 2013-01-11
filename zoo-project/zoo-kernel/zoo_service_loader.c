@@ -891,7 +891,6 @@ int runRequest(map* request_inputs)
     sprintf(tmpMsg,_("The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),r_inputs->value);
     errorException(m, tmpMsg, "InvalidParameterValue");
     free(tmpMsg);
-    freeService(&s1);
     free(s1);
     freeMaps(&m);
     free(m);

@@ -162,7 +162,7 @@ def CentroidPy(conf,inputs,outputs):
         geometry[i].Destroy()
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
-    return zoo.SUCCEEDED
+    return zoo.SERVICE_SUCCEEDED
 
 def ConvexHullPy(conf,inputs,outputs):
     geometry=extractInputs(conf,inputs["InputPolygon"])
@@ -176,7 +176,7 @@ def ConvexHullPy(conf,inputs,outputs):
         geometry[i].Destroy()
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
-    return zoo.SUCCEEDED
+    return zoo.SERVICE_SUCCEEDED
 
 
 
@@ -200,9 +200,12 @@ def UnionPy(conf,inputs,outputs):
     while i < len(geometry1):
         j=0
         while j < len(geometry2):
-            tres=geometry1[i].Union(geometry2[j])
-            if not(tres.IsEmpty()):
-                rgeometries+=[tres]
+            tmp=geometry1[j].Clone()
+            resg=geometry2[i].GetGeometryRef()
+            resg=resg.Union(geometry1[i].GetGeometryRef())
+            tmp.SetGeometryDirectly(resg)
+            if not(resg.IsEmpty()):
+                rgeometries+=[tmp]
             j+=1
         geometry1[i].Destroy()
         i+=1

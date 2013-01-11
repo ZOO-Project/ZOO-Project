@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2012 GeoLabs SARL
+ * Copyright (c) 2009-2013 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,26 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
       sprintf(classpath,"%s/%s/",ntmp,tmp->value);
     }
     sprintf(oclasspath,"-Djava.class.path=%s",classpath);
+  }else{
+    if(cclasspath!=NULL){
+      classpath=(char*) malloc((strlen(ntmp)+strlen(cclasspath)+3)*sizeof(char));
+      oclasspath=(char*) malloc((strlen(ntmp)+strlen(cclasspath)+21)*sizeof(char));
+#ifndef WIN32
+      sprintf(classpath,"%s/:%s",ntmp,cclasspath);
+#else
+      sprintf(classpath,"%s/;%s",ntmp,cclasspath);
+#endif
+    }
+    else{
+      classpath=(char*) malloc((strlen(ntmp)+2)*sizeof(char));
+      oclasspath=(char*) malloc((strlen(ntmp)+20)*sizeof(char));
+      sprintf(classpath,"%s/",ntmp);
+    }
+    sprintf(oclasspath,"-Djava.class.path=%s",classpath);
+
   }
+  sprintf(oclasspath,"-Djava.class.path=%s",classpath);
+
 #ifdef DEBUG
   fprintf(stderr,"CLASSPATH=%s\n",classpath);
   fprintf(stderr,"(%s)\n",oclasspath);
@@ -77,9 +96,12 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #endif
   int i;
 
-  options[0].optionString = strdup(oclasspath);
+  options[0].optionString = oclasspath;
 #ifdef WIN32
-  options[1].optionString = "-Xmx512M";
+  options[1].optionString = "-Xmx512m";
+  /*options[2].optionString = "-Xms128m";
+  options[3].optionString = "-XX:MaxPermSize=256m";
+  options[4].optionString = "-XX:MaxHeapFreeRatio=70";*/
 #endif
 
   JNI_GetDefaultJavaVMInitArgs(&vm_args);
@@ -111,15 +133,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   cls_gr = (*env)->NewGlobalRef(env, cls);
 #endif
   if( cls == NULL ) {
-    char pbt[10240];
-    sprintf(pbt,"can't find class %s\n",tmp->value);
-    fprintf(stderr,pbt);
-    fflush(stderr);
-    map* err=createMap("text",pbt);
-    addToMap(err,"code","NoApplicableCode");
-    printExceptionReportResponse(m,err);
-    freeMap(&err);
-    free(err);
+    displayStack(env,*main_conf);
 #ifdef JAVA7
     (*jvm).DestroyJavaVM();
 #else
@@ -181,36 +195,8 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 	dumpMaps(inputs);
 	dumpMaps(outputs);
 #endif
-      }else{	  
-	/**
-	 * Error handling displayig stack trace in ExceptionReport
-	 */
-	map *tmpm=getMapFromMaps(*main_conf,"main","tmpPath");
-	char tmps[1024];
-	sprintf(tmps,"%s/%d.ztmp",tmpm->value,getpid());
-	int old_stdout=dup(fileno(stdout));
-	FILE* new_stdout=fopen(tmps,"w+");
-	dup2(fileno(new_stdout),fileno(stdout));
-#ifdef JAVA7
-	(*env).ExceptionDescribe();
-#else
-	(*env)->ExceptionDescribe(env);
-#endif
-	fflush(stdout);
-	dup2(old_stdout,fileno(stdout));
-	fseek(new_stdout, 0, SEEK_END);
-	long flen=ftell(new_stdout);
-	rewind(new_stdout);
-	char *tmps1=(char*)malloc((flen+1)*sizeof(char));
-	fread(tmps1,flen,1,new_stdout);
-	fclose(new_stdout);
-	char *pbt=(char*)malloc((100+flen+1)*sizeof(char));
-	sprintf(pbt,"Unable to run your java process properly. Server returns : %s",tmps1);
-	map* err=createMap("text",pbt);
-	addToMap(err,"code","NoApplicableCode");
-	printExceptionReportResponse(m,err);
-	freeMap(&err);
-	free(err);
+      }else{
+	displayStack(env,*main_conf);
 #ifdef JAVA7
 	(*jvm).DestroyJavaVM();
 #else
@@ -220,12 +206,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
       }
     }
     else{
-      char tmpS[1024];
-      sprintf(tmpS, "Cannot find function %s \n", s->name);
-      map* err=createMap("text",tmpS);
-      printExceptionReportResponse(m,err);
-      freeMap(&err);
-      free(err);
+      displayStack(env,*main_conf);
 #ifdef JAVA7
       (*jvm).DestroyJavaVM();
 #else
@@ -233,19 +214,6 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #endif
       return -1;
     }
-  }else{
-    char tmpS[1024];
-    sprintf(tmpS, "Cannot find function %s \n", tmp->value);
-    map* err=createMap("text",tmpS);
-    printExceptionReportResponse(m,err);
-    freeMap(&err);
-    free(err);
-#ifdef JAVA7
-    (*jvm).DestroyJavaVM();
-#else
-    (*jvm)->DestroyJavaVM(jvm);
-#endif
-    return -1;
   }
 #ifdef JAVA7
       (*jvm).DestroyJavaVM();
@@ -253,6 +221,38 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   (*jvm)->DestroyJavaVM(jvm);
 #endif
   return res;
+}
+
+/**
+ * Error handling: display stack trace in an ExceptionReport Document
+ */
+void displayStack(JNIEnv *env,maps* main_conf){
+  map *tmpm=getMapFromMaps(main_conf,"main","tmpPath");
+  char tmps[1024];
+  sprintf(tmps,"%s/%d.ztmp",tmpm->value,getpid());
+  FILE* new_stdout=fopen(tmps,"wb+");
+  fflush(stderr);
+  dup2(fileno(new_stdout),fileno(stderr));
+  fprintf(stderr,"Unable to run your java process properly: ");
+  fflush(stderr);
+#ifdef JAVA7
+  (*env).ExceptionDescribe();
+#else
+  (*env)->ExceptionDescribe(env);
+#endif
+  fflush(new_stdout);
+  fseek(new_stdout, 0, SEEK_END);
+  long flen=ftell(new_stdout);
+  fseek(new_stdout, 0, SEEK_SET);
+  char *tmps1=(char*)malloc((flen+1)*sizeof(char));
+  fread(tmps1,flen,1,new_stdout);
+  fclose(new_stdout);
+  tmps1[flen]=0;
+  map* err=createMap("text",tmps1);
+  addToMap(err,"code","InternalError");
+  printExceptionReportResponse(main_conf,err);
+  freeMap(&err);
+  free(err);
 }
 
 jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHashMap_class,jmethodID scHashMap_constructor){
@@ -312,15 +312,13 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 	    
 	    jclass scArrayListClass,scArrayList_class;
 	    jmethodID scArrayList_constructor;
-	    jobject scObject2,scObject3,scObject4;
+	    jobject scObject2;
 #ifdef JAVA7
 	    scArrayListClass = (*env).FindClass("java/util/ArrayList");
 	    scArrayList_class = (jclass)(*env).NewGlobalRef(scArrayListClass);
 	    scArrayList_constructor = (*env).GetMethodID(scArrayList_class, "<init>", "()V");
 	    jmethodID add_mid = 0;
 	    scObject2 = (*env).NewObject(scArrayList_class, scArrayList_constructor);
-	    scObject3 = (*env).NewObject(scArrayList_class, scArrayList_constructor);
-	    scObject4 = (*env).NewObject(scArrayList_class, scArrayList_constructor);
 
 	    add_mid = (*env).GetMethodID(scArrayListClass,
 					  "add","(Ljava/lang/Object;)Z");
@@ -330,8 +328,6 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 	    scArrayList_constructor = (*env)->GetMethodID(env, scArrayList_class, "<init>", "()V");
 	    jmethodID add_mid = 0;
 	    scObject2 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
-	    scObject3 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
-	    scObject4 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
 
 	    add_mid = (*env)->GetMethodID(env,scArrayListClass,
 					  "add","(Ljava/lang/Object;)Z");

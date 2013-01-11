@@ -38,6 +38,8 @@ extern "C" {
   
   maps* mapsFromHashMap(JNIEnv*,jobject,jclass);
   
+  void displayStack(JNIEnv*,maps*);
+
   int zoo_java_support(maps**,map*,service*,maps**,maps**);
 
 #ifdef __cplusplus
