@@ -200,8 +200,8 @@ def UnionPy(conf,inputs,outputs):
     while i < len(geometry1):
         j=0
         while j < len(geometry2):
-            tmp=geometry1[j].Clone()
-            resg=geometry2[i].GetGeometryRef()
+            tmp=geometry1[i].Clone()
+            resg=geometry2[j].GetGeometryRef()
             resg=resg.Union(geometry1[i].GetGeometryRef())
             tmp.SetGeometryDirectly(resg)
             if not(resg.IsEmpty()):
