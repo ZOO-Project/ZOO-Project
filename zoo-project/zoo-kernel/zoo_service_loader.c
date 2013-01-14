@@ -2104,6 +2104,7 @@ int runRequest(map* request_inputs)
   else
     addToMap(_tmpMaps->content,"soap","false");
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
+    int hasValidCookie=-1;
     char *tcook=strdup(cgiCookie);
     if(strstr(cgiCookie,";")>0){
       char *token,*saveptr;
@@ -2113,44 +2114,47 @@ int runRequest(map* request_inputs)
 	  if(tcook!=NULL)
 	    free(tcook);
 	  tcook=strdup(token);
+	  hasValidCookie=1;
 	}
 	token=strtok_r(NULL,";",&saveptr);
       }
     }
-    addToMap(_tmpMaps->content,"sessid",strstr(tcook,"=")+1);
-    char session_file_path[1024];
-    map *tmpPath=getMapFromMaps(m,"main","sessPath");
-    if(tmpPath==NULL)
-      tmpPath=getMapFromMaps(m,"main","tmpPath");
-    char *tmp1=strtok(tcook,";");
-    if(tmp1!=NULL)
-      sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
-    else
-      sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
-    free(tcook);
-    maps *tmpSess=(maps*)malloc(MAPS_SIZE);
-    struct stat file_status;
-    int istat = stat(session_file_path, &file_status);
-    if(istat==0 && file_status.st_size>0){
-      conf_read(session_file_path,tmpSess);
-      addMapsToMaps(&m,tmpSess);
-      freeMaps(&tmpSess);
-    }else{
-      errorException(m, _("Unable to read your session file."), "InternalError");
-      freeMaps(&tmpSess);
-      freeService(&s1);
-      free(s1);
-      freeMaps(&m);
-      free(m);
-      freeMaps(&request_input_real_format);
-      free(request_input_real_format);
-      freeMaps(&request_output_real_format);
-      free(request_output_real_format);
-      free(REQUEST);
-      free(SERVICE_URL);
-      return 1;
+    if(hasValidCookie>0){
+      addToMap(_tmpMaps->content,"sessid",strstr(tcook,"=")+1);
+      char session_file_path[1024];
+      map *tmpPath=getMapFromMaps(m,"main","sessPath");
+      if(tmpPath==NULL)
+	tmpPath=getMapFromMaps(m,"main","tmpPath");
+      char *tmp1=strtok(tcook,";");
+      if(tmp1!=NULL)
+	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(tmp1,"=")+1);
+      else
+	sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,strstr(cgiCookie,"=")+1);
+      free(tcook);
+      maps *tmpSess=(maps*)malloc(MAPS_SIZE);
+      struct stat file_status;
+      int istat = stat(session_file_path, &file_status);
+      if(istat==0 && file_status.st_size>0){
+	conf_read(session_file_path,tmpSess);
+	addMapsToMaps(&m,tmpSess);
+	freeMaps(&tmpSess);
+      }else{
+	errorException(m, _("Unable to read your session file."), "InternalError");
+	free(tmpSess);
+	freeService(&s1);
+	free(s1);
+	freeMaps(&m);
+	free(m);
+	freeMaps(&request_input_real_format);
+	free(request_input_real_format);
+	freeMaps(&request_output_real_format);
+	free(request_output_real_format);
+	free(REQUEST);
+	free(SERVICE_URL);
+	return 1;
+      }
+      free(tmpSess);
     }
-    free(tmpSess);
   }
   addMapsToMaps(&m,_tmpMaps);
   freeMaps(&_tmpMaps);
