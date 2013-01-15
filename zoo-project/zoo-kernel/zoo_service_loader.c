@@ -2106,7 +2106,7 @@ int runRequest(map* request_inputs)
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
     int hasValidCookie=-1;
     char *tcook=strdup(cgiCookie);
-    if(strstr(cgiCookie,";")>0){
+    if(strstr(cgiCookie,";")!=NULL){
       char *token,*saveptr;
       token=strtok_r(cgiCookie,";",&saveptr);
       while(token!=NULL){
@@ -2117,6 +2117,11 @@ int runRequest(map* request_inputs)
 	  hasValidCookie=1;
 	}
 	token=strtok_r(NULL,";",&saveptr);
+      }
+    }else{
+      if(strstr(cgiCookie,"=")!=NULL && strcasestr(cgiCookie,"ID")!=NULL){
+	tcook=strdup(cgiCookie);
+	hasValidCookie=1;
       }
     }
     if(hasValidCookie>0){
