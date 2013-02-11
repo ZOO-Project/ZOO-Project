@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2011 GeoLabs SARL
+ * Copyright (c) 2009-2013 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,7 +58,6 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-#include "cgic.h"
 #include "ulinet.h"
 
 extern   int getServiceFromFile(const char*,service**);
@@ -134,7 +133,7 @@ extern "C" {
   void addToCache(maps*,char*,char*,int);
   char* isInCache(maps*,char*);
   int loadRemoteFile(maps*,map*,HINTERNET,char*);
-  
+
 #ifdef __cplusplus
 }
 #endif

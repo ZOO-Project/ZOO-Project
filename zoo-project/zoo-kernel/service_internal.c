@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2012 GeoLabs SARL
+ * Copyright (c) 2009-2013 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -2517,7 +2517,7 @@ char* isInCache(maps* conf,char* request){
 #ifdef DEBUG
     fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
 #endif
-    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+50));
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
     sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
     struct stat f_status;
     int s=stat(fname, &f_status);
@@ -2547,9 +2547,9 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     if(s==0){
       fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
       FILE* f=fopen(cached,"rb");
-      fread(fcontent,sizeof(char),f_status.st_size,f);
+      int len=fread(fcontent,f_status.st_size,1,f);
       fsize=f_status.st_size;
-      hasF=1;
+      fcontent[fsize]=0;
     }
   }else{
     res=InternetOpenUrl(hInternet,url,NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
@@ -2557,7 +2557,6 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     if(fcontent == NULL){
       return errorException(m, _("Unable to allocate memory."), "InternalError");
     }
-    hasF=1;
     size_t dwRead;
     InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
     fcontent[res.nDataLen]=0;
@@ -2573,7 +2572,8 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
   if(tmpMap->value==NULL)
     fprintf(stderr,"Unable to allocate memory!\n");
-  memcpy(tmpMap->value,fcontent,(fsize)*sizeof(char));
+  //snprintf(tmpMap->value,(fsize+1)*sizeof(char),fcontent);
+  memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
   
   char ltmp1[256];
   sprintf(ltmp1,"%d",fsize);
@@ -2581,8 +2581,6 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   if(cached==NULL)
     addToCache(m,url,fcontent,fsize);
   else{
-    if(hasF)
-      free(fcontent);
     free(cached);
   }
   return 0;
