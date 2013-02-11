@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2012 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2013 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -271,7 +271,6 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
     errstr = dlerror();
 #endif
 #endif
-
     if( so != NULL ) {
 #ifdef DEBUG
       fprintf(stderr,"Library loaded %s \n",errstr);
@@ -377,7 +376,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 #else
       char* errstr = dlerror();
 #endif
-      sprintf(tmps,_("C Library can't be loaded %s \n"),errstr);
+      sprintf(tmps,_("C Library can't be loaded %s"),errstr);
       map* tmps1=createMap("text",tmps);
       printExceptionReportResponse(m,tmps1);
       *eres=-1;
@@ -1895,7 +1894,8 @@ int runRequest(map* request_inputs)
     xmlCleanupParser();
   }
   
-  //if(CHECK_INET_HANDLE(hInternet))
+
+  //  if(CHECK_INET_HANDLE(hInternet))
   InternetCloseHandle(hInternet);
 
 #ifdef DEBUG
@@ -2038,9 +2038,9 @@ int runRequest(map* request_inputs)
 #else
       ;
 #endif
-	  char* toto=(char*)malloc((strlen(mapcs->name)+strlen(mapcs->value)+2)*sizeof(char));
+      char* toto=(char*)malloc((strlen(mapcs->name)+strlen(mapcs->value)+2)*sizeof(char));
       sprintf(toto,"%s=%s",mapcs->name,mapcs->value);
-	  putenv(toto);
+      putenv(toto);
 #ifdef DEBUG
       fflush(stderr);
 #endif
@@ -2110,7 +2110,7 @@ int runRequest(map* request_inputs)
       char *token,*saveptr;
       token=strtok_r(cgiCookie,";",&saveptr);
       while(token!=NULL){
-	if(strcasestr(token,"ID")!=NULL){
+	if(strcasestr(token,"ID=")!=NULL){
 	  if(tcook!=NULL)
 	    free(tcook);
 	  tcook=strdup(token);
@@ -2119,7 +2119,7 @@ int runRequest(map* request_inputs)
 	token=strtok_r(NULL,";",&saveptr);
       }
     }else{
-      if(strstr(cgiCookie,"=")!=NULL && strcasestr(cgiCookie,"ID")!=NULL){
+      if(strstr(cgiCookie,"=")!=NULL && strcasestr(cgiCookie,"ID=")!=NULL){
 	tcook=strdup(cgiCookie);
 	hasValidCookie=1;
       }
