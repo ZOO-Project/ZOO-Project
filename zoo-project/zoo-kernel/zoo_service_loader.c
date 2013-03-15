@@ -1974,7 +1974,6 @@ int runRequest(map* request_inputs)
 	  strcpy(fileNameOnServer,name+t+1);
 	  
 	  sprintf(storageNameOnServer,"%s/%s",path->value,fileNameOnServer);
-	  printf("\n\nName on server %s\n",storageNameOnServer);
 #ifdef DEBUG
 	  fprintf(stderr,"Name on server %s\n",storageNameOnServer);
 	  fprintf(stderr,"fileNameOnServer: %s\n",fileNameOnServer);
@@ -2303,7 +2302,6 @@ int runRequest(map* request_inputs)
     FILE* f2=fopen(fbkp1,"rb");
     FILE* f3=fopen(fbkp,"wb+");
     free(fbkp);
-    free(fbkp1);
     fseek(f2,0,SEEK_END);
     long flen=ftell(f2);
     fseek(f2,0,SEEK_SET);
@@ -2312,6 +2310,8 @@ int runRequest(map* request_inputs)
     fwrite(tmps1,1,flen,f3);
     fclose(f2);
     fclose(f3);
+    unlink(fbkp1);
+    free(fbkp1);
   }
 
   freeService(&s1);
