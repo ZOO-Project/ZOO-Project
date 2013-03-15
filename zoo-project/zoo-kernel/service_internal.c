@@ -1358,6 +1358,19 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   if(hasStoredExecuteResponse==true){
     /* We need to write the ExecuteResponse Document somewhere */
     FILE* output=fopen(stored_path,"w");
+    if(output==NULL){
+      /* If the file cannot be created return an ExceptionReport */
+      char tmpMsg[1024];
+      sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the ExecuteResponse."),stored_path);
+      map * errormap = createMap("text",tmpMsg);
+      addToMap(errormap,"code", "InternalError");
+      printExceptionReportResponse(m,errormap);
+      freeMap(&errormap);
+      free(errormap);
+      xmlCleanupParser();
+      zooXmlCleanupNs();
+      return;
+    }
     xmlChar *xmlbuff;
     int buffersize;
     xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "UTF-8", 1);
