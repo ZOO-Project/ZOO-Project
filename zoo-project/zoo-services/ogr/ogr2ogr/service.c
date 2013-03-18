@@ -38,6 +38,11 @@
 
 CPL_CVSID("$Id: ogr2ogr.cpp 15473 2008-10-07 20:59:24Z warmerdam $");
 
+#ifdef WIN32
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp 
+#endif
+
 #ifdef ZOO_SERVICE
 extern "C" {
 #endif
@@ -59,7 +64,7 @@ static int TranslateLayer( OGRDataSource *poSrcDS,
 
 static int bSkipFailures = FALSE;
 static int nGroupTransactions = 200;
-static int bPreserveFID = FALSE;
+static int bPreserveFID = TRUE;
 static int nFIDToFetch = OGRNullFID;
 
 /************************************************************************/
@@ -96,6 +101,9 @@ int main( int nArgc, char ** papszArgv )
     int         eGType = -2;
     double      dfMaxSegmentLength = 0;
 
+#ifdef ZOO_SERVICE
+    dumpMaps(inputs);
+#endif
     /* Check strict compilation and runtime library version as we use C++ API */
     if (! GDAL_CHECK_VERSION("ogr2ogr"))
 #ifdef ZOO_SERVICE
@@ -141,72 +149,75 @@ int main( int nArgc, char ** papszArgv )
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"F","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
       pszFormat=tmpMap->value;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"DSCO","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  papszDSCO = CSLAddString(papszDSCO, tmpMap->value );
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"LCO","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  papszLCO = CSLAddString(papszLCO, tmpMap->value );
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"preserve_fid","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  bPreserveFID = TRUE;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"skipfailure","value");
-    if(tmpMap!=NULL){
-	  bPreserveFID = TRUE;
-	  bSkipFailures = TRUE;
-	  nGroupTransactions = 1; /* #2409 */
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      bSkipFailures = TRUE;
+      nGroupTransactions = 1; /* #2409 */
+    }
+
+    /* if exist, overwrite the data with the same name */
+    tmpMap=NULL;
+    tmpMap=getMapFromMaps(inputs,"overwrite","value");
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      bOverwrite = TRUE;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"append","value");
-    if(tmpMap!=NULL){
-	  bAppend = TRUE;
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"TRUE",4)==0){
+      bAppend = TRUE;
     }
 
-    /* if exist, overwrite the data with the same name */
-    bOverwrite = TRUE;
-    
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"update","value");
-    if(tmpMap!=NULL){
-	  bUpdate = TRUE;
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"TRUE",4)==0){
+      bUpdate = TRUE;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"fid","value");
-    if(tmpMap!=NULL){
-	  nFIDToFetch = atoi(tmpMap->value);
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      nFIDToFetch = atoi(tmpMap->value);
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"sql","value");
-    if(tmpMap!=NULL){
-	  pszSQLStatement = tmpMap->value;
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      pszSQLStatement = tmpMap->value;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"nln","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  pszNewLayerName = tmpMap->value;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"nlt","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  pszNewLayerName = tmpMap->value;
 	  if( EQUAL(tmpMap->value,"NONE") )
 		  eGType = wkbNone;
@@ -252,32 +263,32 @@ int main( int nArgc, char ** papszArgv )
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"tg","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  nGroupTransactions = atoi(tmpMap->value);
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"s_srs","value");
-    if(tmpMap!=NULL){
-	  pszSourceSRSDef = tmpMap->value;
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      pszSourceSRSDef = strdup(tmpMap->value);
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"a_srs","value");
-    if(tmpMap!=NULL){
-	  pszOutputSRSDef = tmpMap->value;
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      pszOutputSRSDef = strdup(tmpMap->value);
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"t_srs","value");
-    if(tmpMap!=NULL){
-	  pszOutputSRSDef = tmpMap->value;
-	  bTransform = TRUE;
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      pszOutputSRSDef = strdup(tmpMap->value);
+      bTransform = TRUE;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"SPAT","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
       char *tmp=tmpMap->value;
       char *t=strtok(tmp,",");
       int cnt=0;
@@ -316,13 +327,13 @@ int main( int nArgc, char ** papszArgv )
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"where","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  pszWHERE = tmpMap->value;
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"select","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  pszSelect = tmpMap->value;
 	  papszSelFields = CSLTokenizeStringComplex(pszSelect, " ,", 
 		  FALSE, FALSE );
@@ -330,32 +341,55 @@ int main( int nArgc, char ** papszArgv )
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"segmentize","value");
-    if(tmpMap!=NULL){
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  dfMaxSegmentLength = atof(tmpMap->value);
     }
 
-    tmpMap=NULL;
+    /*tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"segmentize","value");
     if(tmpMap!=NULL){
 	  dfMaxSegmentLength = atof(tmpMap->value);
-    }
+    }*/
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"InputDSN","value");
-    if(tmpMap!=NULL){
-      pszDataSource=(char*)malloc(sizeof(char)*(strlen(dataPath)+strlen(tmpMap->value)+1));
-      sprintf((char*)pszDataSource,"%s/%s",dataPath,tmpMap->value);
+    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+      if(strncasecmp(tmpMap->value,"PG",2)!=0 &&
+	 strncasecmp(tmpMap->value,"My",2)!=0 &&
+	 strncasecmp(tmpMap->value,"OCI",3)!=0 ){
+	if(strncasecmp(dataPath,tmpMap->value,strlen(dataPath))==0 ||
+	   strncasecmp(tempPath,tmpMap->value,strlen(tempPath))==0){
+	  pszDataSource=strdup(tmpMap->value);
+	}else{
+	  pszDataSource=(char*)malloc(sizeof(char)*(strlen(dataPath)+strlen(tmpMap->value)+2));
+	  sprintf((char*)pszDataSource,"%s/%s",dataPath,tmpMap->value);
+	}
+      }else{
+	pszDataSource=(char*)malloc(sizeof(char)*(strlen(tmpMap->value)+1));
+	sprintf((char*)pszDataSource,"%s",tmpMap->value);	
+      }
     }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"OutputDSN","value");
     if(tmpMap!=NULL){
-      pszDestDataSource=(char*)malloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
-      sprintf((char*)pszDestDataSource,"%s/%s",tempPath,tmpMap->value/*,ext*/);
-      pszwebDestData=(char*)malloc(sizeof(char)*(strlen(serverAddress)+strlen(tmpurl)+strlen(tmpMap->value)+4));
-      sprintf((char*)pszwebDestData,"%s%s/%s",serverAddress,tmpurl,tmpMap->value/*,ext*/);
+      if(strncasecmp(tmpMap->value,"PG",2)!=0 &&
+	 strncasecmp(tmpMap->value,"MY",2)!=0 &&
+	 strncasecmp(tmpMap->value,"OCI",3)!=0){
+	pszDestDataSource=(char*)malloc(sizeof(char)*(strlen(tempPath)+strlen(tmpMap->value)+4));
+	sprintf((char*)pszDestDataSource,"%s/%s",tempPath,tmpMap->value/*,ext*/);
+	pszwebDestData=(char*)malloc(sizeof(char)*(strlen(serverAddress)+strlen(tmpurl)+strlen(tmpMap->value)+4));
+	sprintf((char*)pszwebDestData,"%s%s/%s",serverAddress,tmpurl,tmpMap->value/*,ext*/);
+      }
+      else{
+	pszDestDataSource=(char*)malloc(sizeof(char)*(strlen(tmpMap->value)+1));
+	sprintf((char*)pszDestDataSource,"%s",tmpMap->value/*,ext*/);
+	pszwebDestData=(char*)malloc(sizeof(char)*(strlen(serverAddress)+strlen(tmpurl)+strlen(tmpMap->value)+4));
+	sprintf((char*)pszwebDestData,"%s%s/%s",serverAddress,tmpurl,tmpMap->value/*,ext*/);
+      }
     }
 
+    fprintf(stderr,"Message %s\n",pszDestDataSource);
 #else
 /* -------------------------------------------------------------------- */
 /*      Processing command line arguments.                              */
@@ -528,8 +562,9 @@ int main( int nArgc, char ** papszArgv )
     if( pszDataSource == NULL )
 #ifdef ZOO_SERVICE
 	{
-#endif
+#else
 	  Usage();
+#endif
 #ifdef ZOO_SERVICE
 	  setMapInMaps(conf,"lenv","message","Wrong parameter");
 	  return SERVICE_FAILED;
@@ -721,7 +756,7 @@ int main( int nArgc, char ** papszArgv )
         if( pszWHERE != NULL )
             fprintf( stderr,  "-where clause ignored in combination with -sql.\n" );
         if( CSLCount(papszLayers) > 0 )
-            fprintf( stderr,  "layer names ignored in combination with -sql.\n" );
+	  fprintf( stderr,  "layer names ignored in combination with -sql. (%s)\n", pszSQLStatement);
         
         poResultSet = poDS->ExecuteSQL( pszSQLStatement, poSpatialFilter, 
                                         NULL );
@@ -782,50 +817,65 @@ int main( int nArgc, char ** papszArgv )
                                  bOverwrite, dfMaxSegmentLength ) 
                 && !bSkipFailures )
             {
-                CPLError( CE_Failure, CPLE_AppDefined, 
-                          "Terminating translation prematurely after failed\n"
-                          "translation of layer %s (use -skipfailures to skip errors)\n", 
-                          poLayer->GetLayerDefn()->GetName() );
-
 #ifdef ZOO_SERVICE
 		char tmp[1024];
 		sprintf(tmp,"Terminating translation prematurely after failed of layer %s",poLayer->GetLayerDefn()->GetName() );
 		setMapInMaps(conf,"lenv","message",tmp);
 		return SERVICE_FAILED;
 #else
+                CPLError( CE_Failure, CPLE_AppDefined, 
+                          "Terminating translation prematurely after failed\n"
+                          "translation of layer %s (use -skipfailures to skip errors)\n", 
+                          poLayer->GetLayerDefn()->GetName() );
+
                 exit( 1 );
 #endif
             }
         }
     }
 
+#ifdef ZOO_SERVICE
+    outputs->content=createMap("value",(char*)pszwebDestData);
+#endif
+
 /* -------------------------------------------------------------------- */
 /*      Close down.                                                     */
 /* -------------------------------------------------------------------- */
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     delete poOutputSRS;
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     delete poSourceSRS;
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     delete poODS;
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     delete poDS;
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
-    CSLDestroy(papszSelFields);
 #ifndef ZOO_SERVICE
-	CSLDestroy( papszArgv );
+    CSLDestroy(papszSelFields);
+    CSLDestroy( papszArgv );
 #endif
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     CSLDestroy( papszLayers );
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+#ifndef ZOO_SERVICE
     CSLDestroy( papszDSCO );
     CSLDestroy( papszLCO );
+#endif
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
     OGRCleanupAll();
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
 #ifdef DBMALLOC
     malloc_dump(1);
 #endif
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     
 #ifdef ZOO_SERVICE
-    outputs->content=createMap("value",(char*)pszwebDestData);
     return SERVICE_SUCCEEDED;
 #else
-	return 0;
+    return 0;
 #endif
 }
 
@@ -1081,12 +1131,18 @@ static int TranslateLayer( OGRDataSource *poSrcDS,
 /*      selected.                                                       */
 /* -------------------------------------------------------------------- */
     int         iField;
+    int hasMmField=-1;
 
     if (papszSelFields && !bAppend )
     {
         for( iField=0; papszSelFields[iField] != NULL; iField++)
         {
             int iSrcField = poFDefn->GetFieldIndex(papszSelFields[iField]);
+	    OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iSrcField);
+	    fprintf(stderr,"NAME: %s\n",tmp->GetNameRef());
+	    fflush(stderr);
+	    if(tmp!=NULL && strncasecmp(tmp->GetNameRef(),"MMID",4)==0)
+	      hasMmField=1;
             if (iSrcField >= 0)
                 poDstLayer->CreateField( poFDefn->GetFieldDefn(iSrcField) );
             else
@@ -1097,19 +1153,29 @@ static int TranslateLayer( OGRDataSource *poSrcDS,
                     return FALSE;
             }
         }
+
     }
     else if( !bAppend )
     {
-        for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
+      for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ ){
             poDstLayer->CreateField( poFDefn->GetFieldDefn(iField) );
+	    OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iField);
+	    if(tmp!=NULL && strncasecmp(tmp->GetNameRef(),"MMID",4)==0)
+	      hasMmField=1;
+	    fprintf(stderr,"NAME: %s\n",tmp->GetNameRef());
+      }
     }
+    /*if(hasMmField<0){
+      OGRFieldDefn oField( "MMID", OFTInteger );
+      poDstLayer->CreateField( &oField );
+      }*/
 
 /* -------------------------------------------------------------------- */
 /*      Transfer features.                                              */
 /* -------------------------------------------------------------------- */
     OGRFeature  *poFeature;
     int         nFeaturesInTransaction = 0;
-    
+    int fCount=0;
     poSrcLayer->ResetReading();
 
     if( nGroupTransactions )
@@ -1129,9 +1195,11 @@ static int TranslateLayer( OGRDataSource *poSrcDS,
         }
         else
             poFeature = poSrcLayer->GetNextFeature();
-        
+
         if( poFeature == NULL )
             break;
+
+	//poFeature->SetField((poFeature->GetFieldCount()-1),fCount);
 
         if( ++nFeaturesInTransaction == nGroupTransactions )
         {
@@ -1159,6 +1227,11 @@ static int TranslateLayer( OGRDataSource *poSrcDS,
 
         if( bPreserveFID )
             poDstFeature->SetFID( poFeature->GetFID() );
+
+	/*if(hasMmField<0){
+	  poDstFeature->SetField((poDstFeature->GetFieldCount()-1),fCount);
+	  fCount++;
+	}*/
 
 #ifndef GDAL_1_5_0
         if (poDstFeature->GetGeometryRef() != NULL && dfMaxSegmentLength > 0)
