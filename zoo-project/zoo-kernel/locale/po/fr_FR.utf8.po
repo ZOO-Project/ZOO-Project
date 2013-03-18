@@ -62,7 +62,7 @@ msgid ""
 "Unable to run the Service. The message returned back by the Service was the "
 "following : %s"
 msgstr ""
-"Impossible d'exécuter le Servive. Le message retourné par le Service est le suivant : %s"
+"Impossible d'exécuter le Service. Le message retourné par le Service est le suivant : %s"
 
 #: service_internal.c:1589
 #, c-format
@@ -125,7 +125,7 @@ msgstr "Le chemin fourni n'existe pas."
 #: zoo_service_loader.c:404
 #, c-format
 msgid "No request found %s"
-msgstr "Aucune requête trouvé %s"
+msgstr "Aucune requête trouvée %s"
 
 #: zoo_service_loader.c:441
 #, c-format
@@ -133,8 +133,8 @@ msgid ""
 "The value for <indetifier> seems to be wrong (%s). Please, ensure that the "
 "process exist using the GetCapabilities request."
 msgstr ""
-"La valeur poru le paramètre <identifier> semble éronné (%s). Merci de vous assurer que"
-" le service existe en utilisant un requête GetCapabilities."
+"La valeur pour le paramètre <identifier> semble éronné (%s). Merci de vous assurer que"
+" le service existe en utilisant une requête GetCapabilities."
 
 #: zoo_service_loader.c:519 zoo_service_loader.c:530
 msgid "Unable to allocate memory"
