@@ -24,7 +24,8 @@ Python ZCFG requirements
 ************************
 
 .. Note:: For each Service provided by your ZOO Python Services Provider, the ZCFG File 
-          must be named the same as the Python module function name.
+          must be named the same as the Python module function name (also the case of
+          characters is important).
 
 The ZCFG file should contain the following :
 
@@ -39,31 +40,96 @@ serviceProvider
 Python Data Structure used
 **************************
 
-The Python module's function to be used as a service must:
+The Python module's function to be used take three arguments: the main configuration, inputs and outputs.
+All this values are passed to the Python module as dictionaries.
 
-- take three arguments : the main configuration, inputs and outputs maps are passed to the 
-  Python module as dictionaries.
-- return an integer : corresponding to the service status code. 
+Following you'll find an example for each parameters
 
-Sample Data Structure
-*********************
+Main configuration
+^^^^^^^^^^^^^^^^^^^^^
+Main configuration contains several informations, some of them are really useful to develop your service.
+Following an example ::
 
-In the following you'll find a sample argument passed to the Python module's function for 
-the two first main configuration file' sections.
-
-::
-
-  main={
-     "main": {"encoding": "utf-8",
-              "version": "1.0.0",
-              "serverAddress": "http://www.zoo-project.org/zoo/",
-              "lang": "fr-FR,en-CA"}, 
-     "identification": {"title": "The Zoo WPS Development Server",
-                        "abstract": "Development version of ZooWPS.",
-                        "fees": "None",
-                        "accessConstraints": "none",
-                        "keywords": "WPS,GIS,buffer"}
+  {
+  'main': {'lang': 'en-UK',
+	   'language': 'en-US',
+	   'encoding': 'utf-8',
+	   'dataPath': '/var/www/tmp',
+	   'tmpPath': '/var/www/tmp',
+	   'version': '1.0.0',
+	   'mapserverAddress': 'http://localhost/cgi-bin/mapserv',
+	   'isSoap': 'false',
+	   'tmpUrl': 'http://localhost/tmp/',
+	   'serverAddress': 'http://localhost/zoo'
+	  },
+  'identification': {'keywords': 'WPS,GIS',
+		     'abstract': 'WPS services for testing ZOO',
+		     'fees': 'None',
+		     'accessConstraints': 'none',
+		     'title': 'testing services'
+		    },
+  'lenv': {'status': '0',
+	   'soap': 'false',
+	   'cwd': '/usr/lib/cgi-bin',
+	   'sid': '24709'
+	  },
+  'env': {'DISPLAY': 'localhost:0'},
+  'provider': {'addressCountry': 'it',
+	       'positionName': 'Developer',
+	       'providerName': 'Name of provider',
+	       'addressAdministrativeArea': 'False',
+	       'phoneVoice': 'False',
+	       'addressCity': 'City',
+	       'providerSite': 'http://www.your.site',
+	       'addressPostalCode': '38122',
+	       'role': 'Developer',
+	       'addressDeliveryPoint': 'False',
+	       'phoneFacsimile': 'False', 
+	       'addressElectronicMailAddress': 'your@email.com',
+	       'individualName': 'Your Name'
+	      }
   }
+
+Inputs
+^^^^^^^^^^^^
+The inputs are somethings like this ::
+
+  {
+  'variable_name': {'minOccurs': '1',
+		    'DataType': 'string',
+		    'value': 'this_is_the_value',
+		    'maxOccurs': '1',
+		    'inRequest': 'true'
+		   }
+  }
+
+The access to the value you have to require for the ``value`` parameter, something like this ::
+
+  yourVariable = inputs['variable_name']['value']
+
+Outputs
+^^^^^^^^^^^^^
+The outputs data as a structure really similar to the inputs one ::
+
+  {
+  'result': {'DataType': 'string',
+	     'inRequest': 'true',
+	    }
+  }
+
+There is no ``'value'`` parameter before you assign it ::
+
+  inputs['result']['value'] = yourOutputDataVariable
+
+The return statement has to be an integer: corresponding to the service status code.
+
+The module should **return 3 if the process successfully ended otherwise it should return 4**.
+To add a message for the wrong result you can add the massage to ``conf["lenv"]["message"]``,
+for example:
+
+.. code-block:: python
+
+  conf["lenv"]["message"] = 'Your module return an error'
 
 Sample ZOO Python Services Provider
 ***********************************
