@@ -15,6 +15,12 @@ HelloWorlds in Python, PHP, Java  and JavaScript with links to their correspondi
     :depth: 3
     :backlinks: top
 
+Common informations
+----------------------
+
+.. Note:: The service has to **return 3 if the process run successfully instead it 
+	  return 4** if the process end with an error.
+
 Python
 ------
 
@@ -123,7 +129,6 @@ There is no ``'value'`` parameter before you assign it ::
 
 The return statement has to be an integer: corresponding to the service status code.
 
-The module should **return 3 if the process successfully ended otherwise it should return 4**.
 To add a message for the wrong result you can add the massage to ``conf["lenv"]["message"]``,
 for example:
 
