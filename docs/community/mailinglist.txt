@@ -11,17 +11,18 @@ The ``zoo-discuss`` list is your main source of support for the ZOO-Project.
 - **Subscribing to zoo-discuss**
 
   To subscribe to the zoo-discuss listserv visit
-  http://gisws.media.osaka-cu.ac.jp/mailman/listinfo/zoo-discuss. You can later change
+  http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss. You can later change
   your subscription information or leave the list at this website.
 
 - **Submitting Questions to zoo-discuss**
 
   To submit questions to the zoo-discuss listserv, first join the list by
   following the subscription procedure above. Then post questions to the list by
-  sending an email message to zoo-discuss@gisws.media.osaka-cu.ac.jp.
+  sending an email message to zoo-discuss@lists.osgeo.org.
 
 - **Searching the Archives**
 
   All zoo-discuss archives are located in
-  http://gisws.media.osaka-cu.ac.jp/pipermail/zoo-discuss/. Searching the archives is 
-  best done with `Nabble <http://zoo-discuss.1049523.n5.nabble.com/>`__.
+  http://lists.osgeo.org/pipermail/zoo-discuss/.
+
+.. Searching the archives is best done with `Nabble <http://zoo-discuss.1049523.n5.nabble.com/>`_.:
