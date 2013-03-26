@@ -1,0 +1,74 @@
+.. _services-debug:
+
+How To Debug ZOO Services
+=========================
+
+There are different ways to debug your services, the most used solutions are via web
+or via command line.
+
+Web
+----
+
+Using the web request you can see any problem with the log file of Apache.
+
+On Unix system usually to log file is in ``/var/log/apache2`` and the useful file
+is ``error_log``. A simple way to look inside the file is to use ``tail`` command,
+it permits to see the update of the file for each request ::
+
+  tail -f /var/log/apache2/error_log
+
+If the log is not so clear you can add some information inside your code. You have to write
+in the standard error.
+
+Python
+********
+Using Python for example you can do this
+
+.. code-block:: python
+
+  import sys
+  
+  #add this line when you want see your message
+  sys.stderr.write("My message")
+
+
+Command line
+--------------
+
+It is possible to use the ZOO kernel ``zoo_loader.cgi`` also from command line.
+This is really useful to debug in a deeper way your service.
+
+.. code-block:: bash
+
+  # to use it you have to copy test_service.py and HelloPy.zcfg from
+  # the example services
+  ./zoo_loader.cgi "service=wps&version=1.0.0&request=execute&identifier=HelloPy&datainputs=a=your name&responsedocument=Result"
+
+Using this way you can use standard debug system of the programming language used
+in your service.
+
+GDB
+*****
+From command line you can use also the command line tool `GDB <http://www.gnu.org/software/gdb/>`_
+to debug ``zoo_loader.cgi``, you have to run
+
+.. code-block:: bash
+
+  # launch zoo_loader.cgi from gdb
+  gdb zoo_loader.cgi
+  # now run your request
+  run "service=wps&version=1.0.0&request=execute&identifier=HelloPy&datainputs=a=your name&responsedocument=Result"
+
+At this point you can ask help to the `ZOO mailing list <http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss>`_
+copying the result of the command.
+
+Python
+**********
+For Python you can use ``pdb``, more info at http://docs.python.org/2/library/pdb.html
+
+.. code-block:: python
+
+  import pdb
+  
+  # add this line when you want investigate more in the code
+  pdb.set_trace()
