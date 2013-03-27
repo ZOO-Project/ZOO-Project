@@ -111,11 +111,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   JS_SetErrorReporter(cx, reportError);
 
   /* Create the global object. */
-  //#ifdef JS_NewCompartmentAndGlobalObject
   global = JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
-  //#else
-  //global = JS_NewObject(cx, &global_class, 0,0);
-  //#endif
 
   /* Populate the global object with the standard globals,
      like Object and Array. */
@@ -123,6 +119,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     return 1;
   }
 
+  /* Define specific function and global variable to share with JS runtime
+   */
   jsval tmp=INT_TO_JSVAL(3);
   if (!JS_SetProperty(cx, global, "SERVICE_SUCCEEDED", &tmp))
     return 1;
@@ -384,14 +382,12 @@ JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
   if(res==NULL)
     fprintf(stderr,"Array Object is NULL!\n");
   maps* tmp=t;
-
   while(tmp!=NULL){
     jsuint len;
     JSObject* res1=JS_NewObject(cx, NULL, NULL, NULL);
     JSObject *pval=JSObject_FromMap(cx,tmp->content);
     jsval pvalj=OBJECT_TO_JSVAL(pval);
     JS_SetProperty(cx, res, tmp->name, &pvalj);
-
 #ifdef JS_DEBUG
     fprintf(stderr,"Length of the Array %d, element : %s added \n",len,tmp->name);
 #endif
@@ -407,28 +403,27 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
   map* isArray=getMap(t,"isArray");
   map* isBinary=getMap(t,"size");
   map* tmap=getMapType(t);
-#ifdef DEBUG
+#ifdef JS_DEBUG
   if(tmap==NULL)
     fprintf(stderr,"tmap is null !\n");
   else
     fprintf(stderr,"tmap is not null ! (%s = %s)\n",tmap->name,tmap->value);
 #endif
-  /* Avoid gesture of binary content which failed due to strlen function use */
-  if(isBinary!=NULL){
-    return res;
-  }
-  while(tmpm!=NULL){
-    if(isArray==NULL || strncasecmp(tmpm->name,"value",5)!=0 || 
-       (tmap!=NULL && strncasecmp(tmpm->name,tmap->name,strlen(tmap->name))!=0)){
-      jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
+  if(isArray==NULL){
+    while(tmpm!=NULL){
+      jsval jsstr;
+      if(isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0)
+	jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,atoi(isBinary->value)));
+      else
+	jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
       JS_SetProperty(cx, res, tmpm->name,&jsstr);
 #ifdef JS_DEBUG
-      fprintf(stderr,"%s => %s\n",tmpm->name,tmpm->value);
+      fprintf(stderr,"[JS] %s => %s\n",tmpm->name,tmpm->value);
 #endif
+      tmpm=tmpm->next;
     }
-    tmpm=tmpm->next;
   }
-  if(isArray!=NULL){
+  else{
     map* len=getMap(t,"length");
     int cnt=atoi(len->value);
     JSObject* values=JS_NewArrayObject( cx, cnt, NULL );
@@ -514,8 +509,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	freeMaps(&tres);
 	free(tres);
 	tres=NULL;
-	
-	
+		
       }
     }
   }
@@ -603,7 +597,6 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	else
 	  fprintf(stderr,"JSVAL NVP1J IS NOT OBJECT !!\n");
 #endif
-
       }
 #ifdef JS_DEBUG
       dumpMaps(tres);

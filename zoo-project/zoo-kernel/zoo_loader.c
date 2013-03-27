@@ -197,7 +197,6 @@ int cgiMain(){
       addToMap(tmpMap,"xrequest",t1->value);
       xmlInitParser();
       xmlDocPtr doc = xmlParseMemory(t1->value,cgiContentLength);
-
       {
 	xmlXPathObjectPtr reqptr=extractFromDoc(doc,"/*[local-name()='Envelope']/*[local-name()='Body']/*");
 	if(reqptr!=NULL){

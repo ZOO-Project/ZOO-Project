@@ -1214,12 +1214,10 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 
   nc = xmlNewNode(ns, BAD_CAST "Process");
   map* tmp2=getMap(serv->content,"processVersion");
-
   if(tmp2!=NULL)
     xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
   
   printDescription(nc,ns_ows,serv->name,serv->content);
-  //fflush(stderr);
 
   xmlAddChild(n,nc);
 
@@ -1338,10 +1336,10 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       map* tmp0=getMap(mcursor->content,"inRequest");
       scursor=getElements(serv->outputs,mcursor->name);
       if(scursor!=NULL){
-	if(testResponse==NULL)
+	if(testResponse==NULL || tmp0==NULL)
 	  printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
 	else
-	  if(strncmp(tmp0->value,"true",4)==0)
+	  if(tmp0!=NULL && strncmp(tmp0->value,"true",4)==0)
 	    printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
       }
       mcursor=mcursor->next;
