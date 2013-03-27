@@ -104,7 +104,6 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
 }
 
 void setReferenceUrl(maps* m,maps* tmpI){
-  //dumpMaps(tmpI);
   outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   map *msOgcVersion=getMapFromMaps(m,"main","msOgcVersion");
@@ -147,6 +146,14 @@ void setReferenceUrl(maps* m,maps* tmpI){
 
   map* extent=getMap(tmpI->content,options[proto][4]);
   map* crs=getMap(tmpI->content,"crs");
+  int hasCRS=1;
+  if(crs==NULL){
+    crs=getMapFromMaps(m,"main","crs");
+    if(crs==NULL){
+      crs=createMap("crs","epsg:4326");
+      hasCRS=0;
+    }
+  }
   char layers[128];
   sprintf(layers,options[proto][3],tmpI->name);
 
@@ -185,6 +192,10 @@ void setReferenceUrl(maps* m,maps* tmpI){
 	    extent->value,
 	    crs->value
 	    );
+  }
+  if(hasCRS==0){
+    freeMap(&crs);
+    free(crs);
   }
   addToMap(tmpI->content,"Reference",webService_url);
 
@@ -299,19 +310,15 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
   msInsertHashTable(&(myLayer->metadata), "ows_extent", tmpExtent);
   
   if(output!=NULL){
-
     map* test=getMap(output->content,"real_extent");
     if(test!=NULL){
       pointObj min, max;
       projectionObj tempSrs;
-
       min.x = m->extent.minx;
       min.y = m->extent.miny;
       max.x = m->extent.maxx;
       max.y = m->extent.maxy;
       char tmpSrsStr[1024];
-
-
       msInitProjection(&tempSrs);
       msLoadProjectionStringEPSG(&tempSrs,"EPSG:4326");
 
@@ -326,20 +333,18 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
       addToMap(output->content,"wms_extent",tmpExtent);
       sprintf(tmpSrsStr,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
       addToMap(output->content,"wcs_extent",tmpExtent);
-      //dumpMap(output->content);
-
     }else{
       sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
       map* isGeo=getMap(output->content,"crs_isGeographic");
-      fprintf(stderr,"isGeo = %s\n",isGeo->value);
-      if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
-        sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+      if(isGeo!=NULL){
+	fprintf(stderr,"isGeo = %s\n",isGeo->value);
+	if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
+	  sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+      }
       addToMap(output->content,"wms_extent",tmpExtent); 
       sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",minX,minY,maxX,maxY);
       addToMap(output->content,"wcs_extent",tmpExtent);
-      
     }
-
   }
 
   setMapSize(output,minX,minY,maxX,maxY);
