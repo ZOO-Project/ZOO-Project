@@ -22,10 +22,11 @@
  * THE SOFTWARE.
  */
 
-/**
- * Copyright 2005-2010 OpenLayers Contributors, released under the Clear BSD
- * license. Please see http://svn.openlayers.org/trunk/openlayers/license.txt
- * for the full text of the license.
+/* Copyright (c) 2006-2011 by OpenLayers Contributors (see 
+ * https://github.com/openlayers/openlayers/blob/master/authors.txt for full 
+ * list of contributors). Published under the Clear BSD license.
+ * See http://svn.openlayers.org/trunk/openlayers/license.txt for the
+ * full text of the license. 
  */
 
 /**
