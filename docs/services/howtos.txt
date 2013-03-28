@@ -3,7 +3,7 @@
 How To Setup ZOO Services
 =========================
 
-:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna, Luca Delucchi
 :Last Updated: $Date$
 
 ZOO Services are quite easy to create once you have installed the ZOO Kernel and have 
@@ -17,6 +17,9 @@ HelloWorlds in Python, PHP, Java  and JavaScript with links to their correspondi
 
 Common informations
 ----------------------
+
+The function of the process for each programming language take three arguments: the main
+configuration, inputs and outputs.
 
 .. Note:: The service has to **return 3 if the process run successfully instead it 
 	  return 4** if the process end with an error.
@@ -39,15 +42,13 @@ The ZCFG file should contain the following :
 serviceType
     Python 
 serviceProvider
-    The name of the Python module to use as a ZOO Service Provider. For instance, if your 
-    script, located in the same directory as your ZOO Kernel, was named ``my_module.py`` then 
-    you should use ``my_module`` (the Python module name) for the serviceProvider value in ZCFG file. 
+    The name of the Python module to use as a ZOO Service Provider. For instance, if your
+    script, located in the same directory as your ZOO Kernel, was named ``my_module.py`` then
+    you should use ``my_module`` (the Python module name) for the serviceProvider value in ZCFG file.
 
 Python Data Structure used
 **************************
-
-The Python module's function to be used take three arguments: the main configuration, inputs and outputs.
-All this values are passed to the Python module as dictionaries.
+The three parameters of the function are passed to the Python module as dictionaries.
 
 Following you'll find an example for each parameters
 
@@ -183,6 +184,38 @@ Java
 Javascript
 ----------
 
+ZOO API
+*********
+
+If you need to use :ref:`ZOO API <api>` in your service, you have first to copy ``zoo-api.js``
+and ``zoo-proj4js.js`` where your services are located (for example in Unix system probably in
+``/usr/lib/cgi-bin/``
+
+Javascript ZCFG requirements
+**********************************
+
+.. Note:: For each Service provided by your ZOO Javascript Services Provider, the ZCFG File 
+          must be named the same as the Javascript function name (also the case of
+          characters is important).
+
+The ZCFG file should contain the following :
+
+serviceType
+    JS 
+serviceProvider
+    The name of the JavaScript file to use as a ZOO Service Provider. For instance, if your
+    script, located in the same directory as your ZOO Kernel, was named ``my_module.js`` then
+    you should use ``my_module.js``.
+
+
+Javascript Data Structure used
+********************************
+
+The three parameters of the function are passed to the JavaScript function as Object.
+
+Sample ZOO Javascript Services Provider
+******************************************
+
 .. code-block:: javascript
 
   function hellojs(conf,inputs,outputs){
@@ -191,3 +224,4 @@ Javascript
      outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from JS World !";
      return Array(3,outputs);
   }
+
