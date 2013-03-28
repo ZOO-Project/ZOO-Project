@@ -3,7 +3,7 @@
 Prerequisites
 =============
 
-:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna, Luca Delucchi
 :Last Updated: $Date$
 
 .. contents:: Table of Contents
@@ -47,6 +47,7 @@ The following libraries are required on your system before you can install the Z
 
 Optional libraries include:
 
+- MapServer (optional for WMS, WFS and WCS output) ( http://mapserver.org )
 - PHP Embedded (optional) (  http://www.php.net )
 - Java SDK (optional) (  http://java.sun.com )
 - SpiderMonkey (optional) (  http://www.mozilla.org/js/spidermonkey/ ) 
