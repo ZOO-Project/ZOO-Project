@@ -3,7 +3,7 @@
 Unix
 ====
 
-:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna, Luca Delucchi
 :Last Updated: $Date$
 
 .. contents:: Table of Contents
@@ -40,11 +40,15 @@ Here is the list of available options as returned by *./configure --help*:
 
 ::
 
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gdal-config=FILE specify an alternative gdal-config file
   --with-xml2config=FILE  specify an alternative xml2-config file
+  --with-mapserver=PATH   specify the path for MapServer compiled source tree
   --with-python=PATH      To enable python support or specify an alternative
                           directory for python installation, disabled by
                           default
+  --with-pyvers=NUM       To use a specific python version
   --with-php=PATH         To enable php support or specify an alternative
                           directory for php installation, disabled by default
   --with-perl=PATH        To enable perl support or specify an alternative
@@ -81,6 +85,17 @@ then you can use the following command:
 
   $ ./configure --with-xml2config=/usr/local/bin/xml2-config
 
+(Optional) MapServer Support
+*****************************
+
+If you want to activate the WMS, WFS and WCS outputs using MapServer then you will have
+to use the ``--with-mapserver`` option. You have to set the path to your ``mapserver-config``
+locate in the source code of MapServer as following command:
+
+::
+
+  $ ./configure --with-mapserver=/path/to/your/mapserver_config/
+
 (Optional) Python Support
 *************************
 
@@ -103,6 +118,17 @@ Python in /usr/local, then you can use the following command:
   $ ./configure --with-python=/usr/local
 
 This assumes that /usr/local/bin/python-config exists.
+
+(Optional) Python Version
+*************************
+
+If you want use a specific version of Python you will have to use the ``--with-pyvers``
+option. You can specify a Python version as:
+
+::
+
+  $ ./configure --with-pyvers=2.6
+
 
 (Optional) PHP Support
 **********************
