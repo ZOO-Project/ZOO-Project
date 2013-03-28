@@ -3,6 +3,9 @@
 How To Debug ZOO Services
 =========================
 
+:Authors: Luca Delucchi
+:Last Updated: $Date: 2013-03-27 00:06:12 +0100 (Wed, 27 Mar 2013) $
+
 There are different ways to debug your services, the most used solutions are via web
 or via command line.
 
@@ -31,6 +34,21 @@ Using Python for example you can do this
   #add this line when you want see your message
   sys.stderr.write("My message")
 
+.. _web_javascript:
+
+Javascript
+************
+
+You can user ``alert`` to print a string to the standard error.
+
+.. code-block:: javascript
+
+  // add this line when you want see your message
+  alert('My message')
+  // you can debug value of inputs, outputs or conf
+  alert(inputs["S"]["value"])
+
+.. note:: If you try to pass an object it return only ``[object Object]``
 
 Command line
 --------------
@@ -72,3 +90,8 @@ For Python you can use ``pdb``, more info at http://docs.python.org/2/library/pd
   
   # add this line when you want investigate more in the code
   pdb.set_trace()
+
+Javascript
+************
+
+You can use ``alert`` also to print in the console, more info in the :ref:`web_javascript` web section
