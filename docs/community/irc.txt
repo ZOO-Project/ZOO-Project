@@ -3,6 +3,9 @@
 IRC Chat
 ========
 
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna, Luca Delucchi
+:Last Updated: $Date$
+
 Some of the development of the ZOO-Project is coordinated through IRC. This page
 describes how you log on to chat, ask questions, and hack around with the
 developers.
@@ -48,4 +51,9 @@ How do I join?
   - in "Channels" enter: zoo-project
   - Connect!
 
+IRC logs
+-----------
+
+It is possible to see the logs (history) of ZOO-Project IRC channel
+`here <http://svn.zoo-project.org/irc/>`_
 
