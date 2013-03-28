@@ -71,7 +71,7 @@ lex.sr.o: lex.sr.c service.h
 	g++ ${CFLAGS} -c lex.sr.c
 
 ulinet.o: ulinet.c
-	gcc ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
+	gcc -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
 
 service_internal.o: service_internal.c service.h
 	gcc ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
