@@ -14,18 +14,47 @@ Debian / Ubuntu
    An Ubuntu 10.4 with ZOO virtual image is available at http://www.zoo-project.org/Ubuntu10.4_ZOO.zip
    (root: ZOO.test)
 
-The following instructions were tested on Debian Squeeze, Ubuntu 10.04 and Ubuntu 10.10
+Ubuntu 12.04 dependencies
+--------------------------------------
 
-Installation Workflow
----------------------
-
-- install some dependencies
+- install default dependencies
 
 ::
 
-  sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf checkinstall
+  sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion libmoz185js-dev python-dev build-essential
+
+- add ubuntugis repository to obtain the newer GIS libraries
+
+::
+
+  sudo add-apt-repository ppa:ubuntugis/ppa
+  sudo apt-get update
+
+
+- install geographic library
+
+::
+
+  sudo apt-get install libgdal1-dev
 
 - download ZOO  source
+
+Debian 7.0 dependencies
+--------------------------------------
+
+- install dependencies
+
+::
+
+  apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion python-dev libgdal1-dev build-essential libmozjs185-dev
+
+
+Installation Workflow
+--------------------------------------
+
+.. note :: In the following lines you will find ``as administrator user`` note,
+	   on Ubuntu you have to add ``sudo`` at the beginning of line, on Debian
+	   you can use ``su -c COMMAND``)
 
 ::
 
@@ -43,12 +72,13 @@ Installation Workflow
 
   make
 
+- if you want use Mapserver (optional) for WMS, WFS and WCS output read :ref:`mapserver`
 
 - go to kernel path
 
 ::
 
-  cd ../../zoo-kernel/
+  cd ../../zoo-project/zoo-kernel/
 
 - create configure file
 
@@ -60,58 +90,39 @@ Installation Workflow
 
 ::
 
-  ./configure --with-java=/path/to/java
-  ./configure --with-python
+  ./configure --with-js --with-python
 
-.. note::
-   In Ubuntu 10.04 libmozjs-dev does not exist, so to use JavaScript you can compile SpiderMonkey (remember to put /usr/local/lib in a file inside /etc/ld.so.conf.d/). 
-   For PHP, you must make sure to compile PHP with `--enable-embed <http://www.zoo-project.org/trac/wiki/ZooKernel/Embed/PHP#ConfigureandInstallPHPEmbedlibrary>`__.
+.. note:: For PHP, you must make sure to compile PHP with `--enable-embed <http://www.zoo-project.org/trac/wiki/ZooKernel/Embed/PHP#ConfigureandInstallPHPEmbedlibrary>`__.
 
-- to use JavaScript with compiled SpiderMonkey.
-
-::
-   
-  sudo echo "/usr/local/lib" > /etc/ld.so.conf.d/libmoz185.conf
-  sudo ldconfig
-  ./configure --with-js=/usr/local
-
-
-- to use JavaScript with Xulrunner .
-
-::
-   
-  sudo echo "/usr/lib/xulrunner-dev" > /etc/ld.so.conf.d/libmoz185.conf
-  sudo ldconfig
-  ./configure --with-js=/usr/lib/xulrunner-dev
-
+.. note:: To use MapServer add the option ``--with-mapserver=/path/to/mapserver/source`` 
 
 - compile
 
 ::
 
-  make zoo_loader.cgi
+  make
 
-- copy necessary files into your cgi-bin
+- copy necessary files into your cgi-bin (as administrator user)
 
-::
-
-  sudo cp main.cfg /usr/lib/cgi-bin
-  sudo cp zoo_loader.cgi /usr/lib/cgi-bin
-
-- install ZOO ServiceProvider (in this case we try Python service)
 
 ::
 
-  sudo cp ../zoo-services/hello-py/cgi-env/*.zcfg /usr/lib/cgi-bin
-  sudo cp ../zoo-services/hello-py/*.py /usr/lib/cgi-bin/
+  cp main.cfg /usr/lib/cgi-bin
+  cp zoo_loader.cgi /usr/lib/cgi-bin
 
-- change some paths in the main.cfg
+- install ZOO ServiceProvider, in this case we try Python service (as administrator user)
 
 ::
 
-  sudo nano /usr/lib/cgi-bin/main.cfg
-    - serverAddress = http://127.0.0.1
-    - providerSite = http://127.0.0.1
+  cp ../zoo-services/hello-py/cgi-env/*.zcfg /usr/lib/cgi-bin
+  cp ../zoo-services/hello-py/*.py /usr/lib/cgi-bin/
+
+- change some information in the main.cfg (as administrator user)
+
+::
+
+  nano /usr/lib/cgi-bin/main.cfg
+  - serverAddress = http://127.0.0.1
 
 
 - try the installation
@@ -127,3 +138,116 @@ Installation Workflow
    
      [env]
      PYTHONPATH=<YOUR_PYTHONPATH>
+
+
+Rewrite rule configuration
+-----------------------------
+
+- for better readability and fully functional ZOO Kernel, you have to modify the default
+  Apache configuration in order to be able to use the http://localhost/zoo/ url directly.
+  Run (as administrator user)
+
+::
+
+    nano /usr/lib/cgi-bin/main.cfg
+    - serverAddress = http://localhost/zoo
+
+- first, please create a ``zoo`` directory in ``/var/www/`` which is used by Apache as the
+  DocumentRoot (as administrator user)
+
+::
+
+  mkdir /var/www/zoo
+
+- Then, please edit the ``/etc/apache2/sites-available/default`` configuration file and add the following
+  lines after the Directory block related to /var/www directory (as administrator user)
+
+::
+
+  <Directory /var/www/zoo/>
+      Options Indexes FollowSymLinks MultiViews
+      AllowOverride All
+      Order allow,deny
+      allow from all
+  </Directory>
+
+- now create a small .htaccess file in the ``/var/www/zoo`` containing the following lines (as administrator user)
+
+::
+
+  RewriteEngine on
+  RewriteRule call/(.*)/(.*) /cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=$1&DataInputs=sid=$2&RawDataOutput=Result [L,QSA]
+  RewriteRule (.*)/(.*) /cgi-bin/zoo_loader.cgi?metapath=$1 [L,QSA]
+  RewriteRule (.*) /cgi-bin/zoo_loader.cgi [L,QSA]
+
+
+- for this last file to be taken into account by Apache, you must activate the
+  rewrite Apache module by copying a load file as bellow (as administrator user)
+
+::
+
+  cp /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled/
+
+- or using the a2enmod tool this way (as administrator user)
+
+::
+
+  a2enmod rewrite
+
+- now you should be able to access the ZOO Kernel using a simplified by restarting
+  your Apache Web server (as administrator user)
+
+::
+  /etc/init.d/apache2 restart
+
+- now you can try:
+
+  - http://localhost/zoo/?Service=WPS&Request=GetCapabilities&Version=1.0.0
+  - http://localhost/zoo/?Service=WPS&Request=DescribeProcess&Version=1.0.0&Identifier=HelloPy
+  - http://localhost/zoo/?Service=WPS&Request=Execute&Version=1.0.0&Identifier=HelloPy&DataInputs=a=myname
+
+.. _mapserver:
+
+Compile MapServer
+------------------
+
+- install MapServer dependencies (as administrator user)
+
+::
+
+  apt-get install git libfreetype6-dev libproj-dev libkml-dev libcairo-dev libxml2-dev libgd2-xpm-dev libxslt1-dev
+
+- extract MapServer from git repository
+
+::
+
+  git clone https://github.com/mapserver/mapserver.git
+  cd mapserver
+  git checkout branch-6-2
+  git pull
+
+- now compile MapServer
+
+::
+
+  ./configure --with-ogr --with-gdal --with-wfsclient --with-wmsclient --with-tiff --with-jpeg --with-gd --with-wcs --with-sos --with-xml2-config --with-wfs --with-fastcgi --with-proj --with-cairo --with-kml=yes --with-xslt --with-threads --with-geos
+  make
+
+- now install MapServer (as administrator user)
+
+::
+
+  make install
+
+- now add path to libraries path (as administrator user)
+
+::
+
+  nano /etc/ld.so.conf.d/mapserver.conf
+  - /usr/local/lib/
+
+- run as administrator
+
+::
+
+  ldconfig
