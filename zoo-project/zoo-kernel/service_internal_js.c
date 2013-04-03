@@ -409,21 +409,19 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
   else
     fprintf(stderr,"tmap is not null ! (%s = %s)\n",tmap->name,tmap->value);
 #endif
-  if(isArray==NULL){
-    while(tmpm!=NULL){
-      jsval jsstr;
-      if(isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0)
-	jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,atoi(isBinary->value)));
-      else
-	jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
-      JS_SetProperty(cx, res, tmpm->name,&jsstr);
+  while(tmpm!=NULL){
+    jsval jsstr;
+    if((isArray==NULL && isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0))
+      jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,atoi(isBinary->value)));
+    else
+      jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
+    JS_SetProperty(cx, res, tmpm->name,&jsstr);
 #ifdef JS_DEBUG
-      fprintf(stderr,"[JS] %s => %s\n",tmpm->name,tmpm->value);
+    fprintf(stderr,"[JS] %s => %s\n",tmpm->name,tmpm->value);
 #endif
-      tmpm=tmpm->next;
-    }
+    tmpm=tmpm->next;
   }
-  else{
+  if(isArray!=NULL){
     map* len=getMap(t,"length");
     int cnt=atoi(len->value);
     JSObject* values=JS_NewArrayObject( cx, cnt, NULL );
