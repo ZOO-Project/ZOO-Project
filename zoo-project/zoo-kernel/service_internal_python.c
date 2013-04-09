@@ -584,18 +584,20 @@ map* mapFromPyDict(PyDictObject* t){
       addToMap(res,"size",sin);
     }else{
       if(res!=NULL){
+	if(PyString_Size(value)>0)
 #if PY_MAJOR_VERSION >= 3
-	addToMap(res,_PyUnicode_AsString(key),_PyUnicode_AsString(value));
+	  addToMap(res,_PyUnicode_AsString(key),_PyUnicode_AsString(value));
 #else
-	addToMap(res,PyString_AsString(key),PyString_AsString(value));
+	  addToMap(res,PyString_AsString(key),PyString_AsString(value));
 #endif
       }
       else{
-	res=
+	if(PyString_Size(value)>0)
+	  res=
 #if PY_MAJOR_VERSION >= 3
-	  createMap(_PyUnicode_AsString(key),_PyUnicode_AsString(value));
+	    createMap(_PyUnicode_AsString(key),_PyUnicode_AsString(value));
 #else
-	  createMap(PyString_AsString(key),PyString_AsString(value));
+	    createMap(PyString_AsString(key),PyString_AsString(value));
 #endif
       }
     }
