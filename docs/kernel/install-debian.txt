@@ -21,7 +21,7 @@ Ubuntu 12.04 dependencies
 
 ::
 
-  sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion libmoz185js-dev python-dev build-essential
+  sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion libmozjs185-dev python-dev build-essential
 
 - add ubuntugis repository to obtain the newer GIS libraries
 
