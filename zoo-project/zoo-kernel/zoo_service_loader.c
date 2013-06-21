@@ -635,8 +635,6 @@ int runRequest(map* request_inputs)
     errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue");
     freeMaps(&m);
     free(m);
-    freeMap(&request_inputs);
-    free(request_inputs);
     return 1;
   }
   else{
