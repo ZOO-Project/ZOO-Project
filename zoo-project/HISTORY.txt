@@ -1,4 +1,4 @@
-Version 1.3.0-dev
+Version 1.3.0-rc1
 
   * Updating ZOO.Class object with the OpenLayers.Class Updating ZOO.Class with the (ticket #64)
   * Correct the content of proj4js (ticket #63)
@@ -17,6 +17,8 @@ Version 1.3.0-dev
   * Add support for multi-valued inputs in JS ZOO-api
   * Fixing issue about invalid status document #73
   * Add Python-3.3.0 support
+  * Update documentation
+  * Add MapServer W*S Support documentation #34
 
 Version 1.2.0-rc3
 
