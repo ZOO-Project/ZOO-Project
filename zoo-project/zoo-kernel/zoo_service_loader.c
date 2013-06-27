@@ -1672,7 +1672,7 @@ int runRequest(map* request_inputs)
 	  else
 	    addMapsToMaps(&request_input_real_format,tmpmaps);
 	}
-	
+
 #ifdef DEBUG
 	fprintf(stderr,"******TMPMAPS*****\n");
 	dumpMaps(tmpmaps);
@@ -1748,6 +1748,7 @@ int runRequest(map* request_inputs)
 	xmlNodePtr cur1=cur->children;
 	while(cur1!=NULL && cur1->type != XML_ELEMENT_NODE)
 	  cur1=cur1->next;
+	int cur1cnt=0;
 	while(cur1){
 	  /**
 	   * Indentifier
@@ -1768,6 +1769,21 @@ int runRequest(map* request_inputs)
 	      //free(tmpmaps->name);
 	      tmpmaps->name=strdup((char*)val);
 	    }
+	    if(asRaw==true)
+	      addToMap(request_inputs,"RawDataOutput",(char*)val);
+	    else{
+	      if(cur1cnt==0)
+		addToMap(request_inputs,"ResponseDocument",(char*)val);
+	      else{
+		map* tt=getMap(request_inputs,"ResponseDocument");
+		char* tmp=strdup(tt->value);
+		free(tt->value);
+		tt->value=(char*)malloc((strlen(tmp)+strlen((char*)val)+1)*sizeof(char));
+		sprintf(tt->value,"%s;%s",tmp,(char*)val);
+		free(tmp);
+	      }
+	    }
+	    cur1cnt+=1;
 	    xmlFree(val);
 	  }
 	  /**
@@ -1868,10 +1884,6 @@ int runRequest(map* request_inputs)
 		}
 		xmlFree(val);
 	      }
-	      if(request_output_real_format==NULL)
-		request_output_real_format=dupMaps(&tmpmaps);
-	      else
-		addMapsToMaps(&request_output_real_format,tmpmaps);
 	      cur2=cur2->next;
 	      while(cur2!=NULL && cur2->type != XML_ELEMENT_NODE)
 		cur2=cur2->next;
@@ -1882,6 +1894,10 @@ int runRequest(map* request_inputs)
 	    cur1=cur1->next;
 	}
       }
+      if(request_output_real_format==NULL)
+	request_output_real_format=dupMaps(&tmpmaps);
+      else
+	addMapsToMaps(&request_output_real_format,tmpmaps);
       if(tmpmaps!=NULL){
 	freeMaps(&tmpmaps);
 	free(tmpmaps);
