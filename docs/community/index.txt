@@ -8,6 +8,7 @@ The following sections will help you interact with the ZOO community.
 .. toctree::
    :maxdepth: 2
    
+   developper
    mailinglist
    irc
 
