@@ -1,0 +1,140 @@
+ZOO-Project Licensing
+---------------------
+
+This file attempts to include all licenses that apply within the ZOO-Project
+source tree, in particular any that are supposed to be exposed to the end user
+for credit requirements for instance.
+
+ZOO-Kernel License
+------------------
+
+Copyright (c) 2009-2013 GeoLabs SARL
+
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights 
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies of this Software or works derived from this Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+ZOO-API License
+---------------
+
+Copyright 2011-2013 GeoLabs SARL. All rights reserved.
+Copyright 2010 3liz SARL. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+Copyright (c) 2006-2011 by OpenLayers Contributors (see 
+https://github.com/openlayers/openlayers/blob/master/authors.txt for full 
+list of contributors). Published under the Clear BSD license.
+See http://svn.openlayers.org/trunk/openlayers/license.txt for the
+full text of the license.
+
+qrencode ZOO-Services License
+-----------------------------
+
+Copyright (C) 2006-2012 Kentaro Fukuchi <kentaro@fukuchi.org>
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+Other ZOO-Services License
+--------------------------
+
+Copyright (c) 2009-2013, GeoLabs SARL
+Copyright (c) 2006, 2009 Matthew Perry 
+Copyright (c) 2009 Even Rouault
+Copyright (c) 2007, Andrey Kiselev <dron@ak4719.spb.edu>
+Copyright (c) 1998, 1999, 2002, Frank Warmerdam
+Copyright (c) 2002, i3 - information integration and imaging Fort Collin, CO
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+CGIC License
+------------
+
+CGIC, copyright 2009 GeoLabs SARL.
+CGIC, copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
+2004 by Thomas Boutell and Boutell.Com, Inc.. Permission is granted to 
+use CGIC in any application, commercial or noncommercial, at no cost. 
+HOWEVER, this copyright paragraph must appear on a "credits" page 
+accessible in the public online and offline documentation of the program. 
+Modified versions of the CGIC library should not be distributed without 
+the attachment of a clear statement regarding the author of the 
+modifications, and this notice may in no case be removed. 
+Modifications may also be submitted to the author for inclusion 
+in the main CGIC distribution.                                 
+
+IF YOU WOULD PREFER NOT TO ATTACH THE ABOVE NOTICE to
+the public documentation of your application, consult the
+information which follows regarding the availability
+of a nonexclusive commercial license for CGIC.
+
+dirent-win32 License
+--------------------
+
+Copyright Kevlin Henney, 1997, 2003. All rights reserved.
+
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose is hereby granted without fee, provided
+that this copyright and permissions notice appear in all copies and
+derivatives.
+    
+This software is supplied "as is" without express or implied warranty.
+
+But that said, if there are any problems please get in touch.
