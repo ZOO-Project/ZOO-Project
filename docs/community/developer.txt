@@ -1,7 +1,7 @@
 .. _community_developer:
 
 ZOO-Project Committer Guildlines
-===============================
+================================
 
 :Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
 :Last Updated: $Date: 2011-12-07 14:19:47 +0100 (Mer, 07 déc 2011) $
@@ -29,7 +29,7 @@ document.
 Committer Tracking
 ------------------
 
-A list of all project committers will be kept in the main zoo-project directory (called COMMITERS) listing for each SVN committer:
+A list of all project committers will be kept in the main zoo-project directory (called COMMITTERS) listing for each SVN committer:
 
     * Userid: the id that will appear in the SVN logs for this person.
     * Full name: the users actual name.
@@ -38,7 +38,7 @@ A list of all project committers will be kept in the main zoo-project directory 
 SVN Administrator
 -----------------
 
-One member of the Project Steering Committee will be designed the SVN Administrator. That person will be responsible for giving SVN commit access to folks, updating the COMMITERS file, and other SVN related management. That person will need login access on the SVN server of course.
+One member of the Project Steering Committee will be designed the SVN Administrator. That person will be responsible for giving SVN commit access to folks, updating the COMMITTERS file, and other SVN related management. That person will need login access on the SVN server of course.
 
 Initially Gérald Fenoy will be the SVN Adminstrator. 
 
