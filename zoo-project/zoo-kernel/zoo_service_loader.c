@@ -2119,11 +2119,21 @@ int runRequest(map* request_inputs)
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
     int hasValidCookie=-1;
     char *tcook=strdup(cgiCookie);
+    char *tmp=NULL;
+    int hasVal=-1;
+    map* testing=getMapFromMaps(m,"main","cookiePrefix");
+    if(testing==NULL){
+      tmp=strdup("ID=");
+    }else{
+      tmp=(char*)malloc((strlen(testing->value)+2)*sizeof(char));
+      sprintf(tmp,"%s=",testing->value);
+      hasVal=1;
+    }
     if(strstr(cgiCookie,";")!=NULL){
       char *token,*saveptr;
       token=strtok_r(cgiCookie,";",&saveptr);
       while(token!=NULL){
-	if(strcasestr(token,"ID=")!=NULL){
+	if(strcasestr(token,tmp)!=NULL){
 	  if(tcook!=NULL)
 	    free(tcook);
 	  tcook=strdup(token);
@@ -2132,9 +2142,12 @@ int runRequest(map* request_inputs)
 	token=strtok_r(NULL,";",&saveptr);
       }
     }else{
-      if(strstr(cgiCookie,"=")!=NULL && strcasestr(cgiCookie,"ID=")!=NULL){
+      if(strstr(cgiCookie,"=")!=NULL && strcasestr(cgiCookie,tmp)!=NULL){
 	tcook=strdup(cgiCookie);
 	hasValidCookie=1;
+      }
+      if(tmp!=NULL){
+	free(tmp);
       }
     }
     if(hasValidCookie>0){
@@ -2156,22 +2169,8 @@ int runRequest(map* request_inputs)
 	conf_read(session_file_path,tmpSess);
 	addMapsToMaps(&m,tmpSess);
 	freeMaps(&tmpSess);
-      }else{
-	errorException(m, _("Unable to read your session file."), "InternalError");
 	free(tmpSess);
-	freeService(&s1);
-	free(s1);
-	freeMaps(&m);
-	free(m);
-	freeMaps(&request_input_real_format);
-	free(request_input_real_format);
-	freeMaps(&request_output_real_format);
-	free(request_output_real_format);
-	free(REQUEST);
-	free(SERVICE_URL);
-	return 1;
       }
-      free(tmpSess);
     }
   }
   addMapsToMaps(&m,_tmpMaps);
