@@ -1,6 +1,8 @@
 Version 1.3.0-rc2
   * Fix POST Request issue (ticket #34)
   * Fix COOKIE gesture (ticket #79)
+  * Remove verbose messages when using MapServer W*S (ticket #80)
+  * Add COMMITTERS  and LICENSE files
 
 Version 1.3.0-rc1
 
