@@ -1,4 +1,4 @@
-AC_INIT([ZOO Kernel], [1.3.0], [bugs@zoo-project.org])
+AC_INIT([ZOO Kernel], [1.4.0], [bugs@zoo-project.org])
 
 # Checks for programs.
 AC_PROG_YACC
