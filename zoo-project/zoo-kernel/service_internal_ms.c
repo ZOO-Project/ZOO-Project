@@ -117,7 +117,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
   map* versionMap=getMap(tmpI->content,"msOgcVersion");
   char options[3][5][25]={
     {"WMS","1.3.0","GetMap","layers=%s","wms_extent"},
-    {"WFS","1.1.0","GetFeature","typename=%s","wms_extent"},
+    {"WFS","1.1.0","GetFeature","typename=%s","wcs_extent"},
     {"WCS","1.1.0","GetCoverage","coverage=%s","wcs_extent"}
   };
   int proto=0;
@@ -327,7 +327,9 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
       
       sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.y,min.x,max.y,max.x);
       map* isGeo=getMap(output->content,"crs_isGeographic");
+#ifdef DEBUGMS
       fprintf(stderr,"isGeo = %s\n",isGeo->value);
+#endif
       if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
         sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
       addToMap(output->content,"wms_extent",tmpExtent);
@@ -337,7 +339,9 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
       sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
       map* isGeo=getMap(output->content,"crs_isGeographic");
       if(isGeo!=NULL){
+#ifdef DEBUGMS
 	fprintf(stderr,"isGeo = %s\n",isGeo->value);
+#endif
 	if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
 	  sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
       }
@@ -395,14 +399,18 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   fclose(file);
   fclose(fileZ);
   free(buffer);
+#ifdef DEBUGMS
   fprintf(stderr,"Try loading %s",dsName);
+#endif
   poDS1 = OGROpen( dsName, FALSE, poDriver1 );
   if( poDS1 == NULL ){
     fprintf(stderr,"Unable to access the DataSource as ZIP File\n");
     setMapInMaps(conf,"lenv","message","Unable to open datasource in read only mode");
     OGR_DS_Destroy(poDS1);
   }else{
+#ifdef DEBUGMS
     fprintf(stderr,"The DataSource is a  ZIP File\n");
+#endif
     char** demo=VSIReadDir(dsName);
     int i=0;
     mkdir(sdsName
@@ -411,16 +419,22 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 #endif
 		);
     while(demo[i]!=NULL){
+#ifdef DEBUGMS
       fprintf(stderr,"ZIP File content : %s\n",demo[i]);
+#endif
       char *tmpDs=(char*)malloc((strlen(dsName)+strlen(demo[i])+2)*sizeof(char));
       sprintf(tmpDs,"%s/%s",dsName,demo[i]);
       fprintf(stderr,"read : %s\n",tmpDs);
       
       VSILFILE* vsif=VSIFOpenL(tmpDs,"rb");
+#ifdef DEBUGMS
       fprintf(stderr,"open : %s\n",tmpDs);
+#endif
       VSIFSeekL(vsif,0,SEEK_END);
       int size=VSIFTellL(vsif);
+#ifdef DEBUGMS
       fprintf(stderr,"size : %d\n",size);
+#endif
       VSIFSeekL(vsif,0,SEEK_SET);
       char *vsifcontent=(char*) malloc((size+1)*sizeof(char));
       VSIFReadL(vsifcontent,1,size,vsif);
@@ -434,14 +448,18 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       if(tmpP==NULL)
 	tmpP=strstr(fpath,".SHP");
       if(tmpP!=NULL){
+#ifdef DEBUGMS
 	fprintf(stderr,"*** DEBUG %s\n",strstr(tmpP,"."));
+#endif
 	if( strcmp(tmpP,".shp")==0 || strcmp(tmpP,".SHP")==0 ){
 	  tmpMap=getMap(output->content,"storage");
 	  free(tmpMap->value);
 	  tmpMap->value=(char*) malloc((strlen(fpath)+1)*sizeof(char));
 	  sprintf(tmpMap->value,"%s",fpath);
 	  pszDataSource=tmpMap->value;
+#ifdef DEBUGMS
 	  fprintf(stderr,"*** DEBUG %s\n",pszDataSource);
+#endif
 	}
       }
       VSIFCloseL(vsif);
@@ -489,7 +507,9 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     }
 
     layerObj* myLayer=m->layers[m->numlayers];
+#ifdef DEBUGMS
     dumpMaps(output);
+#endif
     myLayer->name = strdup(output->name);
     myLayer->tileitem=NULL;
     myLayer->data = strdup(OGR_L_GetName(poLayer));
