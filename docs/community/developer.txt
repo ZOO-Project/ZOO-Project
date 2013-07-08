@@ -91,7 +91,7 @@ The following existing commiters will be considered authorized ZOO-Project commi
    * Jeff MCKENNA (aka jmckenna)
    * Angelos TZOTSOS (aka kalxas)
    * Luca DELUCCHI (aka lucadelu)
-   * Markus Neteler (aka neteler)
+   * Markus NETELER (aka neteler)
    * Marco NEGRETTI (aka nmarco)
    * René-Luc D'HONT (aka reluc)
    * Trevor CLARKE (aka tclarke) 
