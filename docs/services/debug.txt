@@ -12,26 +12,26 @@ or via command line.
 Web
 ----
 
-Using the web request you can see any problem with the log file of Apache.
+Using the web request you can see any problem in the log file of Apache.
 
-On Unix system usually to log file is in ``/var/log/apache2`` and the useful file
-is ``error_log``. A simple way to look inside the file is to use ``tail`` command,
+On Unix system the log file is usually in ``/var/log/apache2`` and the relevant file
+is ``error_log``. A simple way to read the file is to use the ``tail`` command,
 it permits to see the update of the file for each request ::
 
   tail -f /var/log/apache2/error_log
 
-If the log is not so clear you can add some information inside your code. You have to write
-in the standard error.
+If the log is not clear enough you can add some more debug information to your code. You have to write
+to standard error.
 
 Python
 ********
-Using Python for example you can do this
+Using Python, you can for example do this
 
 .. code-block:: python
 
   import sys
   
-  #add this line when you want see your message
+  #add this line when you want see an own message
   sys.stderr.write("My message")
 
 .. _web_javascript:
@@ -39,36 +39,36 @@ Using Python for example you can do this
 Javascript
 ************
 
-You can user ``alert`` to print a string to the standard error.
+You can user ``alert`` to print a string to standard error:
 
 .. code-block:: javascript
 
-  // add this line when you want see your message
+  // add this line when you want see an own message
   alert('My message')
   // you can debug value of inputs, outputs or conf
   alert(inputs["S"]["value"])
 
-.. note:: If you try to pass an object it return only ``[object Object]``
+.. note:: If you try to pass an object it will only return ``[object Object]``
 
 Command line
 --------------
 
 It is possible to use the ZOO kernel ``zoo_loader.cgi`` also from command line.
-This is really useful to debug in a deeper way your service.
+This is really useful to debug in a deeper way your service:
 
 .. code-block:: bash
 
-  # to use it you have to copy test_service.py and HelloPy.zcfg from
+  # in order to use it you have to copy test_service.py and HelloPy.zcfg from
   # the example services
   ./zoo_loader.cgi "service=wps&version=1.0.0&request=execute&identifier=HelloPy&datainputs=a=your name&responsedocument=Result"
 
-Using this way you can use standard debug system of the programming language used
-in your service.
+Working this way you can use the standard debug system of the actual programming language used
+to develop your service.
 
 GDB
 *****
 From command line you can use also the command line tool `GDB <http://www.gnu.org/software/gdb/>`_
-to debug ``zoo_loader.cgi``, you have to run
+to debug ``zoo_loader.cgi``, you have to run:
 
 .. code-block:: bash
 
@@ -77,18 +77,18 @@ to debug ``zoo_loader.cgi``, you have to run
   # now run your request
   run "service=wps&version=1.0.0&request=execute&identifier=HelloPy&datainputs=a=your name&responsedocument=Result"
 
-At this point you can ask help to the `ZOO mailing list <http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss>`_
+At this point you can ask help at the `ZOO mailing list <http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss>`_
 copying the result of the command.
 
 Python
 **********
-For Python you can use ``pdb``, more info at http://docs.python.org/2/library/pdb.html
+For Python, you can use ``pdb``, more info at http://docs.python.org/2/library/pdb.html
 
 .. code-block:: python
 
   import pdb
   
-  # add this line when you want investigate more in the code
+  # add this line when you want investigate your code in more detail
   pdb.set_trace()
 
 Javascript

@@ -3,7 +3,7 @@
 ZOO.Process
 ===========
 
-Used to query OGC WPS process defined by its URL and its identifier.  Usefull for chaining localhost process.
+Used to query OGC WPS process defined by its URL and its identifier.  Useful for chaining localhost process.
 
 Properties and Functions	
 ------------------------
