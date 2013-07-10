@@ -81,7 +81,7 @@ Committers should adhere to the following guidelines, and may be personally lega
    * When substantial contributions are added to a file (such as substantial patches) the author/contributor should be added to the list of copyright holders for the file.
    * If there is uncertainty about whether a change it proper to contribute to the code base, please seek more information from the project steering committee, or the foundation legal counsel. 
 
-Bootstraping
+Bootstrapping
 ------------
 
 The following existing commiters will be considered authorized ZOO-Project committers as long as they each review the commiter guidelines, and agree to adhere to them. The SVN administrator will be responsible for checking with each person.
