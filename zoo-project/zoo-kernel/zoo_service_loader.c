@@ -1351,7 +1351,7 @@ int runRequest(map* request_inputs)
 		  tmpmaps->content=createMap(refs[l],(char*)val);
 		map* ltmp=getMap(tmpmaps->content,"method");
 		if(l==4){
-		  if(!(ltmp!=NULL && strcmp(ltmp->value,"POST")==0)
+		  if(!(ltmp!=NULL && strncmp(ltmp->value,"POST",4)==0)
 		     && CHECK_INET_HANDLE(hInternet)){
 		    if(loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val)!=0){
 		      freeMaps(&m);

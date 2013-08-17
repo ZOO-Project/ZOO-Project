@@ -111,6 +111,12 @@ void updateStatus(maps *conf){
   lpszTmp = (LPWSTR) lpvMemG;
   for(s=tmpMap->value;*s!=NULL;s++)
     *lpszTmp++ = *s;
+  *lpszTmp++ = '|'; 
+  tmpMap=NULL;
+  tmpMap=getMapFromMaps(conf,"lenv","message");
+  if(tmpMap!=NULL)
+    for(s=tmpMap->value;*s!=NULL;s++)
+      *lpszTmp++ = *s;
   *lpszTmp = '\0'; 
 }
 
@@ -207,6 +213,12 @@ void updateStatus(maps *conf){
 	s1=shm;
 	for(s=tmpMap->value;*s!=NULL && *s!=0;s++){
 	  *s1++=*s;
+	}
+	*s1++='|';
+	tmpMap=getMapFromMaps(conf,"lenv","message");
+	if(tmpMap!=NULL)
+	  for(s=tmpMap->value;*s!=NULL && *s!=0;s++){
+	    *s1++=*s;
 	}
 	*s1=NULL;
 	shmdt((void *)shm);

@@ -54,9 +54,10 @@ extern "C" {
   __declspec(dllexport)
 #endif
   int GetStatus(maps*& conf,maps*& inputs,maps*& outputs){
-    const char *params[2 + 1];
+    const char *params[4 + 1];
     int xmlLoadExtDtdDefaultValue;
     map* tmpMap=NULL,*tmpMmap=NULL, *tmpTmap=NULL;
+
     tmpMap=getMapFromMaps(inputs,"sid","value");
     tmpTmap=getMapFromMaps(conf,"main","tmpPath");
     tmpMmap=getMapFromMaps(conf,"main","dataPath");
@@ -98,15 +99,37 @@ extern "C" {
     cur = xsltParseStylesheetFile(BAD_CAST xslFileName);
     doc = xmlParseFile(fileName);
     if(cur!=NULL && doc!=NULL){
-      params[0]="value";
-      params[1]=getStatus(atoi(tmpMap->value));
-      params[2]=NULL;
-      res = xsltApplyStylesheet(cur, doc, params);
-      xmlChar *xmlbuff;
-      int buffersize;
-      xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
-      setMapInMaps(outputs,"Result","value",(char*)xmlbuff);
-      xmlFree(xmlbuff);
+      /**
+       * Parse Status to extract Status / Message
+       */
+      char *tmpStr=getStatus(atoi(tmpMap->value));
+      if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+	char *tmpStr1=strdup(tmpStr);
+	char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+	char *tmpStrFinal=(char*)malloc((strlen(tmpStr0)+11)*sizeof(char));
+	sprintf(tmpStrFinal,"string(\"%s\")",tmpStr0);
+	params[0]="value";
+	params[1]=tmpStr1;
+	params[2]="message";
+	params[3]=tmpStrFinal;
+	params[4]=NULL;
+	res = xsltApplyStylesheet(cur, doc, params);
+	xmlChar *xmlbuff;
+	int buffersize;
+	xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
+	setMapInMaps(outputs,"Result","value",(char*)xmlbuff);
+	xmlFree(xmlbuff);
+	free(tmpStr1);
+	free(tmpStr0);
+	free(tmpStrFinal);
+      }else{
+	xmlChar *xmlbuff;
+	int buffersize;
+	xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
+	setMapInMaps(outputs,"Result","value",(char*)xmlbuff);
+	xmlFree(xmlbuff);
+      }
     }
     else{
       char tmp[1024];
@@ -130,12 +153,15 @@ extern "C" {
     int i=0;
     while(i<100){
       char tmp[4];
+      char message[10];
       sprintf(tmp,"%i",i);
       map* tmpMap=NULL;
       tmpMap=getMapFromMaps(conf,"lenv","sid");
       if(tmpMap!=NULL)
 	fprintf(stderr,"Status %s %s\n",tmpMap->value,tmp);
+      sprintf(message,"Step %d",i);
       setMapInMaps(conf,"lenv","status",tmp);
+      setMapInMaps(conf,"lenv","message",message);
       updateStatus(conf);
 #ifndef WIN32
       sleep(1);

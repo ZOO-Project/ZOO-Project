@@ -6,6 +6,7 @@
 
   <xsl:output method="xml"/>
   <xsl:param name="value" select="string('-1')"/>
+  <xsl:param name="message" select="string('-1')"/>
 
   <xsl:template match="@*|node()">
     <xsl:copy>
@@ -13,10 +14,13 @@
     </xsl:copy>
   </xsl:template>
 
-  <xsl:template match="/wps:ExecuteResponse/wps:Status/wps:ProcessStarted/@percentCompleted">
-    <xsl:attribute name="percentCompleted">
-      <xsl:value-of select="$value"/>
-    </xsl:attribute>
+  <xsl:template match="/wps:ExecuteResponse/wps:Status/wps:ProcessStarted">
+    <xsl:copy>
+      <xsl:attribute name="percentCompleted">
+	<xsl:value-of select="$value"/>
+      </xsl:attribute>
+      <xsl:value-of select="$message" />
+    </xsl:copy>
   </xsl:template>
 
 </xsl:stylesheet>
