@@ -1375,7 +1375,15 @@ int runRequest(map* request_inputs)
 	    fprintf(stderr,"Parse Header and Body from Reference \n");
 #endif
 	    xmlNodePtr cur3=cur2->children;
-	    hInternet.header=NULL;
+	    HINTERNET hInternetP;
+	    hInternetP=InternetOpen(
+#ifndef WIN32
+				   (LPCTSTR)
+#endif
+				   "ZooWPSClient\0",
+				   INTERNET_OPEN_TYPE_PRECONFIG,
+				   NULL,NULL, 0);
+	    hInternetP.header=NULL;
 	    while(cur3){
 	      while(cur3!=NULL && cur3->type!=XML_ELEMENT_NODE)
 		cur2=cur3->next;
@@ -1405,8 +1413,9 @@ int runRequest(map* request_inputs)
 #endif
 		  }
 		}
-		hInternet.header=curl_slist_append(hInternet.header, has);
-		free(has);
+		hInternetP.header=curl_slist_append(hInternetP.header, has);
+		if(has!=NULL)
+		  free(has);
 	      }
 	      else{
 #ifdef POST_DEBUG
@@ -1440,9 +1449,9 @@ int runRequest(map* request_inputs)
 		  if(btmp!=NULL){
 #ifdef POST_DEBUG
 		    fprintf(stderr,"%s %s\n",btmp->value,tmp);
-		    curl_easy_setopt(hInternet.handle, CURLOPT_VERBOSE, 1);
+		    curl_easy_setopt(hInternetP.handle, CURLOPT_VERBOSE, 1);
 #endif
-		    res=InternetOpenUrl(hInternet,btmp->value,tmp,strlen(tmp),
+		    res=InternetOpenUrl(hInternetP,btmp->value,tmp,strlen(tmp),
 					INTERNET_FLAG_NO_CACHE_WRITE,0);
 		    char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
 		    if(tmpContent == NULL){
@@ -1452,8 +1461,8 @@ int runRequest(map* request_inputs)
 		    InternetReadFile(res, (LPVOID)tmpContent,
 				     res.nDataLen, &dwRead);
 		    tmpContent[res.nDataLen]=0;
-		    if(hInternet.header!=NULL)
-		      curl_slist_free_all(hInternet.header);
+		    if(hInternetP.header!=NULL)
+		      curl_slist_free_all(hInternetP.header);
 		    addToMap(tmpmaps->content,"value",tmpContent);
 #ifdef POST_DEBUG
 		    fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
@@ -1492,9 +1501,9 @@ int runRequest(map* request_inputs)
 		    if(btmp!=NULL){
 #ifdef POST_DEBUG
 		      fprintf(stderr,"%s %s\n",btmp->value,tmp);
-		      curl_easy_setopt(hInternet.handle, CURLOPT_VERBOSE, 1);
+		      curl_easy_setopt(hInternetP.handle, CURLOPT_VERBOSE, 1);
 #endif
-		      res=InternetOpenUrl(hInternet,btmp->value,tmp,
+		      res=InternetOpenUrl(hInternetP,btmp->value,tmp,
 					  strlen(tmp),
 					  INTERNET_FLAG_NO_CACHE_WRITE,0);
 		      char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
@@ -1505,8 +1514,8 @@ int runRequest(map* request_inputs)
 		      InternetReadFile(res, (LPVOID)tmpContent,
 				       res.nDataLen, &dwRead);
 		      tmpContent[res.nDataLen]=0;
-		      if(hInternet.header!=NULL)
-			curl_slist_free_all(hInternet.header);
+		      if(hInternetP.header!=NULL)
+			curl_slist_free_all(hInternetP.header);
 		      addToMap(tmpmaps->content,"value",tmpContent);
 #ifdef POST_DEBUG
 		      fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
@@ -1516,6 +1525,7 @@ int runRequest(map* request_inputs)
 	      }
 	      cur3=cur3->next;
 	    }
+	    InternetCloseHandle(hInternetP);
 #ifdef POST_DEBUG
 	    fprintf(stderr,"Header and Body was parsed from Reference \n");
 #endif
