@@ -1846,7 +1846,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     map *_tmp=getMapFromMaps(m,"lenv","cookie");
     char* sessId;
     if(_tmp!=NULL){
-      printf("Set-Cookie: %s\r\n",_tmp->value);
+      printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
       printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
       char session_file_path[100];
       char *tmp1=strtok(_tmp->value,";");
