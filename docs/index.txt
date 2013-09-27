@@ -66,6 +66,7 @@ This section contains the official ZOO Project documentation.
    api/index
    workshop/2010/index
    workshop/2012/index
+   workshop/2013/index
    community/index
    development/documentation
 
