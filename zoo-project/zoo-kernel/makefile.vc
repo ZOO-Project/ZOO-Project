@@ -5,6 +5,10 @@
 # using value for TOOLS relative to your local installation
 #
 
+!IF DEFINED(MS_DIR)
+MS_BASE=$(MS_DIR)
+!INCLUDE $(MS_DIR)\nmake.opt
+!ENDIF
 !INCLUDE nmake.opt
 
 all:  zoo_loader.cgi

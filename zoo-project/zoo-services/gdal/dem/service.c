@@ -2560,7 +2560,7 @@ __declspec(dllexport)
     map* tmpMap1=getMapFromMaps(inputs,"s","value");
     if(tmpMap1!=NULL && strcasecmp(tmpMap1->value,"NULL")!=0 )
       scale = atof(tmpMap1->value);
-    map* tmpMap1=getMapFromMaps(inputs,"b","value");
+    tmpMap1=getMapFromMaps(inputs,"b","value");
     if(tmpMap1!=NULL && strcasecmp(tmpMap1->value,"NULL")!=0 )
       nBand = atoi(tmpMap1->value);
 

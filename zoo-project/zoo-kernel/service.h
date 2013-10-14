@@ -28,8 +28,10 @@
 #pragma once
 
 #ifdef WIN32
+#ifndef USE_MS
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
+#endif
 #ifndef snprintf
 #define snprintf sprintf_s
 #else
@@ -41,6 +43,11 @@
 extern "C" {
 #endif
 
+#ifdef WIN32
+#ifdef USE_MS
+#include <mapserver.h>
+#endif
+#endif
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
