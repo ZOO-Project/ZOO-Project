@@ -598,7 +598,9 @@ int runRequest(map* request_inputs)
     setMapInMaps(m,"main","language",tmp);
     translateChar(tmp,'-','_');
     setlocale (LC_ALL, tmp);
-#ifdef WIN32
+#ifndef WIN32
+    setenv("LC_ALL",tmp,1);
+#else
     char tmp1[12];
     sprintf(tmp1,"LC_ALL=%s",tmp);
     putenv(tmp1);
@@ -607,7 +609,9 @@ int runRequest(map* request_inputs)
   }
   else{
     setlocale (LC_ALL, "en_US");
-#ifdef WIN32
+#ifndef WIN32
+    setenv("LC_ALL","en_US",1);
+#else
     char tmp1[12];
     sprintf(tmp1,"LC_ALL=en_US");
     putenv(tmp1);

@@ -1,5 +1,5 @@
 TROOT= $(ZOOK_DIR)
-!INCLUDE $(ZOOK_DIR)/nmake.opt
+!INCLUDE $(ZOOK_DIR)nmake.opt
 
 FILES=$(ZOOK_DIR)/service_internal.obj $(ZOOK_DIR)/ulinet.obj 
 !IFDEF JS_DIR
