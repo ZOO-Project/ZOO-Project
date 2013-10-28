@@ -630,6 +630,14 @@ int runRequest(map* request_inputs)
   else
     setMapInMaps(m,"main","isSoap","false");
 
+  if(strlen(cgiServerName)>0){
+    char tmpUrl[1024];
+    sprintf(tmpUrl,"http://%s%s",cgiServerName,cgiScriptName);
+#ifdef DEBUG
+    fprintf(stderr,"*** %s ***\n",tmpUrl);
+#endif
+    setMapInMaps(m,"main","serverAddress",tmpUrl);
+  }
 
   /**
    * Check for minimum inputs
