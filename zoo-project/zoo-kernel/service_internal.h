@@ -130,7 +130,7 @@ extern "C" {
 
   int checkForSoapEnvelope(xmlDocPtr);
 
-  void addToCache(maps*,char*,char*,int);
+  void addToCache(maps*,char*,char*,char*,int);
   char* isInCache(maps*,char*);
   int loadRemoteFile(maps*,map*,HINTERNET,char*);
 

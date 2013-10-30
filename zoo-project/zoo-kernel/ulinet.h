@@ -25,6 +25,7 @@
 #ifndef _ULINET_H
 #define _ULINET_H
 
+#include "fcgi_stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
@@ -71,6 +72,7 @@ typedef struct {
   int nDataLen;
   int nDataAlloc;
   unsigned char *pabyData;
+  unsigned char *mimeType;
 } HINTERNET;
 
 size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data);

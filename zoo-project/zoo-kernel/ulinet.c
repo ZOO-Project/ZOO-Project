@@ -38,11 +38,11 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
   }
   psInternet=(HINTERNET *)data;
   if(psInternet->pabyData){
-    psInternet->pabyData=(char*)realloc(psInternet->pabyData,psInternet->nDataLen+realsize+1);
+    psInternet->pabyData=(unsigned char*)realloc(psInternet->pabyData,psInternet->nDataLen+realsize+1);
     psInternet->nDataAlloc+=psInternet->nDataLen+realsize+1;
   }
   else{
-    psInternet->pabyData=(char*)malloc(psInternet->nDataLen+realsize+1);
+    psInternet->pabyData=(unsigned char*)malloc(psInternet->nDataLen+realsize+1);
     psInternet->nDataAlloc=realsize+1;
   }
 
@@ -105,9 +105,9 @@ OSStatus setProxiesForProtcol(CURL* handle,const char *proto){
   CFDictionaryRef proxyDict;
   CFArrayRef		proxies;
   
-  CFStringRef key_enabled;
-  CFStringRef key_host;
-  CFStringRef key_port;
+  CFStringRef key_enabled = NULL;
+  CFStringRef key_host = NULL;
+  CFStringRef key_port = NULL;
   
   bool proxy_enabled;
   char *proxy_host;
@@ -119,13 +119,13 @@ OSStatus setProxiesForProtcol(CURL* handle,const char *proto){
   err = noErr;
   proxyDict = SCDynamicStoreCopyProxies(NULL);
 
-  if(proto=="http"){
+  if(strncmp(proto,"http",4)==0){
       key_enabled=kSCPropNetProxiesHTTPEnable;
       key_host=kSCPropNetProxiesHTTPProxy;
       key_port=kSCPropNetProxiesHTTPPort;
   }
   else
-    if(proto=="https"){
+    if(strncmp(proto,"https",5)==0){
       key_enabled=kSCPropNetProxiesHTTPSEnable;
       key_host=kSCPropNetProxiesHTTPSProxy;
       key_port=kSCPropNetProxiesHTTPSPort;
@@ -167,6 +167,7 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
   struct MemoryStruct header;
   ret.hasCacheFile=0;
   ret.nDataAlloc = 0;
+  ret.mimeType = NULL;
 
   ret.handle=curl_easy_init();
 
@@ -192,24 +193,15 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
   return ret;
 }
 
-static size_t 
-CurlWriteCB(void *buffer, size_t size, size_t nmemb, void *reqInfo){
-  HINTERNET *psInternet = (HINTERNET *) reqInfo;
-
-  memcpy( psInternet->pabyData + psInternet->nDataLen, buffer,  nmemb * size );
-  psInternet->nDataLen += nmemb * size;
-  psInternet->pabyData[psInternet->nDataLen] = 0;
-
-  return nmemb *size;
-}
-
 void InternetCloseHandle(HINTERNET handle){
   if(handle.hasCacheFile>0){
     fclose(handle.file);
     unlink(handle.filename);
+    handle.mimeType = NULL;
   }
   else{
     handle.pabyData = NULL;
+    handle.mimeType = NULL;
     handle.nDataAlloc = handle.nDataLen = 0;
   }
   if(handle.handle)
@@ -270,7 +262,10 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
 
   curl_easy_setopt(hInternet.handle,CURLOPT_URL,lpszUrl);
   curl_easy_perform(hInternet.handle);
-
+  curl_easy_getinfo(hInternet.handle,CURLINFO_CONTENT_TYPE,&hInternet.mimeType);
+#ifdef ULINET_DEBUG
+  fprintf(stderr,"DEBUG MIMETYPE: %s\n",hInternet.mimeType);
+#endif
   return hInternet;
 };
 
