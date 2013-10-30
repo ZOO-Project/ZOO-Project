@@ -2515,7 +2515,7 @@ char* getMd5(char* url){
 /**
  * Cache a file for a given request
  */
-void addToCache(maps* conf,char* request,char* content,int length){
+void addToCache(maps* conf,char* request,char* content,char* mimeType,int length){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
   if(tmp!=NULL){
     char* md5str=getMd5(request);
@@ -2528,6 +2528,15 @@ void addToCache(maps* conf,char* request,char* content,int length){
     FILE* fo=fopen(fname,"w+");
     fwrite(content,sizeof(char),length,fo);
     fclose(fo);
+
+    sprintf(fname,"%s/%s.zcm",tmp->value,md5str);
+    fo=fopen(fname,"w+");
+#ifdef DEBUG
+    fprintf(stderr,"MIMETYPE: %s\n",mimeType);
+#endif
+    fwrite(mimeType,sizeof(char),strlen(mimeType),fo);
+    fclose(fo);
+
     free(md5str);
     free(fname);
   }
@@ -2562,6 +2571,7 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   HINTERNET res;
   char* fcontent;
   char* cached=isInCache(m,url);
+  char *mimeType=NULL;
   int fsize;
   int hasF=-1;
   if(cached!=NULL){
@@ -2573,6 +2583,16 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
       int len=fread(fcontent,f_status.st_size,1,f);
       fsize=f_status.st_size;
       fcontent[fsize]=0;
+      fclose(f);
+    }
+    cached[strlen(cached)-1]='m';
+    s=stat(cached, &f_status);
+    if(s==0){
+      mimeType=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+      FILE* f=fopen(cached,"rb");
+      int len=fread(mimeType,f_status.st_size,1,f);
+      mimeType[f_status.st_size]=0;
+      fclose(f);
     }
   }else{
     res=InternetOpenUrl(hInternet,url,NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
@@ -2584,9 +2604,14 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
     fcontent[res.nDataLen]=0;
     fsize=res.nDataLen;
+    mimeType=res.mimeType;
   }
   if(fsize==0){
     return errorException(m, _("Unable to download the file."), "InternalError");
+  }
+
+  if(mimeType!=NULL){
+    addToMap(content,"fmimeType",mimeType);
   }
 
   map* tmpMap=getMapOrFill(content,"value","");
@@ -2602,8 +2627,10 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   sprintf(ltmp1,"%d",fsize);
   addToMap(content,"size",ltmp1);
   if(cached==NULL)
-    addToCache(m,url,fcontent,fsize);
+    addToCache(m,url,fcontent,mimeType,fsize);
   else{
+    free(fcontent);
+    free(mimeType);
     free(cached);
   }
   return 0;

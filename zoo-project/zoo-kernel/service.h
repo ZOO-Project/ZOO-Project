@@ -267,7 +267,6 @@ extern "C" {
       }
       map* icurs=curs->content;
       if(type==0){
-	map* tmp=getMap(curs->content,"value");
 	char *temp=strdup(dataInputsKVP);
 	if(getMap(m->content,"xlink:href")!=NULL)
 	  sprintf(dataInputsKVP,"%sReference",temp);
@@ -275,7 +274,6 @@ extern "C" {
 	  sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
 	free(temp);
       }
-      int j=0;
       while(icurs!=NULL){
 	if(strcasecmp(icurs->name,"value")!=0 &&
 	   strcasecmp(icurs->name,"Reference")!=0 &&
@@ -685,7 +683,6 @@ extern "C" {
       len=atoi(tmpLength->value);
     }
 
-    map* tmpValI=getMap(tmp->content,"value");
     char *tmpV[8]={
       "size",
       "value",
@@ -700,7 +697,7 @@ extern "C" {
     addToMap(_cursor->content,"length",tmpLen);
     int i=0;
     map* tmpSizeI=getMap(tmp->content,tmpV[i]);
-    for(0;i<8;i++){
+    for(i=0;i<8;i++){
       map* tmpVI=getMap(tmp->content,tmpV[i]);
       if(tmpVI!=NULL){
 #ifdef DEBUG

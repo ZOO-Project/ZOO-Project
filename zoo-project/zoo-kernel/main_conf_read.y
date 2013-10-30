@@ -5,11 +5,7 @@
 **/
 //======================================================
 
-#include <string>
-#include <stdio.h>
-#include <ctype.h>
 #include <service.h>
-#include <vector>
 
 static int defaultsc=0;
 static maps* my_maps=NULL;
