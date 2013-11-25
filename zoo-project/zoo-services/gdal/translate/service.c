@@ -144,6 +144,20 @@ __declspec(dllexport)
       sprintf((char*)pszDest,"%s/%s.%s",tempPath,tmpMap->value,ext);
       fprintf(stderr,"DEBUG pszDest : %s\n",pszDest);
     }
+
+    tmpMap=NULL;
+    tmpMap=getMapFromMaps(inputs,"SrcWin","value");
+    if(tmpMap!=NULL){
+      char *tmp=tmpMap->value;
+      char *t=strtok(tmp,",");
+      int cnt=0;
+      while(t!=NULL){
+	anSrcWin[cnt] = atoi(t);
+	t=strtok(NULL,",");
+	cnt++;
+      }
+    }   
+
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"ProjWin","value");
     if(tmpMap!=NULL){
