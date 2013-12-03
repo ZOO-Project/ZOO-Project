@@ -1353,7 +1353,12 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	else
 	  if(tmp0!=NULL && strncmp(tmp0->value,"true",4)==0)
 	    printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
-      }
+      }else
+	/**
+	 * In case there was no definition found in the ZCFG file but 
+	 * present in the service code
+	 */
+	printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
       mcursor=mcursor->next;
     }
     xmlAddChild(n,nc);
