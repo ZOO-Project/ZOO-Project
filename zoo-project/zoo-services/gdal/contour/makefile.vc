@@ -1,0 +1,25 @@
+TROOT= $(ZOOK_DIR)
+!INCLUDE $(ZOOK_DIR)nmake.opt
+
+FILES=$(ZOOK_DIR)/service_internal.obj $(ZOOK_DIR)/ulinet.obj 
+!IFDEF JS_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(JS_FILE)
+!ENDIF
+!IFDEF JDK_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(JAVA_FILE)
+!ENDIF
+!IFDEF PY_DIR
+FILES=$(FILES) $(ZOOK_DIR)$(PY_FILE)
+!ENDIF
+!IF DEFINED(MS_DIR)
+MS_BASE=$(MS_DIR)
+!INCLUDE $(MS_DIR)\nmake.opt
+FILES=$(FILES) $(ZOOK_DIR)$(MS_FILE)
+!ENDIF
+
+cgi-env/contour_service.zo: service.c
+	$(CPP)  /D_CRT_NONSTDC_NO_DEPRECATE -DWIN32 -DZOO_SERVICE -I$(GDAL_DIR)/frmts/vrt -I$(GDAL_DIR)/alg $(CFLAGS) /c service.c
+	link /dll /out:cgi-env/contour_service.zo  $(FILES) ./service.obj $(LDFLAGS) /FORCE:MULTIPLE
+
+clean:
+	erase cgi-env\*.zo
