@@ -2609,7 +2609,7 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
     fcontent[res.nDataLen]=0;
     fsize=res.nDataLen;
-    mimeType=res.mimeType;
+    mimeType=(char*)res.mimeType;
   }
   if(fsize==0){
     return errorException(m, _("Unable to download the file."), "InternalError");

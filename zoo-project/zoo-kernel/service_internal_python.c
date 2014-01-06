@@ -112,37 +112,38 @@ PyMODINIT_FUNC init_zoo(){
 }
 
 int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
+  char *pythonpath;
+  char *python_path;
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
   map* tmp0=getMapFromMaps(*main_conf,"lenv","cwd");
   char *ntmp=tmp0->value;
   map* tmp=NULL;
+  int hasToClean=0;
   tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH");
-  char *python_path;
 #ifdef DEBUG
   fprintf(stderr,"PYTHON SUPPORT \n");
 #endif
-  fflush(stderr);
   if(tmp!=NULL){
 #ifdef DEBUG
     fprintf(stderr,"PYTHON SUPPORT (%i)\n",strlen(tmp->value));
 #endif
     python_path=(char*)malloc((strlen(tmp->value))*sizeof(char));
     sprintf(python_path,"%s",tmp->value);
+    hasToClean=1;
   }
   else{
-    python_path=strdup(".");
+    python_path=".";
   }
   tmp=NULL;
   tmp=getMap(request,"metapath");
-  char *pythonpath;//=(char*)malloc((1+strlen(python_path)+2048)*sizeof(char));
   if(tmp!=NULL && strcmp(tmp->value,"")!=0){
     pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
 #ifdef WIN32
-    sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+  sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
 #else
-    sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
 #endif
   }
   else{
@@ -163,8 +164,10 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
   putenv(toto);
+  free(toto);
 #endif
-  free(python_path);
+  if(hasToClean>0)
+    free(python_path);
   free(pythonpath);
 
   PyThreadState *mainstate;
