@@ -210,64 +210,64 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
   OGRSpatialReferenceH  hSRS;
   map* msSrs=NULL;
   hSRS = OSRNewSpatialReference(NULL);
-  if( pszProjection!=NULL && strlen(pszProjection)>1 &&
-      OSRImportFromWkt( hSRS, &pszProjection ) == CE_None ){
-    char *proj4Str=NULL;
-    if(OSRGetAuthorityName(hSRS,NULL)!=NULL && 
-       OSRGetAuthorityCode(hSRS,NULL)!=NULL){
-      char tmpSrs[20];
-      sprintf(tmpSrs,"%s:%s",
-	      OSRGetAuthorityName(hSRS,NULL),OSRGetAuthorityCode(hSRS,NULL));
-      msLoadProjectionStringEPSG(&m->projection,tmpSrs);
-      msLoadProjectionStringEPSG(&myLayer->projection,tmpSrs);
-      
-      char tmpSrss[256];
-      sprintf(tmpSrss,"EPSG:4326 EPSG:900913 %s",tmpSrs);
-
-      msInsertHashTable(&(m->web.metadata), "ows_srs", tmpSrss);
-      msInsertHashTable(&(myLayer->metadata), "ows_srs", tmpSrss);
-
+  if( pszProjection!=NULL && strlen(pszProjection)>1){
+    if(OSRImportFromWkt( hSRS, &pszProjection ) == CE_None ){
+      char *proj4Str=NULL;
+      if(OSRGetAuthorityName(hSRS,NULL)!=NULL && 
+	 OSRGetAuthorityCode(hSRS,NULL)!=NULL){
+	char tmpSrs[20];
+	sprintf(tmpSrs,"%s:%s",
+		OSRGetAuthorityName(hSRS,NULL),OSRGetAuthorityCode(hSRS,NULL));
+	msLoadProjectionStringEPSG(&m->projection,tmpSrs);
+	msLoadProjectionStringEPSG(&myLayer->projection,tmpSrs);
+	
+	char tmpSrss[256];
+	sprintf(tmpSrss,"EPSG:4326 EPSG:900913 %s",tmpSrs);
+	
+	msInsertHashTable(&(m->web.metadata), "ows_srs", tmpSrss);
+	msInsertHashTable(&(myLayer->metadata), "ows_srs", tmpSrss);
+	
 #ifdef DEBUGMS
-      fprintf(stderr,"isGeo %b\n\n",OSRIsGeographic(hSRS)==TRUE);
+	fprintf(stderr,"isGeo %b\n\n",OSRIsGeographic(hSRS)==TRUE);
 #endif
-      if(output!=NULL){
-	if(OSRIsGeographic(hSRS)==TRUE)
-	  addToMap(output->content,"crs_isGeographic","true");
-	else
-	  addToMap(output->content,"crs_isGeographic","false");
-	addToMap(output->content,"crs",tmpSrs);
-      }
-    }
-    else{
-      OSRExportToProj4(hSRS,&proj4Str);
-      if(proj4Str!=NULL){
-#ifdef DEBUGMS
-	fprintf(stderr,"PROJ (%s)\n",proj4Str);
-#endif
-	msLoadProjectionString(&(m->projection),proj4Str);
-	msLoadProjectionString(&(myLayer->projection),proj4Str);
-	if(output!=NULL){ 
+	if(output!=NULL){
 	  if(OSRIsGeographic(hSRS)==TRUE)
 	    addToMap(output->content,"crs_isGeographic","true");
 	  else
 	    addToMap(output->content,"crs_isGeographic","false");
+	  addToMap(output->content,"crs",tmpSrs);
 	}
       }
       else{
-	msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
-	msLoadProjectionStringEPSG(&myLayer->projection,"EPSG:4326");
-	if(output!=NULL){
-	  addToMap(output->content,"crs_isGeographic","true");
+	OSRExportToProj4(hSRS,&proj4Str);
+	fprintf(stderr,"Debug WKT: %s \n",proj4Str);
+	if(proj4Str!=NULL){
+#ifdef DEBUGMS
+	  fprintf(stderr,"PROJ (%s)\n",proj4Str);
+#endif
+	  msLoadProjectionString(&(m->projection),proj4Str);
+	  msLoadProjectionString(&(myLayer->projection),proj4Str);
+	  if(output!=NULL){ 
+	    if(OSRIsGeographic(hSRS)==TRUE)
+	      addToMap(output->content,"crs_isGeographic","true");
+	    else
+	      addToMap(output->content,"crs_isGeographic","false");
+	  }
 	}
+	else{
+	  msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
+	  msLoadProjectionStringEPSG(&myLayer->projection,"EPSG:4326");
+	  if(output!=NULL){
+	    addToMap(output->content,"crs_isGeographic","true");
+	  }
+	}
+	if(output!=NULL){
+	  addToMap(output->content,"crs","EPSG:4326");
+	  addToMap(output->content,"real_extent","true");
+	}
+	msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913");
+	msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
       }
-      if(output!=NULL){
-	addToMap(output->content,"crs","EPSG:4326");
-        addToMap(output->content,"real_extent","true");
-      }
-      msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913");
-      msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
-
-
     }
   }
   else{
@@ -683,7 +683,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     return -1;
   }
 #ifdef DEBUGMS
-    fprintf(stderr,"Accessing the DataSource %s %d\n",pszFilename,__LINE__);
+  fprintf(stderr,"Accessing the DataSource %s %d\n",pszFilename,__LINE__);
 #endif
 
   /**
@@ -695,6 +695,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   if(initLayer((m->layers[m->numlayers]), m) == -1){
     return -1;
   }
+  m->layers[m->numlayers]->index=m->numlayers;
 
   layerObj* myLayer=m->layers[m->numlayers];
   myLayer->name = strdup(output->name);
@@ -713,6 +714,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   tmpMap=getMap(output->content,"abstract");
   if(tmpMap!=NULL)
     abstract=tmpMap->value;
+
   msInsertHashTable(&(myLayer->metadata), "ows_label", title);
   msInsertHashTable(&(myLayer->metadata), "ows_title", title);
   msInsertHashTable(&(myLayer->metadata), "ows_abstract", abstract);
