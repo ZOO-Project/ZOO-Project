@@ -460,15 +460,15 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
     r_inputs1=createMap("metapath","");
     hasIn=1;
   }
-  map* r_inputs2=getMap(s1->content,"ResponseDocument");
+  map* r_inputs2=getMap(request_inputs,"ResponseDocument");
   if(r_inputs2==NULL)
-    r_inputs2=getMap(s1->content,"RawDataOutput");
+    r_inputs2=getMap(request_inputs,"RawDataOutput");
   map *tmpPath=getMapFromMaps(m,"lenv","cwd");
 
   if(r_inputs2!=NULL){
-    sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,r_inputs2->value,sid->value);
+    sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP,sid->value);
     sprintf(tmpq,"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP);
-  }
+    }
   else{
     sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,sid->value);
     sprintf(tmpq,"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",r_inputs1->value,req->value,id->value,dataInputsKVP,sid->value);
@@ -483,7 +483,6 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
   
   free(dataInputsKVP);
   free(dataOutputsKVP);
-  //printf("REQUEST IS : %s \n",tmp);
 #ifdef DEBUG
   fprintf(stderr,"REQUEST IS : %s \n",tmp);
 #endif

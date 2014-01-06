@@ -79,7 +79,9 @@ static HANDLE hMapObjectG = NULL;  // handle to file mapping
 void updateStatus(maps *conf){
   LPWSTR lpszTmp;
   BOOL fInit;
+  char *final_string=NULL;
   char *s=NULL;
+  map *tmpMap1;
   map *tmpMap=getMapFromMaps(conf,"lenv","sid");
   if(hMapObjectG==NULL)
     hMapObjectG = CreateFileMapping( 
@@ -105,23 +107,23 @@ void updateStatus(maps *conf){
     fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
     return ;
   } 
-  if (fInit)
-    memset(lpvMemG, '\0', SHMEMSIZE);
+  memset(lpvMemG, '\0', SHMEMSIZE);
   tmpMap=getMapFromMaps(conf,"lenv","status");
+  tmpMap1=NULL;
+  tmpMap1=getMapFromMaps(conf,"lenv","message");
   lpszTmp = (LPWSTR) lpvMemG;
-  for(s=tmpMap->value;*s!=NULL;s++)
+  final_string=(char*)malloc((strlen(tmpMap1->value)+strlen(tmpMap->value)+2)*sizeof(char));
+  sprintf(final_string,"%s|%s",tmpMap->value,tmpMap1->value);
+  for(s=final_string;*s!='\0';*s++){
     *lpszTmp++ = *s;
-  *lpszTmp++ = '|'; 
-  tmpMap=NULL;
-  tmpMap=getMapFromMaps(conf,"lenv","message");
-  if(tmpMap!=NULL)
-    for(s=tmpMap->value;*s!=NULL;s++)
-      *lpszTmp++ = *s;
-  *lpszTmp = '\0'; 
+  }
+  *lpszTmp++ = '\0';
+  free(final_string);
 }
 
 char* getStatus(int pid){
-  LPWSTR lpszBuf=NULL;
+  char lpszBuf[SHMEMSIZE];
+  int i=0;
   LPWSTR lpszTmp=NULL;
   LPVOID lpvMem = NULL;
   HANDLE hMapObject = NULL;
@@ -154,7 +156,14 @@ char* getStatus(int pid){
   if (lpvMem == NULL) 
     return "-1"; 
   lpszTmp = (LPWSTR) lpvMem;
-  return (char*)lpszTmp;
+  while (*lpszTmp){
+    lpszBuf[i] = (char)*lpszTmp;
+    *lpszTmp++; 
+    lpszBuf[i+1] = '\0'; 
+    i++;
+  }
+  fprintf(stderr,"READING STRING S %s\n",lpszBuf);
+  return (char*)lpszBuf;
 }
 
 void unhandleStatus(maps *conf){
