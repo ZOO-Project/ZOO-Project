@@ -34,9 +34,14 @@
 #endif
 #ifndef snprintf
 #define snprintf sprintf_s
-#else
-
 #endif
+#define zStrdup _strdup
+#define zMkdir _mkdir
+#define zOpen _open
+#define zWrite _write
+#else
+#define zStrdup strdup
+#define zMkdir mkdir
 #endif 
 
 #ifdef __cplusplus
@@ -52,7 +57,6 @@ extern "C" {
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-
 #ifndef WIN32
 #define bool int
 #define true 1
@@ -175,8 +179,8 @@ extern "C" {
 
   static map* createMap(const char* name,const char* value){
     map* tmp=(map *)malloc(MAP_SIZE);
-    tmp->name=strdup(name);
-    tmp->value=strdup(value);
+    tmp->name=zStrdup(name);
+    tmp->value=zStrdup(value);
     tmp->next=NULL;
     return tmp;
   }
@@ -252,39 +256,42 @@ extern "C" {
     maps* curs=m;
     int i=0;
     while(curs!=NULL){
-      if(i==0)
-	if(type==0)
-	  sprintf(dataInputsKVP,"%s=",curs->name);
-	else
-	  sprintf(dataInputsKVP,"%s",curs->name);
-      else{
-	char *temp=strdup(dataInputsKVP);
-	if(type==0)
-	  sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
-	else
-	  sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
-	free(temp);
-      }
-      map* icurs=curs->content;
-      if(type==0){
-	char *temp=strdup(dataInputsKVP);
-	if(getMap(m->content,"xlink:href")!=NULL)
-	  sprintf(dataInputsKVP,"%sReference",temp);
-	else
-	  sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
-	free(temp);
-      }
-      while(icurs!=NULL){
-	if(strcasecmp(icurs->name,"value")!=0 &&
-	   strcasecmp(icurs->name,"Reference")!=0 &&
-	   strcasecmp(icurs->name,"minOccurs")!=0 &&
-	   strcasecmp(icurs->name,"maxOccurs")!=0 &&
-	   strcasecmp(icurs->name,"inRequest")!=0){
-	  char *itemp=strdup(dataInputsKVP);
-	  sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
-	  free(itemp);
+      map *inRequest=getMap(curs->content,"inRequest");
+      if(strncasecmp(inRequest->value,"true",4)==0){
+	if(i==0)
+	  if(type==0)
+	    sprintf(dataInputsKVP,"%s=",curs->name);
+	  else
+	    sprintf(dataInputsKVP,"%s",curs->name);
+	else{
+	  char *temp=zStrdup(dataInputsKVP);
+	  if(type==0)
+	    sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
+	  else
+	    sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
+	  free(temp);
 	}
-	icurs=icurs->next;
+	map* icurs=curs->content;
+	if(type==0){
+	  char *temp=zStrdup(dataInputsKVP);
+	  if(getMap(m->content,"xlink:href")!=NULL)
+	    sprintf(dataInputsKVP,"%sReference",temp);
+	  else
+	    sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
+	  free(temp);
+	}
+	while(icurs!=NULL){
+	  if(strcasecmp(icurs->name,"value")!=0 &&
+	     strcasecmp(icurs->name,"Reference")!=0 &&
+	     strcasecmp(icurs->name,"minOccurs")!=0 &&
+	     strcasecmp(icurs->name,"maxOccurs")!=0 &&
+	     strcasecmp(icurs->name,"inRequest")!=0){
+	    char *itemp=zStrdup(dataInputsKVP);
+	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
+	    free(itemp);
+	  }
+	  icurs=icurs->next;
+	}
       }
       curs=curs->next;
       i++;
@@ -468,7 +475,7 @@ extern "C" {
       map *tmp=getMap(m,n);
       if(tmp->value!=NULL)
       	free(tmp->value);
-      tmp->value=strdup(v);
+      tmp->value=zStrdup(v);
     }
   }
 
@@ -573,7 +580,7 @@ extern "C" {
     maps* res=NULL;
     if(_cursor!=NULL){
       res=(maps*)malloc(MAPS_SIZE);
-      res->name=strdup(_cursor->name);
+      res->name=zStrdup(_cursor->name);
       res->content=NULL;
       res->next=NULL;
       map* mc=_cursor->content;
@@ -722,13 +729,13 @@ extern "C" {
       if(_ztmpm!=NULL){
 	if(_ztmpm->value!=NULL)
 	  free(_ztmpm->value);
-	_ztmpm->value=strdup(value);
+	_ztmpm->value=zStrdup(value);
       }else{
 	addToMap(_tmpm->content,subkey,value);
       }
     }else{
       maps *tmp=(maps*)malloc(MAPS_SIZE);
-      tmp->name=strdup(key);
+      tmp->name=zStrdup(key);
       tmp->content=createMap(subkey,value);
       tmp->next=NULL;
       addMapsToMaps(&m,tmp);
@@ -778,12 +785,12 @@ extern "C" {
       fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
       tmp=(elements*)malloc(ELEMENTS_SIZE);
-      tmp->name=strdup(e->name);
+      tmp->name=zStrdup(e->name);
       tmp->content=NULL;
       addMapToMap(&tmp->content,e->content);
       tmp->metadata=NULL;
       addMapToMap(&tmp->metadata,e->metadata);
-      tmp->format=strdup(e->format);
+      tmp->format=zStrdup(e->format);
       if(e->defaults!=NULL){
 	tmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
 	tmp->defaults->content=NULL;

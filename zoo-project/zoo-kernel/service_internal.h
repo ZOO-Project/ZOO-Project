@@ -44,9 +44,13 @@
 #include <direct.h>
 #endif
 #include <stdio.h>
-#include <unistd.h>
 #include <time.h>
 #include <ctype.h>
+#ifdef WIN32
+#ifndef USE_RUBY
+#include <unistd.h>
+#endif
+#endif
 #ifndef WIN32
 #include <xlocale.h>
 #endif
@@ -71,6 +75,7 @@ extern   int conf_read(const char*,maps*);
 #endif
 #include "service_internal_js.h"
 #endif
+
 
 #ifdef __cplusplus
 extern "C" {

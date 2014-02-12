@@ -248,7 +248,7 @@ texteinterbalise
  ;
 //======================================================
 
-pair: PAIR {curr_key=strdup($1);/*printf("START 0 PAIR FOUND !! \n [%s]\n",$1);*/}
+pair: PAIR {curr_key=zStrdup($1);/*printf("START 0 PAIR FOUND !! \n [%s]\n",$1);*/}
 | EPAIR {
   if(current_content==NULL) 
     current_content=createMap(curr_key,$1);
@@ -261,7 +261,7 @@ pair: PAIR {curr_key=strdup($1);/*printf("START 0 PAIR FOUND !! \n [%s]\n",$1);*
   }
   free(curr_key);
   }
-| SPAIR  {curr_key=strdup($1);if(debug) printf("SPAIR FOUND !!\n"); }
+| SPAIR  {curr_key=zStrdup($1);if(debug) printf("SPAIR FOUND !!\n"); }
  ;
 
 
@@ -273,7 +273,7 @@ processid
      free(current_content);
      current_maps->next=NULL;
      current_maps->next=(maps*)malloc(MAPS_SIZE);
-     current_maps->next->name=strdup($1);
+     current_maps->next->name=zStrdup($1);
      current_maps->next->content=NULL;
      current_maps->next->next=NULL;
      current_maps=current_maps->next;

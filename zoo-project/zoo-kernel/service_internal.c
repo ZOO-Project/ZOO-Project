@@ -1211,7 +1211,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     }else{
       map* tmpm2=getMap(tmp_maps->content,"tmpUrl");
       if(tmpm1!=NULL && tmpm2!=NULL){
-	if(strncasecmp(tmpm2->value,"http://",7)==0){
+	if( strncasecmp( tmpm2->value, "http://", 7) == 0 ||
+	    strncasecmp( tmpm2->value, "https://", 8 ) == 0 ){
 	  sprintf(url,"%s/%s_%i.xml",tmpm2->value,service,pid);
 	}else
 	  sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,pid);
@@ -1891,6 +1892,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the session maps."),session_file_path);
       map * errormap = createMap("text",tmpMsg);
       addToMap(errormap,"code", "InternalError");
+      
       printExceptionReportResponse(m,errormap);
       freeMap(&errormap);
       free(errormap);
@@ -1902,6 +1904,28 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
   }
   
+  if(res==SERVICE_FAILED){
+    map * errormap;
+    map *lenv;
+    lenv=getMapFromMaps(m,"lenv","message");
+    char *tmp0;
+    if(lenv!=NULL){
+      tmp0=(char*)malloc((strlen(lenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "+1)))*sizeof(char));
+      sprintf(tmp0,_("Unable to run the Service. The message returned back by the Service was the following: %s"),lenv->value);
+    }
+    else{
+      tmp0=(char*)malloc((strlen(_("Unable to run the Service. No more information was returned back by the Service."))+1)*sizeof(char));
+      sprintf(tmp0,_("Unable to run the Service. No more information was returned back by the Service."));
+    }
+    errormap = createMap("text",tmp0);
+    free(tmp0);
+    addToMap(errormap,"code", "InternalError");
+    printExceptionReportResponse(m,errormap);
+    freeMap(&errormap);
+    free(errormap);
+    return;
+  }
+
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
@@ -1914,10 +1938,11 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #endif
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
-      if(toto!=NULL && strcasecmp(toto->value,"true")==0 && testMap==NULL){
+      if(toto!=NULL && strcasecmp(toto->value,"true")==0 && testMap==NULL)
 #else
-      if(toto!=NULL && strcasecmp(toto->value,"true")==0){
+      if(toto!=NULL && strcasecmp(toto->value,"true")==0)
 #endif
+	{
 	elements* in=getElements(s->outputs,tmpI->name);
 	char *format=NULL;
 	if(in!=NULL){
@@ -1932,7 +1957,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	}
 	map *ext=getMap(tmpI->content,"extension");
 	map *tmp1=getMapFromMaps(m,"main","tmpPath");
-	char *file_name;
+	char *file_name,*file_path;
 	bool hasExt=true;
 	if(ext==NULL){
 	  // We can fallback to a default list of supported formats using
@@ -1956,9 +1981,12 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    ext=createMap("extension","txt");
 	  hasExt=false;
 	}
-	file_name=(char*)malloc((strlen(tmp1->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
-	sprintf(file_name,"%s/%s_%s_%i.%s",tmp1->value,s->name,tmpI->name,cpid+100000,ext->value);
-	FILE *ofile=fopen(file_name,"wb");
+	file_name=(char*)malloc((strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+1024)*sizeof(char));
+	int cpid0=cpid+time(NULL);
+	sprintf(file_name,"%s_%s_%i.%s",s->name,tmpI->name,cpid0,ext->value);
+	file_path=(char*)malloc((strlen(tmp1->value)+strlen(file_name)+2)*sizeof(char));
+	sprintf(file_path,"%s/%s",tmp1->value,file_name);
+	FILE *ofile=fopen(file_path,"wb");
 	if(ofile==NULL){
 	  char tmpMsg[1024];
 	  sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the %s final result."),file_name,tmpI->name);
@@ -1967,17 +1995,20 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  printExceptionReportResponse(m,errormap);
 	  freeMap(&errormap);
 	  free(errormap);
+	  free(file_name);
+	  free(file_path);
 	  return;
 	}
+	free(file_path);
 	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
 	map *tmp3=getMapFromMaps(m,"main","serverAddress");
 	char *file_url;
 	if(strncasecmp(tmp2->value,"http://",7)==0){
-	  file_url=(char*)malloc((strlen(tmp2->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
-	  sprintf(file_url,"%s/%s_%s_%i.%s",tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
+	  file_url=(char*)malloc((strlen(tmp2->value)+strlen(file_name))*sizeof(char));
+	  sprintf(file_url,"%s/%s",tmp2->value,file_name);
 	}else{
-	  file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(s->name)+strlen(ext->value)+strlen(tmpI->name)+13)*sizeof(char));
-	  sprintf(file_url,"%s/%s/%s_%s_%i.%s",tmp3->value,tmp2->value,s->name,tmpI->name,cpid+100000,ext->value);
+	  file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(file_name))*sizeof(char));
+	  sprintf(file_url,"%s/%s/%s",tmp3->value,tmp2->value,file_name);
 	}
 	addToMap(tmpI->content,"Reference",file_url);
 	if(!hasExt){
@@ -2018,9 +2049,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 			 s,r_inputs->value,res,
 			 request_inputs,
 			 request_outputs);
-  }
-  else
-    if(res!=SERVICE_FAILED){
+    }
+    else{
       /**
        * We get the requested output or fallback to the first one if the 
        * requested one is not present in the resulting outputs maps.
@@ -2082,20 +2112,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	dumpMap(toto);
 #endif
       }
-    }else{
-      char tmp[1024];
-      map * errormap;
-      map *lenv;
-      lenv=getMapFromMaps(m,"lenv","message");
-      if(lenv!=NULL)
-	sprintf(tmp,_("Unable to run the Service. The message returned back by the Service was the following : %s"),lenv->value);
-      else
-	sprintf(tmp,_("Unable to run the Service. No more information was returned back by the Service."));
-      errormap = createMap("text",tmp);      
-      addToMap(errormap,"code", "InternalError");
-      printExceptionReportResponse(m,errormap);
-      freeMap(&errormap);
-      free(errormap);
     }
 }
 

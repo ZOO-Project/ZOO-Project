@@ -108,7 +108,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   map *msOgcVersion=getMapFromMaps(m,"main","msOgcVersion");
   map *dataPath=getMapFromMaps(m,"main","dataPath");
-  map *sid=getMapFromMaps(m,"lenv","sid");
+  map *sid=getMapFromMaps(m,"lenv","usid");
   map* format=getMap(tmpI->content,"mimeType");
   map* rformat=getMap(tmpI->content,"requestedMimeType");
   map* width=getMap(tmpI->content,"width");
@@ -370,8 +370,8 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   OGRDataSourceH poDS1 = NULL;
   OGRSFDriverH *poDriver1 = NULL;
   char *dsName=(char*)malloc((8+strlen(pszDataSource)+1)*sizeof(char));
-  char *odsName=strdup(pszDataSource);
-  char *sdsName=strdup(pszDataSource);
+  char *odsName=zStrdup(pszDataSource);
+  char *sdsName=zStrdup(pszDataSource);
   char *demo=strstr(odsName,".");
   sdsName[strlen(sdsName)-(strlen(demo)-1)]='d';
   sdsName[strlen(sdsName)-(strlen(demo)-2)]='i';
@@ -413,7 +413,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 #endif
     char** demo=VSIReadDir(dsName);
     int i=0;
-    mkdir(sdsName
+    zMkdir(sdsName
 #ifndef WIN32
 		,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH 
 #endif
@@ -431,17 +431,17 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       fprintf(stderr,"open : %s\n",tmpDs);
 #endif
       VSIFSeekL(vsif,0,SEEK_END);
-      int size=VSIFTellL(vsif);
+      vsi_l_offset size=VSIFTellL(vsif);
 #ifdef DEBUGMS
       fprintf(stderr,"size : %d\n",size);
 #endif
       VSIFSeekL(vsif,0,SEEK_SET);
-      char *vsifcontent=(char*) malloc((size+1)*sizeof(char));
-      VSIFReadL(vsifcontent,1,size,vsif);
+      char *vsifcontent=(char*) malloc(((int)size+1)*sizeof(char));
+      VSIFReadL(vsifcontent,1,(size_t)size,vsif);
       char *fpath=(char*) malloc((strlen(sdsName)+strlen(demo[1])+2)*sizeof(char));
       sprintf(fpath,"%s/%s",sdsName,demo[i]);
-      int f=open(fpath,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-      write(f,vsifcontent,size);
+      int f=zOpen(fpath,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+      zWrite(f,vsifcontent,(int)size);
       close(f);
       chmod(fpath,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH);
       char* tmpP=strstr(fpath,".shp");
@@ -510,10 +510,10 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 #ifdef DEBUGMS
     dumpMaps(output);
 #endif
-    myLayer->name = strdup(output->name);
+    myLayer->name = zStrdup(output->name);
     myLayer->tileitem=NULL;
-    myLayer->data = strdup(OGR_L_GetName(poLayer));
-    myLayer->connection = strdup(pszDataSource);
+    myLayer->data = zStrdup(OGR_L_GetName(poLayer));
+    myLayer->connection = zStrdup(pszDataSource);
     myLayer->index = m->numlayers;
     myLayer->dump = MS_TRUE;
     myLayer->status = MS_ON;
@@ -698,9 +698,9 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   m->layers[m->numlayers]->index=m->numlayers;
 
   layerObj* myLayer=m->layers[m->numlayers];
-  myLayer->name = strdup(output->name);
+  myLayer->name = zStrdup(output->name);
   myLayer->tileitem=NULL;
-  myLayer->data = strdup(pszFilename);
+  myLayer->data = zStrdup(pszFilename);
   myLayer->index = m->numlayers;
   myLayer->dump = MS_TRUE;
   myLayer->status = MS_ON;
@@ -733,14 +733,15 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    */
   const char *tRef=GDALGetProjectionRef( hDataset );
   if( tRef != NULL && strlen(tRef)>0 ){
-    OGRSpatialReferenceH  hSRS;
     char *pszProjection;
     pszProjection = (char *) GDALGetProjectionRef( hDataset );
-#ifdef DEBUGMS
+    //#ifdef DEBUGMS
     fprintf(stderr,"Accessing the DataSource %s\n",GDALGetProjectionRef( hDataset ));
-#endif
+    //#endif
     setSrsInformations(output,m,myLayer,pszProjection);
-    }
+  }else{
+    fprintf(stderr,"NO SRS FOUND ! %s\n",GDALGetProjectionRef( hDataset ));    
+  }
 
 
   /**
@@ -791,7 +792,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       sprintf(nameBands,"%s",lBands);
     }else{
       if(iBand<4){
-	char *tmpS=strdup(nameBands);
+	char *tmpS=zStrdup(nameBands);
 	nameBands=(char*)realloc(nameBands,(strlen(nameBands)+strlen(lBands)+1)*sizeof(char));
 	sprintf(nameBands,"%s %s",tmpS,lBands);
 	free(tmpS);
@@ -804,10 +805,10 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Loops over metadata informations to setup specific informations
    */
   for( iBand = 0; iBand < nBandsI; iBand++ ){
-    int         bGotNodata, bSuccess;
-    double      adfCMinMax[2], dfNoData;
-    int         nBlockXSize, nBlockYSize, nMaskFlags;
-    double      dfMean, dfStdDev;
+    //int         bGotNodata;//, bSuccess;
+    double      adfCMinMax[2]/*, dfNoData*/;
+    //int         nBlockXSize, nBlockYSize, nMaskFlags;
+    //double      /*dfMean, dfStdDev*/;
     hBand = GDALGetRasterBand( hDataset, iBand+1 );
 
     CPLErrorReset();
@@ -862,7 +863,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	     */
 	    char className[7];
 	    sprintf(className,"class%d",i);
-	    myLayer->CLASS[myLayer->numclasses]->name=strdup(className);
+	    myLayer->CLASS[myLayer->numclasses]->name=zStrdup(className);
 	    
 	    /**
 	     * Set expression
@@ -923,7 +924,7 @@ void outputMapfile(maps* conf,maps* outputs){
       ext="json";
   
   map* tmpMap=getMapFromMaps(conf,"main","dataPath");
-  map* sidMap=getMapFromMaps(conf,"lenv","sid");
+  map* sidMap=getMapFromMaps(conf,"lenv","usid");
   char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
   sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext);
   int f=open(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
@@ -944,7 +945,7 @@ void outputMapfile(maps* conf,maps* outputs){
    */
   mapObj *myMap=msNewMapObj();
   free(myMap->name);
-  myMap->name=strdup("ZOO-Project_WXS_Server");
+  myMap->name=zStrdup("ZOO-Project_WXS_Server");
   msMapSetSize(myMap,2048,2048);
   msMapSetExtent(myMap,-1,-1,1,1);
   
@@ -952,9 +953,9 @@ void outputMapfile(maps* conf,maps* outputs){
    * Set imagepath and imageurl using tmpPath and tmpUrl from main.cfg
    */
   map *tmp1=getMapFromMaps(conf,"main","tmpPath");
-  myMap->web.imagepath=strdup(tmp1->value);
+  myMap->web.imagepath=zStrdup(tmp1->value);
   tmp1=getMapFromMaps(conf,"main","tmpUrl");
-  myMap->web.imageurl=strdup(tmp1->value);
+  myMap->web.imageurl=zStrdup(tmp1->value);
   
   /*
    * Define supported output formats
@@ -1083,10 +1084,10 @@ void outputMapfile(maps* conf,maps* outputs){
   char *tmpPath=(char*)malloc((13+strlen(tmp1->value))*sizeof(char));
   sprintf(tmpPath,"%s/symbols.sym",tmp1->value);
   msInitSymbolSet(&myMap->symbolset);
-  myMap->symbolset.filename=strdup(tmpPath);
+  myMap->symbolset.filename=zStrdup(tmpPath);
   free(tmpPath);
 
-  map* sid=getMapFromMaps(conf,"lenv","sid");
+  map* sid=getMapFromMaps(conf,"lenv","usid");
   char *mapPath=
     (char*)malloc((16+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
   sprintf(mapPath,"%s/%s_%s.map",tmp1->value,outputs->name,sid->value);

@@ -31,6 +31,28 @@ PY_LDFLAGS=$(PY_LIBRARY)
 PY_FILE=service_internal_python.obj
 !ENDIF
 
+!IFDEF RUBY_DIR
+#################################################################
+#RUBY 1.8.7
+ZRUBY_VERSION=1
+RUBY_CFLAGS=-DZRUBY_VERSION=1 -DUSE_RUBY -I$(RUBY_DIR) 
+RUBY_LDFLAGS="$(RUBY_DIR)/msvcr100-ruby18.lib"
+#################################################################
+#RUBY 1.9.3
+#ZRUBY_VERSION=2
+#RUBY_CFLAGS=-DZRUBY_VERSION=2 -DUSE_RUBY -I$(RUBY_DIR)/include/ruby-1.9.1/ -I$(RUBY_DIR)/include/ruby-1.9.1/i386-mswin32_100
+#RUBY_LDFLAGS="$(RUBY_DIR)/lib/msvcr100-ruby191.lib"
+#RUBY 2.1.0
+#ZRUBY_VERSION=2
+#RUBY_CFLAGS=-DZRUBY_VERSION=2 -DUSE_RUBY -I$(RUBY_DIR)/include/ruby-2.1.0/ -I$(RUBY_DIR)/include/ruby-2.1.0/i386-mswin32_100
+#RUBY_LDFLAGS="$(RUBY_DIR)/lib/msvcr100-ruby210.lib"
+#################################################################
+RUBY_FILE=service_internal_ruby.obj
+!IFDEF MS_DIR
+RUBY_CFLAGS=$(RUBY_CFLAGS) -DHAVE_ROUND
+!ENDIF
+!ENDIF
+
 !IFNDEF ZOOK_DIR
 ZOOK_DIR=.
 !ENDIF
@@ -40,7 +62,7 @@ TPATH=$(ZOOK_DIR)\..\..\..\tools
 LIBINTL_CPATH=$(ZOOK_DIR)\..\..\..\
 PYTHON_CPATH=$(PY_DIR)
 
-CFLAGS=/traceback  $(MS_DEFS) $(INCLUDES) $(CFLAGS1) /nologo /MD /W3 /EHsc /Ox /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I$(ZOOK_DIR) -I./ $(JAVA_CFLAGS) $(MS_CFLAGS) -I$(TROOT)\..\..\thirds\dirent-win32 -I$(INTL_DIR) -I$(CURL_DIR)\include -I$(XML2_DIR)\include -I$(GDAL_DIR)\port $(JS_CFLAGS) -I$(GDAL_DIR)\ogr -I$(GDAL_DIR)\gcore -I$(GD_DIR) -I$(ICONV_DIR) -I$(TROOT)\..\..\thirds\include -I$(TROOT)\..\..\thirds\cgic206 -I$(PYTHON_CPATH)\include -I$(SSL_DIR)/inc32 -I$(FCGI_DIR)\include $(PY_CFLAGS) -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+CFLAGS= $(MS_DEFS) $(INCLUDES) $(CFLAGS1) /nologo /MD /W3 /EHsc /Ox /D_CRT_SECURE_NO_WARNINGS /DWIN32 $(CJFLAGS) -I$(ZOOK_DIR) $(RUBY_CFLAGS) -I./ $(JAVA_CFLAGS) $(MS_CFLAGS) -I$(TROOT)\..\..\thirds\dirent-win32 -I$(INTL_DIR) -I$(CURL_DIR)\include -I$(XML2_DIR)\include -I$(GDAL_DIR)\port $(JS_CFLAGS) -I$(GDAL_DIR)\ogr -I$(GDAL_DIR)\gcore -I$(GD_DIR) -I$(ICONV_DIR) -I$(TROOT)\..\..\thirds\include -I$(TROOT)\..\..\thirds\cgic206 -I$(PYTHON_CPATH)\include -I$(SSL_DIR)/inc32 -I$(FCGI_DIR)\include $(PY_CFLAGS) -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 
 LDFLAGSCGI=$(TROOT)/../../thirds/cgic206/libcgic.lib 
-LDFLAGS=$(FCGI_DIR)/libfcgi/Release/libfcgi.lib $(CURL_LIBRARY) $(PY_LDFLAGS) $(XML2_LIBRARY) $(SSL_DIR)/out32dll/libeay32.lib $(JAVA_LDFLAGS) $(SSL_DIR)/out32dll/ssleay32.lib $(MS_LDFLAGS) $(INTL_DIR)/intl.lib $(XML2_DIR)/win32/bin.msvc/libxml2.lib $(GDAL_DIR)/gdal_i.lib $(CURL_DIR)/lib/libcurl.lib $(JS_LDFLAGS) /machine:i386
+LDFLAGS=$(FCGI_DIR)/libfcgi/Release/libfcgi.lib $(CURL_LIBRARY) $(PY_LDFLAGS) $(XML2_LIBRARY) $(SSL_DIR)/out32dll/libeay32.lib $(JAVA_LDFLAGS) $(SSL_DIR)/out32dll/ssleay32.lib $(MS_LDFLAGS) $(INTL_DIR)/intl.lib $(XML2_DIR)/win32/bin.msvc/libxml2.lib $(GDAL_DIR)/gdal_i.lib $(CURL_DIR)/lib/libcurl.lib $(JS_LDFLAGS) $(RUBY_LDFLAGS) /machine:i386

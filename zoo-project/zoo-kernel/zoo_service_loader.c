@@ -63,6 +63,10 @@ extern "C" {
 #include "service_internal_js.h"
 #endif
 
+#ifdef USE_RUBY
+#include "service_internal_ruby.h"
+#endif
+
 #ifdef USE_PERL
 #include "service_internal_perl.h"
 #endif
@@ -90,8 +94,8 @@ extern "C" {
   __declspec(dllexport) char *strcasestr(char const *a, char const *b)
 #ifndef USE_MS
  { 
-  char *x=_strdup(a); 
-  char *y=_strdup(b); 
+  char *x=_zStrdup(a); 
+  char *y=_zStrdup(b); 
   
   x=_strlwr(x); 
   y=_strlwr(y); 
@@ -249,7 +253,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
       sprintf(tmps1,"%s/%s",ntmp,r_inputs->value);
     else
       sprintf(tmps1,"%s/",ntmp);
-    char *altPath=strdup(tmps1);
+    char *altPath=zStrdup(tmps1);
     r_inputs=getMap(s1->content,"ServiceProvider");
     sprintf(tmps1,"%s/%s",altPath,r_inputs->value);
     free(altPath);
@@ -418,6 +422,14 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 	    }
 	    else
 #endif
+
+#ifdef USE_RUBY
+          if(strncasecmp(r_inputs->value,"Ruby",4)==0){
+            *eres=zoo_ruby_support(&m,request_inputs,s1,&request_input_real_format,&request_output_real_format);
+          }
+          else
+#endif
+
 	      {
 		char tmpv[1024];
 		sprintf(tmpv,_("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),r_inputs->value);
@@ -478,7 +490,7 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
     freeMap(&r_inputs1);
     free(r_inputs1);
   }
-  char *tmp1=strdup(tmp);
+  char *tmp1=zStrdup(tmp);
   sprintf(tmp,"zoo_loader.cgi %s \"%s\"",tmp1,sid->value);
   
   free(dataInputsKVP);
@@ -593,7 +605,7 @@ int runRequest(map* request_inputs)
   if(r_inputs==NULL)
     r_inputs=getMapFromMaps(m,"main","language");
   if(r_inputs!=NULL){
-    char *tmp=strdup(r_inputs->value);
+    char *tmp=zStrdup(r_inputs->value);
     setMapInMaps(m,"main","language",tmp);
     translateChar(tmp,'-','_');
     setlocale (LC_ALL, tmp);
@@ -649,7 +661,7 @@ int runRequest(map* request_inputs)
     return 1;
   }
   else{
-    REQUEST=strdup(r_inputs->value);
+    REQUEST=zStrdup(r_inputs->value);
     if(strncasecmp(r_inputs->value,"GetCapabilities",15)!=0
        && strncasecmp(r_inputs->value,"DescribeProcess",15)!=0
        && strncasecmp(r_inputs->value,"Execute",7)!=0){ 
@@ -688,9 +700,9 @@ int runRequest(map* request_inputs)
   maps* request_output_real_format=NULL;
   map* tmpm=getMapFromMaps(m,"main","serverAddress");
   if(tmpm!=NULL)
-    SERVICE_URL=strdup(tmpm->value);
+    SERVICE_URL=zStrdup(tmpm->value);
   else
-    SERVICE_URL=strdup(DEFAULT_SERVICE_URL);
+    SERVICE_URL=zStrdup(DEFAULT_SERVICE_URL);
 
   service* s1;
   int scount=0;
@@ -882,7 +894,7 @@ int runRequest(map* request_inputs)
   else
     snprintf(tmps1,1024,"%s/",ntmp);
   r_inputs=getMap(request_inputs,"Identifier");
-  char *ttmp=strdup(tmps1);
+  char *ttmp=zStrdup(tmps1);
   snprintf(tmps1,1024,"%s/%s.zcfg",ttmp,r_inputs->value);
   free(ttmp);
 #ifdef DEBUG
@@ -955,7 +967,7 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"OUTPUT Parsing start now ... \n");
 #endif
       char cursor_output[10240];
-      char *cotmp=strdup(r_inputs->value);
+      char *cotmp=zStrdup(r_inputs->value);
       snprintf(cursor_output,10240,"%s",cotmp);
       free(cotmp);
       j=0;
@@ -989,7 +1001,7 @@ int runRequest(map* request_inputs)
 	i++;
       }
       for(j=0;j<i;j++){
-	char *tmp=strdup(outputs_as_text[j]);
+	char *tmp=zStrdup(outputs_as_text[j]);
 	free(outputs_as_text[j]);
 	char *tmpc;
 	tmpc=strtok(tmp,"@");
@@ -1001,7 +1013,7 @@ int runRequest(map* request_inputs)
 	      if(tmp_output == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
-	      tmp_output->name=strdup(tmpc);
+	      tmp_output->name=zStrdup(tmpc);
 	      tmp_output->content=NULL;
 	      tmp_output->next=NULL;
 	    }
@@ -1071,7 +1083,7 @@ int runRequest(map* request_inputs)
     /**
      * Put each DataInputs into the inputs_as_text array
      */
-    char *tmp1=strdup(cursor_input);
+    char *tmp1=zStrdup(cursor_input);
     char * pToken;
     pToken=strtok(cursor_input,";");
     if(pToken!=NULL && strncasecmp(pToken,tmp1,strlen(tmp1))==0){
@@ -1105,7 +1117,7 @@ int runRequest(map* request_inputs)
     }
 
     for(j=0;j<i;j++){
-      char *tmp=strdup(inputs_as_text[j]);
+      char *tmp=zStrdup(inputs_as_text[j]);
       free(inputs_as_text[j]);
       char *tmpc;
       tmpc=strtok(tmp,"@");
@@ -1132,7 +1144,7 @@ int runRequest(map* request_inputs)
 	  if(tmpmaps == NULL){
 	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
-	  tmpmaps->name=strdup(tmpn);
+	  tmpmaps->name=zStrdup(tmpn);
 	  if(tmpv!=NULL){
 	    char *tmpvf=url_decode(tmpv+1);
 	    tmpmaps->content=createMap("value",tmpvf);
@@ -1165,7 +1177,7 @@ int runRequest(map* request_inputs)
 	    char *tmpValue=(char*)malloc((strlen(tmpv)+strlen(tmpc)+1)*sizeof(char));
 	    sprintf(tmpValue,"%s@%s",tmpv+1,tmpc);
 	    free(lmap->value);
-	    lmap->value=strdup(tmpValue);
+	    lmap->value=zStrdup(tmpValue);
 	    free(tmpValue);
 	    tmpc=strtok(NULL,"@");
 	    continue;
@@ -1180,7 +1192,8 @@ int runRequest(map* request_inputs)
 	    if(tmpv1!=NULL){
 	      char *tmpx2=url_decode(tmpv1+1);
 	      if(strncasecmp(tmpx2,"http://",7)!=0 &&
-		 strncasecmp(tmpx2,"ftp://",6)!=0){
+		 strncasecmp(tmpx2,"ftp://",6)!=0 &&
+		 strncasecmp(tmpx2,"https://",8)!=0){
 		char emsg[1024];
 		sprintf(emsg,_("Unable to find a valid protocol to download the remote file %s"),tmpv1+1);
 		errorException(m,emsg,"InternalError");
@@ -1302,7 +1315,7 @@ int runRequest(map* request_inputs)
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
-	      tmpmaps->name=strdup((char*)val);
+	      tmpmaps->name=zStrdup((char*)val);
 	      tmpmaps->content=NULL;
 	      tmpmaps->next=NULL;
 	    }
@@ -1320,7 +1333,7 @@ int runRequest(map* request_inputs)
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
-	      tmpmaps->name=strdup("missingIndetifier");
+	      tmpmaps->name=zStrdup("missingIndetifier");
 	      tmpmaps->content=createMap((char*)cur2->name,(char*)val);
 	      tmpmaps->next=NULL;
 	    }
@@ -1562,8 +1575,8 @@ int runRequest(map* request_inputs)
 		 * dataType , uom
 		 */
 		char *list[2];
-		list[0]=strdup("dataType");
-		list[1]=strdup("uom");
+		list[0]=zStrdup("dataType");
+		list[1]=zStrdup("uom");
 		for(int l=0;l<2;l++){
 #ifdef DEBUG
 		  fprintf(stderr,"*** LiteralData %s ***",list[l]);
@@ -1655,7 +1668,7 @@ int runRequest(map* request_inputs)
 		  }
 		}
 		free(tmpv->value);
-		tmpv->value=strdup(res);
+		tmpv->value=zStrdup(res);
 		free(res);
 		xmlFree(tmp);
 	      }
@@ -1740,7 +1753,7 @@ int runRequest(map* request_inputs)
 	  if(tmpmaps == NULL){
 	    return errorException(m, _("Unable to allocate memory."), "InternalError");
 	  }
-	  tmpmaps->name=strdup("unknownIdentifier");
+	  tmpmaps->name=zStrdup("unknownIdentifier");
 	  tmpmaps->content=NULL;
 	  tmpmaps->next=NULL;
 	}
@@ -1782,13 +1795,13 @@ int runRequest(map* request_inputs)
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
-	      tmpmaps->name=strdup((char*)val);
+	      tmpmaps->name=zStrdup((char*)val);
 	      tmpmaps->content=NULL;
 	      tmpmaps->next=NULL;
 	    }
 	    else{
 	      //free(tmpmaps->name);
-	      tmpmaps->name=strdup((char*)val);
+	      tmpmaps->name=zStrdup((char*)val);
 	    }
 	    if(asRaw==true)
 	      addToMap(request_inputs,"RawDataOutput",(char*)val);
@@ -1797,7 +1810,7 @@ int runRequest(map* request_inputs)
 		addToMap(request_inputs,"ResponseDocument",(char*)val);
 	      else{
 		map* tt=getMap(request_inputs,"ResponseDocument");
-		char* tmp=strdup(tt->value);
+		char* tmp=zStrdup(tt->value);
 		free(tt->value);
 		tt->value=(char*)malloc((strlen(tmp)+strlen((char*)val)+1)*sizeof(char));
 		sprintf(tt->value,"%s;%s",tmp,(char*)val);
@@ -1819,7 +1832,7 @@ int runRequest(map* request_inputs)
 	      if(tmpmaps == NULL){
 		return errorException(m, _("Unable to allocate memory."), "InternalError");
 	      }
-	      tmpmaps->name=strdup("missingIndetifier");
+	      tmpmaps->name=zStrdup("missingIndetifier");
 	      tmpmaps->content=createMap((char*)cur1->name,(char*)val);
 	      tmpmaps->next=NULL;
 	    }
@@ -1868,14 +1881,14 @@ int runRequest(map* request_inputs)
 		  if(tmpmaps == NULL){
 		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
-		  tmpmaps->name=strdup((char*)val);
+		  tmpmaps->name=zStrdup((char*)val);
 		  tmpmaps->content=NULL;
 		  tmpmaps->next=NULL;
 		}
 		else{
 		  if(tmpmaps->name!=NULL)
 		    free(tmpmaps->name);
-		  tmpmaps->name=strdup((char*)val);;
+		  tmpmaps->name=zStrdup((char*)val);;
 		}
 		xmlFree(val);
 	      }
@@ -1891,7 +1904,7 @@ int runRequest(map* request_inputs)
 		  if(tmpmaps == NULL){
 		    return errorException(m, _("Unable to allocate memory."), "InternalError");
 		  }
-		  tmpmaps->name=strdup("missingIndetifier");
+		  tmpmaps->name=zStrdup("missingIndetifier");
 		  tmpmaps->content=createMap((char*)cur2->name,(char*)val);
 		  tmpmaps->next=NULL;
 		}
@@ -2124,13 +2137,34 @@ int runRequest(map* request_inputs)
   int eres=SERVICE_STARTED;
   int cpid=getpid();
 
+  /**
+   * Initialize the specific [lenv] section which contains runtime variables:
+   * 
+   *  - usid : it is an unique identification number 
+   *  - sid : it is the process idenfitication number (OS)
+   *  - status : value between 0 and 100 to express the  completude of 
+   * the operations of the running service 
+   *  - message : is a string where you can store error messages, in case 
+   * service is failing, or o provide details on the ongoing operation.
+   *  - cwd : is the current working directory
+   *  - soap : is a boolean value, true if the request was contained in a SOAP 
+   * Envelop 
+   *  - sessid : string storing the session identifier (only when cookie is 
+   * used)
+   *  - cgiSid : only defined on Window platforms (for being able to identify 
+   * the created process)
+   *
+   */
   maps *_tmpMaps=(maps*)malloc(MAPS_SIZE);
-  _tmpMaps->name=strdup("lenv");
+  _tmpMaps->name=zStrdup("lenv");
   char tmpBuff[100];
-  sprintf(tmpBuff,"%i",cpid);
-  _tmpMaps->content=createMap("sid",tmpBuff);
+  sprintf(tmpBuff,"%i",(cpid+(int)time(NULL)));
+  _tmpMaps->content=createMap("usid",tmpBuff);
   _tmpMaps->next=NULL;
+  sprintf(tmpBuff,"%i",cpid);
+  addToMap(_tmpMaps->content,"sid",tmpBuff);
   addToMap(_tmpMaps->content,"status","0");
+  addToMap(_tmpMaps->content,"message",_("No message provided"));
   addToMap(_tmpMaps->content,"cwd",ntmp);
   map* ltmp=getMap(request_inputs,"soap");
   if(ltmp!=NULL)
@@ -2139,12 +2173,12 @@ int runRequest(map* request_inputs)
     addToMap(_tmpMaps->content,"soap","false");
   if(cgiCookie!=NULL && strlen(cgiCookie)>0){
     int hasValidCookie=-1;
-    char *tcook=strdup(cgiCookie);
+    char *tcook=zStrdup(cgiCookie);
     char *tmp=NULL;
     int hasVal=-1;
     map* testing=getMapFromMaps(m,"main","cookiePrefix");
     if(testing==NULL){
-      tmp=strdup("ID=");
+      tmp=zStrdup("ID=");
     }else{
       tmp=(char*)malloc((strlen(testing->value)+2)*sizeof(char));
       sprintf(tmp,"%s=",testing->value);
@@ -2157,14 +2191,14 @@ int runRequest(map* request_inputs)
 	if(strcasestr(token,tmp)!=NULL){
 	  if(tcook!=NULL)
 	    free(tcook);
-	  tcook=strdup(token);
+	  tcook=zStrdup(token);
 	  hasValidCookie=1;
 	}
 	token=strtok_r(NULL,";",&saveptr);
       }
     }else{
       if(strstr(cgiCookie,"=")!=NULL && strcasestr(cgiCookie,tmp)!=NULL){
-	tcook=strdup(cgiCookie);
+	tcook=zStrdup(cgiCookie);
 	hasValidCookie=1;
       }
       if(tmp!=NULL){

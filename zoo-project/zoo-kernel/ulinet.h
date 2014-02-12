@@ -25,7 +25,7 @@
 #ifndef _ULINET_H
 #define _ULINET_H
 
-#include "fcgi_stdio.h"
+#include "stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
@@ -36,7 +36,7 @@
 #include "time.h"
 #ifdef USE_JS
 #ifdef WIN32
-# define XP_WIN
+#define XP_WIN 1
 #else
 #define XP_UNIX 0
 #endif
