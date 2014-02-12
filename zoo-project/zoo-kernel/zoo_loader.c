@@ -85,7 +85,7 @@ int cgiMain(){
   
   char *strQuery=NULL;
   if(cgiQueryString!=NULL)
-    strQuery=strdup(cgiQueryString);
+    strQuery=zStrdup(cgiQueryString);
   map* tmpMap=NULL;
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
@@ -103,7 +103,7 @@ int cgiMain(){
 	 }
 	 else{
 	   res=(char*)realloc(res,(cgiContentLength+1)*sizeof(char));
-	   char *tmp=strdup(res);
+	   char *tmp=zStrdup(res);
 	   sprintf(res,"%s%s",tmp,buffer);
 	   free(tmp);
 	 }
@@ -135,7 +135,7 @@ int cgiMain(){
 	  if(strlen(buffer)==0){
 	    sprintf(buffer,"%s",tmpValueFinal);
 	  }else{
-	    char *tmp=strdup(buffer);
+	    char *tmp=zStrdup(buffer);
 	    sprintf(buffer,"%s&%s",tmp,tmpValueFinal);
 	    free(tmp);
 	  }
@@ -239,7 +239,7 @@ int cgiMain(){
 	  fprintf(stderr,"%i",req->nodeNr);
 #endif
 	  if(req!=NULL && req->nodeNr==1){
-	    t1->value=strdup(requests[j]);
+	    t1->value=zStrdup(requests[j]);
 	    j=2;
 	  }
 	  xmlXPathFreeObject(reqptr);
@@ -270,7 +270,7 @@ int cgiMain(){
 	    for(int k=0;k<id->nodeNr;k++){
 	      xmlChar* content=xmlNodeListGetString(doc, id->nodeTab[k]->xmlChildrenNode,1);
 	      if(strlen(identifiers)>0){
-		char *tmp=strdup(identifiers);
+		char *tmp=zStrdup(identifiers);
 		snprintf(identifiers,strlen(tmp)+xmlStrlen(content)+2,"%s,%s",tmp,content);
 		free(tmp);
 	      }
@@ -302,9 +302,9 @@ int cgiMain(){
       token1=strtok_r(token,"=",&saveptr1);
       while(token1!=NULL){
 	if(name==NULL)
-	  name=strdup(token1);
+	  name=zStrdup(token1);
 	else
-	  value=strdup(token1);
+	  value=zStrdup(token1);
 	token1=strtok_r(NULL,"=",&saveptr1);
       }
       addToMap(tmpMap,name,value);

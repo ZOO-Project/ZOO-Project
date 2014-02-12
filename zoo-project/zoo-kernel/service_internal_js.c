@@ -482,7 +482,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	len1 = JS_GetStringLength(jsmsg);
 
 	tres=(maps*)malloc(MAPS_SIZE);
-	tres->name=strdup(JS_EncodeString(cx,jsmsg));
+	tres->name=zStrdup(JS_EncodeString(cx,jsmsg));
 	tres->content=NULL;
 	tres->next=NULL;
 
@@ -577,12 +577,12 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	  fprintf(stderr,"JSVAL NVP1J IS OBJECT %s = %s\n",JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
 #endif
 	  if(strcasecmp(JS_EncodeString(cx,jsmsg1),"[object Object]")==0){
-	    tres->name=strdup(JS_EncodeString(cx,jsmsg));
+	    tres->name=zStrdup(JS_EncodeString(cx,jsmsg));
 	    tres->content=mapFromJSObject(cx,nvp1j);
 	  }
 	  else
 	    if(strcasecmp(JS_EncodeString(cx,jsmsg),"name")==0){
-	      tres->name=strdup(JS_EncodeString(cx,jsmsg1));
+	      tres->name=zStrdup(JS_EncodeString(cx,jsmsg1));
 	    }
 	    else{
 	      if(tres->content==NULL)
@@ -774,7 +774,7 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     url=JSValToChar(cx,&argv[1]);
   }
   else{
-    method=strdup("GET");
+    method=zStrdup("GET");
     url=JSValToChar(cx,argv);
   }
   if(argc==4){

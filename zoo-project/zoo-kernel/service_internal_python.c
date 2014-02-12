@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2013 GeoLabs SARL
+ * Copyright (c) 2009-2014 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,13 @@ struct module_state {
 
 #if PY_MAJOR_VERSION >= 3
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#define PyInt_FromLong PyLong_FromLong
+#define PyInt_AsLong PyLong_AsLong
+#define PyString_FromString PyUnicode_FromString
+#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
+#define PyString_Check PyUnicode_Check
+#define	PyString_AsString _PyUnicode_AsString
+#define	PyString_Size PyUnicode_GetSize
 #else
 #define GETSTATE(m) (&_state)
 static struct module_state _state;
@@ -87,19 +94,11 @@ PyMODINIT_FUNC init_zoo(){
   struct module_state *st = GETSTATE(module);
 
   d = PyModule_GetDict(module);
-#if PY_MAJOR_VERSION >= 3
-  tmp = PyLong_FromLong(3);
-#else
   tmp = PyInt_FromLong(3);
-#endif
   PyDict_SetItemString(d, "SERVICE_SUCCEEDED", tmp);
   Py_DECREF(tmp);
 
-#if PY_MAJOR_VERSION >= 3
-  tmp = PyLong_FromLong(4);
-#else
   tmp = PyInt_FromLong(4);
-#endif
   PyDict_SetItemString(d, "SERVICE_FAILED", tmp);
   Py_DECREF(tmp);
 
@@ -190,12 +189,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyObject *pName, *pModule, *pFunc;
   tmp=getMap(s->content,"serviceProvider");
   if(tmp!=NULL)
-    pName = 
-#if PY_MAJOR_VERSION >= 3
-      PyUnicode_FromString(tmp->value);
-#else
-      PyString_FromString(tmp->value);
-#endif
+    pName = PyString_FromString(tmp->value);
   else{
     map* err=createMap("text","Unable to parse serviceProvider please check your zcfg file.");
     addToMap(err,"code","NoApplicableCode");
@@ -217,18 +211,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
       PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
       PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
-      tmp=getMap(request,"storeExecuteResponse");
-#ifdef DEBUG
-      fprintf(stderr,"RUN IN NORMAL MODE \n");
-      fflush(stderr);
-#endif
       pValue = PyObject_CallObject(pFunc, pArgs);
       if (pValue != NULL) {
-#if PY_MAJOR_VERSION >= 3
-	res=PyLong_AsLong(pValue);
-#else
 	res=PyInt_AsLong(pValue);
-#endif
 	freeMaps(real_outputs);
 	free(*real_outputs);
 	freeMaps(main_conf);
@@ -236,11 +221,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	*main_conf=mapsFromPyDict(arg1);
 	*real_outputs=mapsFromPyDict(arg3);
 #ifdef DEBUG
-#if PY_MAJOR_VERSION >= 3
-	fprintf(stderr,"Result of call: %i\n", PyLong_AsLong(pValue));
-#else
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
-#endif
 	dumpMaps(inputs);
 	dumpMaps(*real_outputs);
 #endif
@@ -249,39 +230,22 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	PyObject *trace=PyObject_Str(pvalue);
 	char pbt[10240];
-#if PY_MAJOR_VERSION >= 3
-	if(PyUnicode_Check(trace))
-	  sprintf(pbt,"TRACE : %s",_PyUnicode_AsString(trace));
-#else
 	if(PyString_Check(trace))
 	  sprintf(pbt,"TRACE : %s",PyString_AsString(trace));
-#endif
 	else
 	  fprintf(stderr,"EMPTY TRACE ?");
 	trace=NULL;
 	trace=PyObject_Str(ptype);
-#if PY_MAJOR_VERSION >= 3
-	if(PyUnicode_Check(trace)){
-#else
 	if(PyString_Check(trace)){
-#endif
-	  char *tpbt=strdup(pbt);
-#if PY_MAJOR_VERSION >= 3
-	  sprintf(pbt,"%s\n%s\0",tpbt,_PyUnicode_AsString(trace));
-#else
+	  char *tpbt=zStrdup(pbt);
 	  sprintf(pbt,"%s\n%s\0",tpbt,PyString_AsString(trace));
-#endif
 	  free(tpbt);
 	}
 	else
 	  fprintf(stderr,"EMPTY TRACE ?");
 	
-	char *tpbt=strdup(pbt);
-#if PY_MAJOR_VERSION >= 3
-	pName = PyUnicode_FromString("traceback");
-#else
+	char *tpbt=zStrdup(pbt);
 	pName = PyString_FromString("traceback");
-#endif
 	pModule = PyImport_Import(pName);
 	pArgs = PyTuple_New(1);
 	PyTuple_SetItem(pArgs, 0, ptraceback);
@@ -289,13 +253,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	pValue = PyObject_CallObject(pFunc, pArgs);
 	trace=NULL;
 	trace=PyObject_Str(pValue);
-#if PY_MAJOR_VERSION >= 3
-	if(PyUnicode_Check(trace))
-	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",tpbt,_PyUnicode_AsString(trace));
-#else
 	if(PyString_Check(trace))
 	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",tpbt,PyString_AsString(trace));
-#endif
 	else
 	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations. %s",tpbt);
 	free(tpbt);
@@ -337,12 +296,7 @@ PyDictObject* PyDict_FromMaps(maps* t){
   maps* tmp=t;
   while(tmp!=NULL){
     PyObject* value=(PyObject*)PyDict_FromMap(tmp->content);
-    PyObject* name=
-#if PY_MAJOR_VERSION >= 3
-      PyUnicode_FromString(tmp->name);
-#else
-      PyString_FromString(tmp->name);
-#endif
+    PyObject* name=PyString_FromString(tmp->name);
     if(PyDict_SetItem(res,name,value)<0){
       fprintf(stderr,"Unable to set map value ...");
       return NULL;
@@ -361,12 +315,7 @@ PyDictObject* PyDict_FromMap(map* t){
   map* size=getMap(tmp,"size");
   map* tmap=getMapType(tmp);
   while(tmp!=NULL){
-    PyObject* name=
-#if PY_MAJOR_VERSION >= 3
-      PyUnicode_FromString(tmp->name);
-#else
-      PyString_FromString(tmp->name);
-#endif
+    PyObject* name=PyString_FromString(tmp->name);
     if(strcasecmp(tmp->name,"value")==0) {
       if(isArray!=NULL){
 	map* len=getMap(tmp,"length");
@@ -385,21 +334,12 @@ PyDictObject* PyDict_FromMap(map* t){
 	    PyObject* lvalue;
 	    PyObject* lsvalue;
 	    if(sMap==NULL){
-#if PY_MAJOR_VERSION >= 3
-	      lvalue=PyUnicode_FromString(vMap->value);
-#else
 	      lvalue=PyString_FromString(vMap->value);
-#endif
 	      lsvalue=Py_None;
 	    }
-	    else{
-#if PY_MAJOR_VERSION >= 3
-	      lvalue=PyUnicode_FromStringAndSize(vMap->value,atoi(sMap->value));
-	      lsvalue=PyUnicode_FromString(sMap->value);
-#else
+	    else{    
 	      lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
 	      lsvalue=PyString_FromString(sMap->value);
-#endif
 	      hasSize=1;
 	    }
 
@@ -416,11 +356,7 @@ PyDictObject* PyDict_FromMap(map* t){
 	  map* mMap=getMapArray(tmp,tmap->name,i);
 	  PyObject* lmvalue;
 	  if(mMap!=NULL){
-#if PY_MAJOR_VERSION >= 3
-	    lmvalue=PyUnicode_FromString(mMap->value);
-#else
 	    lmvalue=PyString_FromString(mMap->value);
-#endif
 	  }else
 	    lmvalue=Py_None;
 	  
@@ -435,43 +371,25 @@ PyDictObject* PyDict_FromMap(map* t){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
-#if PY_MAJOR_VERSION >= 3
-	if(PyDict_SetItem(res,PyUnicode_FromString(tmap->name),mvalue)<0){
-#else
 	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
-#endif
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
 	if(hasSize>0)
-#if PY_MAJOR_VERSION >= 3
-	  if(PyDict_SetItem(res,PyUnicode_FromString("size"),svalue)<0){
-#else
 	  if(PyDict_SetItem(res,PyString_FromString("size"),svalue)<0){
-#endif
 	    fprintf(stderr,"Unable to set key value pair...");
 	    return NULL;
 	  }
       }
       else if(size!=NULL){
-	PyObject* value=
-#if PY_MAJOR_VERSION >= 3
-	  PyUnicode_FromStringAndSize(tmp->value,atoi(size->value));
-#else
-	  PyString_FromStringAndSize(tmp->value,atoi(size->value));
-#endif
+	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
       }
       else{
-	PyObject* value=
-#if PY_MAJOR_VERSION >= 3
-	  PyUnicode_FromString(tmp->value);
-#else
-	  PyString_FromString(tmp->value);
-#endif
+	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
@@ -480,12 +398,7 @@ PyDictObject* PyDict_FromMap(map* t){
     }
     else{
       if(PyDict_GetItem(res,name)==NULL){
-	PyObject* value=
-#if PY_MAJOR_VERSION >= 3
-	  PyUnicode_FromString(tmp->value);
-#else
-	  PyString_FromString(tmp->value);
-#endif
+	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
@@ -515,11 +428,7 @@ maps* mapsFromPyDict(PyDictObject* t){
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
     cursor=(maps*)malloc(MAPS_SIZE);
-#if PY_MAJOR_VERSION >= 3
-    cursor->name=_PyUnicode_AsString(key);
-#else
     cursor->name=PyString_AsString(key);
-#endif
     cursor->content=mapFromPyDict((PyDictObject*)value);
 #ifdef DEBUG
     dumpMap(cursor->content);
@@ -552,11 +461,8 @@ map* mapFromPyDict(PyDictObject* t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-#if PY_MAJOR_VERSION >= 3
-    if(strcmp(_PyUnicode_AsString(key),"value")==0){
-#else
+    
     if(strcmp(PyString_AsString(key),"value")==0){
-#endif
       char *buffer=NULL;
       Py_ssize_t size;
 #if PY_MAJOR_VERSION >= 3
@@ -565,17 +471,9 @@ map* mapFromPyDict(PyDictObject* t){
       PyString_AsStringAndSize(value,&buffer,&size);
 #endif
       if(res!=NULL){
-#if PY_MAJOR_VERSION >= 3
-	addToMap(res,_PyUnicode_AsString(key),"");
-#else
 	addToMap(res,PyString_AsString(key),"");
-#endif
       }else{
-#if PY_MAJOR_VERSION >= 3
-	res=createMap(_PyUnicode_AsString(key),"");
-#else
 	res=createMap(PyString_AsString(key),"");
-#endif
       }
       map* tmpR=getMap(res,"value");
       free(tmpR->value);
@@ -588,20 +486,11 @@ map* mapFromPyDict(PyDictObject* t){
     }else{
       if(res!=NULL){
 	if(PyString_Size(value)>0)
-#if PY_MAJOR_VERSION >= 3
-	  addToMap(res,_PyUnicode_AsString(key),_PyUnicode_AsString(value));
-#else
 	  addToMap(res,PyString_AsString(key),PyString_AsString(value));
-#endif
       }
       else{
 	if(PyString_Size(value)>0)
-	  res=
-#if PY_MAJOR_VERSION >= 3
-	    createMap(_PyUnicode_AsString(key),_PyUnicode_AsString(value));
-#else
-	    createMap(PyString_AsString(key),PyString_AsString(value));
-#endif
+	  res=createMap(PyString_AsString(key),PyString_AsString(value));
       }
     }
   }
@@ -618,11 +507,7 @@ PythonTranslate(PyObject* self, PyObject* args)
 #endif
     return NULL;
   }
-#if PY_MAJOR_VERSION >= 3
-  return PyUnicode_FromString(_ss(str));
-#else
   return PyString_FromString(_ss(str));
-#endif
 }
 
 PyObject*
@@ -644,18 +529,13 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
   }else{
      char tmpStatus[4];
      snprintf(tmpStatus, 4, "%i", istatus);
-     status = strdup(tmpStatus);
+     status = zStrdup(tmpStatus);
   }
   /* now update the map */
   {
     PyObject* lenv = PyMapping_GetItemString(confdict, "lenv");
     if (lenv && PyMapping_Check(lenv)){
-      PyObject* valobj = 
-#if PY_MAJOR_VERSION >= 3
-	PyUnicode_FromString(status);
-#else
-	PyString_FromString(status);
-#endif
+      PyObject* valobj = PyString_FromString(status);
       PyMapping_SetItemString(lenv, "status", valobj);
       Py_DECREF(valobj);
     }

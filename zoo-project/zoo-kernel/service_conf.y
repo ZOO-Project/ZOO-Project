@@ -282,7 +282,7 @@ STag
 	      addMapToMap(&current_element->metadata,current_content);
 	      current_element->next=NULL;
 	      if($2!=NULL)
-		current_element->format=strdup($2);
+		current_element->format=zStrdup($2);
 	      
 	      current_element->defaults=NULL;
 	      current_element->supported=NULL;
@@ -297,7 +297,7 @@ STag
 	    current_element->metadata=NULL;
 	    current_element->next=NULL;
 	    if($2!=NULL)
-	      current_element->format=strdup($2);
+	      current_element->format=zStrdup($2);
 	    current_element->defaults=NULL;
 	    current_element->supported=NULL;
 	  }
@@ -548,7 +548,7 @@ pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free
     curr_key=NULL;
   }
   }
-| SPAIR  { if(curr_key!=NULL) {free(curr_key);curr_key=NULL;} if($1!=NULL) curr_key=strdup($1);if(debug) fprintf(stderr,"SPAIR FOUND !!\n"); }
+| SPAIR  { if(curr_key!=NULL) {free(curr_key);curr_key=NULL;} if($1!=NULL) curr_key=zStrdup($1);if(debug) fprintf(stderr,"SPAIR FOUND !!\n"); }
  ;
 
 
@@ -560,7 +560,7 @@ processid
   if(data==-1){
     data=1;
     if($1!=NULL){
-      char *cen=strdup($1);
+      char *cen=zStrdup($1);
       my_service->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
       cen[strlen(cen)-1]=0;
       cen+=1;
@@ -614,7 +614,7 @@ processid
 	fprintf(stderr,"(DATAINPUTS - 501) SET NAME OF current_element\n");
 #endif
 	if($1!=NULL){ 
-	  char *cen=strdup($1);
+	  char *cen=zStrdup($1);
 	  current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
 	  cen[strlen(cen)-1]=0;
 	  cen+=1;
@@ -676,7 +676,7 @@ processid
 	    fprintf(stderr,"(DATAOUTPUTS - %d) SET NAME OF current_element\n",__LINE__);
 #endif
 	    if($1!=NULL){ 
-	      char *cen=strdup($1);
+	      char *cen=zStrdup($1);
 	      current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
 	      cen[strlen(cen)-1]=0;
 	      cen+=1;
@@ -708,7 +708,7 @@ processid
 	    free(current_element);
 	    current_element=NULL;
 	    current_element=(elements*)malloc(ELEMENTS_SIZE);
-	    char *cen=strdup($1);
+	    char *cen=zStrdup($1);
 	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
 	    cen[strlen(cen)-1]=0;
 	    cen+=1;
@@ -728,7 +728,7 @@ processid
 	    fprintf(stderr,"(DATAOUTPUTS - %d) SET NAME OF current_element %s\n",__LINE__,$1);
 #endif
 	    if($1!=NULL){ 
-	      char *cen=strdup($1);
+	      char *cen=zStrdup($1);
 	      current_element->name=(char*)malloc((strlen(cen))*sizeof(char*));
 	      cen[strlen(cen)-1]=0;
 #ifdef DEBUG

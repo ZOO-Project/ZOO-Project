@@ -42,6 +42,9 @@ service_internal_js.obj: service_internal_js.c service.h
 service_internal_java.obj: service_internal_java.c service.h
 	$(CPP) /c $(CFLAGS) service_internal_java.c
 
+service_internal_ruby.obj: service_internal_ruby.c service_internal_ruby.h service.h
+	$(CPP) /c $(CFLAGS) service_internal_ruby.c
+
 service_internal_python.obj: service_internal_python.c service.h
 	$(CPP) /c $(CFLAGS) service_internal_python.c
 
@@ -60,8 +63,8 @@ zoo_loader.obj: zoo_loader.c service.h
 dirent.obj:
 	$(CPP) /EHsc /c $(CFLAGS) ..\..\thirds\dirent-win32\dirent.c
 
-zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
-	link zoo_loader.obj dirent.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS) $(LDFLAGSCGI)
+zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
+	link zoo_loader.obj dirent.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS) $(LDFLAGSCGI)
 
 clean:
 	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling
