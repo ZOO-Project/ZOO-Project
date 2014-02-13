@@ -2375,7 +2375,7 @@ int runRequest(map* request_inputs)
     fseek(f2,0,SEEK_SET);
     char *tmps1=(char*)malloc((flen+1)*sizeof(char));
     fread(tmps1,flen,1,f2);
-    fwrite(tmps1,1,flen,f3);
+    fwrite(tmps1,1,flen+1,f3);
     fclose(f2);
     fclose(f3);
     unlink(fbkp1);

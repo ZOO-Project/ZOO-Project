@@ -42,6 +42,8 @@
 #else
 #define zStrdup strdup
 #define zMkdir mkdir
+#define zOpen open
+#define zWrite write
 #endif 
 
 #ifdef __cplusplus
