@@ -113,7 +113,7 @@ int cgiMain(){
        }else{
 	 if(strQuery==NULL || strlen(strQuery)==0)
 	   tmpMap=createMap("request",res);
-       }
+            }
     }else{
       char *buffer=new char[cgiContentLength+1];
       int r=0;
@@ -176,13 +176,32 @@ int cgiMain(){
     cgiStringArrayFree(array);
   }
 
+#ifdef WIN32
+  map *tmpReq=getMap(tmpMap,"rfile");
+  if(tmpReq!=NULL){
+    FILE *lf=fopen(tmpReq->value,"r");
+    fseek(lf,0,SEEK_END);
+    long flen=ftell(lf);
+    fseek(lf,0,SEEK_SET);
+    char *buffer=(char*)malloc((flen+1)*sizeof(char));
+    fread(buffer,flen,1,lf);
+    fclose(lf);
+    addToMap(tmpMap,"request",buffer);
+    free(buffer);
+    cgiContentLength=flen+9;
+  }
+#endif
   /**
    * In case that the POST method was used, then check if params came in XML
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
   if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
-     (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0)){
+     (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
+#ifdef WIN32
+     ||tmpReq!=NULL
+#endif
+     ){
     /**
      * First include the MetaPath and the ServiceProvider default parameters
      * (which should be always available in GET params so in cgiQueryString)

@@ -543,7 +543,6 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
   }
   conf = mapsFromPyDict((PyDictObject*)confdict);
   if (getMapFromMaps(conf,"lenv","status") != NULL){
-    fprintf(stderr,"STATUS RETURNED : %s\n",status);
     if(status!=NULL){
       setMapInMaps(conf,"lenv","status",status);
       free(status);
