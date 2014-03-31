@@ -922,22 +922,21 @@ void outputMapfile(maps* conf,maps* outputs){
   if(mime!=NULL)
     if(strncasecmp(mime->value,"application/json",16)==0)
       ext="json";
-  
+
   map* tmpMap=getMapFromMaps(conf,"main","dataPath");
   map* sidMap=getMapFromMaps(conf,"lenv","usid");
   char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
-  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext);
-  int f=open(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext); 
+  int f=zOpen(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   map* sizeMap=getMap(outputs->content,"size");
   map* vData=getMap(outputs->content,"value");
   if(sizeMap!=NULL){
-    write(f,vData->value,atoi(sizeMap->value)*sizeof(char));
+    zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char));
   }
   else{
-    write(f,vData->value,strlen(vData->value)*sizeof(char));
+    zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char));
   }
   close(f);
-  //exit(-1);
   addToMap(outputs->content,"storage",pszDataSource);
 
   /*
@@ -1089,7 +1088,7 @@ void outputMapfile(maps* conf,maps* outputs){
 
   map* sid=getMapFromMaps(conf,"lenv","usid");
   char *mapPath=
-    (char*)malloc((16+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
+    (char*)malloc((7+strlen(sid->value)+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
   sprintf(mapPath,"%s/%s_%s.map",tmp1->value,outputs->name,sid->value);
   msSaveMap(myMap,mapPath);
   msFreeMap(myMap);

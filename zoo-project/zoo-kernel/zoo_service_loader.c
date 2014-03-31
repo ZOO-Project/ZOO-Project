@@ -477,10 +477,11 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
     r_inputs2=getMap(request_inputs,"RawDataOutput");
   map *tmpPath=getMapFromMaps(m,"lenv","cwd");
 
+  map *tmpReq=getMap(request_inputs,"xrequest");
   if(r_inputs2!=NULL){
     sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP,sid->value);
     sprintf(tmpq,"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",r_inputs1->value,req->value,id->value,dataInputsKVP,r_inputs2->name,dataOutputsKVP);
-    }
+  }
   else{
     sprintf(tmp,"\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s\"",r_inputs1->value,req->value,id->value,dataInputsKVP,sid->value);
     sprintf(tmpq,"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",r_inputs1->value,req->value,id->value,dataInputsKVP,sid->value);
@@ -491,7 +492,7 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
     free(r_inputs1);
   }
   char *tmp1=zStrdup(tmp);
-  sprintf(tmp,"zoo_loader.cgi %s \"%s\"",tmp1,sid->value);
+  sprintf(tmp,"\"zoo_loader.cgi\" %s \"%s\"",tmp1,sid->value);
   
   free(dataInputsKVP);
   free(dataOutputsKVP);
@@ -503,7 +504,7 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
   char clen[1000];
   sprintf(clen,"%d",strlen(tmpq));
   SetEnvironmentVariable("CONTENT_LENGTH",TEXT(clen));
-
+  
   if( !CreateProcess( NULL,             // No module name (use command line)
 		      TEXT(tmp),        // Command line
 		      NULL,             // Process handle not inheritable
@@ -516,20 +517,17 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
 		      &pi )             // Pointer to PROCESS_INFORMATION struct
       ) 
     { 
-      //printf("CreateProcess failed (%d).\n",GetLastError() );
 #ifdef DEBUG
       fprintf( stderr, "CreateProcess failed (%d).\n", GetLastError() );
 #endif
       return ;
     }else{
-    //printf("CreateProcess successfull (%d).\n",GetLastError() );
 #ifdef DEBUG
     fprintf( stderr, "CreateProcess successfull (%d).\n\n\n\n", GetLastError() );
 #endif
   }
   CloseHandle( pi.hProcess );
   CloseHandle( pi.hThread );
-  //printf("CreateProcess finished !\n");
 #ifdef DEBUG
   fprintf(stderr,"CreateProcess finished !\n");
 #endif
@@ -599,7 +597,7 @@ int runRequest(map* request_inputs)
   FILE * fstde=NULL;
   map* fstdem=getMapFromMaps(m,"main","logPath");
   if(fstdem!=NULL)
-	fstde = freopen(fstdem->value, "a+", stderr) ;
+    fstde = freopen(fstdem->value, "a+", stderr) ;
 
   r_inputs=getMap(request_inputs,"language");
   if(r_inputs==NULL)
@@ -2246,7 +2244,6 @@ int runRequest(map* request_inputs)
     addToMap(request_inputs,"status","true");
     setMapInMaps(m,"lenv","sid",test1->value);
     status=getMap(request_inputs,"status");
-    printf("cgiSid %s\n",cgiSid);
   }
 #endif
   int hrstd=-1;
@@ -2273,10 +2270,7 @@ int runRequest(map* request_inputs)
     }else{
       pid=0;
       cpid=atoi(cgiSid);
-      printf("cgiSid %s\n",cgiSid);
     }
-    //printf("pid cpid %d %d\n",pid,cpid);
-    //fflush(stderr);
 #endif
     if (pid > 0) {
       /**
@@ -2303,9 +2297,11 @@ int runRequest(map* request_inputs)
       fprintf(stderr,"son pid continue (origin %d) %d ...\n",cpid,getpid());
       fprintf(stderr,"\nFILE TO STORE DATA %s\n",r_inputs->value);
 #endif
-      freopen(flog,"w+",stderr);
+      freopen(flog, "w+", stderr);
       f0=freopen(fbkp , "w+", stdout);
+#ifndef WIN32
       fclose(stdin);
+#endif
       free(flog);
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
@@ -2358,7 +2354,7 @@ int runRequest(map* request_inputs)
   (void) signal(SIGABRT,donothing);
 #endif
 
-  if(((int)getpid())!=cpid){
+  if(((int)getpid())!=cpid || cgiSid!=NULL){
     fclose(stdout);
     fclose(stderr);
     unhandleStatus(m);
@@ -2375,7 +2371,7 @@ int runRequest(map* request_inputs)
     fseek(f2,0,SEEK_SET);
     char *tmps1=(char*)malloc((flen+1)*sizeof(char));
     fread(tmps1,flen,1,f2);
-    fwrite(tmps1,1,flen+1,f3);
+    fwrite(tmps1,1,flen,f3);
     fclose(f2);
     fclose(f3);
     unlink(fbkp1);

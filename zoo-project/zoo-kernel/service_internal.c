@@ -286,7 +286,6 @@ JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
     status=strdup(tmpStatus);
   }
   if(getMapFromMaps(conf,"lenv","status")!=NULL){
-    fprintf(stderr,"STATUS RETURNED : %s\n",status);
     if(status!=NULL){
       setMapInMaps(conf,"lenv","status",status);
       free(status);
@@ -1640,6 +1639,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	 || (tmp2!=NULL && (strncmp(tmp2->value,"image/",6)==0 ||
 			    (strncmp(tmp2->value,"application/",12)==0) &&
 			    strncmp(tmp2->value,"application/json",16)!=0&&
+			    strncmp(tmp2->value,"application/x-javascript",24)!=0&&
 			    strncmp(tmp2->value,"application/vnd.google-earth.kml",32)!=0)
 	     )) {
 	map* rs=getMap(m->content,"size");
@@ -2003,11 +2003,12 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	map *tmp2=getMapFromMaps(m,"main","tmpUrl");
 	map *tmp3=getMapFromMaps(m,"main","serverAddress");
 	char *file_url;
-	if(strncasecmp(tmp2->value,"http://",7)==0){
-	  file_url=(char*)malloc((strlen(tmp2->value)+strlen(file_name))*sizeof(char));
+	if(strncasecmp(tmp2->value,"http://",7)==0 ||
+	   strncasecmp(tmp2->value,"https://",8)==0){
+	  file_url=(char*)malloc((strlen(tmp2->value)+strlen(file_name)+2)*sizeof(char));
 	  sprintf(file_url,"%s/%s",tmp2->value,file_name);
 	}else{
-	  file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(file_name))*sizeof(char));
+	  file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(file_name)+3)*sizeof(char));
 	  sprintf(file_url,"%s/%s/%s",tmp3->value,tmp2->value,file_name);
 	}
 	addToMap(tmpI->content,"Reference",file_url);
