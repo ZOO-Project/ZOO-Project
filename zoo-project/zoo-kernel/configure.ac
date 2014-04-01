@@ -67,6 +67,48 @@ AC_SUBST([GDAL_CFLAGS])
 AC_SUBST([GDAL_LIBS])
 
 # ===========================================================================
+# Detect if fastcgi is available
+# ===========================================================================
+
+AC_ARG_WITH([fastcgi],
+        [AS_HELP_STRING([--with-fastcgi=PATH], [specify an alternative location for the fastcgi library])],
+        [FCGIPATH="$withval"], [FCGIPATH=""])
+
+# Extract the linker and include flags
+FCGI_LDFLAGS="-L$FCGIPATH/lib"
+FCGI_CPPFLAGS="-I$FCGIPATH/include"
+
+# Check headers file
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$FCGI_CPPFLAGS"
+AC_CHECK_HEADERS([fcgi_stdio.h],
+                 [], [AC_MSG_ERROR([could not find headers include related to fastcgi])])
+
+AC_SUBST([FCGI_CPPFLAGS])
+AC_SUBST([FCGI_LDFLAGS])
+
+# ===========================================================================
+# Detect if proj is installed
+# ===========================================================================
+
+AC_ARG_WITH([proj],
+        [AS_HELP_STRING([--with-proj=PATH], [specify an alternative location for PROJ4 setup])],
+        [PROJPATH="$withval"], [PROJPATH=""])
+
+# Extract the linker and include flags
+PROJ_LDFLAGS="-L$PROJPATH/lib"
+PROJ_CPPFLAGS="-I$PROJPATH/include"
+
+# Check headers file
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$PROJ_CPPFLAGS"
+AC_CHECK_HEADERS([proj_api.h],
+                 [], [AC_MSG_ERROR([could not find headers include related to PROJ4])])
+
+AC_SUBST([PROJ_CPPFLAGS])
+AC_SUBST([PROJ_LDFLAGS])
+
+# ===========================================================================
 # Detect if libxml2 is installed
 # ===========================================================================
 
@@ -153,6 +195,45 @@ AC_SUBST([MS_LIBS])
 AC_SUBST([MS_FILE])
 
 # ===========================================================================
+# Detect if ruby is installed
+# ===========================================================================
+AC_ARG_WITH([ruby], 
+	[AS_HELP_STRING([--with-ruby=PATH], [To enable ruby support or specify an alternative directory for ruby installation,  disabled by default])], 
+	[RUBY_PATH="$withval"; RUBY_ENABLED="-DUSE_RUBY"], [RUBY_ENABLED=""])
+
+AC_ARG_WITH([rvers], 
+	[AS_HELP_STRING([--with-rvers=NUM], [To use a specific ruby version])], 
+	[RUBY_VERS="$withval"], [RUBY_VERS=""])
+
+
+if test -z "$RUBY_ENABLED"
+then
+	RUBY_FILE=""
+else
+	RUBY_FILE="service_internal_ruby.o"
+
+	# Extract the linker and include flags 
+	RUBY_LDFLAGS="-lruby"
+	RUBY_CPPFLAGS="-I$RUBY_PATH -I$RUBY_PATH/x86_64-darwin13.0/ -DZRUBY_VERSION=$RUBY_VERS"
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$RUBY_CPPFLAGS"
+	AC_CHECK_HEADERS([ruby.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libruby])])
+
+	# Ensure we can link against libphp
+	LIBS_SAVE="$LIBS"
+	LIBS="$RUBY_LDFLAGS"
+	# AC_CHECK_LIB([lruby], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	AC_SUBST([RUBY_CPPFLAGS])
+	AC_SUBST([RUBY_LDFLAGS])
+fi
+
+AC_SUBST([RUBY_ENABLED])
+AC_SUBST([RUBY_FILE])
+
+# ===========================================================================
 # Detect if python is installed
 # ===========================================================================
 
@@ -186,7 +267,7 @@ else
 
 	# Extract the linker and include flags 
 	PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
-	PYTHON_CPPFLAGS=`$PYTHONCONFIG --cflags`
+	PYTHON_CPPFLAGS=`$PYTHONCONFIG --includes`
 
 	# Check headers file
 	CPPFLAGS_SAVE="$CPPFLAGS"

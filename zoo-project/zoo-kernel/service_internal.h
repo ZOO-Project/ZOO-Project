@@ -131,7 +131,7 @@ extern "C" {
 
   char* addDefaultValues(maps**,elements*,maps*,int);
 
-  int errorException(maps *m, const char *message, const char *errorcode);
+  int errorException(maps *, const char *, const char *, const char*);
 
   int checkForSoapEnvelope(xmlDocPtr);
 

@@ -130,6 +130,10 @@ LiteralData node
 
 A ``<LiteralData>`` node contains:
 
+- one (optional) ``AllowedValues`` key containing all value allowed for this input
+- one (optional) ``rangeMin`` (``rangeMin``) properties containing the minimum (maximum) value of this range
+- one (optional) ``rangeSpacing`` properties containing the regular distance or spacing between value in this range
+- one (optional) ``rangeClosure`` properties containing the closure type (``c``,``o``,``oc``,``co``)
 - one ``<Default>`` node,
 - zero or more ``<Supported>`` nodes depending on the existence or the number of supported Units Of Measure (UOM), and 
 - a ``dataType`` property. The ``dataType`` property defines the type of literal data, such as a string, an interger and so on 
@@ -157,6 +161,35 @@ following:
        uom = feet
      </Supported>
    </LiteralData>
+
+
+A typical ``<LiteralData>`` node, defining a ``float`` data type which
+should take values contained in ``[0.0,100.0]``, looks like the following:
+.. code-block:: guess
+   :linenos:
+   
+   <LiteralData>
+     dataType = float
+     rangeMin = 0.0
+     rangeMax = 100.0
+     rangeClosure = c
+     <Default />
+   </LiteralData>
+
+A typical ``<LiteralData>`` node, defining a ``string`` data type which
+support values ``hillshade``, ``slope``, ``aspect``, ``TRI``, ``TPI``
+and ``roughness``, looks like the following:
+.. code-block:: guess
+   :linenos:
+   
+   <LiteralData>
+     dataType = float
+     AllowedValues = hillshade,slope,aspect,TRI,TPI,roughness
+     <Default />
+   </LiteralData>
+
+Properties``AllowedValues`` and ``range*`` can be conbined with both ``<Default>`` and
+``<Supported>`` nodes in the same ``<LiteralData>`` node.
 
 .. _BoundingBoxData:
 

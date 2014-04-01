@@ -882,7 +882,7 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 }
 
 void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
-  char *orderedFields[7];
+  char *orderedFields[12];
   orderedFields[0]="mimeType";
   orderedFields[1]="encoding";
   orderedFields[2]="schema";
@@ -890,8 +890,13 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
   orderedFields[4]="uom";
   orderedFields[5]="CRS";
   orderedFields[6]="value";
+  orderedFields[7]="AllowedValues";
+  orderedFields[8]="rangeMin";
+  orderedFields[9]="rangeMax";
+  orderedFields[10]="rangeClosure";
+  orderedFields[11]="rangeSpace";
 
-  xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7;
+  xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7,nc8;
   elements* e=elem;
   map* tmp1=NULL;
   while(e!=NULL){
@@ -955,7 +960,7 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
       int avcnt=0;
       int dcnt=0;
       int oI=0;
-      for(oI=0;oI<7;oI++)
+      for(oI=0;oI<12;oI++)
 	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 	  //while(tmp1!=NULL){
 #ifdef DEBUG
@@ -976,7 +981,8 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	     strncasecmp(tmp1->name,"DataType",8)!=0 &&
 	     strcasecmp(tmp1->name,"extension")!=0 &&
 	     strcasecmp(tmp1->name,"value")!=0 &&
-	     strncasecmp(tmp1->name,"AllowedValues",13)!=0){
+	     strncasecmp(tmp1->name,"AllowedValues",13)!=0&&
+	     strncasecmp(tmp1->name,"range",5)!=0){
 	    if(datatype!=1){
 	      char *tmp2=zCapitalize1(tmp1->name);
 	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
@@ -992,14 +998,15 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	    hasUOM=true;
 	  }else 
 	    if(strncmp(type,"Input",5)==0){
+
 	      if(strcmp(tmp1->name,"value")==0){
 		nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
 		xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
 		default1=1;
+		hasDefault=true;
 	      }
 	      if(strncasecmp(tmp1->name,"AllowedValues",13)==0){
 		nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-		fprintf(stderr,"ALLOWED VALUE %s\n",tmp1->value);
 		char *token,*saveptr1;
 		token=strtok_r(tmp1->value,",",&saveptr1);
 		while(token!=NULL){
@@ -1007,14 +1014,64 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 		  char *tmps=strdup(token);
 		  tmps[strlen(tmps)]=0;
 		  xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
-		  fprintf(stderr,"strgin : %s\n",tmps);
 		  xmlAddChild(nc6,nc7);
 		  token=strtok_r(NULL,",",&saveptr1);
 		}
+		if(getMap(_tmp->content,"rangeMin")!=NULL ||
+		   getMap(_tmp->content,"rangeMax")!=NULL ||
+		   getMap(_tmp->content,"rangeClosure")!=NULL )
+		  goto doRange;
 		xmlAddChild(nc3,nc6);
 		isAnyValue=-1;
 	      }
-	      hasDefault=true;
+	      if(strncasecmp(tmp1->name,"range",5)==0){
+		if(isAnyValue==1){
+		  nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+		doRange:
+		  nc8 = xmlNewNode(ns_ows, BAD_CAST "Range");
+		  map *tmp0=getMap(tmp1,"rangeMin");
+		  if(tmp0!=NULL){
+		    nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
+		    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
+		    xmlAddChild(nc8,nc7);
+		  }else{
+		    nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
+		    xmlAddChild(nc8,nc7);
+		  }
+		  tmp0=getMap(tmp1,"rangeMax");
+		  if(tmp0!=NULL){
+		    nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
+		    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
+		    xmlAddChild(nc8,nc7);
+		  }else{
+		    nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
+		    xmlAddChild(nc8,nc7);
+		  }
+		  tmp0=getMap(tmp1,"rangeSpacing");
+		  if(tmp0!=NULL){
+		    nc7 = xmlNewNode(ns_ows, BAD_CAST "Spacing");
+		    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
+		    xmlAddChild(nc8,nc7);
+		  }
+		  tmp0=getMap(tmp1,"rangeClosure");
+		  if(tmp0!=NULL){
+		    char *tmp="closed";
+		    if(strcasecmp(tmp0->value,"co")==0)
+		      tmp="closed-open";
+		    else
+		      if(strcasecmp(tmp0->value,"oc")==0)
+			tmp="open-closed";
+		      else
+			if(strcasecmp(tmp0->value,"o")==0)
+			  tmp="open";
+		    xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST tmp);
+		  }else
+		    xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST "closed");
+		}
+		xmlAddChild(nc6,nc8);
+		xmlAddChild(nc3,nc6);
+		isAnyValue=-1;
+	      }
 	    }
 	  tmp1=tmp1->next;
 	  if(datatype!=2){
@@ -1025,18 +1082,20 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	  }else{
 	    xmlAddChild(nc3,nc5);
 	  }
-	 
 	  if(strncmp(type,"Input",5)==0){
-	    if(datatype==1 && isAnyValue==1 && avcnt==0){
-	      xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-	      hasDefault=true;
-	      avcnt++;
-	    }
-	    if(datatype==1 && default1>0){
+	    if(datatype==1 && isAnyValue==1 && default1>0){
 	      xmlAddChild(nc3,nc7);
 	    }
 	  }
+	 
 	}
+      if(strncmp(type,"Input",5)==0){
+	if(datatype==1 && isAnyValue==1 && avcnt==0){
+	  xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	  hasDefault=true;
+	  avcnt++;
+	}
+      }
     }
 
     _tmp=e->supported;
@@ -1118,10 +1177,10 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
     if(datatype!=2 && hasUOM==true){
       xmlAddChild(nc3,nc4);
       xmlAddChild(nc2,nc3);
-    }else if(datatype!=2){
-      if(hasDefault!=true && strncmp(type,"Input",5)==0)
+    }/*else if(datatype!=2){
+      if(hasDefault!=true && strncmp(type,"Input",5)==0 && isAnyValue==1)
 	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-    }
+	}*/
     
     xmlAddChild(nc1,nc2);
     
@@ -1771,20 +1830,42 @@ void printExceptionReportResponse(maps* m,map* s){
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
   char *encoding=getEncoding(tmpMap);
+  char *exceptionCode;
+  
+  map* tmp=getMap(s,"code");
+  if(tmp!=NULL){
+    if(strcmp(tmp->value,"OperationNotSupported")==0)
+      exceptionCode="501 Not Implemented";
+    else
+      if(strcmp(tmp->value,"MissingParameterValue")==0 ||
+	 strcmp(tmp->value,"InvalidUpdateSequence")==0 ||
+	 strcmp(tmp->value,"OptionNotSupported")==0 ||
+	 strcmp(tmp->value,"VersionNegotiationFailed")==0 ||
+	 strcmp(tmp->value,"InvalidParameterValue")==0)
+	exceptionCode="400 Bad request";
+      else
+	if(strcmp(tmp->value,"NoApplicableCode")==0)
+	  exceptionCode="501 Internal Server Error";
+	else
+	  exceptionCode="501 Internal Server Error";
+  }
+  else
+    exceptionCode="501 Internal Server Error";
+
   if(m!=NULL){
     map *tmpSid=getMapFromMaps(m,"lenv","sid");
     if(tmpSid!=NULL){
       if( getpid()==atoi(tmpSid->value) ){
 	printHeaders(m);
-	printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+	printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
       }
     }
     else{
       printHeaders(m);
-      printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+      printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
     }
   }else{
-    printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+    printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
   }
   n=createExceptionReportNode(m,s,1);
   xmlDocSetRootElement(doc, n);
@@ -1828,6 +1909,11 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
     xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST tmp->value);
   else
     xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST "NoApplicableCode");
+
+  tmp=getMap(s,"locator");
+  if(tmp!=NULL && strcasecmp(tmp->value,"NULL")!=0)
+    xmlNewProp(nc,BAD_CAST "locator",BAD_CAST tmp->value);
+
 
   tmp=getMap(s,"text");
   nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
@@ -2629,7 +2715,7 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     res=InternetOpenUrl(hInternet,url,NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
     fcontent=(char*)malloc((res.nDataLen+1)*sizeof(char));
     if(fcontent == NULL){
-      return errorException(m, _("Unable to allocate memory."), "InternalError");
+      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
     }
     size_t dwRead;
     InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
@@ -2638,7 +2724,7 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
     mimeType=(char*)res.mimeType;
   }
   if(fsize==0){
-    return errorException(m, _("Unable to download the file."), "InternalError");
+    return errorException(m, _("Unable to download the file."), "InternalError",NULL);
   }
 
   if(mimeType!=NULL){
@@ -2667,10 +2753,14 @@ int loadRemoteFile(maps* m,map* content,HINTERNET hInternet,char *url){
   return 0;
 }
 
-int errorException(maps *m, const char *message, const char *errorcode) 
+int errorException(maps *m, const char *message, const char *errorcode, const char *locator) 
 {
   map* errormap = createMap("text", message);
   addToMap(errormap,"code", errorcode);
+  if(locator!=NULL)
+    addToMap(errormap,"locator", locator);
+  else
+    addToMap(errormap,"locator", "NULL");
   printExceptionReportResponse(m,errormap);
   freeMap(&errormap);
   free(errormap);
