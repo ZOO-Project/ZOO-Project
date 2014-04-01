@@ -133,7 +133,7 @@ A ``<LiteralData>`` node contains:
 - one (optional) ``AllowedValues`` key containing all value allowed for this input
 - one (optional) ``rangeMin`` (``rangeMax``) properties containing the minimum (maximum) value of this range
 - one (optional) ``rangeSpacing`` properties containing the regular distance or spacing between value in this range
-- one (optional) ``rangeClosure`` properties containing the closure type (``c``,``o``,``oc``,``co``)
+- one (optional) ``rangeClosure`` properties containing the closure type (``c``, ``o``, ``oc``, ``co``)
 - one ``<Default>`` node,
 - zero or more ``<Supported>`` nodes depending on the existence or the number of supported Units Of Measure (UOM), and 
 - a ``dataType`` property. The ``dataType`` property defines the type of literal data, such as a string, an interger and so on 
