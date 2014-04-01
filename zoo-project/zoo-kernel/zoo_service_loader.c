@@ -151,7 +151,7 @@ int appendMapsToMaps(maps* m,maps* mo,maps* mi,elements* elem){
       if(addMapsArrayToMaps(&mo,mi,tmap->name)<0){
 	char emsg[1024];
 	sprintf(emsg,_("You set maximum occurences for <%s> as %i but you tried to use it more than the limit you set. Please correct your ZCFG file or your request."),mi->name,atoi(testMap->value));
-	errorException(m,emsg,"InternalError");
+	errorException(m,emsg,"InternalError",NULL);
 	return -1;
       }
     }else{
@@ -164,14 +164,14 @@ int appendMapsToMaps(maps* m,maps* mo,maps* mi,elements* elem){
 	  char emsg[1024];
 	  map* tmpMap=getMap(mi->content,"length");
 	  sprintf(emsg,_("ZOO-Kernel was unable to load your data for %s position %s."),mi->name,tmpMap->value);
-	  errorException(m,emsg,"InternalError");
+	  errorException(m,emsg,"InternalError",NULL);
 	  return -1;
 	}
       }
       else{
 	char emsg[1024];
 	sprintf(emsg,_("You set maximum occurences for <%s> to one but you tried to use it more than once. Please correct your ZCFG file or your request."),mi->name);
-	errorException(m,emsg,"InternalError");
+	errorException(m,emsg,"InternalError",NULL);
 	return -1;
       }
     }
@@ -220,7 +220,7 @@ void sig_handler(int sig){
     break;
   }
   sprintf(tmp,_("ZOO Kernel failed to process your request receiving signal %d = %s"),sig,ssig);
-  errorException(NULL, tmp, "InternalError");
+  errorException(NULL, tmp, "InternalError",NULL);
 #ifdef DEBUG
   fprintf(stderr,"Not this time!\n");
 #endif
@@ -555,7 +555,7 @@ int runRequest(map* request_inputs)
    */
   m=(maps*)malloc(MAPS_SIZE);
   if(m == NULL){
-    return errorException(m, _("Unable to allocate memory."), "InternalError");
+    return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
   }
   char ntmp[1024];
 #ifndef WIN32
@@ -569,7 +569,7 @@ int runRequest(map* request_inputs)
   char conf_file[10240];
   snprintf(conf_file,10240,"%s/%s/main.cfg",ntmp,r_inputs->value);
   if(conf_read(conf_file,m)==2){
-    errorException(NULL, _("Unable to load the main.cfg file."),"InternalError");
+    errorException(NULL, _("Unable to load the main.cfg file."),"InternalError",NULL);
     free(m);
     return 1;
   }
@@ -653,7 +653,7 @@ int runRequest(map* request_inputs)
    */
   r_inputs=getMap(request_inputs,"Request");
   if(request_inputs==NULL || r_inputs==NULL){ 
-    errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue");
+    errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue","request");
     freeMaps(&m);
     free(m);
     return 1;
@@ -663,7 +663,7 @@ int runRequest(map* request_inputs)
     if(strncasecmp(r_inputs->value,"GetCapabilities",15)!=0
        && strncasecmp(r_inputs->value,"DescribeProcess",15)!=0
        && strncasecmp(r_inputs->value,"Execute",7)!=0){ 
-      errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue");
+      errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue","request");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -673,21 +673,37 @@ int runRequest(map* request_inputs)
   r_inputs=NULL;
   r_inputs=getMap(request_inputs,"Service");
   if(r_inputs==NULLMAP){
-    errorException(m, _("Parameter <service> was not specified"),"MissingParameterValue");
+    errorException(m, _("Parameter <service> was not specified"),"MissingParameterValue","service");
     freeMaps(&m);
     free(m);
     free(REQUEST);
     return 1;
-  }
-  if(strncasecmp(REQUEST,"GetCapabilities",15)!=0){
-    r_inputs=getMap(request_inputs,"Version");
-    if(r_inputs==NULL){ 
-      errorException(m, _("Parameter <version> was not specified"),"MissingParameterValue");
+  }else{
+    if(strcasecmp(r_inputs->value,"WPS")!=0){
+      errorException(m, _("Unenderstood <service> value, WPS is the only acceptable value."), "InvalidParameterValue","service");
       freeMaps(&m);
       free(m);
       free(REQUEST);
       return 1;
     }
+  }
+  if(strncasecmp(REQUEST,"GetCapabilities",15)!=0){
+    r_inputs=getMap(request_inputs,"Version");
+    if(r_inputs==NULL){ 
+      errorException(m, _("Parameter <version> was not specified"),"MissingParameterValue","version");
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      return 1;
+    }else{
+      if(strcasecmp(r_inputs->value,"1.0.0")!=0){
+	errorException(m, _("Unenderstood <version> value, 1.0.0 is the only acceptable value."), "InvalidParameterValue","service");
+	freeMaps(&m);
+	free(m);
+	free(REQUEST);
+	return 1;
+      }
+    } 
   }
 
   r_inputs=getMap(request_inputs,"serviceprovider");
@@ -725,7 +741,7 @@ int runRequest(map* request_inputs)
 #endif
     DIR *dirp = opendir(conf_dir);
     if(dirp==NULL){
-      return errorException(m, _("The specified path doesn't exist."),"InvalidParameterValue");
+      return errorException(m, _("The specified path doesn't exist."),"InvalidParameterValue","metapath");
     }
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
     r_inputs=NULL;
@@ -747,7 +763,7 @@ int runRequest(map* request_inputs)
 	snprintf(tmps1,1024,"%s/%s",conf_dir,dp->d_name);
 	s1=(service*)malloc(SERVICE_SIZE);
 	if(s1 == NULL){ 
-	  return errorException(m, _("Unable to allocate memory."),"InternalError");
+	  return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
 	}
 #ifdef DEBUG
 	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
@@ -778,7 +794,7 @@ int runRequest(map* request_inputs)
     r_inputs=getMap(request_inputs,"Identifier");
     if(r_inputs==NULL 
        || strlen(r_inputs->name)==0 || strlen(r_inputs->value)==0){ 
-      errorException(m, _("Mandatory <identifier> was not specified"),"MissingParameterValue");
+      errorException(m, _("Mandatory <identifier> was not specified"),"MissingParameterValue","identifier");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -789,7 +805,7 @@ int runRequest(map* request_inputs)
     struct dirent *dp;
     DIR *dirp = opendir(conf_dir);
     if(dirp==NULL){
-      errorException(m, _("The specified path path doesn't exist."),"InvalidParameterValue");
+      errorException(m, _("The specified path path doesn't exist."),"InvalidParameterValue",conf_dir);
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -832,7 +848,7 @@ int runRequest(map* request_inputs)
 	    s1=(service*)malloc(SERVICE_SIZE);
 	    if(s1 == NULL){
 	      dup2(saved_stdout,fileno(stdout));
-	      return errorException(m, _("Unable to allocate memory."),"InternalError");
+	      return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
 	    }
 #ifdef DEBUG
 	    printf("#################\n%s\n#################\n",buff1);
@@ -862,7 +878,7 @@ int runRequest(map* request_inputs)
     }
     else
       if(strncasecmp(REQUEST,"Execute",strlen(REQUEST))!=0){
-	errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue");
+	errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue","request");
 #ifdef DEBUG
 	fprintf(stderr,"No request found %s",REQUEST);
 #endif	
@@ -884,7 +900,7 @@ int runRequest(map* request_inputs)
     free(m);
     free(REQUEST);
     free(SERVICE_URL);
-    return errorException(m, _("Unable to allocate memory."),"InternalError");
+    return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
   }
   r_inputs=getMap(request_inputs,"MetaPath");
   if(r_inputs!=NULL)
@@ -907,7 +923,7 @@ int runRequest(map* request_inputs)
     char *tmpMsg=(char*)malloc(2048+strlen(r_inputs->value));
     
     sprintf(tmpMsg,_("The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),r_inputs->value);
-    errorException(m, tmpMsg, "InvalidParameterValue");
+    errorException(m, tmpMsg, "InvalidParameterValue","identifier");
     free(tmpMsg);
     free(s1);
     freeMaps(&m);
@@ -981,7 +997,7 @@ int runRequest(map* request_inputs)
       pToken=strtok(cursor_output,";");
       char** outputs_as_text=(char**)malloc(128*sizeof(char*));
       if(outputs_as_text == NULL) {
-	return errorException(m, _("Unable to allocate memory"), "InternalError");
+	return errorException(m, _("Unable to allocate memory"), "InternalError",NULL);
       }
       i=0;
       while(pToken!=NULL){
@@ -992,7 +1008,7 @@ int runRequest(map* request_inputs)
 #endif
 	outputs_as_text[i]=(char*)malloc((strlen(pToken)+1)*sizeof(char));
 	if(outputs_as_text[i] == NULL) {
-	  return errorException(m, _("Unable to allocate memory"), "InternalError");
+	  return errorException(m, _("Unable to allocate memory"), "InternalError",NULL);
 	}
 	snprintf(outputs_as_text[i],strlen(pToken)+1,"%s",pToken);
 	pToken = strtok(NULL,";");
@@ -1009,7 +1025,7 @@ int runRequest(map* request_inputs)
 	    if(tmp_output==NULL){
 	      tmp_output=(maps*)malloc(MAPS_SIZE);
 	      if(tmp_output == NULL){
-		return errorException(m, _("Unable to allocate memory."), "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	      }
 	      tmp_output->name=zStrdup(tmpc);
 	      tmp_output->content=NULL;
@@ -1066,7 +1082,7 @@ int runRequest(map* request_inputs)
     if(r_inputs!=NULL)
       snprintf(cursor_input,40960,"%s",r_inputs->value);
     else{
-      errorException(m, _("Parameter <DataInputs> was not specified"),"MissingParameterValue");
+      errorException(m, _("Parameter <DataInputs> was not specified"),"MissingParameterValue","DataInputs");
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -1094,7 +1110,7 @@ int runRequest(map* request_inputs)
 
     char** inputs_as_text=(char**)malloc(100*sizeof(char*));
     if(inputs_as_text == NULL){
-      return errorException(m, _("Unable to allocate memory."), "InternalError");
+      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
     }
     i=0;
     while(pToken!=NULL){
@@ -1108,7 +1124,7 @@ int runRequest(map* request_inputs)
       inputs_as_text[i]=(char*)malloc((strlen(pToken)+1)*sizeof(char));
       snprintf(inputs_as_text[i],strlen(pToken)+1,"%s",pToken);
       if(inputs_as_text[i] == NULL){
-	return errorException(m, _("Unable to allocate memory."), "InternalError");
+	return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
       }
       pToken = strtok(NULL,";");
       i++;
@@ -1140,7 +1156,7 @@ int runRequest(map* request_inputs)
 	if(tmpmaps==NULL){
 	  tmpmaps=(maps*)malloc(MAPS_SIZE);
 	  if(tmpmaps == NULL){
-	    return errorException(m, _("Unable to allocate memory."), "InternalError");
+	    return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	  }
 	  tmpmaps->name=zStrdup(tmpn);
 	  if(tmpv!=NULL){
@@ -1194,7 +1210,7 @@ int runRequest(map* request_inputs)
 		 strncasecmp(tmpx2,"https://",8)!=0){
 		char emsg[1024];
 		sprintf(emsg,_("Unable to find a valid protocol to download the remote file %s"),tmpv1+1);
-		errorException(m,emsg,"InternalError");
+		errorException(m,emsg,"InternalError",NULL);
 		freeMaps(&m);
 		free(m);
 		free(REQUEST);
@@ -1311,7 +1327,7 @@ int runRequest(map* request_inputs)
 	    if(tmpmaps==NULL){
 	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
-		return errorException(m, _("Unable to allocate memory."), "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	      }
 	      tmpmaps->name=zStrdup((char*)val);
 	      tmpmaps->content=NULL;
@@ -1329,7 +1345,7 @@ int runRequest(map* request_inputs)
 	    if(tmpmaps==NULL){
 	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
-		return errorException(m, _("Unable to allocate memory."), "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	      }
 	      tmpmaps->name=zStrdup("missingIndetifier");
 	      tmpmaps->content=createMap((char*)cur2->name,(char*)val);
@@ -1427,7 +1443,7 @@ int runRequest(map* request_inputs)
 		  }else{
 		    has=(char*)malloc((3+strlen((char*)val)+strlen(key))*sizeof(char));
 		    if(has == NULL){
-		      return errorException(m, _("Unable to allocate memory."), "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		    }
 		    snprintf(has,(3+strlen((char*)val)+strlen(key)),"%s: %s",key,(char*)val);
 #ifdef POST_DEBUG
@@ -1477,7 +1493,7 @@ int runRequest(map* request_inputs)
 					INTERNET_FLAG_NO_CACHE_WRITE,0);
 		    char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
 		    if(tmpContent == NULL){
-		      return errorException(m, _("Unable to allocate memory."), "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		    }
 		    size_t dwRead;
 		    InternetReadFile(res, (LPVOID)tmpContent,
@@ -1512,7 +1528,7 @@ int runRequest(map* request_inputs)
 		    char* tmp=
 		      (char*)malloc((res1.nDataLen+1)*sizeof(char));
 		    if(tmp == NULL){
-		      return errorException(m, _("Unable to allocate memory."), "InternalError");
+		      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		    }
 		    size_t bRead;
 		    InternetReadFile(res1, (LPVOID)tmp,
@@ -1530,7 +1546,7 @@ int runRequest(map* request_inputs)
 					  INTERNET_FLAG_NO_CACHE_WRITE,0);
 		      char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
 		      if(tmpContent == NULL){
-			return errorException(m, _("Unable to allocate memory."), "InternalError");
+			return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		      }
 		      size_t dwRead;
 		      InternetReadFile(res, (LPVOID)tmpContent,
@@ -1749,7 +1765,7 @@ int runRequest(map* request_inputs)
 	if(tmpmaps==NULL){
 	  tmpmaps=(maps*)malloc(MAPS_SIZE);
 	  if(tmpmaps == NULL){
-	    return errorException(m, _("Unable to allocate memory."), "InternalError");
+	    return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	  }
 	  tmpmaps->name=zStrdup("unknownIdentifier");
 	  tmpmaps->content=NULL;
@@ -1791,7 +1807,7 @@ int runRequest(map* request_inputs)
 	    if(tmpmaps==NULL){
 	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
-		return errorException(m, _("Unable to allocate memory."), "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	      }
 	      tmpmaps->name=zStrdup((char*)val);
 	      tmpmaps->content=NULL;
@@ -1828,7 +1844,7 @@ int runRequest(map* request_inputs)
 	    if(tmpmaps==NULL){
 	      tmpmaps=(maps*)malloc(MAPS_SIZE);
 	      if(tmpmaps == NULL){
-		return errorException(m, _("Unable to allocate memory."), "InternalError");
+		return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 	      }
 	      tmpmaps->name=zStrdup("missingIndetifier");
 	      tmpmaps->content=createMap((char*)cur1->name,(char*)val);
@@ -1877,7 +1893,7 @@ int runRequest(map* request_inputs)
 		if(tmpmaps==NULL){
 		  tmpmaps=(maps*)malloc(MAPS_SIZE);
 		  if(tmpmaps == NULL){
-		    return errorException(m, _("Unable to allocate memory."), "InternalError");
+		    return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		  }
 		  tmpmaps->name=zStrdup((char*)val);
 		  tmpmaps->content=NULL;
@@ -1900,7 +1916,7 @@ int runRequest(map* request_inputs)
 		if(tmpmaps==NULL){
 		  tmpmaps=(maps*)malloc(MAPS_SIZE);
 		  if(tmpmaps == NULL){
-		    return errorException(m, _("Unable to allocate memory."), "InternalError");
+		    return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		  }
 		  tmpmaps->name=zStrdup("missingIndetifier");
 		  tmpmaps->content=createMap((char*)cur2->name,(char*)val);
@@ -1962,14 +1978,16 @@ int runRequest(map* request_inputs)
   char *dfv1=addDefaultValues(&request_output_real_format,s1->outputs,m,1);
   if(strcmp(dfv1,"")!=0 || strcmp(dfv,"")!=0){
     char tmps[1024];
+    map* tmpe=createMap("code","MissingParameterValue");
     if(strcmp(dfv,"")!=0){
       snprintf(tmps,1024,_("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),dfv);
+      addToMap(tmpe,"locator",dfv);
     }
     else if(strcmp(dfv1,"")!=0){
       snprintf(tmps,1024,_("The <%s> argument was specified as Output identifier but not defined in the ZOO Configuration File. Please, correct your query or the ZOO Configuration File."),dfv1);
+      addToMap(tmpe,"locator",dfv1);
     }
-    map* tmpe=createMap("text",tmps);
-    addToMap(tmpe,"code","MissingParameterValue");
+    addToMap(tmpe,"text",tmps);
     printExceptionReportResponse(m,tmpe);
     freeService(&s1);
     free(s1);
@@ -2115,7 +2133,7 @@ int runRequest(map* request_inputs)
    */
   if(status!=NULL && strcmp(status->value,"true")==0 && 
      store!=NULL && strcmp(store->value,"false")==0){
-    errorException(m, _("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."), "InvalidParameterValue");
+    errorException(m, _("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."), "InvalidParameterValue","storeExecuteResponse");
     freeService(&s1);
     free(s1);
     freeMaps(&m);
@@ -2328,7 +2346,7 @@ int runRequest(map* request_inputs)
        * error response here !!!
        */
       eres=-1;
-      errorException(m, _("Unable to run the child process properly"), "InternalError");
+      errorException(m, _("Unable to run the child process properly"), "InternalError",NULL);
     }
   }
 

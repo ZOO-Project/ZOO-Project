@@ -1,3 +1,5 @@
+include ZOOMakefile.opts
+
 OS:=$(shell uname -s)
 ifeq ($(OS),Darwin)
 	MACOS_LD_FLAGS=-lintl -framework SystemConfiguration -framework CoreFoundation
@@ -9,10 +11,6 @@ JAVALDFLAGS=@JAVA_LDFLAGS@
 JAVA_ENABLED=@JAVA_ENABLED@
 JAVA_FILE=@JAVA_FILE@
 
-MS_CFLAGS=@MS_CFLAGS@
-MS_LDFLAGS=@MS_LIBS@
-MS_FILE=@MS_FILE@
-
 CFLAGS=-fpic ${MACOS_CFLAGS} ${MS_CFLAGS} -I../../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 LDFLAGS=-lcurl -L../../thirds/cgic206 -lcgic ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS} ${PERLLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi -lcrypto ${MS_LDFLAGS} ${MACOS_LD_FLAGS}
 
@@ -21,22 +19,6 @@ PHPLDFLAGS=@PHP_LDFLAGS@
 PHP_ENABLED=@PHP_ENABLED@
 PHP_FILE=@PHP_FILE@
 
-
-PYTHONCFLAGS=@PYTHON_CPPFLAGS@
-PYTHONLDFLAGS=@PYTHON_LDFLAGS@
-PYTHON_ENABLED=@PYTHON_ENABLED@
-PYTHON_FILE=@PYTHON_FILE@
-
-JSCFLAGS=@JS_CPPFLAGS@
-JSLDFLAGS=@JS_LDFLAGS@
-JS_ENABLED=@JS_ENABLED@
-JS_FILE=@JS_FILE@
-
-XML2CFLAGS=@XML2_CPPFLAGS@
-XML2LDFLAGS=@XML2_LDFLAGS@
-
-GDAL_CFLAGS=@GDAL_CFLAGS@
-GDAL_LIBS=@GDAL_LIBS@
 
 PERLCFLAGS=@PERL_CPPFLAGS@
 PERLLDFLAGS=@PERL_LDFLAGS@
@@ -88,13 +70,14 @@ service_internal_php.o: service_internal_php.c service.h
 service_internal_perl.o: service_internal_perl.c service.h
 	gcc -c ${XML2CFLAGS} ${PERLCFLAGS} ${CFLAGS}  ${PERL_ENABLED} service_internal_perl.c
 
-
 service_internal_java.o: service_internal_java.c service.h
 	gcc -c ${XML2CFLAGS} ${JAVACFLAGS} ${CFLAGS} ${JAVA_ENABLED} service_internal_java.c
 
 service_internal_js.o: service_internal_js.c service_internal_js.h
 	gcc ${XML2CFLAGS} ${JSCFLAGS} ${CFLAGS} ${JS_ENABLED} -c service_internal_js.c
 
+service_internal_ruby.o: service_internal_ruby.c service_internal_ruby.h
+	g++ ${XML2CFLAGS} ${RUBYCFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c service_internal_ruby.c
 
 service_loader.o: service_loader.c service.h
 	g++ -c ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} service_loader.c
@@ -102,8 +85,8 @@ service_loader.o: service_loader.c service.h
 zoo_service_loader.o: zoo_service_loader.c service.h
 	g++ -g -O2 ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${PYTHON_ENABLED} ${JS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
-zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE}
-	g++ -g -O2 ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS}   ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
+zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE}
+	g++ -g -O2 ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
 	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi ${LDFLAGS}
 
 install:

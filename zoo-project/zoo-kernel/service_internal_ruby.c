@@ -368,7 +368,7 @@ RubyUpdateStatus(int argc, VALUE *argv, VALUE obj)
   char* status;
   if (istatus < 0 || istatus > 100){
     fprintf(stderr,"Status must be a percentage.");
-    return NULL;
+    return Qnil;
   }else{
      char tmpStatus[4];
      snprintf(tmpStatus, 4, "%i", istatus);
