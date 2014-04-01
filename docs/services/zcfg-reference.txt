@@ -185,7 +185,7 @@ and ``roughness``, looks like the following:
    :linenos:
    
    <LiteralData>
-     dataType = float
+     dataType = string
      AllowedValues = hillshade,slope,aspect,TRI,TPI,roughness
      <Default />
    </LiteralData>
