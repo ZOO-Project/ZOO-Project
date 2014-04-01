@@ -131,7 +131,7 @@ LiteralData node
 A ``<LiteralData>`` node contains:
 
 - one (optional) ``AllowedValues`` key containing all value allowed for this input
-- one (optional) ``rangeMin`` (``rangeMin``) properties containing the minimum (maximum) value of this range
+- one (optional) ``rangeMin`` (``rangeMax``) properties containing the minimum (maximum) value of this range
 - one (optional) ``rangeSpacing`` properties containing the regular distance or spacing between value in this range
 - one (optional) ``rangeClosure`` properties containing the closure type (``c``,``o``,``oc``,``co``)
 - one ``<Default>`` node,
