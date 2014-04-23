@@ -34,6 +34,16 @@
 #define FALSE -1
 #endif
 
+int readServiceFile(maps* conf, char* file,service** service,char *name){
+  int t=getServiceFromFile(conf,file,service);
+#ifdef YAML
+  if(t<0){
+    t=getServiceFromYAML(conf,file,service,name);
+  }
+#endif
+  return t;
+}
+
 void printHeaders(maps* m){
   maps *_tmp=getMaps(m,"headers");
   if(_tmp!=NULL){
@@ -882,7 +892,7 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
 }
 
 void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
-  char *orderedFields[12];
+  char *orderedFields[13];
   orderedFields[0]="mimeType";
   orderedFields[1]="encoding";
   orderedFields[2]="schema";
@@ -891,10 +901,11 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
   orderedFields[5]="CRS";
   orderedFields[6]="value";
   orderedFields[7]="AllowedValues";
-  orderedFields[8]="rangeMin";
-  orderedFields[9]="rangeMax";
-  orderedFields[10]="rangeClosure";
-  orderedFields[11]="rangeSpace";
+  orderedFields[8]="range";
+  orderedFields[9]="rangeMin";
+  orderedFields[10]="rangeMax";
+  orderedFields[11]="rangeClosure";
+  orderedFields[12]="rangeSpace";
 
   xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7,nc8;
   elements* e=elem;
@@ -934,6 +945,7 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
       else
 	nc3 = xmlNewNode(NULL, BAD_CAST e->format);
     }
+    iotype* _tmp0=NULL;
     iotype* _tmp=e->defaults;
     int datatype=0;
     bool hasDefault=false;
@@ -960,7 +972,7 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
       int avcnt=0;
       int dcnt=0;
       int oI=0;
-      for(oI=0;oI<12;oI++)
+      for(oI=0;oI<13;oI++)
 	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 	  //while(tmp1!=NULL){
 #ifdef DEBUG
@@ -1017,7 +1029,8 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 		  xmlAddChild(nc6,nc7);
 		  token=strtok_r(NULL,",",&saveptr1);
 		}
-		if(getMap(_tmp->content,"rangeMin")!=NULL ||
+		if(getMap(_tmp->content,"range")!=NULL ||
+		   getMap(_tmp->content,"rangeMin")!=NULL ||
 		   getMap(_tmp->content,"rangeMax")!=NULL ||
 		   getMap(_tmp->content,"rangeClosure")!=NULL )
 		  goto doRange;
@@ -1028,8 +1041,59 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 		if(isAnyValue==1){
 		  nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
 		doRange:
+		  
+		  /**
+		   * Range: Table 46 OGC Web Services Common Standard
+		   */
 		  nc8 = xmlNewNode(ns_ows, BAD_CAST "Range");
-		  map *tmp0=getMap(tmp1,"rangeMin");
+
+		  map* tmp0=getMap(tmp1,"range");
+		  if(tmp0!=NULL){
+		    char* pToken;
+		    char* orig=zStrdup(tmp0->value);
+		    /**
+		     * RangeClosure: Table 47 OGC Web Services Common Standard
+		     */
+		    char *tmp="closed";
+		    if(orig[0]=='[' && orig[strlen(orig)-1]=='[')
+		      tmp="closed-open";
+		    else
+		      if(orig[0]==']' && orig[strlen(orig)-1]==']')
+			tmp="open-closed";
+		      else
+			if(orig[0]==']' && orig[strlen(orig)-1]=='[')
+			  tmp="open";
+		    xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST tmp);
+		    pToken=strtok(orig,",");
+		    int nci0=0;
+		    while(pToken!=NULL){
+		      char *tmpStr=(char*) malloc((strlen(pToken))*sizeof(char));
+		      if(nci0==0){
+			nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
+			int nci=1;
+			for(nci=1;nci<strlen(pToken);nci++){
+			  tmpStr[nci-1]=pToken[nci];
+			}
+		      }else{
+			nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
+			int nci=0;
+			for(nci=0;nci<strlen(pToken)-1;nci++){
+			  tmpStr[nci]=pToken[nci];
+			}
+		      }
+		      xmlAddChild(nc7,xmlNewText(BAD_CAST tmpStr));
+		      xmlAddChild(nc8,nc7);
+		      nci0++;
+		      pToken = strtok(NULL,",");
+		    }		    
+		    if(getMap(tmp1,"rangeSpacing")==NULL){
+		      nc7 = xmlNewNode(ns_ows, BAD_CAST "Spacing");
+		      xmlAddChild(nc7,xmlNewText(BAD_CAST "1"));
+		      xmlAddChild(nc8,nc7);
+		    }
+		  }else{
+
+		  tmp0=getMap(tmp1,"rangeMin");
 		  if(tmp0!=NULL){
 		    nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
 		    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
@@ -1067,10 +1131,25 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 		    xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST tmp);
 		  }else
 		    xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST "closed");
+		  }
+		  if(_tmp0==NULL){
+		    xmlAddChild(nc6,nc8);
+		    _tmp0=e->supported;
+		    tmp1=_tmp0->content;
+		    goto doRange;
+		  }else{
+		    _tmp0=_tmp0->next;
+		    if(_tmp0!=NULL){
+		      xmlAddChild(nc6,nc8);
+		      tmp1=_tmp0->content;
+		      goto doRange;
+		    }
+		  
+		  }
+		  xmlAddChild(nc6,nc8);
+		  xmlAddChild(nc3,nc6);
+		  isAnyValue=-1;
 		}
-		xmlAddChild(nc6,nc8);
-		xmlAddChild(nc3,nc6);
-		isAnyValue=-1;
 	      }
 	    }
 	  tmp1=tmp1->next;
@@ -1095,6 +1174,18 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	  hasDefault=true;
 	  avcnt++;
 	}
+      }
+      
+      map* metadata=e->metadata;
+      xmlNodePtr n;
+      int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+      xmlNsPtr ns_xlink=usedNs[xlinkId];
+
+      while(metadata!=NULL){
+	nc6=xmlNewNode(ns_ows, BAD_CAST "MetaData");
+	xmlNewNsProp(nc6,ns_xlink,BAD_CAST metadata->name,BAD_CAST metadata->value);
+	xmlAddChild(nc2,nc6);
+	metadata=metadata->next;
       }
     }
 

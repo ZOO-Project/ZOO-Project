@@ -21,7 +21,7 @@ int affichetrace = 1;
 int affichetrace = 0;
 #endif
 
-
+char *lmsg;
 int attentionImpossibleDeTrouverXMLDeclapres = 0 ;
 
 int attentionImpossibleDeTrouverPIapres = 0 ;
@@ -40,7 +40,7 @@ Name		([_:]|[\x41-\x5A]|[\x61-\x7A]|[\xC0-\xD6]|[\xD8-\xF6]|[\xF8-\xFF])(([\x41-
 chardata	[^<]*
 
 attname	[a-zA-Z0-9_\-]+
-attvalue1	[\^\*\+,;@a-zA-Z0-9_\-::.:" "\"\'/\\\(\)\t\|\$\&>]+
+attvalue1	[\^\*\+,;@a-zA-Z0-9_\-::.:" "\"\'/\\\(\)\t\|\$\&>\[\]]+
 
 attvalue		\"[^"]*\"|\'[^']*\'\(\)
 
@@ -117,7 +117,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 <INITIAL,HORSBALISE>"<!--"([^-]|"-"[^-])*"-->"		{attentionImpossibleDeTrouverXMLDeclapres=1; }
 
 
-<INITIAL,DANSBALISE,HORSBALISE>.|\n	{fprintf(stderr,"error : ligne %d : caractere non reconnu '%s'\n",srlineno,yytext);}
+<INITIAL,DANSBALISE,HORSBALISE>.|\n	{lmsg=(char*)malloc(1024*sizeof(char));sprintf(lmsg,"error: line %d: character not allowed '%s'",srlineno,yytext);fprintf(stderr,"%s \n",lmsg);srlval.chaine=lmsg;return -1;}
 
 %%
 

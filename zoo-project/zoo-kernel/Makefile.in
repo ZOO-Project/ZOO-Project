@@ -11,8 +11,8 @@ JAVALDFLAGS=@JAVA_LDFLAGS@
 JAVA_ENABLED=@JAVA_ENABLED@
 JAVA_FILE=@JAVA_FILE@
 
-CFLAGS=-fpic ${MACOS_CFLAGS} ${MS_CFLAGS} -I../../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
-LDFLAGS=-lcurl -L../../thirds/cgic206 -lcgic ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS} ${PERLLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi -lcrypto ${MS_LDFLAGS} ${MACOS_LD_FLAGS}
+CFLAGS=-fpic ${YAML_CFLAGS} ${MACOS_CFLAGS} ${MS_CFLAGS} -I../../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+LDFLAGS=-lcurl -L../../thirds/cgic206 -lcgic ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS} ${PERLLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi -lcrypto ${MS_LDFLAGS} ${MACOS_LD_FLAGS} ${YAML_LDFLAGS} 
 
 PHPCFLAGS=@PHP_CPPFLAGS@
 PHPLDFLAGS=@PHP_LDFLAGS@
@@ -26,7 +26,10 @@ PERL_ENABLED=@PERL_ENABLED@
 PERL_FILE=@PERL_FILE@
 
 
-all: zoo_loader.cgi
+all: version.h zoo_loader.cgi ${YAML_FILE1}
+
+version.h:
+	echo "#define ZOO_VERSION \"`svnversion -q -c -n .`\"" > version.h
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
@@ -56,7 +59,10 @@ ulinet.o: ulinet.c
 	gcc -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
 
 service_internal.o: service_internal.c service.h
-	gcc ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
+	g++ ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
+
+service_yaml.o: service_yaml.c service.h
+	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
 
 service_internal_ms.o: service_internal_ms.c
 	gcc ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
@@ -85,9 +91,13 @@ service_loader.o: service_loader.c service.h
 zoo_service_loader.o: zoo_service_loader.c service.h
 	g++ -g -O2 ${XML2CFLAGS} ${CFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${PYTHON_ENABLED} ${JS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
-zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE}
+zoo_loader.cgi: zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE}
 	g++ -g -O2 ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
-	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi ${LDFLAGS}
+	g++  ${JSCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ${YAML_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi ${LDFLAGS}
+
+zcfg2yaml: zcfg2yaml.c  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${JS_FILE} ${RUBY_FILE}  ${YAML_FILE}
+	g++ -g -O2 ${JSCFLAGS} ${RUBYCFLAGS} ${XML2CFLAGS} ${CFLAGS} -c zcfg2yaml.c  -fno-common -DPIC -o zcfg2yaml.o
+	g++  ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o service_internal.o ${MS_FILE} ${JS_FILE}  ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml ${LDFLAGS}
 
 install:
 	@echo "##############################################################################"

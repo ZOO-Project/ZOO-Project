@@ -1,0 +1,453 @@
+/**
+ * Author : Gérald FENOY
+ *
+ *  Copyright 2014 GeoLabs SARL. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#include <stdio.h>
+#include <ctype.h>
+#include <service.h>
+#include <yaml.h>
+
+static service* my_service=NULL;
+static map* current_content=NULL;
+static elements* current_element=NULL;
+static char* curr_key;
+
+/**
+ * getServiceFromFile :
+ * set service given as second parameter with informations extracted from the
+ * definition file.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
+  FILE *fh = fopen("test.yml", "r");
+  if(current_content!=NULL){
+    freeMap(&current_content);
+    free(current_content);
+    current_content=NULL;
+  }
+#ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"(STARTING)FREE current_element\n");
+#endif
+  if(current_element!=NULL){
+    freeElements(&current_element);
+    free(current_element);
+    current_element=NULL;
+  }
+  my_service=NULL;
+  
+  my_service=*service;
+  my_service->name=strdup(name);
+  my_service->content=NULL;
+  my_service->metadata=NULL;
+  my_service->inputs=NULL;
+  my_service->outputs=NULL;
+  fh = fopen(file,"r");
+  if (fh==NULL){
+    fprintf(stderr,"error : file not found\n") ;
+    return -1;
+  }
+  yaml_parser_t parser;
+  yaml_token_t  token;   /* new variable */
+
+  /* Initialize parser */
+  if(!yaml_parser_initialize(&parser))
+    fputs("Failed to initialize parser!\n", stderr);
+  if(fh == NULL)
+    fputs("Failed to open file!\n", stderr);
+  /* Set input file */
+  yaml_parser_set_input_file(&parser, fh);
+  /* BEGIN new code */
+  int level=0;
+  int plevel=level;
+  int ilevel=-1;
+  int blevel=-1;
+  int ttype=0;
+  int wait_metadata=-1;
+  char *cur_key;
+  do {
+    yaml_parser_scan(&parser, &token);
+    switch(token.type)
+    {
+    /* Stream start/end */
+    case YAML_STREAM_START_TOKEN: 
+#ifdef DEBUG_YAML
+      puts("STREAM START"); 
+#endif
+      break;
+    case YAML_STREAM_END_TOKEN:   
+#ifdef DEBUG_YAML
+      puts("STREAM END");   
+#endif
+      break;
+    /* Token types (read before actual token) */
+    case YAML_KEY_TOKEN:   
+#ifdef DEBUG_YAML
+      printf("(Key token)   "); 
+#endif
+      ttype=0;
+      break;
+    case YAML_VALUE_TOKEN: 
+#ifdef DEBUG_YAML
+      printf("(Value token) "); 
+#endif
+      ttype=1;
+      break;
+    /* Block delimeters */
+    case YAML_BLOCK_SEQUENCE_START_TOKEN: 
+#ifdef DEBUG_YAML
+      puts("<b>Start Block (Sequence)</b>"); 
+#endif
+      break;
+    case YAML_BLOCK_ENTRY_TOKEN:          
+#ifdef DEBUG_YAML
+      puts("<b>Start Block (Entry)</b>");    
+#endif
+      break;
+    case YAML_BLOCK_END_TOKEN:      
+      blevel--;
+      if(ilevel>=0)
+	ilevel--;
+#ifdef DEBUG_YAML
+      printf("<b>End block</b> (%d,%d,%d,%d)\n", blevel,level,ilevel,ttype); 
+#endif
+      break;
+    /* Data */
+    case YAML_BLOCK_MAPPING_START_TOKEN:  
+#ifdef DEBUG_YAML
+      puts("[Block mapping]");            
+#endif
+      blevel++;
+      break;
+    case YAML_SCALAR_TOKEN:  
+      if(ttype==0){
+	cur_key=zStrdup(token.data.scalar.value);
+      }
+      if(ttype==1){
+	if(current_content==NULL){
+	  current_content=createMap(cur_key,token.data.scalar.value);
+	}else{
+	  addToMap(current_content,cur_key,token.data.scalar.value);
+	}
+	free(cur_key);
+	cur_key=NULL;
+      }
+
+      if(ttype==0 && blevel==0 && level==0 && strcasecmp(token.data.scalar.value,"MetaData")==0 && blevel==0){
+	addMapToMap(&my_service->content,current_content);
+#ifdef DEBUG_YAML
+	fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	freeMap(&current_content);
+	free(current_content);
+	current_content=NULL;
+	wait_metadata=1;
+      }
+      if(ttype==0 && blevel>0 && level>0 && strcasecmp(token.data.scalar.value,"MetaData")==0){
+	if(current_element->content==NULL && current_content!=NULL)
+	  addMapToMap(&current_element->content,current_content);
+#ifdef DEBUG_YAML
+	dumpMap(current_content);
+	fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	freeMap(&current_content);
+	free(current_content);
+	current_content=NULL;
+	wait_metadata=1;
+      }
+      if(ttype==0 && strcasecmp(token.data.scalar.value,"inputs")==0 && blevel==0){
+	if(wait_metadata>0){
+	  addMapToMap(&my_service->metadata,current_content);
+	  wait_metadata=-1;
+	}else{
+	  if(current_content!=NULL && my_service->content==NULL)
+	    addMapToMap(&my_service->content,current_content);
+	}
+#ifdef DEBUG_YAML
+	dumpMap(current_content);
+	fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	freeMap(&current_content);
+	free(current_content);
+	current_content=NULL;
+	wait_metadata=false;
+	level++;
+      }
+      if(ttype==0 && strcasecmp(token.data.scalar.value,"outputs")==0 && blevel==1){
+	level++;
+#ifdef DEBUG_YAML
+	dumpMap(current_content);
+	printf("\n***\n%d (%d,%d,%d,%d)\n+++\n", current_element->defaults==NULL,blevel,level,ilevel,ttype); 
+#endif
+	if(current_element->defaults==NULL && current_content!=NULL && ilevel<0){
+	  current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+	  current_element->defaults->content=NULL;
+	  current_element->defaults->next=NULL;
+	  addMapToMap(&current_element->defaults->content,current_content);
+#ifdef DEBUG_YAML
+	  dumpElements(current_element);
+	  dumpMap(current_content);
+	  fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	  freeMap(&current_content);
+	  free(current_content);
+	  current_content=NULL;
+	}else{
+	  if(current_content!=NULL && ilevel<=0){
+	    addMapToIoType(&current_element->supported,current_content);
+#ifdef DEBUG_YAML
+	    dumpElements(current_element);
+	    dumpMap(current_content);
+	    fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	    freeMap(&current_content);
+	    free(current_content);
+	    current_content=NULL;
+	  }
+	}
+      }
+      if(level==1 && strcasecmp(token.data.scalar.value,"default")==0){
+	ilevel=0;
+      }
+      if(level==1 && strcasecmp(token.data.scalar.value,"supported")==0){
+#ifdef DEBUG_YAML
+	dumpMap(current_content);
+	printf("\n***\n%d (%d,%d,%d,%d)\n+++\n", current_element->defaults==NULL,blevel,level,ilevel,ttype); 
+#endif
+	if(current_element->defaults==NULL && current_content!=NULL && ilevel<0){
+	  current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+	  current_element->defaults->content=NULL;
+	  current_element->defaults->next=NULL;
+	  addMapToMap(&current_element->defaults->content,current_content);
+#ifdef DEBUG_YAML
+	  dumpElements(current_element);
+	  dumpMap(current_content);
+	  fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	  freeMap(&current_content);
+	  free(current_content);
+	  current_content=NULL;
+	}else{
+	  if(current_content!=NULL && ilevel<=0){
+	    if(current_element->supported==NULL){
+	      current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
+	      current_element->supported->content=NULL;
+	      current_element->supported->next=NULL;
+	    }
+	    addMapToMap(&current_element->supported->content,current_content);
+#ifdef DEBUG_YAML
+	    dumpElements(current_element);
+	    fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	    freeMap(&current_content);
+	    free(current_content);
+	    current_content=NULL;
+	  }
+	}
+	ilevel=1;
+      }
+
+
+      if(strncasecmp(token.data.scalar.value,"ComplexData",11)==0 || strncasecmp(token.data.scalar.value,"LiteralData",10)==0
+	 || strncasecmp(token.data.scalar.value,"ComplexOutput",13)==0 || strncasecmp(token.data.scalar.value,"LiteralOutput",12)==0
+	 || strncasecmp(token.data.scalar.value,"BoundingBoxOutput",13)==0 || strncasecmp(token.data.scalar.value,"BoundingBoxData",12)==0){
+	current_element->format=zStrdup(token.data.scalar.value);
+	free(cur_key);
+	cur_key=NULL;
+	if(wait_metadata>0 && current_content!=NULL){
+	  addMapToMap(&current_element->metadata,current_content);
+	  wait_metadata=-1;
+	}else{
+	  if(current_content!=NULL){
+	    addMapToMap(&current_element->content,current_content);
+	  }
+	}
+#ifdef DEBUG_YAML
+	dumpMap(current_content);
+	fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+	freeMap(&current_content);
+	free(current_content);
+	current_content=NULL;
+#ifdef DEBUG_YAML
+	dumpElements(current_element);
+#endif
+      }
+
+      if(blevel==1 && level==1){
+	if(current_element!=NULL && current_content!=NULL){
+	  if(current_element->defaults==NULL){
+	    current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+	    current_element->defaults->content=NULL;
+	    current_element->defaults->next=NULL;
+	    addMapToMap(&current_element->defaults->content,current_content);
+	  }else{
+	    if(current_element->supported==NULL){
+	      current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
+	      current_element->supported->content=NULL;
+	      current_element->supported->next=NULL;
+	      addMapToMap(&current_element->supported->content,current_content);
+	    }else
+	      addMapToIoType(&current_element->supported,current_content);
+	  }
+	}
+	if(current_element!=NULL){
+	  if(my_service->inputs==NULL)
+	    my_service->inputs=dupElements(current_element);
+	  else
+	    addToElements(&my_service->inputs,current_element);
+	  freeElements(&current_element);
+	  free(current_element);
+	}
+	plevel=level;
+	current_element=(elements*)malloc(ELEMENTS_SIZE);
+	current_element->name=strdup(token.data.scalar.value);
+	current_element->content=NULL;
+	current_element->metadata=NULL;
+	current_element->format=NULL;
+	current_element->defaults=NULL;
+	current_element->supported=NULL;
+	current_element->next=NULL;
+	
+      }
+      if(blevel==1 && level==2){
+	if(current_element!=NULL && current_content!=NULL){
+	  if(current_element->defaults==NULL){
+	    current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+	    current_element->defaults->content=NULL;
+	    current_element->defaults->next=NULL;
+	    addMapToMap(&current_element->defaults->content,current_content);
+	  }else{
+	    if(current_element->supported==NULL){
+	      current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
+	      current_element->supported->content=NULL;
+	      current_element->supported->next=NULL;
+	      addMapToMap(&current_element->supported->content,current_content);
+	    }else
+	      addMapToIoType(&current_element->supported,current_content);
+	  }
+	}
+	if(current_element!=NULL){
+	  if(plevel==level){
+	    if(my_service->outputs==NULL)
+	      my_service->outputs=dupElements(current_element);
+	    else
+	      addToElements(&my_service->outputs,current_element);
+	  }else{
+	    if(my_service->inputs==NULL)
+	      my_service->inputs=dupElements(current_element);
+	    else
+	      addToElements(&my_service->inputs,current_element);
+	  }
+	  freeElements(&current_element);
+	  free(current_element);
+	}
+	plevel=level;
+	current_element=(elements*)malloc(ELEMENTS_SIZE);
+	current_element->name=strdup(token.data.scalar.value);
+	current_element->content=NULL;
+	current_element->metadata=NULL;
+	current_element->format=NULL;
+	current_element->defaults=NULL;
+	current_element->supported=NULL;
+	current_element->next=NULL;
+	
+      }
+
+
+#ifdef DEBUG_YAML
+      printf("scalar %s (%d,%d,%d,%d,%d)\n", token.data.scalar.value,blevel,level,plevel,ilevel,ttype); 
+#endif
+      break;
+    /* Others */
+    default:
+      if(token.type==0){
+	char tmp[1024];
+	sprintf(tmp,"Wrong charater found in %s: \\t",name);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return -1;
+      }
+#ifdef DEBUG_YAML
+      printf("Got token of type %d\n", token.type);
+#endif
+      break;
+    }
+    if(token.type != YAML_STREAM_END_TOKEN )
+      yaml_token_delete(&token);
+  } while(token.type != YAML_STREAM_END_TOKEN);
+  yaml_token_delete(&token);
+
+
+#ifdef DEBUG_YAML
+  fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+  if(current_element!=NULL && current_content!=NULL){
+    if(current_element->defaults==NULL){
+      current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+      current_element->defaults->content=NULL;
+      current_element->defaults->next=NULL;
+      addMapToMap(&current_element->defaults->content,current_content);
+    }else{
+      if(current_element->supported==NULL){
+	current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
+	current_element->supported->content=NULL;
+	current_element->supported->next=NULL;
+	addMapToMap(&current_element->supported->content,current_content);
+      }else
+	addMapToIoType(&current_element->supported,current_content);
+    }
+#ifdef DEBUG_YAML
+    dumpMap(current_content);
+    fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
+#endif
+    freeMap(&current_content);
+    free(current_content);
+    current_content=NULL;
+  }
+  if(current_element!=NULL){
+    if(my_service->outputs==NULL)
+      my_service->outputs=dupElements(current_element);
+    else
+      addToElements(&my_service->outputs,current_element);
+    freeElements(&current_element);
+    free(current_element);
+    current_element=NULL;
+  }
+  /* END new code */
+
+  /* Cleanup */
+  yaml_parser_delete(&parser);
+  fclose(fh);
+
+#ifdef DEBUG_YAML
+  dumpService(my_service);
+#endif
+  *service=my_service;
+
+  return 1;
+}
+#ifdef __cplusplus
+}
+#endif

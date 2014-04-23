@@ -64,7 +64,7 @@
 
 #include "ulinet.h"
 
-extern   int getServiceFromFile(const char*,service**);
+extern   int getServiceFromFile(maps*,const char*,service**);
 extern   int conf_read(const char*,maps*);
 
 #ifdef USE_JS
@@ -87,6 +87,10 @@ extern "C" {
   static xmlNsPtr usedNs[10];
   static char* nsName[10];
   static int nbNs=0;
+
+  int getServiceFromYAML(maps*,char*,service**,char *name);
+  int readServiceFile(maps*, char*,service**,char *);
+  
 
   void printHeaders(maps*);
   void unhandleStatus(maps*);
