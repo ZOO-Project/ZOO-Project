@@ -1,24 +1,17 @@
-[CentroidPy]
- Title = Get the centroid of a polygon. 
- Abstract = Compute the geometry centroid.
- Profile = urn:ogc:wps:1.0.0:centroid
- processVersion = 2
+[Clean]
+ Title = Extract the feature that have a valid geometry field. 
+ Abstract = Extract the feature that have a valid geometry field.
+ processVersion = 1
  storeSupported = true
  statusSupported = true
  serviceProvider = ogr_sp
  serviceType = Python
- <MetaData>
-   title = Demo
- </MetaData>
  <DataInputs>
-  [InputPolygon]
+  [InputData]
    Title = Polygon to get the centroid
    Abstract = The centroid which is not necessarily within the geometry.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData>
-    title = Mon test  
-   </MetaData>   
    <ComplexData>
     <Default>
      mimeType = text/xml
@@ -36,9 +29,6 @@
   [Result]
    Title = The Centroid
    Abstract = JSON String / GML Entity of the centroid
-   <MetaData>
-    title = Mon test  
-   </MetaData>   
    <ComplexData>
     <Default>
      mimeType = text/xml

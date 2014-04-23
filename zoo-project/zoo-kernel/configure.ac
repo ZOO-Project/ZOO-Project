@@ -13,7 +13,6 @@ AC_CHECK_LIB([curl], [curl_easy_init curl_easy_setopt curl_easy_cleanup curl_eas
 AC_CHECK_LIB([dl], [dlopen dlsym dlerror dlclose])
 AC_CHECK_LIB([fl], [main])
 AC_CHECK_LIB([pthread], [main])
-AC_CHECK_LIB([fcgi], [main])
 AC_CHECK_LIB([ssl], [main])
 
 # Checks for header files.
@@ -67,12 +66,49 @@ AC_SUBST([GDAL_CFLAGS])
 AC_SUBST([GDAL_LIBS])
 
 # ===========================================================================
+# Detect if libyaml is available
+# ===========================================================================
+
+AC_ARG_WITH([yaml],
+        [AS_HELP_STRING([--with-yaml=PATH], [specify an alternative location for the fastcgi library])],
+        [YAMLPATH="$withval"], [YAMLPATH=""])
+
+if test -z "$YAMLPATH"
+then
+	YAML_LDFLAGS=""
+	YAML_CPPFLAGS=""
+	YAML_FILE=""
+	YAML_FILE1=""
+else
+
+	# Extract the linker and include flags
+	YAML_LDFLAGS="-L$YAMLPATH/lib -lyaml"
+	YAML_CPPFLAGS="-I$YAMLPATH/include -DYAML"
+	YAML_FILE="service_yaml.o"
+	YAML_FILE1="zcfg2yaml"
+	
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$YAML_CPPFLAGS"
+	LDFLAGS_SAVE="$LDFLAGS"
+	LDFLAGS="YAML_LDFLAGS"
+	AC_CHECK_LIB([yaml], [yaml_parser_initialize,yaml_parser_set_input_file,yaml_parser_scan])
+	AC_CHECK_HEADERS([yaml.h],
+                 [], [AC_MSG_ERROR([could not find headers include related to YAML])])
+
+fi
+AC_SUBST([YAML_CPPFLAGS])
+AC_SUBST([YAML_LDFLAGS])
+AC_SUBST([YAML_FILE])
+AC_SUBST([YAML_FILE1])
+
+# ===========================================================================
 # Detect if fastcgi is available
 # ===========================================================================
 
 AC_ARG_WITH([fastcgi],
         [AS_HELP_STRING([--with-fastcgi=PATH], [specify an alternative location for the fastcgi library])],
-        [FCGIPATH="$withval"], [FCGIPATH=""])
+        [FCGIPATH="$withval"], [FCGIPATH="/usr"])
 
 # Extract the linker and include flags
 FCGI_LDFLAGS="-L$FCGIPATH/lib"
@@ -81,6 +117,9 @@ FCGI_CPPFLAGS="-I$FCGIPATH/include"
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$FCGI_CPPFLAGS"
+LDFLAGS_SAVE="LDFLAGS"
+LDFLAGS="$FCGI_LDFLAGS"
+AC_CHECK_LIB([fcgi], [main])
 AC_CHECK_HEADERS([fcgi_stdio.h],
                  [], [AC_MSG_ERROR([could not find headers include related to fastcgi])])
 

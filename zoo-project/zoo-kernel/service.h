@@ -81,6 +81,7 @@ extern "C" {
 
 #define SHMSZ     27
 
+#include "version.h" 
 
 #ifdef DEBUG_STACK
   void debugStack(const char* file,const int line){
@@ -132,7 +133,7 @@ extern "C" {
    */
   static void _dumpMap(map* t){
     if(t!=NULL){
-      fprintf(stderr,"[%s] => [%s] \n",t->name,t->value);
+      fprintf(stderr,"%s: %s\n",t->name,t->value);
       fflush(stderr);
 	}else{
       fprintf(stderr,"NULL\n");
@@ -436,31 +437,27 @@ extern "C" {
   static void addMapToMap(map** mo,map* mi){
     map* tmp=mi;
     map* _cursor=*mo;
-    if(tmp==NULL){
-      if(_cursor!=NULL){
-	while(_cursor!=NULL)
-	  _cursor=_cursor->next;
-	_cursor=NULL;
-      }else
-	*mo=NULL;
-    }
     while(tmp!=NULL){
       if(_cursor==NULL){
-	if(*mo==NULL)
-	  *mo=createMap(tmp->name,tmp->value);
-	else
-	  addToMap(*mo,tmp->name,tmp->value);
+	*mo=createMap(tmp->name,tmp->value);
+	(*mo)->next=NULL;
       }
       else{
 #ifdef DEBUG
 	fprintf(stderr,"_CURSOR\n");
 	dumpMap(_cursor);
 #endif
-	while(_cursor!=NULL)
+	while(_cursor->next!=NULL)
 	  _cursor=_cursor->next;
-	_cursor=createMap(tmp->name,tmp->value);
-	_cursor->next=NULL;
+	map* tmp1=getMap(_cursor,tmp->name);
+	if(tmp1==NULL)
+	  _cursor->next=createMap(tmp->name,tmp->value);
+	else{
+	  free(tmp1->value);
+	  tmp1->value=zStrdup(tmp->value);
+	}
       }
+      _cursor=*mo;
       tmp=tmp->next;
 #ifdef DEBUG
       fprintf(stderr,"MO\n");
@@ -567,12 +564,16 @@ extern "C" {
     while(tmp!=NULL){
       if(_cursor==NULL){
 	*mo=dupMaps(&mi);
-	(*mo)->next=NULL;
       }
       else{
+	maps* tmp1=getMaps(*mo,tmp->name);
 	while(_cursor->next!=NULL)
 	  _cursor=_cursor->next;
-	_cursor->next=dupMaps(&tmp);
+	if(tmp1==NULL)
+	  _cursor->next=dupMaps(&tmp);
+	else
+	  addMapToMap(&tmp1->content,tmp->content);
+	_cursor=*mo;
       }
       tmp=tmp->next;
     }
@@ -602,12 +603,12 @@ extern "C" {
       sprintf(tmp,"%s_%d",key,index);
     else
       sprintf(tmp,"%s",key);
-    map* tmpSize=getMapArray(m,"size",index);
+    map* tmpSize=getMapArray(m,(char*)"size",index);
     if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
 #ifdef DEBUG
       fprintf(stderr,"%s\n",tmpSize->value);
 #endif
-      map* ptr=getMapOrFill(m,tmp,"");
+      map* ptr=getMapOrFill(m,tmp,(char *)"");
       free(ptr->value);
       ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
       memcpy(ptr->value,value,atoi(tmpSize->value)); 
@@ -617,7 +618,7 @@ extern "C" {
   }
 
   static map* getMapType(map* mt){
-    map* tmap=getMap(mt,"mimeType");
+    map* tmap=getMap(mt,(char *)"mimeType");
     if(tmap==NULL){
       tmap=getMap(mt,"dataType");
       if(tmap==NULL){
@@ -645,14 +646,14 @@ extern "C" {
     }
 
     char *tmpV[8]={
-      "size",
-      "value",
-      "uom",
-      "Reference",
-      "xlink:href",
+      (char*)"size",
+      (char*)"value",
+      (char*)"uom",
+      (char*)"Reference",
+      (char*)"xlink:href",
       typ,
-      "schema",
-      "encoding"
+      (char*)"schema",
+      (char*)"encoding"
     };
     sprintf(tmpLen,"%d",len+1);
     addToMap(_cursor->content,"length",tmpLen);
@@ -729,6 +730,77 @@ extern "C" {
     }
   }
 
+  static void dumpElementsAsYAML(elements* e){
+    elements* tmp=e;
+    while(tmp!=NULL){
+      for(int i=0;i<2;i++)
+	fprintf(stderr," ");
+      fprintf(stderr,"%s:\n",tmp->name);
+      map* mcurs=tmp->content;
+      while(mcurs!=NULL){
+	for(int i=0;i<4;i++)
+	  fprintf(stderr," ");
+	_dumpMap(mcurs);
+	mcurs=mcurs->next;
+      }
+      mcurs=tmp->metadata;
+      if(mcurs!=NULL){
+	for(int i=0;i<4;i++)
+	  fprintf(stderr," ");
+	fprintf(stderr,"MetaData:\n");
+	while(mcurs!=NULL){
+	  for(int i=0;i<6;i++)
+	    fprintf(stderr," ");
+	  _dumpMap(mcurs);
+	  mcurs=mcurs->next;
+	}
+      }
+      for(int i=0;i<4;i++)
+	fprintf(stderr," ");
+      fprintf(stderr,"%s:\n",tmp->format);
+      iotype* tmpio=tmp->defaults;
+      int ioc=0;
+      while(tmpio!=NULL){
+	for(int i=0;i<6;i++)
+	  fprintf(stderr," ");
+	fprintf(stderr,"default:\n");
+	mcurs=tmpio->content;
+	while(mcurs!=NULL){
+	  for(int i=0;i<8;i++)
+	    fprintf(stderr," ");
+	  if(strcasecmp(mcurs->name,"range")==0){
+	    fprintf(stderr,"range: \"%s\"\n",mcurs->value);
+	  }else
+	    _dumpMap(mcurs);
+	  mcurs=mcurs->next;
+	}
+	tmpio=tmpio->next;
+	ioc++;
+      }
+      tmpio=tmp->supported;
+      ioc=0;
+      while(tmpio!=NULL){
+	for(int i=0;i<6;i++)
+	  fprintf(stderr," ");
+	fprintf(stderr,"supported:\n");
+	mcurs=tmpio->content;
+	while(mcurs!=NULL){
+	  for(int i=0;i<8;i++)
+	    fprintf(stderr," ");
+	  if(strcasecmp(mcurs->name,"range")==0){
+	    fprintf(stderr,"range: \"%s\"\n",mcurs->value);
+	  }else
+	    _dumpMap(mcurs);
+	  mcurs=mcurs->next;
+	}
+	tmpio=tmpio->next;
+	ioc++;
+      }
+      tmp=tmp->next;
+    }
+  }
+
+
   static elements* dupElements(elements* e){
     elements* cursor=e;
     elements* tmp=NULL;
@@ -804,6 +876,33 @@ extern "C" {
       dumpElements(s->outputs);
     }
     fprintf(stderr,"++++++++++++++++++\n");
+  }
+
+  static void dumpServiceAsYAML(service* s){
+    int level=0;
+    fprintf(stderr,"# %s\n\n",s->name);
+    if(s->content!=NULL){
+      map* mcurs=s->content;
+      dumpMap(mcurs);
+      mcurs=s->metadata;
+      if(mcurs!=NULL){
+	fprintf(stderr,"MetaData:\n");
+	while(mcurs!=NULL){
+	  for(int i=0;i<2;i++)
+	    fprintf(stderr," ");
+	  _dumpMap(mcurs);
+	  mcurs=mcurs->next;
+	}
+      }
+    }
+    if(s->inputs!=NULL){
+      fprintf(stderr,"\ninputs:\n",s->name);
+      dumpElementsAsYAML(s->inputs);
+    }
+    if(s->outputs!=NULL){
+      fprintf(stderr,"\noutputs:\n",s->name);
+      dumpElementsAsYAML(s->outputs);
+    }
   }
 
   static void mapsToCharXXX(maps* m,char*** c){

@@ -116,7 +116,6 @@ int cgiMain(){
             }
     }else{
       char *buffer=new char[cgiContentLength+1];
-      int r=0;
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>=0){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
@@ -222,15 +221,13 @@ int cgiMain(){
 	  xmlNodeSet* req=reqptr->nodesetval;
 	  if(req!=NULL && req->nodeNr==1){
 	    addToMap(tmpMap,"soap","true");
-	    int k=0;
-	    for(k;k < req->nodeNr;k++){
-	      xmlNsPtr ns=xmlNewNs(req->nodeTab[k],BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
+	    for(int k=0;k < req->nodeNr;k++){
+	      //xmlNsPtr ns=xmlNewNs(req->nodeTab[k],BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
 	      xmlDocSetRootElement(doc, req->nodeTab[k]);
 	      xmlChar *xmlbuff;
 	      int buffersize;
 	      xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "utf-8", 1);
 	      addToMap(tmpMap,"xrequest",(char*)xmlbuff);
-	      char *tmp=(char*)xmlbuff;
 	      xmlFree(xmlbuff);
 	    }
 	  }

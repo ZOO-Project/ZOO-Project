@@ -7,17 +7,11 @@
 
 #include <service.h>
 
-static int defaultsc=0;
 static maps* my_maps=NULL;
 static maps* current_maps=NULL;
-static map* previous_content=NULL;
 static map* current_content=NULL;
-static elements* current_element=NULL;
-static map* scontent=NULL;
 static char* curr_key;
 static int debug=0;
-static int previous_data=0;
-static int current_data=0;
 using namespace std;
 
 extern void crerror(const char *s);

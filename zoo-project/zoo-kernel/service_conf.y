@@ -23,12 +23,9 @@ static bool wait_defaults=false;
 static bool wait_supporteds=false;
 static bool wait_outputs=false;
 static bool wait_data=false;
-static int services_c=0;
 static service* my_service=NULL;
-static map* previous_content=NULL;
 static map* current_content=NULL;
 static elements* current_element=NULL;
-static map* scontent=NULL;
 static char* curr_key;
 static int debug=0;
 static int data=-1;
@@ -771,21 +768,21 @@ void srerror(const char *s)
  * set service given as second parameter with informations extracted from the
  * definition file.
  */
-int getServiceFromFile(const char* file,service** service){
-
-  freeMap(&previous_content);
-  previous_content=NULL;
-  freeMap(&current_content);
-  current_content=NULL;
-  freeMap(&scontent);
+int getServiceFromFile(maps* conf,const char* file,service** service){
+  if(current_content!=NULL){
+    freeMap(&current_content);
+    free(current_content);
+    current_content=NULL;
+  }
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"(STARTING)FREE current_element\n");
 #endif
-  freeElements(&current_element);
-  free(current_element);
-  current_element=NULL;
+  if(current_element!=NULL){
+    freeElements(&current_element);
+    free(current_element);
+    current_element=NULL;
+  }
   my_service=NULL;
-  scontent=NULL;
 
   wait_maincontent=true;
   wait_mainmetadata=false;
@@ -809,6 +806,9 @@ int getServiceFromFile(const char* file,service** service){
 
   int resultatYYParse = srparse() ;
   
+#ifdef DEBUG_SERVICE_CONF
+  fprintf(stderr,"RESULT: %d %d\n",resultatYYParse,wait_outputs);
+#endif
   if(wait_outputs && current_element!=NULL && current_element->name!=NULL){
     if(my_service->outputs==NULL){      
 #ifdef DEBUG_SERVICE_CONF
@@ -847,7 +847,15 @@ int getServiceFromFile(const char* file,service** service){
 #ifdef DEBUG_SERVICE_CONF
   dumpService(my_service);
 #endif
-  *service=my_service;
+  if(wait_outputs<0 || my_service==NULL || my_service->name==NULL || my_service->content==NULL || my_service->inputs==NULL || my_service->outputs==NULL){
+    setMapInMaps(conf,"lenv","message",srlval.chaine);
+#ifndef WIN32
+    srlex_destroy();
+#endif
+    return -1;
+  }
+  else
+    *service=my_service;
 
 #ifndef WIN32
   srlex_destroy();

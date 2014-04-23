@@ -51,7 +51,7 @@ def readFileFromBuffer(data,ext):
     except Exception,e:
         print >> sys.stderr,e
         return []
-
+    
 def buildFeatureFromGeomtry(conf,geom,driverName,ext):
     drv = osgeo.ogr.GetDriverByName( driverName )
     ds = drv.CreateDataSource( "/vsimem//store"+conf["lenv"]["sid"]+"0."+ext )
@@ -68,10 +68,13 @@ def buildFeatureFromGeomtry(conf,geom,driverName,ext):
 
 def createGeometryFromWFS(conf,my_wfs_response):
     try:
-        geom=osgeo.ogr.CreateGeometryFromGML(my_wfs_response.replace('<?xml version="1.0" encoding="utf-8"?>\n',''))
-    except:
+        geom=osgeo.ogr.CreateGeometryFromGML(my_wfs_response.replace('<?xml version="1.0" encoding="utf-8"?>\n','').replace('<?xml version=\'1.0\' encoding="utf-8"?>\n',''))
+    except Exception,e:
+        print >> sys.stderr,"**"
+        print >> sys.stderr,e
         geom=None
     try:
+        print >> sys.stderr,geom is None
         if geom is None:
             if not(conf["lenv"].has_key("cnt")):
                 conf["lenv"]["cnt"]=0
@@ -97,20 +100,33 @@ def extractInputs(conf,obj):
         return createGeometryFromWFS(conf,obj["value"])
     
 def outputResult(conf,obj,geom):
-    driverName = "GML"
-    extension = [ ".xml" , ".xsd" ]
+    if obj["mimeType"].count("text/xml")>0:
+        driverName = "GML"
+        extension = [ ".xml" , ".xsd" ]
+        format_list = { "2.": 'GML2', "3.1.1": 'GML3', "3.1": 'GML3Deegree', "3.2": 'GML3.2' }
+        opts=['FORMAT=%s,GML3_LONGSRS=YES',format_list["3.2"]]
+        for i in format_list:
+            if obj["mimeType"].count(i)>0:
+                opts=['FORMAT=%s,GML3_LONGSRS=YES',format_list[i]]
     if obj["mimeType"]=="application/json":
         driverName = "GeoJSON"
         extension = [ ".js" ]
+        opts=None
     if obj.keys().count("schema")>0 and \
             obj["schema"]=="http://schemas.opengis.net/kml/2.2.0/ogckml22.xsd":
         driverName = "KML"
         extension = [ ".kml" ]
+        opts=None
     drv = osgeo.ogr.GetDriverByName( driverName )
-    # Create virtual file 
-    ds = drv.CreateDataSource( "/vsimem/store"+conf["lenv"]["sid"]+extension[0] )
+    print >> sys.stderr,drv
+    # Create virtual file
+    ds = drv.CreateDataSource( "/vsimem/store"+conf["lenv"]["sid"]+extension[0],options = opts)
+    print >> sys.stderr,ds
     lyr = ds.CreateLayer( "Result", None, osgeo.ogr.wkbUnknown )
+    print >> sys.stderr,lyr
     i=0
+    print >> sys.stderr,driverName
+    print >> sys.stderr,extension
     while i < len(geom):
         if i==0 and driverName!="GeoJSON":
             poDstFDefn=geom[i].GetDefnRef()
@@ -122,7 +138,10 @@ def outputResult(conf,obj,geom):
                     oFieldDefn.SetWidth( poSrcFieldDefn.GetWidth() )
                     oFieldDefn.SetPrecision( poSrcFieldDefn.GetPrecision() )
                     lyr.CreateField( oFieldDefn )
-        lyr.CreateFeature(geom[i])
+        try:
+            lyr.CreateFeature(geom[i])
+        except:
+            pass
         geom[i].Destroy()
         i+=1
     ds.Destroy()
@@ -156,6 +175,56 @@ def BufferPy(conf,inputs,outputs):
         i+=1
     outputResult(conf,outputs["Result"],rgeometries)
     i=0
+    return zoo.SERVICE_SUCCEEDED
+
+def Clean(conf,inputs,outputs):
+    from shapely.wkb import loads
+    print >> sys.stderr, "Starting service ..."
+    features=extractInputs(conf,inputs["InputData"])
+    i=0
+    rgeometries=[]
+    while i < len(features):
+        tmp=features[i].Clone()
+        resg=features[i].GetGeometryRef()
+        if resg is not None:
+            geom = loads(resg.ExportToWkb())
+            if geom.is_valid:
+                tmp.SetGeometryDirectly(resg)
+                rgeometries+=[tmp]
+                print >> sys.stderr,"valid !"
+            else:
+                print >> sys.stderr,"invalid !"
+                print >> sys.stderr,geom.wkt[0:50]
+        features[i].Destroy()
+        resg.thisown=False 
+        tmp.thisown=False
+        i+=1
+    outputResult(conf,outputs["Result"],rgeometries)
+    i=0
+    print >> sys.stderr,"Return"
+    return zoo.SERVICE_SUCCEEDED
+
+def TransformService(conf,inputs,outputs):
+    from osgeo import osr
+    geometry=extractInputs(conf,inputs["InputData"])
+    sourceRef = osr.SpatialReference()
+    tmp=inputs["SourceCRS"]["value"].split(":")
+    sourceRef.ImportFromEPSG(int(tmp[len(tmp)-1]))
+    targetRef = osr.SpatialReference()    
+    tmp=inputs["TargetCRS"]["value"].split(":")
+    targetRef.ImportFromEPSG(int(tmp[len(tmp)-1]))
+    transform = osr.CoordinateTransformation(sourceRef, targetRef)
+    i=0
+    rgeometries=[]
+    while i < len(geometry):
+        tmp=geometry[i].Clone()
+        resg=geometry[i].GetGeometryRef()
+        resg.Transform(transform)
+        tmp.SetGeometryDirectly(resg.Clone())
+        rgeometries+=[tmp]
+        geometry[i].Destroy()
+        i+=1
+    outputResult(conf,outputs["TransformedData"],rgeometries)
     return zoo.SERVICE_SUCCEEDED
 
 def BoundaryPy(conf,inputs,outputs):

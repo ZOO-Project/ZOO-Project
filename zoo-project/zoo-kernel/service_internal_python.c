@@ -102,6 +102,10 @@ PyMODINIT_FUNC init_zoo(){
   PyDict_SetItemString(d, "SERVICE_FAILED", tmp);
   Py_DECREF(tmp);
 
+  tmp = PyString_FromString(ZOO_VERSION);
+  PyDict_SetItemString(d, "VERSION", tmp);
+  Py_DECREF(tmp);
+
   ZooError = PyErr_NewException("zoo.error", NULL, NULL);
   Py_INCREF(ZooError);
   PyModule_AddObject(module, "error", ZooError);
