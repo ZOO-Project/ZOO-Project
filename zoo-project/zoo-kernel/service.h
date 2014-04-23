@@ -732,41 +732,42 @@ extern "C" {
 
   static void dumpElementsAsYAML(elements* e){
     elements* tmp=e;
+    int i;
     while(tmp!=NULL){
-      for(int i=0;i<2;i++)
+      for(i=0;i<2;i++)
 	fprintf(stderr," ");
       fprintf(stderr,"%s:\n",tmp->name);
       map* mcurs=tmp->content;
       while(mcurs!=NULL){
-	for(int i=0;i<4;i++)
+	for(i=0;i<4;i++)
 	  fprintf(stderr," ");
 	_dumpMap(mcurs);
 	mcurs=mcurs->next;
       }
       mcurs=tmp->metadata;
       if(mcurs!=NULL){
-	for(int i=0;i<4;i++)
+	for(i=0;i<4;i++)
 	  fprintf(stderr," ");
 	fprintf(stderr,"MetaData:\n");
 	while(mcurs!=NULL){
-	  for(int i=0;i<6;i++)
+	  for(i=0;i<6;i++)
 	    fprintf(stderr," ");
 	  _dumpMap(mcurs);
 	  mcurs=mcurs->next;
 	}
       }
-      for(int i=0;i<4;i++)
+      for(i=0;i<4;i++)
 	fprintf(stderr," ");
       fprintf(stderr,"%s:\n",tmp->format);
       iotype* tmpio=tmp->defaults;
       int ioc=0;
       while(tmpio!=NULL){
-	for(int i=0;i<6;i++)
+	for(i=0;i<6;i++)
 	  fprintf(stderr," ");
 	fprintf(stderr,"default:\n");
 	mcurs=tmpio->content;
 	while(mcurs!=NULL){
-	  for(int i=0;i<8;i++)
+	  for(i=0;i<8;i++)
 	    fprintf(stderr," ");
 	  if(strcasecmp(mcurs->name,"range")==0){
 	    fprintf(stderr,"range: \"%s\"\n",mcurs->value);
@@ -780,12 +781,12 @@ extern "C" {
       tmpio=tmp->supported;
       ioc=0;
       while(tmpio!=NULL){
-	for(int i=0;i<6;i++)
+	for(i=0;i<6;i++)
 	  fprintf(stderr," ");
 	fprintf(stderr,"supported:\n");
 	mcurs=tmpio->content;
 	while(mcurs!=NULL){
-	  for(int i=0;i<8;i++)
+	  for(i=0;i<8;i++)
 	    fprintf(stderr," ");
 	  if(strcasecmp(mcurs->name,"range")==0){
 	    fprintf(stderr,"range: \"%s\"\n",mcurs->value);
@@ -880,6 +881,7 @@ extern "C" {
 
   static void dumpServiceAsYAML(service* s){
     int level=0;
+    int i;
     fprintf(stderr,"# %s\n\n",s->name);
     if(s->content!=NULL){
       map* mcurs=s->content;
@@ -888,7 +890,7 @@ extern "C" {
       if(mcurs!=NULL){
 	fprintf(stderr,"MetaData:\n");
 	while(mcurs!=NULL){
-	  for(int i=0;i<2;i++)
+	  for(i=0;i<2;i++)
 	    fprintf(stderr," ");
 	  _dumpMap(mcurs);
 	  mcurs=mcurs->next;
@@ -996,7 +998,8 @@ extern "C" {
 	    sprintf(dataInputsKVP,"%sReference",temp);
 	  else{
 	    if(hasLength!=NULL){
-	      for(int j=0;j<atoi(hasLength->value);j++){
+	      int j;
+	      for(j=0;j<atoi(hasLength->value);j++){
 		map* tmp0=getMapArray(curs->content,"value",j);
 		if(j==0)
 		  free(temp);
