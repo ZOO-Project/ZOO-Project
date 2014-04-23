@@ -605,8 +605,15 @@ int runRequest(map* request_inputs)
   if(r_inputs!=NULL){
     char *tmp=zStrdup(r_inputs->value);
     setMapInMaps(m,"main","language",tmp);
+#ifdef DEB
+    char tmp2[12];
+    sprintf(tmp2,"%s.utf-8",tmp);
+    translateChar(tmp2,'-','_');
+    setlocale (LC_ALL, tmp2);
+#else
     translateChar(tmp,'-','_');
     setlocale (LC_ALL, tmp);
+#endif
 #ifndef WIN32
     setenv("LC_ALL",tmp,1);
 #else

@@ -11,7 +11,7 @@ JAVALDFLAGS=@JAVA_LDFLAGS@
 JAVA_ENABLED=@JAVA_ENABLED@
 JAVA_FILE=@JAVA_FILE@
 
-CFLAGS=-fpic ${YAML_CFLAGS} ${MACOS_CFLAGS} ${MS_CFLAGS} -I../../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+CFLAGS=@DEB_DEF@ -fpic ${YAML_CFLAGS} ${MACOS_CFLAGS} ${MS_CFLAGS} -I../../thirds/cgic206 -I. -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 LDFLAGS=-lcurl -L../../thirds/cgic206 -lcgic ${GDAL_LIBS} ${XML2LDFLAGS} ${PYTHONLDFLAGS} ${PERLLDFLAGS}  ${PHPLDFLAGS} ${JAVALDFLAGS} ${JSLDFLAGS} -lfcgi -lcrypto ${MS_LDFLAGS} ${MACOS_LD_FLAGS} ${YAML_LDFLAGS} 
 
 PHPCFLAGS=@PHP_CPPFLAGS@
@@ -29,7 +29,7 @@ PERL_FILE=@PERL_FILE@
 all: version.h zoo_loader.cgi ${YAML_FILE1}
 
 version.h:
-	echo "#define ZOO_VERSION \"`svnversion -q -c -n .`\"" > version.h
+	echo "#define ZOO_VERSION \"`svnversion`\"" > version.h
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
