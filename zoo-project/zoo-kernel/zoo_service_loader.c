@@ -94,8 +94,8 @@ extern "C" {
   __declspec(dllexport) char *strcasestr(char const *a, char const *b)
 #ifndef USE_MS
  { 
-  char *x=_zStrdup(a); 
-  char *y=_zStrdup(b); 
+  char *x=zStrdup(a); 
+  char *y=zStrdup(b); 
   
   x=_strlwr(x); 
   y=_strlwr(y); 
@@ -114,6 +114,17 @@ extern "C" {
 #define _(String) dgettext ("zoo-kernel",String)
 #define __(String) dgettext ("zoo-service",String)
 
+extern   int getServiceFromFile(maps*,const char*,service**);
+
+int readServiceFile(maps* conf, char* file,service** service,char *name){
+  int t=getServiceFromFile(conf,file,service);
+#ifdef YAML
+  if(t<0){
+    t=getServiceFromYAML(conf,file,service,name);
+  }
+#endif
+  return t;
+}
 
 void translateChar(char* str,char toReplace,char toReplaceBy){
   int i=0,len=strlen(str);

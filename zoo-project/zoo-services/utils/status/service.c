@@ -120,6 +120,7 @@ extern "C" {
 	xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
 	setMapInMaps(outputs,"Result","value",(char*)xmlbuff);
 	xmlFree(xmlbuff);
+	free(tmpStr);
 	free(tmpStr1);
 	free(tmpStr0);
 	free(tmpStrFinal);
