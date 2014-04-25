@@ -41,6 +41,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #else
+#include "cgic.h"
 #include <direct.h>
 #endif
 #include <stdio.h>
@@ -64,7 +65,6 @@
 
 #include "ulinet.h"
 
-extern   int getServiceFromFile(maps*,const char*,service**);
 extern   int conf_read(const char*,maps*);
 
 #ifdef USE_JS

@@ -25,6 +25,8 @@
 #include "service.h"
 #include "service_internal.h"
 
+extern   int getServiceFromFile(maps*,const char*,service**);
+
 int main(int argc, char** argv){
   service* s1=NULL;
   maps *m;
@@ -34,7 +36,8 @@ int main(int argc, char** argv){
   if(s1 == NULL){ 
     return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
   }
-  readServiceFile(m,argv[1],&s1,argv[2]);
-  dumpServiceAsYAML(s1);
+  int t=getServiceFromFile(conf,file,service);
+  if(t>=0)
+    dumpServiceAsYAML(s1);
   return 0;
 }

@@ -34,16 +34,6 @@
 #define FALSE -1
 #endif
 
-int readServiceFile(maps* conf, char* file,service** service,char *name){
-  int t=getServiceFromFile(conf,file,service);
-#ifdef YAML
-  if(t<0){
-    t=getServiceFromYAML(conf,file,service,name);
-  }
-#endif
-  return t;
-}
-
 void printHeaders(maps* m){
   maps *_tmp=getMaps(m,"headers");
   if(_tmp!=NULL){
@@ -132,7 +122,7 @@ void updateStatus(maps *conf){
 }
 
 char* getStatus(int pid){
-  char lpszBuf[SHMEMSIZE];
+  char *lpszBuf=(char*) malloc(SHMEMSIZE*sizeof(char));
   int i=0;
   LPWSTR lpszTmp=NULL;
   LPVOID lpvMem = NULL;

@@ -7,13 +7,11 @@
 
 !INCLUDE nmake.opt
 
-all:  zoo_loader.cgi
+all:  zoo_loader.cgi zcfg2yaml
 
 version.h:
-	svnversion -q -c -n . > version_0.h
-	set /p VERS=<version_0.h
-	rm version_0.h
-	echo #define ZOO_VERSION "%VERS%" > version.h
+	set VERS=`svnversion .`
+	echo #define ZOO_VERSION "$(VERS)" > version.h
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
@@ -38,6 +36,9 @@ lex.sr.c: service_conf.y service_conf.l service_conf.tab.c service.h
 
 lex.sr.obj: lex.sr.c service.h
 	$(CPP) $(CFLAGS) /c lex.sr.c
+
+zcfg2yaml.obj: zcfg2yaml.c
+	$(CPP) $(CFLAGS) /c zcfg2yaml.c
 
 service_internal.obj: service_internal.c
 	$(CPP) $(CFLAGS) /c service_internal.c
@@ -69,8 +70,11 @@ zoo_loader.obj: zoo_loader.c service.h
 dirent.obj:
 	$(CPP) /EHsc /c $(CFLAGS) ..\..\thirds\dirent-win32\dirent.c
 
-zoo_loader.cgi: zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
+zoo_loader.cgi: version.h zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
 	link zoo_loader.obj dirent.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS) $(LDFLAGSCGI)
+
+zcfg2yaml.exe: version.h zcfg2yaml.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj dirent.obj
+	link zcfg2yaml.obj dirent.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj /out:zcfg2yaml.exe $(LDFLAGS) $(LDFLAGSCGI)
 
 clean:
 	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling
