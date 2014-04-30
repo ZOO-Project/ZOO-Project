@@ -203,12 +203,14 @@ STag
 	dumpElements(my_service->inputs);
 	dumpService(my_service);
 #endif	
-	if(my_service->inputs==NULL){
+	if(my_service->inputs==NULL && current_element!=NULL && current_element->name!=NULL){
 	  my_service->inputs=dupElements(current_element);
 	  my_service->inputs->next=NULL;
+	  freeElements(&current_element);
 	}
 	else if(current_element!=NULL && current_element->name!=NULL){
 	  addToElements(&my_service->inputs,current_element);
+	  freeElements(&current_element);
 	}
 #ifdef DEBUG_SERVICE_CONF
 	fprintf(stderr,"CURRENT_ELEMENT\n");
@@ -217,7 +219,6 @@ STag
 	dumpElements(my_service->inputs);
 	fprintf(stderr,"(DATAOUTPUTS) FREE current_element\n");
 #endif
-	freeElements(&current_element);
 	free(current_element);
 	current_element=NULL;
 	wait_inputs=false;
@@ -847,7 +848,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 #ifdef DEBUG_SERVICE_CONF
   dumpService(my_service);
 #endif
-  if(wait_outputs<0 || my_service==NULL || my_service->name==NULL || my_service->content==NULL || my_service->inputs==NULL || my_service->outputs==NULL){
+  if(wait_outputs<0 || my_service==NULL || my_service->name==NULL || my_service->content==NULL || my_service->outputs==NULL){
     setMapInMaps(conf,"lenv","message",srlval.chaine);
 #ifndef WIN32
     srlex_destroy();

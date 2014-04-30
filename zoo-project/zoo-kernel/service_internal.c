@@ -755,6 +755,38 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m)
   return nc;
 }
 
+void addPrefix(maps* conf,map* level,service* serv){
+  if(level!=NULL){
+    char key[25];
+    char* prefix=NULL;
+    int clevel=atoi(level->value);
+    int cl=0;
+    for(cl=0;cl<clevel;cl++){
+      sprintf(key,"sprefix_%d",cl);
+      map* tmp2=getMapFromMaps(conf,"lenv",key);
+      if(tmp2!=NULL){
+	if(prefix==NULL)
+	  prefix=zStrdup(tmp2->value);
+	else{
+	  int plen=strlen(prefix);
+	  prefix=(char*)realloc(prefix,(plen+strlen(tmp2->value)+2)*sizeof(char));
+	  memcpy(prefix+plen,tmp2->value,strlen(tmp2->value)*sizeof(char));
+	  prefix[plen+strlen(tmp2->value)]=0;
+	}
+      }
+    }
+    if(prefix!=NULL){
+      char* tmp0=strdup(serv->name);
+      free(serv->name);
+      serv->name=(char*)malloc((strlen(prefix)+strlen(tmp0)+1)*sizeof(char));
+      sprintf(serv->name,"%s%s",prefix,tmp0);
+      free(tmp0);
+      free(prefix);
+      prefix=NULL;
+    }
+  }
+}
+
 void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr nr,n,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
@@ -775,6 +807,8 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
     tmp1=getMap(serv->content,"processVersion");
     if(tmp1!=NULL)
       xmlNewNsProp(nc1,ns,BAD_CAST "processVersion",BAD_CAST tmp1->value);
+    map* tmp3=getMapFromMaps(m,"lenv","level");
+    addPrefix(m,tmp3,serv);
     printDescription(nc1,ns_ows,serv->name,serv->content);
     tmp1=serv->metadata;
     while(tmp1!=NULL){
@@ -815,7 +849,7 @@ xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,const char* service,maps* m)
   return n;
 }
 
-void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
+void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
   xmlNodePtr nr,n,nc1,nc2,nc3,nc4,nc5,nc6,pseudor;
 
@@ -850,6 +884,8 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv,int sc){
     }
   }
   
+  tmp1=getMapFromMaps(m,"lenv","level");
+  addPrefix(m,tmp1,serv);
   printDescription(nc,ns_ows,serv->name,serv->content);
 
   tmp1=serv->metadata;
@@ -1859,6 +1895,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 
 void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map* amap){
   xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "Identifier");
+  
   xmlAddChild(nc2,xmlNewText(BAD_CAST identifier));
   xmlAddChild(root,nc2);
   map* tmp=amap;
@@ -1903,6 +1940,8 @@ char* getVersion(maps* m){
 }
 
 void printExceptionReportResponse(maps* m,map* s){
+  if(getMapFromMaps(m,"lenv","hasPrinted")!=NULL)
+    return;
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
@@ -1957,6 +1996,7 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlFree(xmlbuff);
   xmlCleanupParser();
   zooXmlCleanupNs();
+  setMapInMaps(m,"lenv","hasPrinted","true");
 }
 
 xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
@@ -1968,17 +2008,18 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
 
   maps* tmpMap=getMaps(m,"main");
 
-  int nsid=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
+  int nsid=zooXmlAddNs(NULL,"http://www.opengis.net/ows","ows");
   ns=usedNs[nsid];
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
 
   if(use_ns==1){
-    ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST "ows");
+    ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1.0",BAD_CAST "ows");
     int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
     ns_xsi=usedNs[xsiId];
+    ns_xsi=xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
+    xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
     int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
     ns_xlink=usedNs[xlinkId];
-    xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
   }
   addLangAttr(n,m);
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
@@ -2847,3 +2888,78 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
   free(errormap);
   return -1;
 }
+
+#ifdef USE_MS
+char *readVSIFile(maps* conf,const char* dataSource){
+    VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
+    VSIStatBufL file_status;
+    VSIStatL(dataSource, &file_status);
+    if(fichier==NULL){
+      char tmp[1024];
+      sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %d.",
+	      dataSource,file_status.st_size);
+      setMapInMaps(conf,"lenv","message",tmp);
+      return NULL;
+    }
+    char *res1=(char *)malloc(file_status.st_size*sizeof(char));
+    VSIFReadL(res1,1,(file_status.st_size)*sizeof(char),fichier);
+    VSIFCloseL(fichier);
+    VSIUnlink(dataSource);
+    return res1;
+}
+#endif
+
+void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
+  char *saveptr1;
+  char *tmps1=strtok_r(identifier,".",&saveptr1);
+  int level=0;
+  char key[25];
+  char levels[18];
+  while(tmps1!=NULL){
+    char *test=zStrdup(tmps1);
+    char* tmps2=(char*)malloc((strlen(test)+2)*sizeof(char));
+    sprintf(key,"sprefix_%d",level);
+    sprintf(tmps2,"%s.",test);
+    sprintf(levels,"%d",level);
+    setMapInMaps(conf,"lenv","level",levels);
+    setMapInMaps(conf,"lenv",key,tmps2);
+    free(tmps2);
+    level++;
+    tmps1=strtok_r(NULL,".",&saveptr1);
+  }
+  int i=0;
+  sprintf(buffer,"%s",conf_dir);
+  for(i=0;i<level;i++){
+    char *tmp0=zStrdup(buffer);
+    sprintf(key,"sprefix_%d",i);
+    map* tmp00=getMapFromMaps(conf,"lenv",key);
+    sprintf(buffer,"%s/%s",tmp0,tmp00->value);
+    free(tmp0);
+    buffer[strlen(buffer)-1]=0;
+    if(i+1<level){
+      map* tmpMap=getMapFromMaps(conf,"lenv","metapath");
+      if(tmpMap==NULL || strlen(tmpMap->value)==0){
+	char *tmp01=zStrdup(tmp00->value);
+	tmp01[strlen(tmp01)-1]=0;
+	setMapInMaps(conf,"lenv","metapath",tmp01);
+	free(tmp01);
+      }
+      else{
+	char *value=(char*)malloc((strlen(tmp00->value)+strlen(tmpMap->value)+2)*sizeof(char));
+	sprintf(value,"%s/%s",tmpMap->value,tmp00->value);
+	value[strlen(value)-1]=0;
+	setMapInMaps(conf,"lenv","metapath",value);
+	free(value);
+      }
+    }else{
+      char *tmp0=zStrdup(tmp00->value);
+      tmp0[strlen(tmp0)-1]=0;
+      setMapInMaps(conf,"lenv","Identifier",tmp0);
+      free(tmp0);
+    }
+  }
+  char *tmp0=zStrdup(buffer);
+  sprintf(buffer,"%s.zcfg",tmp0);
+  free(tmp0);
+}
+

@@ -429,7 +429,7 @@ extern "C" {
     else{
       map *tmp=getMap(m,n);
       if(tmp->value!=NULL)
-      	free(tmp->value);
+	free(tmp->value);
       tmp->value=zStrdup(v);
     }
   }
@@ -449,11 +449,13 @@ extern "C" {
 #endif
 	while(_cursor->next!=NULL)
 	  _cursor=_cursor->next;
-	map* tmp1=getMap(_cursor,tmp->name);
-	if(tmp1==NULL)
+	map* tmp1=getMap(*mo,tmp->name);
+	if(tmp1==NULL){
 	  _cursor->next=createMap(tmp->name,tmp->value);
+	}
 	else{
-	  free(tmp1->value);
+	  if(tmp1->value!=NULL)
+	    free(tmp1->value);
 	  tmp1->value=zStrdup(tmp->value);
 	}
       }
@@ -566,9 +568,9 @@ extern "C" {
 	*mo=dupMaps(&mi);
       }
       else{
-	maps* tmp1=getMaps(*mo,tmp->name);
 	while(_cursor->next!=NULL)
 	  _cursor=_cursor->next;
+	maps* tmp1=getMaps(*mo,tmp->name);
 	if(tmp1==NULL)
 	  _cursor->next=dupMaps(&tmp);
 	else
@@ -686,7 +688,13 @@ extern "C" {
 	  free(_ztmpm->value);
 	_ztmpm->value=zStrdup(value);
       }else{
-	addToMap(_tmpm->content,subkey,value);
+	maps *tmp=(maps*)malloc(MAPS_SIZE);
+	tmp->name=zStrdup(key);
+	tmp->content=createMap(subkey,value);
+	tmp->next=NULL;
+	addMapsToMaps(&_tmpm,tmp);
+	freeMaps(&tmp);
+	free(tmp);
       }
     }else{
       maps *tmp=(maps*)malloc(MAPS_SIZE);

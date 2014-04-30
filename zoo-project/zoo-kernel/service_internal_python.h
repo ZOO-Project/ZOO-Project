@@ -27,9 +27,9 @@
 
 #pragma once 
 
-#include "service.h"
 #include "service_internal.h"
 #include <Python.h>
+#include "cgic.h"
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>

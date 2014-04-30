@@ -190,6 +190,102 @@ int appendMapsToMaps(maps* m,maps* mo,maps* mi,elements* elem){
   return 0;
 }
 
+int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_stdout,int level,void (func) (maps*,xmlNodePtr,service*)){
+  struct dirent *dp;
+  int scount=0;
+
+  if(conf_dir==NULL)
+    return 1;
+  DIR *dirp = opendir(conf_dir);
+  if(dirp==NULL){ 
+    dup2(saved_stdout,fileno(stdout));
+    errorException(m, _("The specified path doesn't exist."),"InvalidParameterValue","metapath");
+    return -1;
+  }
+  char tmp1[25];
+  sprintf(tmp1,"sprefix_%d",level);
+  char levels[17];
+  sprintf(levels,"%d",level);
+  setMapInMaps(m,"lenv","level",levels);
+  while ((dp = readdir(dirp)) != NULL)
+    if((dp->d_type==DT_DIR || dp->d_type==DT_LNK) && dp->d_name[0]!='.' && strstr(dp->d_name,".")==NULL){
+
+      char *tmp=(char*)malloc((strlen(conf_dir)+strlen(dp->d_name)+2)*sizeof(char));
+      sprintf(tmp,"%s/%s",conf_dir,dp->d_name);
+
+      if(prefix!=NULL){
+	free(prefix);
+	prefix=NULL;
+      }
+      prefix=(char*)malloc((strlen(dp->d_name)+2)*sizeof(char));
+      sprintf(prefix,"%s.",dp->d_name);
+      
+      map* tmpMap=getMapFromMaps(m,"lenv",tmp1);
+      
+      int res;
+      if(prefix!=NULL){
+	setMapInMaps(m,"lenv",tmp1,prefix);
+	char *cprefix=zStrdup(prefix);
+	char levels1[17];
+	sprintf(levels1,"%d",level+1);
+	setMapInMaps(m,"lenv","level",levels1);
+	res=recursReaddirF(m,n,tmp,cprefix,saved_stdout,level+1,func);
+	sprintf(levels1,"%d",level);
+	setMapInMaps(m,"lenv","level",levels1);
+	free(prefix);
+	prefix=NULL;
+      }
+      free(tmp);
+      if(res<0){
+	return res;
+      }
+    }
+    else{
+      char* tmp0=strdup(dp->d_name);
+      if(dp->d_name[0]!='.' && strstr(dp->d_name,".zcfg")!=0){
+	int t;
+	char tmps1[1024];
+	memset(tmps1,0,1024);
+	snprintf(tmps1,1024,"%s/%s",conf_dir,dp->d_name);
+	service* s1=(service*)malloc(SERVICE_SIZE);
+	if(s1 == NULL){ 
+	  dup2(saved_stdout,fileno(stdout));
+	  errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
+	  return -1;
+	}
+#ifdef DEBUG
+	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
+#endif
+	t=readServiceFile(m,tmps1,&s1,dp->d_name);
+	if(t<0){
+	  dumpMaps(m);
+	  map* tmp00=getMapFromMaps(m,"lenv","message");
+	  char tmp01[1024];
+	  if(tmp00!=NULL)
+	    sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),dp->d_name,tmp00->value);
+	  else
+	    sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),dp->d_name);
+	  dup2(saved_stdout,fileno(stdout));
+	  errorException(m, tmp01,"InternalError",NULL);
+	  freeMaps(&m);
+	  free(m);
+	  return -1;
+	}
+#ifdef DEBUG
+	dumpService(s1);
+	fflush(stdout);
+	fflush(stderr);
+#endif
+	func(m,n,s1);
+	freeService(&s1);
+	free(s1);
+	scount++;
+      }
+    }
+  (void)closedir(dirp);
+  return 1;
+}
+
 xmlXPathObjectPtr extractFromDoc(xmlDocPtr doc,const char* search){
   xmlXPathContextPtr xpathCtx;
   xmlXPathObjectPtr xpathObj;
@@ -276,7 +372,6 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 #else
     void* so = dlopen(tmps1, RTLD_LAZY);
 #endif
-#ifdef DEBUG
 #ifdef WIN32
     DWORD errstr;
     errstr = GetLastError();
@@ -284,7 +379,6 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 #else
     char *errstr;
     errstr = dlerror();
-#endif
 #endif
     if( so != NULL ) {
 #ifdef DEBUG
@@ -345,7 +439,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 	fprintf(stderr,"Function %s failed to load because of %d\n",r_inputs->value,errstr);
 #endif
 #endif
-	r_inputs=getMap(request_inputs,"Identifier");
+	r_inputs=getMapFromMaps(m,"lenv","Identifier");
 #ifdef DEBUG
 	fprintf(stderr,"Try to load function %s\n",r_inputs->value);
 #endif
@@ -355,6 +449,20 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 #else
 	execute_t execute=(execute_t)dlsym(so,r_inputs->value);
 #endif
+
+	if(execute==NULL){
+#ifdef WIN32
+	  errstr = GetLastError();
+#else
+	  errstr = dlerror();
+#endif
+	  char *tmpMsg=(char*)malloc(2048+strlen(r_inputs->value));
+	  sprintf(tmpMsg,_("Error occured while running the %s function: %s"),r_inputs->value,errstr);
+	  errorException(m, tmpMsg, "InternalError",NULL);
+	  free(tmpMsg);
+	  fprintf(stderr,"Function %s error %s\n",r_inputs->value,errstr);
+	  return;
+	}
 
 #ifdef DEBUG
 #ifdef WIN32
@@ -757,10 +865,6 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
     dumpMap(r_inputs);
 #endif
-    DIR *dirp = opendir(conf_dir);
-    if(dirp==NULL){
-      return errorException(m, _("The specified path doesn't exist."),"InvalidParameterValue","metapath");
-    }
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
     r_inputs=NULL;
     r_inputs=getMap(request_inputs,"ServiceProvider");
@@ -775,43 +879,8 @@ int runRequest(map* request_inputs)
      */
     int saved_stdout = dup(fileno(stdout));
     dup2(fileno(stderr),fileno(stdout));
-    while ((dp = readdir(dirp)) != NULL)
-      if(strstr(dp->d_name,".zcfg")!=0){
-	int t;
-	memset(tmps1,0,1024);
-	snprintf(tmps1,1024,"%s/%s",conf_dir,dp->d_name);
-	s1=(service*)malloc(SERVICE_SIZE);
-	if(s1 == NULL){ 
-	  return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
-	}
-#ifdef DEBUG
-	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
-#endif
-	t=readServiceFile(m,tmps1,&s1,dp->d_name);
-	if(t<0){
-	  dumpMaps(m);
-	  map* tmp00=getMapFromMaps(m,"lenv","message");
-	  char tmp01[1024];
-	  sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),dp->d_name,tmp00->value);
-	  dup2(saved_stdout,fileno(stdout));
-	  errorException(m, tmp01,"InternalError",NULL);
-	  freeMaps(&m);
-	  free(m);
-	  return 1;
-	}
-
-#ifdef DEBUG
-	dumpService(s1);
-	fflush(stdout);
-	fflush(stderr);
-#endif
-	printGetCapabilitiesForProcess(m,n,s1);
-	freeService(&s1);
-	free(s1);
-	scount++;
-      }
-    (void)closedir(dirp);
-    fflush(stdout);
+    if(int res=recursReaddirF(m,n,conf_dir,NULL,saved_stdout,0,printGetCapabilitiesForProcess)<0)
+      return res;
     dup2(saved_stdout,fileno(stdout));
     printDocument(m,doc,getpid());
     freeMaps(&m);
@@ -859,38 +928,26 @@ int runRequest(map* request_inputs)
 
       r_inputs=getMap(request_inputs,"Identifier");
       
-      char *saveptr;
       char *orig=zStrdup(r_inputs->value);
-      char *tmps=strtok_r(orig,",",&saveptr);
-      
-      char buff[256];
-      char buff1[1024];
+
       int saved_stdout = dup(fileno(stdout));
       dup2(fileno(stderr),fileno(stdout));
-      while(tmps){
-	memset(buff,0,256);
-	snprintf(buff,256,"%s.zcfg",tmps);
-	memset(buff1,0,1024);
-#ifdef DEBUG
-	printf("\n#######%s\n########\n",buff);
-#endif
-	while ((dp = readdir(dirp)) != NULL)
-	  if((strcasecmp("all.zcfg",buff)==0 && strstr(dp->d_name,".zcfg")>0)
-	     || strcasecmp(dp->d_name,buff)==0){
-	    memset(buff1,0,1024);
-	    snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
+      if(strcasecmp("all",orig)==0){
+	if(int res=recursReaddirF(m,n,conf_dir,NULL,saved_stdout,0,printDescribeProcessForProcess)<0)
+	  return res;
+      }
+      else{
+	char *saveptr;
+	char *tmps=strtok_r(orig,",",&saveptr);
+	
+	char buff[256];
+	char buff1[1024];
+	while(tmps!=NULL){
+	  char *corig=strdup(tmps);
+	  if(strstr(corig,".")!=NULL){
+	    parseIdentifier(m,conf_dir,corig,buff1);
 	    s1=(service*)malloc(SERVICE_SIZE);
-	    if(s1 == NULL){
-	      dup2(saved_stdout,fileno(stdout));
-	      return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
-	    }
-#ifdef DEBUG
-	    printf("#################\n(%s) %s\n#################\n",r_inputs->value,buff1);
-#endif
-	    char *tmp0=zStrdup(dp->d_name);
-	    tmp0[strlen(tmp0)-5]=0;
-	    t=readServiceFile(m,buff1,&s1,tmp0);
-	    free(tmp0);
+	    t=readServiceFile(m,buff1,&s1,corig);
 	    if(t<0){
 	      map* tmp00=getMapFromMaps(m,"lenv","message");
 	      char tmp01[1024];
@@ -907,14 +964,62 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
 	    dumpService(s1);
 #endif
-	    printDescribeProcessForProcess(m,n,s1,1);
+	    printDescribeProcessForProcess(m,n,s1);
 	    freeService(&s1);
 	    free(s1);
 	    s1=NULL;
 	    scount++;
+	    setMapInMaps(m,"lenv","level","0");
 	  }
-	rewinddir(dirp);
-	tmps=strtok_r(NULL,",",&saveptr);
+	  
+	  memset(buff,0,256);
+	  snprintf(buff,256,"%s.zcfg",tmps);
+	  memset(buff1,0,1024);
+#ifdef DEBUG
+	  printf("\n#######%s\n########\n",buff);
+#endif
+	  while ((dp = readdir(dirp)) != NULL)
+	    if( (strcasecmp("all.zcfg",buff)==0 && strstr(dp->d_name,".zcfg")>0)
+		|| strcasecmp(dp->d_name,buff)==0 ){
+	      memset(buff1,0,1024);
+	      snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
+	      s1=(service*)malloc(SERVICE_SIZE);
+	      if(s1 == NULL){
+		dup2(saved_stdout,fileno(stdout));
+		return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
+	      }
+#ifdef DEBUG
+	      printf("#################\n(%s) %s\n#################\n",r_inputs->value,buff1);
+#endif
+	      char *tmp0=zStrdup(dp->d_name);
+	      tmp0[strlen(tmp0)-5]=0;
+	      t=readServiceFile(m,buff1,&s1,tmp0);
+	      free(tmp0);
+	      if(t<0){
+		map* tmp00=getMapFromMaps(m,"lenv","message");
+		char tmp01[1024];
+		if(tmp00!=NULL)
+		  sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),dp->d_name,tmp00->value);
+		else
+		  sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),dp->d_name);
+		dup2(saved_stdout,fileno(stdout));
+		errorException(m, tmp01,"InternalError",NULL);
+		freeMaps(&m);
+		free(m);
+		return 1;
+	      }
+#ifdef DEBUG
+	      dumpService(s1);
+#endif
+	      printDescribeProcessForProcess(m,n,s1);
+	      freeService(&s1);
+	      free(s1);
+	      s1=NULL;
+	      scount++;
+	    }
+	  rewinddir(dirp);
+	  tmps=strtok_r(NULL,",",&saveptr);
+	}
       }
       closedir(dirp);
       fflush(stdout);
@@ -966,6 +1071,15 @@ int runRequest(map* request_inputs)
 #ifdef DEBUG
   fprintf(stderr,"Trying to load %s\n", tmps1);
 #endif
+  if(strstr(r_inputs->value,".")!=NULL){
+    char *identifier=zStrdup(r_inputs->value);
+    parseIdentifier(m,conf_dir,identifier,tmps1);
+    map* tmpMap=getMapFromMaps(m,"lenv","metapath");
+    if(tmpMap!=NULL)
+      addToMap(request_inputs,"metapath",tmpMap->value);
+    free(identifier);
+  }else
+    setMapInMaps(m,"lenv","Identifier",r_inputs->value);
   int saved_stdout = dup(fileno(stdout));
   dup2(fileno(stderr),fileno(stdout));
   t=readServiceFile(m,tmps1,&s1,r_inputs->value);
@@ -973,7 +1087,6 @@ int runRequest(map* request_inputs)
   dup2(saved_stdout,fileno(stdout));
   if(t<0){
     char *tmpMsg=(char*)malloc(2048+strlen(r_inputs->value));
-    
     sprintf(tmpMsg,_("The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),r_inputs->value);
     errorException(m, tmpMsg, "InvalidParameterValue","identifier");
     free(tmpMsg);

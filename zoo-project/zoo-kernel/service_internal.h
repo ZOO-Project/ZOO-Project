@@ -37,11 +37,11 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #else
-#include "cgic.h"
 #include <direct.h>
 #endif
 #include <stdio.h>
@@ -55,6 +55,7 @@
 #ifndef WIN32
 #include <xlocale.h>
 #endif
+#include <dirent.h>
 #include "service.h"
 #include <openssl/sha.h>
 #include <openssl/md5.h>
@@ -117,7 +118,7 @@ extern "C" {
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,const char*,maps*);
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
   xmlNodePtr printDescribeProcessHeader(xmlDocPtr,const char*,maps*);
-  void printDescribeProcessForProcess(maps*,xmlNodePtr,service*,int);
+  void printDescribeProcessForProcess(maps*,xmlNodePtr,service*);
   void printFullDescription(elements*,const char*,xmlNsPtr,xmlNodePtr);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*);
@@ -142,6 +143,11 @@ extern "C" {
   void addToCache(maps*,char*,char*,char*,int);
   char* isInCache(maps*,char*);
   int loadRemoteFile(maps*,map*,HINTERNET,char*);
+
+#ifdef USE_MS
+  char *readVSIFile(maps*,const char*);
+#endif
+  void parseIdentifier(maps*,char*,char*,char*);
 
 #ifdef __cplusplus
 }
