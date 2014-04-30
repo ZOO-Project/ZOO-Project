@@ -18,7 +18,7 @@ of each services available in the `ZOO-Project SVN source tree <http://zoo-proje
 A ZOO Configuration file is divided into three distinct sections :
 
 1. Main Metadata information
-2. List of Inputs metadata information
+2. List of Inputs metadata information (optional since `rev. 469 <http://zoo-project.org/trac/changeset/469>`__)
 3. List of Outputs metadata information
 
 .. Note:: The ZOO Service Configuration File is case sensitive.
@@ -111,17 +111,16 @@ You can define your data as:
 - :ref:`BoundingBoxData <BoundingBoxData>`
 - :ref:`ComplexData <ComplexData>`
 
-Except for ``LiteralData``, each *Type Of Data* node must have at least one ``<Default>`` and one ``<Supported>`` node. Even 
-if one of those are empty, it **has to be present** with an opening and closing tag on two different lines. So, something 
-like the following:
+Except for ``LiteralData``, each *Type Of Data* node must have at least one ``<Default>`` node. Even 
+if empty, it **has to be present**. So, something
+like the following should be present in your ZCFG file:
 
 .. code-block:: guess
    :linenos:
 
-   <Default>
-   </Default>
+   <Default />
 
-Otherwise, ZOO-Kernel won't be able to parse your ZCFG and will fail to process requests.
+Otherwise, ZOO-Kernel won't be able to parse your ZCFG correctly.
 
 .. _LiteralData:
 
@@ -131,6 +130,7 @@ LiteralData node
 A ``<LiteralData>`` node contains:
 
 - one (optional) ``AllowedValues`` key containing all value allowed for this input
+- one (optional) ``range`` properties containing the range (``[``, ``]``)
 - one (optional) ``rangeMin`` (``rangeMax``) properties containing the minimum (maximum) value of this range
 - one (optional) ``rangeSpacing`` properties containing the regular distance or spacing between value in this range
 - one (optional) ``rangeClosure`` properties containing the closure type (``c``, ``o``, ``oc``, ``co``)
@@ -177,6 +177,17 @@ should take values contained in ``[0.0,100.0]``, looks like the following:
      <Default />
    </LiteralData>
 
+Or more simply:
+
+.. code-block:: guess
+   :linenos:
+   
+   <LiteralData>
+     dataType = float
+     range = [0.0,100.0]
+     <Default />
+   </LiteralData>
+
 A typical ``<LiteralData>`` node, defining a ``string`` data type which
 support values ``hillshade``, ``slope``, ``aspect``, ``TRI``, ``TPI``
 and ``roughness``, looks like the following:
@@ -191,7 +202,33 @@ and ``roughness``, looks like the following:
    </LiteralData>
 
 Properties ``AllowedValues`` and ``range*`` can be conbined with both ``<Default>`` and
-``<Supported>`` nodes in the same ``<LiteralData>`` node.
+``<Supported>`` nodes in the same was as ``<LiteralData>`` node. For
+instance, the following is supported:
+
+.. code-block:: guess
+   :linenos:
+   
+   <LiteralData>
+     dataType = int
+     <Default>
+       value = 11
+       AllowedValues = -10,-8,-7,-5,-1
+       rangeMin = 0
+       rangeMin = 100
+       rangeClosure = co
+     </Default>
+     <Supported>
+       rangeMin = 200
+       rangeMin = 600
+       rangeClosure = co
+     </Supported>
+     <Supported>
+       rangeMin = 750
+       rangeMin = 990
+       rangeClosure = co
+       rangeSpacing = 10
+     </Supported>
+   </LiteralData>
 
 .. _BoundingBoxData:
 
