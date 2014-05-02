@@ -2924,6 +2924,7 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
     setMapInMaps(conf,"lenv","level",levels);
     setMapInMaps(conf,"lenv",key,tmps2);
     free(tmps2);
+    free(test);
     level++;
     tmps1=strtok_r(NULL,".",&saveptr1);
   }
@@ -2952,10 +2953,10 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
 	free(value);
       }
     }else{
-      char *tmp0=zStrdup(tmp00->value);
-      tmp0[strlen(tmp0)-1]=0;
-      setMapInMaps(conf,"lenv","Identifier",tmp0);
-      free(tmp0);
+      char *tmp01=zStrdup(tmp00->value);
+      tmp01[strlen(tmp01)-1]=0;
+      setMapInMaps(conf,"lenv","Identifier",tmp01);
+      free(tmp01);
     }
   }
   char *tmp0=zStrdup(buffer);
