@@ -63,7 +63,7 @@ struct MemoryStruct {
 };
 
 typedef struct {
-  CURL *handle;
+  CURLSH *handle;
   struct curl_slist *header;
   char* filename;
   FILE* file;
