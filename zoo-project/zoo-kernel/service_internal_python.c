@@ -388,25 +388,31 @@ PyDictObject* PyDict_FromMap(map* t){
       else if(size!=NULL){
 	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
+	  Py_DECREF(value);
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
+	Py_DECREF(value);
       }
       else{
 	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
+	  Py_DECREF(value);
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
+	Py_DECREF(value);
       }
     }
     else{
       if(PyDict_GetItem(res,name)==NULL){
 	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
+	  Py_DECREF(value);
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
+	Py_DECREF(value);
       }
     }
     Py_DECREF(name);
@@ -445,6 +451,7 @@ maps* mapsFromPyDict(PyDictObject* t){
     freeMap(&cursor->content);
     free(cursor->content);
     free(cursor);
+    Py_DECREF(key);
 #ifdef DEBUG
     dumpMaps(res);
     fprintf(stderr,">> parsed maps %d\n",i);
@@ -488,15 +495,19 @@ map* mapFromPyDict(PyDictObject* t){
       sprintf(sin,"%d",size);
       addToMap(res,"size",sin);
     }else{
+      char* lkey=PyString_AsString(key);
+      char* lvalue=PyString_AsString(value);
       if(res!=NULL){
 	if(PyString_Size(value)>0)
-	  addToMap(res,PyString_AsString(key),PyString_AsString(value));
+	  addToMap(res,lkey,lvalue);
       }
       else{
 	if(PyString_Size(value)>0)
-	  res=createMap(PyString_AsString(key),PyString_AsString(value));
+	  res=createMap(lkey,lvalue);
       }
     }
+    Py_DECREF(value);
+    Py_DECREF(key);
   }
   return res;
 }
@@ -553,7 +564,7 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
     }
     else
       setMapInMaps(conf,"lenv","status","15");
-    updateStatus(conf);
+    _updateStatus(conf);
   }
   freeMaps(&conf);
   free(conf);

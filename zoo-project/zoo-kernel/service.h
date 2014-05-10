@@ -422,9 +422,10 @@ extern "C" {
   static void addToMap(map* m,const char* n,const char* v){
     if(hasKey(m,n)==false){
       map* _cursor=m;
-      while(_cursor->next!=NULL)
-	_cursor=_cursor->next;
-      _cursor->next=createMap(n,v);
+      if(_cursor->next!=NULL){
+	addToMap(_cursor->next,n,v);
+      }else
+	_cursor->next=createMap(n,v);
     }
     else{
       map *tmp=getMap(m,n);
@@ -454,9 +455,7 @@ extern "C" {
 	  _cursor->next=createMap(tmp->name,tmp->value);
 	}
 	else{
-	  if(tmp1->value!=NULL)
-	    free(tmp1->value);
-	  tmp1->value=zStrdup(tmp->value);
+	  addToMap(*mo,tmp->name,tmp->value);
 	}
       }
       _cursor=*mo;
@@ -479,15 +478,15 @@ extern "C" {
     tmp->next->next=NULL;
   }
 
-  static map* getMapOrFill(map* m,const char *key,char* value){
-    map* tmp=m;
+  static map* getMapOrFill(map** m,const char *key,char* value){
+    map* tmp=*m;
     map* tmpMap=getMap(tmp,key);
     if(tmpMap==NULL){
       if(tmp!=NULL)
-	addToMap(tmp,key,value);
+	addToMap(*m,key,value);
       else
-	tmp=createMap(key,value);
-      tmpMap=getMap(tmp,key);
+	(*m)=createMap(key,value);
+      tmpMap=getMap(*m,key);
     }
     return tmpMap;
   }
@@ -610,7 +609,7 @@ extern "C" {
 #ifdef DEBUG
       fprintf(stderr,"%s\n",tmpSize->value);
 #endif
-      map* ptr=getMapOrFill(m,tmp,(char *)"");
+      map* ptr=getMapOrFill(&m,tmp,(char *)"");
       free(ptr->value);
       ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
       memcpy(ptr->value,value,atoi(tmpSize->value)); 

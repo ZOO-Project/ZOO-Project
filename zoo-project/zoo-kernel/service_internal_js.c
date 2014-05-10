@@ -38,7 +38,9 @@ JSAlert(JSContext *cx, uintN argc, jsval *argv1)
   JS_MaybeGC(cx);
   for(i=0;i<argc;i++){
     JSString* jsmsg = JS_ValueToString(cx,argv[i]);
-    fprintf(stderr,"[ZOO-API:JS] %s\n",JS_EncodeString(cx,jsmsg));
+    char *tmp=JS_EncodeString(cx,jsmsg);
+    fprintf(stderr,"[ZOO-API:JS] %s\n",tmp);
+    free(tmp);
   }
   JS_MaybeGC(cx);
   
@@ -68,6 +70,7 @@ JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
     fflush(stderr);
 #endif
     JSObject *api_script1=loadZooApiFile(cx,JS_GetGlobalObject(cx),api0);
+    free(api0);
   }
   JS_MaybeGC(cx);
   JS_SET_RVAL(cx, argv1, JSVAL_VOID);
@@ -157,6 +160,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   fprintf(stderr,"Trying to load %s\n",api0);
 #endif
   JSObject *api_script1=loadZooApiFile(cx,global,api0);
+  free(api0);
   fflush(stderr);
 
   char *api1=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+13);
@@ -165,6 +169,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   fprintf(stderr,"Trying to load %s\n",api1);
 #endif
   JSObject *api_script2=loadZooApiFile(cx,global,api1);
+  free(api1);
   fflush(stderr);
 
   /* Your application code here. This may include JSAPI calls
@@ -182,7 +187,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
 #endif
   struct stat file_status;
   stat(filename, &file_status);
-  char *source=(char*)malloc(file_status.st_size);
+  //char *source=(char*)malloc(file_status.st_size);
   uint16 lineno;
   jsval rval;
   JSBool ok ;
@@ -193,14 +198,19 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   else{
     char tmp1[1024];
     sprintf(tmp1,"Unable to load JavaScript file %s",filename);
+    free(filename);
     map* err=createMap("text",tmp1);
-    addMapToMap(&err,createMap("code","NoApplicableCode"));
+    addToMap(err,"code","NoApplicableCode");
     printExceptionReportResponse(mc,err);
+    freeMap(&err);
+    free(err);
+    JS_MaybeGC(cx);
     JS_DestroyContext(cx);
     JS_DestroyRuntime(rt);
     JS_ShutDown();
-    exit(-1);
+    return -1;
   }
+  
 
   /* Call a function in obj's scope. */
   jsval argv[3];
@@ -242,11 +252,13 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
     printExceptionReportResponse(*main_conf,err);
     freeMap(&err);
     free(err);
+    free(filename);
+    JS_MaybeGC(cx);
     JS_DestroyContext(cx);
     JS_DestroyRuntime(rt);
     JS_ShutDown();
     // Should return -1 here but the unallocation won't work from zoo_service_loader.c line 1847
-    exit(-1);
+    return -1;
   }
 
   jsval t=OBJECT_TO_JSVAL(d);
@@ -343,6 +355,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   JS_DestroyContext(cx);
   JS_DestroyRuntime(rt);
   JS_ShutDown();
+  free(filename);
 #ifdef JS_DEBUG
   fprintf(stderr,"Returned value %d\n",res);
 #endif
@@ -480,19 +493,20 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	size_t len1;
 	jsmsg = JS_ValueToString(cx,vp);
 	len1 = JS_GetStringLength(jsmsg);
-
+	
+	tmp=JS_EncodeString(cx,jsmsg);
 	tres=(maps*)malloc(MAPS_SIZE);
-	tres->name=zStrdup(JS_EncodeString(cx,jsmsg));
+	tres->name=zStrdup(tmp);
 	tres->content=NULL;
 	tres->next=NULL;
 
 	jsval nvp=JSVAL_NULL;
-	if((JS_GetProperty(cx, tt, JS_EncodeString(cx,jsmsg), &nvp)==JS_FALSE)){
+	if((JS_GetProperty(cx, tt, tmp, &nvp)==JS_FALSE)){
 #ifdef JS_DEBUG
-	  fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,JS_EncodeString(cx,jsmsg));
+	  fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,tmp);
 #endif
 	}
-	
+	free(tmp);
 	JSObject *nvp1=JSVAL_TO_OBJECT(JSVAL_NULL);
 	JS_ValueToObject(cx,nvp,&nvp1);
 	jsval nvp1j=OBJECT_TO_JSVAL(nvp1);
@@ -509,6 +523,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	tres=NULL;
 		
       }
+      JS_DestroyIdArray(cx,idp);
     }
   }
 
@@ -549,16 +564,17 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	size_t len1;
 	jsmsg = JS_ValueToString(cx,vp);
 	len1 = JS_GetStringLength(jsmsg);
+	tmp=JS_EncodeString(cx,jsmsg);
 #ifdef JS_DEBUG
-	fprintf(stderr,"Enumerate id : %d => %s\n",oi,JS_EncodeString(cx,jsmsg));
+	fprintf(stderr,"Enumerate id : %d => %s\n",oi,tmp);
 #endif
 	jsval nvp=JSVAL_NULL;
-	if((JS_GetProperty(cx, JSVAL_TO_OBJECT(tmp1), JS_EncodeString(cx,jsmsg), &nvp)==JS_FALSE)){
+	if((JS_GetProperty(cx, JSVAL_TO_OBJECT(tmp1), tmp, &nvp)==JS_FALSE)){
 #ifdef JS_DEBUG
-	  fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,JS_EncodeString(cx,jsmsg));
+	  fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,tmp);
 #endif
 	}
-	
+	free(tmp);
 	if(JSVAL_IS_OBJECT(nvp)){
 #ifdef JS_DEBUG
 	  fprintf(stderr,"JSVAL NVP IS OBJECT\n");
@@ -570,26 +586,31 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	jsval nvp1j=OBJECT_TO_JSVAL(nvp1);
 	if(JSVAL_IS_OBJECT(nvp1j)){
 	  JSString *jsmsg1;
+	  char *tmp1, *tmp2;
 	  JSObject *nvp2=JSVAL_TO_OBJECT(JSVAL_NULL);
 	  jsmsg1 = JS_ValueToString(cx,nvp1j);
 	  len1 = JS_GetStringLength(jsmsg1);
+	  tmp1=JS_EncodeString(cx,jsmsg1);
+	  tmp2=JS_EncodeString(cx,jsmsg);
 #ifdef JS_DEBUG
-	  fprintf(stderr,"JSVAL NVP1J IS OBJECT %s = %s\n",JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+	  fprintf(stderr,"JSVAL NVP1J IS OBJECT %s = %s\n",JS_EncodeString(cx,jsmsg),tmp1);
 #endif
-	  if(strcasecmp(JS_EncodeString(cx,jsmsg1),"[object Object]")==0){
-	    tres->name=zStrdup(JS_EncodeString(cx,jsmsg));
+	  if(strcasecmp(tmp1,"[object Object]")==0){
+	    tres->name=zStrdup(tmp2);
 	    tres->content=mapFromJSObject(cx,nvp1j);
 	  }
 	  else
-	    if(strcasecmp(JS_EncodeString(cx,jsmsg),"name")==0){
-	      tres->name=zStrdup(JS_EncodeString(cx,jsmsg1));
+	    if(strcasecmp(tmp2,"name")==0){
+	      tres->name=zStrdup(tmp1);
 	    }
 	    else{
 	      if(tres->content==NULL)
-		tres->content=createMap(JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+		tres->content=createMap(tmp2,tmp1);
 	      else
-		addToMap(tres->content,JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+		addToMap(tres->content,tmp2,tmp1);
 	    }
+	  free(tmp1);
+	  free(tmp2);
 	}
 #ifdef JS_DEBUG
 	else
@@ -606,7 +627,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
       freeMaps(&tres);
       free(tres);
       tres=NULL;
-
+      JS_DestroyIdArray(cx,idp);
     }
   }
 #ifdef JS_DEBUG
@@ -632,32 +653,37 @@ map* mapFromJSObject(JSContext *cx,jsval t){
       jsval vp;
       JSString* str; 
       JS_IdToValue(cx,id,&vp);
-      char *c, *tmp;
+      char *c, *tmp, *tmp1;
       JSString *jsmsg,*jsmsg1;
       size_t len,len1;
       jsmsg = JS_ValueToString(cx,vp);
       len = JS_GetStringLength(jsmsg);
       jsval nvp;
-      JS_GetProperty(cx, JSVAL_TO_OBJECT(t), JS_EncodeString(cx,jsmsg), &nvp);
+      tmp=JS_EncodeString(cx,jsmsg);
+      JS_GetProperty(cx, JSVAL_TO_OBJECT(t), tmp, &nvp);
       jsmsg1 = JS_ValueToString(cx,nvp);
       len1 = JS_GetStringLength(jsmsg1);
+      tmp1=JS_EncodeString(cx,jsmsg1);
 #ifdef JS_DEBUG
-      fprintf(stderr,"Enumerate id : %d [ %s => %s ]\n",index,JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+      fprintf(stderr,"Enumerate id : %d [ %s => %s ]\n",index,tmp,tmp1);
 #endif
       if(res!=NULL){
 #ifdef JS_DEBUG
-	fprintf(stderr,"%s - %s\n",JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+	fprintf(stderr,"%s - %s\n",tmp,tmp1);
 #endif
-	addToMap(res,JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+	addToMap(res,tmp,tmp1);
       }
       else{
-	res=createMap(JS_EncodeString(cx,jsmsg),JS_EncodeString(cx,jsmsg1));
+	res=createMap(tmp,tmp1);
 	res->next=NULL;
       }
+      free(tmp);
+      free(tmp1);
 #ifdef JS_DEBUG
       dumpMap(res);
 #endif
     }
+    JS_DestroyIdArray(cx,idp);
   }
 #ifdef JS_DEBUG
   dumpMap(res);

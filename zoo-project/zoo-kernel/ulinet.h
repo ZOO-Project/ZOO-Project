@@ -25,7 +25,7 @@
 #ifndef _ULINET_H
 #define _ULINET_H
 
-#include "stdio.h"
+#include "fcgi_stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>

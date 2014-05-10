@@ -30,6 +30,7 @@
 #define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
 #define TIME_SIZE 40
 
+#include "fcgi_stdio.h"
 #include <libintl.h>
 #include <locale.h>
 #define _(String) dgettext ("zoo-kernel",String)
@@ -95,7 +96,7 @@ extern "C" {
 
   void printHeaders(maps*);
   void unhandleStatus(maps*);
-  void updateStatus(maps*);
+  int _updateStatus(maps*);
   char* getStatus(int);
 
 #ifdef USE_JS
@@ -142,12 +143,15 @@ extern "C" {
 
   void addToCache(maps*,char*,char*,char*,int);
   char* isInCache(maps*,char*);
-  int loadRemoteFile(maps*,map*,HINTERNET,char*);
+  int loadRemoteFile(maps**,map**,HINTERNET,char*);
 
 #ifdef USE_MS
   char *readVSIFile(maps*,const char*);
 #endif
   void parseIdentifier(maps*,char*,char*,char*);
+  int updateStatus( maps*,const int,const char*);
+  char* getInputValue( maps*,const char*,size_t*);
+  int  setOutputValue( maps*, const char*, char*, size_t);
 
 #ifdef __cplusplus
 }
