@@ -503,6 +503,8 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
       map* tmps1=createMap("text",tmps);
       printExceptionReportResponse(m,tmps1);
       *eres=-1;
+      freeMap(&tmps1);
+      free(tmps1);
     }
   }
   else
@@ -682,7 +684,7 @@ int runRequest(map* request_inputs)
 #else
   _getcwd(ntmp,1024);
 #endif
-  r_inputs=getMapOrFill(request_inputs,"metapath","");
+  r_inputs=getMapOrFill(&request_inputs,"metapath","");
 
 
   char conf_file[10240];
@@ -782,6 +784,10 @@ int runRequest(map* request_inputs)
     errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue","request");
     freeMaps(&m);
     free(m);
+    if(request_inputs!=NULL){
+      freeMap(&request_inputs);
+      free(request_inputs);
+    }
     return 1;
   }
   else{
@@ -971,6 +977,7 @@ int runRequest(map* request_inputs)
 	    scount++;
 	    setMapInMaps(m,"lenv","level","0");
 	  }
+	  free(corig);
 	  
 	  memset(buff,0,256);
 	  snprintf(buff,256,"%s.zcfg",tmps);
@@ -1394,7 +1401,7 @@ int runRequest(map* request_inputs)
 	      if(CHECK_INET_HANDLE(hInternet))
 #endif
 		{
-		  if(loadRemoteFile(m,tmpmaps->content,hInternet,tmpx2)<0){
+		  if(loadRemoteFile(&m,&tmpmaps->content,hInternet,tmpx2)<0){
 		    freeMaps(&m);
 		    free(m);
 		    free(REQUEST);
@@ -1556,7 +1563,7 @@ int runRequest(map* request_inputs)
 		if(l==4){
 		  if(!(ltmp!=NULL && strncmp(ltmp->value,"POST",4)==0)
 		     && CHECK_INET_HANDLE(hInternet)){
-		    if(loadRemoteFile(m,tmpmaps->content,hInternet,(char*)val)!=0){
+		    if(loadRemoteFile(&m,&tmpmaps->content,hInternet,(char*)val)!=0){
 		      freeMaps(&m);
 		      free(m);
 		      free(REQUEST);

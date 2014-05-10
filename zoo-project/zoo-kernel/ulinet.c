@@ -169,25 +169,26 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
   ret.nDataAlloc = 0;
   ret.mimeType = NULL;
 
-  ret.handle=curl_share_init();
+  curl_global_init(CURL_GLOBAL_ALL|CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32);
+  ret.handle=curl_easy_init();
 
-  curl_share_setopt(ret.handle, CURLOPT_COOKIEFILE, "ALL");
+  curl_easy_setopt(ret.handle, CURLOPT_COOKIEFILE, "ALL");
 #ifndef TIGER
-  curl_share_setopt(ret.handle, CURLOPT_COOKIELIST, "ALL");
+  curl_easy_setopt(ret.handle, CURLOPT_COOKIELIST, "ALL");
 #endif
-  curl_share_setopt(ret.handle, CURLOPT_USERAGENT, lpszAgent);
+  curl_easy_setopt(ret.handle, CURLOPT_USERAGENT, lpszAgent);
   
-  curl_share_setopt(ret.handle,CURLOPT_FOLLOWLOCATION,1);
-  curl_share_setopt(ret.handle,CURLOPT_MAXREDIRS,3);
+  curl_easy_setopt(ret.handle,CURLOPT_FOLLOWLOCATION,1);
+  curl_easy_setopt(ret.handle,CURLOPT_MAXREDIRS,3);
   
   header.memory=NULL;
   header.size = 0;
 
-  curl_share_setopt(ret.handle, CURLOPT_HEADERFUNCTION, header_write_data);
-  curl_share_setopt(ret.handle, CURLOPT_WRITEHEADER, (void *)&header);
+  curl_easy_setopt(ret.handle, CURLOPT_HEADERFUNCTION, header_write_data);
+  curl_easy_setopt(ret.handle, CURLOPT_WRITEHEADER, (void *)&header);
 
 #ifdef MSG_LAF_VERBOSE
-  curl_share_setopt(ret.handle, CURLOPT_VERBOSE, 1);
+  curl_easy_setopt(ret.handle, CURLOPT_VERBOSE, 1);
 #endif
 
   return ret;
@@ -205,7 +206,7 @@ void InternetCloseHandle(HINTERNET handle){
     handle.nDataAlloc = handle.nDataLen = 0;
   }
   if(handle.handle)
-    curl_share_cleanup(handle.handle);
+    curl_easy_cleanup(handle.handle);
   curl_global_cleanup();
 }
 
@@ -221,8 +222,8 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
     {
     case INTERNET_FLAG_NO_CACHE_WRITE:    
       hInternet.hasCacheFile=-1;
-      curl_share_setopt(hInternet.handle, CURLOPT_WRITEFUNCTION, write_data_into);
-      curl_share_setopt(hInternet.handle, CURLOPT_WRITEDATA, &hInternet);
+      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEFUNCTION, write_data_into);
+      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEDATA, &hInternet);
       break;
     default:
       sprintf(filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
@@ -235,8 +236,8 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
       hInternet.file=fopen(hInternet.filename,"w+");
     
       hInternet.hasCacheFile=1;
-      curl_share_setopt(hInternet.handle, CURLOPT_WRITEFUNCTION, NULL);
-      curl_share_setopt(hInternet.handle, CURLOPT_WRITEDATA, hInternet.file);
+      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEFUNCTION, NULL);
+      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEDATA, hInternet.file);
       hInternet.nDataLen=0;
       break;
     }
@@ -249,18 +250,18 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
     fprintf(stderr,"HEADER : %s\n",lpszHeaders);
 #endif
     //curl_easy_setopt(hInternet.handle,CURLOPT_COOKIE,lpszHeaders);
-    curl_share_setopt(hInternet.handle,CURLOPT_POST,1);
+    curl_easy_setopt(hInternet.handle,CURLOPT_POST,1);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
-    curl_share_setopt(hInternet.handle,CURLOPT_VERBOSE,1);
+    curl_easy_setopt(hInternet.handle,CURLOPT_VERBOSE,1);
 #endif
-    curl_share_setopt(hInternet.handle,CURLOPT_POSTFIELDS,lpszHeaders);
+    curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDS,lpszHeaders);
     //curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
     if(hInternet.header!=NULL)
-      curl_share_setopt(hInternet.handle,CURLOPT_HTTPHEADER,hInternet.header);
+      curl_easy_setopt(hInternet.handle,CURLOPT_HTTPHEADER,hInternet.header);
   }
 
-  curl_share_setopt(hInternet.handle,CURLOPT_URL,lpszUrl);
+  curl_easy_setopt(hInternet.handle,CURLOPT_URL,lpszUrl);
   curl_easy_perform(hInternet.handle);
   curl_easy_getinfo(hInternet.handle,CURLINFO_CONTENT_TYPE,&hInternet.mimeType);
 #ifdef ULINET_DEBUG
@@ -272,7 +273,7 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
 int freeCookieList(HINTERNET hInternet){
   memset(&CCookie[0],0,1024);
 #ifndef TIGER
-  curl_share_setopt(hInternet.handle, CURLOPT_COOKIELIST, "ALL");
+  curl_easy_setopt(hInternet.handle, CURLOPT_COOKIELIST, "ALL");
 #endif
   return 1;
 }

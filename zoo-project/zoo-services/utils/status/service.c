@@ -103,6 +103,7 @@ extern "C" {
        * Parse Status to extract Status / Message
        */
       char *tmpStr=getStatus(atoi(tmpMap->value));
+      fprintf(stderr,"DEBUG: %s \n",tmpStr);
       if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	char *tmpStr1=strdup(tmpStr);
 	char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
@@ -120,7 +121,6 @@ extern "C" {
 	xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
 	setMapInMaps(outputs,"Result","value",(char*)xmlbuff);
 	xmlFree(xmlbuff);
-	free(tmpStr);
 	free(tmpStr1);
 	free(tmpStr0);
 	free(tmpStrFinal);
@@ -153,17 +153,9 @@ extern "C" {
   int longProcess(maps*& conf,maps*& inputs,maps*& outputs){
     int i=0;
     while(i<100){
-      char tmp[4];
       char message[10];
-      sprintf(tmp,"%i",i);
-      map* tmpMap=NULL;
-      tmpMap=getMapFromMaps(conf,"lenv","sid");
-      if(tmpMap!=NULL)
-	fprintf(stderr,"Status %s %s\n",tmpMap->value,tmp);
       sprintf(message,"Step %d",i);
-      setMapInMaps(conf,"lenv","status",tmp);
-      setMapInMaps(conf,"lenv","message",message);
-      updateStatus(conf);
+      updateStatus(conf,i,message);
 #ifndef WIN32
       sleep(1);
 #else
@@ -171,7 +163,7 @@ extern "C" {
 #endif
       i+=5;
     }
-    setMapInMaps(outputs,"Result","value","\"Running long process successfully\"");
+    setOutputValue(outputs,"Result","\"Long process run successfully\"",-1);
     return SERVICE_SUCCEEDED;
   }
 

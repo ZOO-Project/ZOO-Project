@@ -28,7 +28,9 @@
    maxOccurs = 1
    <LiteralData>
     dataType = string
-    <Default />
+    <Default>
+     value=000000
+    </Default>
    </LiteralData>
   [bgcolor]
    Title = the input string
@@ -37,7 +39,9 @@
    maxOccurs = 1
    <LiteralData>
     dataType = string
-    <Default />
+    <Default>
+     value=ffffff
+    </Default>
    </LiteralData>
   [size]
    Title = the image size
@@ -46,7 +50,9 @@
    maxOccurs = 1
    <LiteralData>
     dataType = integer
-    <Default />
+    <Default>
+     value=3
+    </Default>
    </LiteralData>
  </DataInputs>
  <DataOutputs>

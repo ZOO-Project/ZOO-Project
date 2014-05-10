@@ -5,7 +5,7 @@
  storeSupported = true
  statusSupported = true
  serviceType = C
- serviceProvider = gdal_profile_service.zo
+ serviceProvider = profile_service.zo
  <MetaData>
    title = My Demo
  </MetaData>
