@@ -1596,7 +1596,7 @@ int runRequest(map* request_inputs)
 	    hInternetP.header=NULL;
 	    while(cur3!=NULL){
 	      while(cur3!=NULL && cur3->type!=XML_ELEMENT_NODE)
-		cur2=cur3->next;
+		cur3=cur3->next;
 	      if(cur3==NULL)
 		break;
 	      if(xmlStrcasecmp(cur3->name,BAD_CAST "Header")==0 ){
