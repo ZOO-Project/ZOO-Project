@@ -1594,9 +1594,11 @@ int runRequest(map* request_inputs)
 				   INTERNET_OPEN_TYPE_PRECONFIG,
 				   NULL,NULL, 0);
 	    hInternetP.header=NULL;
-	    while(cur3){
+	    while(cur3!=NULL){
 	      while(cur3!=NULL && cur3->type!=XML_ELEMENT_NODE)
 		cur2=cur3->next;
+	      if(cur3==NULL)
+		break;
 	      if(xmlStrcasecmp(cur3->name,BAD_CAST "Header")==0 ){
 		const char *ha[2];
 		ha[0]="key";
