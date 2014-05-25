@@ -506,8 +506,6 @@ map* mapFromPyDict(PyDictObject* t){
 	  res=createMap(lkey,lvalue);
       }
     }
-    Py_DECREF(value);
-    Py_DECREF(key);
   }
   return res;
 }

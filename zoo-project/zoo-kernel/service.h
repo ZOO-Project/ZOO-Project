@@ -272,7 +272,6 @@ extern "C" {
 
   static void freeMaps(maps** mo){
     maps* _cursor=*mo;
-    fflush(stderr);
     if(_cursor && _cursor!=NULL){
 #ifdef DEBUG
       fprintf(stderr,"freeMaps\n");
