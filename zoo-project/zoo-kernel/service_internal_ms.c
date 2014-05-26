@@ -240,8 +240,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       }
       else{
 	OSRExportToProj4(hSRS,&proj4Str);
-	fprintf(stderr,"Debug WKT: %s \n",proj4Str);
-	if(proj4Str!=NULL){
+	if(proj4Str!=NULL && strlen(proj4Str)>0){
 #ifdef DEBUGMS
 	  fprintf(stderr,"PROJ (%s)\n",proj4Str);
 #endif
