@@ -117,7 +117,7 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 <INITIAL,HORSBALISE>"<!--"([^-]|"-"[^-])*"-->"		{attentionImpossibleDeTrouverXMLDeclapres=1; }
 
 
-<INITIAL,DANSBALISE,HORSBALISE>.|\n	{lmsg=(char*)malloc(1024*sizeof(char));sprintf(lmsg,"error: line %d: character not allowed '%s'",srlineno,yytext);fprintf(stderr,"%s \n",lmsg);srlval.chaine=lmsg;return -1;}
+<INITIAL,DANSBALISE,HORSBALISE>.|\n	{lmsg=(char*)malloc(1024*sizeof(char));sprintf(lmsg,"error: line %d: character not allowed '%s'",srlineno,yytext);fprintf(stderr,"%s \n",lmsg);srlval.chaine=lmsg;fprintf(stderr,"%s \n",lmsg);return -1;}
 
 %%
 
