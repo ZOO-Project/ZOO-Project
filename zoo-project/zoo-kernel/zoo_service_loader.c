@@ -296,7 +296,9 @@ xmlXPathObjectPtr extractFromDoc(xmlDocPtr doc,const char* search){
 }
 
 void donothing(int sig){
+#ifdef DEBUG
   fprintf(stderr,"Signal %d after the ZOO-Kernel returned result !\n",sig);
+#endif
   exit(0);
 }
 
@@ -375,10 +377,12 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 #ifdef WIN32
     DWORD errstr;
     errstr = GetLastError();
-    fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
 #else
     char *errstr;
     errstr = dlerror();
+#endif
+#ifdef DEBUG
+    fprintf(stderr,"%s loaded (%d) \n",tmps1,errstr);
 #endif
     if( so != NULL ) {
 #ifdef DEBUG
@@ -460,7 +464,9 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 	  sprintf(tmpMsg,_("Error occured while running the %s function: %s"),r_inputs->value,errstr);
 	  errorException(m, tmpMsg, "InternalError",NULL);
 	  free(tmpMsg);
+#ifdef DEBUG
 	  fprintf(stderr,"Function %s error %s\n",r_inputs->value,errstr);
+#endif
 	  return;
 	}
 

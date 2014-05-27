@@ -25,6 +25,8 @@
 #include "service_internal.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
+#else
+#include "cpl_vsi.h"
 #endif
 
 #ifndef TRUE
@@ -164,7 +166,9 @@ char* getStatus(int pid){
     lpszBuf[i+1] = '\0'; 
     i++;
   }
+#ifdef DEBUG
   fprintf(stderr,"READING STRING S %s\n",lpszBuf);
+#endif
   return (char*)lpszBuf;
 }
 
@@ -2939,7 +2943,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET hInternet,char *url){
   free(tmpMap->value);
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
   if(tmpMap->value==NULL)
-    fprintf(stderr,"Unable to allocate memory!\n");
+    return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
   //snprintf(tmpMap->value,(fsize+1)*sizeof(char),fcontent);
   memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
   
@@ -2970,7 +2974,6 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
   return -1;
 }
 
-#ifdef USE_MS
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
     VSIStatBufL file_status;
@@ -2988,7 +2991,6 @@ char *readVSIFile(maps* conf,const char* dataSource){
     VSIUnlink(dataSource);
     return res1;
 }
-#endif
 
 void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
   char *saveptr1;
