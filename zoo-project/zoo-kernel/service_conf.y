@@ -806,7 +806,6 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   }
 
   int resultatYYParse = srparse() ;
-  fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,resultatYYParse);
 
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"RESULT: %d %d\n",resultatYYParse,wait_outputs);
@@ -825,7 +824,6 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 #endif
       addToElements(&my_service->outputs,current_element);
     }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 #ifdef DEBUG_SERVICE_CONF
     fprintf(stderr,"(DATAOUTPUTS - %d) FREE current_element\n",__LINE__);
 #endif
@@ -836,19 +834,16 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
     fprintf(stderr,"(DATAOUTPUTS - %d) FREE current_element\n",__LINE__);
 #endif
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   if(current_element!=NULL){
     freeElements(&current_element);
     free(current_element);
     current_element=NULL;
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   if(current_content!=NULL){
     freeMap(&current_content);
     free(current_content);
     current_content=NULL;
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   fclose(srin);
 #ifdef DEBUG_SERVICE_CONF
   dumpService(my_service);
@@ -864,8 +859,6 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   }
   else
     *service=my_service;
-  dumpService(my_service);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
 #ifndef WIN32
   srlex_destroy();
