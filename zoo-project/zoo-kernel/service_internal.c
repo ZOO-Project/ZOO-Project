@@ -67,6 +67,7 @@ char to_hex(char code) {
 #ifdef WIN32
 
 #include <windows.h>
+#include <fcgi_stdio.h>
 #include <stdio.h>
 #include <conio.h>
 #include <tchar.h>
@@ -1153,14 +1154,24 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	  if(_tmp0==NULL){
 	    xmlAddChild(nc6,nc8);
 	    _tmp0=e->supported;
-	    tmp1=_tmp0->content;
-	    goto doRange;
+	    if(getMap(_tmp0->content,"range")!=NULL ||
+	       getMap(_tmp0->content,"rangeMin")!=NULL ||
+	       getMap(_tmp0->content,"rangeMax")!=NULL ||
+	       getMap(_tmp0->content,"rangeClosure")!=NULL ){
+	      tmp1=_tmp0->content;
+	      goto doRange;
+	    }
 	  }else{
 	    _tmp0=_tmp0->next;
 	    if(_tmp0!=NULL){
 	      xmlAddChild(nc6,nc8);
-	      tmp1=_tmp0->content;
-	      goto doRange;
+	      if(getMap(_tmp0->content,"range")!=NULL ||
+		 getMap(_tmp0->content,"rangeMin")!=NULL ||
+		 getMap(_tmp0->content,"rangeMax")!=NULL ||
+		 getMap(_tmp0->content,"rangeClosure")!=NULL ){
+		tmp1=_tmp0->content;
+		goto doRange;
+	      }
 	    }
 	  }
 	  xmlAddChild(nc6,nc8);

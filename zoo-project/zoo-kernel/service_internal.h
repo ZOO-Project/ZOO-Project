@@ -30,7 +30,7 @@
 #define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
 #define TIME_SIZE 40
 
-#include "fcgi_stdio.h"
+#include "cgic.h"
 #include <libintl.h>
 #include <locale.h>
 #define _(String) dgettext ("zoo-kernel",String)
@@ -38,7 +38,6 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
