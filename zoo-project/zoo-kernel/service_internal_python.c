@@ -284,11 +284,10 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyErr_Print();
     PyErr_Clear();
     res=-1;
-    //exit(-1);
   } 
 #if PY_MAJOR_VERSION < 3
   PyGILState_Release(gstate);
-  PyEval_ReleaseLock();
+  PyEval_AcquireLock();
 #endif
   PyThreadState_Swap(mainstate);
   Py_Finalize();

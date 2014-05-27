@@ -30,7 +30,6 @@
 #define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
 #define TIME_SIZE 40
 
-#include "cgic.h"
 #include <libintl.h>
 #include <locale.h>
 #define _(String) dgettext ("zoo-kernel",String)
@@ -38,6 +37,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -144,9 +144,7 @@ extern "C" {
   char* isInCache(maps*,char*);
   int loadRemoteFile(maps**,map**,HINTERNET,char*);
 
-#ifdef USE_MS
   char *readVSIFile(maps*,const char*);
-#endif
   void parseIdentifier(maps*,char*,char*,char*);
   int updateStatus( maps*,const int,const char*);
   char* getInputValue( maps*,const char*,size_t*);

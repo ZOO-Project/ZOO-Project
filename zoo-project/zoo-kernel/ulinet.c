@@ -228,7 +228,6 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
     default:
       sprintf(filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
       filename[24]=0;
-      fprintf(stderr,"file=%s",filename);
 #ifdef MSG_LAF_VERBOSE
       fprintf(stderr,"file=%s",filename);
 #endif
@@ -266,6 +265,7 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
   curl_easy_getinfo(hInternet.handle,CURLINFO_CONTENT_TYPE,&hInternet.mimeType);
 #ifdef ULINET_DEBUG
   fprintf(stderr,"DEBUG MIMETYPE: %s\n",hInternet.mimeType);
+  fflush(stderr);
 #endif
   return hInternet;
 };
