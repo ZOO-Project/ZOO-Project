@@ -2091,17 +2091,18 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
 
   int nsid=zooXmlAddNs(NULL,"http://www.opengis.net/ows","ows");
   ns=usedNs[nsid];
-  n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
-
   if(use_ns==1){
-    ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1.0",BAD_CAST "ows");
+    ns=NULL;
+  }
+  n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
+  if(use_ns==1){
+    ns_ows=xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",NULL);
     int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
     ns_xsi=usedNs[xsiId];
-    ns_xsi=xmlNewNs(n,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
     xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
-    int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
-    ns_xlink=usedNs[xlinkId];
   }
+
+
   addLangAttr(n,m);
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
   
@@ -2193,27 +2194,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
   }
   
-  if(res==SERVICE_FAILED){
-    map * errormap;
-    map *lenv;
-    lenv=getMapFromMaps(m,"lenv","message");
-    char *tmp0;
-    if(lenv!=NULL){
-      tmp0=(char*)malloc((strlen(lenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "))+1)*sizeof(char));
-      sprintf(tmp0,_("Unable to run the Service. The message returned back by the Service was the following: %s"),lenv->value);
-    }
-    else{
-      tmp0=(char*)malloc((strlen(_("Unable to run the Service. No more information was returned back by the Service."))+1)*sizeof(char));
-      sprintf(tmp0,_("Unable to run the Service. No more information was returned back by the Service."));
-    }
-    errormap = createMap("text",tmp0);
-    free(tmp0);
-    addToMap(errormap,"code", "InternalError");
-    printExceptionReportResponse(m,errormap);
-    freeMap(&errormap);
-    free(errormap);
-    return;
-  }
 
   if(asRaw==0){
 #ifdef DEBUG
@@ -2341,6 +2321,27 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 			 request_outputs);
     }
     else{
+      if(res==SERVICE_FAILED){
+	map * errormap;
+	map *lenv;
+	lenv=getMapFromMaps(m,"lenv","message");
+	char *tmp0;
+	if(lenv!=NULL){
+	  tmp0=(char*)malloc((strlen(lenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "))+1)*sizeof(char));
+	  sprintf(tmp0,_("Unable to run the Service. The message returned back by the Service was the following: %s"),lenv->value);
+	}
+	else{
+	  tmp0=(char*)malloc((strlen(_("Unable to run the Service. No more information was returned back by the Service."))+1)*sizeof(char));
+	  sprintf(tmp0,_("Unable to run the Service. No more information was returned back by the Service."));
+	}
+	errormap = createMap("text",tmp0);
+	free(tmp0);
+	addToMap(errormap,"code", "InternalError");
+	printExceptionReportResponse(m,errormap);
+	freeMap(&errormap);
+	free(errormap);
+	return;
+      }
       /**
        * We get the requested output or fallback to the first one if the 
        * requested one is not present in the resulting outputs maps.
