@@ -381,7 +381,7 @@ int zooXmlSearchForNs(const char* name){
 
 int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
 #ifdef DEBUG
-  fprintf(stderr,"zooXmlAddNs %d \n",nbNs);
+  fprintf(stderr,"zooXmlAddNs %d %s \n",nbNs,name);
 #endif
   int currId=-1;
   int currNode=-1;
@@ -2027,6 +2027,7 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlChar *xmlbuff;
   xmlNodePtr n;
 
+  zooXmlCleanupNs();
   doc = xmlNewDoc(BAD_CAST "1.0");
   maps* tmpMap=getMaps(m,"main");
   char *encoding=getEncoding(tmpMap);
