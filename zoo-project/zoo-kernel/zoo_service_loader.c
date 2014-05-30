@@ -197,10 +197,11 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
   if(conf_dir==NULL)
     return 1;
   DIR *dirp = opendir(conf_dir);
-  if(dirp==NULL){ 
-    dup2(saved_stdout,fileno(stdout));
-    errorException(m, _("The specified path doesn't exist."),"InvalidParameterValue","metapath");
-    return -1;
+  if(dirp==NULL){
+    if(level>0)
+      return 1;
+    else
+      return -1;
   }
   char tmp1[25];
   sprintf(tmp1,"sprefix_%d",level);
@@ -887,8 +888,14 @@ int runRequest(map* request_inputs)
      */
     int saved_stdout = dup(fileno(stdout));
     dup2(fileno(stderr),fileno(stdout));
-    if(int res=recursReaddirF(m,n,conf_dir,NULL,saved_stdout,0,printGetCapabilitiesForProcess)<0)
+    if(int res=recursReaddirF(m,n,conf_dir,NULL,saved_stdout,0,printGetCapabilitiesForProcess)<0){
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      free(SERVICE_URL);
+      fflush(stdout);
       return res;
+    }
     dup2(saved_stdout,fileno(stdout));
     printDocument(m,doc,getpid());
     freeMaps(&m);
@@ -2502,10 +2509,8 @@ int runRequest(map* request_inputs)
        * The rewind stdout to restart writing from the bgining of the file,
        * this way the data will be updated at the end of the process run.
        */
-      printProcessResponse(m,request_inputs,cpid,
-			   s1,r_inputs1->value,SERVICE_STARTED,
-			   request_input_real_format,
-			   request_output_real_format);
+      printProcessResponse(m,request_inputs,cpid,s1,r_inputs1->value,SERVICE_STARTED,
+			   request_input_real_format,request_output_real_format);
 #ifndef WIN32
       fflush(stdout);
       rewind(stdout);
