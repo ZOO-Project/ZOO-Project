@@ -56,7 +56,7 @@ The list of inputs contains metadata information of each supported input, and th
 Each input is defined as :
 
 -  a name (between brackets as for the name of the service before)
-- various medata properties (``Title``, ``Abstract``, ``minOccurs`` and ``maxOccurs``)
+- various medata properties (``Title``, ``Abstract``, ``minOccurs``, ``maxOccurs`` and, in case of ComplexData, the optional ``maximumMegabytes``)
 - a Type Of Data node (:ref:`description <typeDataNodes>`)
 
 A typical list of inputs (``<DataInputs>``) look like the following:

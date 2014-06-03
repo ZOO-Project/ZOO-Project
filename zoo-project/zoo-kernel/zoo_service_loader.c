@@ -2158,6 +2158,40 @@ int runRequest(map* request_inputs)
    * DataInputs and ResponseDocument / RawDataOutput
    */
   char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,0);
+  maps *ptr=request_input_real_format;
+  while(ptr!=NULL){
+    dumpMap(ptr->content);
+    map *tmp0=getMap(ptr->content,"size");
+    map *tmp1=getMap(ptr->content,"maximumMegabytes");
+    if(tmp1!=NULL && tmp0!=NULL){
+      float i=atof(tmp0->value)/1048576.0;
+      if(i>=atoi(tmp1->value)){
+	char tmps[1024];
+	map* tmpe=createMap("code","FileSizeExceeded");
+	snprintf(tmps,1024,_("The <%s> parameter has a limited size (%sMB) defined in ZOO ServicesProvider configuration file but the reference you provided exceed this limitation (%dMB), please correct your query or the ZOO Configuration file."),ptr->name,tmp1->value,i);
+	addToMap(tmpe,"locator",ptr->name);
+	addToMap(tmpe,"text",tmps);
+	printExceptionReportResponse(m,tmpe);
+	freeService(&s1);
+	free(s1);
+	freeMap(&tmpe);
+	free(tmpe);
+	freeMaps(&m);
+	free(m);
+	free(REQUEST);
+	free(SERVICE_URL);
+	freeMaps(&request_input_real_format);
+	free(request_input_real_format);
+	freeMaps(&request_output_real_format);
+	free(request_output_real_format);
+	freeMaps(&tmpmaps);
+	free(tmpmaps);
+	return 1;
+      }
+    }
+    ptr=ptr->next;
+  }
+
   char *dfv1=addDefaultValues(&request_output_real_format,s1->outputs,m,1);
   if(strcmp(dfv1,"")!=0 || strcmp(dfv,"")!=0){
     char tmps[1024];
