@@ -1,4 +1,5 @@
 Version 1.4.0-dev
+  * Add support of maximumMegabytes keywords for ComplexData Inputs
   * Add the optional YAML ZCFG support #4 and the zcfg2yaml converter
   * Return error messages that enable the service provider to quickly identify the root cause of errors due to configuration file syntax (ticket #90)
   * Fix logic in addMapToMap (ticket #91)

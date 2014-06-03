@@ -192,9 +192,6 @@ for j in 0 1 2 3; do
     kvpRequest "${WPSInstance}?$suffix" "tmp/outputDPb$(expr $j + 6).xml" "owsExceptionReport"
 done
 
-kvpRequest "${WPSInstance}?request=DescribeProcess&service=WPS&Identifier=${ServiceName}" "tmp/outputDPb10.xml" "DescribeProcess"
-
-echo ""
 
 cat requests/dp.xml | sed "s:ServiceName:${ServiceName}:g" > tmp/dp1.xml
 postRequest "${WPSInstance}" "tmp/outputDPp.xml" "DescribeProcess" "tmp/dp1.xml"

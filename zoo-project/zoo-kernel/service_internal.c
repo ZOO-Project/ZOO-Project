@@ -966,6 +966,9 @@ void printFullDescription(elements *elem,const char* type,xmlNsPtr ns_ows,xmlNod
 	  xmlNewProp(nc2,BAD_CAST "maxOccurs",BAD_CAST "1000");
       }else
 	xmlNewProp(nc2,BAD_CAST "maxOccurs",BAD_CAST "1");
+      if((tmp1=getMap(e->content,"maximumMegabytes"))!=NULL){
+	xmlNewProp(nc2,BAD_CAST "maximumMegabytes",BAD_CAST tmp1->value);
+      }
     }
 
     printDescription(nc2,ns_ows,e->name,e->content);
@@ -2507,6 +2510,12 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	    tmpMaps2->content=createMap("maxOccurs",tmpMaxO->value);
 	  else
 	    addToMap(tmpMaps2->content,"maxOccurs",tmpMaxO->value);
+	map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
+	if(tmpMaxMB!=NULL)
+	  if(tmpMaps2->content==NULL)
+	    tmpMaps2->content=createMap("maximumMegabytes",tmpMaxMB->value);
+	  else
+	    addToMap(tmpMaps2->content,"maximumMegabytes",tmpMaxMB->value);
       }
 
       iotype* tmpIoType=tmpInputs->defaults;
@@ -2557,10 +2566,16 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
 	if(tmpMaxO!=NULL){
 	  if(tmpMaps->content==NULL)
-	    tmpMaps->content=createMap("maxOccurs",tmpMap1->value);
+	    tmpMaps->content=createMap("maxOccurs",tmpMaxO->value);
 	  else
-	    addToMap(tmpMaps->content,"maxOccurs",tmpMap1->value);
+	    addToMap(tmpMaps->content,"maxOccurs",tmpMaxO->value);
 	}
+	map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
+	if(tmpMaxMB!=NULL)
+	  if(tmpMaps->content==NULL)
+	    tmpMaps->content=createMap("maximumMegabytes",tmpMaxMB->value);
+	  else
+	    addToMap(tmpMaps->content,"maximumMegabytes",tmpMaxMB->value);
 	/**
 	 * Parsing BoundingBoxData, fill the following map and then add it to
 	 * the content map of the Input maps: 
