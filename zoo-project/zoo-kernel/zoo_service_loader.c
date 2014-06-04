@@ -2160,7 +2160,6 @@ int runRequest(map* request_inputs)
   char *dfv=addDefaultValues(&request_input_real_format,s1->inputs,m,0);
   maps *ptr=request_input_real_format;
   while(ptr!=NULL){
-    dumpMap(ptr->content);
     map *tmp0=getMap(ptr->content,"size");
     map *tmp1=getMap(ptr->content,"maximumMegabytes");
     if(tmp1!=NULL && tmp0!=NULL){
