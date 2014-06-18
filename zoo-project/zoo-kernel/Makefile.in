@@ -80,7 +80,7 @@ service_internal_java.o: service_internal_java.c service.h
 	gcc -c ${XML2CFLAGS} ${JAVACFLAGS} ${CFLAGS} ${JAVA_ENABLED} service_internal_java.c
 
 service_internal_js.o: service_internal_js.c service_internal_js.h
-	gcc ${XML2CFLAGS} ${JSCFLAGS} ${CFLAGS} ${JS_ENABLED} -c service_internal_js.c
+	gcc -fPIC ${XML2CFLAGS} ${JSCFLAGS} ${CFLAGS} ${JS_ENABLED} -c service_internal_js.c
 
 service_internal_ruby.o: service_internal_ruby.c service_internal_ruby.h
 	g++ ${XML2CFLAGS} ${RUBYCFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c service_internal_ruby.c
