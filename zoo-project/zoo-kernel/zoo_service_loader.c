@@ -215,7 +215,6 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
       sprintf(tmp,"%s/%s",conf_dir,dp->d_name);
 
       if(prefix!=NULL){
-	free(prefix);
 	prefix=NULL;
       }
       prefix=(char*)malloc((strlen(dp->d_name)+2)*sizeof(char));
@@ -226,23 +225,22 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
       int res;
       if(prefix!=NULL){
 	setMapInMaps(m,"lenv",tmp1,prefix);
-	char *cprefix=zStrdup(prefix);
 	char levels1[17];
 	sprintf(levels1,"%d",level+1);
 	setMapInMaps(m,"lenv","level",levels1);
-	res=recursReaddirF(m,n,tmp,cprefix,saved_stdout,level+1,func);
+	res=recursReaddirF(m,n,tmp,prefix,saved_stdout,level+1,func);
 	sprintf(levels1,"%d",level);
 	setMapInMaps(m,"lenv","level",levels1);
 	free(prefix);
 	prefix=NULL;
-      }
+      }else
+	res=-1;
       free(tmp);
       if(res<0){
 	return res;
       }
     }
     else{
-      char* tmp0=strdup(dp->d_name);
       if(dp->d_name[0]!='.' && strstr(dp->d_name,".zcfg")!=0){
 	int t;
 	char tmps1[1024];
@@ -789,6 +787,8 @@ int runRequest(map* request_inputs)
   r_inputs=getMap(request_inputs,"Request");
   if(request_inputs==NULL || r_inputs==NULL){ 
     errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue","request");
+    freeMap(&request_inputs);
+    free(request_inputs);
     freeMaps(&m);
     free(m);
     return 1;
