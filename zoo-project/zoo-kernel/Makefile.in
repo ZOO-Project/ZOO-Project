@@ -108,4 +108,4 @@ install:
 	@echo "##############################################################################"
 
 clean:
-	rm -f *.o *.zo *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM 
+	rm -f version.h *.o *.zo *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM 
