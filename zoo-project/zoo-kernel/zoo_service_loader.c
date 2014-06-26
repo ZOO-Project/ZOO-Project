@@ -220,7 +220,7 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
       prefix=(char*)malloc((strlen(dp->d_name)+2)*sizeof(char));
       sprintf(prefix,"%s.",dp->d_name);
       
-      map* tmpMap=getMapFromMaps(m,"lenv",tmp1);
+      //map* tmpMap=getMapFromMaps(m,"lenv",tmp1);
       
       int res;
       if(prefix!=NULL){
@@ -466,6 +466,7 @@ void loadServiceAndRun(maps **myMap,service* s1,map* request_inputs,maps **input
 #ifdef DEBUG
 	  fprintf(stderr,"Function %s error %s\n",r_inputs->value,errstr);
 #endif
+	  *eres=-1;
 	  return;
 	}
 
@@ -660,9 +661,9 @@ void createProcess(maps* m,map* request_inputs,service* s1,char* opts,int cpid, 
 }
 #endif
 
-int runRequest(map* request_inputs)
+int runRequest(map** inputs)
 {
-
+  
 #ifndef USE_GDB
   (void) signal(SIGSEGV,sig_handler);
   (void) signal(SIGTERM,sig_handler);
@@ -673,8 +674,8 @@ int runRequest(map* request_inputs)
 #endif
 
   map* r_inputs=NULL;
+  map* request_inputs=*inputs;
   maps* m=NULL;
-
   char* REQUEST=NULL;
   /**
    * Parsing service specfic configuration file
@@ -787,8 +788,10 @@ int runRequest(map* request_inputs)
   r_inputs=getMap(request_inputs,"Request");
   if(request_inputs==NULL || r_inputs==NULL){ 
     errorException(m, _("Parameter <request> was not specified"),"MissingParameterValue","request");
-    freeMap(&request_inputs);
-    free(request_inputs);
+    if(count(request_inputs)==1){
+      freeMap(&request_inputs);
+      free(request_inputs);
+    }
     freeMaps(&m);
     free(m);
     return 1;
@@ -870,7 +873,6 @@ int runRequest(map* request_inputs)
     snprintf(conf_dir,1024,"%s",ntmp);
 
   if(strncasecmp(REQUEST,"GetCapabilities",15)==0){
-    struct dirent *dp;
 #ifdef DEBUG
     dumpMap(r_inputs);
 #endif
@@ -1621,18 +1623,19 @@ int runRequest(map* request_inputs)
 		  fprintf(stderr,"%s = %s\n",ha[hai],(char*)val);
 #endif
 		  if(hai==0){
-		    key=(char*)malloc((1+strlen((char*)val))*sizeof(char));
-		    snprintf(key,1+strlen((char*)val),"%s",(char*)val);
+		    key=zStrdup((char*)val);
 		  }else{
-		    has=(char*)malloc((3+strlen((char*)val)+strlen(key))*sizeof(char));
+		    has=(char*)malloc((4+xmlStrlen(val)+strlen(key))*sizeof(char));
 		    if(has == NULL){
 		      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		    }
-		    snprintf(has,(3+strlen((char*)val)+strlen(key)),"%s: %s",key,(char*)val);
+		    snprintf(has,(3+xmlStrlen(val)+strlen(key)),"%s: %s",key,(char*)val);
+		    free(key);
 #ifdef POST_DEBUG
 		    fprintf(stderr,"%s\n",has);
 #endif
 		  }
+		  xmlFree(val);
 		}
 		hInternetP.header=curl_slist_append(hInternetP.header, has);
 		if(has!=NULL)
@@ -1646,7 +1649,7 @@ int runRequest(map* request_inputs)
 #ifdef POST_DEBUG
 		  fprintf(stderr,"Body part found !!!\n",(char*)cur3->content);
 #endif
-		  char *tmp=new char[cgiContentLength];
+		  char *tmp=(char*)malloc(cgiContentLength+1*sizeof(char));
 		  memset(tmp,0,cgiContentLength);
 		  xmlNodePtr cur4=cur3->children;
 		  while(cur4!=NULL){
@@ -1663,8 +1666,9 @@ int runRequest(map* request_inputs)
 #endif
 		    if(btmps!=NULL)
 		      sprintf(tmp,"%s",(char*)btmps);
-		    xmlFreeDoc(bdoc);
+		    xmlFree(btmps);
 		    cur4=cur4->next;
+		    xmlFreeDoc(bdoc);
 		  }
 		  map *btmp=getMap(tmpmaps->content,"href");
 		  if(btmp!=NULL){
@@ -1685,10 +1689,12 @@ int runRequest(map* request_inputs)
 		    if(hInternetP.header!=NULL)
 		      curl_slist_free_all(hInternetP.header);
 		    addToMap(tmpmaps->content,"value",tmpContent);
+		    free(tmpContent);
 #ifdef POST_DEBUG
 		    fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
-#endif
+#endif		    
 		  }
+		  free(tmp);
 		}
 		else
 		  if(xmlStrcasecmp(cur3->name,BAD_CAST "BodyReference")==0 ){
@@ -1841,6 +1847,7 @@ int runRequest(map* request_inputs)
 		  char size[1024];
 		  sprintf(size,"%d",buffersize);
 		  addToMap(tmpmaps->content,"size",size);
+		  xmlFreeDoc(doc1);
 		}
 		addToMap(tmpmaps->content,"value",(char*)mv);
 		xmlFree(mv);
@@ -2136,6 +2143,7 @@ int runRequest(map* request_inputs)
       }
     }
     xmlXPathFreeObject(tmpsptr);
+    xmlFreeDoc(doc);
     xmlCleanupParser();
   }
   
@@ -2167,7 +2175,7 @@ int runRequest(map* request_inputs)
       if(i>=atoi(tmp1->value)){
 	char tmps[1024];
 	map* tmpe=createMap("code","FileSizeExceeded");
-	snprintf(tmps,1024,_("The <%s> parameter has a limited size (%sMB) defined in ZOO ServicesProvider configuration file but the reference you provided exceed this limitation (%dMB), please correct your query or the ZOO Configuration file."),ptr->name,tmp1->value,i);
+	snprintf(tmps,1024,_("The <%s> parameter has a limited size (%sMB) defined in ZOO ServicesProvider configuration file but the reference you provided exceed this limitation (%fMB), please correct your query or the ZOO Configuration file."),ptr->name,tmp1->value,i);
 	addToMap(tmpe,"locator",ptr->name);
 	addToMap(tmpe,"text",tmps);
 	printExceptionReportResponse(m,tmpe);
@@ -2229,7 +2237,6 @@ int runRequest(map* request_inputs)
 	int BufferLen=1024;
 	cgiFilePtr file;
 	int targetFile;
-	mode_t mode;
 	char storageNameOnServer[2048];
 	char fileNameOnServer[64];
 	char contentType[1024];
@@ -2258,7 +2265,6 @@ int runRequest(map* request_inputs)
 	  fprintf(stderr,"Name on server %s\n",storageNameOnServer);
 	  fprintf(stderr,"fileNameOnServer: %s\n",fileNameOnServer);
 #endif
-	  mode=S_IRWXU|S_IRGRP|S_IROTH;
 	  targetFile = open (storageNameOnServer,O_RDWR|O_CREAT|O_TRUNC,S_IRWXU|S_IRGRP|S_IROTH);
 	  if(targetFile<0){
 #ifdef DEBUG
@@ -2407,14 +2413,12 @@ int runRequest(map* request_inputs)
     int hasValidCookie=-1;
     char *tcook=zStrdup(cgiCookie);
     char *tmp=NULL;
-    int hasVal=-1;
     map* testing=getMapFromMaps(m,"main","cookiePrefix");
     if(testing==NULL){
       tmp=zStrdup("ID=");
     }else{
       tmp=(char*)malloc((strlen(testing->value)+2)*sizeof(char));
       sprintf(tmp,"%s=",testing->value);
-      hasVal=1;
     }
     if(strstr(cgiCookie,";")!=NULL){
       char *token,*saveptr;
@@ -2584,7 +2588,6 @@ int runRequest(map* request_inputs)
   (void) signal(SIGFPE,donothing);
   (void) signal(SIGABRT,donothing);
 #endif
-
   if(((int)getpid())!=cpid || cgiSid!=NULL){
     fclose(stdout);
     fclose(stderr);
@@ -2607,6 +2610,7 @@ int runRequest(map* request_inputs)
     fclose(f3);
     unlink(fbkp1);
     free(fbkp1);
+    free(tmps1);
   }
 
   freeService(&s1);

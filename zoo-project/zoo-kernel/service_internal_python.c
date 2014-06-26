@@ -106,7 +106,7 @@ PyMODINIT_FUNC init_zoo(){
   PyDict_SetItemString(d, "VERSION", tmp);
   Py_DECREF(tmp);
 
-  ZooError = PyErr_NewException("zoo.error", NULL, NULL);
+  ZooError = PyErr_NewException((char*)"zoo.error", NULL, NULL);
   Py_INCREF(ZooError);
   PyModule_AddObject(module, "error", ZooError);
 #if PY_MAJOR_VERSION >= 3
@@ -137,7 +137,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     hasToClean=1;
   }
   else{
-    python_path=".";
+    python_path=(char*)".";
   }
   tmp=NULL;
   tmp=getMap(request,"metapath");
@@ -242,7 +242,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	trace=PyObject_Str(ptype);
 	if(PyString_Check(trace)){
 	  char *tpbt=zStrdup(pbt);
-	  sprintf(pbt,"%s\n%s\0",tpbt,PyString_AsString(trace));
+	  sprintf(pbt,"%s\n%s",tpbt,PyString_AsString(trace));
 	  free(tpbt);
 	}
 	else
@@ -260,7 +260,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	if(PyString_Check(trace))
 	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",tpbt,PyString_AsString(trace));
 	else
-	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations. %s",tpbt);
+	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations.",tpbt);
 	free(tpbt);
 	map* err=createMap("text",pbt);
 	addToMap(err,"code","NoApplicableCode");
@@ -491,7 +491,7 @@ map* mapFromPyDict(PyDictObject* t){
       memmove(tmpR->value,buffer,size*sizeof(char));
       tmpR->value[size]=0;
       char sin[1024];
-      sprintf(sin,"%d",size);
+      sprintf(sin,"%ld",size);
       addToMap(res,"size",sin);
     }else{
       char* lkey=PyString_AsString(key);
@@ -545,10 +545,10 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
   }
   /* now update the map */
   {
-    PyObject* lenv = PyMapping_GetItemString(confdict, "lenv");
+    PyObject* lenv = PyMapping_GetItemString(confdict, (char *)"lenv");
     if (lenv && PyMapping_Check(lenv)){
       PyObject* valobj = PyString_FromString(status);
-      PyMapping_SetItemString(lenv, "status", valobj);
+      PyMapping_SetItemString(lenv, (char *)"status", valobj);
       Py_DECREF(valobj);
     }
     Py_DECREF(lenv);

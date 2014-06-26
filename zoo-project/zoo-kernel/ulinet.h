@@ -63,9 +63,11 @@ struct MemoryStruct {
 };
 
 typedef struct {
-  CURLSH *handle;
+  CURLM *handle;
+  CURL *ihandle;
   struct curl_slist *header;
   char* filename;
+  char *agent;
   FILE* file;
   size_t size;
   int hasCacheFile;

@@ -128,14 +128,16 @@ void setReferenceUrl(maps* m,maps* tmpI){
     proto=1;
   if(strncasecmp(rformat->value,"image/tiff",10)==0)
     proto=2;
-  if(protoMap!=NULL)
+  if(protoMap!=NULL){
     if(strncasecmp(protoMap->value,"WMS",3)==0)
       proto=0;
-    else if(strncasecmp(protoMap->value,"WFS",3)==0)
-      proto=1;
-    else 
-      proto=2;
-  
+    else{
+      if(strncasecmp(protoMap->value,"WFS",3)==0)
+	proto=1;
+      else 
+	proto=2;
+    }
+  }
   char *protoVersion=options[proto][1];
   if(proto==1){
     if(msOgcVersion!=NULL)
@@ -277,7 +279,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       msLoadProjectionStringEPSG(&m->projection,msSrs->value);
       msLoadProjectionStringEPSG(&myLayer->projection,msSrs->value);
       char tmpSrs[128];
-      sprintf(tmpSrs,"%s EPSG:4326 EPSG:900913",msSrs);
+      sprintf(tmpSrs,"%s EPSG:4326 EPSG:900913",msSrs->value);
       msInsertHashTable(&(m->web.metadata),"ows_srs",tmpSrs);
       msInsertHashTable(&(myLayer->metadata),"ows_srs",tmpSrs);
     }else{
@@ -573,9 +575,6 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       msInsertHashTable(&(m->web.metadata), "ows_srs", "EPSG:4326 EPSG:900913");
       msInsertHashTable(&(myLayer->metadata), "ows_srs", "EPSG:4326 EPSG:900913");
     }
-
-    map* crs=getMap(output->content,"crs");
-    map* isGeo=getMap(output->content,"crs_isGeographic");
 
     OGREnvelope oExt;
     if (OGR_L_GetExtent(poLayer,&oExt, TRUE) == OGRERR_NONE){
