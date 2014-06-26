@@ -1,24 +1,18 @@
-[Intersection]
+[Touches]
  Title = Compute intersection. 
- Abstract = This function SHALL return a bag of geometry values representing the Point set intersection of geometry InputEntity1 and geometry InputEntity2.
+ Abstract = Generates a new geometry which is the region of intersection of the two geometries operated on.
  Profile = urn:ogc:wps:1.0.0:union
  processVersion = 2
  storeSupported = true
  statusSupported = true
  serviceProvider = ogr_service.zo
  serviceType = C
- <MetaData>
-   title = Demo
- </MetaData>
  <DataInputs>
   [InputEntity1]
    Title = the first geometry 
    Abstract = the first geometry to compare against.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData>
-    title = Mon test  
-   </MetaData>   
    <ComplexData>
     <Default>
      mimeType = text/xml
@@ -36,9 +30,6 @@
    Abstract = the other geometry to compare against.
    minOccurs = 1
    maxOccurs = 1
-   <MetaData>
-    title = Mon test  
-   </MetaData>   
    <ComplexData>
     <Default>
      mimeType = text/xml
@@ -54,22 +45,13 @@
  </DataInputs>
  <DataOutputs>
   [Result]
-   Title = Intersection of geometries
-   Abstract = A new geometry representing the intersection or NULL if there is no intersection or an error occurs.
+   Title = Intersects result
+   Abstract = A value true or false if the geometry1 and geometry2 touches.
    <MetaData>
     title = Mon test  
    </MetaData>   
-    <ComplexData>
-     <Default>
-      mimeType = text/xml
-      encoding = UTF-8
-      schema = http://fooa/gml/3.1.0/polygon.xsd
-      extension = xml
-     </Default>
-     <Supported>
-      mimeType = application/json
-      encoding = UTF-8
-      extension = js
-     </Supported>
-    </ComplexData>
+    <LiteralData>
+      dataType=boolean
+      <Default />
+    </LiteralData>
  </DataOutputs>  

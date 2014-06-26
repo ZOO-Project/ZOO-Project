@@ -1,6 +1,6 @@
 [Boundary]
  Title = Compute boundary.
- Abstract = A new geometry object is created and returned containing the boundary of the geometry on which the method is invoked. 
+ Abstract = This service shall return a feature callection representing the combinatorial boundary of each geometry in the InputPolygon feature collection.
  processVersion = 1
  storeSupported = true
  statusSupported = true

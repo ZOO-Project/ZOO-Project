@@ -1,6 +1,6 @@
 [SymDifference]
  Title = Compute symmetric difference. 
- Abstract = Generates a new geometry which is the symmetric difference of this geometry and the other geometry.
+ Abstract = This service shall return a feature collection representing the closure of the symmetric difference of two Geometries. The symmetric difference is the set of points which lie on either InputEntity1 or InputEntity2 but not in both.
  Profile = urn:ogc:wps:1.0.0:symmetricdifference
  processVersion = 2
  storeSupported = true

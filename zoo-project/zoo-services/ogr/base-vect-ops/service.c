@@ -25,6 +25,11 @@
 #include "cpl_conv.h"
 #include "ogr_api.h"
 #include "ogr_geometry.h"
+
+#include "cpl_minixml.h"
+#include "ogr_api.h"
+#include "ogrsf_frmts.h"
+
 #include "geos_c.h"
 #include "service.h"
 #include "service_internal.h"
@@ -43,7 +48,6 @@ extern "C" {
 
   void printExceptionReportResponse(maps*,map*);
   char *base64(const char *input, int length);
-  int errorException(maps *m, const char *message, const char *errorcode);
 
   OGRGeometryH createGeometryFromGML(maps* conf,char* inputStr){
     xmlInitParser();
@@ -52,7 +56,7 @@ extern "C" {
     int buffersize;
     xmlXPathContextPtr xpathCtx;
     xmlXPathObjectPtr xpathObj;
-    char * xpathExpr="/*/*/*/*/*[local-name()='Polygon' or local-name()='MultiPolygon']";
+    const char * xpathExpr="/*/*/*/*/*[local-name()='Polygon' or local-name()='MultiPolygon']";
     xpathCtx = xmlXPathNewContext(doc);
     xpathObj = xmlXPathEvalExpression(BAD_CAST xpathExpr,xpathCtx);
     if(!xpathObj->nodesetval){
@@ -178,12 +182,498 @@ extern "C" {
   }
 
 
-  int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometryH (*myFunc)(OGRGeometryH),char* schema){
+  int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry::*myFunc)() const,const char* schema){
+    OGRRegisterAll();
+
+    maps* cursor=inputs;
+    OGRGeometryH geometry,res;
+    OGRLayer *poDstLayer;
+    const char *oDriver1;
+    OGRDataSource       *poODS;
+    map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp){
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
+      return SERVICE_FAILED;
+    }
+    char filename[1024];
+    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    const char *oDriver;
+    oDriver="GeoJSON";
+    sprintf(filename,"/vsimem/input_%d.json",getpid());
+    if(tmp1!=NULL){
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(filename,"/vsimem/input_%d.xml",getpid());
+	oDriver="GML";
+      }
+    }
+    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+    char pszDestDataSource[100];
+    if( ipoDS == NULL )
+      {
+	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+	  }
+	char tmp[1024];
+	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
+      }
+    for( int iLayer = 0; iLayer < ipoDS->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer = ipoDS->GetLayer(iLayer);
+	
+	if( poLayer == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+	
+	OGRFeature  *poFeature;
+
+	/* -------------------------------------------------------------------- */
+	/*      Try opening the output datasource as an existing, writable      */
+	/* -------------------------------------------------------------------- */
+	
+	OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+	OGRSFDriver          *poDriver = NULL;
+	int                  iDriver;
+	
+	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
+	oDriver1="GeoJSON";
+	sprintf(pszDestDataSource,"/vsimem/result_%d.json",getpid());
+	if(tmpMap!=NULL){
+	  if(strcmp(tmpMap->value,"text/xml")==0){
+	    sprintf(pszDestDataSource,"/vsimem/result_%d.xml",getpid());
+	    oDriver1="GML";
+	  }
+	}
+	
+	for( iDriver = 0;
+	     iDriver < poR->GetDriverCount() && poDriver == NULL;
+	     iDriver++ )
+	  {
+	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+	      {
+		poDriver = poR->GetDriver(iDriver);
+	      }
+	  }
+	
+	if( poDriver == NULL )
+	  {
+	    char emessage[8192];
+	    sprintf( emessage, "Unable to find driver `%s'.\n", oDriver );
+	    sprintf( emessage,  "%sThe following drivers are available:\n",emessage );
+	    
+	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	      {
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+	      }
+	    
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	    
+	  }
+	
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
+	  char emessage[1024];
+	  sprintf( emessage,  "%s driver does not support data source creation.\n",
+		   "json" );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/*      Create the output data source.                                  */
+	/* -------------------------------------------------------------------- */
+	//map* tpath=getMapFromMaps(conf,"main","tmpPath");
+	char **papszDSCO=NULL;
+	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+	if( poODS == NULL ){
+	  char emessage[1024];      
+	  sprintf( emessage,  "%s driver failed to create %s\n", 
+		   "json", pszDestDataSource );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/*      Create the layer.                                               */
+	/* -------------------------------------------------------------------- */
+	if( !poODS->TestCapability( ODsCCreateLayer ) )
+	  {
+	    char emessage[1024];
+	    sprintf( emessage, 
+		     "Layer %s not found, and CreateLayer not supported by driver.", 
+		     "Result" );
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	  }
+	
+	//CPLErrorReset();
+	
+	poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
+	if( poDstLayer == NULL ){
+	  setMapInMaps(conf,"lenv","message","Layer creation failed.\n");
+	  return SERVICE_FAILED;
+	}
+	
+	OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+	int iField;
+	int hasMmField=0;
+	
+	for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
+	  {
+	    OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iField);
+            if (iField >= 0)
+                poDstLayer->CreateField( poFDefn->GetFieldDefn(iField) );
+            else
+            {
+                fprintf( stderr, "Field '%s' not found in source layer.\n", 
+                        iField );
+		return SERVICE_FAILED;
+            }
+	  }
+
+	while(TRUE){
+	  OGRFeature      *poDstFeature = NULL;
+	  poFeature = poLayer->GetNextFeature();
+	  if( poFeature == NULL )
+	    break;
+	  if(poFeature->GetGeometryRef() != NULL){
+	    // DO SOMETHING HERE !!
+	    poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
+	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    if(poDstFeature->SetGeometryDirectly((poDstFeature->GetGeometryRef()->*myFunc)()) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poFeature );
+	    if( poDstLayer->CreateFeature( poDstFeature ) != OGRERR_NONE )
+	      {		
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poDstFeature );
+	  }
+	}
+
+      }
+
+    delete poODS;
+    delete ipoDS;
+
+    char *res1=readVSIFile(conf,pszDestDataSource);
+    if(res1==NULL)
+      return SERVICE_FAILED;
+    setMapInMaps(outputs,"Result","value",res1);
+    free(res1);
+
+    OGRCleanupAll();
+    return SERVICE_SUCCEEDED;
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
+    OGRRegisterAll();
+
+    double bufferDistance;
+    map* tmp0=getMapFromMaps(inputs,"BufferDistance","value");
+    if(tmp0==NULL){
+      bufferDistance=atof("10.0");
+    }
+    else
+      bufferDistance=atof(tmp0->value);
+
+    maps* cursor=inputs;
+    OGRGeometryH geometry,res;
+    OGRLayer *poDstLayer;
+    const char *oDriver1;
+    OGRDataSource       *poODS;
+    map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp){
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
+      return SERVICE_FAILED;
+    }
+    char filename[1024];
+    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    const char *oDriver;
+    oDriver="GeoJSON";
+    sprintf(filename,"/vsimem/input_%d.json",getpid());
+    if(tmp1!=NULL){
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(filename,"/vsimem/input_%d.xml",getpid());
+	oDriver="GML";
+      }
+    }
+    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+    char pszDestDataSource[100];
+    if( ipoDS == NULL )
+      {
+	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+	  }
+	char tmp[1024];
+	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
+      }
+    for( int iLayer = 0; iLayer < ipoDS->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer = ipoDS->GetLayer(iLayer);
+	
+	if( poLayer == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+	
+	OGRFeature  *poFeature;
+
+	/* -------------------------------------------------------------------- */
+	/*      Try opening the output datasource as an existing, writable      */
+	/* -------------------------------------------------------------------- */
+	
+	OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+	OGRSFDriver          *poDriver = NULL;
+	int                  iDriver;
+	
+	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
+	oDriver1="GeoJSON";
+	sprintf(pszDestDataSource,"/vsimem/result_%d.json",getpid());
+	if(tmpMap!=NULL){
+	  if(strcmp(tmpMap->value,"text/xml")==0){
+	    sprintf(pszDestDataSource,"/vsimem/result_%d.xml",getpid());
+	    oDriver1="GML";
+	  }
+	}
+	
+	for( iDriver = 0;
+	     iDriver < poR->GetDriverCount() && poDriver == NULL;
+	     iDriver++ )
+	  {
+	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+	      {
+		poDriver = poR->GetDriver(iDriver);
+	      }
+	  }
+	
+	if( poDriver == NULL )
+	  {
+	    char emessage[8192];
+	    sprintf( emessage, "Unable to find driver `%s'.\n", oDriver );
+	    sprintf( emessage,  "%sThe following drivers are available:\n",emessage );
+	    
+	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	      {
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+	      }
+	    
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	    
+	  }
+	
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
+	  char emessage[1024];
+	  sprintf( emessage,  "%s driver does not support data source creation.\n",
+		   "json" );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/*      Create the output data source.                                  */
+	/* -------------------------------------------------------------------- */
+	//map* tpath=getMapFromMaps(conf,"main","tmpPath");
+	char **papszDSCO=NULL;
+	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+	if( poODS == NULL ){
+	  char emessage[1024];      
+	  sprintf( emessage,  "%s driver failed to create %s\n", 
+		   "json", pszDestDataSource );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/*      Create the layer.                                               */
+	/* -------------------------------------------------------------------- */
+	if( !poODS->TestCapability( ODsCCreateLayer ) )
+	  {
+	    char emessage[1024];
+	    sprintf( emessage, 
+		     "Layer %s not found, and CreateLayer not supported by driver.", 
+		     "Result" );
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	  }
+	
+	//CPLErrorReset();
+	
+	poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
+	if( poDstLayer == NULL ){
+	  setMapInMaps(conf,"lenv","message","Layer creation failed.\n");
+	  return SERVICE_FAILED;
+	}
+	
+	OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+	int iField;
+	int hasMmField=0;
+	
+	for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
+	  {
+	    OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iField);
+            if (iField >= 0)
+                poDstLayer->CreateField( poFDefn->GetFieldDefn(iField) );
+            else
+            {
+                fprintf( stderr, "Field '%s' not found in source layer.\n", 
+                        iField );
+		return SERVICE_FAILED;
+            }
+	  }
+
+	while(TRUE){
+	  OGRFeature      *poDstFeature = NULL;
+	  poFeature = poLayer->GetNextFeature();
+	  if( poFeature == NULL )
+	    break;
+	  if(poFeature->GetGeometryRef() != NULL){
+	    // DO SOMETHING HERE !!
+	    poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
+	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    if(poDstFeature->SetGeometryDirectly(poDstFeature->GetGeometryRef()->Buffer(bufferDistance,30)) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poFeature );
+	    if( poDstLayer->CreateFeature( poDstFeature ) != OGRERR_NONE )
+	      {		
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poDstFeature );
+	  }
+	}
+
+      }
+
+    delete poODS;
+    delete ipoDS;
+
+    char *res1=readVSIFile(conf,pszDestDataSource);
+    if(res1==NULL)
+      return SERVICE_FAILED;
+    setMapInMaps(outputs,"Result","value",res1);
+    free(res1);
+
+    OGRCleanupAll();
+    return SERVICE_SUCCEEDED;
+
+}
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Boundary(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyOne(conf,inputs,outputs,&OGRGeometry::Boundary,"http://fooa/gml/3.1.0/polygon.xsd");
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int ConvexHull(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyOne(conf,inputs,outputs,&OGRGeometry::ConvexHull,"http://fooa/gml/3.1.0/polygon.xsd");
+  }
+
+
+  OGRDataSource* loadEntity(maps* conf,maps* inputs,char **filename,const char **oDriver,const char *entity,int iter){
+    map* tmp=getMapFromMaps(inputs,entity,"value");
+    map* tmp1=getMapFromMaps(inputs,entity,"mimeType");
+    *oDriver="GeoJSON";
+    sprintf(*filename,"/vsimem/input_%d.json",getpid()+iter);
+    if(tmp1!=NULL){
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(*filename,"/vsimem/input_%d.xml",getpid()+iter);
+	*oDriver="GML";
+      }
+    }
+    VSILFILE *ifile=VSIFileFromMemBuffer(*filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+    return OGRSFDriverRegistrar::Open(*filename,FALSE);    
+  }
+
+  int applyOneBool(maps*& conf,maps*& inputs,maps*& outputs,OGRBoolean (OGRGeometry::*myFunc)() const){
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print\n");
 #endif
+    OGRRegisterAll();
+
     maps* cursor=inputs;
     OGRGeometryH geometry,res;
+    OGRLayer *poDstLayer;
+    const char *oDriver1;
+    OGRDataSource       *poODS;
 #ifdef DEBUG
     dumpMaps(cursor);
 #endif
@@ -192,296 +682,349 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
-#ifdef DEBUG
-    fprintf(stderr,"Service internal print \n");
-    dumpMaps(inputs);
-    fprintf(stderr,"/Service internal print \n");
-#endif
+    char filename[1024];
     map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
-#ifdef DEBUG
-    fprintf(stderr,"Service internal print \n");
-    dumpMap(tmp1);
-    fprintf(stderr,"/Service internal print \n");
-#endif
+    const char *oDriver;
+    oDriver="GeoJSON";
+    sprintf(filename,"/vsimem/input_%d.json",getpid());
     if(tmp1!=NULL){
-      if(strncmp(tmp1->value,"text/js",7)==0 ||
-	 strncmp(tmp1->value,"application/json",7)==0)
-        geometry=OGR_G_CreateGeometryFromJson(tmp->value);
-      else
-        geometry=createGeometryFromGML(conf,tmp->value);
-    }
-    else
-      geometry=createGeometryFromGML(conf,tmp->value);
-    if(geometry==NULL){
-      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
-      return SERVICE_FAILED;
-    }
-    res=(*myFunc)(geometry);
-#ifdef DEBUG
-    fprintf(stderr,"Service internal print \n");
-    dumpMaps(outputs);
-    fprintf(stderr,"/Service internal print \n");
-#endif
-    map *tmp_2=getMapFromMaps(outputs,"Result","mimeType");
-#ifdef DEBUG
-    fprintf(stderr,"Service internal print \n");
-    dumpMap(tmp_2);
-    fprintf(stderr,"/Service internal print \n");
-#endif
-    if(tmp_2!=NULL){
-      if(strncmp(tmp_2->value,"text/js",7)==0 ||
-	 strncmp(tmp_2->value,"application/json",16)==0){
-	char *tmpS=OGR_G_ExportToJson(res);
-	setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-	setMapInMaps(outputs,"Result","mimeType","text/plain");
-	setMapInMaps(outputs,"Result","encoding","UTF-8");
-	free(tmpS);
-#endif
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(filename,"/vsimem/input_%d.xml",getpid());
+	oDriver="GML";
       }
-      else{
-	char *tmpS=OGR_G_ExportToGML(res);
-	setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-	setMapInMaps(outputs,"Result","mimeType","text/xml");
-	setMapInMaps(outputs,"Result","encoding","UTF-8");
-	setMapInMaps(outputs,"Result","schema",schema);
-	free(tmpS);
-#endif
-      }
-    }else{
-      char *tmpS=OGR_G_ExportToJson(res);
-      setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-      setMapInMaps(outputs,"Result","mimeType","text/plain");
-      setMapInMaps(outputs,"Result","encoding","UTF-8");
-      free(tmpS);
-#endif
     }
-    //outputs->next=NULL;
-#ifdef DEBUG
-    dumpMaps(outputs);
-    fprintf(stderr,"\nService internal print\n===\n");
-#endif
-    OGR_G_DestroyGeometry(res);
-    OGR_G_DestroyGeometry(geometry);
-    //CPLFree(res);
-    //CPLFree(geometry);
-#ifdef DEBUG
-    fprintf(stderr,"Service internal print \n");
-    dumpMaps(outputs);
-    fprintf(stderr,"/Service internal print \n");
-#endif
+    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+    char pszDestDataSource[100];
+    if( ipoDS == NULL )
+      {
+	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+	  }
+	char tmp[1024];
+	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
+      }
+    for( int iLayer = 0; iLayer < ipoDS->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer = ipoDS->GetLayer(iLayer);
+	
+	if( poLayer == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+	
+	OGRFeature  *poFeature;
+
+
+	while(TRUE){
+	  OGRFeature      *poDstFeature = NULL;
+	  poFeature = poLayer->GetNextFeature();
+	  if( poFeature == NULL )
+	    break;
+	  if(poFeature->GetGeometryRef() != NULL){
+	    // DO SOMETHING HERE !!
+	    if((poFeature->GetGeometryRef()->*myFunc)()==0){
+	      setMapInMaps(outputs,"Result","value","false");
+	      OGRFeature::DestroyFeature( poFeature );
+	      delete ipoDS;
+	      return SERVICE_SUCCEEDED;
+	    }
+	  }
+	  OGRFeature::DestroyFeature( poFeature );
+	}
+
+      }
+
+    delete ipoDS;
+    setMapInMaps(outputs,"Result","value","true");
+
+    OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
-int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
-   OGRGeometryH geometry,res;
-   map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
-   if(tmp==NULL){
-     setMapInMaps(conf,"lenv","message",_ss("Unable to fetch input geometry"));
-     return SERVICE_FAILED;
-   }else
-     if(strlen(tmp->value)<=0){
-       setMapInMaps(conf,"lenv","message",_ss("Unable to fetch input geometry"));
-       return SERVICE_FAILED;
-     }
-   map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
-   if(strncmp(tmp1->value,"application/json",16)==0)
-     geometry=OGR_G_CreateGeometryFromJson(tmp->value);
-   else
-     geometry=createGeometryFromGML(conf,tmp->value);
-   if(geometry==NULL){
-     setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry"));
-     return SERVICE_FAILED;
-   }
-   double bufferDistance;
-   tmp=getMapFromMaps(inputs,"BufferDistance","value");
-   if(tmp==NULL){
-     bufferDistance=atof("10.0");
-   }
-   else
-     bufferDistance=atof(tmp->value);
-   res=OGR_G_Buffer(geometry,bufferDistance,30);
-   dumpMap(tmp);
-   tmp1=getMapFromMaps(outputs,"Result","mimeType");
-   dumpMap(tmp);
-   if(strncmp(tmp1->value,"application/json",16)==0){
-     char *tmpS=OGR_G_ExportToJson(res);
-     setMapInMaps(outputs,"Result","value",tmpS);
-     dumpMap(tmp);
-#ifndef WIN32
-     setMapInMaps(outputs,"Result","mimeType","text/plain");
-     setMapInMaps(outputs,"Result","encoding","UTF-8");
-     free(tmpS);
-#endif
-   }
-   else{
-     char *tmpS=OGR_G_ExportToGML(res);
-     setMapInMaps(outputs,"Result","value",tmpS);
-     dumpMap(tmp);
-#ifndef WIN32
-     free(tmpS);
-     setMapInMaps(outputs,"Result","mimeType","text/xml");
-     setMapInMaps(outputs,"Result","encoding","UTF-8");
-     setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
-#endif
-   }
-   //outputs->next=NULL;
-   OGR_G_DestroyGeometry(geometry);
-   OGR_G_DestroyGeometry(res);
-   return SERVICE_SUCCEEDED;
-}
-
-#ifdef WIN32
-  __declspec(dllexport)
-#endif
-  int Boundary(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyOne(conf,inputs,outputs,&OGR_G_GetBoundary,"http://fooa/gml/3.1.0/polygon.xsd");
+  int IsSimple(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyOneBool(conf,inputs,outputs,&OGRGeometry::IsSimple);
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
-  int ConvexHull(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyOne(conf,inputs,outputs,&OGR_G_ConvexHull,"http://fooa/gml/3.1.0/polygon.xsd");
-  }
-
-
-  OGRGeometryH MY_OGR_G_Centroid(OGRGeometryH hTarget){
-    OGRGeometryH res;
-    res=OGR_G_CreateGeometryFromJson("{\"type\": \"Point\", \"coordinates\": [0,0] }");
-    OGRwkbGeometryType gtype=OGR_G_GetGeometryType(hTarget);
-    if(gtype!=wkbPolygon){
-      hTarget=OGR_G_ConvexHull(hTarget);
-    }
-    int c=OGR_G_Centroid(hTarget,res);
-    return res;
+  int IsClosed(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyOneBool(conf,inputs,outputs,&OGRGeometry::IsRing);
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
-  int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyOne(conf,inputs,outputs,&MY_OGR_G_Centroid,"http://fooa/gml/3.1.0/point.xsd");
+  int IsValid(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyOneBool(conf,inputs,outputs,&OGRGeometry::IsValid);
   }
 
-  int applyTwo(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometryH (*myFunc)(OGRGeometryH,OGRGeometryH)){
+  
+  int applyTwo(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry::*myFunc)(const OGRGeometry*) const){
 #ifdef DEBUG
-    fprintf(stderr,"\nService internal print1\n");
-    fflush(stderr);
-    fprintf(stderr,"\nService internal print1\n");
-    dumpMaps(inputs);
-    fprintf(stderr,"\nService internal print1\n");
+    fprintf(stderr,"\nService internal print\n");
 #endif
+    OGRRegisterAll();
 
     maps* cursor=inputs;
-    OGRGeometryH geometry1,geometry2;
-    OGRGeometryH res;
-    {
-      map* tmp=getMapFromMaps(inputs,"InputEntity1","value");
-      map* tmp1=getMapFromMaps(inputs,"InputEntity1","mimeType");
-      if(tmp1!=NULL){
-        if(strncmp(tmp1->value,"application/json",16)==0)
-      	  geometry1=OGR_G_CreateGeometryFromJson(tmp->value);
-	else
-	  geometry1=createGeometryFromGML(conf,tmp->value);
+    OGRGeometryH geometry,res;
+    OGRLayer *poDstLayer;
+    //const char *oDriver1;
+    OGRDataSource       *poODS;
+#ifdef DEBUG
+    dumpMaps(cursor);
+#endif
+
+    char *filename=(char*)malloc(1024*sizeof(char));
+    const char *oDriver1;
+    OGRDataSource* ipoDS1 = loadEntity(conf,inputs,&filename,&oDriver1,"InputEntity1",1);
+
+    char *filename1=(char*)malloc(1024*sizeof(char));
+    const char *oDriver2;
+    OGRDataSource* ipoDS2 = loadEntity(conf,inputs,&filename1,&oDriver2,"InputEntity2",2);
+    const char *oDriver3;
+    char pszDestDataSource[100];
+    if( ipoDS1 == NULL || ipoDS2 == NULL )
+      {
+	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+	  }
+	char tmp[1024];
+	if( ipoDS1 == NULL )
+	  sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	if( ipoDS2 == NULL )
+	  sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename1);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
       }
-      else
-      	geometry1=createGeometryFromGML(conf,tmp->value);
-    }
-    if(geometry1==NULL){
-      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity1."));
+    for( int iLayer = 0; iLayer < ipoDS1->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer1 = ipoDS1->GetLayer(iLayer);
+	
+	if( poLayer1 == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+
+	for( int iLayer1 = 0; iLayer1 < ipoDS2->GetLayerCount();
+	     iLayer1++ )
+	  {
+	    OGRLayer        *poLayer2 = ipoDS2->GetLayer(iLayer1);
+	    
+	    if( poLayer1 == NULL )
+	      {
+		fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+			 iLayer1 );
+		char tmp[1024];
+		sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer1);
+		setMapInMaps(conf,"lenv","message",tmp);
+		return SERVICE_FAILED;
+	      }
+	
+	    OGRFeature  *poFeature1,*poFeature2;
+
+	    /* -------------------------------------------------------------------- */
+	    /*      Try opening the output datasource as an existing, writable      */
+	    /* -------------------------------------------------------------------- */
+	    
+	    OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+	    OGRSFDriver          *poDriver = NULL;
+	    int                  iDriver;
+	    
+	    map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
+	    oDriver3="GeoJSON";
+	    sprintf(pszDestDataSource,"/vsimem/result_%d.json",getpid());
+	    if(tmpMap!=NULL){
+	      if(strcmp(tmpMap->value,"text/xml")==0){
+		sprintf(pszDestDataSource,"/vsimem/result_%d.xml",getpid());
+		oDriver3="GML";
+	      }
+	    }
+	    
+	    for( iDriver = 0;
+		 iDriver < poR->GetDriverCount() && poDriver == NULL;
+		 iDriver++ )
+	      {
 #ifdef DEBUG
-      fprintf(stderr,"SERVICE FAILED !\n");
+		fprintf(stderr,"D:%s\n",poR->GetDriver(iDriver)->GetName());
 #endif
-      return SERVICE_FAILED;
-    }
-#ifdef DEBUG
-    fprintf(stderr,"\nService internal print1 InputEntity1\n");
-#endif
-    {
-      map* tmp=getMapFromMaps(inputs,"InputEntity2","value");
-      map* tmp1=getMapFromMaps(inputs,"InputEntity2","mimeType");
-#ifdef DEBUG
-      fprintf(stderr,"MY MAP \n[%s] - %i\n",tmp1->value,strncmp(tmp1->value,"application/json",16));
-      //dumpMap(tmp);
-      fprintf(stderr,"MY MAP\n");
-      fprintf(stderr,"\nService internal print1 InputEntity2\n");
-#endif
-      if(tmp1!=NULL){
-        if(strncmp(tmp1->value,"application/json",16)==0){
-#ifdef DEBUG
-	  fprintf(stderr,"\nService internal print1 InputEntity2 as JSON\n");
-#endif
-      	  geometry2=OGR_G_CreateGeometryFromJson(tmp->value);
-	}
-	else{
-#ifdef DEBUG
-	  fprintf(stderr,"\nService internal print1 InputEntity2 as GML\n");
-#endif
-	  geometry2=createGeometryFromGML(conf,tmp->value);
-	}
+		if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver3) )
+		  {
+		    poDriver = poR->GetDriver(iDriver);
+		  }
+	      }
+	    
+	    if( poDriver == NULL )
+	      {
+		char emessage[8192];
+		sprintf( emessage, "Unable to find driver `%s'.\n", oDriver1 );
+		sprintf( emessage,  "%sThe following drivers are available:\n",emessage );
+		
+		for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+		  {
+		    sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+		  }
+		
+		setMapInMaps(conf,"lenv","message",emessage);
+		return SERVICE_FAILED;
+		
+	      }
+	    
+	    if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
+	      char emessage[1024];
+	      sprintf( emessage,  "%s driver does not support data source creation.\n",
+		       "json" );
+	      setMapInMaps(conf,"lenv","message",emessage);
+	      return SERVICE_FAILED;
+	    }
+	    
+	    /* -------------------------------------------------------------------- */
+	    /*      Create the output data source.                                  */
+	    /* -------------------------------------------------------------------- */
+	    //map* tpath=getMapFromMaps(conf,"main","tmpPath");
+	    char **papszDSCO=NULL;
+	    poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+	    if( poODS == NULL ){
+	      char emessage[1024];      
+	      sprintf( emessage,  "%s driver failed to create %s\n", 
+		       "json", pszDestDataSource );
+	      setMapInMaps(conf,"lenv","message",emessage);
+	      return SERVICE_FAILED;
+	    }
+	    
+	    /* -------------------------------------------------------------------- */
+	    /*      Create the layer.                                               */
+	    /* -------------------------------------------------------------------- */
+	    if( !poODS->TestCapability( ODsCCreateLayer ) )
+	      {
+		char emessage[1024];
+		sprintf( emessage, 
+			 "Layer %s not found, and CreateLayer not supported by driver.", 
+			 "Result" );
+		setMapInMaps(conf,"lenv","message",emessage);
+		return SERVICE_FAILED;
+	      }
+	    
+	    //CPLErrorReset();
+	    
+	    poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
+	    if( poDstLayer == NULL ){
+	      setMapInMaps(conf,"lenv","message","Layer creation failed.\n");
+	      return SERVICE_FAILED;
+	    }
+	    
+	    OGRFeatureDefn *poFDefn = poLayer1->GetLayerDefn();
+	    int iField;
+	    int hasMmField=0;
+	    
+	    for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
+	      {
+		OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iField);
+		if (iField >= 0)
+		  poDstLayer->CreateField( poFDefn->GetFieldDefn(iField) );
+		else
+		  {
+		    fprintf( stderr, "Field '%s' not found in source layer.\n", 
+			     iField );
+		    return SERVICE_FAILED;
+		  }
+	      }
+	    
+	    while(TRUE){
+	      OGRFeature      *poDstFeature = NULL;
+	      poFeature1 = poLayer1->GetNextFeature();
+	      if( poFeature1 == NULL )
+		break;
+	      while(TRUE){
+		poFeature2 = poLayer2->GetNextFeature();
+		if( poFeature2 == NULL )
+		  break;
+
+		if(poFeature1->GetGeometryRef() != NULL && poFeature2->GetGeometryRef() != NULL){
+		  // DO SOMETHING HERE !!
+		  poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
+		  if( poDstFeature->SetFrom( poFeature2, TRUE ) != OGRERR_NONE )
+		    {
+		      char tmpMsg[1024];
+		      sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			       poFeature2->GetFID(), poFDefn->GetName() );
+		      
+		      OGRFeature::DestroyFeature( poFeature1 );
+		      OGRFeature::DestroyFeature( poFeature2 );
+		      OGRFeature::DestroyFeature( poDstFeature );
+		      return SERVICE_FAILED;
+		    }
+		  if(poDstFeature->SetGeometryDirectly((poFeature1->GetGeometryRef()->*myFunc)(poFeature2->GetGeometryRef())) != OGRERR_NONE )
+		    {
+		      char tmpMsg[1024];
+		      sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			       poFeature2->GetFID(), poFDefn->GetName() );
+		      
+		      OGRFeature::DestroyFeature( poFeature1 );
+		      OGRFeature::DestroyFeature( poFeature2 );
+		      OGRFeature::DestroyFeature( poDstFeature );
+		      return SERVICE_FAILED;
+		    }
+		  OGRFeature::DestroyFeature( poFeature1 );
+		  OGRFeature::DestroyFeature( poFeature2 );
+		  if(!poDstFeature->GetGeometryRef()->IsEmpty())
+		    if( poDstLayer->CreateFeature( poDstFeature ) != OGRERR_NONE )
+		      {		
+			OGRFeature::DestroyFeature( poDstFeature );
+			return SERVICE_FAILED;
+		      }
+		  OGRFeature::DestroyFeature( poDstFeature );
+		}
+	      }
+	    }
+	  }
       }
-      else
-      	geometry2=createGeometryFromGML(conf,tmp->value);
-#ifdef DEBUG
-      fprintf(stderr,"\nService internal print1 InputEntity2 PreFinal\n");
-#endif
-    }
-#ifdef DEBUG
-    fprintf(stderr,"\nService internal print1 InputEntity2 Final\n");
-#endif
-    if(geometry2==NULL){
-      setMapInMaps(conf,"lenv","message",_ss("Unable to parse input geometry for InputEntity2."));
-#ifdef DEBUG
-      fprintf(stderr,"SERVICE FAILED !\n");
-#endif
+
+    delete poODS;
+    delete ipoDS1;
+    delete ipoDS2;
+    free(filename);
+    free(filename1);
+
+    char *res1=readVSIFile(conf,pszDestDataSource);
+    if(res1==NULL)
       return SERVICE_FAILED;
-    }
-#ifdef DEBUG
-    fprintf(stderr,"\nService internal print1\n");
-#endif
-    res=(*myFunc)(geometry1,geometry2);
-#ifdef DEBUG
-    fprintf(stderr,"\nService internal print1\n");
-#endif    
-    /* nuova parte */
-    map* tmp2=getMapFromMaps(outputs,"Result","mimeType");
-    if(strncmp(tmp2->value,"application/json",16)==0){
-      char *tmpS=OGR_G_ExportToJson(res);
-      setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-      setMapInMaps(outputs,"Result","mimeType","text/plain");
-      setMapInMaps(outputs,"Result","encoding","UTF-8");
-      free(tmpS);
-#endif
-    }
-    else{
-      char *tmpS=OGR_G_ExportToGML(res);
-      setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-      setMapInMaps(outputs,"Result","mimeType","text/xml");
-      setMapInMaps(outputs,"Result","encoding","UTF-8");
-      setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
-      free(tmpS);
-#endif
-    }
-    
-    /* vecchia da togliere */
-    /*
-    char *tmpS=OGR_G_ExportToJson(res);
-    setMapInMaps(outputs,"Result","value",tmpS);
-    setMapInMaps(outputs,"Result","mimeType","text/plain");
-    setMapInMaps(outputs,"Result","encoding","UTF-8");
-    free(tmpS);
-    */
-    OGR_G_DestroyGeometry(geometry1);
-    OGR_G_DestroyGeometry(geometry2);
-    OGR_G_DestroyGeometry(res);
+    setMapInMaps(outputs,"Result","value",res1);
+    free(res1);
+    OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
   
@@ -489,28 +1032,195 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
   __declspec(dllexport)
 #endif
   int Difference(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyTwo(conf,inputs,outputs,&OGR_G_Difference);
+    return applyTwo(conf,inputs,outputs,&OGRGeometry::Difference);
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
   int SymDifference(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyTwo(conf,inputs,outputs,&OGR_G_SymmetricDifference);
+    return applyTwo(conf,inputs,outputs,&OGRGeometry::SymDifference);
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
   int Intersection(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyTwo(conf,inputs,outputs,&OGR_G_Intersection);
+    return applyTwo(conf,inputs,outputs,&OGRGeometry::Intersection);
   }
 
 #ifdef WIN32
   __declspec(dllexport)
 #endif
   int Union(maps*& conf,maps*& inputs,maps*& outputs){
-    return applyTwo(conf,inputs,outputs,&OGR_G_Union);
+    return applyTwo(conf,inputs,outputs,&OGRGeometry::Union);
+  }
+
+  int applyTwoBool(maps*& conf,maps*& inputs,maps*& outputs,OGRBoolean (OGRGeometry::*myFunc)(const OGRGeometry*) const){
+    OGRRegisterAll();
+
+    maps* cursor=inputs;
+    OGRGeometryH geometry,res;
+    OGRLayer *poDstLayer;
+    OGRDataSource       *poODS;
+
+    char *filename=(char*)malloc(1024*sizeof(char));
+    const char *oDriver1;
+    OGRDataSource* ipoDS1 = loadEntity(conf,inputs,&filename,&oDriver1,"InputEntity1",1);
+
+    char *filename1=(char*)malloc(1024*sizeof(char));
+    const char *oDriver2;
+    OGRDataSource* ipoDS2 = loadEntity(conf,inputs,&filename1,&oDriver2,"InputEntity2",2);
+    const char *oDriver3;
+    char pszDestDataSource[100];
+    if( ipoDS1 == NULL || ipoDS2 == NULL )
+      {
+	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+	  }
+	char tmp[1024];
+	if( ipoDS1 == NULL )
+	  sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	if( ipoDS2 == NULL )
+	  sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename1);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
+      }
+    for( int iLayer = 0; iLayer < ipoDS1->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer1 = ipoDS1->GetLayer(iLayer);
+	
+	if( poLayer1 == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+
+	for( int iLayer1 = 0; iLayer1 < ipoDS2->GetLayerCount();
+	     iLayer1++ )
+	  {
+	    OGRLayer        *poLayer2 = ipoDS2->GetLayer(iLayer1);
+	    
+	    if( poLayer1 == NULL )
+	      {
+		fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+			 iLayer1 );
+		char tmp[1024];
+		sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer1);
+		setMapInMaps(conf,"lenv","message",tmp);
+		return SERVICE_FAILED;
+	      }
+	
+	    OGRFeature  *poFeature1,*poFeature2;
+
+
+	    while(TRUE){
+	      OGRFeature      *poDstFeature = NULL;
+	      poFeature1 = poLayer1->GetNextFeature();
+	      if( poFeature1 == NULL )
+		break;
+	      while(TRUE){
+		poFeature2 = poLayer2->GetNextFeature();
+		if( poFeature2 == NULL )
+		  break;
+		if(poFeature1->GetGeometryRef() != NULL && poFeature2->GetGeometryRef() != NULL){
+		  // DO SOMETHING HERE !!
+		  if((poFeature1->GetGeometryRef()->*myFunc)(poFeature2->GetGeometryRef())==0){
+		    setMapInMaps(outputs,"Result","value","false");
+		    OGRFeature::DestroyFeature( poFeature1 );
+		    OGRFeature::DestroyFeature( poFeature2 );
+		    delete ipoDS1;
+		    delete ipoDS2;
+		    free(filename);
+		    free(filename1);
+		    return SERVICE_SUCCEEDED;
+		  }
+		}
+		OGRFeature::DestroyFeature( poFeature2 );
+	      }
+	      OGRFeature::DestroyFeature( poFeature1 );
+	    }
+	  }
+      }
+
+    delete ipoDS1;
+    delete ipoDS2;
+    free(filename);
+    free(filename1);
+
+    setMapInMaps(outputs,"Result","value","true");
+
+    OGRCleanupAll();
+    return SERVICE_SUCCEEDED;
+  }
+
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Equals(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,(OGRBoolean (OGRGeometry::*)(const OGRGeometry *) const)&OGRGeometry::Equals);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Disjoint(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,&OGRGeometry::Disjoint);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Touches(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,&OGRGeometry::Touches);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Crosses(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,&OGRGeometry::Crosses);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Within(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,&OGRGeometry::Within);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Contains(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,&OGRGeometry::Contains);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Overlaps(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,&OGRGeometry::Overlaps);
+  }
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
+  int Intersects(maps*& conf,maps*& inputs,maps*& outputs){
+    return applyTwoBool(conf,inputs,outputs,(OGRBoolean (OGRGeometry::*)(const OGRGeometry *) const)&OGRGeometry::Intersects);
   }
 
 #ifdef WIN32
@@ -604,7 +1314,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       return SERVICE_FAILED;
     }
     fprintf(stderr,"geometry created %s \n",tmp->value);
-    res=OGR_G_GetArea(geometry);
+    res=OGR_G_Area(geometry);
     fprintf(stderr,"area %d \n",res);
     /**
      * Filling the outputs

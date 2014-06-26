@@ -1,6 +1,6 @@
 [ConvexHull]
  Title = Compute convex hull.
- Abstract = A new geometry object is created and returned containing the convex hull of the geometry on which the method is invoked.
+ Abstract = This service shall return a feature collection that represents the convex hull of geometry InputPolygon. The convex hull is the smallest convex polygon that contains all points of the geometry. The convex Hull for a geometry of encoding data type Point is the point itself
  processVersion = 1
  storeSupported = true
  statusSupported = true
