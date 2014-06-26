@@ -1,0 +1,37 @@
+[IsSimple]
+ Title = IsSimple test 
+ Abstract = This service shall return a true value if and only if geometry g has no anomalous geometric points, such as self intersection or self tangency. Simple curves intersect themselves only at their endpoints (only if they are also closed, see next function).
+ Profile = urn:ogc:wps:1.0.0:union
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = ogr_service.zo
+ serviceType = C
+ <DataInputs>
+  [InputPolygon]
+   Title = the first geometry 
+   Abstract = the first geometry to compare against.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://fooa/gml/3.1.0/polygon.xsd
+    </Supported>
+   </ComplexData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = IsSimple result
+   Abstract = The boolean result
+    <LiteralData>
+      dataType=boolean
+      <Default />
+    </LiteralData>
+ </DataOutputs>  

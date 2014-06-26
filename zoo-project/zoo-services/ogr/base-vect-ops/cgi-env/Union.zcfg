@@ -1,7 +1,7 @@
 [Union]
  Title = Compute union. 
- Abstract = Generates a new geometry which is the region of union of the two geometries operated on.
- Profile = urn:ogc:wps:1.0.0:union
+ Abstract = This service shall return a bag of geometry values representing a Point set union of geometry InputEntity1 with geometry InputEntity2.
+ profile = urn:ogc:wps:1.0.0:union
  processVersion = 2
  storeSupported = true
  statusSupported = true
