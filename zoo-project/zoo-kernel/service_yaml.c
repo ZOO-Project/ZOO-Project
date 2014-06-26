@@ -143,19 +143,19 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
       break;
     case YAML_SCALAR_TOKEN:  
       if(ttype==0){
-	cur_key=zStrdup(token.data.scalar.value);
+	cur_key=zStrdup((char *)token.data.scalar.value);
       }
       if(ttype==1){
 	if(current_content==NULL){
-	  current_content=createMap(cur_key,token.data.scalar.value);
+	  current_content=createMap(cur_key,(char *)token.data.scalar.value);
 	}else{
-	  addToMap(current_content,cur_key,token.data.scalar.value);
+	  addToMap(current_content,cur_key,(char *)token.data.scalar.value);
 	}
 	free(cur_key);
 	cur_key=NULL;
       }
 
-      if(ttype==0 && blevel==0 && level==0 && strcasecmp(token.data.scalar.value,"MetaData")==0 && blevel==0){
+      if(ttype==0 && blevel==0 && level==0 && strcasecmp((char *)token.data.scalar.value,"MetaData")==0 && blevel==0){
 	addMapToMap(&my_service->content,current_content);
 #ifdef DEBUG_YAML
 	fprintf(stderr,"MSG: %s %d \n",__FILE__,__LINE__);
@@ -165,7 +165,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	current_content=NULL;
 	wait_metadata=1;
       }
-      if(ttype==0 && blevel>0 && level>0 && strcasecmp(token.data.scalar.value,"MetaData")==0){
+      if(ttype==0 && blevel>0 && level>0 && strcasecmp((char *)token.data.scalar.value,"MetaData")==0){
 	if(current_element->content==NULL && current_content!=NULL)
 	  addMapToMap(&current_element->content,current_content);
 #ifdef DEBUG_YAML
@@ -177,7 +177,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	current_content=NULL;
 	wait_metadata=1;
       }
-      if(ttype==0 && strcasecmp(token.data.scalar.value,"inputs")==0 && blevel==0){
+      if(ttype==0 && strcasecmp((char *)token.data.scalar.value,"inputs")==0 && blevel==0){
 	if(wait_metadata>0){
 	  addMapToMap(&my_service->metadata,current_content);
 	  wait_metadata=-1;
@@ -195,7 +195,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	wait_metadata=false;
 	level++;
       }
-      if(ttype==0 && strcasecmp(token.data.scalar.value,"outputs")==0 && blevel==1){
+      if(ttype==0 && strcasecmp((char *)token.data.scalar.value,"outputs")==0 && blevel==1){
 	level++;
 #ifdef DEBUG_YAML
 	dumpMap(current_content);
@@ -228,10 +228,10 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	  }
 	}
       }
-      if(level==1 && strcasecmp(token.data.scalar.value,"default")==0){
+      if(level==1 && strcasecmp((char *)token.data.scalar.value,"default")==0){
 	ilevel=0;
       }
-      if(level==1 && strcasecmp(token.data.scalar.value,"supported")==0){
+      if(level==1 && strcasecmp((char *)token.data.scalar.value,"supported")==0){
 #ifdef DEBUG_YAML
 	dumpMap(current_content);
 	printf("\n***\n%d (%d,%d,%d,%d)\n+++\n", current_element->defaults==NULL,blevel,level,ilevel,ttype); 
@@ -270,10 +270,13 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
       }
 
 
-      if(strncasecmp(token.data.scalar.value,"ComplexData",11)==0 || strncasecmp(token.data.scalar.value,"LiteralData",10)==0
-	 || strncasecmp(token.data.scalar.value,"ComplexOutput",13)==0 || strncasecmp(token.data.scalar.value,"LiteralOutput",12)==0
-	 || strncasecmp(token.data.scalar.value,"BoundingBoxOutput",13)==0 || strncasecmp(token.data.scalar.value,"BoundingBoxData",12)==0){
-	current_element->format=zStrdup(token.data.scalar.value);
+      if(strncasecmp((char *)token.data.scalar.value,"ComplexData",11)==0 || 
+	 strncasecmp((char *)token.data.scalar.value,"LiteralData",10)==0 || 
+	 strncasecmp((char *)token.data.scalar.value,"ComplexOutput",13)==0 || 
+	 strncasecmp((char *)token.data.scalar.value,"LiteralOutput",12)==0 || 
+	 strncasecmp((char *)token.data.scalar.value,"BoundingBoxOutput",13)==0 || 
+	 strncasecmp((char *)token.data.scalar.value,"BoundingBoxData",12)==0){
+	current_element->format=zStrdup((char *)token.data.scalar.value);
 	free(cur_key);
 	cur_key=NULL;
 	if(wait_metadata>0 && current_content!=NULL){
@@ -323,7 +326,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	}
 	plevel=level;
 	current_element=(elements*)malloc(ELEMENTS_SIZE);
-	current_element->name=strdup(token.data.scalar.value);
+	current_element->name=zStrdup((char *)token.data.scalar.value);
 	current_element->content=NULL;
 	current_element->metadata=NULL;
 	current_element->format=NULL;
@@ -366,7 +369,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	}
 	plevel=level;
 	current_element=(elements*)malloc(ELEMENTS_SIZE);
-	current_element->name=strdup(token.data.scalar.value);
+	current_element->name=zStrdup((char *)token.data.scalar.value);
 	current_element->content=NULL;
 	current_element->metadata=NULL;
 	current_element->format=NULL;

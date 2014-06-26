@@ -60,9 +60,13 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #ifndef WIN32
+#ifndef bool
 #define bool int
+#endif
+#ifndef true
 #define true 1
 #define false -1
+#endif
 #else
   //#include <stdbool.h>
 #endif
@@ -421,10 +425,10 @@ extern "C" {
   static void addToMap(map* m,const char* n,const char* v){
     if(hasKey(m,n)==false){
       map* _cursor=m;
-      if(_cursor->next!=NULL){
-	addToMap(_cursor->next,n,v);
-      }else
-	_cursor->next=createMap(n,v);
+      while(_cursor->next!=NULL){
+	_cursor=_cursor->next;
+      }
+      _cursor->next=createMap(n,v);
     }
     else{
       map *tmp=getMap(m,n);
@@ -477,12 +481,13 @@ extern "C" {
     tmp->next->next=NULL;
   }
 
-  static map* getMapOrFill(map** m,const char *key,char* value){
+  static map* getMapOrFill(map** m,const char *key,const char* value){
     map* tmp=*m;
     map* tmpMap=getMap(tmp,key);
     if(tmpMap==NULL){
-      if(tmp!=NULL)
-	addToMap(*m,key,value);
+      if(tmp!=NULL){
+	addToMap((*m),key,value);
+      }
       else
 	(*m)=createMap(key,value);
       tmpMap=getMap(*m,key);
@@ -579,7 +584,7 @@ extern "C" {
     }
   }
 
-  static map* getMapArray(map* m,char* key,int index){
+  static map* getMapArray(map* m,const char* key,int index){
     char tmp[1024];
     if(index>0)
       sprintf(tmp,"%s_%d",key,index);
@@ -658,7 +663,6 @@ extern "C" {
     sprintf(tmpLen,"%d",len+1);
     addToMap(_cursor->content,"length",tmpLen);
     int i=0;
-    map* tmpSizeI=getMap(tmp->content,tmpV[i]);
     for(i=0;i<8;i++){
       map* tmpVI=getMap(tmp->content,tmpV[i]);
       if(tmpVI!=NULL){
@@ -886,7 +890,6 @@ extern "C" {
   }
 
   static void dumpServiceAsYAML(service* s){
-    int level=0;
     int i;
     fprintf(stderr,"# %s\n\n",s->name);
     if(s->content!=NULL){
@@ -904,11 +907,11 @@ extern "C" {
       }
     }
     if(s->inputs!=NULL){
-      fprintf(stderr,"\ninputs:\n",s->name);
+      fprintf(stderr,"\ninputs:\n");
       dumpElementsAsYAML(s->inputs);
     }
     if(s->outputs!=NULL){
-      fprintf(stderr,"\noutputs:\n",s->name);
+      fprintf(stderr,"\noutputs:\n");
       dumpElementsAsYAML(s->outputs);
     }
   }

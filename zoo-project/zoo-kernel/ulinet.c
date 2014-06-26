@@ -26,6 +26,7 @@
  */
 
 #define _ULINET
+#define MAX_WAIT_MSECS 180*1000 /* Wait max. 180 seconds */
 #include "ulinet.h"
 #include <assert.h>
 
@@ -161,36 +162,14 @@ bool setProxiesForProtcol(CURL* handle,const char *proto){
 }
 #endif
 
-HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags){
-  
+HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags){  
   HINTERNET ret;
-  struct MemoryStruct header;
+  ret.handle=curl_multi_init();
+  ret.ihandle=NULL;
   ret.hasCacheFile=0;
   ret.nDataAlloc = 0;
   ret.mimeType = NULL;
-
-  curl_global_init(CURL_GLOBAL_ALL|CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32);
-  ret.handle=curl_easy_init();
-
-  curl_easy_setopt(ret.handle, CURLOPT_COOKIEFILE, "ALL");
-#ifndef TIGER
-  curl_easy_setopt(ret.handle, CURLOPT_COOKIELIST, "ALL");
-#endif
-  curl_easy_setopt(ret.handle, CURLOPT_USERAGENT, lpszAgent);
-  
-  curl_easy_setopt(ret.handle,CURLOPT_FOLLOWLOCATION,1);
-  curl_easy_setopt(ret.handle,CURLOPT_MAXREDIRS,3);
-  
-  header.memory=NULL;
-  header.size = 0;
-
-  curl_easy_setopt(ret.handle, CURLOPT_HEADERFUNCTION, header_write_data);
-  curl_easy_setopt(ret.handle, CURLOPT_WRITEHEADER, (void *)&header);
-
-#ifdef MSG_LAF_VERBOSE
-  curl_easy_setopt(ret.handle, CURLOPT_VERBOSE, 1);
-#endif
-
+  ret.agent=strdup(lpszAgent);
   return ret;
 }
 
@@ -205,25 +184,52 @@ void InternetCloseHandle(HINTERNET handle){
     handle.mimeType = NULL;
     handle.nDataAlloc = handle.nDataLen = 0;
   }
+  if(handle.ihandle!=NULL)
+    curl_easy_cleanup(handle.ihandle);
   if(handle.handle)
-    curl_easy_cleanup(handle.handle);
-  curl_global_cleanup();
+    curl_multi_cleanup(handle.handle);
+  free(handle.agent);
 }
 
 HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
 
   char filename[255];
+  struct MemoryStruct header;
+
   hInternet.nDataLen = 0;
 
   hInternet.nDataAlloc = 0;
   hInternet.pabyData= NULL;
+
+  if(hInternet.ihandle!=NULL)
+    curl_easy_cleanup(hInternet.ihandle);
+  hInternet.ihandle=curl_easy_init( );
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_COOKIEFILE, "ALL");
+#ifndef TIGER
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_COOKIELIST, "ALL");
+#endif
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_USERAGENT, hInternet.agent);
+  
+  curl_easy_setopt(hInternet.ihandle,CURLOPT_FOLLOWLOCATION,1);
+  curl_easy_setopt(hInternet.ihandle,CURLOPT_MAXREDIRS,3);
+  
+  header.memory=NULL;
+  header.size = 0;
+
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_HEADERFUNCTION, header_write_data);
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEHEADER, (void *)&header);
+
+#ifdef MSG_LAF_VERBOSE
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_VERBOSE, 1);
+#endif
+
       
   switch(dwFlags)
     {
     case INTERNET_FLAG_NO_CACHE_WRITE:    
       hInternet.hasCacheFile=-1;
-      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEFUNCTION, write_data_into);
-      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEDATA, &hInternet);
+      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEFUNCTION, write_data_into);
+      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEDATA, &hInternet);
       break;
     default:
       sprintf(filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
@@ -235,8 +241,8 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
       hInternet.file=fopen(hInternet.filename,"w+");
     
       hInternet.hasCacheFile=1;
-      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEFUNCTION, NULL);
-      curl_easy_setopt(hInternet.handle, CURLOPT_WRITEDATA, hInternet.file);
+      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEFUNCTION, NULL);
+      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEDATA, hInternet.file);
       hInternet.nDataLen=0;
       break;
     }
@@ -249,20 +255,40 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
     fprintf(stderr,"HEADER : %s\n",lpszHeaders);
 #endif
     //curl_easy_setopt(hInternet.handle,CURLOPT_COOKIE,lpszHeaders);
-    curl_easy_setopt(hInternet.handle,CURLOPT_POST,1);
+    curl_easy_setopt(hInternet.ihandle,CURLOPT_POST,1);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
-    curl_easy_setopt(hInternet.handle,CURLOPT_VERBOSE,1);
+    curl_easy_setopt(hInternet.ihandle,CURLOPT_VERBOSE,1);
 #endif
-    curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDS,lpszHeaders);
+    curl_easy_setopt(hInternet.ihandle,CURLOPT_POSTFIELDS,lpszHeaders);
     //curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
     if(hInternet.header!=NULL)
-      curl_easy_setopt(hInternet.handle,CURLOPT_HTTPHEADER,hInternet.header);
+      curl_easy_setopt(hInternet.ihandle,CURLOPT_HTTPHEADER,hInternet.header);
   }
 
-  curl_easy_setopt(hInternet.handle,CURLOPT_URL,lpszUrl);
-  curl_easy_perform(hInternet.handle);
-  curl_easy_getinfo(hInternet.handle,CURLINFO_CONTENT_TYPE,&hInternet.mimeType);
+  curl_easy_setopt(hInternet.ihandle,CURLOPT_URL,lpszUrl);
+
+  curl_multi_add_handle(hInternet.handle,hInternet.ihandle);
+  
+  int still_running=0;
+  int msgs_left=0;
+  do{
+    curl_multi_perform(hInternet.handle, &still_running);
+  }while(still_running);
+
+  CURLMsg *msg=NULL;
+  while ((msg = curl_multi_info_read(hInternet.handle, &msgs_left))) {
+    if (msg->msg == CURLMSG_DONE) {
+      CURL *eh=NULL;
+      eh = msg->easy_handle;
+      curl_easy_getinfo(eh,CURLINFO_CONTENT_TYPE,&hInternet.mimeType);
+    }
+    else {
+      fprintf(stderr, "error: after curl_multi_info_read(), CURLMsg=%d\n", msg->msg);
+    }
+  }
+  curl_multi_remove_handle(hInternet.handle, hInternet.ihandle);
+
 #ifdef ULINET_DEBUG
   fprintf(stderr,"DEBUG MIMETYPE: %s\n",hInternet.mimeType);
   fflush(stderr);
@@ -273,7 +299,7 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
 int freeCookieList(HINTERNET hInternet){
   memset(&CCookie[0],0,1024);
 #ifndef TIGER
-  curl_easy_setopt(hInternet.handle, CURLOPT_COOKIELIST, "ALL");
+  curl_easy_setopt(hInternet.ihandle, CURLOPT_COOKIELIST, "ALL");
 #endif
   return 1;
 }

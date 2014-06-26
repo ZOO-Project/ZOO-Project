@@ -53,7 +53,7 @@ extern "C" {
 #include "service_internal.h"
 
 xmlXPathObjectPtr extractFromDoc(xmlDocPtr,const char*);
-int runRequest(map*);
+int runRequest(map**);
 
 using namespace std;
 
@@ -90,33 +90,36 @@ int cgiMain(){
 
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
      strncasecmp(cgiRequestMethod,"post",4)==0){
-    if(cgiContentLength==NULL){
-       cgiContentLength=0;
+    if(cgiContentLength==0){
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
        while((r=fread(buffer,sizeof(char),1,cgiIn))){
+	 buffer[1]=0;
 	 cgiContentLength+=r;
 	 if(res==NULL){
-	   res=(char*)malloc(1*sizeof(char));
+	   res=(char*)malloc(2*sizeof(char));
 	   sprintf(res,"%s",buffer);
 	 }
 	 else{
-	   res=(char*)realloc(res,(cgiContentLength+1)*sizeof(char));
 	   char *tmp=zStrdup(res);
+	   res=(char*)realloc(res,(strlen(tmp)+2)*sizeof(char));
 	   sprintf(res,"%s%s",tmp,buffer);
 	   free(tmp);
 	 }
        }
+       delete[] buffer;
        if(res==NULL && (strQuery==NULL || strlen(strQuery)==0)){
 	 return errorException(NULL,"ZOO-Kernel failed to process your request cause the request was emtpty.","InternalError",NULL);
        }else{
 	 if(strQuery==NULL || strlen(strQuery)==0)
 	   tmpMap=createMap("request",res);
-            }
+       }
+       if(res!=NULL)
+	 free(res);
     }else{
       char *buffer=new char[cgiContentLength+1];
-      if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>=0){
+      if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>0){
 	buffer[cgiContentLength]=0;
 	tmpMap=createMap("request",buffer);
       }else{
@@ -145,7 +148,10 @@ int cgiMain(){
 	  delete[]ivalue;
 	  arrayStep++;
 	}
-	tmpMap=createMap("request",buffer);
+	if(tmpMap!=NULL)
+	  addToMap(tmpMap,"request",buffer);
+	else
+	  tmpMap=createMap("request",buffer);
       }
       delete[]buffer;
     }
@@ -202,12 +208,6 @@ int cgiMain(){
 #endif
      ){
     /**
-     * First include the MetaPath and the ServiceProvider default parameters
-     * (which should be always available in GET params so in cgiQueryString)
-     */
-    char *str1;
-    str1=cgiQueryString;
-    /**
      * Store the original XML request in xrequest map
      */
     map* t1=getMap(tmpMap,"request");
@@ -231,6 +231,7 @@ int cgiMain(){
 	      xmlFree(xmlbuff);
 	    }
 	  }
+	  xmlXPathFreeObject(reqptr);
 	}
       }
 
@@ -238,12 +239,16 @@ int cgiMain(){
       char *tval;
       tval=NULL;
       tval = (char*) xmlGetProp(cur,BAD_CAST "service");
-      if(tval!=NULL)
+      if(tval!=NULL){
 	addToMap(tmpMap,"service",tval);
+	xmlFree(tval);
+      }
       tval=NULL;
       tval = (char*) xmlGetProp(cur,BAD_CAST "language");
-      if(tval!=NULL)
+      if(tval!=NULL){
 	addToMap(tmpMap,"language",tval);
+	xmlFree(tval);
+      }
       const char* requests[3]={"GetCapabilities","DescribeProcess","Execute"};
       for(int j=0;j<3;j++){
 	char tt[128];
@@ -255,6 +260,8 @@ int cgiMain(){
 	  fprintf(stderr,"%i",req->nodeNr);
 #endif
 	  if(req!=NULL && req->nodeNr==1){
+	    if(t1->value!=NULL)
+	      free(t1->value);
 	    t1->value=zStrdup(requests[j]);
 	    j=2;
 	  }
@@ -271,11 +278,15 @@ int cgiMain(){
       }else{
 	tval=NULL;
 	tval = (char*) xmlGetProp(cur,BAD_CAST "version");
-	if(tval!=NULL)
+	if(tval!=NULL){
 	  addToMap(tmpMap,"version",tval);
+	  xmlFree(tval);
+	}
 	tval = (char*) xmlGetProp(cur,BAD_CAST "language");
-	if(tval!=NULL)
+	if(tval!=NULL){
 	  addToMap(tmpMap,"language",tval);
+	  xmlFree(tval);
+	}
 	xmlXPathObjectPtr idptr=extractFromDoc(doc,"/*/*[local-name()='Identifier']");
 	if(idptr!=NULL){
 	  xmlNodeSet* id=idptr->nodesetval;
@@ -342,12 +353,13 @@ int cgiMain(){
 
   if(strQuery!=NULL)
     free(strQuery);
-  runRequest(tmpMap);
+
+  runRequest(&tmpMap);
 
   /** 
    * Required but can't be made after executing a process using POST requests.
    */
-  if(strncasecmp(cgiRequestMethod,"post",4)!=0 && count(tmpMap)!=1 && tmpMap!=NULL){
+  if(/*strncasecmp(cgiRequestMethod,"post",4)!=0 && count(tmpMap)!=1 && */tmpMap!=NULL){
     freeMap(&tmpMap);
     free(tmpMap);
   }

@@ -56,6 +56,8 @@
 #include <xlocale.h>
 #endif
 #include <dirent.h>
+#include "ulinet.h"
+
 #include "service.h"
 #include <openssl/sha.h>
 #include <openssl/md5.h>
@@ -63,8 +65,6 @@
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
-
-#include "ulinet.h"
 
 extern   int conf_read(const char*,maps*);
 
@@ -87,7 +87,9 @@ extern "C" {
   static char* SERVICE_URL;
   static xmlNsPtr usedNs[10];
   static char* nsName[10];
+  static xmlDocPtr iDocs[10];
   static int nbNs=0;
+  static int nbDocs=0;
 
   int getServiceFromYAML(maps*,char*,service**,char *name);
   int readServiceFile(maps*, char*,service**,char *);
@@ -111,6 +113,9 @@ extern "C" {
   int zooXmlSearchForNs(const char*);
   int zooXmlAddNs(xmlNodePtr,const char*,const char*);
   void zooXmlCleanupNs();
+
+  int zooXmlAddDoc(xmlNodePtr,const char*,const char*);
+  void zooXmlCleanupDocs();
   
   void printExceptionReportResponse(maps*,map*);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
@@ -119,7 +124,7 @@ extern "C" {
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
   xmlNodePtr printDescribeProcessHeader(xmlDocPtr,const char*,maps*);
   void printDescribeProcessForProcess(maps*,xmlNodePtr,service*);
-  void printFullDescription(elements*,const char*,xmlNsPtr,xmlNodePtr);
+  void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNodePtr);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);

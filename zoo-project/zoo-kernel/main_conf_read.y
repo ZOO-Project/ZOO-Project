@@ -12,7 +12,6 @@ static maps* current_maps=NULL;
 static map* current_content=NULL;
 static char* curr_key;
 static int debug=0;
-using namespace std;
 
 extern void crerror(const char *s);
 
