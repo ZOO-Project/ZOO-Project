@@ -147,7 +147,8 @@ extern "C" {
 
   void addToCache(maps*,char*,char*,char*,int);
   char* isInCache(maps*,char*);
-  int loadRemoteFile(maps**,map**,HINTERNET,char*);
+  int runHttpRequests(maps**,maps**,HINTERNET*);
+  int loadRemoteFile(maps**,map**,HINTERNET*,char*);
 
   char *readVSIFile(maps*,const char*);
   void parseIdentifier(maps*,char*,char*,char*);

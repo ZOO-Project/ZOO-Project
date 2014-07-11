@@ -29,15 +29,15 @@
 #define MAX_WAIT_MSECS 180*1000 /* Wait max. 180 seconds */
 #include "ulinet.h"
 #include <assert.h>
-
+  
 size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
   size_t realsize = size * nmemb;
-  HINTERNET *psInternet;
+  _HINTERNET *psInternet;
   if(buffer==NULL){
     buffer=NULL;
     return -1;
   }
-  psInternet=(HINTERNET *)data;
+  psInternet=(_HINTERNET *)data;
   if(psInternet->pabyData){
     psInternet->pabyData=(unsigned char*)realloc(psInternet->pabyData,psInternet->nDataLen+realsize+1);
     psInternet->nDataAlloc+=psInternet->nDataLen+realsize+1;
@@ -63,7 +63,7 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
     char env[1024];
     char path[1024];
     char domain[1024];
-	char* tmp;
+    char* tmp;
     for(i=0;i<12;i++)
 #ifndef WIN32
       buffer++;
@@ -162,88 +162,97 @@ bool setProxiesForProtcol(CURL* handle,const char *proto){
 }
 #endif
 
-HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags){  
+HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags){
   HINTERNET ret;
   ret.handle=curl_multi_init();
-  ret.ihandle=NULL;
-  ret.hasCacheFile=0;
-  ret.nDataAlloc = 0;
-  ret.mimeType = NULL;
   ret.agent=strdup(lpszAgent);
+  ret.nb=0;
+  ret.ihandle[ret.nb].header=NULL;
   return ret;
 }
 
-void InternetCloseHandle(HINTERNET handle){
-  if(handle.hasCacheFile>0){
-    fclose(handle.file);
-    unlink(handle.filename);
-    handle.mimeType = NULL;
+void InternetCloseHandle(HINTERNET* handle0){
+  int i=0;
+  for(i=0;i<handle0->nb;i++){
+    _HINTERNET handle=handle0->ihandle[i];
+    if(handle.hasCacheFile>0){
+      fclose(handle.file);
+      unlink(handle.filename);
+      handle.mimeType = NULL;
+    }
+    else{
+      handle.pabyData = NULL;
+      handle.mimeType = NULL;
+      handle.nDataAlloc = handle.nDataLen = 0;
+    }
+    if(handle0->ihandle[i].header!=NULL){
+      curl_slist_free_all(handle0->ihandle[i].header);
+      handle0->ihandle[i].header=NULL;
+    }
+    free(handle.mimeType);
   }
-  else{
-    handle.pabyData = NULL;
-    handle.mimeType = NULL;
-    handle.nDataAlloc = handle.nDataLen = 0;
+  if(handle0->handle)
+    curl_multi_cleanup(handle0->handle);
+  free(handle0->agent);
+  for(i=handle0->nb-1;i>=0;i--){
+    free(handle0->waitingRequests[i]);
   }
-  if(handle.ihandle!=NULL)
-    curl_easy_cleanup(handle.ihandle);
-  if(handle.handle)
-    curl_multi_cleanup(handle.handle);
-  free(handle.agent);
 }
 
-HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
+HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
 
   char filename[255];
   struct MemoryStruct header;
 
-  hInternet.nDataLen = 0;
+  hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
+  hInternet->ihandle[hInternet->nb].hasCacheFile=0;
+  hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
+  hInternet->ihandle[hInternet->nb].mimeType = NULL;
+  hInternet->ihandle[hInternet->nb].nDataLen = 0;
+  hInternet->ihandle[hInternet->nb].id = hInternet->nb;
+  hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
+  hInternet->ihandle[hInternet->nb].pabyData = NULL;
 
-  hInternet.nDataAlloc = 0;
-  hInternet.pabyData= NULL;
-
-  if(hInternet.ihandle!=NULL)
-    curl_easy_cleanup(hInternet.ihandle);
-  hInternet.ihandle=curl_easy_init( );
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_COOKIEFILE, "ALL");
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIEFILE, "ALL");
 #ifndef TIGER
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_COOKIELIST, "ALL");
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIELIST, "ALL");
 #endif
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_USERAGENT, hInternet.agent);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_USERAGENT, hInternet->agent);
   
-  curl_easy_setopt(hInternet.ihandle,CURLOPT_FOLLOWLOCATION,1);
-  curl_easy_setopt(hInternet.ihandle,CURLOPT_MAXREDIRS,3);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_FOLLOWLOCATION,1);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_MAXREDIRS,3);
   
   header.memory=NULL;
   header.size = 0;
 
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_HEADERFUNCTION, header_write_data);
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEHEADER, (void *)&header);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_HEADERFUNCTION, header_write_data);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEHEADER, (void *)&header);
 
 #ifdef MSG_LAF_VERBOSE
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_VERBOSE, 1);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
 
       
   switch(dwFlags)
     {
-    case INTERNET_FLAG_NO_CACHE_WRITE:    
-      hInternet.hasCacheFile=-1;
-      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEFUNCTION, write_data_into);
-      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEDATA, &hInternet);
+    case INTERNET_FLAG_NO_CACHE_WRITE:
+      hInternet->ihandle[hInternet->nb].hasCacheFile=-1;
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, write_data_into);
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEDATA, (void*)&hInternet->ihandle[hInternet->nb]);
       break;
     default:
-      sprintf(filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
-      filename[24]=0;
+      sprintf(hInternet->ihandle[hInternet->nb].filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
+      hInternet->ihandle[hInternet->nb].filename[24]=0;
 #ifdef MSG_LAF_VERBOSE
-      fprintf(stderr,"file=%s",filename);
+      fprintf(stderr,"file=%s",hInternet->ihandle[hInternet->nb].filename);
 #endif
-      hInternet.filename=filename;
-      hInternet.file=fopen(hInternet.filename,"w+");
+      hInternet->ihandle[hInternet->nb].filename=filename;
+      hInternet->ihandle[hInternet->nb].file=fopen(hInternet->ihandle[hInternet->nb].filename,"w+");
     
-      hInternet.hasCacheFile=1;
-      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEFUNCTION, NULL);
-      curl_easy_setopt(hInternet.ihandle, CURLOPT_WRITEDATA, hInternet.file);
-      hInternet.nDataLen=0;
+      hInternet->ihandle[hInternet->nb].hasCacheFile=1;
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, NULL);
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEDATA, hInternet->ihandle[hInternet->nb].file);
+      hInternet->ihandle[hInternet->nb].nDataLen=0;
       break;
     }
 #ifdef ULINET_DEBUG
@@ -254,57 +263,54 @@ HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeader
     fprintf(stderr,"FROM ULINET !!");
     fprintf(stderr,"HEADER : %s\n",lpszHeaders);
 #endif
-    //curl_easy_setopt(hInternet.handle,CURLOPT_COOKIE,lpszHeaders);
-    curl_easy_setopt(hInternet.ihandle,CURLOPT_POST,1);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
-    curl_easy_setopt(hInternet.ihandle,CURLOPT_VERBOSE,1);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
 #endif
-    curl_easy_setopt(hInternet.ihandle,CURLOPT_POSTFIELDS,lpszHeaders);
-    //curl_easy_setopt(hInternet.handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
-    if(hInternet.header!=NULL)
-      curl_easy_setopt(hInternet.ihandle,CURLOPT_HTTPHEADER,hInternet.header);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,lpszHeaders);
+    //curl_easy_setopt(hInternet->handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
+    if(hInternet->ihandle[hInternet->nb].header!=NULL)
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
   }
 
-  curl_easy_setopt(hInternet.ihandle,CURLOPT_URL,lpszUrl);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
 
-  curl_multi_add_handle(hInternet.handle,hInternet.ihandle);
+  curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
   
-  int still_running=0;
-  int msgs_left=0;
-  do{
-    curl_multi_perform(hInternet.handle, &still_running);
-  }while(still_running);
-
-  CURLMsg *msg=NULL;
-  while ((msg = curl_multi_info_read(hInternet.handle, &msgs_left))) {
-    if (msg->msg == CURLMSG_DONE) {
-      CURL *eh=NULL;
-      eh = msg->easy_handle;
-      curl_easy_getinfo(eh,CURLINFO_CONTENT_TYPE,&hInternet.mimeType);
-    }
-    else {
-      fprintf(stderr, "error: after curl_multi_info_read(), CURLMsg=%d\n", msg->msg);
-    }
-  }
-  curl_multi_remove_handle(hInternet.handle, hInternet.ihandle);
+  ++hInternet->nb;
+  hInternet->ihandle[hInternet->nb].header=NULL;
 
 #ifdef ULINET_DEBUG
   fprintf(stderr,"DEBUG MIMETYPE: %s\n",hInternet.mimeType);
   fflush(stderr);
 #endif
-  return hInternet;
+  return *hInternet;
 };
 
+int processDownloads(HINTERNET* hInternet){
+  int still_running=0;
+  int msgs_left=0;
+  int i=0;
+  do{
+    curl_multi_perform(hInternet->handle, &still_running);
+  }while(still_running);  
+  for(i=0;i<hInternet->nb;i++){
+    curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&hInternet->ihandle[i].mimeType);
+    curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
+    curl_easy_cleanup(hInternet->ihandle[i].handle);
+  }
+}
+
 int freeCookieList(HINTERNET hInternet){
-  memset(&CCookie[0],0,1024);
+  memset(&CCookie[hInternet.nb][0],0,1024);
 #ifndef TIGER
-  curl_easy_setopt(hInternet.ihandle, CURLOPT_COOKIELIST, "ALL");
+  curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle, CURLOPT_COOKIELIST, "ALL");
 #endif
   return 1;
 }
 
-int InternetReadFile(HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead, size_t *lpdwNumberOfBytesRead){
+int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead, size_t *lpdwNumberOfBytesRead){
   int dwDataSize;
 
   if(hInternet.hasCacheFile>0){
@@ -337,61 +343,11 @@ int InternetReadFile(HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRe
     hInternet.nDataAlloc = hInternet.nDataLen = 0;
   }
 
-  CCookie[0]=0;
+  CCookie[hInternet.id][0]=0;
 
   if( *lpdwNumberOfBytesRead < dwDataSize )
       return 0;
   else
       return 1; // TRUE
-}
-
-bool InternetGetCookie(LPCTSTR lpszUrl,LPCTSTR lpszCookieName,LPTSTR lpszCookieData,LPDWORD lpdwSize){
-
-  bool ret=1;  
-  int count=0;
-  int hasCookie=-1;
-  char TMP[1024];
-  int j;
-  int tmpC=0;
-  lpszUrl=NULL;
-
-  for(j=0;j<strlen(CCookie);j++){
-    if(lpszCookieName[count]==CCookie[j]){
-      hasCookie=1;
-      count++;
-      if(count==strlen(lpszCookieName))
-	break;
-      continue;
-    }
-  }
-
-  if(hasCookie>0){
-    if(CCookie[count]=='='){
-      int i=0;
-      count++;
-      for(i=count;i<strlen(CCookie);i++){
-	if(CCookie[i]!=';'){
-	  TMP[tmpC]=CCookie[i];
-	  tmpC++;
-	}
-	else{
-	  break;
-	}
-      }
-    }
-  }
-  else
-    return -1;
-
-  TMP[tmpC]=0;
-  strncpy(lpszCookieData,TMP,strlen(TMP)+1);
-  lpdwSize=(size_t*) strlen(lpszCookieData);
-
-#ifdef MSG_LAF_VERBOSE
-  printf("Cookie returned : (%s)",(char*)lpszCookieData);
-#endif
-
-  return ret;
-
 }
 

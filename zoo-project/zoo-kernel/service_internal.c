@@ -1870,6 +1870,8 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       map* testMap=getMap(m->content,"requestedMimeType");
       if(testMap!=NULL){
 	HINTERNET hInternet;
+	char* tmpValue;
+	size_t dwRead;
 	hInternet=InternetOpen(
 #ifndef WIN32
 			       (LPCTSTR)
@@ -1878,8 +1880,11 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 			       INTERNET_OPEN_TYPE_PRECONFIG,
 			       NULL,NULL, 0);
 	testMap=getMap(m->content,"Reference");
-	loadRemoteFile(&m,&m->content,hInternet,testMap->value);
-	InternetCloseHandle(hInternet);
+	loadRemoteFile(&m,&m->content,&hInternet,testMap->value);
+	processDownloads(&hInternet);
+	tmpValue=(char*)malloc((hInternet.ihandle[0].nDataLen+1)*sizeof(char));
+	InternetReadFile(hInternet.ihandle[0],(LPVOID)tmpValue,hInternet.ihandle[0].nDataLen,&dwRead);
+	InternetCloseHandle(&hInternet);
       }
 #endif
       map* tmp1=getMap(m->content,"encoding");
@@ -1962,7 +1967,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	}
 	else
 #endif
-	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	  if(strcasecmp(tmp->name,"datatype")==0)
+	    xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	  else
+	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
       }
       tmp=tmp->next;
       xmlAddChild(nc2,nc3);
@@ -2871,7 +2879,7 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
 #ifdef DEBUG
     fprintf(stderr,"MIMETYPE: %s\n",mimeType);
 #endif
-    fwrite(mimeType,1,strlen(mimeType),fo);
+    fwrite(mimeType,sizeof(char),strlen(mimeType),fo);
     fclose(fo);
 
     free(md5str);
@@ -2900,12 +2908,60 @@ char* isInCache(maps* conf,char* request){
   return NULL;
 }
 
+int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
+  if(hInternet->nb>0){
+    processDownloads(hInternet);
+    maps* content=*inputs;
+    map* tmp1;
+    int index=0;
+    while(content!=NULL){
+      if((tmp1=getMap(content->content,"href")) || 
+	 (tmp1=getMap(content->content,"xlink:href"))){
+	if(getMap(content->content,"isCached")==NULL){
+	  char* fcontent;
+	  char *mimeType=NULL;
+	  int fsize=0;
+
+	  fcontent=(char*)malloc((hInternet->ihandle[index].nDataLen+1)*sizeof(char));
+	  if(fcontent == NULL){
+	    return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
+	  }
+	  size_t dwRead;
+	  InternetReadFile(hInternet->ihandle[index], 
+			   (LPVOID)fcontent, 
+			   hInternet->ihandle[index].nDataLen, 
+			   &dwRead);
+	  fcontent[hInternet->ihandle[index].nDataLen]=0;
+	  fsize=hInternet->ihandle[index].nDataLen;
+	  mimeType=strdup((char*)hInternet->ihandle[index].mimeType);
+	  
+	  map* tmpMap=getMapOrFill(&content->content,"value","");
+	  free(tmpMap->value);
+	  tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
+	  if(tmpMap->value==NULL){
+	    return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
+	  }
+	  memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
+	  
+	  char ltmp1[256];
+	  sprintf(ltmp1,"%d",fsize);
+	  addToMap(content->content,"size",ltmp1);
+	  addToCache(*m,tmp1->value,fcontent,mimeType,fsize);
+	  free(fcontent);
+	  free(mimeType);
+	}
+	index++;
+      }
+      content=content->next;
+    }
+  }
+}
+
 /**
  * loadRemoteFile:
  * Try to load file from cache or download a remote file if not in cache
  */
-int loadRemoteFile(maps** m,map** content,HINTERNET hInternet,char *url){
-  HINTERNET res;
+int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   char* fcontent;
   char* cached=isInCache(*m,url);
   char *mimeType=NULL;
@@ -2931,21 +2987,13 @@ int loadRemoteFile(maps** m,map** content,HINTERNET hInternet,char *url){
       fclose(f);
     }
   }else{
-    res=InternetOpenUrl(hInternet,url,NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
-    fcontent=(char*)malloc((res.nDataLen+1)*sizeof(char));
-    if(fcontent == NULL){
-      return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
-    }
-    size_t dwRead;
-    InternetReadFile(res, (LPVOID)fcontent, res.nDataLen, &dwRead);
-    fcontent[res.nDataLen]=0;
-    fsize=res.nDataLen;
-    mimeType=(char*)res.mimeType;
+    hInternet->waitingRequests[hInternet->nb]=strdup(url);
+    InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
+    return 0;
   }
   if(fsize==0){
     return errorException(*m, _("Unable to download the file."), "InternalError",NULL);
   }
-
   if(mimeType!=NULL){
     addToMap(*content,"fmimeType",mimeType);
   }
@@ -2956,7 +3004,6 @@ int loadRemoteFile(maps** m,map** content,HINTERNET hInternet,char *url){
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
   if(tmpMap->value==NULL)
     return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
-  //snprintf(tmpMap->value,(fsize+1)*sizeof(char),fcontent);
   memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
   
   char ltmp1[256];
@@ -2964,6 +3011,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET hInternet,char *url){
   addToMap(*content,"size",ltmp1);
   if(cached==NULL)
     addToCache(*m,url,fcontent,mimeType,fsize);
+  else
+    addToMap(*content,"isCached","true");
   free(fcontent);
   free(mimeType);
   free(cached);
