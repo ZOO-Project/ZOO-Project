@@ -256,6 +256,7 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
 	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
 #endif
 	t=readServiceFile(m,tmps1,&s1,dp->d_name);
+
 	if(t<0){
 	  dumpMaps(m);
 	  map* tmp00=getMapFromMaps(m,"lenv","message");
@@ -960,11 +961,13 @@ int runRequest(map** inputs)
 	char buff[256];
 	char buff1[1024];
 	while(tmps!=NULL){
+	  int hasVal=-1;
 	  char *corig=strdup(tmps);
 	  if(strstr(corig,".")!=NULL){
 	    parseIdentifier(m,conf_dir,corig,buff1);
 	    s1=(service*)malloc(SERVICE_SIZE);
 	    t=readServiceFile(m,buff1,&s1,corig);
+
 	    if(t<0){
 	      map* tmp00=getMapFromMaps(m,"lenv","message");
 	      char tmp01[1024];
@@ -976,6 +979,7 @@ int runRequest(map** inputs)
 	      errorException(m, tmp01,"InternalError",NULL);
 	      freeMaps(&m);
 	      free(m);
+	      free(REQUEST);
 	      return 1;
 	    }
 #ifdef DEBUG
@@ -988,17 +992,16 @@ int runRequest(map** inputs)
 	    scount++;
 	    setMapInMaps(m,"lenv","level","0");
 	  }
-	  free(corig);
 	  
 	  memset(buff,0,256);
-	  snprintf(buff,256,"%s.zcfg",tmps);
+	  snprintf(buff,256,"%s.zcfg",corig);
+	  free(corig);
 	  memset(buff1,0,1024);
 #ifdef DEBUG
 	  printf("\n#######%s\n########\n",buff);
 #endif
-	  while ((dp = readdir(dirp)) != NULL)
-	    if( (strcasecmp("all.zcfg",buff)==0 && strstr(dp->d_name,".zcfg")>0)
-		|| strcasecmp(dp->d_name,buff)==0 ){
+	  while ((dp = readdir(dirp)) != NULL){
+	    if( strcasecmp(dp->d_name,buff)==0 ){
 	      memset(buff1,0,1024);
 	      snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
 	      s1=(service*)malloc(SERVICE_SIZE);
@@ -1024,6 +1027,10 @@ int runRequest(map** inputs)
 		errorException(m, tmp01,"InternalError",NULL);
 		freeMaps(&m);
 		free(m);
+		free(orig);
+		free(REQUEST);
+		closedir(dirp);
+		xmlFreeDoc(doc);
 		return 1;
 	      }
 #ifdef DEBUG
@@ -1034,7 +1041,26 @@ int runRequest(map** inputs)
 	      free(s1);
 	      s1=NULL;
 	      scount++;
+	      hasVal=1;
 	    }
+	  }
+	  if(hasVal<0){
+	    map* tmp00=getMapFromMaps(m,"lenv","message");
+	    char tmp01[1024];
+	    if(tmp00!=NULL)
+	      sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),buff,tmp00->value);
+	    else
+	      sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),buff);
+	    dup2(saved_stdout,fileno(stdout));
+	    errorException(m, tmp01,"InvalidParameterValue","Identifier");
+	    freeMaps(&m);
+	    free(m);
+	    free(orig);
+	    free(REQUEST);
+	    closedir(dirp);
+	    xmlFreeDoc(doc);
+	    return 1;
+	  }
 	  rewinddir(dirp);
 	  tmps=strtok_r(NULL,",",&saveptr);
 	}
@@ -1270,7 +1296,7 @@ int runRequest(map** inputs)
       free(m);
       free(REQUEST);
       free(SERVICE_URL);
-      InternetCloseHandle(hInternet);
+      InternetCloseHandle(&hInternet);
       freeService(&s1);
       free(s1);
       return 0;
@@ -1398,7 +1424,7 @@ int runRequest(map** inputs)
 		free(m);
 		free(REQUEST);
 		free(SERVICE_URL);
-		InternetCloseHandle(hInternet);
+		InternetCloseHandle(&hInternet);
 		freeService(&s1);
 		free(s1);
 		return 0;
@@ -1406,18 +1432,17 @@ int runRequest(map** inputs)
 #ifdef DEBUG
 	      fprintf(stderr,"REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",tmpv1+1);
 #endif
-	      addToMap(tmpmaps->content,tmpn1,tmpx2);
-	      
+	      addToMap(tmpmaps->content,tmpn1,tmpx2);	      
 #ifndef WIN32
 	      if(CHECK_INET_HANDLE(hInternet))
 #endif
 		{
-		  if(loadRemoteFile(&m,&tmpmaps->content,hInternet,tmpx2)<0){
+		  if(loadRemoteFile(&m,&tmpmaps->content,&hInternet,tmpx2)<0){
 		    freeMaps(&m);
 		    free(m);
 		    free(REQUEST);
 		    free(SERVICE_URL);
-		    InternetCloseHandle(hInternet);
+		    InternetCloseHandle(&hInternet);
 		    freeService(&s1);
 		    free(s1);
 		    return 0;
@@ -1444,7 +1469,7 @@ int runRequest(map** inputs)
 		free(m);
 		free(REQUEST);
 		free(SERVICE_URL);
-		InternetCloseHandle(hInternet);
+		InternetCloseHandle(&hInternet);
 		freeService(&s1);
 		free(s1);
 		return 0;
@@ -1574,12 +1599,12 @@ int runRequest(map** inputs)
 		if(l==4){
 		  if(!(ltmp!=NULL && strncmp(ltmp->value,"POST",4)==0)
 		     && CHECK_INET_HANDLE(hInternet)){
-		    if(loadRemoteFile(&m,&tmpmaps->content,hInternet,(char*)val)!=0){
+		    if(loadRemoteFile(&m,&tmpmaps->content,&hInternet,(char*)val)!=0){
 		      freeMaps(&m);
 		      free(m);
 		      free(REQUEST);
 		      free(SERVICE_URL);
-		      InternetCloseHandle(hInternet);
+		      InternetCloseHandle(&hInternet);
 		      freeService(&s1);
 		      free(s1);
 		      return 0;
@@ -1596,15 +1621,15 @@ int runRequest(map** inputs)
 	    fprintf(stderr,"Parse Header and Body from Reference \n");
 #endif
 	    xmlNodePtr cur3=cur2->children;
-	    HINTERNET hInternetP;
+	    /*	    HINTERNET hInternetP;
 	    hInternetP=InternetOpen(
 #ifndef WIN32
 				   (LPCTSTR)
 #endif
 				   "ZooWPSClient\0",
 				   INTERNET_OPEN_TYPE_PRECONFIG,
-				   NULL,NULL, 0);
-	    hInternetP.header=NULL;
+				   NULL,NULL, 0);*/
+	    //hInternet.ihandle[hInternet.nb].header=NULL;
 	    while(cur3!=NULL){
 	      while(cur3!=NULL && cur3->type!=XML_ELEMENT_NODE)
 		cur3=cur3->next;
@@ -1637,7 +1662,7 @@ int runRequest(map** inputs)
 		  }
 		  xmlFree(val);
 		}
-		hInternetP.header=curl_slist_append(hInternetP.header, has);
+		hInternet.ihandle[hInternet.nb].header=curl_slist_append(hInternet.ihandle[hInternet.nb].header, has);
 		if(has!=NULL)
 		  free(has);
 	      }
@@ -1674,25 +1699,11 @@ int runRequest(map** inputs)
 		  if(btmp!=NULL){
 #ifdef POST_DEBUG
 		    fprintf(stderr,"%s %s\n",btmp->value,tmp);
-		    curl_easy_setopt(hInternetP.handle, CURLOPT_VERBOSE, 1);
+		    curl_easy_setopt(hInternet.handle, CURLOPT_VERBOSE, 1);
 #endif
-		    res=InternetOpenUrl(hInternetP,btmp->value,tmp,strlen(tmp),
+		    hInternet.waitingRequests[hInternet.nb]=strdup(tmp);
+		    InternetOpenUrl(&hInternet,btmp->value,hInternet.waitingRequests[hInternet.nb],strlen(hInternet.waitingRequests[hInternet.nb]),
 					INTERNET_FLAG_NO_CACHE_WRITE,0);
-		    char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
-		    if(tmpContent == NULL){
-		      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
-		    }
-		    size_t dwRead;
-		    InternetReadFile(res, (LPVOID)tmpContent,
-				     res.nDataLen, &dwRead);
-		    tmpContent[res.nDataLen]=0;
-		    if(hInternetP.header!=NULL)
-		      curl_slist_free_all(hInternetP.header);
-		    addToMap(tmpmaps->content,"value",tmpContent);
-		    free(tmpContent);
-#ifdef POST_DEBUG
-		    fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
-#endif		    
 		  }
 		  free(tmp);
 		}
@@ -1707,52 +1718,40 @@ int runRequest(map** inputs)
 					   "ZooWPSClient\0",
 					   INTERNET_OPEN_TYPE_PRECONFIG,
 					   NULL,NULL, 0);
-		    if(!CHECK_INET_HANDLE(bInternet))
+		    if(!CHECK_INET_HANDLE(hInternet))
 		      fprintf(stderr,"WARNING : hInternet handle failed to initialize");
 #ifdef POST_DEBUG
 		    curl_easy_setopt(bInternet.handle, CURLOPT_VERBOSE, 1);
 #endif
-		    res1=InternetOpenUrl(bInternet,(char*)val,NULL,0,
+		    bInternet.waitingRequests[0]=strdup((char*)val);
+		    res1=InternetOpenUrl(&bInternet,bInternet.waitingRequests[0],NULL,0,
 					 INTERNET_FLAG_NO_CACHE_WRITE,0);
+		    processDownloads(&bInternet);
 		    char* tmp=
-		      (char*)malloc((res1.nDataLen+1)*sizeof(char));
+		      (char*)malloc((bInternet.ihandle[0].nDataLen+1)*sizeof(char));
 		    if(tmp == NULL){
 		      return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
 		    }
 		    size_t bRead;
-		    InternetReadFile(res1, (LPVOID)tmp,
-				     res1.nDataLen, &bRead);
-		    tmp[res1.nDataLen]=0;
-		    InternetCloseHandle(bInternet);
+		    InternetReadFile(bInternet.ihandle[0], (LPVOID)tmp,
+				     bInternet.ihandle[0].nDataLen, &bRead);
+		    tmp[bInternet.ihandle[0].nDataLen]=0;
+		    InternetCloseHandle(&bInternet);
 		    map *btmp=getMap(tmpmaps->content,"href");
 		    if(btmp!=NULL){
 #ifdef POST_DEBUG
 		      fprintf(stderr,"%s %s\n",btmp->value,tmp);
-		      curl_easy_setopt(hInternetP.handle, CURLOPT_VERBOSE, 1);
 #endif
-		      res=InternetOpenUrl(hInternetP,btmp->value,tmp,
-					  strlen(tmp),
+		      hInternet.waitingRequests[hInternet.nb]=strdup(tmp);
+		      res=InternetOpenUrl(&hInternet,btmp->value,hInternet.waitingRequests[hInternet.nb],
+					  strlen(hInternet.waitingRequests[hInternet.nb]),
 					  INTERNET_FLAG_NO_CACHE_WRITE,0);
-		      char* tmpContent = (char*)malloc((res.nDataLen+1)*sizeof(char));
-		      if(tmpContent == NULL){
-			return errorException(m, _("Unable to allocate memory."), "InternalError",NULL);
-		      }
-		      size_t dwRead;
-		      InternetReadFile(res, (LPVOID)tmpContent,
-				       res.nDataLen, &dwRead);
-		      tmpContent[res.nDataLen]=0;
-		      if(hInternetP.header!=NULL)
-			curl_slist_free_all(hInternetP.header);
-		      addToMap(tmpmaps->content,"value",tmpContent);
-#ifdef POST_DEBUG
-		      fprintf(stderr,"DL CONTENT : (%s)\n",tmpContent);
-#endif
 		    }
+		    free(tmp);
 		  }
 	      }
 	      cur3=cur3->next;
 	    }
-	    InternetCloseHandle(hInternetP);
 #ifdef POST_DEBUG
 	    fprintf(stderr,"Header and Body was parsed from Reference \n");
 #endif
@@ -1900,7 +1899,7 @@ int runRequest(map** inputs)
 		free(m);
 		free(REQUEST);
 		free(SERVICE_URL);
-		InternetCloseHandle(hInternet);
+		InternetCloseHandle(&hInternet);
 		freeService(&s1);
 		free(s1);
 		return 0;
@@ -2147,9 +2146,10 @@ int runRequest(map** inputs)
     xmlCleanupParser();
   }
   
+  runHttpRequests(&m,&request_input_real_format,&hInternet);
 
   //  if(CHECK_INET_HANDLE(hInternet))
-  InternetCloseHandle(hInternet);
+  InternetCloseHandle(&hInternet);
 
 #ifdef DEBUG
   fprintf(stderr,"\n%d\n",__LINE__);

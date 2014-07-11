@@ -26,6 +26,7 @@
 #define _ULINET_H
 
 #include "fcgi_stdio.h"
+#include "service.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
@@ -43,12 +44,13 @@
 #include "jsapi.h"
 #endif
 
+#define MAX_REQ 100
 
 #ifdef _ULINET
-static char CCookie[1024];
+static char CCookie[MAX_REQ][1024];
 #else
-extern char HEADER[3072];
-extern char CCookie[1024];
+extern char HEADER[MAX_REQ][3072];
+extern char CCookie[MAX_REQ][1024];
 #endif
 
 #ifdef __cplusplus
@@ -57,24 +59,33 @@ extern "C" {
 
   //static pthread_mutex_t hMutexConnect = PTHREAD_MUTEX_INITIALIZER;
 
+static char* waitingRequests[MAX_REQ];
+
 struct MemoryStruct {
   char *memory;
   size_t size;
 };
 
 typedef struct {
-  CURLM *handle;
-  CURL *ihandle;
+  CURL *handle;
   struct curl_slist *header;
   char* filename;
-  char *agent;
   FILE* file;
   size_t size;
+  unsigned char *pabyData;
+  unsigned char *mimeType;
   int hasCacheFile;
   int nDataLen;
   int nDataAlloc;
-  unsigned char *pabyData;
-  unsigned char *mimeType;
+  int id;
+} _HINTERNET;
+
+typedef struct {
+  CURLM *handle;
+  _HINTERNET ihandle[MAX_REQ];
+  char *waitingRequests[MAX_REQ];
+  char *agent;
+  int nb;
 } HINTERNET;
 
 size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data);
@@ -111,7 +122,7 @@ typedef char* LPCTSTR;
 #endif
 HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags);
 
-void InternetCloseHandle(HINTERNET handle);
+void InternetCloseHandle(HINTERNET* handle);
 
 #define INTERNET_FLAG_EXISTING_CONNECT         0
 #define INTERNET_FLAG_HYPERLINK                1
@@ -136,13 +147,13 @@ typedef size_t* LPDWORD;
 
 #  define CHECK_INET_HANDLE(h) (h.handle != 0)
 
-HINTERNET InternetOpenUrl(HINTERNET hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext);
+HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext);
+
+int processDownloads(HINTERNET* hInternet);
 
 int freeCookieList(HINTERNET hInternet);
 
-int InternetReadFile(HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead,size_t *lpdwNumberOfBytesRead);
-
-bool InternetGetCookie(LPCTSTR lpszUrl,LPCTSTR lpszCookieName,LPTSTR lpszCookieData,LPDWORD lpdwSize);
+int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead,size_t *lpdwNumberOfBytesRead);
 
 #ifdef __cplusplus
 }

@@ -200,7 +200,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
     free(crs);
   }
   addToMap(tmpI->content,"Reference",webService_url);
-
+  free(webService_url);
 }
 
 /**
@@ -254,6 +254,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	    else
 	      addToMap(output->content,"crs_isGeographic","false");
 	  }
+	  free(proj4Str);
 	}
 	else{
 	  msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
@@ -391,6 +392,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
   FILE* file = fopen(pszDataSource, "rb");
   FILE* fileZ = fopen(odsName, "wb");
+  free(odsName);
   fseek(file, 0, SEEK_END);
   unsigned long fileLen=ftell(file);
   fseek(file, 0, SEEK_SET);
@@ -466,8 +468,9 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       VSIFCloseL(vsif);
       i++;
     }
-
   }
+  free(sdsName);
+  free(dsName);
 
   OGRDataSourceH poDS = NULL;
   OGRSFDriverH *poDriver = NULL;
@@ -567,6 +570,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       char *wkt=NULL;
       OSRExportToWkt(srs,&wkt);
       setSrsInformations(output,m,myLayer,wkt);
+      free(wkt);
     }
     else{
       addToMap(output->content,"crs","EPSG:4326");
@@ -936,6 +940,7 @@ void outputMapfile(maps* conf,maps* outputs){
   }
   close(f);
   addToMap(outputs->content,"storage",pszDataSource);
+  free(pszDataSource);
 
   /*
    * Create an empty map, set name, default size and extent
@@ -1031,6 +1036,8 @@ void outputMapfile(maps* conf,maps* outputs){
     }
     cursor=cursor->next;
   }
+  freeMap(&correspondance);
+  free(correspondance);
 
   /*
    * Set mapserver PROJ_LIB/GDAL_DATA or any other config parameter from 
@@ -1089,6 +1096,8 @@ void outputMapfile(maps* conf,maps* outputs){
     (char*)malloc((7+strlen(sid->value)+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
   sprintf(mapPath,"%s/%s_%s.map",tmp1->value,outputs->name,sid->value);
   msSaveMap(myMap,mapPath);
+  free(mapPath);
+  msGDALCleanup();
   msFreeMap(myMap);
 }
 

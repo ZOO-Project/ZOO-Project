@@ -731,7 +731,7 @@ char* JSValToChar(JSContext* context, jsval* arg) {
   return c;
 }
 
-HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
+HINTERNET setHeader(HINTERNET* handle,JSContext *cx,JSObject *header){
   jsuint length=0;
   jsint i=0;
   char *tmp1;
@@ -746,23 +746,23 @@ HINTERNET setHeader(HINTERNET handle,JSContext *cx,JSObject *header){
 #ifdef ULINET_DEBUG
     fprintf(stderr,"header is an array of %d elements\n",length);
 #endif
-    handle.header=NULL;
+    handle->ihandle[handle->nb].header=NULL;
     for(i=0;i<length;i++){
       jsval tmp;
       JS_GetElement(cx,header,i,&tmp);
       tmp1=JSValToChar(cx,&tmp);
 #ifdef ULINET_DEBUG
-      curl_easy_setopt(handle.handle,CURLOPT_VERBOSE,1);
+      curl_easy_setopt(handle->ihandle[handle->nb].handle,CURLOPT_VERBOSE,1);
       fprintf(stderr,"Element of array n° %d, value : %s\n",i,tmp1);
 #endif
-      handle.header=curl_slist_append(handle.header, tmp1);
+      handle->ihandle[handle->nb].header=curl_slist_append(handle->ihandle[handle->nb].header, tmp1);
       free(tmp1);
     }
   }
   else{
     fprintf(stderr,"not an array !!!!!!!\n");
   }
-  return handle;
+  return *handle;
 }
 
 JSBool
@@ -803,6 +803,7 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     method=zStrdup("GET");
     url=JSValToChar(cx,argv);
   }
+  hInternet.waitingRequests[hInternet.nb]=strdup(url);
   if(argc==4){
     char *body;
     body=JSValToChar(cx,&argv[2]);
@@ -811,25 +812,29 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     fprintf(stderr,"URL (%s) \nBODY (%s)\n",url,body);
 #endif
     if(JS_IsArrayObject(cx,header))
-      res1=setHeader(hInternet,cx,header);
+      setHeader(&hInternet,cx,header);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"BODY (%s)\n",body);
 #endif
-    res=InternetOpenUrl(res1,url,body,strlen(body),
-			INTERNET_FLAG_NO_CACHE_WRITE,0);    
+    InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],body,strlen(body),
+		    INTERNET_FLAG_NO_CACHE_WRITE,0);    
+    processDownloads(&hInternet);
     free(body);
   }else{
     if(argc==3){
       char *body=JSValToChar(cx,&argv[2]);
-      res=InternetOpenUrl(hInternet,url,body,strlen(body),
-			  INTERNET_FLAG_NO_CACHE_WRITE,0);
+      InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],body,strlen(body),
+		      INTERNET_FLAG_NO_CACHE_WRITE,0);
+      processDownloads(&hInternet);
       free(body);
+    }else{
+      InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],NULL,0,
+		      INTERNET_FLAG_NO_CACHE_WRITE,0);
+      processDownloads(&hInternet);
     }
-    res=InternetOpenUrl(hInternet,url,NULL,0,
-			INTERNET_FLAG_NO_CACHE_WRITE,0);
   }
-  tmpValue=(char*)malloc((res.nDataLen+1)*sizeof(char));
-  InternetReadFile(res,(LPVOID)tmpValue,res.nDataLen,&dwRead);
+  tmpValue=(char*)malloc((hInternet.ihandle[0].nDataLen+1)*sizeof(char));
+  InternetReadFile(hInternet.ihandle[0],(LPVOID)tmpValue,hInternet.ihandle[0].nDataLen,&dwRead);
 #ifdef ULINET_DEBUG
   fprintf(stderr,"content downloaded (%d) (%s) \n",dwRead,tmpValue);
 #endif
@@ -845,10 +850,7 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
   free(url);
   if(argc>=2)
     free(method);
-  if(argc==4 && res.header!=NULL){
-    curl_slist_free_all(res.header);
-  }
-  InternetCloseHandle(hInternet);
+  InternetCloseHandle(&hInternet);
   JS_MaybeGC(cx);
   return JS_TRUE;
 }
