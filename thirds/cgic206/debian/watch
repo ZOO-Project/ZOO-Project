@@ -1,0 +1,4 @@
+version=3
+opts="uversionmangle=s/^(\d)(\d\d)$/$1.$2/" \
+http://www.boutell.com/cgic/ \
+cgic(.*)\.t.*

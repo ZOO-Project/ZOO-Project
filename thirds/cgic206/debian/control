@@ -1,0 +1,35 @@
+Source: libcgic
+Section: libs
+Priority: optional
+Maintainer: Bart Martens <bartm@debian.org>
+Build-Depends: cdbs, libfcgi-dev, debhelper (>= 5)
+Standards-Version: 3.9.3
+Homepage: http://www.boutell.com/cgic/
+
+Package: libcgic-dev
+Section: libdevel
+Architecture: any
+Depends: libc6-dev, ${misc:Depends}
+Suggests: httpd
+Conflicts: libcgicg1-dev
+Replaces: libcgicg1-dev
+Description: C library for developing CGI applications
+ Cgic is an ANSI-C library for the creation of CGI-based World Wide Web
+ applications.  Cgic provides the following:
+ .
+   * Parses form data, correcting for defective and/or inconsistent
+     browsers
+   * Transparently accepts both GET and POST form data
+   * Handles line breaks in form fields in a consistent manner
+   * Provides string, integer, floating-point, and single- and
+     multiple-choice functions to retrieve form data
+   * Provides bounds checking for numeric fields
+   * Loads CGI environment variables into C strings which are always
+     non-null
+   * Provides a way to capture CGI situations for replay in a debugging
+     environment
+ .
+ This package provides a static library version of cgic, examples of using
+ cgic (including a CGI application that captures a CGI environment for use
+ in debugging), and header files.
+
