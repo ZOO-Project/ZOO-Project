@@ -61,6 +61,8 @@ extern "C" {
     tmpMap=getMapFromMaps(inputs,"sid","value");
     tmpTmap=getMapFromMaps(conf,"main","tmpPath");
     tmpMmap=getMapFromMaps(conf,"main","dataPath");
+    if(tmpMmap==NULL)
+      tmpMmap=tmpTmap;
     xmlInitParser();
     struct dirent *dp;
     DIR *dirp = opendir(tmpTmap->value);
