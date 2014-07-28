@@ -1,0 +1,32 @@
+libcgic (2.06-1~trusty3) trusty; urgency=low
+
+  * New version to be used for ZOO-Kernel.
+
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Tue, 10 Jun 2014 19:29:04 +0200
+
+libcgic (2.05-3) unstable; urgency=low
+
+  * debian/control: Suggests: httpd.  Closes: #600138.
+  * debian/control: Fixed debhelper-but-no-misc-depends.
+
+ -- Bart Martens <bartm@debian.org>  Sun, 13 May 2012 08:33:04 +0000
+
+libcgic (2.05-2) unstable; urgency=low
+
+  * debian/control: Standards-Version, Homepage.
+
+ -- Bart Martens <bartm@debian.org>  Sun, 13 Jul 2008 09:31:48 +0200
+
+libcgic (2.05-1) unstable; urgency=low
+
+  * New maitnainer.  Closes: #438643.
+  * New upstream release.
+  * debian/*: Repackaged with cdbs.
+  * debian/changelog-upstream.html: Removed.
+  * debian/Makefile.examples: Removed.
+  * debian/README.Debian: Removed.
+  * debian/copyright: Updated.
+  * debian/watch: Updated.
+
+ -- Bart Martens <bartm@knars.be>  Sun, 19 Aug 2007 09:18:53 +0200
+
