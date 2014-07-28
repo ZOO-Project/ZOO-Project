@@ -1,0 +1,12 @@
+zoo-project (1.3.0-1~trusty10) trusty; urgency=low
+
+  * Added OGR ZOO Services.
+
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Sun, 28 Jul 2014 19:48:00 +0200
+
+zoo-project (1.3.0-1~trusty7) trusty; urgency=low
+
+  * Initial Debian packaging.
+
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Tue, 10 Jun 2014 21:17:04 +0200
+

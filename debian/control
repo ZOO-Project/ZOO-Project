@@ -1,0 +1,49 @@
+Source: zoo-project
+Maintainer: Angelos Tzotsos <gcpp.kalxas@gmail.com>
+Section: web
+Priority: optional
+Build-Depends: debhelper (>= 9),
+               dpkg-dev (>= 1.16.1.1),
+               autoconf,
+               automake,
+               autotools-dev,
+               flex,
+               bison,
+               libssl-dev,
+               libcurl4-gnutls-dev,
+               libcgic-dev (>= 2.06),
+               libgdal-dev (>= 1.10.1-0~),
+               python-all (>= 2.6.6-3~),
+               python-all-dev (>= 2.6.6-3~),
+               libfcgi-dev,
+               libxml2-dev,
+               libxslt1-dev,
+               libmapserver1-dev
+Build-Conflicts: libcurl3-openssl-dev
+Standards-Version: 3.9.3
+X-Python-Version: >= 2.6
+Homepage: http://zoo-project.org
+
+Package: zoo-kernel
+Architecture: any
+Section: web
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: This package contains the CGI ZOO Kernel
+ .
+ ZOO is a WPS (Web Processing Service) open source project released 
+ under a  MIT/X-11 style license . It provides an OGC WPS compliant
+ developer-friendly framework to create and chain WPS Web services. 
+
+Package: zoo-services
+Architecture: any
+Section: web
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         python (>=2.6), 
+         python-gdal
+Description: This package contains the CGI ZOO Services
+ .
+ ZOO is a WPS (Web Processing Service) open source project released 
+ under a  MIT/X-11 style license . It provides an OGC WPS compliant
+ developer-friendly framework to create and chain WPS Web services. 

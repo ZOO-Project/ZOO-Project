@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh  $@
+
+override_dh_auto_configure:
+	cd zoo-project/zoo-kernel && autoconf && ./configure --with-python
+
+override_dh_auto_build:
+	dh_auto_build --builddirectory zoo-project/zoo-kernel
+	cd zoo-project/zoo-services/ogr/base-vect-ops && make
+
+override_dh_auto_install:
+	dh_auto_install --builddirectory zoo-project/zoo-kernel
+	-mkdir -p $(CURDIR)/debian/tmp/usr/lib/cgi-bin
+	install -m755 $(CURDIR)/zoo-project/zoo-kernel/zoo_loader.cgi $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+	-mv -v $(CURDIR)/zoo-project/zoo-kernel/main.cfg $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+	install -m755 $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops/cgi-env/ogr_service.zo $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+	-mv -v $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops/cgi-env/*.zcfg $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+	install -m755 $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops-py/cgi-env/ogr_sp.py $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+	-mv -v $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops-py/cgi-env/*.zcfg $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+
+override_dh_auto_clean:
+	dh_auto_clean --builddirectory zoo-project/zoo-kernel
