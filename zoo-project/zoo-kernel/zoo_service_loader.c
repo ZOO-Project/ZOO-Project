@@ -1839,9 +1839,9 @@ int runRequest(map** inputs)
 		  xmlDocPtr doc1=xmlNewDoc(BAD_CAST "1.0");
 		  int buffersize;
 		  xmlNodePtr cur5=cur4->children;
-		  while(cur5!=NULL &&cur5->type!=XML_ELEMENT_NODE && cur5->type!=XML_CDATA_SECTION_NODE)
+		  while(cur5!=NULL && cur5->type!=XML_ELEMENT_NODE && cur5->type!=XML_CDATA_SECTION_NODE)
 		    cur5=cur5->next;
-		  if(cur5->type!=XML_CDATA_SECTION_NODE){
+		  if(cur5!=NULL && cur5->type!=XML_CDATA_SECTION_NODE){
 		    xmlDocSetRootElement(doc1,cur5);
 		    xmlDocDumpFormatMemoryEnc(doc1, &mv, &buffersize, "utf-8", 1);
 		    char size[1024];
@@ -1850,8 +1850,10 @@ int runRequest(map** inputs)
 		    xmlFreeDoc(doc1);
 		  }
 		}
-		addToMap(tmpmaps->content,"value",(char*)mv);
-		xmlFree(mv);
+		if(mv!=NULL){
+		  addToMap(tmpmaps->content,"value",(char*)mv);
+		  xmlFree(mv);
+		}
 	      }else{
 		xmlChar* tmp=xmlNodeListGetRawString(doc,cur4->xmlChildrenNode,0);
 		addToMap(tmpmaps->content,"value",(char*)tmp);
