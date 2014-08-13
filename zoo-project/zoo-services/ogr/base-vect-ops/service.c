@@ -103,84 +103,231 @@ extern "C" {
   __declspec(dllexport)
 #endif
   int Simplify(maps*& conf,maps*& inputs,maps*& outputs){
-    maps* cursor=inputs;
-    OGRGeometryH geometry,res;
+    OGRRegisterAll();
+
     double tolerance;
-    map* tmp0=getMapFromMaps(cursor,"Tolerance","value");
+    map* tmp0=getMapFromMaps(inputs,"Tolerance","value");
     if(tmp0==NULL){
       tolerance=atof("2.0");
     }
     else
       tolerance=atof(tmp0->value);
-#ifdef DEBUG
-    fprintf(stderr,"Tolerance for Simplify %f",tolerance);
-#endif
+
+    maps* cursor=inputs;
+    OGRGeometryH geometry;
+    OGRGeometry *res;
+    OGRLayer *poDstLayer;
+    const char *oDriver1;
+    OGRDataSource       *poODS;
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
+    char filename[1024];
     map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    const char *oDriver;
+    oDriver="GeoJSON";
+    sprintf(filename,"/vsimem/input_%d.json",getpid());
     if(tmp1!=NULL){
-      if(strncmp(tmp1->value,"text/js",7)==0 ||
-	 strncmp(tmp1->value,"application/json",16)==0)
-        geometry=OGR_G_CreateGeometryFromJson(tmp->value);
-      else
-        geometry=createGeometryFromGML(conf,tmp->value);
-    }
-    else{
-      setMapInMaps(conf,"lenv","message",_ss("Unable to find any geometry for InputPolygon"));
-      return SERVICE_FAILED;
-    }
-    if(geometry==NULL){
-      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
-      return SERVICE_FAILED;
-    }
-#ifdef DEBUG
-    fprintf(stderr,"Create GEOSGeometry object");
-#endif
-    GEOSGeometry* ggeometry=((OGRGeometry *) geometry)->exportToGEOS();
-    GEOSGeometry* gres=GEOSTopologyPreserveSimplify(ggeometry,tolerance);
-    res=(OGRGeometryH)OGRGeometryFactory::createFromGEOS(gres);
-    tmp1=getMapFromMaps(outputs,"Result","mimeType");
-    if(tmp1!=NULL){
-      if(strncmp(tmp1->value,"text/js",7)==0 ||
-	 strncmp(tmp1->value,"application/json",16)==0){
-	char *tmpS=OGR_G_ExportToJson(res);
-	setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-	setMapInMaps(outputs,"Result","mimeType","text/plain");
-	setMapInMaps(outputs,"Result","encoding","UTF-8");
-	free(tmpS);
-#endif
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(filename,"/vsimem/input_%d.xml",getpid());
+	oDriver="GML";
       }
-      else{
-	char *tmpS=OGR_G_ExportToGML(res);
-	setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-	setMapInMaps(outputs,"Result","mimeType","text/xml");
-	setMapInMaps(outputs,"Result","encoding","UTF-8");
-	setMapInMaps(outputs,"Result","schema","http://fooa/gml/3.1.0/polygon.xsd");
-	free(tmpS);
-#endif
-      }
-    }else{
-      char *tmpS=OGR_G_ExportToJson(res);
-      setMapInMaps(outputs,"Result","value",tmpS);
-#ifndef WIN32
-      setMapInMaps(outputs,"Result","mimeType","text/plain");
-      setMapInMaps(outputs,"Result","encoding","UTF-8");
-      free(tmpS);
-#endif
     }
-    outputs->next=NULL;
-    //GEOSFree(ggeometry);
-    //GEOSFree(gres);
-    OGR_G_DestroyGeometry(res);
-    OGR_G_DestroyGeometry(geometry);
-    return SERVICE_SUCCEEDED;
-  }
+    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+    char pszDestDataSource[100];
+    if( ipoDS == NULL )
+      {
+	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+	  }
+	char tmp[1024];
+	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
+      }
+    for( int iLayer = 0; iLayer < ipoDS->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer = ipoDS->GetLayer(iLayer);
+	
+	if( poLayer == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+	
+	OGRFeature  *poFeature;
+	
+	OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+	OGRSFDriver          *poDriver = NULL;
+	int                  iDriver;
+	
+	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
+	oDriver1="GeoJSON";
+	sprintf(pszDestDataSource,"/vsimem/result_%d.json",getpid());
+	if(tmpMap!=NULL){
+	  if(strcmp(tmpMap->value,"text/xml")==0){
+	    sprintf(pszDestDataSource,"/vsimem/result_%d.xml",getpid());
+	    oDriver1="GML";
+	  }
+	}
+	
+	for( iDriver = 0;
+	     iDriver < poR->GetDriverCount() && poDriver == NULL;
+	     iDriver++ )
+	  {
+	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+	      {
+		poDriver = poR->GetDriver(iDriver);
+	      }
+	  }
+	
+	if( poDriver == NULL )
+	  {
+	    char emessage[8192];
+	    sprintf( emessage, "Unable to find driver `%s'.\n", oDriver );
+	    sprintf( emessage,  "%sThe following drivers are available:\n",emessage );
+	    
+	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	      {
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+	      }
+	    
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	    
+	  }
+	
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
+	  char emessage[1024];
+	  sprintf( emessage,  "%s driver does not support data source creation.\n",
+		   "json" );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	char **papszDSCO=NULL;
+	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+	if( poODS == NULL ){
+	  char emessage[1024];      
+	  sprintf( emessage,  "%s driver failed to create %s\n", 
+		   "json", pszDestDataSource );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	if( !poODS->TestCapability( ODsCCreateLayer ) )
+	  {
+	    char emessage[1024];
+	    sprintf( emessage, 
+		     "Layer %s not found, and CreateLayer not supported by driver.", 
+		     "Result" );
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	  }
+	
+	poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
+	if( poDstLayer == NULL ){
+	  setMapInMaps(conf,"lenv","message","Layer creation failed.\n");
+	  return SERVICE_FAILED;
+	}
+	
+	OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+	int iField;
+	int hasMmField=0;
+	
+	for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
+	  {
+	    OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iField);
+            if (iField >= 0)
+                poDstLayer->CreateField( poFDefn->GetFieldDefn(iField) );
+            else
+            {
+                fprintf( stderr, "Field '%s' not found in source layer.\n", 
+                        iField );
+		return SERVICE_FAILED;
+            }
+	  }
 
+	while(TRUE){
+	  OGRFeature      *poDstFeature = NULL;
+	  poFeature = poLayer->GetNextFeature();
+	  if( poFeature == NULL )
+	    break;
+	  if(poFeature->GetGeometryRef() != NULL){
+	    poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
+	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    geometry=poFeature->GetGeometryRef();
+#if GDAL_VERSION_MAJOR == 1 && GDAL_VERSION_MINOR < 11
+	    GEOSGeometry* ggeometry=((OGRGeometry *) geometry)->exportToGEOS();
+	    GEOSGeometry* gres=GEOSTopologyPreserveSimplify(ggeometry,tolerance);
+	    if(gres!=NULL)
+	      res=(OGRGeometry*)OGRGeometryFactory::createFromGEOS(gres);
+#else
+	    res=((OGRGeometry *) geometry)->SimplifyPreserveTopology(tolerance);
+#endif
+	    if(poDstFeature->SetGeometryDirectly(res) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poFeature );
+	    if( poDstLayer->CreateFeature( poDstFeature ) != OGRERR_NONE )
+	      {		
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poDstFeature );
+#if GDAL_VERSION_MAJOR == 1 && GDAL_VERSION_MINOR < 11
+	    GEOSGeom_destroy( ggeometry);
+	    GEOSGeom_destroy( gres);
+#endif
+	  }
+	}
+      }
+
+    delete poODS;
+    delete ipoDS;
+
+    char *res1=readVSIFile(conf,pszDestDataSource);
+    if(res1==NULL)
+      return SERVICE_FAILED;
+    setMapInMaps(outputs,"Result","value",res1);
+    free(res1);
+
+    OGRCleanupAll();
+    return SERVICE_SUCCEEDED;
+
+}
 
   int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry::*myFunc)() const,const char* schema){
     OGRRegisterAll();
@@ -354,7 +501,6 @@ extern "C" {
 	  if( poFeature == NULL )
 	    break;
 	  if(poFeature->GetGeometryRef() != NULL){
-	    // DO SOMETHING HERE !!
 	    poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
 	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE )
 	      {
@@ -552,9 +698,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	    setMapInMaps(conf,"lenv","message",emessage);
 	    return SERVICE_FAILED;
 	  }
-	
-	//CPLErrorReset();
-	
+
 	poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
 	if( poDstLayer == NULL ){
 	  setMapInMaps(conf,"lenv","message","Layer creation failed.\n");
@@ -584,7 +728,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	  if( poFeature == NULL )
 	    break;
 	  if(poFeature->GetGeometryRef() != NULL){
-	    // DO SOMETHING HERE !!
 	    poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
 	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE )
 	      {
@@ -738,7 +881,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	  if( poFeature == NULL )
 	    break;
 	  if(poFeature->GetGeometryRef() != NULL){
-	    // DO SOMETHING HERE !!
 	    if((poFeature->GetGeometryRef()->*myFunc)()==0){
 	      setMapInMaps(outputs,"Result","value","false");
 	      OGRFeature::DestroyFeature( poFeature );
@@ -974,7 +1116,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		  break;
 
 		if(poFeature1->GetGeometryRef() != NULL && poFeature2->GetGeometryRef() != NULL){
-		  // DO SOMETHING HERE !!
 		  poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
 		  if( poDstFeature->SetFrom( poFeature2, TRUE ) != OGRERR_NONE )
 		    {
@@ -1136,7 +1277,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		if( poFeature2 == NULL )
 		  break;
 		if(poFeature1->GetGeometryRef() != NULL && poFeature2->GetGeometryRef() != NULL){
-		  // DO SOMETHING HERE !!
 		  if((poFeature1->GetGeometryRef()->*myFunc)(poFeature2->GetGeometryRef())==0){
 		    setMapInMaps(outputs,"Result","value","false");
 		    OGRFeature::DestroyFeature( poFeature1 );
