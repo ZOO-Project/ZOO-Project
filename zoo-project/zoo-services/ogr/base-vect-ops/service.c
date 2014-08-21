@@ -1088,7 +1088,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	      return SERVICE_FAILED;
 	    }
 	    
-	    OGRFeatureDefn *poFDefn = poLayer1->GetLayerDefn();
+	    OGRFeatureDefn *poFDefn = poLayer2->GetLayerDefn();
 	    int iField;
 	    int hasMmField=0;
 	    
@@ -1139,7 +1139,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		      OGRFeature::DestroyFeature( poDstFeature );
 		      return SERVICE_FAILED;
 		    }
-		  OGRFeature::DestroyFeature( poFeature1 );
 		  OGRFeature::DestroyFeature( poFeature2 );
 		  if(!poDstFeature->GetGeometryRef()->IsEmpty())
 		    if( poDstLayer->CreateFeature( poDstFeature ) != OGRERR_NONE )
@@ -1151,6 +1150,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		}
 	      }
 	    }
+	    OGRFeature::DestroyFeature( poFeature1 );
 	  }
       }
 
