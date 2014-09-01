@@ -1912,6 +1912,8 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	}
 
 	xmlAddChild(nc3,xmlNewText(BAD_CAST base64(tmp3->value, atoi(rs->value))));
+	if(tmp1==NULL || (tmp1!=NULL && strncmp(tmp1->value,"base64",6)!=0))
+	  xmlNewProp(nc3,BAD_CAST "encoding",BAD_CAST "base64");
 	if(!isSized){
 	  freeMap(&rs);
 	  free(rs);
@@ -2304,7 +2306,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	fclose(ofile);
 	free(file_name);
 	free(file_url);	
-      }
+	}
 #ifdef USE_MS
       else{
 	if(testMap!=NULL){
@@ -2419,12 +2421,12 @@ char *base64(const char *input, int length)
   BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
   bmem = BIO_new(BIO_s_mem());
   b64 = BIO_push(b64, bmem);
-  BIO_write(b64, input, length);
+  BIO_write(b64, input, length+1);
   BIO_flush(b64);
   BIO_get_mem_ptr(b64, &bptr);
 
-  char *buff = (char *)malloc((bptr->length)*sizeof(char));
-  memcpy(buff, bptr->data, bptr->length-1);
+  char *buff = (char *)malloc((bptr->length+1)*sizeof(char));
+  memcpy(buff, bptr->data, bptr->length);
   buff[bptr->length-1] = 0;
 
   BIO_free_all(b64);
