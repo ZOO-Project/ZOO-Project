@@ -731,6 +731,17 @@ int runRequest(map** inputs)
   if(r_inputs==NULL)
     r_inputs=getMapFromMaps(m,"main","language");
   if(r_inputs!=NULL){
+    if(isValidLang(m,r_inputs->value)<0){
+      char tmp[1024];
+      sprintf(tmp,_("The value %s is not supported for the <language> parameter"),
+	      r_inputs->value);
+      errorException(m, tmp,"InvalidParameterValue","language");
+      freeMaps(&m);
+      free(m);
+      free(REQUEST);
+      return 1;
+
+    }
     char *tmp=zStrdup(r_inputs->value);
     setMapInMaps(m,"main","language",tmp);
 #ifdef DEB
@@ -776,7 +787,11 @@ int runRequest(map** inputs)
 
   if(strlen(cgiServerName)>0){
     char tmpUrl[1024];
-    sprintf(tmpUrl,"http://%s%s",cgiServerName,cgiScriptName);
+    if(strncmp(cgiServerPort,"80",2)==0){
+      sprintf(tmpUrl,"http://%s%s",cgiServerName,cgiScriptName);
+    }else{
+      sprintf(tmpUrl,"http://%s:%s%s",cgiServerName,cgiServerPort,cgiScriptName);
+    }
 #ifdef DEBUG
     fprintf(stderr,"*** %s ***\n",tmpUrl);
 #endif
@@ -802,7 +817,7 @@ int runRequest(map** inputs)
     if(strncasecmp(r_inputs->value,"GetCapabilities",15)!=0
        && strncasecmp(r_inputs->value,"DescribeProcess",15)!=0
        && strncasecmp(r_inputs->value,"Execute",7)!=0){ 
-      errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "InvalidParameterValue","request");
+      errorException(m, _("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."), "OperationNotSupported",r_inputs->value);
       freeMaps(&m);
       free(m);
       free(REQUEST);
@@ -843,6 +858,17 @@ int runRequest(map** inputs)
 	return 1;
       }
     } 
+  }else{
+    r_inputs=getMap(request_inputs,"AcceptVersions");
+    if(r_inputs!=NULL){ 
+      if(strncmp(r_inputs->value,"1.0.0",5)!=0){
+      errorException(m, _("Unenderstood <AcceptVersions> value, 1.0.0 is the only acceptable value."), "VersionNegotiationFailed",NULL);
+	freeMaps(&m);
+	free(m);
+	free(REQUEST);
+	return 1;
+      }
+    }
   }
 
   r_inputs=getMap(request_inputs,"serviceprovider");
