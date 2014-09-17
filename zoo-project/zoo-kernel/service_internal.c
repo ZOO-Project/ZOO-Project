@@ -36,6 +36,22 @@
 #define FALSE -1
 #endif
 
+int isValidLang(maps* conf,const char *str){
+  map *tmpMap=getMapFromMaps(conf,"main","lang");
+  char *tmp=zStrdup(tmpMap->value);
+  char *pToken=strtok(tmp,",");
+  int res=-1;
+  while(pToken!=NULL){
+    if(strcasecmp(str,pToken)==0){
+      res=1;
+      break;
+    }
+    pToken = strtok(NULL,",");
+  }
+  free(tmp);
+  return res;
+}
+
 void printHeaders(maps* m){
   maps *_tmp=getMaps(m,"headers");
   if(_tmp!=NULL){

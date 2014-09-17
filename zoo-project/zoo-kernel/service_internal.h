@@ -93,7 +93,7 @@ extern "C" {
 
   int getServiceFromYAML(maps*,char*,service**,char *name);
   int readServiceFile(maps*, char*,service**,char *);
-  
+  int isValidLang(maps*,const char*);
 
   void printHeaders(maps*);
   void unhandleStatus(maps*);
