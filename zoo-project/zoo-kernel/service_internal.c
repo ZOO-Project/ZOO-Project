@@ -3096,23 +3096,26 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
     char *tmp0=zStrdup(buffer);
     sprintf(key,"sprefix_%d",i);
     map* tmp00=getMapFromMaps(conf,"lenv",key);
-    sprintf(buffer,"%s/%s",tmp0,tmp00->value);
+    if(tmp00!=NULL)
+      sprintf(buffer,"%s/%s",tmp0,tmp00->value);
     free(tmp0);
     buffer[strlen(buffer)-1]=0;
     if(i+1<level){
       map* tmpMap=getMapFromMaps(conf,"lenv","metapath");
       if(tmpMap==NULL || strlen(tmpMap->value)==0){
 	char *tmp01=zStrdup(tmp00->value);
-	tmp01[strlen(tmp01)-1]=0;
 	setMapInMaps(conf,"lenv","metapath",tmp01);
 	free(tmp01);
+	tmp01=NULL;
       }
       else{
-	char *value=(char*)malloc((strlen(tmp00->value)+strlen(tmpMap->value)+2)*sizeof(char));
-	sprintf(value,"%s/%s",tmpMap->value,tmp00->value);
-	value[strlen(value)-1]=0;
-	setMapInMaps(conf,"lenv","metapath",value);
-	free(value);
+	if(tmp00!=NULL && tmpMap!=NULL){
+	  char *value=(char*)malloc((strlen(tmp00->value)+strlen(tmpMap->value)+2)*sizeof(char));
+	  sprintf(value,"%s/%s",tmpMap->value,tmp00->value);
+	  setMapInMaps(conf,"lenv","metapath",value);
+	  free(value);
+	  value=NULL;
+	}
       }
     }else{
       char *tmp01=zStrdup(tmp00->value);
