@@ -6188,7 +6188,7 @@ ZOO.Process = ZOO.Class({
       return output;
     },
     'RawDataOutput': function(identifier,obj) {
-      var output = new XML('<wps:ResponseForm xmlns:wps="'+this.namespaces['wps']+'"><wps:RawDataOutput><wps:Output '+(obj["mimeType"]?' mimeType="'+obj["mimeType"]+'" ':'')+(obj["encoding"]?' encoding="'+obj["encoding"]+'" ':'')+'><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier></wps:Output></wps:RawDataOutput></wps:ResponseForm>');
+      var output = new XML('<wps:ResponseForm xmlns:wps="'+this.namespaces['wps']+'"><wps:RawDataOutput '+(obj["mimeType"]?' mimeType="'+obj["mimeType"]+'" ':'')+(obj["encoding"]?' encoding="'+obj["encoding"]+'" ':'')+'><ows:Identifier xmlns:ows="'+this.namespaces['ows']+'">'+identifier+'</ows:Identifier></wps:RawDataOutput></wps:ResponseForm>');
       if (obj.encoding)
         output.*::Data.*::ComplexData.@encoding = obj.encoding;
       if (obj.schema)
