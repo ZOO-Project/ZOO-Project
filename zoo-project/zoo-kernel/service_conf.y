@@ -802,6 +802,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   srin = fopen(file,"r");
   if (srin==NULL){
     fprintf(stderr,"error : file not found\n") ;
+    setMapInMaps(conf,"lenv","message","file not found");
     return -1;
   }
 
@@ -851,7 +852,6 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   if(wait_outputs<0 || my_service==NULL || my_service->name==NULL || my_service->content==NULL || my_service->outputs==NULL){
     fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     setMapInMaps(conf,"lenv","message",srlval.chaine);
-    dumpMaps(conf);
 #ifndef WIN32
     srlex_destroy();
 #endif

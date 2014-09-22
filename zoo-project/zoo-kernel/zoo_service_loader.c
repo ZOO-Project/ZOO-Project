@@ -987,24 +987,36 @@ int runRequest(map** inputs)
 	char buff1[1024];
 	while(tmps!=NULL){
 	  int hasVal=-1;
-	  char *corig=strdup(tmps);
+	  char *corig=zStrdup(tmps);
 	  if(strstr(corig,".")!=NULL){
+	    
 	    parseIdentifier(m,conf_dir,corig,buff1);
+	    map* tmpMap=getMapFromMaps(m,"lenv","metapath");
+	    if(tmpMap!=NULL)
+	      addToMap(request_inputs,"metapath",tmpMap->value);
+
 	    s1=(service*)malloc(SERVICE_SIZE);
 	    t=readServiceFile(m,buff1,&s1,corig);
-
 	    if(t<0){
 	      map* tmp00=getMapFromMaps(m,"lenv","message");
 	      char tmp01[1024];
 	      if(tmp00!=NULL)
-		sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),dp->d_name,tmp00->value);
+		sprintf(tmp01,_("Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"),tmps,tmp00->value);
 	      else
-		sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),dp->d_name);
+		sprintf(tmp01,_("Unable to parse the ZCFG file for the following ZOO-Service: %s."),tmps);
 	      dup2(saved_stdout,fileno(stdout));
-	      errorException(m, tmp01,"InternalError",NULL);
+	      errorException(m, tmp01,"InvalidParameterValue","identifier");
 	      freeMaps(&m);
 	      free(m);
 	      free(REQUEST);
+	      free(corig);
+	      free(orig);
+	      free(SERVICE_URL);
+	      free(s1);
+	      closedir(dirp);
+	      xmlFreeDoc(doc);
+	      xmlCleanupParser();
+	      zooXmlCleanupNs();
 	      return 1;
 	    }
 #ifdef DEBUG
@@ -1015,58 +1027,60 @@ int runRequest(map** inputs)
 	    free(s1);
 	    s1=NULL;
 	    scount++;
-	    setMapInMaps(m,"lenv","level","0");
-	  }
-	  
-	  memset(buff,0,256);
-	  snprintf(buff,256,"%s.zcfg",corig);
-	  free(corig);
-	  memset(buff1,0,1024);
+	    hasVal=1;
+	  }else{
+	    memset(buff,0,256);
+	    snprintf(buff,256,"%s.zcfg",corig);
+	    free(corig);
+	    memset(buff1,0,1024);
 #ifdef DEBUG
-	  printf("\n#######%s\n########\n",buff);
+	    printf("\n#######%s\n########\n",buff);
 #endif
-	  while ((dp = readdir(dirp)) != NULL){
-	    if( strcasecmp(dp->d_name,buff)==0 ){
-	      memset(buff1,0,1024);
-	      snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
-	      s1=(service*)malloc(SERVICE_SIZE);
-	      if(s1 == NULL){
-		dup2(saved_stdout,fileno(stdout));
-		return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
+	    while ((dp = readdir(dirp)) != NULL){
+	      if( strcasecmp(dp->d_name,buff)==0 ){
+		memset(buff1,0,1024);
+		snprintf(buff1,1024,"%s/%s",conf_dir,dp->d_name);
+		s1=(service*)malloc(SERVICE_SIZE);
+		if(s1 == NULL){
+		  dup2(saved_stdout,fileno(stdout));
+		  return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
+		}
+#ifdef DEBUG
+		printf("#################\n(%s) %s\n#################\n",r_inputs->value,buff1);
+#endif
+		char *tmp0=zStrdup(dp->d_name);
+		tmp0[strlen(tmp0)-5]=0;
+		t=readServiceFile(m,buff1,&s1,tmp0);
+		free(tmp0);
+		if(t<0){
+		  map* tmp00=getMapFromMaps(m,"lenv","message");
+		  char tmp01[1024];
+		  if(tmp00!=NULL)
+		    sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),dp->d_name,tmp00->value);
+		  else
+		    sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),dp->d_name);
+		  dup2(saved_stdout,fileno(stdout));
+		  errorException(m, tmp01,"InternalError",NULL);
+		  freeMaps(&m);
+		  free(m);
+		  free(orig);
+		  free(REQUEST);
+		  closedir(dirp);
+		  xmlFreeDoc(doc);
+		  xmlCleanupParser();
+		  zooXmlCleanupNs();
+		  return 1;
+		}
+#ifdef DEBUG
+		dumpService(s1);
+#endif
+		printDescribeProcessForProcess(m,n,s1);
+		freeService(&s1);
+		free(s1);
+		s1=NULL;
+		scount++;
+		hasVal=1;
 	      }
-#ifdef DEBUG
-	      printf("#################\n(%s) %s\n#################\n",r_inputs->value,buff1);
-#endif
-	      char *tmp0=zStrdup(dp->d_name);
-	      tmp0[strlen(tmp0)-5]=0;
-	      t=readServiceFile(m,buff1,&s1,tmp0);
-	      free(tmp0);
-	      if(t<0){
-		map* tmp00=getMapFromMaps(m,"lenv","message");
-		char tmp01[1024];
-		if(tmp00!=NULL)
-		  sprintf(tmp01,_("Unable to parse the ZCFG file: %s (%s)"),dp->d_name,tmp00->value);
-		else
-		  sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),dp->d_name);
-		dup2(saved_stdout,fileno(stdout));
-		errorException(m, tmp01,"InternalError",NULL);
-		freeMaps(&m);
-		free(m);
-		free(orig);
-		free(REQUEST);
-		closedir(dirp);
-		xmlFreeDoc(doc);
-		return 1;
-	      }
-#ifdef DEBUG
-	      dumpService(s1);
-#endif
-	      printDescribeProcessForProcess(m,n,s1);
-	      freeService(&s1);
-	      free(s1);
-	      s1=NULL;
-	      scount++;
-	      hasVal=1;
 	    }
 	  }
 	  if(hasVal<0){
@@ -1077,6 +1091,7 @@ int runRequest(map** inputs)
 	    else
 	      sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),buff);
 	    dup2(saved_stdout,fileno(stdout));
+	    dumpMaps(m);
 	    errorException(m, tmp01,"InvalidParameterValue","Identifier");
 	    freeMaps(&m);
 	    free(m);
@@ -1084,8 +1099,11 @@ int runRequest(map** inputs)
 	    free(REQUEST);
 	    closedir(dirp);
 	    xmlFreeDoc(doc);
+	    xmlCleanupParser();
+	    zooXmlCleanupNs();
 	    return 1;
 	  }
+	  free(corig);
 	  rewinddir(dirp);
 	  tmps=strtok_r(NULL,",",&saveptr);
 	}
