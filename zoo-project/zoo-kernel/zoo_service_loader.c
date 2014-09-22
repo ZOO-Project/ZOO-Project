@@ -1028,10 +1028,10 @@ int runRequest(map** inputs)
 	    s1=NULL;
 	    scount++;
 	    hasVal=1;
+	    setMapInMaps(m,"lenv","level","0");
 	  }else{
 	    memset(buff,0,256);
 	    snprintf(buff,256,"%s.zcfg",corig);
-	    free(corig);
 	    memset(buff1,0,1024);
 #ifdef DEBUG
 	    printf("\n#######%s\n########\n",buff);
@@ -1091,7 +1091,6 @@ int runRequest(map** inputs)
 	    else
 	      sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),buff);
 	    dup2(saved_stdout,fileno(stdout));
-	    dumpMaps(m);
 	    errorException(m, tmp01,"InvalidParameterValue","Identifier");
 	    freeMaps(&m);
 	    free(m);
@@ -1103,9 +1102,10 @@ int runRequest(map** inputs)
 	    zooXmlCleanupNs();
 	    return 1;
 	  }
-	  free(corig);
 	  rewinddir(dirp);
 	  tmps=strtok_r(NULL,",",&saveptr);
+	  if(corig!=NULL)
+	    free(corig);
 	}
       }
       closedir(dirp);
