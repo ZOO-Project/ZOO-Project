@@ -801,7 +801,6 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 
   srin = fopen(file,"r");
   if (srin==NULL){
-    fprintf(stderr,"error : file not found\n") ;
     setMapInMaps(conf,"lenv","message","file not found");
     return -1;
   }

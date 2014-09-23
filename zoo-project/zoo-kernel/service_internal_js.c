@@ -146,7 +146,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
    */
   void* cxPrivate = request;
   JS_SetContextPrivate(cx,cxPrivate);
-    
+
   map* tmpm1=getMap(request,"metapath");
   char ntmp[1024];
   getcwd(ntmp,1024);
@@ -154,8 +154,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   /**
    * Load the first part of the ZOO-API
    */
-  char *api0=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+17);
-  sprintf(api0,"%s/%s/ZOO-proj4js.js",ntmp,tmpm1->value);
+  char *api0=(char*)malloc((strlen(ntmp)+17)*sizeof(char));
+  sprintf(api0,"%s/ZOO-proj4js.js",ntmp);
 #ifdef JS_DEBUG
   fprintf(stderr,"Trying to load %s\n",api0);
 #endif
@@ -163,8 +163,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   free(api0);
   fflush(stderr);
 
-  char *api1=(char*)malloc(strlen(tmpm1->value)+strlen(ntmp)+13);
-  sprintf(api1,"%s/%s/ZOO-api.js",ntmp,tmpm1->value);
+  char *api1=(char*)malloc((strlen(ntmp)+13)*sizeof(char));
+  sprintf(api1,"%s/ZOO-api.js",ntmp);
 #ifdef JS_DEBUG
   fprintf(stderr,"Trying to load %s\n",api1);
 #endif
