@@ -192,8 +192,28 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   gstate = PyGILState_Ensure();
   PyObject *pName, *pModule, *pFunc;
   tmp=getMap(s->content,"serviceProvider");
-  if(tmp!=NULL)
-    pName = PyString_FromString(tmp->value);
+  map* mp=getMap(request,"metapath");
+  if(tmp!=NULL){
+    if(mp!=NULL && strlen(mp->value)>0){
+      char *mps=zStrdup(mp->value);
+      int i,len=strlen(mps);
+      int j=0;
+      for(i=0;i<len;i++){
+	if(mps[i]=='/'){
+	  mps[i]='.';
+	}
+      }
+      char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
+      sprintf(mn,"%s.%s",mps,tmp->value);
+      pName = PyString_FromString(mn);
+      free(mn);
+      free(mps);
+    }
+    else{
+      pName = PyString_FromString(tmp->value);
+      fprintf(stderr,"%s %d",tmp->value,__LINE__);
+    }
+  }
   else{
     map* err=createMap("text","Unable to parse serviceProvider please check your zcfg file.");
     addToMap(err,"code","NoApplicableCode");
@@ -456,6 +476,7 @@ maps* mapsFromPyDict(PyDictObject* t){
     fprintf(stderr,">> parsed maps %d\n",i);
 #endif
   }
+  Py_DECREF(list);
   return res;
 }
 
@@ -506,6 +527,7 @@ map* mapFromPyDict(PyDictObject* t){
       }
     }
   }
+  Py_DECREF(list);
   return res;
 }
 

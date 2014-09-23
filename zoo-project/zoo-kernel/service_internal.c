@@ -3104,16 +3104,20 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
       map* tmpMap=getMapFromMaps(conf,"lenv","metapath");
       if(tmpMap==NULL || strlen(tmpMap->value)==0){
 	char *tmp01=zStrdup(tmp00->value);
+	tmp01[strlen(tmp01)-1]=0;
 	setMapInMaps(conf,"lenv","metapath",tmp01);
 	free(tmp01);
 	tmp01=NULL;
       }
       else{
 	if(tmp00!=NULL && tmpMap!=NULL){
-	  char *value=(char*)malloc((strlen(tmp00->value)+strlen(tmpMap->value)+2)*sizeof(char));
-	  sprintf(value,"%s/%s",tmpMap->value,tmp00->value);
+	  char *tmp00s=zStrdup(tmp00->value);
+	  tmp00s[strlen(tmp00s)-1]=0;
+	  char *value=(char*)malloc((strlen(tmp00s)+strlen(tmpMap->value)+2)*sizeof(char));
+	  sprintf(value,"%s/%s",tmpMap->value,tmp00s);
 	  setMapInMaps(conf,"lenv","metapath",value);
 	  free(value);
+	  free(tmp00s);
 	  value=NULL;
 	}
       }
