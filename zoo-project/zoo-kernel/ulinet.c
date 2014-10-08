@@ -60,9 +60,9 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
 size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
   if(strncmp("Set-Cookie: ",buffer,12)==0){
     int i;
-    char env[1024];
-    char path[1024];
-    char domain[1024];
+    char env[256];
+    char path[256];
+    char domain[256];
     char* tmp;
     for(i=0;i<12;i++)
 #ifndef WIN32
