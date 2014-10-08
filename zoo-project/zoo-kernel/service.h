@@ -39,11 +39,13 @@
 #define zMkdir _mkdir
 #define zOpen _open
 #define zWrite _write
+#define zSleep Sleep
 #else
 #define zStrdup strdup
 #define zMkdir mkdir
 #define zOpen open
 #define zWrite write
+#define zSleep sleep
 #endif 
 
 #ifdef __cplusplus
@@ -67,8 +69,6 @@ extern "C" {
 #define true 1
 #define false -1
 #endif
-#else
-  //#include <stdbool.h>
 #endif
 
 #define SERVICE_ACCEPTED 0

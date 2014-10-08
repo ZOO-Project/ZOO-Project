@@ -35,12 +35,17 @@
 #define _(String) dgettext ("zoo-kernel",String)
 #define _ss(String) dgettext ("zoo-services",String)
 
+#define ZOO_LOCK_CREATE_FAILED -4
+#define ZOO_LOCK_ACQUIRE_FAILED -5
+#define ZOO_LOCK_RELEASE_FAILED -6
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #else
 #include <direct.h>
 #endif
@@ -98,7 +103,17 @@ extern "C" {
   void printHeaders(maps*);
   void unhandleStatus(maps*);
   int _updateStatus(maps*);
+  char* _getStatus(maps*,int);
   char* getStatus(int);
+  int removeShmLock(maps*, int);
+#ifndef WIN32
+#define semid int
+#else
+#define semid HANDLE
+#endif
+  semid getShmLockId(maps*,int);
+  int lockShm(semid);
+  int unlockShm(semid);
 
 #ifdef USE_JS
   char* JSValToChar(JSContext*,jsval*);

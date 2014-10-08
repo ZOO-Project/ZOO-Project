@@ -2628,6 +2628,9 @@ int runRequest(map** inputs)
        * son : have to close the stdout, stdin and stderr to let the parent
        * process answer to http client.
        */
+#ifndef WIN32
+      zSleep(1);
+#endif
       r_inputs=getMapFromMaps(m,"main","tmpPath");
       map* r_inputs1=getMap(s1->content,"ServiceProvider");
       fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+1024)*sizeof(char));
@@ -2640,7 +2643,23 @@ int runRequest(map** inputs)
       fprintf(stderr,"\nFILE TO STORE DATA %s\n",r_inputs->value);
 #endif
       freopen(flog, "w+", stderr);
+      semid lid=getShmLockId(m,1);
+      fflush(stderr);
+      if(lid<0){
+	fprintf(stderr,"ERROR %s %d\n",__FILE__,__LINE__);
+	fflush(stderr);
+	return -1;
+      }
+      else{
+	if(lockShm(lid)<0){
+	  fprintf(stderr,"ERROR %s %d\n",__FILE__,__LINE__);
+	  fflush(stderr);
+	  return -1;
+	}
+	fflush(stderr);
+      }
       f0=freopen(fbkp , "w+", stdout);
+      rewind(stdout);
 #ifndef WIN32
       fclose(stdin);
 #endif
@@ -2653,11 +2672,9 @@ int runRequest(map** inputs)
        */
       printProcessResponse(m,request_inputs,cpid,s1,r_inputs1->value,SERVICE_STARTED,
 			   request_input_real_format,request_output_real_format);
-#ifndef WIN32
       fflush(stdout);
-      rewind(stdout);
-#else
-#endif
+      unlockShm(lid);
+      fflush(stderr);
       fbkp1=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+1024)*sizeof(char));
       sprintf(fbkp1,"%s/%s_final_%d.xml",r_inputs->value,r_inputs1->value,cpid);
       f1=freopen(fbkp1 , "w+", stdout);
@@ -2696,13 +2713,16 @@ int runRequest(map** inputs)
   if(((int)getpid())!=cpid || cgiSid!=NULL){
     fclose(stdout);
     fclose(stderr);
-    unhandleStatus(m);
     /**
      * Dump back the final file fbkp1 to fbkp
      */
     fclose(f0);
     fclose(f1);
     FILE* f2=fopen(fbkp1,"rb");
+    semid lid=getShmLockId(m,1);
+    if(lid<0)
+      return -1;
+    lockShm(lid);
     FILE* f3=fopen(fbkp,"wb+");
     free(fbkp);
     fseek(f2,0,SEEK_END);
@@ -2713,9 +2733,11 @@ int runRequest(map** inputs)
     fwrite(tmps1,1,flen,f3);
     fclose(f2);
     fclose(f3);
+    unlockShm(lid);
     unlink(fbkp1);
     free(fbkp1);
     free(tmps1);
+    unhandleStatus(m);
   }
 
   freeService(&s1);

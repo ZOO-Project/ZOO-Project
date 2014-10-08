@@ -26,7 +26,6 @@
 #define _ULINET_H
 
 #include "fcgi_stdio.h"
-#include "service.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
@@ -43,8 +42,15 @@
 #endif
 #include "jsapi.h"
 #endif
+#ifndef bool
+#define bool int
+#endif
+#ifndef true
+#define true 1
+#define false -1
+#endif
 
-#define MAX_REQ 100
+#define MAX_REQ 50
 
 #ifdef _ULINET
 static char CCookie[MAX_REQ][1024];
