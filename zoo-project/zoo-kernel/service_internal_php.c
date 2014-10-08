@@ -55,36 +55,24 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   }
 
   php_embed_init(0,NULL,&tsrm_ls);
-
-  fprintf(stderr,"PHP EMBEDED\n");
   
   zend_try {
-    fprintf(stderr,"PHP EMBEDED include script %s\n",tmp->value);
     php_execute_script(&iscript TSRMLS_CC);
-    fprintf(stderr,"PHP EMBEDED include script done\n");
 
     zval *iargs[3];
     zval iret, ifunc,ifile;
       
     ZVAL_STRING(&ifunc, s->name, 0);
-    fprintf(stderr,"PHP EMBEDED include script done\n");
     iargs[0] = php_Array_from_maps(*main_conf);
-    fprintf(stderr,"PHP EMBEDED include script done\n");
     iargs[1] = php_Array_from_maps(*real_inputs);
-    fprintf(stderr,"PHP EMBEDED include script done\n");
     iargs[2] = php_Array_from_maps(*real_outputs);
-    fprintf(stderr,"PHP EMBEDED include script done\n");
     
     call_user_function(EG(function_table), NULL, &ifunc, &iret, 3, iargs TSRMLS_CC);
 
     HashTable* t=HASH_OF(iargs[2]);
     *real_outputs=php_maps_from_Array(t);
     
-    dumpMaps(*real_outputs);
-
     char tmp1[1024];
-
-    sprintf(tmp1,"PHP EMBEDED ran function successfully and return %d !?",Z_STRVAL(iret));
 
     res=SERVICE_SUCCEEDED;
 
@@ -105,10 +93,8 @@ zval *php_Array_from_maps(maps* t){
   zval *mapArrayTmp;
   maps* tmp=t;
   int tres=0;
-  fprintf(stderr,"arra_init\n");
   MAKE_STD_ZVAL(mapArray);
   tres=array_init(mapArray);
-  fprintf(stderr,"arra_init %d\n",tres);
   while(tmp!=NULL){
     add_assoc_zval(mapArray,tmp->name,php_Array_from_map(tmp->content));
     tmp=tmp->next;
@@ -121,22 +107,20 @@ zval *php_Array_from_map(map* t){
   zval *mapArrayTmp;
   map* tmp=t;
   int tres=0;
-  fprintf(stderr,"arra_init\n");
   MAKE_STD_ZVAL(mapArray);
   tres=array_init(mapArray);
-  fprintf(stderr,"arra_init\n");
   while(tmp!=NULL){
-    fprintf(stderr,"=> %s %d %s %d \n",tmp->name,strlen(tmp->name),tmp->value,strlen(tmp->value));
-    tres=add_assoc_string(mapArray,tmp->name,tmp->value,1);
+    map* sMap=getMapArray(tmp,"size",i);
+    if(strncmp(tmp->name,"value",5)==0 && sMap!=NULL){
+      tres=add_assoc_stringl(mapArray,tmp->name,tmp->value,atoi(sMap->value),1);
+    }else
+      tres=add_assoc_string(mapArray,tmp->name,tmp->value,1);
     tmp=tmp->next;
   }
   return mapArray;
 }
 
 maps* php_maps_from_Array(HashTable *t){
-  //#ifdef DEBUG
-  fprintf(stderr,"mapsFromPHPArray start\n");
-  //#endif
   maps* final_res=NULL;
   maps* cursor=final_res;
   char key[1024];
@@ -149,7 +133,6 @@ maps* php_maps_from_Array(HashTable *t){
     int type; 
     zval **ppzval, tmpcopy; 
     type = zend_hash_get_current_key_ex(t, &key, &keylen, &idx, 0, NULL); 
-    fprintf(stderr,"key : %s\n",key);
     if (zend_hash_get_current_data(t, (void**)&ppzval) == FAILURE) { 
       /**
        * Should never actually fail since the key is known to exist.
@@ -160,9 +143,13 @@ maps* php_maps_from_Array(HashTable *t){
      * Duplicate the zval so that * the orignal’s contents are not destroyed
      */
     tmpcopy = **ppzval;
+#ifdef DEBUG
     fprintf(stderr,"key : %s\n",key);
+#endif
     zval_copy_ctor(&tmpcopy); 
+#ifdef DEBUG
     fprintf(stderr,"key : %s\n",key);
+#endif
     /**
      * Reset refcount & Convert
      */
@@ -177,14 +164,18 @@ maps* php_maps_from_Array(HashTable *t){
     }
     fprintf(stderr,"key : %s\n",key);
     HashTable* t=HASH_OF(*ppzval);
+#ifdef DEBUG
     fprintf(stderr,"key : %s\n",key);
+#endif
     cursor->content=php_map_from_HasTable(t);
     cursor->next=NULL;
     if(final_res==NULL)
       final_res=cursor;
     else
       addMapsToMaps(&final_res,cursor);
+#ifdef DEBUG
     fprintf(stderr,"key : %s\n",key);
+#endif
     /**
      * Toss out old copy
      */
@@ -200,14 +191,15 @@ map* php_map_from_HasTable(HashTable* t){
   map* final_res=(map*)malloc(MAP_SIZE);
   final_res=NULL;
   char key[1024];
-  for(zend_hash_internal_pointer_reset(t); 
-      zend_hash_has_more_elements(t) == SUCCESS; 
-      zend_hash_move_forward(t)) { 
-    char *key; 
-    uint keylen; 
-    ulong idx; 
-    int type; 
-    zval **ppzval, tmpcopy; 
+  for(zend_hash_internal_pointer_reset(t);
+      zend_hash_has_more_elements(t) == SUCCESS;
+      zend_hash_move_forward(t)) {
+    char *key;
+    uint keylen;
+    ulong idx;
+    int type;
+    int len;
+    zval **ppzval, tmpcopy;
     type = zend_hash_get_current_key_ex(t, &key, &keylen, &idx, 0, NULL); 
     if (zend_hash_get_current_data(t, (void**)&ppzval) == FAILURE) { 
       /* Should never actually fail * since the key is known to exist. */ 
@@ -222,14 +214,24 @@ map* php_map_from_HasTable(HashTable* t){
      * Reset refcount & Convert 
      */ 
     INIT_PZVAL(&tmpcopy); 
-    convert_to_string(&tmpcopy); 
-    if(final_res==NULL){
-      fprintf(stderr,"%s => %s\n",key,Z_STRVAL(tmpcopy));
-      final_res=createMap(key,Z_STRVAL(tmpcopy));
+    convert_to_string(&tmpcopy);
+    if(strncmp(key,"value")==0){
+      len=Z_STRLEN_P(varcopy);
+      addToMapWithSize(final_res,key,Z_STRVAL_P(tmpcopy),len);
     }
     else{
-      fprintf(stderr,"%s => %s\n",key,Z_STRVAL(tmpcopy));
-      addMapToMap(&final_res,createMap(key,Z_STRVAL(tmpcopy)));
+      if(final_res==NULL){
+#ifdef DEBUG
+	fprintf(stderr,"%s => %s\n",key,Z_STRVAL(tmpcopy));
+#endif
+	final_res=createMap(key,Z_STRVAL(tmpcopy));
+      }
+      else{
+#ifdef DEBUG
+	fprintf(stderr,"%s => %s\n",key,Z_STRVAL(tmpcopy));
+#endif
+	addToMap(&final_res,key,Z_STRVAL(tmpcopy));
+      }
     }
     /* Toss out old copy */ 
     zval_dtor(&tmpcopy); 

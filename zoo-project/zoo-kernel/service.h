@@ -438,6 +438,26 @@ extern "C" {
     }
   }
 
+  static void addToMapWithSize(map* m,const char* n,const char* v,int size){
+    if(hasKey(m,n)==false){
+      map* _cursor=m;
+      if(_cursor!=NULL){
+	addToMap(m,n,"");
+      }else{
+	m=createMap(n,"");
+      }
+    }
+    map *tmp=getMap(m,n);
+    if(tmp->value!=NULL)
+      free(tmp->value);
+    tmp->value=(char*)malloc((size+1)*sizeof(char));
+    memmove(tmp->value,v,size*sizeof(char));
+    tmp->value[size]=0;
+    char sin[128];
+    sprintf(sin,"%ld",size);
+    addToMap(m,"size",sin);
+  }
+
   static void addMapToMap(map** mo,map* mi){
     map* tmp=mi;
     map* _cursor=*mo;

@@ -501,19 +501,7 @@ map* mapFromPyDict(PyDictObject* t){
 #else
       PyString_AsStringAndSize(value,&buffer,&size);
 #endif
-      if(res!=NULL){
-	addToMap(res,PyString_AsString(key),"");
-      }else{
-	res=createMap(PyString_AsString(key),"");
-      }
-      map* tmpR=getMap(res,"value");
-      free(tmpR->value);
-      tmpR->value=(char*)malloc((size+1)*sizeof(char));
-      memmove(tmpR->value,buffer,size*sizeof(char));
-      tmpR->value[size]=0;
-      char sin[1024];
-      sprintf(sin,"%ld",size);
-      addToMap(res,"size",sin);
+      addToMapWithSize(res,"value",buffer,size);
     }else{
       char* lkey=PyString_AsString(key);
       char* lvalue=PyString_AsString(value);
