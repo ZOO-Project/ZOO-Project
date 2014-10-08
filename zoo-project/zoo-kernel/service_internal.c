@@ -82,6 +82,37 @@ char to_hex(char code) {
   return hex[code & 15];
 }
 
+char* _getStatus(maps* conf,int pid){
+  char lid[1024];
+  sprintf(lid,"%d",pid);
+  setMapInMaps(conf,"lenv","lid",lid);
+  semid lockid=getShmLockId(conf,1);
+  if(
+#ifdef WIN32
+     lockid==NULL
+#else
+     lockid<0
+#endif
+     ){
+    char tmp[3];
+    sprintf(tmp,"%d",ZOO_LOCK_CREATE_FAILED);
+    return tmp;
+  }
+  if(lockShm(lockid)<0){
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+    fflush(stderr);
+    char tmp[3];
+    sprintf(tmp,"%d",ZOO_LOCK_ACQUIRE_FAILED);
+    return tmp;
+  }
+  char *tmp=getStatus(pid);
+  unlockShm(lockid);
+  if(tmp==NULL || strncmp(tmp,"-1",2)==0){
+    removeShmLock(conf,1);
+  }
+  return tmp;
+}
+
 #ifdef WIN32
 
 #include <windows.h>
@@ -91,6 +122,75 @@ char to_hex(char code) {
 #include <tchar.h>
 
 #define SHMEMSIZE 4096
+
+char* getKeyValue(maps* conf){
+  map *tmpMap=getMapFromMaps(conf,"lenv","lid");
+  if(tmpMap==NULL)
+    tmpMap=getMapFromMaps(conf,"lenv","sid");
+  char* key="-1";
+  if(tmpMap!=NULL){
+    key=(char*)malloc((strlen(tmpMap->value)+9)*sizeof(char));
+    sprintf(key,"zoo_sem_%s",tmpMap->value);
+  }
+  return key;
+}
+
+
+semid getShmLockId(maps* conf, int nsems){
+    semid sem_id;
+    char* key=getKeyValue(conf);
+    
+    sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
+    if(sem_id==NULL){
+      if(strncmp(key,"-1",2)!=0)
+	free(key);
+#ifdef DEBUG
+      fprintf(stderr,"Semaphore failed to create ! %s\n",GetLastError());
+#endif
+      return NULL;
+    }
+#ifdef DEBUG
+    fprintf(stderr,"%s Accessed !\n",key);
+#endif
+    if(strncmp(key,"-1",2)!=0)
+      free(key);
+    return sem_id;
+}
+
+int removeShmLock(maps* conf, int nsems){
+  semid sem_id=getShmLockId(conf,1);
+  if (CloseHandle(sem_id) == 0) {
+    fprintf(stderr,"Unable to remove semaphore %s",GetLastError());
+    return -1;
+  }
+#ifdef DEBUG
+  fprintf(stderr,"%d Removed !\n",sem_id);
+#endif
+  return 0;
+}
+
+int lockShm(semid id){
+  DWORD dwWaitResult=WaitForSingleObject(id,INFINITE);
+  switch (dwWaitResult){
+    case WAIT_OBJECT_0:
+      return 0;
+      break;
+    case WAIT_TIMEOUT:
+      return -1;
+      break;
+    default:
+      return -2;
+      break;
+  }
+  return 0;
+}
+
+int unlockShm(semid id){
+  if(!ReleaseSemaphore(id,1,NULL)){
+    return -1;
+  }
+  return 0;
+}
 
 static LPVOID lpvMemG = NULL;      // pointer to shared memory
 static HANDLE hMapObjectG = NULL;  // handle to file mapping
@@ -102,6 +202,20 @@ int _updateStatus(maps *conf){
   char *s=NULL;
   map *tmpMap1;
   map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+  semid lockid=getShmLockId(conf,1);
+  if(lockid==NULL){
+#ifdef DEBUG
+    fprintf(stderr,"Unable to create semaphore on line %d!! \n",__LINE__);
+#endif
+    return ZOO_LOCK_CREATE_FAILED;
+  }
+  if(lockShm(lockid)<0){
+#ifdef DEBUG
+    fprintf(stderr,"Unable to create semaphore on line %d!! \n",__LINE__);
+#endif
+    return ZOO_LOCK_ACQUIRE_FAILED;
+  }
+  
   if(hMapObjectG==NULL)
     hMapObjectG = CreateFileMapping( 
 				    INVALID_HANDLE_VALUE,   // use paging file
@@ -111,7 +225,9 @@ int _updateStatus(maps *conf){
 				    SHMEMSIZE,              // size: low 32-bits
 				    TEXT(tmpMap->value));   // name of map object
   if (hMapObjectG == NULL){
-    fprintf(stderr,"Unable to create share memory segment %s !! \n",tmpMap->value);
+#ifdef DEBUG
+    fprintf(stderr,"Unable to create shared memory segment %d !! \n",GetLastError());
+#endif
     return -2;
   }
   fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
@@ -123,7 +239,9 @@ int _updateStatus(maps *conf){
 			    0,              // low offset:   beginning
 			    0);             // default: map entire file
   if (lpvMemG == NULL){
+#ifdef DEBUG
     fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
+#endif
     return -1;
   } 
   memset(lpvMemG, '\0', SHMEMSIZE);
@@ -138,6 +256,7 @@ int _updateStatus(maps *conf){
   }
   *lpszTmp++ = '\0';
   free(final_string);
+  unlockShm(lockid);
   return 0;
 }
 
@@ -148,8 +267,8 @@ char* getStatus(int pid){
   LPVOID lpvMem = NULL;
   HANDLE hMapObject = NULL;
   BOOL fIgnore,fInit;
-  char tmp[100];
-  sprintf(tmp,"%i",pid);
+  char tmp[1024];
+  sprintf(tmp,"%d",pid);
   if(hMapObject==NULL)
     hMapObject = CreateFileMapping( 
 				   INVALID_HANDLE_VALUE,   // use paging file
@@ -158,9 +277,17 @@ char* getStatus(int pid){
 				   0,                      // size: high 32-bits
 				   4096,                   // size: low 32-bits
 				   TEXT(tmp));   // name of map object
-  if (hMapObject == NULL) 
-    return FALSE;
+  if (hMapObject == NULL){
+#ifdef DEBUG
+    fprintf(stderr,"ERROR on line %d\n",__LINE__);
+#endif
+    return "-1";
+  }
   if((GetLastError() != ERROR_ALREADY_EXISTS)){
+#ifdef DEBUG
+    fprintf(stderr,"ERROR on line %d\n",__LINE__);
+    fprintf(stderr,"READING STRING S %s\n",GetLastError());
+#endif
     fIgnore = UnmapViewOfFile(lpvMem); 
     fIgnore = CloseHandle(hMapObject);
     return "-1";
@@ -173,8 +300,13 @@ char* getStatus(int pid){
 			   0,              // high offset:  map from
 			   0,              // low offset:   beginning
 			   0);             // default: map entire file
-  if (lpvMem == NULL) 
+  if (lpvMem == NULL){
+#ifdef DEBUG
+    fprintf(stderr,"READING STRING S %d\n",__LINE__);
+    fprintf(stderr,"READING STRING S %s\n",GetLastError());
+#endif
     return "-1"; 
+  }
   lpszTmp = (LPWSTR) lpvMem;
   while (*lpszTmp){
     lpszBuf[i] = (char)*lpszTmp;
@@ -182,9 +314,6 @@ char* getStatus(int pid){
     lpszBuf[i+1] = '\0'; 
     i++;
   }
-#ifdef DEBUG
-  fprintf(stderr,"READING STRING S %s\n",lpszBuf);
-#endif
   return (char*)lpszBuf;
 }
 
@@ -193,7 +322,118 @@ void unhandleStatus(maps *conf){
   fIgnore = UnmapViewOfFile(lpvMemG); 
   fIgnore = CloseHandle(hMapObjectG);
 }
+
 #else
+
+#define MAX_RETRIES 10
+
+int getKeyValue(maps* conf){
+  map *tmpMap=getMapFromMaps(conf,"lenv","lid");
+  if(tmpMap==NULL)
+    tmpMap=getMapFromMaps(conf,"lenv","sid");
+  int key=-1;
+  if(tmpMap!=NULL)
+    key=atoi(tmpMap->value);
+  return key;
+}
+
+int getShmLockId(maps* conf, int nsems){
+    int i;
+    union semun arg;
+    struct semid_ds buf;
+    struct sembuf sb;
+    semid sem_id;
+    int key=getKeyValue(conf);
+    
+    sem_id = semget(key, nsems, IPC_CREAT | IPC_EXCL | 0666);
+
+    if (sem_id >= 0) { /* we got it first */
+        sb.sem_op = 1; 
+	sb.sem_flg = 0;
+	arg.val=1;
+        for(sb.sem_num = 0; sb.sem_num < nsems; sb.sem_num++) { 
+            /* do a semop() to "free" the semaphores. */
+            /* this sets the sem_otime field, as needed below. */
+            if (semop(sem_id, &sb, 1) == -1) {
+                int e = errno;
+                semctl(sem_id, 0, IPC_RMID); /* clean up */
+                errno = e;
+                return -1; /* error, check errno */
+            }
+        }
+    } else if (errno == EEXIST) { /* someone else got it first */
+        int ready = 0;
+
+        sem_id = semget(key, nsems, 0); /* get the id */
+        if (sem_id < 0) return sem_id; /* error, check errno */
+
+        /* wait for other process to initialize the semaphore: */
+        arg.buf = &buf;
+        for(i = 0; i < MAX_RETRIES && !ready; i++) {
+            semctl(sem_id, nsems-1, IPC_STAT, arg);
+            if (arg.buf->sem_otime != 0) {
+#ifdef DEBUG
+	      fprintf(stderr,"Semaphore acquired ...\n");
+#endif
+	      ready = 1;
+            } else {
+#ifdef DEBUG
+	      fprintf(stderr,"Retry to access the semaphore later ...\n");
+#endif
+	      sleep(1);
+            }
+        }
+	errno = NULL;
+        if (!ready) {
+#ifdef DEBUG
+	  fprintf(stderr,"Unable to access the semaphore ...\n");
+#endif
+	  errno = ETIME;
+	  return -1;
+        }
+    } else {
+        return sem_id; /* error, check errno */
+    }
+#ifdef DEBUG
+    fprintf(stderr,"%d Created !\n",sem_id);
+#endif
+    return sem_id;
+}
+
+int removeShmLock(maps* conf, int nsems){
+  union semun arg;
+  int sem_id=getShmLockId(conf,nsems);
+  if (semctl(sem_id, 0, IPC_RMID, arg) == -1) {
+    perror("semctl");
+    return -1;
+  }
+  return 0;
+}
+
+int lockShm(int id){
+  struct sembuf sb;
+  int i;
+  sb.sem_num = 0;
+  sb.sem_op = -1;  /* set to allocate resource */
+  sb.sem_flg = SEM_UNDO;
+  if (semop(id, &sb, 1) == -1){
+    perror("semop");
+    return -1;
+  }
+  return 0;
+}
+
+int unlockShm(int id){
+  struct sembuf sb;
+  sb.sem_num = 0;
+  sb.sem_op = 1;  /* free resource */
+  sb.sem_flg = SEM_UNDO;
+  if (semop(id, &sb, 1) == -1) {
+    perror("semop");
+    return -1;
+  }
+  return 0;
+}
 
 void unhandleStatus(maps *conf){
   int shmid;
@@ -222,22 +462,28 @@ void unhandleStatus(maps *conf){
 
 int _updateStatus(maps *conf){
   int shmid;
-  key_t key;
   char *shm,*s,*s1;
   map *tmpMap=NULL;
-  tmpMap=getMapFromMaps(conf,"lenv","sid");
-  if(tmpMap!=NULL){
-    key=atoi(tmpMap->value);
+  key_t key=getKeyValue(conf);
+  if(key!=-1){
+    semid lockid=getShmLockId(conf,1);
+    if(lockid<0)
+      return ZOO_LOCK_CREATE_FAILED;
+    if(lockShm(lockid)<0){
+      return ZOO_LOCK_ACQUIRE_FAILED;
+    }
     if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
 #ifdef DEBUG
       fprintf(stderr,"shmget failed to create new Shared memory segment\n");
 #endif
+      unlockShm(lockid);
       return -2;
     }else{
       if ((shm = (char*) shmat(shmid, NULL, 0)) == (char *) -1) {
 #ifdef DEBUG
 	fprintf(stderr,"shmat failed to update value\n");
 #endif
+	unlockShm(lockid);
 	return -1;
       }
       else{
@@ -254,6 +500,7 @@ int _updateStatus(maps *conf){
 	}
 	*s1=NULL;
 	shmdt((void *)shm);
+	unlockShm(lockid);
       }
     }
   }
@@ -1111,16 +1358,15 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 	      char *tmpStr=(char*) malloc((strlen(pToken))*sizeof(char));
 	      if(nci0==0){
 		nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
-		int nci=1;
-		for(nci=1;nci<strlen(pToken);nci++){
-		  tmpStr[nci-1]=pToken[nci];
-		}
-		}else{
+		strncpy( tmpStr, pToken+1, strlen(pToken)-1 );
+		tmpStr[strlen(pToken)-1] = '\0';
+	      }else{
 		nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
-		int nci=0;
-		for(nci=0;nci<strlen(pToken)-1;nci++){
-		  tmpStr[nci]=pToken[nci];
-		}
+		const char* bkt;
+		if ( ( bkt = strchr(pToken, '[') ) != NULL || ( bkt = strchr(pToken, ']') ) != NULL ){
+		    strncpy( tmpStr, pToken, bkt - pToken );
+		    tmpStr[bkt - pToken] = '\0';
+		  }
 	      }
 	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmpStr));
 	      free(tmpStr);
@@ -1178,10 +1424,11 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 	  if(_tmp0==NULL){
 	    xmlAddChild(nc6,nc8);
 	    _tmp0=e->supported;
-	    if(getMap(_tmp0->content,"range")!=NULL ||
-	       getMap(_tmp0->content,"rangeMin")!=NULL ||
-	       getMap(_tmp0->content,"rangeMax")!=NULL ||
-	       getMap(_tmp0->content,"rangeClosure")!=NULL ){
+	    if(_tmp0!=NULL &&
+	       (getMap(_tmp0->content,"range")!=NULL ||
+		getMap(_tmp0->content,"rangeMin")!=NULL ||
+		getMap(_tmp0->content,"rangeMax")!=NULL ||
+		getMap(_tmp0->content,"rangeClosure")!=NULL )){
 	      tmp1=_tmp0->content;
 	      goto doRange;
 	    }
@@ -1649,29 +1896,47 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   nr=soapEnvelope(m,n);
   xmlDocSetRootElement(doc, nr);
 
-  if(hasStoredExecuteResponse==true){
-    /* We need to write the ExecuteResponse Document somewhere */
-    FILE* output=fopen(stored_path,"w");
-    if(output==NULL){
-      /* If the file cannot be created return an ExceptionReport */
-      char tmpMsg[1024];
-      sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the ExecuteResponse."),stored_path);
-      map * errormap = createMap("text",tmpMsg);
-      addToMap(errormap,"code", "InternalError");
-      printExceptionReportResponse(m,errormap);
-      freeMap(&errormap);
-      free(errormap);
-      xmlFreeDoc(doc);
-      xmlCleanupParser();
-      zooXmlCleanupNs();
+  if(hasStoredExecuteResponse==true && status!=SERVICE_STARTED){
+    semid lid=getShmLockId(m,1);
+    if(lid<0)
       return;
+    else{
+#ifdef DEBUG
+      fprintf(stderr,"LOCK %s %d !\n",__FILE__,__LINE__);
+#endif
+      lockShm(lid);
+      /* We need to write the ExecuteResponse Document somewhere */
+      FILE* output=fopen(stored_path,"w");
+      if(output==NULL){
+	/* If the file cannot be created return an ExceptionReport */
+	char tmpMsg[1024];
+	sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the ExecuteResponse."),stored_path);
+	map * errormap = createMap("text",tmpMsg);
+	addToMap(errormap,"code", "InternalError");
+	printExceptionReportResponse(m,errormap);
+	freeMap(&errormap);
+	free(errormap);
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	zooXmlCleanupNs();
+	unlockShm(lid);
+	return;
+      }
+      xmlChar *xmlbuff;
+      int buffersize;
+      xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "UTF-8", 1);
+      fwrite(xmlbuff,1,xmlStrlen(xmlbuff)*sizeof(char),output);
+      xmlFree(xmlbuff);
+      fclose(output);
+#ifdef DEBUG
+      fprintf(stderr,"UNLOCK %s %d !\n",__FILE__,__LINE__);
+#endif
+      unlockShm(lid);
+      map* test1=getMap(request,"status");
+      if(test1==NULL || strcasecmp(test1->value,"true")!=0){
+	removeShmLock(m,1);
+      }
     }
-    xmlChar *xmlbuff;
-    int buffersize;
-    xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "UTF-8", 1);
-    fwrite(xmlbuff,1,xmlStrlen(xmlbuff)*sizeof(char),output);
-    xmlFree(xmlbuff);
-    fclose(output);
   }
   printDocument(m,doc,pid);
 
