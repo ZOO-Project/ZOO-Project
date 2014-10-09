@@ -60,7 +60,6 @@
 #ifndef WIN32
 #include <xlocale.h>
 #endif
-#include <dirent.h>
 #include "ulinet.h"
 
 #include "service.h"

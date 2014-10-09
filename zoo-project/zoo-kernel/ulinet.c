@@ -58,7 +58,7 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
 }
 
 size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
-  if(strncmp("Set-Cookie: ",buffer,12)==0){
+  if(strncmp("Set-Cookie: ",(char*)buffer,12)==0){
     int i;
     char env[256];
     char path[256];
@@ -70,13 +70,13 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
 #else
 	;
 #endif
-    sscanf(buffer,"%s; path=%s; domain=%s",env,path,domain);
-    tmp=strcat(env,CCookie);
+    sscanf((char*)buffer,"%s; path=%s; domain=%s",env,path,domain);
+    tmp=strcat(env,CCookie[0]);
 #ifdef MSG_LAF_OUT
     printf("\n**Cookie env : [%s] , path : [%s], domain : [%s]**\n",env,path,domain);
     printf("buffer : %d (%s) (%s) (%s)\n",(buffer==NULL),buffer,tmp,CCookie);
 #endif
-    strcpy(CCookie,tmp);
+    strcpy(CCookie[0],tmp);
   }
   return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
 };
@@ -159,6 +159,7 @@ bool setProxiesForProtcol(CURL* handle,const char *proto){
 #ifdef MSG_LAF_VERBOSE
   fprintf( stderr, "setProxiesForProtocol (do nothing) ...\n" );
 #endif
+  return true;
 }
 #endif
 
@@ -300,6 +301,7 @@ int processDownloads(HINTERNET* hInternet){
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
   }
+  return 0;
 }
 
 int freeCookieList(HINTERNET hInternet){

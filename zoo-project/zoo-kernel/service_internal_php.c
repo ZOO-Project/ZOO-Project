@@ -24,12 +24,19 @@
 
 #include "service_internal_php.h"
 
+#include <sapi/embed/php_embed.h>
+#include <zend_stream.h>
+
 #ifdef ZTS
 void ***tsrm_ls;
 #endif
 
+zval *php_Array_from_maps(maps* t);
+zval*  php_Array_from_map(map*);
+maps* php_maps_from_Array(HashTable* t);
+map* php_map_from_HasTable(HashTable* t);
+
 int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
-  fprintf(stderr,"STARING PHP SCRIPT\n");
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
@@ -110,7 +117,7 @@ zval *php_Array_from_map(map* t){
   MAKE_STD_ZVAL(mapArray);
   tres=array_init(mapArray);
   while(tmp!=NULL){
-    map* sMap=getMapArray(tmp,"size",i);
+    map* sMap=getMapArray(tmp,"size",0);
     if(strncmp(tmp->name,"value",5)==0 && sMap!=NULL){
       tres=add_assoc_stringl(mapArray,tmp->name,tmp->value,atoi(sMap->value),1);
     }else
@@ -215,9 +222,9 @@ map* php_map_from_HasTable(HashTable* t){
      */ 
     INIT_PZVAL(&tmpcopy); 
     convert_to_string(&tmpcopy);
-    if(strncmp(key,"value")==0){
-      len=Z_STRLEN_P(varcopy);
-      addToMapWithSize(final_res,key,Z_STRVAL_P(tmpcopy),len);
+    if(strncmp(key,"value",5)==0){
+      len=Z_STRLEN_P(&tmpcopy);
+      addToMapWithSize(final_res,key,Z_STRVAL_P(&tmpcopy),len);
     }
     else{
       if(final_res==NULL){
@@ -230,7 +237,7 @@ map* php_map_from_HasTable(HashTable* t){
 #ifdef DEBUG
 	fprintf(stderr,"%s => %s\n",key,Z_STRVAL(tmpcopy));
 #endif
-	addToMap(&final_res,key,Z_STRVAL(tmpcopy));
+	addToMap(final_res,key,Z_STRVAL(tmpcopy));
       }
     }
     /* Toss out old copy */ 
