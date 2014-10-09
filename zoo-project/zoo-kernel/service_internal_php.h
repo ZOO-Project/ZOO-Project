@@ -30,17 +30,11 @@
 #include "service.h"
 #include "service_internal.h"
 #include <stdio.h>
-#include <sapi/embed/php_embed.h>
-#include <zend_stream.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  zval *php_Array_from_maps(maps* t);
-  zval*  php_Array_from_map(map*);
-  maps* php_maps_from_Array(HashTable* t);
-  map* php_map_from_HasTable(HashTable* t);
   int zoo_php_support(maps**,map*,service*,maps**,maps**);
 
 #ifdef __cplusplus

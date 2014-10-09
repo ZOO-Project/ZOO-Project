@@ -327,6 +327,14 @@ void unhandleStatus(maps *conf){
 
 #define MAX_RETRIES 10
 
+#ifndef __APPLE__
+union semun {
+  int val;
+  struct semid_ds *buf;
+  ushort *array;
+};
+#endif
+
 int getKeyValue(maps* conf){
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
