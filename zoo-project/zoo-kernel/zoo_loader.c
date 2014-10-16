@@ -96,17 +96,16 @@ int cgiMain(){
        int r=0;
        while((r=fread(buffer,sizeof(char),1,cgiIn))){
 	 buffer[1]=0;
-	 cgiContentLength+=r;
 	 if(res==NULL){
 	   res=(char*)malloc(2*sizeof(char));
 	   sprintf(res,"%s",buffer);
 	 }
 	 else{
-	   char *tmp=zStrdup(res);
-	   res=(char*)realloc(res,(strlen(tmp)+2)*sizeof(char));
-	   sprintf(res,"%s%s",tmp,buffer);
-	   free(tmp);
+	   res=(char*)realloc(res,(cgiContentLength+2)*sizeof(char));
+	   memcpy(res + cgiContentLength, buffer, sizeof(char));
+	   res[cgiContentLength+1]=0;
 	 }
+	 cgiContentLength+=r;
        }
        delete[] buffer;
        if(res==NULL && (strQuery==NULL || strlen(strQuery)==0)){

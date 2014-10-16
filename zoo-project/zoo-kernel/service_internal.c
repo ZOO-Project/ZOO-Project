@@ -3224,7 +3224,10 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 			   &dwRead);
 	  fcontent[hInternet->ihandle[index].nDataLen]=0;
 	  fsize=hInternet->ihandle[index].nDataLen;
-	  mimeType=strdup((char*)hInternet->ihandle[index].mimeType);
+	  if(hInternet->ihandle[index].mimeType==NULL)
+	    mimeType=strdup("none");
+	  else
+	    mimeType=strdup((char*)hInternet->ihandle[index].mimeType);
 	  
 	  map* tmpMap=getMapOrFill(&content->content,"value","");
 	  free(tmpMap->value);
