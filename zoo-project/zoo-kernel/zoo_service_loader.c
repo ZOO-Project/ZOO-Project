@@ -1980,6 +1980,7 @@ int runRequest(map** inputs)
     bool asRaw=false;
     tmps=tmpsptr->nodesetval;
     if(tmps->nodeNr==0){
+      xmlXPathFreeObject(tmpsptr);
       tmpsptr=extractFromDoc(doc,"/*/*/*[local-name()='RawDataOutput']");
       tmps=tmpsptr->nodesetval;
       asRaw=true;
@@ -2030,6 +2031,7 @@ int runRequest(map** inputs)
 	      xmlNodeListGetString(NULL,cur2->xmlChildrenNode,1);
 	    free(tmpmaps->name);
 	    tmpmaps->name=zStrdup((char*)val);
+	    xmlFree(val);
 	  }
 	  cur2=cur2->next;
 	  while(cur2!=NULL && cur2->type != XML_ELEMENT_NODE)
