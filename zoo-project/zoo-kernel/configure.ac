@@ -189,6 +189,8 @@ fi
 XML2_LDFLAGS=`$XML2CONFIG --libs`
 XML2_CPPFLAGS=`$XML2CONFIG --cflags`
 
+
+
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$XML2_CPPFLAGS"
@@ -202,6 +204,16 @@ AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([could not find libxml2]
 
 AC_SUBST([XML2_CPPFLAGS])
 AC_SUBST([XML2_LDFLAGS])
+
+
+
+GLIB_LDFLAGS=`pkg-config --libs glib-2.0`
+GLIB_CPPFLAGS=`pkg-config --cflags glib-2.0`
+
+AC_SUBST([GLIB_CPPFLAGS])
+AC_SUBST([GLIB_LDFLAGS])
+
+
 
 #============================================================================
 # Detect if mapserver is installed
