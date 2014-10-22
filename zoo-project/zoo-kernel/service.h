@@ -81,7 +81,8 @@ extern "C" {
 #define MAP_SIZE (2*sizeof(char*))+sizeof(NULL)
 #define IOTYPE_SIZE MAP_SIZE+sizeof(NULL)
 #define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
-#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
+#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)+sizeof(char*)+sizeof(char*)
+//#define SERVICE_SIZE sizeof(struct service)
 
 #define SHMSZ     27
 
@@ -332,6 +333,8 @@ extern "C" {
 
   typedef struct service{
     char* name;
+    char* identifier;
+    char * zcfg;
     struct map* content;
     struct map* metadata;
     struct elements* inputs;
@@ -406,7 +409,11 @@ extern "C" {
     service* tmp=*s;
     if(tmp!=NULL){
       if(tmp->name!=NULL)
-	free(tmp->name);
+	        free(tmp->name);
+      if (tmp->identifier!=NULL)
+            free(tmp->identifier);
+      if (tmp->zcfg!=NULL)
+            free(tmp->zcfg);
       freeMap(&tmp->content);
       if(tmp->content!=NULL)
 	free(tmp->content);
@@ -872,6 +879,10 @@ extern "C" {
 
   static void dumpService(service* s){
     fprintf(stderr,"++++++++++++++++++\nSERVICE [%s]\n++++++++++++++++++\n",s->name);
+    if (s->identifier !=NULL)
+        fprintf(stderr,"IDENTIFIER : %s \n",s->identifier);
+    if (s->zcfg !=NULL)
+        fprintf(stderr,"ZCFG PATH : %s \n",s->zcfg);
     if(s->content!=NULL){
       fprintf(stderr,"CONTENT MAP\n");
       dumpMap(s->content);

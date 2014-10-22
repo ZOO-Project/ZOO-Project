@@ -25,7 +25,7 @@
 #ifndef ZOO_SERVICE_INTERNAL_H
 #define ZOO_SERVICE_INTERNAL_H 1
 
-#pragma once 
+#pragma once
 
 #define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
 #define TIME_SIZE 40
@@ -37,7 +37,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "cgic.h"
+//#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -66,7 +66,7 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-extern   int conf_read(const char*,maps*);
+extern int conf_read (const char *, maps *);
 
 #ifdef USE_JS
 #ifdef WIN32
@@ -79,82 +79,87 @@ extern   int conf_read(const char*,maps*);
 
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
-  static char* SERVICE_URL;
+  static char *SERVICE_URL;
   static xmlNsPtr usedNs[10];
-  static char* nsName[10];
+  static char *nsName[10];
   static xmlDocPtr iDocs[10];
-  static int nbNs=0;
-  static int nbDocs=0;
+  static int nbNs = 0;
+  static int nbDocs = 0;
 
-  int getServiceFromYAML(maps*,char*,service**,char *name);
-  int readServiceFile(maps*, char*,service**,char *);
-  int isValidLang(maps*,const char*);
+  int getServiceFromYAML (maps *, char *, service **, char *name);
+  int readServiceFile (maps *, char *, service **, char *);
+  int isValidLang (maps *, const char *);
 
-  void printHeaders(maps*);
-  void unhandleStatus(maps*);
-  int _updateStatus(maps*);
-  char* getStatus(int);
+  void printHeaders (maps *);
+  void unhandleStatus (maps *);
+  int _updateStatus (maps *);
+  char *getStatus (int);
 
 #ifdef USE_JS
-  char* JSValToChar(JSContext*,jsval*);
-  JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
+  char *JSValToChar (JSContext *, jsval *);
+  JSBool JSUpdateStatus (JSContext *, uintN, jsval *);
 #endif
-  
-  void URLDecode(char *);
-  char *url_encode(char *);
-  char *url_decode(char *);
-  char* getEncoding(maps*);
 
-  int zooXmlSearchForNs(const char*);
-  int zooXmlAddNs(xmlNodePtr,const char*,const char*);
-  void zooXmlCleanupNs();
+  void URLDecode (char *);
+  char *url_encode (char *);
+  char *url_decode (char *);
+  char *getEncoding (maps *);
 
-  int zooXmlAddDoc(xmlNodePtr,const char*,const char*);
-  void zooXmlCleanupDocs();
-  
-  void printExceptionReportResponse(maps*,map*);
-  xmlNodePtr createExceptionReportNode(maps*,map*,int);
-  void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
-  xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,const char*,maps*);
-  void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
-  xmlNodePtr printDescribeProcessHeader(xmlDocPtr,const char*,maps*);
-  void printDescribeProcessForProcess(maps*,xmlNodePtr,service*);
-  void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNodePtr);
-  void printDocument(maps*,xmlDocPtr,int);
-  void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*);
-  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
-  map* parseBoundingBox(const char*);
-  void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
-  void printBoundingBoxDocument(maps*,maps*,FILE*);
-  void printOutputDefinitions1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
-  
-  void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
+  int zooXmlSearchForNs (const char *);
+  int zooXmlAddNs (xmlNodePtr, const char *, const char *);
+  void zooXmlCleanupNs ();
 
-  char *base64(const char*,int);
-  char *base64d(const char*,int,int*);
-  void ensureDecodedBase64(maps**);
+  int zooXmlAddDoc (xmlNodePtr, const char *, const char *);
+  void zooXmlCleanupDocs ();
+  void addPrefix (maps * conf, map * level, service * serv);
+  void printExceptionReportResponse (maps *, map *);
+  xmlNodePtr createExceptionReportNode (maps *, map *, int);
+  void printProcessResponse (maps *, map *, int, service *, const char *, int,
+                             maps *, maps *);
+  xmlNodePtr printGetCapabilitiesHeader (xmlDocPtr, const char *, maps *);
+  void printGetCapabilitiesForProcess (maps *, xmlNodePtr, service *);
+  xmlNodePtr printDescribeProcessHeader (xmlDocPtr, const char *, maps *);
+  void printDescribeProcessForProcess (maps *, xmlNodePtr, service *);
+  void printFullDescription (int, elements *, const char *, xmlNsPtr,
+                             xmlNodePtr);
+  void printDocument (maps *, xmlDocPtr, int);
+  void printDescription (xmlNodePtr, xmlNsPtr, const char *, map *);
+  void printIOType (xmlDocPtr, xmlNodePtr, xmlNsPtr, xmlNsPtr, xmlNsPtr,
+                    elements *, maps *, const char *);
+  map *parseBoundingBox (const char *);
+  void printBoundingBox (xmlNsPtr, xmlNodePtr, map *);
+  void printBoundingBoxDocument (maps *, maps *, FILE *);
+  void printOutputDefinitions1 (xmlDocPtr, xmlNodePtr, xmlNsPtr, xmlNsPtr,
+                                elements *, maps *, const char *);
 
-  char* addDefaultValues(maps**,elements*,maps*,int);
+  void outputResponse (service *, maps *, maps *, map *, int, maps *, int);
 
-  int errorException(maps *, const char *, const char *, const char*);
+  char *base64 (const char *, int);
+  char *base64d (const char *, int, int *);
+  void ensureDecodedBase64 (maps **);
 
-  int checkForSoapEnvelope(xmlDocPtr);
+  char *addDefaultValues (maps **, elements *, maps *, int);
 
-  void addToCache(maps*,char*,char*,char*,int);
-  char* isInCache(maps*,char*);
-  int runHttpRequests(maps**,maps**,HINTERNET*);
-  int loadRemoteFile(maps**,map**,HINTERNET*,char*);
+  int errorException (maps *, const char *, const char *, const char *);
 
-  char *readVSIFile(maps*,const char*);
-  void parseIdentifier(maps*,char*,char*,char*);
-  int updateStatus( maps*,const int,const char*);
-  char* getInputValue( maps*,const char*,size_t*);
-  int  setOutputValue( maps*, const char*, char*, size_t);
+  int checkForSoapEnvelope (xmlDocPtr);
+
+  void addToCache (maps *, char *, char *, char *, int);
+  char *isInCache (maps *, char *);
+  int runHttpRequests (maps **, maps **, HINTERNET *);
+  int loadRemoteFile (maps **, map **, HINTERNET *, char *);
+
+  char *readVSIFile (maps *, const char *);
+  void parseIdentifier (maps *, char *, char *, char *);
+  int updateStatus (maps *, const int, const char *);
+  char *getInputValue (maps *, const char *, size_t *);
+  int setOutputValue (maps *, const char *, char *, size_t);
 
 #ifdef __cplusplus
 }
