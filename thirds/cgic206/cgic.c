@@ -122,18 +122,17 @@ static cgiParseResultType cgiParsePostFormInput();
 static cgiParseResultType cgiParsePostMultipartInput();
 static cgiParseResultType cgiParseFormInput(char *data, int length);
 static void cgiSetupConstants();
-static void cgiFreeResources();
+void cgiFreeResources();
 static int cgiStrEqNc(char *s1, char *s2);
 static int cgiStrBeginsNc(char *s1, char *s2);
 
 //int cgiMain_init() {}
 
 
-int main(int argc, char *argv[]) {
+int cgiMain_init(int argc, char *argv[]) {
 	int result;
 	char *cgiContentLengthString;
 	char *e;
-	while (FCGI_Accept() >= 0) {
 	cgiSetupConstants();
 	cgiGetenv(&cgiServerSoftware, "SERVER_SOFTWARE");
 	cgiGetenv(&cgiServerName, "SERVER_NAME");
@@ -309,10 +308,6 @@ int main(int argc, char *argv[]) {
 #endif /* CGICDEBUG */
 		}
 	}
-	result = cgiMain();
-	cgiFreeResources();
-	}
-	FCGI_Finish();
 	return result;
 }
 
@@ -1176,7 +1171,7 @@ static void cgiSetupConstants() {
 	cgiHexValue['f'] = 15;
 }
 
-static void cgiFreeResources() {
+void cgiFreeResources() {
 	cgiFormEntry *c = cgiFormEntryFirst;
 	cgiFormEntry *n;
 	while (c) {

@@ -414,13 +414,8 @@ extern
 #endif
 int cgiMain();
 extern 
-#ifdef __cplusplus
-"C" 
-#endif
-int cgiMain_init();
 
 
-extern 
 #ifdef __cplusplus
 "C" 
 #endif
@@ -452,6 +447,10 @@ cgiFormResultType cgiValueEscape(char *s);
 	bytes in 'data'. Returns cgiFormIO in the event
 	of error, cgiFormSuccess otherwise. */
 cgiFormResultType cgiValueEscapeData(char *data, int len);
+
+int cgiMain_init(int argc, char *argv[]);
+
+void cgiFreeResources();
 
 #endif /* CGI_C */
 
