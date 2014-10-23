@@ -38,42 +38,30 @@ extern "C"
 #include <libxml/xpathInternals.h>
 #include "service_zcfg.h"
 }
-
 #include "ulinet.h"
-
 #include <libintl.h>
 #include <locale.h>
 #include <string.h>
-
 #include "service.h"
-
-
 #include "service_internal.h"
-
 #ifdef USE_PYTHON
 #include "service_internal_python.h"
 #endif
-
 #ifdef USE_JAVA
 #include "service_internal_java.h"
 #endif
-
 #ifdef USE_PHP
 #include "service_internal_php.h"
 #endif
-
 #ifdef USE_JS
 #include "service_internal_js.h"
 #endif
-
 #ifdef USE_RUBY
 #include "service_internal_ruby.h"
 #endif
-
 #ifdef USE_PERL
 #include "service_internal_perl.h"
 #endif
-
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
@@ -91,7 +79,6 @@ extern "C"
 #include <fcntl.h>
 #include <time.h>
 #include <stdarg.h>
-
 #ifdef WIN32
 extern "C"
 {
@@ -114,10 +101,8 @@ extern "C"
 #endif
 }
 #endif
-
 #define _(String) dgettext ("zoo-kernel",String)
 #define __(String) dgettext ("zoo-service",String)
-
 extern int getServiceFromFile (maps *, const char *, service **);
 
 int
@@ -227,7 +212,8 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
 
 int
 recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
-                int saved_stdout, int level, void (func) (maps *, xmlNodePtr,
+                int saved_stdout, int level, void (func) (maps *,
+                                                          xmlNodePtr,
                                                           service *))
 {
   struct dirent *dp;
@@ -249,13 +235,14 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
   sprintf (levels, "%d", level);
   setMapInMaps (m, "lenv", "level", levels);
   while ((dp = readdir (dirp)) != NULL)
-    if ((dp->d_type == DT_DIR || dp->d_type == DT_LNK) && dp->d_name[0] != '.'
-        && strstr (dp->d_name, ".") == NULL)
+    if ((dp->d_type == DT_DIR || dp->d_type == DT_LNK)
+        && dp->d_name[0] != '.' && strstr (dp->d_name, ".") == NULL)
       {
 
         char *tmp =
-          (char *) malloc ((strlen (conf_dir) + strlen (dp->d_name) + 2) *
-                           sizeof (char));
+          (char *)
+          malloc ((strlen (conf_dir) + strlen (dp->d_name) +
+                   2) * sizeof (char));
         sprintf (tmp, "%s/%s", conf_dir, dp->d_name);
 
         if (prefix != NULL)
@@ -265,7 +252,7 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
         prefix = (char *) malloc ((strlen (dp->d_name) + 2) * sizeof (char));
         sprintf (prefix, "%s.", dp->d_name);
 
-        //map* tmpMap=getMapFromMaps(m,"lenv",tmp1);
+        // map* tmpMap=getMapFromMaps(m,"lenv",tmp1);
 
         int res;
         if (prefix != NULL)
@@ -275,8 +262,8 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
             sprintf (levels1, "%d", level + 1);
             setMapInMaps (m, "lenv", "level", levels1);
             res =
-              recursReaddirF (m, n, tmp, prefix, saved_stdout, level + 1,
-                              func);
+              recursReaddirF (m, n, tmp, prefix, saved_stdout,
+                              level + 1, func);
             sprintf (levels1, "%d", level);
             setMapInMaps (m, "lenv", "level", levels1);
             free (prefix);
@@ -307,8 +294,8 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
                 return -1;
               }
 #ifdef DEBUG
-            fprintf (stderr, "#################\n%s\n#################\n",
-                     tmps1);
+            fprintf (stderr,
+                     "#################\n%s\n#################\n", tmps1);
 #endif
             t = readServiceFile (m, tmps1, &s1, dp->d_name);
 
@@ -317,10 +304,14 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
                 map *tmp00 = getMapFromMaps (m, "lenv", "message");
                 char tmp01[1024];
                 if (tmp00 != NULL)
-                  sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+                  sprintf (tmp01,
+                           _
+                           ("Unable to parse the ZCFG file: %s (%s)"),
                            dp->d_name, tmp00->value);
                 else
-                  sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+                  sprintf (tmp01,
+                           _
+                           ("Unable to parse the ZCFG file: %s."),
                            dp->d_name);
                 dup2 (saved_stdout, fileno (stdout));
                 errorException (m, tmp01, "InternalError", NULL);
@@ -510,8 +501,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               mapsToCharXXX (request_input_real_format, (char ***) inputs);
               mapsToCharXXX (request_output_real_format, (char ***) outputs);
               *eres =
-                execute ((char ***) &main_conf[0], (char ***) &inputs[0],
-                         (char ***) &outputs[0]);
+                execute ((char ***) &main_conf[0],
+                         (char ***) &inputs[0], (char ***) &outputs[0]);
 #ifdef DEBUG
               fprintf (stderr, "Function run successfully \n");
 #endif
@@ -523,7 +514,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #ifdef DEBUG
 #ifdef WIN32
               errstr = GetLastError ();
-              fprintf (stderr, "Function %s failed to load because of %d\n",
+              fprintf (stderr,
+                       "Function %s failed to load because of %d\n",
                        r_inputs->value, errstr);
 #endif
 #endif
@@ -555,13 +547,12 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                   errorException (m, tmpMsg, "InternalError", NULL);
                   free (tmpMsg);
 #ifdef DEBUG
-                  fprintf (stderr, "Function %s error %s\n", r_inputs->value,
-                           errstr);
+                  fprintf (stderr, "Function %s error %s\n",
+                           r_inputs->value, errstr);
 #endif
                   *eres = -1;
                   return;
                 }
-
 #ifdef DEBUG
 #ifdef WIN32
               errstr = GetLastError ();
@@ -625,7 +616,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   if (strncasecmp (r_inputs->value, "JAVA", 4) == 0)
     {
       *eres =
-        zoo_java_support (&m, request_inputs, s1, &request_input_real_format,
+        zoo_java_support (&m, request_inputs, s1,
+                          &request_input_real_format,
                           &request_output_real_format);
     }
   else
@@ -635,7 +627,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   if (strncasecmp (r_inputs->value, "PHP", 3) == 0)
     {
       *eres =
-        zoo_php_support (&m, request_inputs, s1, &request_input_real_format,
+        zoo_php_support (&m, request_inputs, s1,
+                         &request_input_real_format,
                          &request_output_real_format);
     }
   else
@@ -646,7 +639,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   if (strncasecmp (r_inputs->value, "PERL", 4) == 0)
     {
       *eres =
-        zoo_perl_support (&m, request_inputs, s1, &request_input_real_format,
+        zoo_perl_support (&m, request_inputs, s1,
+                          &request_input_real_format,
                           &request_output_real_format);
     }
   else
@@ -656,7 +650,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   if (strncasecmp (r_inputs->value, "JS", 2) == 0)
     {
       *eres =
-        zoo_js_support (&m, request_inputs, s1, &request_input_real_format,
+        zoo_js_support (&m, request_inputs, s1,
+                        &request_input_real_format,
                         &request_output_real_format);
     }
   else
@@ -666,7 +661,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   if (strncasecmp (r_inputs->value, "Ruby", 4) == 0)
     {
       *eres =
-        zoo_ruby_support (&m, request_inputs, s1, &request_input_real_format,
+        zoo_ruby_support (&m, request_inputs, s1,
+                          &request_input_real_format,
                           &request_output_real_format);
     }
   else
@@ -774,7 +770,8 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
                       NULL,     // Process handle not inheritable
                       NULL,     // Thread handle not inheritable
                       FALSE,    // Set handle inheritance to FALSE
-                      CREATE_NO_WINDOW, // Apache won't wait until the end
+                      CREATE_NO_WINDOW, // Apache won't wait until 
+                      // the end
                       NULL,     // Use parent's environment block
                       NULL,     // Use parent's starting directory 
                       &si,      // Pointer to STARTUPINFO struct
@@ -946,8 +943,8 @@ runRequest (map ** inputs)
         }
       else
         {
-          sprintf (tmpUrl, "http://%s:%s%s", cgiServerName, cgiServerPort,
-                   cgiScriptName);
+          sprintf (tmpUrl, "http://%s:%s%s", cgiServerName,
+                   cgiServerPort, cgiScriptName);
         }
 #ifdef DEBUG
       fprintf (stderr, "*** %s ***\n", tmpUrl);
@@ -1138,7 +1135,8 @@ runRequest (map ** inputs)
       if (r_inputs == NULL
           || strlen (r_inputs->name) == 0 || strlen (r_inputs->value) == 0)
         {
-          errorException (m, _("Mandatory <identifier> was not specified"),
+          errorException (m,
+                          _("Mandatory <identifier> was not specified"),
                           "MissingParameterValue", "identifier");
           freeMaps (&m);
           free (m);
@@ -1151,7 +1149,8 @@ runRequest (map ** inputs)
       DIR *dirp = opendir (conf_dir);
       if (dirp == NULL)
         {
-          errorException (m, _("The specified path path doesn't exist."),
+          errorException (m,
+                          _("The specified path path doesn't exist."),
                           "InvalidParameterValue", conf_dir);
           freeMaps (&m);
           free (m);
@@ -1338,7 +1337,8 @@ runRequest (map ** inputs)
           char **outputs_as_text = (char **) malloc (128 * sizeof (char *));
           if (outputs_as_text == NULL)
             {
-              return errorException (m, _("Unable to allocate memory"),
+              return errorException (m,
+                                     _("Unable to allocate memory"),
                                      "InternalError", NULL);
             }
           i = 0;
@@ -1353,7 +1353,9 @@ runRequest (map ** inputs)
                 (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
               if (outputs_as_text[i] == NULL)
                 {
-                  return errorException (m, _("Unable to allocate memory"),
+                  return errorException (m,
+                                         _
+                                         ("Unable to allocate memory"),
                                          "InternalError", NULL);
                 }
               snprintf (outputs_as_text[i], strlen (pToken) + 1, "%s",
@@ -1397,8 +1399,8 @@ runRequest (map ** inputs)
                                 strlen (tmpv)) * sizeof (char));
                       tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
 #ifdef DEBUG
-                      fprintf (stderr, "OUTPUT DEF [%s]=[%s]\n", tmpn,
-                               tmpv + 1);
+                      fprintf (stderr, "OUTPUT DEF [%s]=[%s]\n",
+                               tmpn, tmpv + 1);
 #endif
                       if (tmp_output->content == NULL)
                         {
@@ -1443,7 +1445,8 @@ runRequest (map ** inputs)
         snprintf (cursor_input, 40960, "%s", r_inputs->value);
       else
         {
-          errorException (m, _("Parameter <DataInputs> was not specified"),
+          errorException (m,
+                          _("Parameter <DataInputs> was not specified"),
                           "MissingParameterValue", "DataInputs");
           freeMaps (&m);
           free (m);
@@ -1465,8 +1468,8 @@ runRequest (map ** inputs)
       if (pToken != NULL && strncasecmp (pToken, tmp1, strlen (tmp1)) == 0)
         {
           char *tmp2 = url_decode (tmp1);
-          snprintf (cursor_input, (strlen (tmp2) + 1) * sizeof (char), "%s",
-                    tmp2);
+          snprintf (cursor_input, (strlen (tmp2) + 1) * sizeof (char),
+                    "%s", tmp2);
           free (tmp2);
           pToken = strtok (cursor_input, ";");
         }
@@ -1493,7 +1496,8 @@ runRequest (map ** inputs)
           snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
           if (inputs_as_text[i] == NULL)
             {
-              return errorException (m, _("Unable to allocate memory."),
+              return errorException (m,
+                                     _("Unable to allocate memory."),
                                      "InternalError", NULL);
             }
           pToken = strtok (NULL, ";");
@@ -1534,7 +1538,8 @@ runRequest (map ** inputs)
                   if (tmpmaps == NULL)
                     {
                       return errorException (m,
-                                             _("Unable to allocate memory."),
+                                             _
+                                             ("Unable to allocate memory."),
                                              "InternalError", NULL);
                     }
                   tmpmaps->name = zStrdup (tmpn);
@@ -1552,12 +1557,13 @@ runRequest (map ** inputs)
               while (tmpc != NULL)
                 {
 #ifdef DEBUG
-                  fprintf (stderr, "*** KVP NON URL-ENCODED \n***%s***\n",
-                           tmpc);
+                  fprintf (stderr,
+                           "*** KVP NON URL-ENCODED \n***%s***\n", tmpc);
 #endif
                   char *tmpv1 = strstr (tmpc, "=");
 #ifdef DEBUG
-                  fprintf (stderr, "*** VALUE NON URL-ENCODED \n***%s***\n",
+                  fprintf (stderr,
+                           "*** VALUE NON URL-ENCODED \n***%s***\n",
                            tmpv1 + 1);
 #endif
                   char tmpn1[1024];
@@ -1574,8 +1580,9 @@ runRequest (map ** inputs)
                       tmpn1[strlen (tmpc)] = 0;
                       map *lmap = getLastMap (tmpmaps->content);
                       char *tmpValue =
-                        (char *) malloc ((strlen (tmpv) + strlen (tmpc) + 1) *
-                                         sizeof (char));
+                        (char *)
+                        malloc ((strlen (tmpv) + strlen (tmpc) +
+                                 1) * sizeof (char));
                       sprintf (tmpValue, "%s@%s", tmpv + 1, tmpc);
                       free (lmap->value);
                       lmap->value = zStrdup (tmpValue);
@@ -1584,9 +1591,10 @@ runRequest (map ** inputs)
                       continue;
                     }
 #ifdef DEBUG
-                  fprintf (stderr, "*** NAME NON URL-ENCODED \n***%s***\n",
-                           tmpn1);
-                  fprintf (stderr, "*** VALUE NON URL-ENCODED \n***%s***\n",
+                  fprintf (stderr,
+                           "*** NAME NON URL-ENCODED \n***%s***\n", tmpn1);
+                  fprintf (stderr,
+                           "*** VALUE NON URL-ENCODED \n***%s***\n",
                            tmpv1 + 1);
 #endif
                   if (strcmp (tmpn1, "xlink:href") != 0)
@@ -1594,9 +1602,9 @@ runRequest (map ** inputs)
                   else if (tmpv1 != NULL)
                     {
                       char *tmpx2 = url_decode (tmpv1 + 1);
-                      if (strncasecmp (tmpx2, "http://", 7) != 0 &&
-                          strncasecmp (tmpx2, "ftp://", 6) != 0 &&
-                          strncasecmp (tmpx2, "https://", 8) != 0)
+                      if (strncasecmp (tmpx2, "http://", 7) != 0
+                          && strncasecmp (tmpx2, "ftp://", 6) != 0
+                          && strncasecmp (tmpx2, "https://", 8) != 0)
                         {
                           char emsg[1024];
                           sprintf (emsg,
@@ -1649,8 +1657,8 @@ runRequest (map ** inputs)
                 request_input_real_format = dupMaps (&tmpmaps);
               else
                 {
-                  maps *testPresence =
-                    getMaps (request_input_real_format, tmpmaps->name);
+                  maps *testPresence = getMaps (request_input_real_format,
+                                                tmpmaps->name);
                   if (testPresence != NULL)
                     {
                       elements *elem =
@@ -1658,8 +1666,8 @@ runRequest (map ** inputs)
                       if (elem != NULL)
                         {
                           if (appendMapsToMaps
-                              (m, request_input_real_format, tmpmaps,
-                               elem) < 0)
+                              (m, request_input_real_format,
+                               tmpmaps, elem) < 0)
                             {
                               freeMaps (&m);
                               free (m);
@@ -1734,8 +1742,9 @@ runRequest (map ** inputs)
                       (cur2->name, BAD_CAST "Identifier",
                        xmlStrlen (cur2->name)) == 0)
                     {
-                      xmlChar *val =
-                        xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
+                      xmlChar *val = xmlNodeListGetString (doc,
+                                                           cur2->xmlChildrenNode,
+                                                           1);
                       if (tmpmaps == NULL)
                         {
                           tmpmaps = (maps *) malloc (MAPS_SIZE);
@@ -1758,11 +1767,13 @@ runRequest (map ** inputs)
                   if (xmlStrncasecmp
                       (cur2->name, BAD_CAST "Title",
                        xmlStrlen (cur2->name)) == 0
-                      || xmlStrncasecmp (cur2->name, BAD_CAST "Abstract",
+                      || xmlStrncasecmp (cur2->name,
+                                         BAD_CAST "Abstract",
                                          xmlStrlen (cur2->name)) == 0)
                     {
-                      xmlChar *val =
-                        xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
+                      xmlChar *val = xmlNodeListGetString (doc,
+                                                           cur2->xmlChildrenNode,
+                                                           1);
                       if (tmpmaps == NULL)
                         {
                           tmpmaps = (maps *) malloc (MAPS_SIZE);
@@ -1806,7 +1817,8 @@ runRequest (map ** inputs)
                       fprintf (stderr, "REFERENCE\n");
 #endif
                       const char *refs[5] =
-                        { "mimeType", "encoding", "schema", "method",
+                        { "mimeType", "encoding", "schema",
+                        "method",
                         "href"
                       };
                       for (int l = 0; l < 5; l++)
@@ -1814,27 +1826,31 @@ runRequest (map ** inputs)
 #ifdef DEBUG
                           fprintf (stderr, "*** %s ***", refs[l]);
 #endif
-                          xmlChar *val = xmlGetProp (cur2, BAD_CAST refs[l]);
+                          xmlChar *val = xmlGetProp (cur2,
+                                                     BAD_CAST refs[l]);
                           if (val != NULL && xmlStrlen (val) > 0)
                             {
                               if (tmpmaps->content != NULL)
-                                addToMap (tmpmaps->content, refs[l],
-                                          (char *) val);
+                                addToMap (tmpmaps->content,
+                                          refs[l], (char *) val);
                               else
                                 tmpmaps->content =
                                   createMap (refs[l], (char *) val);
-                              map *ltmp = getMap (tmpmaps->content, "method");
+                              map *ltmp = getMap (tmpmaps->content,
+                                                  "method");
                               if (l == 4)
                                 {
                                   if (!
                                       (ltmp != NULL
-                                       && strncmp (ltmp->value, "POST",
+                                       && strncmp (ltmp->value,
+                                                   "POST",
                                                    4) == 0)
                                       && CHECK_INET_HANDLE (hInternet))
                                     {
                                       if (loadRemoteFile
-                                          (&m, &tmpmaps->content, &hInternet,
-                                           (char *) val) != 0)
+                                          (&m,
+                                           &tmpmaps->content,
+                                           &hInternet, (char *) val) != 0)
                                         {
                                           freeMaps (&m);
                                           free (m);
@@ -1858,15 +1874,13 @@ runRequest (map ** inputs)
                                "Parse Header and Body from Reference \n");
 #endif
                       xmlNodePtr cur3 = cur2->children;
-                      /*      HINTERNET hInternetP;
-                         hInternetP=InternetOpen(
-                         #ifndef WIN32
-                         (LPCTSTR)
-                         #endif
-                         "ZooWPSClient\0",
-                         INTERNET_OPEN_TYPE_PRECONFIG,
-                         NULL,NULL, 0); */
-                      //hInternet.ihandle[hInternet.nb].header=NULL;
+                      /*
+                       * HINTERNET hInternetP; hInternetP=InternetOpen(
+                       * #ifndef WIN32 (LPCTSTR) #endif
+                       * "ZooWPSClient\0", INTERNET_OPEN_TYPE_PRECONFIG,
+                       * NULL,NULL, 0); 
+                       */
+                      // hInternet.ihandle[hInternet.nb].header=NULL;
                       while (cur3 != NULL)
                         {
                           while (cur3 != NULL
@@ -1874,8 +1888,8 @@ runRequest (map ** inputs)
                             cur3 = cur3->next;
                           if (cur3 == NULL)
                             break;
-                          if (xmlStrcasecmp (cur3->name, BAD_CAST "Header") ==
-                              0)
+                          if (xmlStrcasecmp
+                              (cur3->name, BAD_CAST "Header") == 0)
                             {
                               const char *ha[2];
                               ha[0] = "key";
@@ -1885,11 +1899,13 @@ runRequest (map ** inputs)
                               char *key;
                               for (hai = 0; hai < 2; hai++)
                                 {
-                                  xmlChar *val =
-                                    xmlGetProp (cur3, BAD_CAST ha[hai]);
+                                  xmlChar *val = xmlGetProp (cur3,
+                                                             BAD_CAST
+                                                             ha[hai]);
 #ifdef POST_DEBUG
-                                  fprintf (stderr, "%s = %s\n", ha[hai],
-                                           (char *) val);
+                                  fprintf (stderr,
+                                           "%s = %s\n",
+                                           ha[hai], (char *) val);
 #endif
                                   if (hai == 0)
                                     {
@@ -1897,23 +1913,28 @@ runRequest (map ** inputs)
                                     }
                                   else
                                     {
-                                      has =
-                                        (char *)
-                                        malloc ((4 + xmlStrlen (val) +
-                                                 strlen (key)) *
-                                                sizeof (char));
+                                      has = (char *)
+                                        malloc ((4 +
+                                                 xmlStrlen
+                                                 (val) +
+                                                 strlen
+                                                 (key)) * sizeof (char));
                                       if (has == NULL)
                                         {
-                                          return errorException (m,
-                                                                 _
-                                                                 ("Unable to allocate memory."),
-                                                                 "InternalError",
-                                                                 NULL);
+                                          return
+                                            errorException
+                                            (m,
+                                             _
+                                             ("Unable to allocate memory."),
+                                             "InternalError", NULL);
                                         }
                                       snprintf (has,
-                                                (3 + xmlStrlen (val) +
-                                                 strlen (key)), "%s: %s", key,
-                                                (char *) val);
+                                                (3 +
+                                                 xmlStrlen
+                                                 (val) +
+                                                 strlen
+                                                 (key)),
+                                                "%s: %s", key, (char *) val);
                                       free (key);
 #ifdef POST_DEBUG
                                       fprintf (stderr, "%s\n", has);
@@ -1922,9 +1943,8 @@ runRequest (map ** inputs)
                                   xmlFree (val);
                                 }
                               hInternet.ihandle[hInternet.nb].header =
-                                curl_slist_append (hInternet.ihandle
-                                                   [hInternet.nb].header,
-                                                   has);
+                                curl_slist_append
+                                (hInternet.ihandle[hInternet.nb].header, has);
                               if (has != NULL)
                                 free (has);
                             }
@@ -1934,16 +1954,18 @@ runRequest (map ** inputs)
                               fprintf (stderr,
                                        "Try to fetch the body part of the request ...\n");
 #endif
-                              if (xmlStrcasecmp (cur3->name, BAD_CAST "Body")
-                                  == 0)
+                              if (xmlStrcasecmp
+                                  (cur3->name, BAD_CAST "Body") == 0)
                                 {
 #ifdef POST_DEBUG
-                                  fprintf (stderr, "Body part found !!!\n",
+                                  fprintf (stderr,
+                                           "Body part found !!!\n",
                                            (char *) cur3->content);
 #endif
                                   char *tmp =
-                                    (char *) malloc (cgiContentLength +
-                                                     1 * sizeof (char));
+                                    (char *)
+                                    malloc
+                                    (cgiContentLength + 1 * sizeof (char));
                                   memset (tmp, 0, cgiContentLength);
                                   xmlNodePtr cur4 = cur3->children;
                                   while (cur4 != NULL)
@@ -1969,40 +1991,37 @@ runRequest (map ** inputs)
                                       cur4 = cur4->next;
                                       xmlFreeDoc (bdoc);
                                     }
-                                  map *btmp =
-                                    getMap (tmpmaps->content, "href");
+                                  map *btmp = getMap (tmpmaps->content,
+                                                      "href");
                                   if (btmp != NULL)
                                     {
 #ifdef POST_DEBUG
-                                      fprintf (stderr, "%s %s\n", btmp->value,
-                                               tmp);
-                                      curl_easy_setopt (hInternet.handle,
-                                                        CURLOPT_VERBOSE, 1);
+                                      fprintf (stderr,
+                                               "%s %s\n", btmp->value, tmp);
+                                      curl_easy_setopt
+                                        (hInternet.handle,
+                                         CURLOPT_VERBOSE, 1);
 #endif
-                                      hInternet.waitingRequests[hInternet.
-                                                                nb] =
-                                        strdup (tmp);
-                                      InternetOpenUrl (&hInternet,
-                                                       btmp->value,
-                                                       hInternet.
-                                                       waitingRequests
-                                                       [hInternet.nb],
-                                                       strlen (hInternet.
-                                                               waitingRequests
-                                                               [hInternet.
-                                                                nb]),
-                                                       INTERNET_FLAG_NO_CACHE_WRITE,
-                                                       0);
+                                      hInternet.waitingRequests
+                                        [hInternet.nb] = strdup (tmp);
+                                      InternetOpenUrl
+                                        (&hInternet,
+                                         btmp->value,
+                                         hInternet.waitingRequests
+                                         [hInternet.nb],
+                                         strlen
+                                         (hInternet.waitingRequests
+                                          [hInternet.nb]),
+                                         INTERNET_FLAG_NO_CACHE_WRITE, 0);
                                     }
                                   free (tmp);
                                 }
-                              else
-                                if (xmlStrcasecmp
-                                    (cur3->name,
-                                     BAD_CAST "BodyReference") == 0)
+                              else if (xmlStrcasecmp
+                                       (cur3->name,
+                                        BAD_CAST "BodyReference") == 0)
                                 {
-                                  xmlChar *val =
-                                    xmlGetProp (cur3, BAD_CAST "href");
+                                  xmlChar *val = xmlGetProp (cur3,
+                                                             BAD_CAST "href");
                                   HINTERNET bInternet, res1;
                                   bInternet = InternetOpen (
 #ifndef WIN32
@@ -2015,60 +2034,59 @@ runRequest (map ** inputs)
                                     fprintf (stderr,
                                              "WARNING : hInternet handle failed to initialize");
 #ifdef POST_DEBUG
-                                  curl_easy_setopt (bInternet.handle,
-                                                    CURLOPT_VERBOSE, 1);
+                                  curl_easy_setopt
+                                    (bInternet.handle, CURLOPT_VERBOSE, 1);
 #endif
                                   bInternet.waitingRequests[0] =
                                     strdup ((char *) val);
                                   res1 =
-                                    InternetOpenUrl (&bInternet,
-                                                     bInternet.waitingRequests
-                                                     [0], NULL, 0,
-                                                     INTERNET_FLAG_NO_CACHE_WRITE,
-                                                     0);
+                                    InternetOpenUrl
+                                    (&bInternet,
+                                     bInternet.waitingRequests
+                                     [0], NULL, 0,
+                                     INTERNET_FLAG_NO_CACHE_WRITE, 0);
                                   processDownloads (&bInternet);
                                   char *tmp =
                                     (char *)
-                                    malloc ((bInternet.ihandle[0].nDataLen +
-                                             1) * sizeof (char));
+                                    malloc ((bInternet.ihandle
+                                             [0].nDataLen
+                                             + 1) * sizeof (char));
                                   if (tmp == NULL)
                                     {
-                                      return errorException (m,
-                                                             _
-                                                             ("Unable to allocate memory."),
-                                                             "InternalError",
-                                                             NULL);
+                                      return
+                                        errorException
+                                        (m,
+                                         _
+                                         ("Unable to allocate memory."),
+                                         "InternalError", NULL);
                                     }
                                   size_t bRead;
-                                  InternetReadFile (bInternet.ihandle[0],
-                                                    (LPVOID) tmp,
-                                                    bInternet.ihandle[0].
-                                                    nDataLen, &bRead);
+                                  InternetReadFile
+                                    (bInternet.ihandle[0],
+                                     (LPVOID) tmp,
+                                     bInternet.ihandle[0].nDataLen, &bRead);
                                   tmp[bInternet.ihandle[0].nDataLen] = 0;
                                   InternetCloseHandle (&bInternet);
-                                  map *btmp =
-                                    getMap (tmpmaps->content, "href");
+                                  map *btmp = getMap (tmpmaps->content,
+                                                      "href");
                                   if (btmp != NULL)
                                     {
 #ifdef POST_DEBUG
-                                      fprintf (stderr, "%s %s\n", btmp->value,
-                                               tmp);
+                                      fprintf (stderr,
+                                               "%s %s\n", btmp->value, tmp);
 #endif
-                                      hInternet.waitingRequests[hInternet.
-                                                                nb] =
-                                        strdup (tmp);
+                                      hInternet.waitingRequests
+                                        [hInternet.nb] = strdup (tmp);
                                       res =
-                                        InternetOpenUrl (&hInternet,
-                                                         btmp->value,
-                                                         hInternet.
-                                                         waitingRequests
-                                                         [hInternet.nb],
-                                                         strlen (hInternet.
-                                                                 waitingRequests
-                                                                 [hInternet.
-                                                                  nb]),
-                                                         INTERNET_FLAG_NO_CACHE_WRITE,
-                                                         0);
+                                        InternetOpenUrl
+                                        (&hInternet,
+                                         btmp->value,
+                                         hInternet.waitingRequests
+                                         [hInternet.nb],
+                                         strlen
+                                         (hInternet.waitingRequests
+                                          [hInternet.nb]),
+                                         INTERNET_FLAG_NO_CACHE_WRITE, 0);
                                     }
                                   free (tmp);
                                 }
@@ -2081,7 +2099,8 @@ runRequest (map ** inputs)
 #endif
 #ifdef DEBUG
                       dumpMap (tmpmaps->content);
-                      fprintf (stderr, "= element 2 node \"%s\" = (%s)\n",
+                      fprintf (stderr,
+                               "= element 2 node \"%s\" = (%s)\n",
                                cur2->name, cur2->content);
 #endif
                     }
@@ -2111,17 +2130,19 @@ runRequest (map ** inputs)
                               for (int l = 0; l < 2; l++)
                                 {
 #ifdef DEBUG
-                                  fprintf (stderr, "*** LiteralData %s ***",
-                                           list[l]);
+                                  fprintf (stderr,
+                                           "*** LiteralData %s ***", list[l]);
 #endif
-                                  xmlChar *val =
-                                    xmlGetProp (cur4, BAD_CAST list[l]);
+                                  xmlChar *val = xmlGetProp (cur4,
+                                                             BAD_CAST
+                                                             list[l]);
                                   if (val != NULL
                                       && strlen ((char *) val) > 0)
                                     {
                                       if (tmpmaps->content != NULL)
-                                        addToMap (tmpmaps->content, list[l],
-                                                  (char *) val);
+                                        addToMap
+                                          (tmpmaps->content,
+                                           list[l], (char *) val);
                                       else
                                         tmpmaps->content =
                                           createMap (list[l], (char *) val);
@@ -2133,30 +2154,33 @@ runRequest (map ** inputs)
                                   free (list[l]);
                                 }
                             }
-                          else
-                            if (xmlStrcasecmp
-                                (cur4->name, BAD_CAST "ComplexData") == 0)
+                          else if (xmlStrcasecmp
+                                   (cur4->name, BAD_CAST "ComplexData") == 0)
                             {
                 /**
 		 * Get every attribute from a Reference node
 		 * mimeType, encoding, schema
 		 */
-                              const char *coms[3] =
-                                { "mimeType", "encoding", "schema" };
+                              const char *coms[3] = { "mimeType", "encoding",
+                                "schema"
+                              };
                               for (int l = 0; l < 3; l++)
                                 {
 #ifdef DEBUG
-                                  fprintf (stderr, "*** ComplexData %s ***\n",
+                                  fprintf (stderr,
+                                           "*** ComplexData %s ***\n",
                                            coms[l]);
 #endif
-                                  xmlChar *val =
-                                    xmlGetProp (cur4, BAD_CAST coms[l]);
+                                  xmlChar *val = xmlGetProp (cur4,
+                                                             BAD_CAST
+                                                             coms[l]);
                                   if (val != NULL
                                       && strlen ((char *) val) > 0)
                                     {
                                       if (tmpmaps->content != NULL)
-                                        addToMap (tmpmaps->content, coms[l],
-                                                  (char *) val);
+                                        addToMap
+                                          (tmpmaps->content,
+                                           coms[l], (char *) val);
                                       else
                                         tmpmaps->content =
                                           createMap (coms[l], (char *) val);
@@ -2168,12 +2192,13 @@ runRequest (map ** inputs)
                                 }
                             }
 
-                          map *test = getMap (tmpmaps->content, "encoding");
+                          map *test = getMap (tmpmaps->content,
+                                              "encoding");
                           if (test == NULL)
                             {
                               if (tmpmaps->content != NULL)
-                                addToMap (tmpmaps->content, "encoding",
-                                          "utf-8");
+                                addToMap (tmpmaps->content,
+                                          "encoding", "utf-8");
                               else
                                 tmpmaps->content =
                                   createMap ("encoding", "utf-8");
@@ -2183,23 +2208,27 @@ runRequest (map ** inputs)
                           if (strcasecmp (test->value, "base64") != 0)
                             {
                               xmlChar *mv = xmlNodeListGetString (doc,
-                                                                  cur4->xmlChildrenNode,
+                                                                  cur4->
+                                                                  xmlChildrenNode,
                                                                   1);
-                              map *ltmp =
-                                getMap (tmpmaps->content, "mimeType");
+                              map *ltmp = getMap (tmpmaps->content,
+                                                  "mimeType");
                               if (mv == NULL
                                   ||
                                   (xmlStrcasecmp
-                                   (cur4->name, BAD_CAST "ComplexData") == 0
-                                   && (ltmp == NULL
-                                       || strncasecmp (ltmp->value,
-                                                       "text/xml", 8) == 0)))
+                                   (cur4->name,
+                                    BAD_CAST "ComplexData") ==
+                                   0 && (ltmp == NULL
+                                         ||
+                                         strncasecmp (ltmp->value,
+                                                      "text/xml", 8) == 0)))
                                 {
                                   xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
                                   int buffersize;
                                   xmlNodePtr cur5 = cur4->children;
                                   while (cur5 != NULL
-                                         && cur5->type != XML_ELEMENT_NODE
+                                         && cur5->type !=
+                                         XML_ELEMENT_NODE
                                          && cur5->type !=
                                          XML_CDATA_SECTION_NODE)
                                     cur5 = cur5->next;
@@ -2207,20 +2236,19 @@ runRequest (map ** inputs)
                                       && cur5->type != XML_CDATA_SECTION_NODE)
                                     {
                                       xmlDocSetRootElement (doc1, cur5);
-                                      xmlDocDumpFormatMemoryEnc (doc1, &mv,
-                                                                 &buffersize,
-                                                                 "utf-8", 1);
+                                      xmlDocDumpFormatMemoryEnc
+                                        (doc1, &mv, &buffersize, "utf-8", 1);
                                       char size[1024];
                                       sprintf (size, "%d", buffersize);
-                                      addToMap (tmpmaps->content, "size",
-                                                size);
+                                      addToMap (tmpmaps->content,
+                                                "size", size);
                                       xmlFreeDoc (doc1);
                                     }
                                 }
                               if (mv != NULL)
                                 {
-                                  addToMap (tmpmaps->content, "value",
-                                            (char *) mv);
+                                  addToMap (tmpmaps->content,
+                                            "value", (char *) mv);
                                   xmlFree (mv);
                                 }
                             }
@@ -2230,30 +2258,34 @@ runRequest (map ** inputs)
                                                                       cur4->
                                                                       xmlChildrenNode,
                                                                       0);
-                              addToMap (tmpmaps->content, "value",
-                                        (char *) tmp);
-                              map *tmpv = getMap (tmpmaps->content, "value");
+                              addToMap (tmpmaps->content,
+                                        "value", (char *) tmp);
+                              map *tmpv = getMap (tmpmaps->content,
+                                                  "value");
                               char *res = NULL;
                               char *curs = tmpv->value;
-                              for (int i = 0; i <= strlen (tmpv->value) / 64;
-                                   i++)
+                              for (int i = 0;
+                                   i <= strlen (tmpv->value) / 64; i++)
                                 {
                                   if (res == NULL)
                                     res =
                                       (char *) malloc (67 * sizeof (char));
                                   else
                                     res =
-                                      (char *) realloc (res,
-                                                        (((i + 1) * 65) +
-                                                         i) * sizeof (char));
+                                      (char *)
+                                      realloc (res,
+                                               (((i +
+                                                  1) *
+                                                 65) + i) * sizeof (char));
                                   int csize = i * 65;
                                   strncpy (res + csize, curs, 64);
                                   if (i == xmlStrlen (tmp) / 64)
                                     strcat (res, "\n\0");
                                   else
                                     {
-                                      strncpy (res + (((i + 1) * 64) + i),
-                                               "\n\0", 2);
+                                      strncpy (res +
+                                               (((i +
+                                                  1) * 64) + i), "\n\0", 2);
                                       curs += 64;
                                     }
                                 }
@@ -2277,8 +2309,8 @@ runRequest (map ** inputs)
 #endif
 
               {
-                maps *testPresence =
-                  getMaps (request_input_real_format, tmpmaps->name);
+                maps *testPresence = getMaps (request_input_real_format,
+                                              tmpmaps->name);
                 if (testPresence != NULL)
                   {
                     elements *elem = getElements (s1->inputs, tmpmaps->name);
@@ -2345,7 +2377,9 @@ runRequest (map ** inputs)
               maps *tmpmaps = (maps *) malloc (MAPS_SIZE);
               if (tmpmaps == NULL)
                 {
-                  return errorException (m, _("Unable to allocate memory."),
+                  return errorException (m,
+                                         _
+                                         ("Unable to allocate memory."),
                                          "InternalError", NULL);
                 }
               tmpmaps->name = zStrdup ("unknownIdentifier");
@@ -2369,8 +2403,8 @@ runRequest (map ** inputs)
                       if (strlen ((char *) val) > 0)
                         {
                           if (tmpmaps->content != NULL)
-                            addToMap (tmpmaps->content, outs[l],
-                                      (char *) val);
+                            addToMap (tmpmaps->content,
+                                      outs[l], (char *) val);
                           else
                             tmpmaps->content =
                               createMap (outs[l], (char *) val);
@@ -2388,8 +2422,9 @@ runRequest (map ** inputs)
                       (cur2->name, BAD_CAST "Identifier",
                        xmlStrlen (cur2->name)) == 0)
                     {
-                      xmlChar *val =
-                        xmlNodeListGetString (NULL, cur2->xmlChildrenNode, 1);
+                      xmlChar *val = xmlNodeListGetString (NULL,
+                                                           cur2->xmlChildrenNode,
+                                                           1);
                       free (tmpmaps->name);
                       tmpmaps->name = zStrdup ((char *) val);
                     }
@@ -2412,7 +2447,7 @@ runRequest (map ** inputs)
       else
         for (int k = 0; k < tmps->nodeNr; k++)
           {
-            //else
+            // else
             addToMap (request_inputs, "ResponseDocument", "");
             maps *tmpmaps = NULL;
             xmlNodePtr cur = tmps->nodeTab[k];
@@ -2474,9 +2509,9 @@ runRequest (map ** inputs)
                         (cur1->name, BAD_CAST "Identifier",
                          xmlStrlen (cur1->name)) == 0)
                       {
-                        xmlChar *val =
-                          xmlNodeListGetString (doc, cur1->xmlChildrenNode,
-                                                1);
+                        xmlChar *val = xmlNodeListGetString (doc,
+                                                             cur1->xmlChildrenNode,
+                                                             1);
                         if (tmpmaps == NULL)
                           {
                             tmpmaps = (maps *) malloc (MAPS_SIZE);
@@ -2497,26 +2532,26 @@ runRequest (map ** inputs)
                             tmpmaps->name = zStrdup ((char *) val);
                           }
                         if (asRaw == true)
-                          addToMap (request_inputs, "RawDataOutput",
-                                    (char *) val);
+                          addToMap (request_inputs,
+                                    "RawDataOutput", (char *) val);
                         else
                           {
                             if (cur1cnt == 0)
-                              addToMap (request_inputs, "ResponseDocument",
-                                        (char *) val);
+                              addToMap (request_inputs,
+                                        "ResponseDocument", (char *) val);
                             else
                               {
-                                map *tt =
-                                  getMap (request_inputs, "ResponseDocument");
+                                map *tt = getMap (request_inputs,
+                                                  "ResponseDocument");
                                 char *tmp = zStrdup (tt->value);
                                 free (tt->value);
-                                tt->value =
-                                  (char *)
+                                tt->value = (char *)
                                   malloc ((strlen (tmp) +
-                                           strlen ((char *) val) +
-                                           1) * sizeof (char));
-                                sprintf (tt->value, "%s;%s", tmp,
-                                         (char *) val);
+                                           strlen ((char
+                                                    *)
+                                                   val) + 1) * sizeof (char));
+                                sprintf (tt->value, "%s;%s",
+                                         tmp, (char *) val);
                                 free (tmp);
                               }
                           }
@@ -2526,16 +2561,17 @@ runRequest (map ** inputs)
             /**
 	     * Title, Asbtract
 	     */
-                    else
-                      if (xmlStrncasecmp
-                          (cur1->name, BAD_CAST "Title",
-                           xmlStrlen (cur1->name)) == 0
-                          || xmlStrncasecmp (cur1->name, BAD_CAST "Abstract",
-                                             xmlStrlen (cur1->name)) == 0)
+                    else if (xmlStrncasecmp
+                             (cur1->name, BAD_CAST "Title",
+                              xmlStrlen (cur1->name)) == 0
+                             || xmlStrncasecmp (cur1->name,
+                                                BAD_CAST
+                                                "Abstract",
+                                                xmlStrlen (cur1->name)) == 0)
                       {
-                        xmlChar *val =
-                          xmlNodeListGetString (doc, cur1->xmlChildrenNode,
-                                                1);
+                        xmlChar *val = xmlNodeListGetString (doc,
+                                                             cur1->xmlChildrenNode,
+                                                             1);
                         if (tmpmaps == NULL)
                           {
                             tmpmaps = (maps *) malloc (MAPS_SIZE);
@@ -2554,25 +2590,25 @@ runRequest (map ** inputs)
                         else
                           {
                             if (tmpmaps->content != NULL)
-                              addToMap (tmpmaps->content, (char *) cur1->name,
-                                        (char *) val);
+                              addToMap (tmpmaps->content,
+                                        (char *) cur1->name, (char *) val);
                             else
                               tmpmaps->content =
                                 createMap ((char *) cur1->name, (char *) val);
                           }
                         xmlFree (val);
                       }
-                    else
-                      if (xmlStrncasecmp
-                          (cur1->name, BAD_CAST "Output",
-                           xmlStrlen (cur1->name)) == 0)
+                    else if (xmlStrncasecmp
+                             (cur1->name, BAD_CAST "Output",
+                              xmlStrlen (cur1->name)) == 0)
                       {
               /**
 	       * Get every attribute from a Output node
 	       * mimeType, encoding, schema, uom, asReference
 	       */
                         const char *outs[5] =
-                          { "mimeType", "encoding", "schema", "uom",
+                          { "mimeType", "encoding", "schema",
+                          "uom",
                           "asReference"
                         };
                         for (int l = 0; l < 5; l++)
@@ -2580,13 +2616,13 @@ runRequest (map ** inputs)
 #ifdef DEBUG
                             fprintf (stderr, "*** %s ***\t", outs[l]);
 #endif
-                            xmlChar *val =
-                              xmlGetProp (cur1, BAD_CAST outs[l]);
+                            xmlChar *val = xmlGetProp (cur1,
+                                                       BAD_CAST outs[l]);
                             if (val != NULL && strlen ((char *) val) > 0)
                               {
                                 if (tmpmaps->content != NULL)
-                                  addToMap (tmpmaps->content, outs[l],
-                                            (char *) val);
+                                  addToMap (tmpmaps->content,
+                                            outs[l], (char *) val);
                                 else
                                   tmpmaps->content =
                                     createMap (outs[l], (char *) val);
@@ -2605,22 +2641,25 @@ runRequest (map ** inputs)
 		 * Indentifier
 		 */
                             if (xmlStrncasecmp
-                                (cur2->name, BAD_CAST "Identifier",
+                                (cur2->name,
+                                 BAD_CAST "Identifier",
                                  xmlStrlen (cur2->name)) == 0)
                               {
                                 xmlChar *val = xmlNodeListGetString (doc,
-                                                                     cur2->xmlChildrenNode,
+                                                                     cur2->
+                                                                     xmlChildrenNode,
                                                                      1);
                                 if (tmpmaps == NULL)
                                   {
                                     tmpmaps = (maps *) malloc (MAPS_SIZE);
                                     if (tmpmaps == NULL)
                                       {
-                                        return errorException (m,
-                                                               _
-                                                               ("Unable to allocate memory."),
-                                                               "InternalError",
-                                                               NULL);
+                                        return
+                                          errorException
+                                          (m,
+                                           _
+                                           ("Unable to allocate memory."),
+                                           "InternalError", NULL);
                                       }
                                     tmpmaps->name = zStrdup ((char *) val);
                                     tmpmaps->content = NULL;
@@ -2637,42 +2676,46 @@ runRequest (map ** inputs)
                 /**
 		 * Title, Asbtract
 		 */
-                            else
-                              if (xmlStrncasecmp
-                                  (cur2->name, BAD_CAST "Title",
-                                   xmlStrlen (cur2->name)) == 0
-                                  || xmlStrncasecmp (cur2->name,
-                                                     BAD_CAST "Abstract",
-                                                     xmlStrlen (cur2->name))
-                                  == 0)
+                            else if (xmlStrncasecmp
+                                     (cur2->name,
+                                      BAD_CAST "Title",
+                                      xmlStrlen (cur2->name)) == 0
+                                     || xmlStrncasecmp (cur2->name,
+                                                        BAD_CAST
+                                                        "Abstract",
+                                                        xmlStrlen
+                                                        (cur2->name)) == 0)
                               {
                                 xmlChar *val = xmlNodeListGetString (doc,
-                                                                     cur2->xmlChildrenNode,
+                                                                     cur2->
+                                                                     xmlChildrenNode,
                                                                      1);
                                 if (tmpmaps == NULL)
                                   {
                                     tmpmaps = (maps *) malloc (MAPS_SIZE);
                                     if (tmpmaps == NULL)
                                       {
-                                        return errorException (m,
-                                                               _
-                                                               ("Unable to allocate memory."),
-                                                               "InternalError",
-                                                               NULL);
+                                        return
+                                          errorException
+                                          (m,
+                                           _
+                                           ("Unable to allocate memory."),
+                                           "InternalError", NULL);
                                       }
                                     tmpmaps->name =
                                       zStrdup ("missingIndetifier");
                                     tmpmaps->content =
-                                      createMap ((char *) cur2->name,
-                                                 (char *) val);
+                                      createMap ((char
+                                                  *)
+                                                 cur2->name, (char *) val);
                                     tmpmaps->next = NULL;
                                   }
                                 else
                                   {
                                     if (tmpmaps->content != NULL)
-                                      addToMap (tmpmaps->content,
-                                                (char *) cur2->name,
-                                                (char *) val);
+                                      addToMap
+                                        (tmpmaps->content,
+                                         (char *) cur2->name, (char *) val);
                                     else
                                       tmpmaps->content =
                                         createMap ((char *) cur2->name,
@@ -2709,7 +2752,7 @@ runRequest (map ** inputs)
 
   runHttpRequests (&m, &request_input_real_format, &hInternet);
 
-  //  if(CHECK_INET_HANDLE(hInternet))
+  // if(CHECK_INET_HANDLE(hInternet))
   InternetCloseHandle (&hInternet);
 
 #ifdef DEBUG
@@ -2844,8 +2887,8 @@ runRequest (map ** inputs)
                     }
                   strcpy (fileNameOnServer, name + t + 1);
 
-                  sprintf (storageNameOnServer, "%s/%s", path->value,
-                           fileNameOnServer);
+                  sprintf (storageNameOnServer, "%s/%s",
+                           path->value, fileNameOnServer);
 #ifdef DEBUG
                   fprintf (stderr, "Name on server %s\n",
                            storageNameOnServer);
@@ -2853,18 +2896,21 @@ runRequest (map ** inputs)
                            fileNameOnServer);
 #endif
                   targetFile =
-                    open (storageNameOnServer, O_RDWR | O_CREAT | O_TRUNC,
+                    open (storageNameOnServer,
+                          O_RDWR | O_CREAT | O_TRUNC,
                           S_IRWXU | S_IRGRP | S_IROTH);
                   if (targetFile < 0)
                     {
 #ifdef DEBUG
-                      fprintf (stderr, "could not create the new file,%s\n",
+                      fprintf (stderr,
+                               "could not create the new file,%s\n",
                                fileNameOnServer);
 #endif
                     }
                   else
                     {
-                      while (cgiFormFileRead (file, buffer, BufferLen, &got)
+                      while (cgiFormFileRead
+                             (file, buffer, BufferLen, &got)
                              == cgiFormSuccess)
                         {
                           if (got > 0)
@@ -2914,109 +2960,80 @@ runRequest (map ** inputs)
               mapcs->value[strlen (mapcs->value) - 1] = 0;
             }
 #ifdef DEBUG
-          fflush (stderr);
-          fprintf (stderr, "setting variable... %s\n", (
-#endif
-                                                         SetEnvironmentVariable
-                                                         (mapcs->name,
-                                                          mapcs->value)
-#ifdef DEBUG
-                                                         == 0) ? "OK" :
-                   "FAILED");
+          if (SetEnvironmentVariable (mapcs->name, mapcs->value) == 0)
+            {
+              fflush (stderr);
+              fprintf (stderr, "setting variable... %s\n", "OK");
+            }
+          else
+            {
+              fflush (stderr);
+              fprintf (stderr, "setting variable... %s\n", "OK");
+            }
 #else
-                                                         ;
-#endif
-                                                         char *toto =
-                                                         (char
-                                                          *)malloc ((strlen
-                                                                     (mapcs->
-                                                                      name) +
-                                                                     strlen
-                                                                     (mapcs->
-                                                                      value) +
-                                                                     2) *
-                                                                    sizeof
-                                                                    (char));
-                                                         sprintf (toto,
-                                                                  "%s=%s",
-                                                                  mapcs->name,
-                                                                  mapcs->
-                                                                  value);
-                                                         putenv (toto);
-#ifdef DEBUG
-                                                         fflush (stderr);
-#endif
-#endif
-#ifdef DEBUG
-                                                         fprintf (stderr,
-                                                                  "[ZOO: setenv (%s=%s)]\n",
-                                                                  mapcs->name,
-                                                                  mapcs->
-                                                                  value);
-                                                         fflush (stderr);
-#endif
-                                                         mapcs = mapcs->next;}
-                                                         }
 
+
+          SetEnvironmentVariable (mapcs->name, mapcs->value);
+#endif
+          char *toto =
+            (char
+             *) malloc ((strlen
+                         (mapcs->name) +
+                         strlen (mapcs->value) + 2) * sizeof (char));
+          sprintf (toto, "%s=%s", mapcs->name, mapcs->value);
+          putenv (toto);
 #ifdef DEBUG
-                                                         dumpMap
-                                                         (request_inputs);
+          fflush (stderr);
+#endif
+#endif
+#ifdef DEBUG
+          fprintf (stderr,
+                   "[ZOO: setenv (%s=%s)]\n", mapcs->name, mapcs->value);
+          fflush (stderr);
+#endif
+          mapcs = mapcs->next;
+        }
+    }
+#ifdef DEBUG
+  dumpMap (request_inputs);
 #endif
   /**
    * Need to check if we need to fork to load a status enabled 
    */
-                                                         r_inputs = NULL;
-                                                         map * store =
-                                                         getMap
-                                                         (request_inputs,
-                                                          "storeExecuteResponse");
-                                                         map * status =
-                                                         getMap
-                                                         (request_inputs,
-                                                          "status");
+  r_inputs = NULL;
+  map *store = getMap (request_inputs,
+                       "storeExecuteResponse");
+  map *status = getMap (request_inputs, "status");
   /**
    * 05-007r7 WPS 1.0.0 page 57 :
    * 'If status="true" and storeExecuteResponse is "false" then the service 
    * shall raise an exception.'
    */
-                                                         if (status != NULL
-                                                             &&
-                                                             strcmp
-                                                             (status->value,
-                                                              "true") == 0
-                                                             && store != NULL
-                                                             &&
-                                                             strcmp
-                                                             (store->value,
-                                                              "false") == 0)
-                                                         {
-                                                         errorException (m,
-                                                                         _
-                                                                         ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
-                                                                         "InvalidParameterValue",
-                                                                         "storeExecuteResponse");
-                                                         freeService (&s1);
-                                                         free (s1);
-                                                         freeMaps (&m);
-                                                         free (m);
-                                                         freeMaps
-                                                         (&request_input_real_format);
-                                                         free
-                                                         (request_input_real_format);
-                                                         freeMaps
-                                                         (&request_output_real_format);
-                                                         free
-                                                         (request_output_real_format);
-                                                         free (REQUEST);
-                                                         free (SERVICE_URL);
-                                                         return 1;}
-                                                         r_inputs =
-                                                         getMap
-                                                         (request_inputs,
-                                                          "storeExecuteResponse");
-                                                         int eres =
-                                                         SERVICE_STARTED;
-                                                         int cpid = getpid ();
+  if (status != NULL
+      &&
+      strcmp
+      (status->value,
+       "true") == 0 && store != NULL && strcmp (store->value, "false") == 0)
+    {
+      errorException (m,
+                      _
+                      ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
+                      "InvalidParameterValue", "storeExecuteResponse");
+      freeService (&s1);
+      free (s1);
+      freeMaps (&m);
+      free (m);
+      freeMaps (&request_input_real_format);
+      free (request_input_real_format);
+      freeMaps (&request_output_real_format);
+      free (request_output_real_format);
+      free (REQUEST);
+      free (SERVICE_URL);
+      return 1;
+    }
+  r_inputs = getMap (request_inputs, "storeExecuteResponse");
+  int eres = SERVICE_STARTED;
+  int cpid = getpid ();
   /**
    * Initialize the specific [lenv] section which contains runtime variables:
    * 
@@ -3035,513 +3052,309 @@ runRequest (map ** inputs)
    * the created process)
    *
    */
-                                                         maps * _tmpMaps =
-                                                         (maps *)
-                                                         malloc (MAPS_SIZE);
-                                                         _tmpMaps->name =
-                                                         zStrdup ("lenv");
-                                                         char tmpBuff[100];
-                                                         sprintf (tmpBuff,
-                                                                  "%i",
-                                                                  (cpid +
-                                                                   (int)
-                                                                   time
-                                                                   (NULL)));
-                                                         _tmpMaps->content =
-                                                         createMap ("usid",
-                                                                    tmpBuff);
-                                                         _tmpMaps->next =
-                                                         NULL;
-                                                         sprintf (tmpBuff,
-                                                                  "%i", cpid);
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "sid", tmpBuff);
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "status", "0");
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "cwd", ntmp);
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "message",
-                                                          _
-                                                          ("No message provided"));
-                                                         map * ltmp =
-                                                         getMap
-                                                         (request_inputs,
-                                                          "soap");
-                                                         if (ltmp !=
-                                                             NULL)
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "soap",
-                                                          ltmp->value);
-                                                         else
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "soap", "false");
-                                                         if (cgiCookie != NULL
-                                                             &&
-                                                             strlen
-                                                             (cgiCookie) > 0)
-                                                         {
-                                                         int hasValidCookie =
-                                                         -1;
-                                                         char *tcook =
-                                                         zStrdup (cgiCookie);
-                                                         char *tmp = NULL;
-                                                         map * testing =
-                                                         getMapFromMaps (m,
-                                                                         "main",
-                                                                         "cookiePrefix");
-                                                         if (testing == NULL)
-                                                         {
-                                                         tmp =
-                                                         zStrdup ("ID=");}
-                                                         else
-                                                         {
-                                                         tmp =
-                                                         (char *)
-                                                         malloc ((strlen
-                                                                  (testing->
-                                                                   value) +
-                                                                  2) *
-                                                                 sizeof
-                                                                 (char));
-                                                         sprintf (tmp, "%s=",
-                                                                  testing->
-                                                                  value);}
-                                                         if (strstr
-                                                             (cgiCookie,
-                                                              ";") != NULL)
-                                                         {
-                                                         char *token,
-                                                         *saveptr;
-                                                         token =
-                                                         strtok_r (cgiCookie,
-                                                                   ";",
-                                                                   &saveptr);
-                                                         while (token != NULL)
-                                                         {
-                                                         if (strcasestr
-                                                             (token,
-                                                              tmp) != NULL)
-                                                         {
-                                                         if (tcook != NULL)
-                                                         free (tcook);
-                                                         tcook =
-                                                         zStrdup (token);
-                                                         hasValidCookie = 1;}
-                                                         token =
-                                                         strtok_r (NULL, ";",
-                                                                   &saveptr);}
-                                                         }
-                                                         else
-                                                         {
-                                                         if (strstr
-                                                             (cgiCookie,
-                                                              "=") != NULL
-                                                             &&
-                                                             strcasestr
-                                                             (cgiCookie,
-                                                              tmp) != NULL)
-                                                         {
-                                                         tcook =
-                                                         zStrdup (cgiCookie);
-                                                         hasValidCookie = 1;}
-                                                         if (tmp != NULL)
-                                                         {
-                                                         free (tmp);}
-                                                         }
-                                                         if (hasValidCookie >
-                                                             0)
-                                                         {
-                                                         addToMap
-                                                         (_tmpMaps->content,
-                                                          "sessid",
-                                                          strstr (tcook,
-                                                                  "=") + 1);
-                                                         char
-                                                         session_file_path
-                                                         [1024];
-                                                         map * tmpPath =
-                                                         getMapFromMaps (m,
-                                                                         "main",
-                                                                         "sessPath");
-                                                         if (tmpPath ==
-                                                             NULL) tmpPath =
-                                                         getMapFromMaps (m,
-                                                                         "main",
-                                                                         "tmpPath");
-                                                         char *tmp1 =
-                                                         strtok (tcook, ";");
-                                                         if (tmp1 !=
-                                                             NULL)
-                                                         sprintf
-                                                         (session_file_path,
-                                                          "%s/sess_%s.cfg",
-                                                          tmpPath->value,
-                                                          strstr (tmp1,
-                                                                  "=") + 1);
-                                                         else
-                                                         sprintf
-                                                         (session_file_path,
-                                                          "%s/sess_%s.cfg",
-                                                          tmpPath->value,
-                                                          strstr (cgiCookie,
-                                                                  "=") + 1);
-                                                         free (tcook);
-                                                         maps * tmpSess =
-                                                         (maps *)
-                                                         malloc (MAPS_SIZE);
-                                                         struct stat
-                                                         file_status;
-                                                         int istat =
-                                                         stat
-                                                         (session_file_path,
-                                                          &file_status);
-                                                         if (istat == 0
-                                                             &&
-                                                             file_status.
-                                                             st_size > 0)
-                                                         {
-                                                         conf_read
-                                                         (session_file_path,
-                                                          tmpSess);
-                                                         addMapsToMaps (&m,
-                                                                        tmpSess);
-                                                         freeMaps (&tmpSess);
-                                                         free (tmpSess);}
-                                                         }
-                                                         }
-                                                         addMapsToMaps (&m,
-                                                                        _tmpMaps);
-                                                         freeMaps (&_tmpMaps);
-                                                         free (_tmpMaps);
+  maps *_tmpMaps = (maps *) malloc (MAPS_SIZE);
+  _tmpMaps->name = zStrdup ("lenv");
+  char tmpBuff[100];
+  sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
+  _tmpMaps->content = createMap ("usid", tmpBuff);
+  _tmpMaps->next = NULL;
+  sprintf (tmpBuff, "%i", cpid);
+  addToMap (_tmpMaps->content, "sid", tmpBuff);
+  addToMap (_tmpMaps->content, "status", "0");
+  addToMap (_tmpMaps->content, "cwd", ntmp);
+  addToMap (_tmpMaps->content, "message", _("No message provided"));
+  map *ltmp = getMap (request_inputs,
+                      "soap");
+  if (ltmp != NULL)
+    addToMap (_tmpMaps->content, "soap", ltmp->value);
+  else
+    addToMap (_tmpMaps->content, "soap", "false");
+  if (cgiCookie != NULL && strlen (cgiCookie) > 0)
+    {
+      int hasValidCookie = -1;
+      char *tcook = zStrdup (cgiCookie);
+      char *tmp = NULL;
+      map *testing = getMapFromMaps (m, "main", "cookiePrefix");
+      if (testing == NULL)
+        {
+          tmp = zStrdup ("ID=");
+        }
+      else
+        {
+          tmp =
+            (char *) malloc ((strlen (testing->value) + 2) * sizeof (char));
+          sprintf (tmp, "%s=", testing->value);
+        }
+      if (strstr (cgiCookie, ";") != NULL)
+        {
+          char *token, *saveptr;
+          token = strtok_r (cgiCookie, ";", &saveptr);
+          while (token != NULL)
+            {
+              if (strcasestr (token, tmp) != NULL)
+                {
+                  if (tcook != NULL)
+                    free (tcook);
+                  tcook = zStrdup (token);
+                  hasValidCookie = 1;
+                }
+              token = strtok_r (NULL, ";", &saveptr);
+            }
+        }
+      else
+        {
+          if (strstr
+              (cgiCookie, "=") != NULL && strcasestr (cgiCookie, tmp) != NULL)
+            {
+              tcook = zStrdup (cgiCookie);
+              hasValidCookie = 1;
+            }
+          if (tmp != NULL)
+            {
+              free (tmp);
+            }
+        }
+      if (hasValidCookie > 0)
+        {
+          addToMap (_tmpMaps->content, "sessid", strstr (tcook, "=") + 1);
+          char session_file_path[1024];
+          map *tmpPath = getMapFromMaps (m,
+                                         "main",
+                                         "sessPath");
+          if (tmpPath == NULL)
+            tmpPath = getMapFromMaps (m, "main", "tmpPath");
+          char *tmp1 = strtok (tcook, ";");
+          if (tmp1 != NULL)
+            sprintf
+              (session_file_path,
+               "%s/sess_%s.cfg", tmpPath->value, strstr (tmp1, "=") + 1);
+          else
+            sprintf
+              (session_file_path,
+               "%s/sess_%s.cfg", tmpPath->value, strstr (cgiCookie, "=") + 1);
+          free (tcook);
+          maps *tmpSess = (maps *) malloc (MAPS_SIZE);
+          struct stat file_status;
+          int istat = stat (session_file_path,
+                            &file_status);
+          if (istat == 0 && file_status.st_size > 0)
+            {
+              conf_read (session_file_path, tmpSess);
+              addMapsToMaps (&m, tmpSess);
+              freeMaps (&tmpSess);
+              free (tmpSess);
+            }
+        }
+    }
+  addMapsToMaps (&m, _tmpMaps);
+  freeMaps (&_tmpMaps);
+  free (_tmpMaps);
 #ifdef DEBUG
-                                                         dumpMap
-                                                         (request_inputs);
+  dumpMap (request_inputs);
 #endif
 #ifdef WIN32
-                                                         char *cgiSidL = NULL;
-                                                         if (getenv ("CGISID")
-                                                             !=
-                                                             NULL)
-                                                         addToMap
-                                                         (request_inputs,
-                                                          "cgiSid",
-                                                          getenv ("CGISID"));
-                                                         map * test1 =
-                                                         getMap
-                                                         (request_inputs,
-                                                          "cgiSid");
-                                                         if (test1 != NULL)
-                                                         {
-                                                         cgiSid =
-                                                         test1->value;
-                                                         addToMap
-                                                         (request_inputs,
-                                                          "storeExecuteResponse",
-                                                          "true");
-                                                         addToMap
-                                                         (request_inputs,
-                                                          "status", "true");
-                                                         setMapInMaps (m,
-                                                                       "lenv",
-                                                                       "sid",
-                                                                       test1->
-                                                                       value);
-                                                         status =
-                                                         getMap
-                                                         (request_inputs,
-                                                          "status");}
+  char *cgiSidL = NULL;
+  if (getenv ("CGISID") != NULL)
+    addToMap (request_inputs, "cgiSid", getenv ("CGISID"));
+  map *test1 = getMap (request_inputs, "cgiSid");
+  if (test1 != NULL)
+    {
+      cgiSid = test1->value;
+      addToMap (request_inputs, "storeExecuteResponse", "true");
+      addToMap (request_inputs, "status", "true");
+      setMapInMaps (m, "lenv", "sid", test1->value);
+      status = getMap (request_inputs, "status");
+    }
 #endif
-                                                         char *fbkp, *fbkp1;
-                                                         FILE * f0, *f1;
-                                                         if (status != NULL)
-                                                         if (strcasecmp
-                                                             (status->value,
-                                                              "false") ==
-                                                             0) status =
-                                                         NULLMAP;
-                                                         if (status ==
-                                                             NULLMAP)
-                                                         {
-                                                         loadServiceAndRun
-                                                         (&m, s1,
-                                                          request_inputs,
-                                                          &request_input_real_format,
-                                                          &request_output_real_format,
-                                                          &eres);}
-                                                         else
-                                                         {
-                                                         int pid;
+  char *fbkp, *fbkp1;
+  FILE *f0, *f1;
+  if (status != NULL)
+    if (strcasecmp (status->value, "false") == 0)
+      status = NULLMAP;
+  if (status == NULLMAP)
+    {
+      loadServiceAndRun
+        (&m, s1,
+         request_inputs,
+         &request_input_real_format, &request_output_real_format, &eres);
+    }
+  else
+    {
+      int pid;
 #ifdef DEBUG
-                                                         fprintf (stderr,
-                                                                  "\nPID : %d\n",
-                                                                  cpid);
+      fprintf (stderr, "\nPID : %d\n", cpid);
 #endif
 #ifndef WIN32
-                                                         pid = fork ();
+      pid = fork ();
 #else
-                                                         if (cgiSid == NULL)
-                                                         {
-                                                         createProcess (m,
-                                                                        request_inputs,
-                                                                        s1,
-                                                                        NULL,
-                                                                        cpid,
-                                                                        request_input_real_format,
-                                                                        request_output_real_format);
-                                                         pid = cpid;}
-                                                         else
-                                                         {
-                                                         pid = 0;
-                                                         cpid =
-                                                         atoi (cgiSid);}
+      if (cgiSid == NULL)
+        {
+          createProcess (m,
+                         request_inputs,
+                         s1,
+                         NULL,
+                         cpid,
+                         request_input_real_format,
+                         request_output_real_format);
+          pid = cpid;
+        }
+      else
+        {
+          pid = 0;
+          cpid = atoi (cgiSid);
+        }
 #endif
-                                                         if (pid > 0)
-                                                         {
+      if (pid > 0)
+        {
       /**
        * dady :
        * set status to SERVICE_ACCEPTED
        */
 #ifdef DEBUG
-                                                         fprintf (stderr,
-                                                                  "father pid continue (origin %d) %d ...\n",
-                                                                  cpid,
-                                                                  getpid ());
+          fprintf (stderr,
+                   "father pid continue (origin %d) %d ...\n",
+                   cpid, getpid ());
 #endif
-                                                         eres =
-                                                         SERVICE_ACCEPTED;}
-                                                         else
-                                                         if (pid == 0)
-                                                         {
+          eres = SERVICE_ACCEPTED;
+        }
+      else if (pid == 0)
+        {
       /**
        * son : have to close the stdout, stdin and stderr to let the parent
        * process answer to http client.
        */
-                                                         r_inputs =
-                                                         getMapFromMaps (m,
-                                                                         "main",
-                                                                         "tmpPath");
-                                                         map * r_inputs1 =
-                                                         getMap (s1->content,
-                                                                 "ServiceProvider");
-                                                         fbkp =
-                                                         (char *)
-                                                         malloc ((strlen
-                                                                  (r_inputs->
-                                                                   value) +
-                                                                  strlen
-                                                                  (r_inputs1->
-                                                                   value) +
-                                                                  1024) *
-                                                                 sizeof
-                                                                 (char));
-                                                         sprintf (fbkp,
-                                                                  "%s/%s_%d.xml",
-                                                                  r_inputs->
-                                                                  value,
-                                                                  r_inputs1->
-                                                                  value,
-                                                                  cpid);
-                                                         char *flog =
-                                                         (char *)
-                                                         malloc ((strlen
-                                                                  (r_inputs->
-                                                                   value) +
-                                                                  strlen
-                                                                  (r_inputs1->
-                                                                   value) +
-                                                                  1024) *
-                                                                 sizeof
-                                                                 (char));
-                                                         sprintf (flog,
-                                                                  "%s/%s_%d_error.log",
-                                                                  r_inputs->
-                                                                  value,
-                                                                  r_inputs1->
-                                                                  value,
-                                                                  cpid);
+          r_inputs = getMapFromMaps (m, "main", "tmpPath");
+          map *r_inputs1 = getMap (s1->content,
+                                   "ServiceProvider");
+          fbkp = (char *)
+            malloc ((strlen
+                     (r_inputs->value) +
+                     strlen (r_inputs1->value) + 1024) * sizeof (char));
+          sprintf (fbkp, "%s/%s_%d.xml", r_inputs->value,
+                   r_inputs1->value, cpid);
+          char *flog =
+            (char *)
+            malloc ((strlen (r_inputs->value) +
+                     strlen (r_inputs1->value) + 1024) * sizeof (char));
+          sprintf (flog, "%s/%s_%d_error.log", r_inputs->value,
+                   r_inputs1->value, cpid);
 #ifdef DEBUG
-                                                         fprintf (stderr,
-                                                                  "RUN IN BACKGROUND MODE \n");
-                                                         fprintf (stderr,
-                                                                  "son pid continue (origin %d) %d ...\n",
-                                                                  cpid,
-                                                                  getpid ());
-                                                         fprintf (stderr,
-                                                                  "\nFILE TO STORE DATA %s\n",
-                                                                  r_inputs->
-                                                                  value);
+          fprintf (stderr, "RUN IN BACKGROUND MODE \n");
+          fprintf (stderr,
+                   "son pid continue (origin %d) %d ...\n", cpid, getpid ());
+          fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
 #endif
-                                                         freopen (flog, "w+",
-                                                                  stderr);
-                                                         f0 =
-                                                         freopen (fbkp, "w+",
-                                                                  stdout);
+          freopen (flog, "w+", stderr);
+          f0 = freopen (fbkp, "w+", stdout);
 #ifndef WIN32
-                                                         fclose (stdin);
+          fclose (stdin);
 #endif
-                                                         free (flog);
+          free (flog);
       /**
        * set status to SERVICE_STARTED and flush stdout to ensure full 
        * content was outputed (the file used to store the ResponseDocument).
        * The rewind stdout to restart writing from the bgining of the file,
        * this way the data will be updated at the end of the process run.
        */
-                                                         printProcessResponse
-                                                         (m, request_inputs,
-                                                          cpid, s1,
-                                                          r_inputs1->value,
-                                                          SERVICE_STARTED,
-                                                          request_input_real_format,
-                                                          request_output_real_format);
+          printProcessResponse
+            (m, request_inputs,
+             cpid, s1,
+             r_inputs1->value,
+             SERVICE_STARTED,
+             request_input_real_format, request_output_real_format);
 #ifndef WIN32
-                                                         fflush (stdout);
-                                                         rewind (stdout);
+          fflush (stdout);
+          rewind (stdout);
 #else
 #endif
-                                                         fbkp1 =
-                                                         (char *)
-                                                         malloc ((strlen
-                                                                  (r_inputs->
-                                                                   value) +
-                                                                  strlen
-                                                                  (r_inputs1->
-                                                                   value) +
-                                                                  1024) *
-                                                                 sizeof
-                                                                 (char));
-                                                         sprintf (fbkp1,
-                                                                  "%s/%s_final_%d.xml",
-                                                                  r_inputs->
-                                                                  value,
-                                                                  r_inputs1->
-                                                                  value,
-                                                                  cpid);
-                                                         f1 =
-                                                         freopen (fbkp1, "w+",
-                                                                  stdout);
-                                                         loadServiceAndRun
-                                                         (&m, s1,
-                                                          request_inputs,
-                                                          &request_input_real_format,
-                                                          &request_output_real_format,
-                                                          &eres);}
-                                                         else
-                                                         {
+          fbkp1 = (char *)
+            malloc ((strlen
+                     (r_inputs->value) +
+                     strlen (r_inputs1->value) + 1024) * sizeof (char));
+          sprintf (fbkp1, "%s/%s_final_%d.xml", r_inputs->value,
+                   r_inputs1->value, cpid);
+          f1 = freopen (fbkp1, "w+", stdout);
+          loadServiceAndRun
+            (&m, s1,
+             request_inputs,
+             &request_input_real_format, &request_output_real_format, &eres);
+        }
+      else
+        {
       /**
        * error server don't accept the process need to output a valid 
        * error response here !!!
        */
-                                                         eres = -1;
-                                                         errorException (m,
-                                                                         _
-                                                                         ("Unable to run the child process properly"),
-                                                                         "InternalError",
-                                                                         NULL);}
-                                                         }
+          eres = -1;
+          errorException (m,
+                          _
+                          ("Unable to run the child process properly"),
+                          "InternalError", NULL);
+        }
+    }
 
 #ifdef DEBUG
-                                                         dumpMaps
-                                                         (request_output_real_format);
+  dumpMaps (request_output_real_format);
 #endif
-                                                         if (eres != -1)
-                                                         outputResponse (s1,
-                                                                         request_input_real_format,
-                                                                         request_output_real_format,
-                                                                         request_inputs,
-                                                                         cpid,
-                                                                         m,
-                                                                         eres);
-                                                         fflush (stdout);
+  if (eres != -1)
+    outputResponse (s1,
+                    request_input_real_format,
+                    request_output_real_format,
+                    request_inputs, cpid, m, eres);
+  fflush (stdout);
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 
    * client.
    */
 #ifndef USE_GDB
-                                                         (void)
-                                                         signal (SIGSEGV,
-                                                                 donothing);
-                                                         (void)
-                                                         signal (SIGTERM,
-                                                                 donothing);
-                                                         (void)
-                                                         signal (SIGINT,
-                                                                 donothing);
-                                                         (void)
-                                                         signal (SIGILL,
-                                                                 donothing);
-                                                         (void)
-                                                         signal (SIGFPE,
-                                                                 donothing);
-                                                         (void)
-                                                         signal (SIGABRT,
-                                                                 donothing);
+  (void) signal (SIGSEGV, donothing);
+  (void) signal (SIGTERM, donothing);
+  (void) signal (SIGINT, donothing);
+  (void) signal (SIGILL, donothing);
+  (void) signal (SIGFPE, donothing);
+  (void) signal (SIGABRT, donothing);
 #endif
-                                                         if (((int) getpid ())
-                                                             != cpid
-                                                             || cgiSid !=
-                                                             NULL)
-                                                         {
-                                                         fclose (stdout);
-                                                         fclose (stderr);
-                                                         unhandleStatus (m);
+  if (((int) getpid ()) != cpid || cgiSid != NULL)
+    {
+      fclose (stdout);
+      fclose (stderr);
+      unhandleStatus (m);
     /**
      * Dump back the final file fbkp1 to fbkp
      */
-                                                         fclose (f0);
-                                                         fclose (f1);
-                                                         FILE * f2 =
-                                                         fopen (fbkp1, "rb");
-                                                         FILE * f3 =
-                                                         fopen (fbkp, "wb+");
-                                                         free (fbkp);
-                                                         fseek (f2, 0,
-                                                                SEEK_END);
-                                                         long flen =
-                                                         ftell (f2);
-                                                         fseek (f2, 0,
-                                                                SEEK_SET);
-                                                         char *tmps1 =
-                                                         (char
-                                                          *)malloc ((flen +
-                                                                     1) *
-                                                                    sizeof
-                                                                    (char));
-                                                         fread (tmps1, flen,
-                                                                1, f2);
-                                                         fwrite (tmps1, 1,
-                                                                 flen, f3);
-                                                         fclose (f2);
-                                                         fclose (f3);
-                                                         unlink (fbkp1);
-                                                         free (fbkp1);
-                                                         free (tmps1);}
+      fclose (f0);
+      fclose (f1);
+      FILE *f2 = fopen (fbkp1, "rb");
+      FILE *f3 = fopen (fbkp, "wb+");
+      free (fbkp);
+      fseek (f2, 0, SEEK_END);
+      long flen = ftell (f2);
+      fseek (f2, 0, SEEK_SET);
+      char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
+      fread (tmps1, flen, 1, f2);
+      fwrite (tmps1, 1, flen, f3);
+      fclose (f2);
+      fclose (f3);
+      unlink (fbkp1);
+      free (fbkp1);
+      free (tmps1);
+    }
 
-                                                         freeService (&s1);
-                                                         free (s1);
-                                                         freeMaps (&m);
-                                                         free (m);
-                                                         freeMaps
-                                                         (&request_input_real_format);
-                                                         free
-                                                         (request_input_real_format);
-                                                         freeMaps
-                                                         (&request_output_real_format);
-                                                         free
-                                                         (request_output_real_format);
-                                                         free (REQUEST);
-                                                         free (SERVICE_URL);
+  freeService (&s1);
+  free (s1);
+  freeMaps (&m);
+  free (m);
+  freeMaps (&request_input_real_format);
+  free (request_input_real_format);
+  freeMaps (&request_output_real_format);
+  free (request_output_real_format);
+  free (REQUEST);
+  free (SERVICE_URL);
 #ifdef DEBUG
-                                                         fprintf (stderr,
-                                                                  "Processed response \n");
-                                                         fflush (stdout);
-                                                         fflush (stderr);
+  fprintf (stderr, "Processed response \n");
+  fflush (stdout);
+  fflush (stderr);
 #endif
-                                                         return 0;}
+  return 0;
+}
