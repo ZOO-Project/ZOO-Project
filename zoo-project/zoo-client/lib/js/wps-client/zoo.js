@@ -1,4 +1,3 @@
-// Filename: zoo-process.js
 /**
  * Author : Samuel Souk aloun
  *
@@ -27,12 +26,25 @@ define([
     'xml2json', 'queryString', 'wpsPayload', 'utils'
 ], function(X2JS, qs, wpsPayload, utils) {
 
+    /** 
+     * The ZooProcess Class
+     * @constructs ZooProcess
+     * @param {Object} params Parameters
+     * @example
+     * var myZooObject = new ZooProcess({
+     *     url: "http://localhost/cgi-bin/zoo_loader.cgi",
+     *     delay: 2500
+     * });
+     */
     var ZooProcess = function(params) {
         
         /**
-         * Private
-         */        
-        
+	 * Object configuring the xml2json use.
+	 *
+         * @access private
+	 * @memberof ZooProcess#
+	 * @var _x2js {x2js}
+         */         
         var _x2js = new X2JS({
             arrayAccessFormPaths: [
             'ProcessDescriptions.ProcessDescription.DataInputs.Input',
@@ -43,20 +55,109 @@ define([
             ],   
         });
 
-        
+       
         /**
-         * Public
-         */
-         
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var debug {Boolean} true if verbose messages should be displayed on the console
+	 * @default false
+         */         
+        this.debug = false;
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var url {String} The WPS Server URL
+	 */
         this.url = params.url;
-        
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var language {String} The language to be used to request the WPS Server
+	 * @default "en-US"
+	 */
+        this.language = params.language?params.language:"en-US";
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var statusLocation {Object} An object to store the statusLocation 
+	 * URLs when running request including both the storeExecuteResponse and
+	 * the status parameters set to true.
+	 */
         this.statusLocation = {};
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var launched {Object} An object to store the running asynchrone services.
+	 */
         this.launched = {};
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var terminated {Object} An object to store the finished services.
+	 */
         this.terminated = {};
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var percent {Object} An object to store the percentage of completude of services.
+	 */
         this.percent = {};
-        this.delay = params.delay || 2000,
+        /**
+         * @access public
+	 * @memberof ZooProcess#
+	 * @var delay {Integer} The time (in milliseconds) between each polling requests.
+	 * @default 2000
+	 */
+        this.delay = params.delay || 2000;
         
-        //
+	/**
+	 * The getCapabilities method run the GetCapabilities request by calling {@link ZooProcess#request}.
+	 * 
+	 * @method getCapabilities
+	 * @memberof ZooProcess#
+	 * @param {Object} params The parameter for the request and callback functions to call on success or
+	 * on failure.
+	 * @example
+	 * // Log the array of available processes in console
+	 * myZooObject.getCapabilities({
+	 *     type: 'POST',
+	 *     success: function(data){
+	 *         console.log(data["Capabilities"]["ProcessOfferings"]["Process"]);
+	 *     }
+	 * });
+	 */
+        this.getCapabilities = function(params) {
+            var closure = this;
+
+            if (!params.hasOwnProperty('type')) {
+                params.type = 'GET';
+            }
+
+            var zoo_request_params = {
+                request: 'GetCapabilities',
+                service: 'WPS',
+                version: '1.0.0',
+            }
+
+            this.request(zoo_request_params, params.success, params.error, params.type);
+        };
+        
+	/**
+	 * The describeProcess method run the DescribeProcess request by calling {@link ZooProcess#request}.
+	 * 
+	 * @method describeProcess
+	 * @memberof ZooProcess#
+	 * @param {Object} params 
+	 * @example
+	 * // Log x2js representation of all available services in console
+	 * myZooObject.describeProcess({
+	 *     type: 'POST',
+	 *     identifier: "all"
+	 *     success: function(data){
+	 *         console.log(data);
+	 *     }
+	 * });
+	 */
         this.describeProcess = function(params) {
             var closure = this;
 
@@ -66,7 +167,6 @@ define([
 
             var zoo_request_params = {
                 Identifier: params.identifier,
-                metapath: params.metapath ? params.metapath : '',
                 request: 'DescribeProcess',
                 service: 'WPS',
                 version: '1.0.0',
@@ -75,31 +175,20 @@ define([
             this.request(zoo_request_params, params.success, params.error, params.type);
         };
         
-        //
-        this.getCapabilities = function(params) {
-            var closure = this;
-
-            if (!params.hasOwnProperty('type')) {
-                params.type = 'GET';
-            }
-
-            // http://zoo-server/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=GetCapabilities&Version=1.0.0
-            var zoo_request_params = {
-                ServiceProvider: '',
-                metapath: params.metapath ? params.metapath : '',
-                request: 'GetCapabilities',
-                service: 'WPS',
-                version: '1.0.0',
-            }
-
-            this.request(zoo_request_params, params.success, params.error, params.type);
-        };
-        
-        //
-        this.execute = function(params) {
-            var closure = this;
-            console.log("======== Execute "+params.identifier);
-            console.log(params);
+	/**
+	 * The convertParams method convert parameters for Execute requests
+	 *
+	 * @method convertParams
+	 * @memberof ZooProcess#
+	 * @param {Object} params The original object
+	 * @returns {Object} The converted object
+	 */
+	this.convertParams = function(params){
+	    var closure = this;
+	    if(closure.debug){
+		console.log("======== Execute "+params.identifier);
+		console.log(params);
+	    }
 
             if (!params.hasOwnProperty('type')) {
                 params.type = 'GET';
@@ -112,9 +201,6 @@ define([
                 Identifier: params.identifier,
                 DataInputs: params.dataInputs ? params.dataInputs : '',
                 DataOutputs: params.dataOutputs ? params.dataOutputs : '',
-
-                //storeExecuteResponse: params.storeExecuteResponse ? 'true' : 'false',
-                //status: params.status ? 'true' : 'false',
             }
 
 
@@ -130,101 +216,261 @@ define([
             if (params.hasOwnProperty('lineage') &&  params.lineage) {
                 zoo_request_params.lineage = 'true';
             }
+	    return zoo_request_params;
+	};
 
-
-            this.request(zoo_request_params, params.success, params.error, params.type);
-        };
-
-        
-        //
-        this.request = function(params, onSuccess, onError, type) {
+	/**
+	 * The buildRequest method is building the object expected by
+	 * [jQuery.ajax]{@link http://api.jquery.com/jquery.ajax/}.
+	 * In case of GET request, it will use {@link ZooProcess#getQueryString}.
+	 * In case of POST request, it will use {@link module:wpsPayload} getPayload.
+	 *
+	 * @method buildRequest
+	 * @memberof ZooProcess#
+	 * @param {Object} params the request parameters
+	 * @param {String} type the request method ("GET" or "POST")
+	 * @returns {Object} The expected object to give as input for the 
+	 * [jQuery.ajax]{@link http://api.jquery.com/jquery.ajax/} function.
+	 */
+	this.buildRequest = function(params,type){
             var closure = this;
-            console.log('======== REQUEST type='+type);
-            console.log(params);
-
+	    if(closure.debug){
+		console.log('======== REQUEST method='+type);
+		console.log(params);
+	    }
             var url = this.url;
             var payload;
             var headers;
+	    if(params.hasOwnProperty('DataOutputs'))
+		for(var i=0;i<params.DataOutputs.length;i++)
+		    if(params.DataOutputs[i].type==="raw"){
+			params["RawDataOutput"]=params.DataOutputs[i];
+			break;
+		    }
 
+	    params["language"]=this.language;
             if (type == 'GET') {
                 url += '?' + this.getQueryString(params);
             } else if (type == 'POST') {
                 payload = wpsPayload.getPayload(params);
-                console.log("======== POST PAYLOAD ========");
-                console.log(payload);
+		if(closure.debug){
+                    console.log("======== POST PAYLOAD ========");
+                    console.log(payload);
+		}
 
                 headers = {
                     "Content-Type": "text/xml"        
                 };
             }
-            
-            console.log("ajax url: "+url);
+	    
+            if(closure.debug){
+		console.log("ajax url: "+url);
+	    }
+	    return {"url":url,"headers": headers,"data": payload,"type":type};
+	};
 
-            $.ajax({
-                type: type,
-                url: url,
-                dataType: "xml",
-                data: payload,
-                headers: headers
-            })
-            .always(
-                function() {
-                    //console.log("ALWAYS");
-                }
-            )
-            .fail(
-                function(jqXHR, textStatus, errorThrown) {
-                    console.log("======== ERROR ========"); 
-                    onError(jqXHR);       
-                }
-            )
-            .done(
-                function(data, textStatus, jqXHR) {
-                    console.log("======== SUCCESS ========");
-                    //console.log(data);
-                    console.log(utils.xmlToString(data));
+	/**
+	 * The getRequest method call the {@link ZooProcess#buildRequest} method
+	 * by giving the {@link ZooProcess#convertParams} result as first 
+	 * argument and the detected type (default is 'GET') defined in params.
+	 * 
+	 * @method getRequest
+	 * @memberof ZooProcess#
+	 * @params {Object} params The request parameters
+	 */
+	this.getRequest = function(params){
+	    var closure = this;
+	    var type = 'GET';
+	    if(params.hasOwnProperty("type"))
+		type=params["type"];
+	    return closure.buildRequest(closure.convertParams(params),type);
+	};
 
-                    // TODO: move this transformation
-                    data = _x2js.xml2json( data );
+	/**
+	 * The execute method run the Execute request by calling {@link ZooProcess#request}
+	 * with the params converted by {@link ZooProcess#convertParams}.
+	 *
+	 * @method execute
+	 * @memberof ZooProcess#
+	 * @param {Object} param Parameters
+	 * @example
+	 * myZooObject.execute({
+	 *     identifier: "Buffer",
+	 *     dataInputs: [{"identifier":"InputPolygon","href":"http://features.org/toto.xml","mimeType":"text/xml"}],
+	 *     dataOutputs: [{"identifier":"Result","mimeType":"application/json","type":"raw"}],
+	 *     type: 'POST',
+	 *     success: function(data) {
+	 *         console.log(data);
+	 *     }
+	 * });
+	 */
+        this.execute = function(params) {
+            var closure = this;
+            this.request(closure.convertParams(params), params.success, params.error, params.type);
+        };
 
-                    console.log(data);
-                    //------
+        
+	/**
+	 * The request method call {@link ZooProcess#buildRequest} method to
+	 * to build parameters to give to 
+	 * [jQuery.ajax]{@link http://api.jquery.com/jquery.ajax/}.
+	 * If the request succeed and if the content-type of the response is 
+	 * "text/xml" then xml2json is called on the resulting data and passed 
+	 * to the onSuccess callback function given in parameter. In case the
+	 * request failed, the WPS Exception Repport will be parsed with 
+	 * xml2json and given as parameter to the onError callback function.
+	 *
+	 * @method request
+	 * @memberof ZooProcess#
+	 * @param {Object} params The object used as parameter for
+	 * [jQuery.ajax]{@link http://api.jquery.com/jquery.ajax/}
+	 * @param {Function} onSuccess The callback function called if the request succeed
+	 * @param {Function} onError The callback function called if the request failed 
+	 * @param {String} type The request method ('GET' or 'POST')
+	 */
+        this.request = function(params, onSuccess, onError, type) {
+            var closure = this;
 
-                    var launched;
-
-                    if (params.storeExecuteResponse == 'true' && params.status == 'true') {
-                        launched = closure.parseStatusLocation(data);            
-                        console.log(launched);
-                        closure.statusLocation[launched.sid] = launched.statusLocation;
-
-                        if (launched.hasOwnProperty('sid') && !closure.launched.hasOwnProperty(launched.sid)) {                    
-                            closure.launched[launched.sid] = launched.params;
-                            //closure.emit('launched', launched);
-                        }           
+	    var obj;
+	    obj=closure.buildRequest(params,type);
+            $.ajax(obj)
+		.always(
+                    function() {
+			//console.log("ALWAYS");
                     }
-                    onSuccess(data, launched);
-            });
+		)
+		.fail(
+                    function(jqXHR, textStatus, errorThrown) {
+			if(closure.debug){
+			    console.log("======== ERROR ========");
+			}
+			var robj=_x2js.xml2json( jqXHR.responseXML );
+			if(closure.debug){
+			    console.log(robj);
+			}
+			if(onError)
+			    onError(robj);
+                    }
+		)
+		.done(
+                    function(data, textStatus, jqXHR) {
+			if(closure.debug){
+			    console.log("======== SUCCESS ========2");
+			    console.log(data);
+			}
+			var ctype=jqXHR.getResponseHeader("Content-Type").split(";")[0];
+			if( ctype=="text/xml" )
+			{
+			    var tmpD=data;
+			    data = _x2js.xml2json( data );
+			    data._origin=tmpD;
+			}
+			var launched;
+			
+			if (params.storeExecuteResponse == 'true' && params.status == 'true') {
+			    launched = closure.parseStatusLocation(data);            
+			    closure.statusLocation[launched.sid] = launched.statusLocation;
+			    
+			    if ( launched.hasOwnProperty('sid') && 
+				 !closure.launched.hasOwnProperty(launched.sid)) {
+				closure.launched[launched.sid] = launched.statusLocation;
+			    }
+			}
+
+			if(onSuccess)
+			    onSuccess(data, launched);
+		    });
         };
         
-        //
+	/**
+	 * The watch method should be used from the success callback function
+	 * passed to {@link ZooProcess#execute} when both status and 
+	 * storeExecuteResponse parameters are set to 'true', so when the 
+	 * service should be called asynchronously. This function is
+	 * responsible for polling the WPS server until the service end (success
+	 * or failure). It call the {@link ZooProcess#getStatus} method every
+	 * {@link ZooProcess#delay} milliseconds.
+	 *
+	 * @method watch
+	 * @memberof ZooProcess#
+	 * @param {Integer} sid The identifier of the running service
+	 * @param {Object} handlers The callback function definitions 
+	 * (onPercentCompleted, onProcessSucceeded, onError)
+	 * @example
+	 * zoo.execute({
+	 *     identifier: 'MyIdentifier',
+	 *     type: 'POST',
+	 *     dataInputs: myInputs,
+	 *     dataOutputs: myOupts,
+	 *     storeExecuteResponse: true,
+	 *     status: true,
+	 *     success: function(data, launched) {
+	 *         zoo.watch(launched.sid, {
+         *             onPercentCompleted: function(data) {
+	 *                 console.log("**** PercentCompleted ****");
+	 *                 console.log(data);
+         *                 progress.text(data.text+' : '+(data.percentCompleted)+'%');
+         *             },
+	 *             onProcessSucceeded: function(data) {
+         *                 progress.css('width', (100)+'%');
+	 *                 progress.text(data.text+' : '+(100)+'%');
+	 *                     if (data.result.ExecuteResponse.ProcessOutputs) {
+	 *                         console.log("**** onSuccess ****");
+	 *                         console.log(data.result);
+	 *                     }
+	 *             },
+	 *             onError: function(data) {
+	 *                 console.log("**** onError ****");
+	 *                 console.log(data);
+	 *             },
+         *         });
+	 *     },
+	 *     error: function(data) {
+	 *         console.log("**** ERROR ****");
+	 *         console.log(data);
+	 *         notify("Execute asynchrone failed", 'danger');
+	 *     }
+	 * });
+	 */
         this.watch = function(sid, handlers) {
             //onPercentCompleted, onProcessSucceeded, onError
             var closure = this;
-
-            console.log("WATCH: "+sid);
+	    if(closure.debug){
+		console.log("WATCH: "+sid);
+	    }
 
             function onSuccess(data) {
-                console.log("++++ getStatus SUCCESS "+sid);
-                console.log(data);
+		if(closure.debug){
+                    console.log("++++ getStatus SUCCESS "+sid);
+                    console.log(data);
+		}
 
-                if (data.ExecuteResponse.Status.ProcessStarted) {
-                    console.log("#### ProcessStarted");
+		if (data.ExecuteResponse.Status.ProcessAccepted) {
+                    var ret = {
+                        sid: sid,
+                        percentCompleted: 0,
+                        text: data.ExecuteResponse.Status.ProcessAccepted.__text,
+                        creationTime: data.ExecuteResponse.Status._creationTime,
+                    };
+
+                    closure.percent[sid] = ret.percentCompleted;
+                    //closure.emit('percent', ret);
+
+                    if (handlers.onPercentCompleted instanceof Function) {
+                        handlers.onPercentCompleted(ret);
+                    }
+
+		}
+                else if (data.ExecuteResponse.Status.ProcessStarted) {
+		    if(closure.debug){
+			console.log("#### ProcessStarted");
+		    }
 
                     var ret = {
                         sid: sid,
                         percentCompleted: data.ExecuteResponse.Status.ProcessStarted._percentCompleted,
                         text: data.ExecuteResponse.Status.ProcessStarted.__text,
-                        creationTime: data.ExecuteResponse.Status.ProcessStarted._creationTime,
+                        creationTime: data.ExecuteResponse.Status._creationTime,
                     };
 
                     closure.percent[sid] = ret.percentCompleted;
@@ -235,7 +481,9 @@ define([
                     }
                 }
                 else if (data.ExecuteResponse.Status.ProcessSucceeded) {
-                console.log("#### ProcessSucceeded");
+		    if(closure.debug){
+			console.log("#### ProcessSucceeded");
+		    }
 
                     var text = data.ExecuteResponse.Status.ProcessSucceeded.__text;
                     closure.terminated[sid] = true;
@@ -252,7 +500,9 @@ define([
                     }
                 }
                 else {
-                    console.log("#### UNHANDLED EXCEPTION");
+		    if(closure.debug){
+			console.log("#### UNHANDLED EXCEPTION");
+		    }
                     closure.terminated[sid] = true;
                     ret = {
                         sid: sid,
@@ -268,72 +518,180 @@ define([
             }
 
             function onError(data) {
-                console.log("++++ getStatus ERROR "+sid);
-                console.log(data);
+		if(closure.debug){
+                    console.log("++++ getStatus ERROR "+sid);
+                    console.log(data);
+		}
             }
 
             function ping(sid) {
-                console.log("PING: "+sid);
+		if(closure.debug){
+                    console.log("PING: "+sid);
+		}
                 closure.getStatus(sid, onSuccess, onError);
                 if (closure.terminated[sid]) {
-                    console.log("++++ getStatus TERMINATED "+sid);            
+		    if(closure.debug){
+			console.log("++++ getStatus TERMINATED "+sid);
+		    }
                 }
                 else if (!closure.percent.hasOwnProperty(sid) || closure.percent[sid]<100) {
                     setTimeout( function() {
                         ping(sid);
-                    }, closure.delay);            
+                     }, closure.delay);
                 } else {
-                    console.log(closure.percent);
+		    if(closure.debug){
+			console.log(closure.percent);
+		    }
                 }
             }
 
             ping(sid);
         };
         
-        //
+	/**
+	 * The getStatus method call 
+	 * [jQuery.ajax]{@link http://api.jquery.com/jquery.ajax/} to fecth the
+	 * ExecuteResponse document which contains a Status node and
+	 * potentially the result (when the asynch service end). This method is
+	 * used by {@link ZooProcess#watch} to get the ongoing status of 
+	 * services called asynchronously.
+	 * 
+	 * @method getStatus
+	 * @memberof ZooProcess#
+	 * @param {Integer} sid Service Identifier
+	 * @param {Function} onSuccess callback 
+	 * @param {Function} onError callback 
+	 */
         this.getStatus = function(sid, onSuccess, onError) {
             var closure = this;
-
-            console.log("GET STATUS: "+sid);
-
+	    if(closure.debug){
+		console.log("GET STATUS: "+sid);
+	    }
             if (closure.terminated[sid]) {
-                console.log("DEBUG TERMINATED");
+		if(closure.debug){
+                    console.log("DEBUG TERMINATED");
+		}
                 return;
             }
             if (!closure.launched[sid]) {
-                console.log("DEBUG LAUNCHED");
+		if(closure.debug){
+                    console.log("DEBUG LAUNCHED");
+		}
                 return;
             }
-            console.log("PARSE URI: "+closure.statusLocation[sid]);
-            var parsed_url = utils.parseUri(closure.statusLocation[sid]);
-            console.log(parsed_url);
-            zoo_request_params = parsed_url.queryKey;
 
-            this.request(zoo_request_params, onSuccess, onError, 'GET');
+            $.ajax({
+		url: closure.statusLocation[sid]
+	    })
+		.fail(
+                    function(jqXHR, textStatus, errorThrown) {
+			if(closure.debug){
+			    console.log("======== ERROR ========");
+			}
+			var robj=_x2js.xml2json( jqXHR.responseXML );
+			if(closure.debug){
+			    console.log(robj);
+			}
+			if(onError)
+			    onError(robj);
+                    }
+		)
+		.done(
+                    function(data, textStatus, jqXHR) {
+			if(closure.debug){
+			    console.log("======== SUCCESS ========2");
+			    console.log(data);
+			}
+			var ctype=jqXHR.getResponseHeader("Content-Type").split(";")[0];
+			if( ctype=="text/xml" ){
+			    var tmpD=data;
+			    data = _x2js.xml2json( data );
+			    data._origin=tmpD;
+			}
+			if(onSuccess)
+			    onSuccess(data);
+		    });
         };
         
-        //
+	/**
+	 * The getQueryString method generate a KVP GET request which can be 
+	 * used to request a WPS server.
+	 *
+	 * @method getQueryString
+	 * @memberof ZooProcess#
+	 * @param {Object} params The WPS requests parameters
+	 * @returns {String} The GET WPS request
+	 * @example
+	 * // Log GetCapabilities GET request in console
+	 * var request_params = {
+	 *     request: 'GetCapabilities',
+         *     service: 'WPS',
+         *     version: '1.0.0',
+	 *     language; 'en-US'
+         * }
+	 * console.log(myZooObject.getQueryString(request_params));
+	 */
         this.getQueryString = function(params) {
-
+	    var closure = this;
             var ret = '';
 
-            // TODO: serialize attributes
             serializeInputs = function(obj) {
-              console.log("SERIALIZE dataInputs");
-              console.log(obj);
-              if($.type(obj) === "string") {
-                return obj;
-              }
-              var str = [];
-              for(var p in obj){
-                if (obj.hasOwnProperty(p)) {
-                  //str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-                  str.push(p + "=" + obj[p]);
-                }
-              }
-              return str.join(";");
+		if(closure.debug){
+		    console.log("SERIALIZE dataInputs");
+		    console.log(obj);
+		}
+		var lt=$.type(obj);
+		if(lt === "string") {
+                    return obj;
+		}
+		var str = [];
+		for(var p in obj){
+		    if(lt === "array"){
+			if(obj[p].hasOwnProperty("href"))
+			    str.push(obj[p]["identifier"] + "=Reference");
+			else
+			    str.push(obj[p]["identifier"] + "=" + obj[p]["value"]);
+			for(var q in obj[p]){
+			    if(q!="identifier" && q!="value" && q!="href")
+				str.push("@" + q + "=" + obj[p][q]);
+			    else
+				if(q=="href")
+				    str.push("@xlink:" + q + "=" + encodeURIComponent(obj[p][q]));
+			}
+			str.push(";");
+		    }
+		    else
+			if (obj.hasOwnProperty(p)) {
+			    if(p=="href")
+				str.push(p + "=" + encodeURIComponent(obj[p]));
+			    else
+				str.push(p + "=" + obj[p]);
+			}
+		}
+		return str.join("");
             }
 
+            serializeOutputs = function(obj) {
+		if(closure.debug){
+		    console.log("SERIALIZE dataOutputs");
+		    console.log(obj);
+		}
+		var lt=$.type(obj);
+		if(lt === "string") {
+                    return obj;
+		}
+		var str = [];
+		for(var p in obj){
+		    str.push(obj[p]["identifier"]);
+		    for(var q in obj[p]){
+			if(q!="identifier" && q!="type")
+			    str.push("@" + q + "=" + obj[p][q]);
+		    }
+		    str.push(";");
+		}
+		return str.join("");
+            }
+	    
             var responseDocument = params.ResponseDocument;
             var tmp_params = {};
 
@@ -345,8 +703,9 @@ define([
 
             var skip = {
                 'DataInputs': true,
-                'DataOuptputs': true,
+                'DataOutputs': true,
                 'ResponseDocument': true,
+                'RawDataOutput': true,
             }
             var keys = objectKeys(params);
             for (var i = 0; i < keys.length; i++) {
@@ -358,43 +717,77 @@ define([
                     tmp_params[key] = params[key];
                 }
             }
-
             ret = qs.stringify(tmp_params);
 
             //req_options.path = req_options.path.replace("&DataInputs=sid%3D", "&DataInputs=sid=")
             if (params.hasOwnProperty('DataInputs')) {
               //var dataInputs = params.DataInputs;
-              var dataInputs = serializeInputs(params.DataInputs);
-              console.log("dataInputs: "+dataInputs);
-              ret += '&DataInputs=' + dataInputs;
+		var dataInputs = serializeInputs(params.DataInputs);
+		if(closure.debug){
+		    console.log("dataInputs: "+dataInputs);
+		}
+		ret += '&DataInputs=' + dataInputs;
             }
-            /*
+            
             if (params.hasOwnProperty('DataOutputs')) {
-              var dataOutputs = serializeOutputs(params.DataOutputs);
-              console.log("dataOutputs: "+dataOutputs);
-              ret += '&DataOutputs=' + dataOutputs;
-            }
-            */
-            //ResponseDocument=Result ou RawDataOutput=Result
-
-            if (params.ResponseDocument) {
-                ret += '&ResponseDocument=' + params.ResponseDocument;
-            }
-
+		var dataOutputs = serializeOutputs(params.DataOutputs);
+		if(closure.debug){
+		    console.log("dataOutputs: "+dataOutputs);
+		}
+		if(dataOutputs!=""){
+		    var displayInputs=true;
+		    for(var i=0;i<params.DataOutputs.length;i++)
+			if(params.DataOutputs[i].type==="raw"){
+			    ret += '&RawDataOutput=' + dataOutputs;
+			    displayInputs=false;
+			    break;
+			}
+		    if(displayInputs)
+			ret += '&ResponseDocument=' + dataOutputs;
+		}
+            }else{
+		if (params.hasOwnProperty('RawDataOutput')) {
+		    ret+="&RawDataOutput="+params['RawDataOutput']+";";
+		}else{
+		    if (params.hasOwnProperty('ResponseDocument')) {
+			var lt=$.type(params['ResponseDocument']);
+			if(lt === "string") {
+			    ret+="&ResponseDocument="+params['ResponseDocument']+";";
+			}else{
+			    var tmp_ret=serializeOutputs(params['ResponseDocument']);
+			    ret+="&ResponseDocument="+tmp;
+			}
+		    }
+		}
+	    }
+            
             return ret;
         };
         
+	/**
+	 * The parseStatusLocation method parse the statusLocation and return an
+	 * object with sid and statusLocation attributes which contains
+	 * respectively: a unique identifier named sid and the statusLocation
+	 * value returned by the WPS server.
+	 * 
+	 * @method parseStatusLocation
+	 * @memberof ZooProcess#
+	 * @param {Object} data The XML response parsed by x2js.xml2json
+	 * @returns {Object} The result is an object with sid and statusLocation
+	 */
         this.parseStatusLocation = function(data) {
             var closure = this;
 
             if (statusLocation = data.ExecuteResponse._statusLocation) {
-                console.log("statusLocation: "+statusLocation);
+		if(closure.debug){
+                    console.log("statusLocation: "+statusLocation);
+		}
 
-                var parsed_url = utils.parseUri(statusLocation);
-                console.log(parsed_url);
-                var parsed_params = parsed_url.queryKey;
-
-                return {sid: parsed_url.queryKey.DataInputs, params: parsed_params, statusLocation: statusLocation};
+		var lsid=0;
+		for(i in closure.statusLocation)
+		    lsid++;
+		
+                return {sid: lsid, statusLocation: statusLocation};
             }
         };        
     };
