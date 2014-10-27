@@ -355,10 +355,7 @@ int cgiMain(){
 
   runRequest(&tmpMap);
 
-  /** 
-   * Required but can't be made after executing a process using POST requests.
-   */
-  if(/*strncasecmp(cgiRequestMethod,"post",4)!=0 && count(tmpMap)!=1 && */tmpMap!=NULL){
+  if(tmpMap!=NULL){
     freeMap(&tmpMap);
     free(tmpMap);
   }

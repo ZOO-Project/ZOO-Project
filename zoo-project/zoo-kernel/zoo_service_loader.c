@@ -665,12 +665,13 @@ int runRequest(map** inputs)
 {
   
 #ifndef USE_GDB
-  (void) signal(SIGSEGV,sig_handler);
-  (void) signal(SIGTERM,sig_handler);
-  (void) signal(SIGINT,sig_handler);
-  (void) signal(SIGILL,sig_handler);
-  (void) signal(SIGFPE,sig_handler);
-  (void) signal(SIGABRT,sig_handler);
+  signal(SIGCHLD, SIG_IGN);
+  signal(SIGSEGV,sig_handler);
+  signal(SIGTERM,sig_handler);
+  signal(SIGINT,sig_handler);
+  signal(SIGILL,sig_handler);
+  signal(SIGFPE,sig_handler);
+  signal(SIGABRT,sig_handler);
 #endif
 
   map* r_inputs=NULL;
@@ -2715,12 +2716,12 @@ int runRequest(map** inputs)
    * client.
    */
 #ifndef USE_GDB
-  (void) signal(SIGSEGV,donothing);
-  (void) signal(SIGTERM,donothing);
-  (void) signal(SIGINT,donothing);
-  (void) signal(SIGILL,donothing);
-  (void) signal(SIGFPE,donothing);
-  (void) signal(SIGABRT,donothing);
+  signal(SIGSEGV,donothing);
+  signal(SIGTERM,donothing);
+  signal(SIGINT,donothing);
+  signal(SIGILL,donothing);
+  signal(SIGFPE,donothing);
+  signal(SIGABRT,donothing);
 #endif
   if(((int)getpid())!=cpid || cgiSid!=NULL){
     fclose(stdout);
@@ -2770,6 +2771,10 @@ int runRequest(map** inputs)
   fflush(stdout);
   fflush(stderr);
 #endif
+
+  if(((int)getpid())!=cpid || cgiSid!=NULL){
+    exit(0);
+  }
 
   return 0;
 }
