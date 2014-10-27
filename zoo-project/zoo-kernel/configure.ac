@@ -445,7 +445,7 @@ else
 	if test "x$JDKHOME" = "xmacos";
 	then
 		JAVA_LDFLAGS="-framework JavaVM"
-		JAVA_CPPFLAGS="-I/Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
+		JAVA_CPPFLAGS="-I/Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
 	else
 		if test -d "$JDKHOME/jre/lib/i386";
 		then

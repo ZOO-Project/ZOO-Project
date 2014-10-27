@@ -2503,7 +2503,15 @@ int runRequest(map** inputs)
   maps *_tmpMaps=(maps*)malloc(MAPS_SIZE);
   _tmpMaps->name=zStrdup("lenv");
   char tmpBuff[100];
-  sprintf(tmpBuff,"%i",(cpid+(int)time(NULL)));
+  int lid=getShmLockId(NULL,1);
+  lockShm(lid);
+  struct ztimeval tp;
+  if(zGettimeofday(&tp,NULL)==0)
+    sprintf(tmpBuff,"%i",(cpid+((int)tp.tv_sec+(int)tp.tv_usec)));
+  else
+    sprintf(tmpBuff,"%i",(cpid+(int)time(NULL)));
+  unlockShm(lid);
+  removeShmLock(NULL,1);
   _tmpMaps->content=createMap("usid",tmpBuff);
   _tmpMaps->next=NULL;
   sprintf(tmpBuff,"%i",cpid);
@@ -2574,7 +2582,7 @@ int runRequest(map** inputs)
   addMapsToMaps(&m,_tmpMaps);
   freeMaps(&_tmpMaps);
   free(_tmpMaps);
-  
+
 #ifdef DEBUG
   dumpMap(request_inputs);
 #endif
@@ -2633,6 +2641,8 @@ int runRequest(map** inputs)
 #ifndef WIN32
       zSleep(1);
 #endif
+      r_inputs=getMapFromMaps(m,"lenv","usid");
+      int cpid=atoi(r_inputs->value);
       r_inputs=getMapFromMaps(m,"main","tmpPath");
       map* r_inputs1=getMap(s1->content,"ServiceProvider");
       fbkp=(char*)malloc((strlen(r_inputs->value)+strlen(r_inputs1->value)+1024)*sizeof(char));
