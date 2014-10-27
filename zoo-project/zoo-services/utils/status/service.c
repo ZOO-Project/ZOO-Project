@@ -104,13 +104,14 @@ extern "C" {
       /**
        * Parse Status to extract Status / Message
        */
-      char *tmpStr=getStatus(atoi(tmpMap->value));
+      char *tmpStr=_getStatus(conf,atoi(tmpMap->value));
 #ifdef DEBUG
       fprintf(stderr,"DEBUG: %s \n",tmpStr);
 #endif
       if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	char *tmpStr1=strdup(tmpStr);
 	char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	free(tmpStr);
 	tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	char *tmpStrFinal=(char*)malloc((strlen(tmpStr0)+11)*sizeof(char));
 	sprintf(tmpStrFinal,"string(\"%s\")",tmpStr0);
