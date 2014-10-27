@@ -1,5 +1,5 @@
 <wps:Execute service="WPS" version="1.0.0" xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wps/1.0.0
-../wpsExecute_request.xsd">
+../wpsExecute_request.xsd" language="{{language}}">
   <!-- template-version: 0.21 -->
 	<ows:Identifier>{{Identifier}}</ows:Identifier>
 	<wps:DataInputs>
@@ -28,17 +28,17 @@
 {{#is_get}}
 		<wps:Input>
 			<ows:Identifier>{{identifier}}</ows:Identifier>
-			<wps:Reference xlink:href="{{href}}"/>
+			<wps:Reference xlink:href="{{href}}"{{#schema}} schema="{{shema}}"{{/schema}}{{#mimeType}} mimeType="{{mimeType}}"{{/mimeType}}{{#encoding}} encoding="{{encoding}}"{{/encoding}}/>
 		</wps:Input>
 {{/is_get}}
 {{#is_post}}
 		<wps:Input>
 			<ows:Identifier>{{identifier}}</ows:Identifier>
 			<wps:Reference xlink:href="{{href}}" method="{{method}}">
-{{#mimeType}}
-			  <wps:Header key="Content-type" value="{{mimeType}}" />
-{{/mimeType}}
-			  <wps:Body>{{{complexPayload}}}</wps:Body>
+{{#headers}}
+			  <wps:Header key="{{key}}" value="{{value}}" />
+{{/headers}}
+			  <wps:Body>{{{value}}}</wps:Body>
 			</wps:Reference>
 		</wps:Input>
 {{/is_post}}
@@ -47,8 +47,8 @@
 		<wps:Input>
       <ows:Identifier>{{identifier}}</ows:Identifier>
       <wps:Data>
-        <wps:ComplexData{{#schema}} schema="{{shema}}"{{/schema}}{{#mimeType}} mimeType="{{mimeType}}"{{/mimeType}}{{#encoding}} encoding="{{encoding}}"{{/encoding}}>
-        	{{{complexPayload}}}
+        <wps:ComplexData{{#schema}} schema="{{shema}}"{{/schema}}{{#mimeType}} mimeType="{{mimeType}}"{{/mimeType}}{{#encoding}} encoding="{{encoding}}"{{/encoding}}>{{#is_XML}}
+	 {{{value}}}{{/is_XML}}{{^is_XML}}<![CDATA[{{{value}}}]]>{{/is_XML}}
         </wps:ComplexData>
       </wps:Data>
     </wps:Input>
@@ -58,15 +58,17 @@
 	</wps:DataInputs>	
 	<wps:ResponseForm>
 {{#RawDataOutput}}
+{{#DataOutputs}}
     <wps:RawDataOutput mimeType="{{mimeType}}">
       <ows:Identifier>{{identifier}}</ows:Identifier>
     </wps:RawDataOutput>
+{{/DataOutputs}}
 {{/RawDataOutput}}
 {{^RawDataOutput}}
     <wps:ResponseDocument{{#storeExecuteResponse}} storeExecuteResponse="{{storeExecuteResponse}}"{{/storeExecuteResponse}}{{#lineage}} lineage="{{lineage}}"{{/lineage}}{{#status}} status="{{status}}"{{/status}}>
 {{#DataOutputs}}
 {{#is_literal}}
-      <wps:Output>
+      <wps:Output{{#dataType}} dataType="{{dataType}}"{{/dataType}}{{#uom}} uom="{{uom}}"{{/uom}}>
         <ows:Identifier>{{identifier}}</ows:Identifier>
       </wps:Output>
 {{/is_literal}}
