@@ -40,12 +40,26 @@
 #define zOpen _open
 #define zWrite _write
 #define zSleep Sleep
+#include <sys/timeb.h>
+struct ztimeval {
+  long tv_sec; /* seconds */
+  long tv_usec; /* and microseconds */
+};
+void zGettimeofday(struct mstimeval* tp, void* tzp)
+{
+  struct _timeb theTime;
+  _ftime(&theTime);
+  tp->tv_sec = theTime.time;
+  tp->tv_usec = theTime.millitm * 1000;
+}
 #else
 #define zStrdup strdup
 #define zMkdir mkdir
 #define zOpen open
 #define zWrite write
 #define zSleep sleep
+#define zGettimeofday gettimeofday
+#define ztimeval timeval
 #endif 
 
 #ifdef __cplusplus

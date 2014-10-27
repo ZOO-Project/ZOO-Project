@@ -124,9 +124,11 @@ char* _getStatus(maps* conf,int pid){
 #define SHMEMSIZE 4096
 
 char* getKeyValue(maps* conf){
+  if(conf==NULL)
+     return "700666";
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
-    tmpMap=getMapFromMaps(conf,"lenv","sid");
+    tmpMap=getMapFromMaps(conf,"lenv","usid");
   char* key="-1";
   if(tmpMap!=NULL){
     key=(char*)malloc((strlen(tmpMap->value)+9)*sizeof(char));
@@ -201,7 +203,7 @@ int _updateStatus(maps *conf){
   char *final_string=NULL;
   char *s=NULL;
   map *tmpMap1;
-  map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+  map *tmpMap=getMapFromMaps(conf,"lenv","usid");
   semid lockid=getShmLockId(conf,1);
   if(lockid==NULL){
 #ifdef DEBUG
@@ -336,9 +338,11 @@ union semun {
 #endif
 
 int getKeyValue(maps* conf){
+  if(conf==NULL)
+     return 700666;
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
-    tmpMap=getMapFromMaps(conf,"lenv","sid");
+    tmpMap=getMapFromMaps(conf,"lenv","usid");
   int key=-1;
   if(tmpMap!=NULL)
     key=atoi(tmpMap->value);
@@ -448,7 +452,7 @@ void unhandleStatus(maps *conf){
   key_t key;
   void *shm;
   struct shmid_ds shmids;
-  map *tmpMap=getMapFromMaps(conf,"lenv","sid");
+  map *tmpMap=getMapFromMaps(conf,"lenv","usid");
   if(tmpMap!=NULL){
     key=atoi(tmpMap->value);
     if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
@@ -530,7 +534,9 @@ char* getStatus(int pid){
       fprintf(stderr,"shmat failed in getStatus\n");
 #endif
     }else{
-      return (char*)shm;
+      char *ret=strdup((char*)shm);
+      shmdt((void *)shm);
+      return ret;
     }
   }
   return (char*)"-1";
@@ -1717,7 +1723,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       char currentSid[128];
       map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
       map *tmp_lenv=NULL;
-      tmp_lenv=getMapFromMaps(m,"lenv","sid");
+      tmp_lenv=getMapFromMaps(m,"lenv","usid");
       if(tmp_lenv==NULL)
 	sprintf(currentSid,"%i",pid);
       else
@@ -1734,19 +1740,25 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	  sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
       }
     }else{
-      map* tmpm2=getMap(tmp_maps->content,"tmpUrl");
+      int lpid;
+      map* tmpm2=getMapFromMaps(m,"lenv","usid");
+      lpid=atoi(tmpm2->value);
+      tmpm2=getMap(tmp_maps->content,"tmpUrl");
       if(tmpm1!=NULL && tmpm2!=NULL){
 	if( strncasecmp( tmpm2->value, "http://", 7) == 0 ||
 	    strncasecmp( tmpm2->value, "https://", 8 ) == 0 ){
-	  sprintf(url,"%s/%s_%i.xml",tmpm2->value,service,pid);
+	  sprintf(url,"%s/%s_%i.xml",tmpm2->value,service,lpid);
 	}else
-	  sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,pid);
+	  sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,lpid);
       }
     }
     if(tmpm1!=NULL)
       sprintf(tmp,"%s",tmpm1->value);
+    int lpid;
+    tmpm1=getMapFromMaps(m,"lenv","usid");
+    lpid=atoi(tmpm1->value);
     tmpm1=getMapFromMaps(m,"main","TmpPath");
-    sprintf(stored_path,"%s/%s_%i.xml",tmpm1->value,service,pid);
+    sprintf(stored_path,"%s/%s_%i.xml",tmpm1->value,service,lpid);
   }
 
 
