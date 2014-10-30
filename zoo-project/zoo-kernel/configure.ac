@@ -45,6 +45,14 @@ then
 fi
 AC_SUBST([DEB_DEF])
 
+
+
+
+AC_ARG_WITH([cgi-dir],
+    [AS_HELP_STRING([--with-cgi-dir=PATH], [specify an alternative cgi directory path ( default: /usr/lib/cgi-bin) ])],
+    [CGI_DIR="$withval"], [CGI_DIR="/usr/lib/cgi-bin"])
+AC_SUBST([CGI_DIR])
+
 #============================================================================
 # Detect if gdal is installed
 #============================================================================

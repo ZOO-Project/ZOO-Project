@@ -5,6 +5,8 @@ ifeq ($(OS),Darwin)
 	MACOS_CFLAGS=-arch $(shell uname -m)
 endif
 
+CGI_DIR=@CGI_DIR@
+
 YAML_CFLAGS=@YAML_CPPFLAGS@
 YAML_LDFLAGS=@YAML_LDFLAGS@
 YAML_FILE=@YAML_FILE@
