@@ -100,12 +100,9 @@ zcfg2yaml: zcfg2yaml.c  ulinet.o service.h lex.sr.o service_conf.tab.o service_c
 	g++  ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o service_internal.o ${MS_FILE} ${JS_FILE}  ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml ${LDFLAGS}
 
 install:
-	@echo "##############################################################################"
-	@echo "# This won't install anything !!!                                            #"
-	@echo "#                                                                            #"
-	@echo "# Please copy the zoo_loader.cgi and its companion main.cfg into your cgbin  #"
-	@echo "# directory.                                                                 #"
-	@echo "##############################################################################"
+	install -d ${CGI_DIR}
+	install zoo_loader.cgi ${CGI_DIR}/
+	install main.cfg	${CGI_DIR}/
 
 clean:
 	rm -f version.h *.o *.zo *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM 
