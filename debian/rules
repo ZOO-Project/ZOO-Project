@@ -5,21 +5,37 @@
 	dh  $@
 
 override_dh_auto_configure:
-	cd zoo-project/zoo-kernel && autoconf && ./configure --with-python
+	cd zoo-project/zoo-kernel && autoconf && ./configure --with-python --with-js --with-cgi-dir=$(CURDIR)/debian/tmp/usr/lib/cgi-bin
 
 override_dh_auto_build:
 	dh_auto_build --builddirectory zoo-project/zoo-kernel
-	cd zoo-project/zoo-services/ogr/base-vect-ops && make
+	dh_auto_build --builddirectory zoo-project/zoo-services/cgal
+	dh_auto_build --builddirectory zoo-project/zoo-services/gdal/contour
+	dh_auto_build --builddirectory zoo-project/zoo-services/gdal/translate
+	dh_auto_build --builddirectory zoo-project/zoo-services/gdal/dem
+	dh_auto_build --builddirectory zoo-project/zoo-services/gdal/grid
+	dh_auto_build --builddirectory zoo-project/zoo-services/gdal/profile
+	dh_auto_build --builddirectory zoo-project/zoo-services/gdal/warp
+	dh_auto_build --builddirectory zoo-project/zoo-services/ogr/base-vect-ops
+	dh_auto_build --builddirectory zoo-project/zoo-services/ogr/ogr2ogr
+	dh_auto_build --builddirectory zoo-project/zoo-services/utils/status
 
 override_dh_auto_install:
 	dh_auto_install --builddirectory zoo-project/zoo-kernel
-	-mkdir -p $(CURDIR)/debian/tmp/usr/lib/cgi-bin
-	install -m755 $(CURDIR)/zoo-project/zoo-kernel/zoo_loader.cgi $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
-	-mv -v $(CURDIR)/zoo-project/zoo-kernel/main.cfg $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
-	install -m755 $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops/cgi-env/ogr_service.zo $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
-	-mv -v $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops/cgi-env/*.zcfg $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
-	install -m755 $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops-py/cgi-env/ogr_sp.py $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
-	-mv -v $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops-py/cgi-env/*.zcfg $(CURDIR)/debian/tmp/usr/lib/cgi-bin/
+	dh_auto_install --builddirectory zoo-project/zoo-services/cgal
+	dh_auto_install --builddirectory zoo-project/zoo-services/gdal/contour
+	dh_auto_install --builddirectory zoo-project/zoo-services/gdal/translate
+	dh_auto_install --builddirectory zoo-project/zoo-services/gdal/dem
+	dh_auto_install --builddirectory zoo-project/zoo-services/gdal/grid
+	dh_auto_install --builddirectory zoo-project/zoo-services/gdal/profile
+	dh_auto_install --builddirectory zoo-project/zoo-services/gdal/warp
+	install -d $(CURDIR)/debian/tmp/usr/lib/cgi-bin/gdal/ndvi
+	install $(CURDIR)/zoo-project/zoo-services/gdal/ndvi/cgi-env/* $(CURDIR)/debian/tmp/usr/lib/cgi-bin/gdal/ndvi/
+	dh_auto_install --builddirectory zoo-project/zoo-services/ogr/base-vect-ops
+	dh_auto_install --builddirectory zoo-project/zoo-services/ogr/ogr2ogr
+	install -d $(CURDIR)/debian/tmp/usr/lib/cgi-bin/ogr/base-vect-ops-py
+	install $(CURDIR)/zoo-project/zoo-services/ogr/base-vect-ops-py/cgi-env/* $(CURDIR)/debian/tmp/usr/lib/cgi-bin/ogr/base-vect-ops-py/
+	dh_auto_install --builddirectory zoo-project/zoo-services/utils/status
 
-override_dh_auto_clean:
-	dh_auto_clean --builddirectory zoo-project/zoo-kernel
+#override_dh_auto_clean:
+#	dh_auto_clean --builddirectory zoo-project/zoo-kernel
