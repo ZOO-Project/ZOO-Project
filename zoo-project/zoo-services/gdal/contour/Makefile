@@ -5,6 +5,9 @@ CC=gcc
 
 cgi-env/contour_service.zo: service.c
 	g++ ${CFLAGS} -shared -fpic -o cgi-env/contour_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS}
+install:
+	install -d ${CGI_DIR}/gdal/contour
+	install cgi-env/* ${CGI_DIR}/gdal/contour
 
 clean:
 	rm -f cgi-env/*.zo
