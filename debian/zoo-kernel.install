@@ -1,2 +1,3 @@
 usr/lib/cgi-bin/zoo_loader.cgi
 usr/lib/cgi-bin/main.cfg
+zoo-project/zoo-api/js/*    usr/lib/cgi-bin/
