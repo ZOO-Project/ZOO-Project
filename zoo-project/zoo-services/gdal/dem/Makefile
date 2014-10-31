@@ -6,5 +6,10 @@ CC=gcc
 cgi-env/dem_service.zo: service.c
 	g++ ${CFLAGS} -shared -fpic -o cgi-env/dem_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS}
 
+install:
+	install -d ${CGI_DIR}/gdal/dem
+	install cgi-env/* ${CGI_DIR}/gdal/dem
+
+
 clean:
 	rm -f cgi-env/*.zo
