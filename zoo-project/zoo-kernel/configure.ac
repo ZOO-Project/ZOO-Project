@@ -211,6 +211,58 @@ AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([could not find libxml2]
 AC_SUBST([XML2_CPPFLAGS])
 AC_SUBST([XML2_LDFLAGS])
 
+
+
+# ===========================================================================
+# Detect if libxslt is installed
+# ===========================================================================
+
+AC_ARG_WITH([xsltconfig], 
+	[AS_HELP_STRING([--with-xsltconfig=FILE], [specify an alternative xslt-config file])], 
+	[XSLTCONFIG="$withval"], [XSLTCONFIG=""])
+
+if test "x$XSLTCONFIG" = "x"; then
+	# XSLTCONFIG was not specified, so search within the current path
+	AC_PATH_PROG([XSLTCONFIG], [xslt-config])
+
+	# If we couldn't find xslt-config, display a warning
+	if test "x$XSLTCONFIG" = "x"; then
+		AC_MSG_ERROR([could not find xslt-config from libxslt within the current path. You may need to try re-running configure with a --with-xtltconfig parameter.])
+	fi
+else
+	# XSLTCONFIG was specified; display a message to the user
+	if test "x$XSLTCONFIG" = "xyes"; then
+		AC_MSG_ERROR([you must specify a parameter to --with-xsltconfig, e.g. --with-xsltconfig=/path/to/xslt-config])
+	else
+		if test -f $XSLTCONFIG; then
+			AC_MSG_RESULT([Using user-specified xslt-config file: $XSLTCONFIG])
+		else
+			AC_MSG_ERROR([the user-specified xslt-config file $XSLTCONFIG does not exist])
+		fi	
+	fi
+fi
+
+# Extract the linker and include flags 
+XSLT_LDFLAGS=`$XSLTCONFIG --libs`
+XSLT_CPPFLAGS=`$XSLTCONFIG --cflags`
+
+# Check headers file
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$XML2_CPPFLAGS"
+AC_CHECK_HEADERS([libxslt/xslt.h libxslt/xsltInternals.h libxslt/transform.h libxslt/xsltutils.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libxlst])])
+
+# Ensure we can link against libxslt
+LIBS_SAVE="$LIBS"
+LIBS="$XSLT_LDFLAGS"
+
+AC_SUBST([XSLT_CPPFLAGS])
+AC_SUBST([XSLT_LDFLAGS])
+
+
+
+
+
 #============================================================================
 # Detect if mapserver is installed
 #============================================================================
