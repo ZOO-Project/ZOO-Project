@@ -248,21 +248,79 @@ XSLT_CPPFLAGS=`$XSLTCONFIG --cflags`
 
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
-CPPFLAGS="$XML2_CPPFLAGS"
+CPPFLAGS="$XSLT_CPPFLAGS"
 AC_CHECK_HEADERS([libxslt/xslt.h libxslt/xsltInternals.h libxslt/transform.h libxslt/xsltutils.h],
 		 [], [AC_MSG_ERROR([could not find headers include related to libxlst])])
-
-# Ensure we can link against libxslt
-LIBS_SAVE="$LIBS"
-LIBS="$XSLT_LDFLAGS"
 
 AC_SUBST([XSLT_CPPFLAGS])
 AC_SUBST([XSLT_LDFLAGS])
 
 
 
+# ===========================================================================
+# Detect if libgeos is installed
+# ===========================================================================
+
+AC_ARG_WITH([geosconfig], 
+	[AS_HELP_STRING([--with-geosconfig=FILE], [specify an alternative geos-config file])], 
+	[GEOSCONFIG="$withval"], [GEOSCONFIG=""])
+
+if test "x$GEOSCONFIG" = "x"; then
+	# GEOSCONFIG was not specified, so search within the current path
+	AC_PATH_PROG([GEOSCONFIG], [geos-config])
+
+	# If we couldn't find geos-config, display a warning
+	if test "x$GEOSCONFIG" = "x"; then
+		AC_MSG_WARN([could not find geos-config from libgeos within the current path. You may need to try re-running configure with a --with-geosconfig parameter.])
+	fi
+else
+	# GEOSCONFIG was specified; display a message to the user
+	if test "x$GEOSCONFIG" = "xyes"; then
+		AC_MSG_WARN([you must specify a parameter to --with-geosconfig, e.g. --with-geosconfig=/path/to/geos-config])
+	else
+		if test -f $GEOSCONFIG; then
+			AC_MSG_RESULT([Using user-specified geos-config file: $GEOSCONFIG])
+		else
+			AC_MSG_ERROR([the user-specified geos-config file $GEOSCONFIG does not exist])
+		fi	
+	fi
+fi
+
+GEOS_LDFLAGS=`$GEOSCONFIG --libs`
+GEOS_CPPFLAGS=`$GEOSCONFIG --cflags`
+
+# Check headers file
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$GEOS_CPPFLAGS"
+AC_CHECK_HEADERS([geos_c.h],
+		 [], [AC_MSG_WARN([could not find headers include related to libgeos])])
+
+AC_SUBST([GEOS_CPPFLAGS])
+AC_SUBST([GEOS_LDFLAGS])
 
 
+# ===========================================================================
+# Detect if cgal is installed
+# ===========================================================================
+
+AC_ARG_WITH([cgal],
+        [AS_HELP_STRING([--with-cgal=PATH], [specify an alternative location for CGAL setup])],
+        [CGALPATH="$withval"], [CGALPATH="/usr"])
+
+
+# Check headers file
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$CGAL_CPPFLAGS"
+AC_CHECK_HEADERS([CGAL/Delaunay_triangulation_2.h],
+         [], [AC_MSG_WARN([could not find headers include related to libgeos])])
+
+# Extract the linker and include flags
+CGAL_LDFLAGS="-L$CGALPATH/lib"
+CGAL_CPPFLAGS="-I$CGALPATH/include"
+
+
+AC_SUBST([CGAL_CPPFLAGS])
+AC_SUBST([CGAL_LDFLAGS])
 #============================================================================
 # Detect if mapserver is installed
 #============================================================================
