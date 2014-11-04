@@ -31,8 +31,27 @@ public class HelloJava {
         hm1.put("dataType","string");
         HashMap tmp=(HashMap)(inputs.get("S"));
         String v=tmp.get("value").toString();
-        hm1.put("value","Hello "+v+" from JAVA World !!");
+        hm1.put("value",ZOO._("Hello "+v+" from JAVA World !!"));
         outputs.put("Result",hm1);
-        return 3;
-  }
+        return ZOO.SERVICE_SUCCEEDED;
+    }
+    public static int JavaLongProcess(HashMap conf,HashMap inputs, HashMap outputs) {
+        HashMap hm1 = new HashMap();
+        hm1.put("dataType","string");
+        HashMap tmp=(HashMap)(inputs.get("S"));
+        String v=tmp.get("value").toString();
+	Integer i;
+	for(i=0;i<100;i+=5){
+	    ZOO.updateStatus(conf,String.valueOf(i),"Currently executing tasks "+String.valueOf(i/5)+"..");
+	    try{
+		Thread.sleep(2000);
+	    }catch(java.lang.InterruptedException e){
+	    }finally{
+	    }
+	}
+        hm1.put("value",ZOO._("Hello "+v+" from JAVA World !!"));
+        outputs.put("Result",hm1);
+        return ZOO.SERVICE_SUCCEEDED;
+    }
 }
+

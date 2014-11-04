@@ -1,0 +1,33 @@
+[JavaLongProcess]
+ Title = Display a string
+ Abstract = Display a string which contains an hello message after waiting many times to illustrate the way you can use updateStatus ZOO-API function from your Java service
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = HelloJava
+ serviceType = Java
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [S]
+   Title = the string
+   Abstract = The string to add to the hellow one.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The hello string
+   Abstract = The Hello message string.
+   <LiteralOutput>
+    DataType = string
+    <Default>
+    </Default>
+   </LiteralOutput>
+ </DataOutputs>  
