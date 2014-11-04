@@ -266,8 +266,6 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
 	    sprintf(tmp01,_("Unable to parse the ZCFG file: %s."),dp->d_name);
 	  dup2(saved_stdout,fileno(stdout));
 	  errorException(m, tmp01,"InternalError",NULL);
-	  freeMaps(&m);
-	  free(m);
 	  return -1;
 	}
 #ifdef DEBUG

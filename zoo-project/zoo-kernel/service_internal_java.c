@@ -231,6 +231,14 @@ void displayStack(JNIEnv *env,maps* main_conf){
   char tmps[1024];
   sprintf(tmps,"%s/%d.ztmp",tmpm->value,getpid());
   FILE* new_stdout=fopen(tmps,"wb+");
+  if(new_stdout==NULL){
+    map* err=createMap("text","Unable to run your service, no debug informations can be provided (please verify privileges on tmpPath)");
+    addToMap(err,"code","InternalError");
+    printExceptionReportResponse(main_conf,err);
+    freeMap(&err);
+    free(err);
+    return;
+  }
   fflush(stderr);
   dup2(fileno(new_stdout),fileno(stderr));
   fprintf(stderr,"Unable to run your java process properly: ");
@@ -633,3 +641,4 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 
   return final_res;
 }
+
