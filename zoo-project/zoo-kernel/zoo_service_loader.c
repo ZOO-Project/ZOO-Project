@@ -1215,7 +1215,7 @@ runRequest (map ** inputs)
     }
 
   s1 = NULL;
-  s1 = (service *) malloc (SERVICE_SIZE);
+  /**s1 = (service *) malloc (SERVICE_SIZE);
   if (s1 == NULL)
     {
       freeMaps (&m);
@@ -1230,7 +1230,9 @@ runRequest (map ** inputs)
     snprintf (tmps1, 1024, "%s/%s", ntmp, r_inputs->value);
   else
     snprintf (tmps1, 1024, "%s/", ntmp);
+   **/
   r_inputs = getMap (request_inputs, "Identifier");
+/**
   char *ttmp = zStrdup (tmps1);
   snprintf (tmps1, 1024, "%s/%s.zcfg", ttmp, r_inputs->value);
   free (ttmp);
@@ -1252,8 +1254,11 @@ runRequest (map ** inputs)
   dup2 (fileno (stderr), fileno (stdout));
   t = readServiceFile (m, tmps1, &s1, r_inputs->value);
   fflush (stdout);
+  **/
+  int saved_stdout = dup (fileno (stdout));
   dup2 (saved_stdout, fileno (stdout));
-  if (t < 0)
+  s1 = search_service (r_inputs->value);
+  if (s1 == NULL)
     {
       char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
       sprintf (tmpMsg,
@@ -1453,7 +1458,7 @@ runRequest (map ** inputs)
           free (REQUEST);
           free (SERVICE_URL);
           InternetCloseHandle (&hInternet);
-          freeService (&s1);
+          //freeService (&s1);
           free (s1);
           return 0;
         }
@@ -1617,7 +1622,7 @@ runRequest (map ** inputs)
                           free (REQUEST);
                           free (SERVICE_URL);
                           InternetCloseHandle (&hInternet);
-                          freeService (&s1);
+                          //freeService (&s1);
                           free (s1);
                           return 0;
                         }
@@ -1639,7 +1644,7 @@ runRequest (map ** inputs)
                               free (REQUEST);
                               free (SERVICE_URL);
                               InternetCloseHandle (&hInternet);
-                              freeService (&s1);
+                              //freeService (&s1);
                               free (s1);
                               return 0;
                             }
@@ -1674,7 +1679,7 @@ runRequest (map ** inputs)
                               free (REQUEST);
                               free (SERVICE_URL);
                               InternetCloseHandle (&hInternet);
-                              freeService (&s1);
+                              //freeService (&s1);
                               free (s1);
                               return 0;
                             }
@@ -1743,7 +1748,8 @@ runRequest (map ** inputs)
                        xmlStrlen (cur2->name)) == 0)
                     {
                       xmlChar *val = xmlNodeListGetString (doc,
-                                                           cur2->xmlChildrenNode,
+                                                           cur2->
+                                                           xmlChildrenNode,
                                                            1);
                       if (tmpmaps == NULL)
                         {
@@ -1772,7 +1778,8 @@ runRequest (map ** inputs)
                                          xmlStrlen (cur2->name)) == 0)
                     {
                       xmlChar *val = xmlNodeListGetString (doc,
-                                                           cur2->xmlChildrenNode,
+                                                           cur2->
+                                                           xmlChildrenNode,
                                                            1);
                       if (tmpmaps == NULL)
                         {
@@ -1784,7 +1791,7 @@ runRequest (map ** inputs)
                                                      ("Unable to allocate memory."),
                                                      "InternalError", NULL);
                             }
-                          tmpmaps->name = zStrdup ("missingIndetifier");
+                          tmpmaps->name = zStrdup ("missingIndentifier");
                           tmpmaps->content =
                             createMap ((char *) cur2->name, (char *) val);
                           tmpmaps->next = NULL;
@@ -1857,7 +1864,7 @@ runRequest (map ** inputs)
                                           free (REQUEST);
                                           free (SERVICE_URL);
                                           InternetCloseHandle (&hInternet);
-                                          freeService (&s1);
+                                          //freeService (&s1);
                                           free (s1);
                                           return 0;
                                         }
@@ -2208,8 +2215,7 @@ runRequest (map ** inputs)
                           if (strcasecmp (test->value, "base64") != 0)
                             {
                               xmlChar *mv = xmlNodeListGetString (doc,
-                                                                  cur4->
-                                                                  xmlChildrenNode,
+                                                                  cur4->xmlChildrenNode,
                                                                   1);
                               map *ltmp = getMap (tmpmaps->content,
                                                   "mimeType");
@@ -2255,8 +2261,7 @@ runRequest (map ** inputs)
                           else
                             {
                               xmlChar *tmp = xmlNodeListGetRawString (doc,
-                                                                      cur4->
-                                                                      xmlChildrenNode,
+                                                                      cur4->xmlChildrenNode,
                                                                       0);
                               addToMap (tmpmaps->content,
                                         "value", (char *) tmp);
@@ -2324,7 +2329,7 @@ runRequest (map ** inputs)
                             free (REQUEST);
                             free (SERVICE_URL);
                             InternetCloseHandle (&hInternet);
-                            freeService (&s1);
+                            //freeService (&s1);
                             free (s1);
                             return 0;
                           }
@@ -2423,7 +2428,8 @@ runRequest (map ** inputs)
                        xmlStrlen (cur2->name)) == 0)
                     {
                       xmlChar *val = xmlNodeListGetString (NULL,
-                                                           cur2->xmlChildrenNode,
+                                                           cur2->
+                                                           xmlChildrenNode,
                                                            1);
                       free (tmpmaps->name);
                       tmpmaps->name = zStrdup ((char *) val);
@@ -2510,7 +2516,8 @@ runRequest (map ** inputs)
                          xmlStrlen (cur1->name)) == 0)
                       {
                         xmlChar *val = xmlNodeListGetString (doc,
-                                                             cur1->xmlChildrenNode,
+                                                             cur1->
+                                                             xmlChildrenNode,
                                                              1);
                         if (tmpmaps == NULL)
                           {
@@ -2570,7 +2577,8 @@ runRequest (map ** inputs)
                                                 xmlStrlen (cur1->name)) == 0)
                       {
                         xmlChar *val = xmlNodeListGetString (doc,
-                                                             cur1->xmlChildrenNode,
+                                                             cur1->
+                                                             xmlChildrenNode,
                                                              1);
                         if (tmpmaps == NULL)
                           {
@@ -2646,8 +2654,7 @@ runRequest (map ** inputs)
                                  xmlStrlen (cur2->name)) == 0)
                               {
                                 xmlChar *val = xmlNodeListGetString (doc,
-                                                                     cur2->
-                                                                     xmlChildrenNode,
+                                                                     cur2->xmlChildrenNode,
                                                                      1);
                                 if (tmpmaps == NULL)
                                   {
@@ -2687,8 +2694,7 @@ runRequest (map ** inputs)
                                                         (cur2->name)) == 0)
                               {
                                 xmlChar *val = xmlNodeListGetString (doc,
-                                                                     cur2->
-                                                                     xmlChildrenNode,
+                                                                     cur2->xmlChildrenNode,
                                                                      1);
                                 if (tmpmaps == NULL)
                                   {
@@ -2789,7 +2795,7 @@ runRequest (map ** inputs)
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
               printExceptionReportResponse (m, tmpe);
-              freeService (&s1);
+              //freeService (&s1);
               free (s1);
               freeMap (&tmpe);
               free (tmpe);
@@ -2833,7 +2839,7 @@ runRequest (map ** inputs)
         }
       addToMap (tmpe, "text", tmps);
       printExceptionReportResponse (m, tmpe);
-      freeService (&s1);
+      //freeService (&s1);
       free (s1);
       freeMap (&tmpe);
       free (tmpe);
@@ -3019,7 +3025,7 @@ runRequest (map ** inputs)
                       _
                       ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
                       "InvalidParameterValue", "storeExecuteResponse");
-      freeService (&s1);
+      //freeService (&s1);
       free (s1);
       freeMaps (&m);
       free (m);
@@ -3341,7 +3347,7 @@ runRequest (map ** inputs)
       free (tmps1);
     }
 
-  freeService (&s1);
+  //freeService (&s1);
   free (s1);
   freeMaps (&m);
   free (m);
