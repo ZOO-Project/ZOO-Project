@@ -24,8 +24,9 @@
 
 #include "service_internal_python.h"
 
-struct module_state {
-    PyObject *error;
+struct module_state
+{
+  PyObject *error;
 };
 
 #if PY_MAJOR_VERSION >= 3
@@ -42,23 +43,29 @@ struct module_state {
 static struct module_state _state;
 #endif
 
-static PyObject* ZooError;
+static PyObject *ZooError;
 
 PyMethodDef zooMethods[] = {
-  {"_", PythonTranslate, METH_VARARGS, "Translate a string using the zoo-services textdomain."},
-  {"update_status", PythonUpdateStatus, METH_VARARGS, "Update status percentage of a running process."},
-  {NULL, NULL, 0, NULL} /* tempt not the blade, all fear the sentinel */
+  {"_", PythonTranslate, METH_VARARGS,
+   "Translate a string using the zoo-services textdomain."},
+  {"update_status", PythonUpdateStatus, METH_VARARGS,
+   "Update status percentage of a running process."},
+  {NULL, NULL, 0, NULL}         /* tempt not the blade, all fear the sentinel */
 };
 
 #if PY_MAJOR_VERSION >= 3
 
-static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
-  Py_VISIT(GETSTATE(m)->error);
+static int
+myextension_traverse (PyObject * m, visitproc visit, void *arg)
+{
+  Py_VISIT (GETSTATE (m)->error);
   return 0;
 }
 
-static int myextension_clear(PyObject *m) {
-  Py_CLEAR(GETSTATE(m)->error);
+static int
+myextension_clear (PyObject * m)
+{
+  Py_CLEAR (GETSTATE (m)->error);
   return 0;
 }
 
@@ -66,7 +73,7 @@ static struct PyModuleDef moduledef = {
   PyModuleDef_HEAD_INIT,
   "zoo",
   NULL,
-  sizeof(struct module_state),
+  sizeof (struct module_state),
   zooMethods,
   NULL,
   myextension_traverse,
@@ -75,517 +82,583 @@ static struct PyModuleDef moduledef = {
 };
 #endif
 
-PyMODINIT_FUNC init_zoo(){
-  PyObject *tmp,*d;
-  PyObject *module = 
+PyMODINIT_FUNC
+init_zoo ()
+{
+  PyObject *tmp, *d;
+  PyObject *module =
 #if PY_MAJOR_VERSION >= 3
-    PyModule_Create(&moduledef);
+    PyModule_Create (&moduledef);
 #else
-    Py_InitModule("zoo", zooMethods);
+    Py_InitModule ("zoo", zooMethods);
 #endif
-  if (module == NULL){
+  if (module == NULL)
+    {
 #if PY_MAJOR_VERSION >= 3
-    return NULL;
+      return NULL;
 #else
-    return;
+      return;
 #endif
-  }
+    }
 
-  struct module_state *st = GETSTATE(module);
+  struct module_state *st = GETSTATE (module);
 
-  d = PyModule_GetDict(module);
-  tmp = PyInt_FromLong(3);
-  PyDict_SetItemString(d, "SERVICE_SUCCEEDED", tmp);
-  Py_DECREF(tmp);
+  d = PyModule_GetDict (module);
+  tmp = PyInt_FromLong (3);
+  PyDict_SetItemString (d, "SERVICE_SUCCEEDED", tmp);
+  Py_DECREF (tmp);
 
-  tmp = PyInt_FromLong(4);
-  PyDict_SetItemString(d, "SERVICE_FAILED", tmp);
-  Py_DECREF(tmp);
+  tmp = PyInt_FromLong (4);
+  PyDict_SetItemString (d, "SERVICE_FAILED", tmp);
+  Py_DECREF (tmp);
 
-  tmp = PyString_FromString(ZOO_VERSION);
-  PyDict_SetItemString(d, "VERSION", tmp);
-  Py_DECREF(tmp);
+  tmp = PyString_FromString (ZOO_VERSION);
+  PyDict_SetItemString (d, "VERSION", tmp);
+  Py_DECREF (tmp);
 
-  ZooError = PyErr_NewException((char*)"zoo.error", NULL, NULL);
-  Py_INCREF(ZooError);
-  PyModule_AddObject(module, "error", ZooError);
+  ZooError = PyErr_NewException ((char *) "zoo.error", NULL, NULL);
+  Py_INCREF (ZooError);
+  PyModule_AddObject (module, "error", ZooError);
 #if PY_MAJOR_VERSION >= 3
   return module;
 #endif
 }
 
-int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
+int
+zoo_python_support (maps ** main_conf, map * request, service * s,
+                    maps ** real_inputs, maps ** real_outputs)
+{
   char *pythonpath;
   char *python_path;
-  maps* m=*main_conf;
-  maps* inputs=*real_inputs;
-  maps* outputs=*real_outputs;
-  map* tmp0=getMapFromMaps(*main_conf,"lenv","cwd");
-  char *ntmp=tmp0->value;
-  map* tmp=NULL;
-  int hasToClean=0;
-  tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH");
+  maps *m = *main_conf;
+  maps *inputs = *real_inputs;
+  maps *outputs = *real_outputs;
+  map *tmp0 = getMapFromMaps (*main_conf, "lenv", "cwd");
+  char *python_package =
+    (char *) malloc ((strlen (s->identifier) - strlen (s->name) + 1) *
+                     sizeof (char));
+  python_package[0] = '\0';
+  python_package =
+    strncat (python_package, s->identifier,
+             strlen (s->identifier) - strlen (s->name) - 1);
+  python_package[strlen (s->identifier) - strlen (s->name)] = '\0';
+  char *ntmp = tmp0->value;
+  map *tmp = NULL;
+  int hasToClean = 0;
+  tmp = getMapFromMaps (*main_conf, "env", "PYTHONPATH");
 #ifdef DEBUG
-  fprintf(stderr,"PYTHON SUPPORT \n");
+  fprintf (stderr, "PYTHON SUPPORT \n");
 #endif
-  if(tmp!=NULL){
+  if (tmp != NULL)
+    {
 #ifdef DEBUG
-    fprintf(stderr,"PYTHON SUPPORT (%i)\n",strlen(tmp->value));
+      fprintf (stderr, "PYTHON SUPPORT (%i)\n", strlen (tmp->value));
 #endif
-    python_path=(char*)malloc((strlen(tmp->value))*sizeof(char));
-    sprintf(python_path,"%s",tmp->value);
-    hasToClean=1;
-  }
-  else{
-    python_path=(char*)".";
-  }
-  tmp=NULL;
-  tmp=getMap(request,"metapath");
-  if(tmp!=NULL && strcmp(tmp->value,"")!=0){
-    pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
+      python_path = (char *) malloc ((strlen (tmp->value)) * sizeof (char));
+      sprintf (python_path, "%s", tmp->value);
+      hasToClean = 1;
+    }
+  else
+    {
+      python_path = (char *) ".";
+    }
+  pythonpath =
+    (char *) malloc ((2 + strlen (python_path) + strlen (ntmp)) *
+                     sizeof (char));
 #ifdef WIN32
-  sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+  sprintf (pythonpath, "%s;%s", ntmp, python_path);
 #else
-  sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  sprintf (pythonpath, "%s:%s", ntmp, python_path);
 #endif
-  }
-  else{
-    pythonpath=(char*)malloc((2+strlen(python_path)+strlen(ntmp))*sizeof(char));
-#ifdef WIN32
-    sprintf(pythonpath,"%s;%s",ntmp,python_path);
-#else
-    sprintf(pythonpath,"%s:%s",ntmp,python_path);
-#endif
-  }
+
 #ifdef DEBUG
-    fprintf(stderr,"PYTHONPATH=%s\n",pythonpath);
+  fprintf (stderr, "PYTHONPATH=%s\n", pythonpath);
 #endif
 #ifndef WIN32
-  setenv("PYTHONPATH",pythonpath,1);
+  setenv ("PYTHONPATH", pythonpath, 1);
 #else
-  SetEnvironmentVariable("PYTHONPATH",pythonpath);
-  char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
-  sprintf(toto,"PYTHONPATH=%s",pythonpath);
-  putenv(toto);
-  free(toto);
+  SetEnvironmentVariable ("PYTHONPATH", pythonpath);
+  char *toto = (char *) malloc ((strlen (pythonpath) + 12) * sizeof (char));
+  sprintf (toto, "PYTHONPATH=%s", pythonpath);
+  putenv (toto);
+  free (toto);
 #endif
-  if(hasToClean>0)
-    free(python_path);
-  free(pythonpath);
+  if (hasToClean > 0)
+    free (python_path);
+  free (pythonpath);
 
   PyThreadState *mainstate;
 #if PY_MAJOR_VERSION >= 3
-  PyImport_AppendInittab("zoo", init_zoo);
+  PyImport_AppendInittab ("zoo", init_zoo);
 #else
-  PyEval_InitThreads();
+  PyEval_InitThreads ();
 #endif
-  Py_Initialize();
+  Py_Initialize ();
 #if PY_MAJOR_VERSION >= 3
-  PyEval_InitThreads();
-  PyImport_ImportModule("zoo");
+  PyEval_InitThreads ();
+  PyImport_ImportModule ("zoo");
 #else
-  init_zoo();
+  init_zoo ();
 #endif
-  mainstate = PyThreadState_Swap(NULL);
-  PyEval_ReleaseLock();
+  mainstate = PyThreadState_Swap (NULL);
+  PyEval_ReleaseLock ();
   PyGILState_STATE gstate;
-  gstate = PyGILState_Ensure();
+  gstate = PyGILState_Ensure ();
   PyObject *pName, *pModule, *pFunc;
-  tmp=getMap(s->content,"serviceProvider");
-  map* mp=getMap(request,"metapath");
-  if(tmp!=NULL){
-    if(mp!=NULL && strlen(mp->value)>0){
-      char *mps=zStrdup(mp->value);
-      int i,len=strlen(mps);
-      int j=0;
-      for(i=0;i<len;i++){
-	if(mps[i]=='/'){
-	  mps[i]='.';
-	}
-      }
-      char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
-      sprintf(mn,"%s.%s",mps,tmp->value);
-      pName = PyString_FromString(mn);
-      free(mn);
-      free(mps);
+  tmp = getMap (s->content, "serviceProvider");
+  if (tmp != NULL)
+    {
+      char *module_name =
+        (char *) malloc (strlen (python_package) + strlen (tmp->value) + 2);
+      sprintf (module_name, "%s.%s", python_package, tmp->value);
+      pName = PyString_FromString (module_name);
+      free (python_package);
+      free (module_name);
+      fprintf (stderr, "%s %d", tmp->value, __LINE__);
     }
-    else{
-      pName = PyString_FromString(tmp->value);
-      fprintf(stderr,"%s %d",tmp->value,__LINE__);
+  else
+    {
+      map *err = createMap ("text",
+                            "Unable to parse serviceProvider please check your zcfg file.");
+      addToMap (err, "code", "NoApplicableCode");
+      printExceptionReportResponse (m, err);
+      exit (-1);
     }
-  }
-  else{
-    map* err=createMap("text","Unable to parse serviceProvider please check your zcfg file.");
-    addToMap(err,"code","NoApplicableCode");
-    printExceptionReportResponse(m,err);
-    exit(-1);
-  }
-  pModule = PyImport_Import(pName);
-  int res=SERVICE_FAILED;
-  if (pModule != NULL) {
-    pFunc=PyObject_GetAttrString(pModule,s->name);
-    if (pFunc && PyCallable_Check(pFunc)){
-      PyObject *pValue;
-      PyDictObject* arg1=PyDict_FromMaps(m);
-      PyDictObject* arg2=PyDict_FromMaps(inputs);
-      PyDictObject* arg3=PyDict_FromMaps(outputs);
-      PyObject *pArgs=PyTuple_New(3);
-      if (!pArgs)
-	return -1;
-      PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
-      PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
-      PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
-      pValue = PyObject_CallObject(pFunc, pArgs);
-      if (pValue != NULL) {
-	res=PyInt_AsLong(pValue);
-	freeMaps(real_outputs);
-	free(*real_outputs);
-	freeMaps(main_conf);
-	free(*main_conf);
-	*main_conf=mapsFromPyDict(arg1);
-	*real_outputs=mapsFromPyDict(arg3);
+  pModule = PyImport_Import (pName);
+  int res = SERVICE_FAILED;
+  if (pModule != NULL)
+    {
+      pFunc = PyObject_GetAttrString (pModule, s->name);
+      if (pFunc && PyCallable_Check (pFunc))
+        {
+          PyObject *pValue;
+          PyDictObject *arg1 = PyDict_FromMaps (m);
+          PyDictObject *arg2 = PyDict_FromMaps (inputs);
+          PyDictObject *arg3 = PyDict_FromMaps (outputs);
+          PyObject *pArgs = PyTuple_New (3);
+          if (!pArgs)
+            return -1;
+          PyTuple_SetItem (pArgs, 0, (PyObject *) arg1);
+          PyTuple_SetItem (pArgs, 1, (PyObject *) arg2);
+          PyTuple_SetItem (pArgs, 2, (PyObject *) arg3);
+          pValue = PyObject_CallObject (pFunc, pArgs);
+          if (pValue != NULL)
+            {
+              res = PyInt_AsLong (pValue);
+              freeMaps (real_outputs);
+              free (*real_outputs);
+              freeMaps (main_conf);
+              free (*main_conf);
+              *main_conf = mapsFromPyDict (arg1);
+              *real_outputs = mapsFromPyDict (arg3);
 #ifdef DEBUG
-	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
-	dumpMaps(inputs);
-	dumpMaps(*real_outputs);
+              fprintf (stderr, "Result of call: %i\n", PyInt_AsLong (pValue));
+              dumpMaps (inputs);
+              dumpMaps (*real_outputs);
 #endif
-      }else{	  
-	PyObject *ptype,*pvalue, *ptraceback;
-	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-	PyObject *trace=PyObject_Str(pvalue);
-	char pbt[10240];
-	if(PyString_Check(trace))
-	  sprintf(pbt,"TRACE : %s",PyString_AsString(trace));
-	else
-	  fprintf(stderr,"EMPTY TRACE ?");
-	trace=NULL;
-	trace=PyObject_Str(ptype);
-	if(PyString_Check(trace)){
-	  char *tpbt=zStrdup(pbt);
-	  sprintf(pbt,"%s\n%s",tpbt,PyString_AsString(trace));
-	  free(tpbt);
-	}
-	else
-	  fprintf(stderr,"EMPTY TRACE ?");
-	
-	char *tpbt=zStrdup(pbt);
-	pName = PyString_FromString("traceback");
-	pModule = PyImport_Import(pName);
-	pArgs = PyTuple_New(1);
-	PyTuple_SetItem(pArgs, 0, ptraceback);
-	pFunc = PyObject_GetAttrString(pModule,"format_tb");
-	pValue = PyObject_CallObject(pFunc, pArgs);
-	trace=NULL;
-	trace=PyObject_Str(pValue);
-	if(PyString_Check(trace))
-	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",tpbt,PyString_AsString(trace));
-	else
-	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations.",tpbt);
-	free(tpbt);
-	map* err=createMap("text",pbt);
-	addToMap(err,"code","NoApplicableCode");
-	printExceptionReportResponse(m,err);
-	res=-1;
-      }
+            }
+          else
+            {
+              PyObject *ptype, *pvalue, *ptraceback;
+              PyErr_Fetch (&ptype, &pvalue, &ptraceback);
+              PyObject *trace = PyObject_Str (pvalue);
+              char pbt[10240];
+              if (PyString_Check (trace))
+                sprintf (pbt, "TRACE : %s", PyString_AsString (trace));
+              else
+                fprintf (stderr, "EMPTY TRACE ?");
+              trace = NULL;
+              trace = PyObject_Str (ptype);
+              if (PyString_Check (trace))
+                {
+                  char *tpbt = zStrdup (pbt);
+                  sprintf (pbt, "%s\n%s", tpbt, PyString_AsString (trace));
+                  free (tpbt);
+                }
+              else
+                fprintf (stderr, "EMPTY TRACE ?");
+
+              char *tpbt = zStrdup (pbt);
+              pName = PyString_FromString ("traceback");
+              pModule = PyImport_Import (pName);
+              pArgs = PyTuple_New (1);
+              PyTuple_SetItem (pArgs, 0, ptraceback);
+              pFunc = PyObject_GetAttrString (pModule, "format_tb");
+              pValue = PyObject_CallObject (pFunc, pArgs);
+              trace = NULL;
+              trace = PyObject_Str (pValue);
+              if (PyString_Check (trace))
+                sprintf (pbt,
+                         "%s\nUnable to run your python process properly. Please check the following messages : %s",
+                         tpbt, PyString_AsString (trace));
+              else
+                sprintf (pbt,
+                         "%s \n Unable to run your python process properly. Unable to provide any futher informations.",
+                         tpbt);
+              free (tpbt);
+              map *err = createMap ("text", pbt);
+              addToMap (err, "code", "NoApplicableCode");
+              printExceptionReportResponse (m, err);
+              res = -1;
+            }
+        }
+      else
+        {
+          char tmpS[1024];
+          sprintf (tmpS, "Cannot find the %s function in the %s file.\n",
+                   s->name, tmp->value);
+          map *tmps = createMap ("text", tmpS);
+          printExceptionReportResponse (m, tmps);
+          res = -1;
+        }
     }
-    else{
+  else
+    {
       char tmpS[1024];
-      sprintf(tmpS, "Cannot find the %s function in the %s file.\n", s->name, tmp->value);
-      map* tmps=createMap("text",tmpS);
-      printExceptionReportResponse(m,tmps);
-      res=-1;
+      sprintf (tmpS, "Python module %s cannot be loaded.\n", tmp->value);
+      map *tmps = createMap ("text", tmpS);
+      printExceptionReportResponse (m, tmps);
+      if (PyErr_Occurred ())
+        PyErr_Print ();
+      PyErr_Clear ();
+      res = -1;
     }
-  } else{
-    char tmpS[1024];
-    sprintf(tmpS, "Python module %s cannot be loaded.\n", tmp->value);
-    map* tmps=createMap("text",tmpS);
-    printExceptionReportResponse(m,tmps);
-    if (PyErr_Occurred())
-      PyErr_Print();
-    PyErr_Clear();
-    res=-1;
-  } 
 #if PY_MAJOR_VERSION < 3
-  PyGILState_Release(gstate);
-  PyEval_AcquireLock();
+  PyGILState_Release (gstate);
+  PyEval_AcquireLock ();
 #endif
-  PyThreadState_Swap(mainstate);
-  Py_Finalize();
+  PyThreadState_Swap (mainstate);
+  Py_Finalize ();
   return res;
 }
 
-PyDictObject* PyDict_FromMaps(maps* t){
-  PyObject* res=PyDict_New( );
-  maps* tmp=t;
-  while(tmp!=NULL){
-    PyObject* value=(PyObject*)PyDict_FromMap(tmp->content);
-    PyObject* name=PyString_FromString(tmp->name);
-    if(PyDict_SetItem(res,name,value)<0){
-      fprintf(stderr,"Unable to set map value ...");
-      return NULL;
+PyDictObject *
+PyDict_FromMaps (maps * t)
+{
+  PyObject *res = PyDict_New ();
+  maps *tmp = t;
+  while (tmp != NULL)
+    {
+      PyObject *value = (PyObject *) PyDict_FromMap (tmp->content);
+      PyObject *name = PyString_FromString (tmp->name);
+      if (PyDict_SetItem (res, name, value) < 0)
+        {
+          fprintf (stderr, "Unable to set map value ...");
+          return NULL;
+        }
+      Py_DECREF (name);
+      tmp = tmp->next;
     }
-    Py_DECREF(name);
-    tmp=tmp->next;
-  }  
-  return (PyDictObject*) res;
+  return (PyDictObject *) res;
 }
 
-PyDictObject* PyDict_FromMap(map* t){
-  PyObject* res=PyDict_New( );
-  map* tmp=t;
-  int hasSize=0;
-  map* isArray=getMap(tmp,"isArray");
-  map* size=getMap(tmp,"size");
-  map* tmap=getMapType(tmp);
-  while(tmp!=NULL){
-    PyObject* name=PyString_FromString(tmp->name);
-    if(strcasecmp(tmp->name,"value")==0) {
-      if(isArray!=NULL){
-	map* len=getMap(tmp,"length");
-	int cnt=atoi(len->value);
-	PyObject* value=PyList_New(cnt);
-	PyObject* mvalue=PyList_New(cnt);
-	PyObject* svalue=PyList_New(cnt);
+PyDictObject *
+PyDict_FromMap (map * t)
+{
+  PyObject *res = PyDict_New ();
+  map *tmp = t;
+  int hasSize = 0;
+  map *isArray = getMap (tmp, "isArray");
+  map *size = getMap (tmp, "size");
+  map *tmap = getMapType (tmp);
+  while (tmp != NULL)
+    {
+      PyObject *name = PyString_FromString (tmp->name);
+      if (strcasecmp (tmp->name, "value") == 0)
+        {
+          if (isArray != NULL)
+            {
+              map *len = getMap (tmp, "length");
+              int cnt = atoi (len->value);
+              PyObject *value = PyList_New (cnt);
+              PyObject *mvalue = PyList_New (cnt);
+              PyObject *svalue = PyList_New (cnt);
 
-	for(int i=0;i<cnt;i++){
-	  
-	  map* vMap=getMapArray(tmp,"value",i);	    
-	  map* sMap=getMapArray(tmp,"size",i);
+              for (int i = 0; i < cnt; i++)
+                {
 
-	  if(vMap!=NULL){
-	    
-	    PyObject* lvalue;
-	    PyObject* lsvalue;
-	    if(sMap==NULL){
-	      lvalue=PyString_FromString(vMap->value);
-	      lsvalue=Py_None;
-	    }
-	    else{    
-	      lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
-	      lsvalue=PyString_FromString(sMap->value);
-	      hasSize=1;
-	    }
+                  map *vMap = getMapArray (tmp, "value", i);
+                  map *sMap = getMapArray (tmp, "size", i);
 
-	    if(PyList_SetItem(value,i,lvalue)<0){
-	      fprintf(stderr,"Unable to set key value pair...");
-	      return NULL;
-	    } 
-	    if(PyList_SetItem(svalue,i,lsvalue)<0){
-	      fprintf(stderr,"Unable to set key value pair...");
-	      return NULL;
-	    } 
-	  }
-	  
-	  map* mMap=getMapArray(tmp,tmap->name,i);
-	  PyObject* lmvalue;
-	  if(mMap!=NULL){
-	    lmvalue=PyString_FromString(mMap->value);
-	  }else
-	    lmvalue=Py_None;
-	  
-	  if(PyList_SetItem(mvalue,i,lmvalue)<0){
-	      fprintf(stderr,"Unable to set key value pair...");
-	      return NULL;
-	  } 
-	  
-	}
+                  if (vMap != NULL)
+                    {
 
-	if(PyDict_SetItem(res,name,value)<0){
-	  fprintf(stderr,"Unable to set key value pair...");
-	  return NULL;
-	}
-	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
-	  fprintf(stderr,"Unable to set key value pair...");
-	  return NULL;
-	}
-	if(hasSize>0)
-	  if(PyDict_SetItem(res,PyString_FromString("size"),svalue)<0){
-	    fprintf(stderr,"Unable to set key value pair...");
-	    return NULL;
-	  }
-      }
-      else if(size!=NULL){
-	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
-	if(PyDict_SetItem(res,name,value)<0){
-	  Py_DECREF(value);
-	  fprintf(stderr,"Unable to set key value pair...");
-	  return NULL;
-	}
-	Py_DECREF(value);
-      }
-      else{
-	PyObject* value=PyString_FromString(tmp->value);
-	if(PyDict_SetItem(res,name,value)<0){
-	  Py_DECREF(value);
-	  fprintf(stderr,"Unable to set key value pair...");
-	  return NULL;
-	}
-	Py_DECREF(value);
-      }
+                      PyObject *lvalue;
+                      PyObject *lsvalue;
+                      if (sMap == NULL)
+                        {
+                          lvalue = PyString_FromString (vMap->value);
+                          lsvalue = Py_None;
+                        }
+                      else
+                        {
+                          lvalue =
+                            PyString_FromStringAndSize (vMap->value,
+                                                        atoi (sMap->value));
+                          lsvalue = PyString_FromString (sMap->value);
+                          hasSize = 1;
+                        }
+
+                      if (PyList_SetItem (value, i, lvalue) < 0)
+                        {
+                          fprintf (stderr, "Unable to set key value pair...");
+                          return NULL;
+                        }
+                      if (PyList_SetItem (svalue, i, lsvalue) < 0)
+                        {
+                          fprintf (stderr, "Unable to set key value pair...");
+                          return NULL;
+                        }
+                    }
+
+                  map *mMap = getMapArray (tmp, tmap->name, i);
+                  PyObject *lmvalue;
+                  if (mMap != NULL)
+                    {
+                      lmvalue = PyString_FromString (mMap->value);
+                    }
+                  else
+                    lmvalue = Py_None;
+
+                  if (PyList_SetItem (mvalue, i, lmvalue) < 0)
+                    {
+                      fprintf (stderr, "Unable to set key value pair...");
+                      return NULL;
+                    }
+
+                }
+
+              if (PyDict_SetItem (res, name, value) < 0)
+                {
+                  fprintf (stderr, "Unable to set key value pair...");
+                  return NULL;
+                }
+              if (PyDict_SetItem
+                  (res, PyString_FromString (tmap->name), mvalue) < 0)
+                {
+                  fprintf (stderr, "Unable to set key value pair...");
+                  return NULL;
+                }
+              if (hasSize > 0)
+                if (PyDict_SetItem (res, PyString_FromString ("size"), svalue)
+                    < 0)
+                  {
+                    fprintf (stderr, "Unable to set key value pair...");
+                    return NULL;
+                  }
+            }
+          else if (size != NULL)
+            {
+              PyObject *value =
+                PyString_FromStringAndSize (tmp->value, atoi (size->value));
+              if (PyDict_SetItem (res, name, value) < 0)
+                {
+                  Py_DECREF (value);
+                  fprintf (stderr, "Unable to set key value pair...");
+                  return NULL;
+                }
+              Py_DECREF (value);
+            }
+          else
+            {
+              PyObject *value = PyString_FromString (tmp->value);
+              if (PyDict_SetItem (res, name, value) < 0)
+                {
+                  Py_DECREF (value);
+                  fprintf (stderr, "Unable to set key value pair...");
+                  return NULL;
+                }
+              Py_DECREF (value);
+            }
+        }
+      else
+        {
+          if (PyDict_GetItem (res, name) == NULL)
+            {
+              PyObject *value = PyString_FromString (tmp->value);
+              if (PyDict_SetItem (res, name, value) < 0)
+                {
+                  Py_DECREF (value);
+                  fprintf (stderr, "Unable to set key value pair...");
+                  return NULL;
+                }
+              Py_DECREF (value);
+            }
+        }
+      Py_DECREF (name);
+      tmp = tmp->next;
     }
-    else{
-      if(PyDict_GetItem(res,name)==NULL){
-	PyObject* value=PyString_FromString(tmp->value);
-	if(PyDict_SetItem(res,name,value)<0){
-	  Py_DECREF(value);
-	  fprintf(stderr,"Unable to set key value pair...");
-	  return NULL;
-	}
-	Py_DECREF(value);
-      }
-    }
-    Py_DECREF(name);
-    tmp=tmp->next;
-  }
-  return (PyDictObject*) res;
+  return (PyDictObject *) res;
 }
 
-maps* mapsFromPyDict(PyDictObject* t){
-  maps* res=NULL;
-  maps* cursor=res;
-  PyObject* list=PyDict_Keys((PyObject*)t);
-  int nb=PyList_Size(list);
+maps *
+mapsFromPyDict (PyDictObject * t)
+{
+  maps *res = NULL;
+  maps *cursor = res;
+  PyObject *list = PyDict_Keys ((PyObject *) t);
+  int nb = PyList_Size (list);
   int i;
-  for(i=0;i<nb;i++){
+  for (i = 0; i < nb; i++)
+    {
 #ifdef DEBUG
-    fprintf(stderr,">> parsing maps %d\n",i);
+      fprintf (stderr, ">> parsing maps %d\n", i);
 #endif
-    PyObject* key=PyList_GetItem(list,i);
-    PyObject* value=PyDict_GetItem((PyObject*)t,key);
+      PyObject *key = PyList_GetItem (list, i);
+      PyObject *value = PyDict_GetItem ((PyObject *) t, key);
 #ifdef DEBUG
-    fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
-	    PyString_AsString(key),PyString_AsString(value));
+      fprintf (stderr, ">> DEBUG VALUES : %s => %s\n",
+               PyString_AsString (key), PyString_AsString (value));
 #endif
-    cursor=(maps*)malloc(MAPS_SIZE);
-    cursor->name=PyString_AsString(key);
-    cursor->content=mapFromPyDict((PyDictObject*)value);
+      cursor = (maps *) malloc (MAPS_SIZE);
+      cursor->name = PyString_AsString (key);
+      cursor->content = mapFromPyDict ((PyDictObject *) value);
 #ifdef DEBUG
-    dumpMap(cursor->content);
+      dumpMap (cursor->content);
 #endif
-    cursor->next=NULL;
-    if(res==NULL)
-      res=dupMaps(&cursor);
-    else
-      addMapsToMaps(&res,cursor);
-    freeMap(&cursor->content);
-    free(cursor->content);
-    free(cursor);
-    Py_DECREF(key);
+      cursor->next = NULL;
+      if (res == NULL)
+        res = dupMaps (&cursor);
+      else
+        addMapsToMaps (&res, cursor);
+      freeMap (&cursor->content);
+      free (cursor->content);
+      free (cursor);
+      Py_DECREF (key);
 #ifdef DEBUG
-    dumpMaps(res);
-    fprintf(stderr,">> parsed maps %d\n",i);
+      dumpMaps (res);
+      fprintf (stderr, ">> parsed maps %d\n", i);
 #endif
-  }
-  Py_DECREF(list);
+    }
+  Py_DECREF (list);
   return res;
 }
 
-map* mapFromPyDict(PyDictObject* t){
-  map* res=NULL;
-  PyObject* list=PyDict_Keys((PyObject*)t);
-  int nb=PyList_Size(list);
+map *
+mapFromPyDict (PyDictObject * t)
+{
+  map *res = NULL;
+  PyObject *list = PyDict_Keys ((PyObject *) t);
+  int nb = PyList_Size (list);
   int i;
-  for(i=0;i<nb;i++){
-    PyObject* key=PyList_GetItem(list,i);
-    PyObject* value=PyDict_GetItem((PyObject*)t,key);
+  for (i = 0; i < nb; i++)
+    {
+      PyObject *key = PyList_GetItem (list, i);
+      PyObject *value = PyDict_GetItem ((PyObject *) t, key);
 #ifdef DEBUG
-    fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
-	    PyString_AsString(key),PyString_AsString(value));
+      fprintf (stderr, ">> DEBUG VALUES : %s => %s\n",
+               PyString_AsString (key), PyString_AsString (value));
 #endif
-    
-    if(strcmp(PyString_AsString(key),"value")==0){
-      char *buffer=NULL;
-      Py_ssize_t size;
+
+      if (strcmp (PyString_AsString (key), "value") == 0)
+        {
+          char *buffer = NULL;
+          Py_ssize_t size;
 #if PY_MAJOR_VERSION >= 3
-      buffer=_PyUnicode_AsStringAndSize(value,&size);
+          buffer = _PyUnicode_AsStringAndSize (value, &size);
 #else
-      PyString_AsStringAndSize(value,&buffer,&size);
+          PyString_AsStringAndSize (value, &buffer, &size);
 #endif
-      if(res!=NULL){
-	addToMap(res,PyString_AsString(key),"");
-      }else{
-	res=createMap(PyString_AsString(key),"");
-      }
-      map* tmpR=getMap(res,"value");
-      free(tmpR->value);
-      tmpR->value=(char*)malloc((size+1)*sizeof(char));
-      memmove(tmpR->value,buffer,size*sizeof(char));
-      tmpR->value[size]=0;
-      char sin[1024];
-      sprintf(sin,"%ld",size);
-      addToMap(res,"size",sin);
-    }else{
-      char* lkey=PyString_AsString(key);
-      char* lvalue=PyString_AsString(value);
-      if(res!=NULL){
-	if(PyString_Size(value)>0)
-	  addToMap(res,lkey,lvalue);
-      }
-      else{
-	if(PyString_Size(value)>0)
-	  res=createMap(lkey,lvalue);
-      }
+          if (res != NULL)
+            {
+              addToMap (res, PyString_AsString (key), "");
+            }
+          else
+            {
+              res = createMap (PyString_AsString (key), "");
+            }
+          map *tmpR = getMap (res, "value");
+          free (tmpR->value);
+          tmpR->value = (char *) malloc ((size + 1) * sizeof (char));
+          memmove (tmpR->value, buffer, size * sizeof (char));
+          tmpR->value[size] = 0;
+          char sin[1024];
+          sprintf (sin, "%ld", size);
+          addToMap (res, "size", sin);
+        }
+      else
+        {
+          char *lkey = PyString_AsString (key);
+          char *lvalue = PyString_AsString (value);
+          if (res != NULL)
+            {
+              if (PyString_Size (value) > 0)
+                addToMap (res, lkey, lvalue);
+            }
+          else
+            {
+              if (PyString_Size (value) > 0)
+                res = createMap (lkey, lvalue);
+            }
+        }
     }
-  }
-  Py_DECREF(list);
+  Py_DECREF (list);
   return res;
 }
 
-PyObject*
-PythonTranslate(PyObject* self, PyObject* args)
+PyObject *
+PythonTranslate (PyObject * self, PyObject * args)
 {
   char *str;
-  if (!PyArg_ParseTuple(args, "s", &str)){
+  if (!PyArg_ParseTuple (args, "s", &str))
+    {
 #ifdef DEBUG
-    fprintf(stderr,"Incorrect arguments to update status function");
+      fprintf (stderr, "Incorrect arguments to update status function");
 #endif
-    return NULL;
-  }
-  return PyString_FromString(_ss(str));
+      return NULL;
+    }
+  return PyString_FromString (_ss (str));
 }
 
-PyObject*
-PythonUpdateStatus(PyObject* self, PyObject* args)
+PyObject *
+PythonUpdateStatus (PyObject * self, PyObject * args)
 {
-  maps* conf;
-  PyObject* confdict;
+  maps *conf;
+  PyObject *confdict;
   int istatus;
-  char* status;
-  if (!PyArg_ParseTuple(args, "O!i", &PyDict_Type, &confdict, &istatus)){
+  char *status;
+  if (!PyArg_ParseTuple (args, "O!i", &PyDict_Type, &confdict, &istatus))
+    {
 #ifdef DEBUG
-    fprintf(stderr,"Incorrect arguments to update status function");
+      fprintf (stderr, "Incorrect arguments to update status function");
 #endif
-    return NULL;
-  }
-  if (istatus < 0 || istatus > 100){
-     PyErr_SetString(ZooError, "Status must be a percentage.");
-     return NULL;
-  }else{
-     char tmpStatus[4];
-     snprintf(tmpStatus, 4, "%i", istatus);
-     status = zStrdup(tmpStatus);
-  }
+      return NULL;
+    }
+  if (istatus < 0 || istatus > 100)
+    {
+      PyErr_SetString (ZooError, "Status must be a percentage.");
+      return NULL;
+    }
+  else
+    {
+      char tmpStatus[4];
+      snprintf (tmpStatus, 4, "%i", istatus);
+      status = zStrdup (tmpStatus);
+    }
   /* now update the map */
   {
-    PyObject* lenv = PyMapping_GetItemString(confdict, (char *)"lenv");
-    if (lenv && PyMapping_Check(lenv)){
-      PyObject* valobj = PyString_FromString(status);
-      PyMapping_SetItemString(lenv, (char *)"status", valobj);
-      Py_DECREF(valobj);
-    }
-    Py_DECREF(lenv);
+    PyObject *lenv = PyMapping_GetItemString (confdict, (char *) "lenv");
+    if (lenv && PyMapping_Check (lenv))
+      {
+        PyObject *valobj = PyString_FromString (status);
+        PyMapping_SetItemString (lenv, (char *) "status", valobj);
+        Py_DECREF (valobj);
+      }
+    Py_DECREF (lenv);
   }
-  conf = mapsFromPyDict((PyDictObject*)confdict);
-  if (getMapFromMaps(conf,"lenv","status") != NULL){
-    if(status!=NULL){
-      setMapInMaps(conf,"lenv","status",status);
-      free(status);
+  conf = mapsFromPyDict ((PyDictObject *) confdict);
+  if (getMapFromMaps (conf, "lenv", "status") != NULL)
+    {
+      if (status != NULL)
+        {
+          setMapInMaps (conf, "lenv", "status", status);
+          free (status);
+        }
+      else
+        setMapInMaps (conf, "lenv", "status", "15");
+      _updateStatus (conf);
     }
-    else
-      setMapInMaps(conf,"lenv","status","15");
-    _updateStatus(conf);
-  }
-  freeMaps(&conf);
-  free(conf);
+  freeMaps (&conf);
+  free (conf);
   Py_RETURN_NONE;
 }
