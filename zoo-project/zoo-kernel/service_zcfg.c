@@ -123,8 +123,14 @@ service *
 search_service (char *identifier)
 {
   GList *l;
+  int i = 0;
   for (l = serviceCfgList; l; l = l->next)
     {
+#ifdef DEBUG
+      fprintf (stderr, "%d ### %s ###\n", i,
+               ((service *) (l->data))->identifier);
+      i++;
+#endif
       if (strcasecmp (identifier, ((service *) (l->data))->identifier) == 0)
         return (service *) l->data;
     }
