@@ -13,7 +13,7 @@ ZCFG : the ZOO Service Configuration File
 The ZOO Service configuration file (.zcfg) describes the service and will be parsed by 
 the ZOO Kernel. We will describe here what such a file contains. 
 You can also take a look at the existing examples of ZCFG files in the ``cgi-env`` directory 
-of each services available in the `ZOO-Project SVN source tree <http://zoo-project.org/trac/browser/trunk/zoo-services>`__.
+of each services available in the `ZOO-Project SVN source tree <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services>`__.
 
 A ZOO Configuration file is divided into three distinct sections :
 
