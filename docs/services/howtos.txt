@@ -165,6 +165,53 @@ PHP
 Java
 ----
 
+ZOO-API
+*******
+
+Before you build your first ZOO-Service implemented inn Java, it is
+recommended that you first build the ZOO class of the Java ZOO-API.
+
+.. Note:: You should build ZOO-Kernel prior to follow this instructions.
+
+To build the ZOO.class of the ZOO-API for Java, use the following
+command:
+
+.. code-block:: guess
+
+  cd zoo-api/java
+  make
+  cp ZOO.class libZOO.so /usr/lib/cgi-bin
+
+.. Note:: running the previous commands will require that both
+          ``javac`` and ``javah`` are in your PATH.
+
+Java ZCFG requirements
+**********************************
+
+.. Note:: For each Service provided by your ZOO Java Services Provider
+          (your corresponding Java class), the ZCFG File must be
+          named the same as the Java public method name (also the
+          case of characters is important).
+
+The ZCFG file should contain the following :
+
+serviceType
+    Java 
+serviceProvider
+    The name of the Java class to use as a ZOO Service Provider. For instance, if your
+    java class, located in the same directory as your ZOO-Kernel, was
+    named ``HelloWorld.class`` then you should use ``HelloWorld``.
+
+
+Java Data Structure used
+********************************
+
+The three parameters of the function are passed to the Java function
+as `java.util.HashMap <http://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html>`__.
+
+Sample ZOO Java Services Provider
+******************************************
+
 .. code-block:: java
 
   import java.util.*;
@@ -177,7 +224,7 @@ Java
        hm1.put("value","Hello "+v+" from JAVA WOrld !");
        outputs.put("Result",hm1);
        System.err.println("Hello from JAVA WOrld !");
-       return 3;
+       return ZOO.SERVICE_SUCCEEDED;
     }
   }
 
