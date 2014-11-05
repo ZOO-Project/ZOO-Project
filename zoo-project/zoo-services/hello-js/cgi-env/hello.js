@@ -23,14 +23,14 @@
  */
 
 function hellojs(conf,inputs,outputs){
-	outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
+    var my_outputs =  {"result": { "value" : "Hello "+inputs["S"]["value"]+" from the JS World !" }};
 	//SERVICE_SUCEEDED
-	return Array(3,outputs);
+	return Array(3,my_outputs);
 }
 
 function hellojs1(conf,inputs,outputs){
-	outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
+	var my_outputs =  {"result": { "value" : "Hello "+inputs["S"]["value"]+" from the JS World !" }};
 	//SERVICE_SUCEEDED
-	return {"result":3,"outputs": outputs};
+	return {"result":3,"outputs": my_outputs};
 }
 
