@@ -56,8 +56,9 @@ scanServiceCfg (char *rootDir, GList ** serviceList, int level)
                   }
             }
         }
+        if (level > 0)
+            free(rootDir);
     }
-  free (d);
   closedir (dir);
   return 1;
 }
@@ -95,9 +96,9 @@ get_identifier (char *root_dir, char *zcfg_path, char **identifier)
       *identifier =
         (char *) malloc ((strlen (identifier_tmp) + 1) * sizeof (char));
       strncpy (*identifier, identifier_tmp, strlen (identifier_tmp) + 1);
-      free (identifier_tmp);
       free (s_tmp);
     }
+  free (identifier_tmp);
   return 1;
 }
 
@@ -116,6 +117,7 @@ init_services_conf (char *rootDir)
       readServiceFile (m, (char *) l->data, &s1, s1->identifier);
       serviceCfgList = g_list_append (serviceCfgList, s1);
     }
+  freeMap(&m);
 }
 
 
