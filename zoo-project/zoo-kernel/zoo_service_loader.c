@@ -514,16 +514,15 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                        r_inputs->value, errstr);
 #endif
 #endif
-              r_inputs = getMapFromMaps (m, "lenv", "Identifier");
 #ifdef DEBUG
-              fprintf (stderr, "Try to load function %s\n", r_inputs->value);
+              fprintf (stderr, "Try to load function %s\n", s1->name);
 #endif
               typedef int (*execute_t) (maps **, maps **, maps **);
 #ifdef WIN32
               execute_t execute =
-                (execute_t) GetProcAddress (so, r_inputs->value);
+                (execute_t) GetProcAddress (so, s1->name);
 #else
-              execute_t execute = (execute_t) dlsym (so, r_inputs->value);
+              execute_t execute = (execute_t) dlsym (so, s1->name);
 #endif
 
               if (execute == NULL)
@@ -534,16 +533,16 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                   errstr = dlerror ();
 #endif
                   char *tmpMsg =
-                    (char *) malloc (2048 + strlen (r_inputs->value));
+                    (char *) malloc (2048 + strlen (s1->name));
                   sprintf (tmpMsg,
                            _
                            ("Error occured while running the %s function: %s"),
-                           r_inputs->value, errstr);
+                           s1->name, errstr);
                   errorException (m, tmpMsg, "InternalError", NULL);
                   free (tmpMsg);
 #ifdef DEBUG
                   fprintf (stderr, "Function %s error %s\n",
-                           r_inputs->value, errstr);
+                           s1->name, errstr);
 #endif
                   *eres = -1;
                   return;
