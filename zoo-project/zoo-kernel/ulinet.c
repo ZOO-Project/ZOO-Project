@@ -179,11 +179,9 @@ void InternetCloseHandle(HINTERNET* handle0){
     if(handle.hasCacheFile>0){
       fclose(handle.file);
       unlink(handle.filename);
-      handle.mimeType = NULL;
     }
     else{
       handle.pabyData = NULL;
-      handle.mimeType = NULL;
       handle.nDataAlloc = handle.nDataLen = 0;
     }
     if(handle0->ihandle[i].header!=NULL){
@@ -191,6 +189,7 @@ void InternetCloseHandle(HINTERNET* handle0){
       handle0->ihandle[i].header=NULL;
     }
     free(handle.mimeType);
+    handle.mimeType = NULL;
   }
   if(handle0->handle)
     curl_multi_cleanup(handle0->handle);
@@ -297,7 +296,9 @@ int processDownloads(HINTERNET* hInternet){
     curl_multi_perform(hInternet->handle, &still_running);
   }while(still_running);  
   for(i=0;i<hInternet->nb;i++){
-    curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&hInternet->ihandle[i].mimeType);
+    char *tmp;
+    curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
+    hInternet->ihandle[i].mimeType=strdup(tmp);
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
   }
