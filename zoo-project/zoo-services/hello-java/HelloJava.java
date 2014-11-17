@@ -27,17 +27,13 @@ import java.util.*;
 
 public class HelloJava {
     public static int HelloWorldJava(HashMap conf,HashMap inputs, HashMap outputs) {
-        HashMap hm1 = new HashMap();
-        hm1.put("dataType","string");
         HashMap tmp=(HashMap)(inputs.get("S"));
         String v=tmp.get("value").toString();
+        HashMap hm1 = (HashMap)(outputs.get("Result"));
         hm1.put("value",ZOO._("Hello "+v+" from JAVA World !!"));
-        outputs.put("Result",hm1);
         return ZOO.SERVICE_SUCCEEDED;
     }
     public static int JavaLongProcess(HashMap conf,HashMap inputs, HashMap outputs) {
-        HashMap hm1 = new HashMap();
-        hm1.put("dataType","string");
         HashMap tmp=(HashMap)(inputs.get("S"));
         String v=tmp.get("value").toString();
 	Integer i;
@@ -49,8 +45,8 @@ public class HelloJava {
 	    }finally{
 	    }
 	}
+        HashMap hm1 = (HashMap)(outputs.get("Result"));
         hm1.put("value",ZOO._("Hello "+v+" from JAVA World !!"));
-        outputs.put("Result",hm1);
         return ZOO.SERVICE_SUCCEEDED;
     }
 }
