@@ -298,7 +298,8 @@ int processDownloads(HINTERNET* hInternet){
   for(i=0;i<hInternet->nb;i++){
     char *tmp;
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
-    hInternet->ihandle[i].mimeType=strdup(tmp);
+    if(tmp!=NULL)
+      hInternet->ihandle[i].mimeType=strdup(tmp);
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
   }

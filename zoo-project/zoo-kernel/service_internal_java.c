@@ -50,7 +50,6 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
       oclasspath=(char*) malloc((strlen(ntmp)+strlen(tmp->value)+21)*sizeof(char));
       sprintf(classpath,"%s/%s/",ntmp,tmp->value);
     }
-    sprintf(oclasspath,"-Djava.class.path=%s",classpath);
   }else{
     if(cclasspath!=NULL){
       classpath=(char*) malloc((strlen(ntmp)+strlen(cclasspath)+3)*sizeof(char));
@@ -66,7 +65,6 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
       oclasspath=(char*) malloc((strlen(ntmp)+20)*sizeof(char));
       sprintf(classpath,"%s/",ntmp);
     }
-    sprintf(oclasspath,"-Djava.class.path=%s",classpath);
 
   }
   sprintf(oclasspath,"-Djava.class.path=%s",classpath);
@@ -76,10 +74,22 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   fprintf(stderr,"(%s)\n",oclasspath);
 #endif
 
+  int nb=1;
+  int nbc0=0;
+  maps* javaXXMap=getMaps(main_conf,"javaxx");
+  if(javaXXMap!=NULL){
+    nbc0+=count(javaXXMap->content);
+  }
+  int nbc1=0;
+  maps* javaXMap=getMaps(main_conf,"javax");
+  if(javaXMap!=NULL){
+    nbc1+=count(javaXMap->content);
+  }
 #ifdef WIN32
-  JavaVMOption options[2];
+  nb=2+nbc0+nbc1;
+  JavaVMOption options[nb];
 #else
-  JavaVMOption options[1];
+  JavaVMOption options[nb+nbc0+nbc1];
 #endif
   JavaVMInitArgs vm_args;
   JavaVM *jvm;
@@ -94,24 +104,37 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #else
   jclass cls_gr;
 #endif
-  int i;
-
+  int i,start;
+  map *cursorxx=NULL;
+  if(javaXXMap!=NULL)
+    cursorxx=javaXXMap->content;
+  map *cursorx=NULL;
+  if(javaXMap!=NULL)
+    cursorx=javaXMap->content;
   options[0].optionString = oclasspath;
 #ifdef WIN32
+  start=2;
   options[1].optionString = "-Xmx512m";
-  /*options[2].optionString = "-Xms128m";
-  options[3].optionString = "-XX:MaxPermSize=256m";
-  options[4].optionString = "-XX:MaxHeapFreeRatio=70";*/
+#else
+  start=1;
 #endif
+  for(i=0;i<nbc0;i++){
+    char *tmp=parseJVMXXOption(cursorxx);
+    options[start+i].optionString = tmp;
+    free(tmp);
+    cursorxx=cursorxx->next;
+  }
+  for(;i<nbc1+nbc0;i++){
+    char *tmp=parseJVMXOption(cursorx);
+    options[start+i].optionString = tmp;
+    free(tmp);
+    cursorx=cursorx->next;
+  }
 
   JNI_GetDefaultJavaVMInitArgs(&vm_args);
   vm_args.version = JNI_VERSION_1_6;
   vm_args.options = options;
-#ifdef WIN32
-  vm_args.nOptions = 2;
-#else
-  vm_args.nOptions = 1;
-#endif
+  vm_args.nOptions = start+nbc0+nbc1;
   vm_args.ignoreUnrecognized = JNI_TRUE;
 
   result = JNI_CreateJavaVM(&jvm,(void **)&env, &vm_args);
@@ -261,6 +284,23 @@ void displayStack(JNIEnv *env,maps* main_conf){
   printExceptionReportResponse(main_conf,err);
   freeMap(&err);
   free(err);
+}
+
+char *parseJVMXXOption(map* m){
+  char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+5)*sizeof(char));
+  if(strncasecmp(m->value,"minus",5)==0)
+    sprintf(res,"-XX:-%s",m->name);
+  else if(strncasecmp(m->value,"plus",5)==0)
+    sprintf(res,"-XX:+%s",m->name);
+  else
+    sprintf(res,"-XX:%s=%s",m->name,m->value);
+  return res;
+}
+
+char *parseJVMXOption(map* m){
+  char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+5)*sizeof(char));
+  sprintf(res,"-X%s:%s",m->name,m->value);
+  return res;
 }
 
 jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHashMap_class,jmethodID scHashMap_constructor){

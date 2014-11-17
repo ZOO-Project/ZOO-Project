@@ -211,7 +211,6 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     }
     else{
       pName = PyString_FromString(tmp->value);
-      fprintf(stderr,"%s %d",tmp->value,__LINE__);
     }
   }
   else{

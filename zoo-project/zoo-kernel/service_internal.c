@@ -1776,7 +1776,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   if(tmp2!=NULL)
     xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
   
-  printDescription(nc,ns_ows,serv->name,serv->content);
+  map* tmpI=getMapFromMaps(m,"lenv","oIdentifier");
+  printDescription(nc,ns_ows,tmpI->value,serv->content);
 
   xmlAddChild(n,nc);
 
@@ -3360,8 +3361,10 @@ char *readVSIFile(maps* conf,const char* dataSource){
 }
 
 void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
+  setMapInMaps(conf,"lenv","oIdentifier",identifier);
+  char *lid=zStrdup(identifier);
   char *saveptr1;
-  char *tmps1=strtok_r(identifier,".",&saveptr1);
+  char *tmps1=strtok_r(lid,".",&saveptr1);
   int level=0;
   char key[25];
   char levels[18];
@@ -3419,6 +3422,8 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
   char *tmp0=zStrdup(buffer);
   sprintf(buffer,"%s.zcfg",tmp0);
   free(tmp0);
+  fprintf(stderr,"DEBUG %s\n",lid);
+  free(lid);
 }
 
 int updateStatus( maps* conf, const int percentCompleted, const char* message ){
@@ -3450,6 +3455,10 @@ int  setOutputValue( maps* outputs, const char* parameterName, char* data, size_
   }else{
     char size[1024];
     map* tmp=getMapFromMaps(outputs,parameterName,"value");
+    if(tmp==NULL){
+      setMapInMaps(outputs,parameterName,"value","");
+      tmp=getMapFromMaps(outputs,parameterName,"value");
+    }
     free(tmp->value);
     tmp->value=(char*) malloc((numberOfBytes+1)*sizeof(char));
     memcpy(tmp->value,data,numberOfBytes);

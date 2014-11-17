@@ -255,8 +255,10 @@ int recursReaddirF(maps* m,xmlNodePtr n,char *conf_dir,char *prefix,int saved_st
 #ifdef DEBUG
 	fprintf(stderr,"#################\n%s\n#################\n",tmps1);
 #endif
-	t=readServiceFile(m,tmps1,&s1,dp->d_name);
-
+	char *tmpsn=zStrdup(dp->d_name);
+	tmpsn[strlen(tmpsn)-5]=0;
+	t=readServiceFile(m,tmps1,&s1,tmpsn);
+	free(tmpsn);
 	if(t<0){
 	  map* tmp00=getMapFromMaps(m,"lenv","message");
 	  char tmp01[1024];
@@ -993,9 +995,10 @@ int runRequest(map** inputs)
 	    map* tmpMap=getMapFromMaps(m,"lenv","metapath");
 	    if(tmpMap!=NULL)
 	      addToMap(request_inputs,"metapath",tmpMap->value);
+	    map* tmpMapI=getMapFromMaps(m,"lenv","Identifier");
 
 	    s1=(service*)malloc(SERVICE_SIZE);
-	    t=readServiceFile(m,buff1,&s1,corig);
+	    t=readServiceFile(m,buff1,&s1,tmpMapI->value);
 	    if(t<0){
 	      map* tmp00=getMapFromMaps(m,"lenv","message");
 	      char tmp01[1024];
@@ -1164,8 +1167,12 @@ int runRequest(map** inputs)
     if(tmpMap!=NULL)
       addToMap(request_inputs,"metapath",tmpMap->value);
     free(identifier);
-  }else
+  }else{
     setMapInMaps(m,"lenv","Identifier",r_inputs->value);
+    setMapInMaps(m,"lenv","oIdentifier",r_inputs->value);
+  }
+
+  r_inputs=getMapFromMaps(m,"lenv","Identifier");
   int saved_stdout = dup(fileno(stdout));
   dup2(fileno(stderr),fileno(stdout));
   t=readServiceFile(m,tmps1,&s1,r_inputs->value);
