@@ -1,6 +1,6 @@
 [Xml2Pdf]
- Title = Convert raster data from one format to another. 
- Abstract = Converts raster data between different formats.
+ Title = Convert XML and Open Document to PDF format. 
+ Abstract = Converts XML to PDF format.
  processVersion = 1
  storeSupported = true
  statusSupported = true

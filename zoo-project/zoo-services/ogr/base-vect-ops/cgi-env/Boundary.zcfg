@@ -1,5 +1,5 @@
 [Boundary]
- Title = Compute boundary.
+ Title = Computes boundary.
  Abstract = This service shall return a feature callection representing the combinatorial boundary of each geometry in the InputPolygon feature collection.
  processVersion = 1
  storeSupported = true

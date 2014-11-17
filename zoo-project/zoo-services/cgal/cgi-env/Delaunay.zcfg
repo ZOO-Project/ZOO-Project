@@ -1,6 +1,6 @@
 [Delaunay]
  Title = Delaunay Triangulation. 
- Abstract = Computes the edges of Voronoi diagram of a set of data points.
+ Abstract = Computes the edges of a Delaunay triangulation for a set of data points.
  processVersion = 2
  storeSupported = true
  statusSupported = true

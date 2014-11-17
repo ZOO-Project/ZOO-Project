@@ -1,5 +1,5 @@
 [DifferencePy]
- Title = Compute difference. . 
+ Title = Computes difference. 
  Abstract = Generates a new geometry which is the region of this geometry with the region of the other geometry removed.
  Profile = urn:ogc:wps:1.0.0:difference
  processVersion = 2

@@ -1,6 +1,6 @@
 [QREncode]
- Title = Encode a string into its QR Code
- Abstract = Multiply two values and stor the result in Result.
+ Title = Encode a string into a QR Code
+ Abstract = Multiply two values and store the result in Result.
  processVersion = 1
  storeSupported = true
  statusSupported = true

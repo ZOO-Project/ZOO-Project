@@ -1,5 +1,5 @@
 [Simplify]
- Title = Create a buffer around a polygon. 
+ Title = Simplifies polygons geometries. 
  Abstract = This service shall return a feature collection representing all simplified geometries with all their vertices within the distance of the original geometry defined by the given tolerance.
  Profile = urn:ogc:wps:1.0.0:buffer
  processVersion = 2

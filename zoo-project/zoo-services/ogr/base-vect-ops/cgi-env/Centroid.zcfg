@@ -1,5 +1,5 @@
 [Centroid]
- Title = Get the centroid of a polygon. 
+ Title = Computes the centroid of a polygon. 
  Abstract = This service shall return the point that is the geometric centre of gravity of the geometry InputPolygon.
  Profile = urn:ogc:wps:1.0.0:centroid
  processVersion = 2

@@ -1,6 +1,6 @@
 [Difference]
- Title = Compute difference. . 
- Abstract = This function SHALL return a bag of geometry values representing the closure of the set difference between the two geometries InputEntity1 and InputEntity2. The difference is the set of all points which lie on InputEntity1 but not on InputEntity2.
+ Title = Compute difference. 
+ Abstract = This function shall return a bag of geometry values representing the closure of the set difference between the two geometries InputEntity1 and InputEntity2. The difference is the set of all points which lie on InputEntity1 but not on InputEntity2.
  Profile = urn:ogc:wps:1.0.0:difference
  processVersion = 2
  storeSupported = true

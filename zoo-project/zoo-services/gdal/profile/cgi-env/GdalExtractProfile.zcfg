@@ -1,6 +1,6 @@
 [GdalExtractProfile]
- Title = Convert raster data from one format to another. 
- Abstract = Converts raster data between different formats.
+ Title = Extract elevation values along a line. 
+ Abstract = Fetch the x,y,z values of a DEM raster file along a linestring
  processVersion = 1
  storeSupported = true
  statusSupported = true
@@ -11,7 +11,7 @@
  </MetaData>
  <DataInputs>
   [RasterFile]
-   Title = The name fo the MNT file
+   Title = The name of the MNT file
    Abstract = The file containing elevation model relative to the dataPath defined in the ZOO-Project main configuration file.
    minOccurs = 0
    maxOccurs = 1
@@ -42,7 +42,7 @@
  <DataOutputs>
   [Profile]
    Title = The resulting profile
-   Abstract = GeoJSON string containing the X Y Z values where (X,Y) is corresponding to the original coordinates and Z the elevation value 
+   Abstract = GeoJSON string containing the X Y Z values where (X,Y) is corresponding to the original coordinates and the elevation value. 
    <ComplexData>
     <Default>
      mimeType = application/json

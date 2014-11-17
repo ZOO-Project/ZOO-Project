@@ -1,5 +1,5 @@
 [UnionPy]
- Title = Compute union. 
+ Title = Computes union. 
  Abstract = Generates a new geometry which is the region of union of the two geometries operated on.
  Profile = urn:ogc:wps:1.0.0:union
  processVersion = 2

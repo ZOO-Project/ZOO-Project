@@ -1,6 +1,6 @@
 [ExtractNDVI]
  Title = Normalized Difference Vegetation Index. 
- Abstract = Create raster file containing the Normalized Difference Vegetation Index. 
+ Abstract = Computes the Normalized Difference Vegetation Index in a new raster file. 
  Profile = urn:ogc:wps:1.0.0:buffer
  processVersion = 2
  storeSupported = true

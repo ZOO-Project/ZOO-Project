@@ -1,6 +1,6 @@
 [Voronoi]
  Title = Voronoi Diagram. 
- Abstract = Computes the edges of Voronoi diagram of a set of data points.
+ Abstract = Computes the edges of Voronoi diagram for a set of data points.
  Profile = urn:ogc:wps:1.0.0:voronoi
  processVersion = 2
  storeSupported = true
