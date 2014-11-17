@@ -3422,7 +3422,6 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
   char *tmp0=zStrdup(buffer);
   sprintf(buffer,"%s.zcfg",tmp0);
   free(tmp0);
-  fprintf(stderr,"DEBUG %s\n",lid);
   free(lid);
 }
 
