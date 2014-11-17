@@ -1,5 +1,5 @@
 [SymDifferencePy]
- Title = Compute symmetric difference. 
+ Title = Computes symmetric difference. 
  Abstract = Generates a new geometry which is the symmetric difference of this geometry and the other geometry.
  Profile = urn:ogc:wps:1.0.0:symmetricdifference
  processVersion = 2

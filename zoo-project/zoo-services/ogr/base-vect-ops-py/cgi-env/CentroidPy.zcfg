@@ -1,6 +1,6 @@
 [Clean]
- Title = Extract the feature that have a valid geometry field. 
- Abstract = Extract the feature that have a valid geometry field.
+ Title = Computes the centroid of a polygon 
+ Abstract = Computes the centroid of a polygon that have a valid geometry field.
  processVersion = 1
  storeSupported = true
  statusSupported = true

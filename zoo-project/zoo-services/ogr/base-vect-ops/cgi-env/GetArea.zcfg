@@ -1,6 +1,6 @@
 [GetArea]
  Title = Compute geometry area.
- Abstract = Computes the area for a geometry
+ Abstract = Computes the area of a geometry
  processVersion = 2
  storeSupported = true
  statusSupported = true

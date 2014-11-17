@@ -1,6 +1,6 @@
 [Gdal_Grid]
- Title = Convert raster data from one format to another. 
- Abstract = Converts raster data between different formats.
+ Title =  Computes a regular grid (raster) from scattered data read from a vector data source. 
+ Abstract = http://www.gdal.org/gdal_grid.html
  processVersion = 1
  storeSupported = true
  statusSupported = true

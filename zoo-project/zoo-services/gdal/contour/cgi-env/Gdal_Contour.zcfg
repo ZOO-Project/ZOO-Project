@@ -1,5 +1,5 @@
 [Gdal_Contour]
- Title = Tool to builds vector contour lines from a raster elevation model.
+ Title = Builds vector contour lines from a raster elevation model.
  Abstract = http://www.gdal.org/gdal_contour.html
  processVersion = 1
  storeSupported = true

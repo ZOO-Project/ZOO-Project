@@ -1,5 +1,5 @@
 [BoundaryPy]
- Title = Compute boundary.
+ Title = Computes boundary.
  Abstract = A new geometry object is created and returned containing the boundary of the geometry on which the method is invoked. 
  processVersion = 1
  storeSupported = true

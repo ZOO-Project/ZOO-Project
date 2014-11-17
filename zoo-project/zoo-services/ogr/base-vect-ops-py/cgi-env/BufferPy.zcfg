@@ -1,6 +1,6 @@
 [BufferPy]
- Title = Create a buffer around a polygon. 
- Abstract = Create a buffer around a single polygon. Accepts the polygon as GML and provides GML output for the buffered feature. 
+ Title = Creates a buffer around a polygon. 
+ Abstract = Creates a buffer around a single polygon. Accepts the polygon as GML and provides GML output for the buffered feature. 
  Profile = urn:ogc:wps:1.0.0:buffer
  processVersion = 2
  storeSupported = true

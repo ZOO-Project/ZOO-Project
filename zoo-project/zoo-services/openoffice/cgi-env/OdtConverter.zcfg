@@ -1,6 +1,6 @@
 [OdtConverter]
- Title = Convert raster data from one format to another. 
- Abstract = Converts raster data between different formats.
+ Title = Converts Open Documents. 
+ Abstract = Converts open documents.
  processVersion = 1
  storeSupported = true
  statusSupported = true
@@ -12,7 +12,7 @@
  <DataInputs>
   [InputDoc]
    Title = The input data source name
-   Abstract = The input data source name to use as source for convertion.
+   Abstract = The input data source name
    minOccurs = 1
    maxOccurs = 1
    <LiteralData>
@@ -22,7 +22,7 @@
    </LiteralData>
   [OutputDoc]
    Title = The output data source name
-   Abstract = The output data source name to use as source for convertion.
+   Abstract = The output data source name to use as source.
    minOccurs = 1
    maxOccurs = 1
    <LiteralData>
