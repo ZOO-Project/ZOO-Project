@@ -1635,18 +1635,18 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
        getMap(_tmp->content,"rangeMax")==NULL &&
        getMap(_tmp->content,"rangeClosure")==NULL ){
       tmp1=getMap(_tmp->content,"dataType");
-      if(tmp1!=NULL)
-	if(strcasecmp(tmp1->value,"boolean")==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	  nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	  xmlAddChild(nc7,xmlNewText(BAD_CAST "true"));
-	  xmlAddChild(nc6,nc7);
-	  nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	  xmlAddChild(nc7,xmlNewText(BAD_CAST "false"));
-	  xmlAddChild(nc6,nc7);
-	  xmlAddChild(nc3,nc6);
-	}
-      xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+      if(tmp1!=NULL && strcasecmp(tmp1->value,"boolean")==0){
+	nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	xmlAddChild(nc7,xmlNewText(BAD_CAST "true"));
+	xmlAddChild(nc6,nc7);
+	nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	xmlAddChild(nc7,xmlNewText(BAD_CAST "false"));
+	xmlAddChild(nc6,nc7);
+	xmlAddChild(nc3,nc6);
+      }
+      else
+	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
     }
     
     if((tmp1=getMap(_tmp->content,"value"))!=NULL){
