@@ -40,6 +40,10 @@ extern "C" {
   
   void displayStack(JNIEnv*,maps*);
 
+  char *parseJVMXXOption(map*);
+
+  char *parseJVMXOption(map*);
+
   int zoo_java_support(maps**,map*,service*,maps**,maps**);
 
 #ifdef __cplusplus

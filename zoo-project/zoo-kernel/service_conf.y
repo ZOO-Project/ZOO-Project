@@ -514,7 +514,7 @@ pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free
   dumpMap(current_content);
   fflush(stderr);
 #endif
-  if($1!=NULL){
+  if($1!=NULL && curr_key!=NULL){
     if(current_content==NULL){
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
