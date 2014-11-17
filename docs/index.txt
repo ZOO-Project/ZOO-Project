@@ -64,6 +64,7 @@ This section contains the official ZOO Project documentation.
    kernel/index
    services/index
    api/index
+   client/index
    workshop/2010/index
    workshop/2012/index
    workshop/2013/index
