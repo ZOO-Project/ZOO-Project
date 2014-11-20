@@ -1,4 +1,10 @@
 Version 1.4.0-dev
+  * Binary support for PHP language
+  * ZOO-API for the Java language
+  * ZOO-Client Javascript API
+  * FastCGI fixes
+  * JavaScript ZOO-API enhancements (COOKIE use and Output in generated XML)
+  * Add debian files
   * Inputs passed by reference downloaded in parallel
   * Conform behavior for DescribeProcess when the Identifier was not found
   * Add support of maximumMegabytes keywords for ComplexData Inputs
