@@ -1,6 +1,6 @@
 .. _home:
 
-ZOO 1.3 Documentation
+ZOO 1.4 Documentation
 =====================
 
 :Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
