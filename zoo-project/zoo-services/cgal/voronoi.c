@@ -215,7 +215,7 @@ extern "C" {
     if(strcmp(oDriver,"GML")==0)
       setMapInMaps(outputs,"Result","mimeType","text/xml");
     else
-      setMapInMaps(outputs,"Result","mimeType","text/plain");
+      setMapInMaps(outputs,"Result","mimeType","application/json");
 
     setMapInMaps(outputs,"Result","encoding","UTF-8");
 #ifdef DEBUG
