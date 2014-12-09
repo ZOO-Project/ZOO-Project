@@ -1,3 +1,6 @@
+Version 1.4.0
+  * Small fix for mimeType of results for CGAL services
+
 Version 1.4.0-rc1
   * Binary support for PHP language
   * ZOO-API for the Java language
