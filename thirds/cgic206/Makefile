@@ -15,7 +15,7 @@ CC=gcc
 AR=ar
 RANLIB=ranlib
 
-all: libcgic.a cgictest.cgi capture
+all: libcgic.a 
 
 install: libcgic.a
 	mkdir -p ../../dist/lib
@@ -30,12 +30,12 @@ libcgic.a: cgic.o cgic.h
 
 #mingw32 and cygwin users: replace .cgi with .exe
 
-cgictest.cgi: cgictest.o libcgic.a
-	gcc cgictest.o -o cgictest.cgi ${LIBS}
+#cgictest.cgi: cgictest.o libcgic.a
+#	gcc cgictest.o -o cgictest.cgi ${LIBS}
 
-capture: capture.o libcgic.a
-	gcc capture.o -o capture ${LIBS}
+#capture: capture.o libcgic.a
+#	gcc capture.o -o capture ${LIBS}
 
 clean:
-	rm -f *.o *.a cgictest.cgi capture
+	rm -f *.o *.a #cgictest.cgi capture
 

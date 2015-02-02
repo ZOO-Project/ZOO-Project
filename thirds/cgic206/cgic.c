@@ -9,6 +9,7 @@
 #define cgicTempDir "/tmp"
 
 #include <fcgi_stdio.h>
+
 #if CGICDEBUG
 #define CGICDEBUGSTART \
 	{ \
@@ -47,7 +48,7 @@
 #include "cgic.h"
 
 #define cgiStrEq(a, b) (!strcmp((a), (b)))
-
+/**
 char *cgiServerSoftware;
 char *cgiServerName;
 char *cgiGatewayInterface;
@@ -76,11 +77,13 @@ char *cgiSid;
 FILE *cgiIn;
 FILE *cgiOut;
 
-/* True if CGI environment was restored from a file. */
-static int cgiRestored = 0;
-static int cgiTreatUrlEncoding;
+**/
 
-static void cgiGetenv(char **s, char *var);
+/* True if CGI environment was restored from a file. */
+//static int cgiRestored = 0;
+//static int cgiTreatUrlEncoding;
+
+//static void cgiGetenv(char **s, char *var);
 
 typedef enum {
 	cgiParseSuccess,
@@ -96,31 +99,14 @@ typedef enum {
 	which will be null when 'in' is null. DO NOT MODIFY THESE 
 	VALUES. Make local copies if modifications are desired. */
 
-typedef struct cgiFormEntryStruct {
-        char *attr;
-	/* value is populated for regular form fields only.
-		For file uploads, it points to an empty string, and file
-		upload data should be read from the file tfileName. */ 
-	char *value;
-	/* When fileName is not an empty string, tfileName is not null,
-		and 'value' points to an empty string. */
-	/* Valid for both files and regular fields; does not include
-		terminating null of regular fields. */
-	int valueLength;
-	char *fileName;	
-	char *contentType;
-	/* Temporary file name for working storage of file uploads. */
-	char *tfileName;
-        struct cgiFormEntryStruct *next;
-} cgiFormEntry;
 
 /* The first form entry. */
-static cgiFormEntry *cgiFormEntryFirst;
+//static cgiFormEntry *cgiFormEntryFirst;
 
-static cgiParseResultType cgiParseGetFormInput();
-static cgiParseResultType cgiParsePostFormInput();
-static cgiParseResultType cgiParsePostMultipartInput();
-static cgiParseResultType cgiParseFormInput(char *data, int length);
+static cgiParseResultType cgiParseGetFormInput(struct cgi_env ** ce);
+static cgiParseResultType cgiParsePostFormInput(struct cgi_env ** ce, FCGX_Stream *in);
+static cgiParseResultType cgiParsePostMultipartInput(struct cgi_env **cet, FCGX_Stream *in);
+static cgiParseResultType cgiParseFormInput(char *data, int length,struct cgi_env ** ce);
 static void cgiSetupConstants();
 void cgiFreeResources();
 static int cgiStrEqNc(char *s1, char *s2);
@@ -129,58 +115,66 @@ static int cgiStrBeginsNc(char *s1, char *s2);
 //int cgiMain_init() {}
 
 
-int cgiMain_init(int argc, char *argv[]) {
-	int result;
+int cgiMain_init(int argc, char *argv[],struct cgi_env ** c,FCGX_Request *request) {
+    struct cgi_env * cgi = * c;
+    cgi->cgiFindTarget = 0;
+    cgi->cgiFindPos = 0;
+
+    cgi->cgiContentType = cgi->cgiContentTypeData;
+    cgi->cgiRestored = 0;
+    int result = 0;
 	char *cgiContentLengthString;
 	char *e;
 	cgiSetupConstants();
-	cgiGetenv(&cgiServerSoftware, "SERVER_SOFTWARE");
-	cgiGetenv(&cgiServerName, "SERVER_NAME");
-	cgiGetenv(&cgiGatewayInterface, "GATEWAY_INTERFACE");
-	cgiGetenv(&cgiServerProtocol, "SERVER_PROTOCOL");
-	cgiGetenv(&cgiServerPort, "SERVER_PORT");
-	cgiGetenv(&cgiRequestMethod, "REQUEST_METHOD");
-	if(strcmp(cgiRequestMethod,"")==0 && argc>=1)
-		cgiRequestMethod="GET";
-	cgiGetenv(&cgiPathInfo, "PATH_INFO");
-	cgiGetenv(&cgiPathTranslated, "PATH_TRANSLATED");
-	cgiGetenv(&cgiScriptName, "SCRIPT_NAME");
-	cgiGetenv(&cgiQueryString, "QUERY_STRING");
-	cgiSid=NULL;
-	if(cgiQueryString!=NULL && argc>=2){
-		cgiQueryString=argv[1];
+    cgi->cgiServerSoftware = FCGX_GetParam("SERVER_SOFTWARE",request->envp);
+	cgi->cgiServerName = FCGX_GetParam("SERVER_NAME",request->envp);
+    cgi->cgiGatewayInterface = FCGX_GetParam("GATEWAY_INTERFACE",request->envp);
+    cgi->cgiServerProtocol = FCGX_GetParam("SERVER_PROTOCOL",request->envp);
+    cgi->cgiServerPort = FCGX_GetParam("SERVER_PORT",request->envp);
+    cgi->cgiRequestMethod = FCGX_GetParam("REQUEST_METHOD",request->envp);
+	if(strcmp(cgi->cgiRequestMethod,"")==0 && argc>=1)
+		cgi->cgiRequestMethod="GET";
+    cgi->cgiPathInfo = FCGX_GetParam("PATH_INFO",request->envp);
+	cgi->cgiPathTranslated = FCGX_GetParam("PATH_TRANSLATED",request->envp);
+	cgi->cgiScriptName = FCGX_GetParam("SCRIPT_NAME",request->envp);
+	cgi->cgiQueryString = FCGX_GetParam("QUERY_STRING",request->envp);
+	cgi->cgiSid=NULL;
+	if(cgi->cgiQueryString!=NULL && argc>=2){
+		cgi->cgiQueryString=argv[1];
 		if(argc>2){
-		  cgiSid=argv[2];
+		  cgi->cgiSid=argv[2];
 		}
 	}
-	cgiGetenv(&cgiRemoteHost, "REMOTE_HOST");
-	cgiGetenv(&cgiRemoteAddr, "REMOTE_ADDR");
-	cgiGetenv(&cgiAuthType, "AUTH_TYPE");
-	cgiGetenv(&cgiRemoteUser, "REMOTE_USER");
-	cgiGetenv(&cgiRemoteIdent, "REMOTE_IDENT");
+    cgi->cgiRemoteHost = FCGX_GetParam("REMOTE_HOST",request->envp);
+	cgi->cgiRemoteAddr = FCGX_GetParam("REMOTE_ADDR",request->envp);
+	cgi->cgiAuthType = FCGX_GetParam("AUTH_TYPE",request->envp);
+	cgi->cgiRemoteUser = FCGX_GetParam("REMOTE_USER",request->envp);
+	cgi->cgiRemoteIdent = FCGX_GetParam("REMOTE_IDENT",request->envp);
+    //cgiGetenv(&cgiRemoteIdent, "REMOTE_IDENT");
 	/* 2.0: the content type string needs to be parsed and modified, so
 		copy it to a buffer. */
-	e = getenv("CONTENT_TYPE");
-	if (e) {
-		if (strlen(e) < sizeof(cgiContentTypeData)) {
-			strcpy(cgiContentType, e);
+	//e = getenv("CONTENT_TYPE");
+	e = FCGX_GetParam("CONTENT_TYPE",request->envp);
+    if (e) {
+		if (strlen(e) < sizeof(cgi->cgiContentTypeData)) {
+			strcpy(cgi->cgiContentType, e);
 		} else {
 			/* Truncate safely in the event of what is almost certainly
 				a hack attempt */
-			strncpy(cgiContentType, e, sizeof(cgiContentTypeData));
-			cgiContentType[sizeof(cgiContentTypeData) - 1] = '\0';
+			strncpy(cgi->cgiContentType, e, sizeof(cgi->cgiContentTypeData));
+			cgi->cgiContentType[sizeof(cgi->cgiContentTypeData) - 1] = '\0';
 		}
 	} else {
-		cgiContentType[0] = '\0';
+		cgi->cgiContentType[0] = '\0';
 	}
 	/* Never null */
-	cgiMultipartBoundary = "";
+	cgi->cgiMultipartBoundary = "";
 	/* 2.0: parse semicolon-separated additional parameters of the
 		content type. The one we're interested in is 'boundary'.
 		We discard the rest to make cgiContentType more useful
 		to the typical programmer. */
-	if (strchr(cgiContentType, ';')) {
-		char *sat = strchr(cgiContentType, ';');
+	if (strchr(cgi->cgiContentType, ';')) {
+		char *sat = strchr(cgi->cgiContentType, ';');
 		while (sat) {
 			*sat = '\0';
 			sat++;
@@ -189,8 +183,8 @@ int cgiMain_init(int argc, char *argv[]) {
 			}	
 			if (cgiStrBeginsNc(sat, "boundary=")) {
 				char *s;
-				cgiMultipartBoundary = sat + strlen("boundary=");
-				s = cgiMultipartBoundary;
+				cgi->cgiMultipartBoundary = sat + strlen("boundary=");
+				s = cgi->cgiMultipartBoundary;
 				while ((*s) && (!isspace(*s))) {
 					s++;
 				}
@@ -201,32 +195,29 @@ int cgiMain_init(int argc, char *argv[]) {
 			} 	
 		}
 	}
-	cgiGetenv(&cgiContentLengthString, "CONTENT_LENGTH");
-	cgiContentLength = atoi(cgiContentLengthString);	
-	if(cgiContentLength==0 && argc>=2){
-		cgiContentLength=strlen(argv[1]);
+    
+    cgiContentLengthString = FCGX_GetParam("CONTENT_LENGTH",request->envp);
+    if (cgiContentLengthString != NULL)
+	    cgi->cgiContentLength = strtol(cgiContentLengthString,NULL,10);
+    else
+        cgi->cgiContentLength = 0;
+	if(cgi->cgiContentLength==0 && argc>=2){
+		cgi->cgiContentLength=strlen(argv[1]);
 	}
-	cgiGetenv(&cgiAccept, "HTTP_ACCEPT");
-	cgiGetenv(&cgiUserAgent, "HTTP_USER_AGENT");
-	cgiGetenv(&cgiReferrer, "HTTP_REFERER");
-	cgiGetenv(&cgiCookie, "HTTP_COOKIE");
-#ifdef CGICDEBUG
-	CGICDEBUGSTART
-	fprintf(dout, "%d\n", cgiContentLength);
-	fprintf(dout, "%s\n", cgiRequestMethod);
-	fprintf(dout, "%s\n", cgiContentType);
-	CGICDEBUGEND	
-#endif /* CGICDEBUG */
+    cgi->cgiAccept = FCGX_GetParam("HTTP_ACCEPT",request->envp);
+	cgi->cgiUserAgent = FCGX_GetParam("HTTP_USER_AGENT",request->envp);
+	cgi->cgiReferrer = FCGX_GetParam("HTTP_REFERER",request->envp);
+	cgi->cgiCookie = FCGX_GetParam("HTTP_COOKIE",request->envp);
 #ifdef WIN32
 	/* 1.07: Must set stdin and stdout to binary mode */
 	/* 2.0: this is particularly crucial now and must not be removed */
 	_setmode( FCGI_fileno( stdin ), _O_BINARY );
 	_setmode( FCGI_fileno( stdout ), _O_BINARY );
 #endif /* WIN32 */
-	cgiFormEntryFirst = 0;
-	cgiIn = FCGI_stdin;
-	cgiOut = FCGI_stdout;
-	cgiRestored = 0;
+	cgi->cgiFormEntryFirst = 0;
+	//cgiIn = FCGI_stdin;
+	//cgiOut = FCGI_stdout;
+	//cgiRestored = 0;
 
 
 	/* These five lines keep compilers from
@@ -234,32 +225,32 @@ int cgiMain_init(int argc, char *argv[]) {
 		are unused. They have no actual function. */
 	if (argc) {
 		if (argv[0]) {
-			cgiRestored = 0;
+			cgi->cgiRestored = 0;
 		}
 	}	
 
 
-	cgiTreatUrlEncoding=0;
-	if (cgiStrEqNc(cgiRequestMethod, "post")) {
-		cgiTreatUrlEncoding=0;
+	cgi->cgiTreatUrlEncoding=0;
+	if (cgiStrEqNc(cgi->cgiRequestMethod, "post")) {
+		cgi->cgiTreatUrlEncoding=0;
 #ifdef CGICDEBUG
 		CGICDEBUGSTART
 		fprintf(dout, "POST recognized\n");
 		CGICDEBUGEND
 #endif /* CGICDEBUG */
-		if (cgiStrEqNc(cgiContentType, "application/x-www-form-urlencoded")) {	
+		if (cgiStrEqNc(cgi->cgiContentType, "application/x-www-form-urlencoded")) {	
 #ifdef CGICDEBUG
 			CGICDEBUGSTART
 			fprintf(dout, "Calling PostFormInput\n");
 			CGICDEBUGEND	
 #endif /* CGICDEBUG */
-			if (cgiParsePostFormInput() != cgiParseSuccess) {
+			if (cgiParsePostFormInput(&cgi,request->in) != cgiParseSuccess) {
 #ifdef CGICDEBUG
 				CGICDEBUGSTART
 				fprintf(dout, "PostFormInput failed\n");
 				CGICDEBUGEND	
 #endif /* CGICDEBUG */
-				cgiFreeResources();
+				cgiFreeResources(&cgi);
 				return -1;
 			}	
 #ifdef CGICDEBUG
@@ -267,19 +258,19 @@ int cgiMain_init(int argc, char *argv[]) {
 			fprintf(dout, "PostFormInput succeeded\n");
 			CGICDEBUGEND	
 #endif /* CGICDEBUG */
-		} else if (cgiStrEqNc(cgiContentType, "multipart/form-data")) {
+		} else if (cgiStrEqNc(cgi->cgiContentType, "multipart/form-data")) {
 #ifdef CGICDEBUG
 			CGICDEBUGSTART
 			fprintf(dout, "Calling PostMultipartInput\n");
 			CGICDEBUGEND	
 #endif /* CGICDEBUG */
-			if (cgiParsePostMultipartInput() != cgiParseSuccess) {
+			if (cgiParsePostMultipartInput(&cgi,request->in) != cgiParseSuccess) {
 #ifdef CGICDEBUG
 				CGICDEBUGSTART
 				fprintf(dout, "PostMultipartInput failed\n");
 				CGICDEBUGEND	
 #endif /* CGICDEBUG */
-				cgiFreeResources();
+				cgiFreeResources(&cgi);
 				return -1;
 			}	
 #ifdef CGICDEBUG
@@ -288,17 +279,17 @@ int cgiMain_init(int argc, char *argv[]) {
 			CGICDEBUGEND	
 #endif /* CGICDEBUG */
 		}
-	} else if (cgiStrEqNc(cgiRequestMethod, "get")) {	
+	} else if (cgiStrEqNc(cgi->cgiRequestMethod, "get")) {	
 		/* The spec says this should be taken care of by
 			the server, but... it isn't */
-		cgiContentLength = strlen(cgiQueryString);
-		if (cgiParseGetFormInput() != cgiParseSuccess) {
+		cgi->cgiContentLength = strlen(cgi->cgiQueryString);
+		if (cgiParseGetFormInput(&cgi) != cgiParseSuccess) {
 #ifdef CGICDEBUG
 			CGICDEBUGSTART
 			fprintf(dout, "GetFormInput failed\n");
 			CGICDEBUGEND	
 #endif /* CGICDEBUG */
-			cgiFreeResources();
+			cgiFreeResources(&cgi);
 			return -1;
 		} else {	
 #ifdef CGICDEBUG
@@ -310,30 +301,31 @@ int cgiMain_init(int argc, char *argv[]) {
 	}
 	return result;
 }
-
+/**
 static void cgiGetenv(char **s, char *var){
 	*s = getenv(var);
 	if (!(*s)) {
 		*s = "";
 	}
 }
-
-static cgiParseResultType cgiParsePostFormInput() {
+**/
+static cgiParseResultType cgiParsePostFormInput(struct cgi_env **ce, FCGX_Stream *in) {
+    struct cgi_env * cgi = *ce;
 	char *input;
 	cgiParseResultType result;
-	if (!cgiContentLength) {
+	if (!cgi->cgiContentLength) {
 		return cgiParseSuccess;
 	}
-	input = (char *) malloc(cgiContentLength);
+	input = (char *) malloc(cgi->cgiContentLength);
 	if (!input) {
 		return cgiParseMemory;	
 	}
-	if (((int) fread(input, 1, cgiContentLength, cgiIn)) 
-		!= cgiContentLength) 
+	//if (((int) fread(input, 1, cgiContentLength, cgiIn)) != cgiContentLength) 
+    if (((int) FCGX_GetStr (input, cgi->cgiContentLength, in)) != cgi->cgiContentLength)    
 	{
 		return cgiParseIO;
 	}	
-	result = cgiParseFormInput(input, cgiContentLength);
+	result = cgiParseFormInput(input,cgi->cgiContentLength,&cgi);
 	free(input);
 	return result;
 }
@@ -360,7 +352,7 @@ typedef struct {
 	int offset;
 } mpStream, *mpStreamPtr;
 
-int mpRead(mpStreamPtr mpp, char *buffer, int len)
+int mpRead(mpStreamPtr mpp, char *buffer, int len, int cgiContentLength,FCGX_Stream *in)
 {
 	int ilen = len;
 	int got = 0;
@@ -380,7 +372,8 @@ int mpRead(mpStreamPtr mpp, char *buffer, int len)
 		len = cgiContentLength - mpp->offset;
 	}
 	if (len) {
-		int fgot = fread(buffer, 1, len, cgiIn);
+        int fgot = FCGX_GetStr(buffer,len,in);
+		//int fgot = fread(buffer, 1, len, cgiIn);
 		if (fgot >= 0) {
 			mpp->offset += (got + fgot);
 			return got + fgot;
@@ -429,7 +422,10 @@ static cgiParseResultType afterNextBoundary(mpStreamPtr mpp,
 	FILE *outf,
 	char **outP,
 	int *bodyLengthP,
-	int first
+	int first,
+    int cgiContentLength,
+    FCGX_Stream *in,
+    char * cgiMultipartBoundary
 	);
 
 static int readHeaderLine(
@@ -437,7 +433,9 @@ static int readHeaderLine(
 	char *attr,
 	int attrSpace,
 	char *value,
-	int valueSpace);
+	int valueSpace,
+    int cgiContentLength,
+    FCGX_Stream *in);
 
 static void decomposeValue(char *value,
 	char *mvalue, int mvalueSpace,
@@ -453,8 +451,9 @@ static void decomposeValue(char *value,
 	
 static cgiParseResultType getTempFileName(char *tfileName);
 
-static cgiParseResultType cgiParsePostMultipartInput() {
-	cgiParseResultType result;
+static cgiParseResultType cgiParsePostMultipartInput(struct cgi_env ** ce,FCGX_Stream * in) {
+	struct cgi_env * cgi = *ce;
+    cgiParseResultType result;
 	cgiFormEntry *n = 0, *l = 0;
 	int got;
 	FILE *outf = 0;
@@ -463,11 +462,11 @@ static cgiParseResultType cgiParsePostMultipartInput() {
 	mpStream mp;
 	mpStreamPtr mpp = &mp;
 	memset(&mp, 0, sizeof(mp));
-	if (!cgiContentLength) {
+	if (!cgi->cgiContentLength) {
 		return cgiParseSuccess;
 	}
 	/* Read first boundary, including trailing newline */
-	result = afterNextBoundary(mpp, 0, 0, 0, 1);
+	result = afterNextBoundary(mpp, 0, 0, 0, 1,cgi->cgiContentLength,in,cgi->cgiMultipartBoundary);
 	if (result == cgiParseIO) {	
 		/* An empty submission is not necessarily an error */
 		return cgiParseSuccess;
@@ -490,7 +489,7 @@ static cgiParseResultType cgiParsePostMultipartInput() {
 		out = 0;
 		outf = 0;
 		/* Check for EOF */
-		got = mpRead(mpp, d, 2);
+		got = mpRead(mpp, d, 2,cgi->cgiContentLength,in);
 		if (got < 2) {
 			/* Crude EOF */
 			break;
@@ -502,7 +501,7 @@ static cgiParseResultType cgiParsePostMultipartInput() {
 		mpPutBack(mpp, d, 2);
 		/* Read header lines until end of header */
 		while (readHeaderLine(
-				mpp, attr, sizeof(attr), value, sizeof(value))) 
+				mpp, attr, sizeof(attr), value, sizeof(value),cgi->cgiContentLength,in)) 
 		{
 			char *argNames[3];
 			char *argValues[2];
@@ -547,7 +546,7 @@ static cgiParseResultType cgiParsePostMultipartInput() {
 			outf = 0;
 			tfileName[0] = '\0';
 		}	
-		result = afterNextBoundary(mpp, outf, &out, &bodyLength, 0);
+		result = afterNextBoundary(mpp, outf, &out, &bodyLength, 0,cgi->cgiContentLength,in,cgi->cgiMultipartBoundary);
 		if (result != cgiParseSuccess) {
 			/* Lack of a boundary here is an error. */
 			if (outf) {
@@ -586,7 +585,7 @@ static cgiParseResultType cgiParsePostMultipartInput() {
 		n->valueLength = bodyLength;
 		n->next = 0;
 		if (!l) {
-			cgiFormEntryFirst = n;
+			cgi->cgiFormEntryFirst = n;
 		} else {
 			l->next = n;
 		}
@@ -703,7 +702,7 @@ static cgiParseResultType getTempFileName(char *tfileName)
 	}
 
 cgiParseResultType afterNextBoundary(mpStreamPtr mpp, FILE *outf, char **outP,
-	int *bodyLengthP, int first)
+	int *bodyLengthP, int first,int cgiContentLength,FCGX_Stream *in,char *cgiMultipartBoundary)
 {
 	int outLen = 0;
 	int outSpace = 256;
@@ -732,7 +731,7 @@ cgiParseResultType afterNextBoundary(mpStreamPtr mpp, FILE *outf, char **outP,
 	}
 	workingBoundaryLength = strlen(workingBoundary);
 	while (1) {
-		got = mpRead(mpp, d, 1);
+		got = mpRead(mpp, d, 1,cgiContentLength,in);
 		if (got != 1) {
 			/* 2.01: cgiParseIO, not cgiFormIO */
 			result = cgiParseIO;
@@ -767,7 +766,7 @@ cgiParseResultType afterNextBoundary(mpStreamPtr mpp, FILE *outf, char **outP,
 	}
 	/* Read trailing newline or -- EOF marker. A literal EOF here
 		would be an error in the input stream. */
-	got = mpRead(mpp, d, 2);
+	got = mpRead(mpp, d, 2,cgiContentLength,in);
 	if (got != 2) {
 		result = cgiParseIO;
 		goto error;
@@ -928,19 +927,21 @@ static int readHeaderLine(
 	char *attr,
 	int attrSpace,
 	char *value,
-	int valueSpace)
+	int valueSpace,
+    int cgiContentLength,
+    FCGX_Stream *in)
 {	
 	int attrLen = 0;
 	int valueLen = 0;
 	int valueFound = 0;
 	while (1) {
 		char d[1];
-		int got = mpRead(mpp, d, 1);
+		int got = mpRead(mpp, d, 1,cgiContentLength,in);
 		if (got != 1) {	
 			return 0;
 		}
 		if (d[0] == '\r') {
-			got = mpRead(mpp, d, 1);
+			got = mpRead(mpp, d, 1,cgiContentLength,in);
 			if (got == 1) {	
 				if (d[0] == '\n') {
 					/* OK */
@@ -953,7 +954,7 @@ static int readHeaderLine(
 			break;
 		} else if ((d[0] == ':') && attrLen) {
 			valueFound = 1;
-			while (mpRead(mpp, d, 1) == 1) {
+			while (mpRead(mpp, d, 1,cgiContentLength,in) == 1) {
 				if (!isspace(d[0])) {
 					mpPutBack(mpp, d, 1);
 					break;
@@ -984,8 +985,9 @@ static int readHeaderLine(
 	}
 }
 
-static cgiParseResultType cgiParseGetFormInput() {
-	return cgiParseFormInput(cgiQueryString, cgiContentLength);
+static cgiParseResultType cgiParseGetFormInput(struct cgi_env ** ce) {
+    struct cgi_env * cgi = *ce;
+	return cgiParseFormInput(cgi->cgiQueryString, cgi->cgiContentLength,ce);
 }
 
 typedef enum {
@@ -999,10 +1001,11 @@ typedef enum {
 	cgiUnescapeMemory
 } cgiUnescapeResultType;
 
-static cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len);
+static cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len,int cgiTreatUrlEncoding);
 
-static cgiParseResultType cgiParseFormInput(char *data, int length) {
+static cgiParseResultType cgiParseFormInput(char *data, int length,struct cgi_env ** ce) {
 	/* Scan for pairs, unescaping and storing them as they are found. */
+    struct cgi_env * cgi = *ce;
 	int pos = 0;
 	cgiFormEntry *n;
 	cgiFormEntry *l = 0;
@@ -1025,7 +1028,7 @@ static cgiParseResultType cgiParseFormInput(char *data, int length) {
 		if (!foundEq) {
 			break;
 		}
-		if (cgiUnescapeChars(&attr, data+start, len)
+		if (cgiUnescapeChars(&attr, data+start, len,cgi->cgiTreatUrlEncoding)
 			!= cgiUnescapeSuccess) {
 			return cgiParseMemory;
 		}	
@@ -1042,7 +1045,7 @@ static cgiParseResultType cgiParseFormInput(char *data, int length) {
 		}
 		/* The last pair probably won't be followed by a &, but
 			that's fine, so check for that after accepting it */
-		if (cgiUnescapeChars(&value, data+start, len)
+		if (cgiUnescapeChars(&value, data+start, len, cgi->cgiTreatUrlEncoding)
 			!= cgiUnescapeSuccess) {
 			free(attr);
 			return cgiParseMemory;
@@ -1086,7 +1089,7 @@ static cgiParseResultType cgiParseFormInput(char *data, int length) {
 		n->tfileName[0] = '\0';
 		n->next = 0;
 		if (!l) {
-			cgiFormEntryFirst = n;
+			cgi->cgiFormEntryFirst = n;
 		} else {
 			l->next = n;
 		}
@@ -1100,7 +1103,7 @@ static cgiParseResultType cgiParseFormInput(char *data, int length) {
 
 static int cgiHexValue[256];
 
-cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len) {
+cgiUnescapeResultType cgiUnescapeChars(char **sp, char *cp, int len,int cgiTreatUrlEncoding ) {
 	char *s;
 	cgiEscapeState escapeState = cgiEscapeRest;
 	int escapedValue = 0;
@@ -1171,8 +1174,9 @@ static void cgiSetupConstants() {
 	cgiHexValue['f'] = 15;
 }
 
-void cgiFreeResources() {
-	cgiFormEntry *c = cgiFormEntryFirst;
+void cgiFreeResources(struct cgi_env **cgi) {
+    struct cgi_env * cc = *cgi;
+	cgiFormEntry *c = cc->cgiFormEntryFirst;
 	cgiFormEntry *n;
 	while (c) {
 		n = c->next;
@@ -1189,43 +1193,45 @@ void cgiFreeResources() {
 	}
 	/* If the cgi environment was restored from a saved environment,
 		then these are in allocated space and must also be freed */
-	if (cgiRestored) {
-		free(cgiServerSoftware);
-		free(cgiServerName);
-		free(cgiGatewayInterface);
-		free(cgiServerProtocol);
-		free(cgiServerPort);
-		free(cgiRequestMethod);
-		free(cgiPathInfo);
-		free(cgiPathTranslated);
-		free(cgiScriptName);
-		free(cgiQueryString);
-		free(cgiRemoteHost);
-		free(cgiRemoteAddr);
-		free(cgiAuthType);
-		free(cgiRemoteUser);
-		free(cgiRemoteIdent);
-		free(cgiContentType);
-		free(cgiAccept);
-		free(cgiUserAgent);
-		free(cgiReferrer);
+	/**
+    if (cc->cgiRestored) {
+		free(cc->cgiServerSoftware);
+		free(cc->cgiServerName);
+		free(cc->cgiGatewayInterface);
+		free(cc->cgiServerProtocol);
+		free(cc->cgiServerPort);
+		free(cc->cgiRequestMethod);
+		free(cc->cgiPathInfo);
+		free(cc->cgiPathTranslated);
+		free(cc->cgiScriptName);
+		free(cc->cgiQueryString);
+		free(cc->cgiRemoteHost);
+		free(cc->cgiRemoteAddr);
+		free(cc->cgiAuthType);
+		free(cc->cgiRemoteUser);
+		free(cc->cgiRemoteIdent);
+		free(cc->cgiContentType);
+		free(cc->cgiAccept);
+		free(cc->cgiUserAgent);
+		free(cc->cgiReferrer);
 	}
+    **/
 	/* 2.0: to clean up the environment for cgiReadEnvironment,
 		we must set these correctly */
-	cgiFormEntryFirst = 0;
-	cgiRestored = 0;
+	cc->cgiFormEntryFirst = 0;
+	cc->cgiRestored = 0;
 }
 
 static cgiFormResultType cgiFormEntryString(
 	cgiFormEntry *e, char *result, int max, int newlines);
 
-static cgiFormEntry *cgiFormEntryFindFirst(char *name);
-static cgiFormEntry *cgiFormEntryFindNext();
+static cgiFormEntry *cgiFormEntryFindFirst(char *name, struct cgi_env ** ce);
+static cgiFormEntry *cgiFormEntryFindNext(struct cgi_env ** ce);
 
 cgiFormResultType cgiFormString(
-        char *name, char *result, int max) {
+        char *name, char *result, int max,struct cgi_env ** ce) {
 	cgiFormEntry *e;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		strcpy(result, "");
 		return cgiFormNotFound;
@@ -1234,12 +1240,12 @@ cgiFormResultType cgiFormString(
 }
 
 cgiFormResultType cgiFormFileName(
-	char *name, char *result, int resultSpace)
+	char *name, char *result, int resultSpace,struct cgi_env ** ce)
 {
 	cgiFormEntry *e;
 	int resultLen = 0;
 	char *s;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		strcpy(result, "");
 		return cgiFormNotFound;
@@ -1262,12 +1268,12 @@ cgiFormResultType cgiFormFileName(
 }
 
 cgiFormResultType cgiFormFileContentType(
-	char *name, char *result, int resultSpace)
+	char *name, char *result, int resultSpace,struct cgi_env ** ce)
 {
 	cgiFormEntry *e;
 	int resultLen = 0;
 	char *s;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		if (resultSpace) {
 			result[0] = '\0';
@@ -1292,10 +1298,10 @@ cgiFormResultType cgiFormFileContentType(
 }
 
 cgiFormResultType cgiFormFileSize(
-	char *name, int *sizeP)
+	char *name, int *sizeP,struct cgi_env ** ce)
 {
 	cgiFormEntry *e;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		if (sizeP) {
 			*sizeP = 0;
@@ -1319,11 +1325,11 @@ typedef struct cgiFileStruct {
 } cgiFile;
 
 cgiFormResultType cgiFormFileOpen(
-	char *name, cgiFilePtr *cfpp)
+	char *name, cgiFilePtr *cfpp,struct cgi_env ** ce)
 {
 	cgiFormEntry *e;
 	cgiFilePtr cfp;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		*cfpp = 0;
 		return cgiFormNotFound;
@@ -1373,9 +1379,9 @@ cgiFormResultType cgiFormFileClose(cgiFilePtr cfp)
 }
 
 cgiFormResultType cgiFormStringNoNewlines(
-        char *name, char *result, int max) {
+        char *name, char *result, int max,struct cgi_env ** ce) {
 	cgiFormEntry *e;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		strcpy(result, "");
 		return cgiFormNotFound;
@@ -1384,7 +1390,7 @@ cgiFormResultType cgiFormStringNoNewlines(
 }
 
 cgiFormResultType cgiFormStringMultiple(
-        char *name, char ***result) {
+        char *name, char ***result,struct cgi_env ** ce) {
 	char **stringArray;
 	cgiFormEntry *e;
 	int i;
@@ -1392,11 +1398,11 @@ cgiFormResultType cgiFormStringMultiple(
 	/* Make two passes. One would be more efficient, but this
 		function is not commonly used. The select menu and
 		radio box functions are faster. */
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (e != 0) {
 		do {
 			total++;
-		} while ((e = cgiFormEntryFindNext()) != 0); 
+		} while ((e = cgiFormEntryFindNext(ce)) != 0); 
 	}
 	stringArray = (char **) malloc(sizeof(char *) * (total + 1));
 	if (!stringArray) {
@@ -1408,7 +1414,7 @@ cgiFormResultType cgiFormStringMultiple(
 		stringArray[i] = 0;
 	}
 	/* Now go get the entries */
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 #ifdef CGICDEBUG
 	CGICDEBUGSTART
 	fprintf(dout, "StringMultiple Beginning\n");
@@ -1428,7 +1434,7 @@ cgiFormResultType cgiFormStringMultiple(
 			strcpy(stringArray[i], e->value);
 			cgiFormEntryString(e, stringArray[i], max, 1);
 			i++;
-		} while ((e = cgiFormEntryFindNext()) != 0); 
+		} while ((e = cgiFormEntryFindNext(ce)) != 0); 
 		*result = stringArray;
 #ifdef CGICDEBUG
 		CGICDEBUGSTART
@@ -1448,9 +1454,9 @@ cgiFormResultType cgiFormStringMultiple(
 }
 
 cgiFormResultType cgiFormStringSpaceNeeded(
-        char *name, int *result) {
+        char *name, int *result,struct cgi_env ** ce) {
 	cgiFormEntry *e;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		*result = 1;
 		return cgiFormNotFound; 
@@ -1542,10 +1548,10 @@ static cgiFormResultType cgiFormEntryString(
 static int cgiFirstNonspaceChar(char *s);
 
 cgiFormResultType cgiFormInteger(
-        char *name, int *result, int defaultV) {
+        char *name, int *result, int defaultV,struct cgi_env ** ce) {
 	cgiFormEntry *e;
 	int ch;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		*result = defaultV;
 		return cgiFormNotFound; 
@@ -1565,8 +1571,8 @@ cgiFormResultType cgiFormInteger(
 }
 
 cgiFormResultType cgiFormIntegerBounded(
-        char *name, int *result, int min, int max, int defaultV) {
-	cgiFormResultType error = cgiFormInteger(name, result, defaultV);
+        char *name, int *result, int min, int max, int defaultV,struct cgi_env ** ce) {
+	cgiFormResultType error = cgiFormInteger(name, result, defaultV,ce);
 	if (error != cgiFormSuccess) {
 		return error;
 	}
@@ -1582,10 +1588,10 @@ cgiFormResultType cgiFormIntegerBounded(
 }
 
 cgiFormResultType cgiFormDouble(
-        char *name, double *result, double defaultV) {
+        char *name, double *result, double defaultV,struct cgi_env ** ce) {
 	cgiFormEntry *e;
 	int ch;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		*result = defaultV;
 		return cgiFormNotFound; 
@@ -1605,8 +1611,8 @@ cgiFormResultType cgiFormDouble(
 }
 
 cgiFormResultType cgiFormDoubleBounded(
-        char *name, double *result, double min, double max, double defaultV) {
-	cgiFormResultType error = cgiFormDouble(name, result, defaultV);
+        char *name, double *result, double min, double max, double defaultV,struct cgi_env ** ce) {
+	cgiFormResultType error = cgiFormDouble(name, result, defaultV,ce);
 	if (error != cgiFormSuccess) {
 		return error;
 	}
@@ -1623,11 +1629,11 @@ cgiFormResultType cgiFormDoubleBounded(
 
 cgiFormResultType cgiFormSelectSingle(
 	char *name, char **choicesText, int choicesTotal, 
-	int *result, int defaultV) 
+	int *result, int defaultV,struct cgi_env ** ce) 
 {
 	cgiFormEntry *e;
 	int i;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 #ifdef CGICDEBUG
 	CGICDEBUGSTART
 	fprintf(dout, "%d\n", (int) e);
@@ -1659,7 +1665,7 @@ cgiFormResultType cgiFormSelectSingle(
 
 cgiFormResultType cgiFormSelectMultiple(
 	char *name, char **choicesText, int choicesTotal, 
-	int *result, int *invalid) 
+	int *result, int *invalid,struct cgi_env ** ce) 
 {
 	cgiFormEntry *e;
 	int i;
@@ -1668,7 +1674,7 @@ cgiFormResultType cgiFormSelectMultiple(
 	for (i=0; (i < choicesTotal); i++) {
 		result[i] = 0;
 	}
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		*invalid = invalidE;
 		return cgiFormNotFound;
@@ -1686,7 +1692,7 @@ cgiFormResultType cgiFormSelectMultiple(
 		if (!(hit)) {
 			invalidE++;
 		}
-	} while ((e = cgiFormEntryFindNext()) != 0);
+	} while ((e = cgiFormEntryFindNext(ce)) != 0);
 
 	*invalid = invalidE;
 
@@ -1698,10 +1704,10 @@ cgiFormResultType cgiFormSelectMultiple(
 }
 
 cgiFormResultType cgiFormCheckboxSingle(
-	char *name)
+	char *name,struct cgi_env ** ce)
 {
 	cgiFormEntry *e;
-	e = cgiFormEntryFindFirst(name);
+	e = cgiFormEntryFindFirst(name,ce);
 	if (!e) {
 		return cgiFormNotFound;
 	}
@@ -1710,26 +1716,27 @@ cgiFormResultType cgiFormCheckboxSingle(
 
 extern cgiFormResultType cgiFormCheckboxMultiple(
 	char *name, char **valuesText, int valuesTotal, 
-	int *result, int *invalid)
+	int *result, int *invalid,struct cgi_env ** ce)
 {
 	/* Implementation is identical to cgiFormSelectMultiple. */
 	return cgiFormSelectMultiple(name, valuesText, 
-		valuesTotal, result, invalid);
+		valuesTotal, result, invalid,ce);
 }
 
 cgiFormResultType cgiFormRadio(
 	char *name, 
-	char **valuesText, int valuesTotal, int *result, int defaultV)
+	char **valuesText, int valuesTotal, int *result, int defaultV,struct cgi_env **ce)
 {
 	/* Implementation is identical to cgiFormSelectSingle. */
 	return cgiFormSelectSingle(name, valuesText, valuesTotal, 
-		result, defaultV);
+		result, defaultV,ce);
 }
 
 cgiFormResultType cgiCookieString(
 	char *name,
 	char *value,
-	int space)
+	int space,
+    char * cgiCookie)
 {
 	char *p = cgiCookie;
 	while (*p) {
@@ -1802,11 +1809,12 @@ cgiFormResultType cgiCookieString(
 cgiFormResultType cgiCookieInteger(
 	char *name,
 	int *result,
-	int defaultV)
+	int defaultV,
+    char * cgiCookie)
 {
 	char buffer[256];
 	cgiFormResultType r = 
-		cgiCookieString(name, buffer, sizeof(buffer));
+		cgiCookieString(name, buffer, sizeof(buffer),cgiCookie);
 	if (r != cgiFormSuccess) {
 		*result = defaultV;
 	} else {
@@ -1816,11 +1824,11 @@ cgiFormResultType cgiCookieInteger(
 }
 
 void cgiHeaderCookieSetInteger(char *name, int value, int secondsToLive,
-	char *path, char *domain)
+	char *path, char *domain,FCGX_Stream * out)
 {
 	char svalue[256];
 	sprintf(svalue, "%d", value);
-	cgiHeaderCookieSetString(name, svalue, secondsToLive, path, domain);
+	cgiHeaderCookieSetString(name, svalue, secondsToLive, path, domain,out);
 }
 
 char *days[] = {
@@ -1849,7 +1857,7 @@ char *months[] = {
 };
 
 void cgiHeaderCookieSetString(char *name, char *value, int secondsToLive,
-	char *path, char *domain)
+	char *path, char *domain,FCGX_Stream * out)
 {
 	/* cgic 2.02: simpler and more widely compatible implementation.
 		Thanks to Chunfu Lai. 
@@ -1867,7 +1875,7 @@ void cgiHeaderCookieSetString(char *name, char *value, int secondsToLive,
 	time(&now);
 	then = now + secondsToLive;
 	gt = gmtime(&then);
-	fprintf(cgiOut, 
+	FCGX_FPrintF(out, 
 		"Set-Cookie: %s=%s; domain=%s; expires=%s, %02d-%s-%04d %02d:%02d:%02d GMT; path=%s\r\n",
 		name, value, domain, 
 		days[gt->tm_wday],
@@ -1880,31 +1888,31 @@ void cgiHeaderCookieSetString(char *name, char *value, int secondsToLive,
 		path);
 }
 
-void cgiHeaderLocation(char *redirectUrl) {
-	fprintf(cgiOut, "Location: %s\r\n\r\n", redirectUrl);
+void cgiHeaderLocation(char *redirectUrl,FCGX_Stream * out) {
+	FCGX_FPrintF(out, "Location: %s\r\n\r\n", redirectUrl);
 }
 
-void cgiHeaderStatus(int status, char *statusMessage) {
-	fprintf(cgiOut, "Status: %d %s\r\n\r\n", status, statusMessage);
+void cgiHeaderStatus(int status, char *statusMessage,FCGX_Stream * out) {
+	FCGX_FPrintF(out, "Status: %d %s\r\n\r\n", status, statusMessage);
 }
 
-void cgiHeaderContentType(char *mimeType) {
-	fprintf(cgiOut, "Content-type: %s\r\n\r\n", mimeType);
+void cgiHeaderContentType(char *mimeType,FCGX_Stream * out) {
+	FCGX_FPrintF(out, "Content-type: %s\r\n\r\n", mimeType);
 }
 
-static int cgiWriteString(FILE *out, char *s);
+//static int cgiWriteString(FILE *out, char *s);
 
-static int cgiWriteInt(FILE *out, int i);
+//static int cgiWriteInt(FILE *out, int i);
 
 #define CGIC_VERSION "2.0"
-
+/**
 cgiEnvironmentResultType cgiWriteEnvironment(char *filename) {
 	FILE *out;
 	cgiFormEntry *e;
-	/* Be sure to open in binary mode */
+	// Be sure to open in binary mode 
 	out = fopen(filename, "wb");
 	if (!out) {
-		/* Can't create file */
+		// Can't create file 
 		return cgiEnvironmentIO;
 	}
 	if (!cgiWriteString(out, "CGIC2.0")) {
@@ -1982,7 +1990,7 @@ cgiEnvironmentResultType cgiWriteEnvironment(char *filename) {
 		if (!cgiWriteString(out, e->value)) {
 			goto error;
 		}
-		/* New 2.0 fields and file uploads */
+		// New 2.0 fields and file uploads 
 		if (!cgiWriteString(out, e->fileName)) {
 			goto error;
 		}
@@ -2021,13 +2029,16 @@ cgiEnvironmentResultType cgiWriteEnvironment(char *filename) {
 	return cgiEnvironmentSuccess;
 error:
 	fclose(out);
-	/* If this function is not defined in your system,
-		you must substitute the appropriate 
-		file-deletion function. */
+	// If this function is not defined in your system,
+	//	you must substitute the appropriate 
+	//	file-deletion function. 
 	unlink(filename);
 	return cgiEnvironmentIO;
 }
 
+**/
+
+/**
 static int cgiWriteString(FILE *out, char *s) {
 	int len = (int) strlen(s);
 	cgiWriteInt(out, len);
@@ -2048,29 +2059,33 @@ static int cgiReadString(FILE *out, char **s);
 
 static int cgiReadInt(FILE *out, int *i);
 
+**/
+
+
+/**
 cgiEnvironmentResultType cgiReadEnvironment(char *filename) {
 	FILE *in;
 	cgiFormEntry *e = 0, *p;
 	char *version;
-	/* Prevent compiler warnings */
+	// Prevent compiler warnings 
 	cgiEnvironmentResultType result = cgiEnvironmentIO;
-	/* Free any existing data first */
+	// Free any existing data first 
 	cgiFreeResources();
-	/* Be sure to open in binary mode */
+	/ Be sure to open in binary mode
 	in = fopen(filename, "rb");
 	if (!in) {
-		/* Can't access file */
+		// Can't access file
 		return cgiEnvironmentIO;
 	}
 	if (!cgiReadString(in, &version)) {
 		goto error;
 	}
 	if (strcmp(version, "CGIC" CGIC_VERSION)) {
-		/* 2.02: Merezko Oleg */
+		// 2.02: Merezko Oleg 
 		free(version);
 		return cgiEnvironmentWrongVersion;
 	}	
-	/* 2.02: Merezko Oleg */
+	// 2.02: Merezko Oleg 
 	free(version);
 	if (!cgiReadString(in, &cgiServerSoftware)) {
 		goto error;
@@ -2129,7 +2144,7 @@ cgiEnvironmentResultType cgiReadEnvironment(char *filename) {
 	if (!cgiReadString(in, &cgiReferrer)) {
 		goto error;
 	}
-	/* 2.0 */
+	// 2.0 
 	if (!cgiReadString(in, &cgiCookie)) {
 		goto error;
 	}
@@ -2147,8 +2162,8 @@ cgiEnvironmentResultType cgiReadEnvironment(char *filename) {
 		}
 		memset(e, 0, sizeof(cgiFormEntry));
 		if (!cgiReadString(in, &e->attr)) {
-			/* This means we've reached the end of the list. */
-			/* 2.02: thanks to Merezko Oleg */
+			// This means we've reached the end of the list. 
+			// 2.02: thanks to Merezko Oleg 
 			free(e);
 			break;
 		}
@@ -2185,9 +2200,9 @@ cgiEnvironmentResultType cgiReadEnvironment(char *filename) {
 				goto error;
 			}
 			while (len > 0) {		
-				/* 2.01: try is a bad variable name in
-					C++, and it wasn't being used
-					properly either */
+				// 2.01: try is a bad variable name in
+				//	C++, and it wasn't being used
+				//	properly either 
 				int tryr = len;
 				if (tryr > ((int) sizeof(buffer))) {
 					tryr = sizeof(buffer);
@@ -2207,7 +2222,7 @@ cgiEnvironmentResultType cgiReadEnvironment(char *filename) {
 				}
 				len -= got;
 			}
-			/* cgic 2.05: should be fclose not rewind */
+			// cgic 2.05: should be fclose not rewind 
 			fclose(out);
 			e->tfileName = (char *) malloc((int) strlen(tfileName) + 1);
 			if (!e->tfileName) {
@@ -2259,10 +2274,13 @@ error:
 	}
 	return result;
 }
+**/
 
+
+/**
 static int cgiReadString(FILE *in, char **s) {
 	int len;
-	/* 2.0 fix: test cgiReadInt for failure! */ 
+	//  2.0 fix: test cgiReadInt for failure! 
 	if (!cgiReadInt(in, &len)) {
 		return 0;
 	}
@@ -2283,7 +2301,7 @@ static int cgiReadInt(FILE *out, int *i) {
 	}
 	return 1;
 }
-
+**/
 static int cgiStrEqNc(char *s1, char *s2) {
 	while(1) {
 		if (!(*s1)) {
@@ -2326,20 +2344,22 @@ static int cgiStrBeginsNc(char *s1, char *s2) {
 	}
 }
 
-static char *cgiFindTarget = 0;
-static cgiFormEntry *cgiFindPos = 0;
+//static char *cgiFindTarget = 0;
+//static cgiFormEntry *cgiFindPos = 0;
 
-static cgiFormEntry *cgiFormEntryFindFirst(char *name) {
-	cgiFindTarget = name;
-	cgiFindPos = cgiFormEntryFirst;
-	return cgiFormEntryFindNext();
+static cgiFormEntry *cgiFormEntryFindFirst(char *name,struct cgi_env ** ce) {
+    struct cgi_env * cgi = * ce;
+	cgi->cgiFindTarget = name;
+	cgi->cgiFindPos = cgi->cgiFormEntryFirst;
+	return cgiFormEntryFindNext(ce);
 }
 
-static cgiFormEntry *cgiFormEntryFindNext() {
-	while (cgiFindPos) {
-		cgiFormEntry *c = cgiFindPos;
-		cgiFindPos = c->next;
-		if (!strcmp(c -> attr, cgiFindTarget)) {
+static cgiFormEntry *cgiFormEntryFindNext(struct cgi_env ** ce) {
+    struct cgi_env * cgi = * ce;
+	while (cgi->cgiFindPos) {
+		cgiFormEntry *c = cgi->cgiFindPos;
+		cgi->cgiFindPos = c->next;
+		if (!strcmp(c -> attr, cgi->cgiFindTarget)) {
 			return c;
 		}
 	}
@@ -2364,7 +2384,7 @@ void cgiStringArrayFree(char **stringArray) {
 	free(arrayItself);
 }	
 
-cgiFormResultType cgiCookies(char ***result) {
+cgiFormResultType cgiCookies(char ***result,char *cgiCookie) {
 	char **stringArray;
 	int i;
 	int total = 0;
@@ -2421,16 +2441,17 @@ cgiFormResultType cgiCookies(char ***result) {
 	return cgiFormSuccess;
 }
 
-cgiFormResultType cgiFormEntries(char ***result) {
+cgiFormResultType cgiFormEntries(char ***result,struct cgi_env ** ce) {
+    struct cgi_env * cgi = *ce;
 	char **stringArray;
 	cgiFormEntry *e, *pe;
 	int i;
 	int total = 0;
-	e = cgiFormEntryFirst;
+	e = cgi->cgiFormEntryFirst;
 	while (e) {
 		/* Don't count a field name more than once if
 			multiple values happen to be present for it */
-		pe = cgiFormEntryFirst;
+		pe = cgi->cgiFormEntryFirst;
 		while (pe != e) {
 			if (!strcmp(e->attr, pe->attr)) {
 				goto skipSecondValue;
@@ -2451,13 +2472,13 @@ skipSecondValue:
 		stringArray[i] = 0;
 	}
 	/* Now go get the entries */
-	e = cgiFormEntryFirst;
+	e = cgi->cgiFormEntryFirst;
 	i = 0;
 	while (e) {
 		int space;
 		/* Don't return a field name more than once if
 			multiple values happen to be present for it */
-		pe = cgiFormEntryFirst;
+		pe = cgi->cgiFormEntryFirst;
 		while (pe != e) {
 			if (!strcmp(e->attr, pe->attr)) {
 				goto skipSecondValue2;
@@ -2481,43 +2502,43 @@ skipSecondValue2:
 	return cgiFormSuccess;
 }
 
-#define TRYPUTC(ch) \
+#define TRYPUTC(ch,out) \
 	{ \
-		if (putc((ch), cgiOut) == EOF) { \
+		if (FCGX_PutChar((int)ch, out) == -1) { \
 			return cgiFormIO; \
 		} \
 	} 
 
-cgiFormResultType cgiHtmlEscapeData(char *data, int len)
+cgiFormResultType cgiHtmlEscapeData(char *data, int len,FCGX_Stream *out)
 {
 	while (len--) {
 		if (*data == '<') {
-			TRYPUTC('&');
-			TRYPUTC('l');
-			TRYPUTC('t');
-			TRYPUTC(';');
+			TRYPUTC('&',out);
+			TRYPUTC('l',out);
+			TRYPUTC('t',out);
+			TRYPUTC(';',out);
 		} else if (*data == '&') {
-			TRYPUTC('&');
-			TRYPUTC('a');
-			TRYPUTC('m');
-			TRYPUTC('p');
-			TRYPUTC(';');
+			TRYPUTC('&',out);
+			TRYPUTC('a',out);
+			TRYPUTC('m',out);
+			TRYPUTC('p',out);
+			TRYPUTC(';',out);
 		} else if (*data == '>') {
-			TRYPUTC('&');
-			TRYPUTC('g');
-			TRYPUTC('t');
-			TRYPUTC(';');
+			TRYPUTC('&',out);
+			TRYPUTC('g',out);
+			TRYPUTC('t',out);
+			TRYPUTC(';',out);
 		} else {
-			TRYPUTC(*data);
+			TRYPUTC(*data,out);
 		}
 		data++;
 	}
 	return cgiFormSuccess;
 }
 
-cgiFormResultType cgiHtmlEscape(char *s)
+cgiFormResultType cgiHtmlEscape(char *s, FCGX_Stream *out)
 {
-	return cgiHtmlEscapeData(s, (int) strlen(s));
+	return cgiHtmlEscapeData(s, (int) strlen(s),out);
 }
 
 /* Output data with the " character HTML-escaped, and no
@@ -2526,26 +2547,26 @@ cgiFormResultType cgiHtmlEscape(char *s)
 	'data' is not null-terminated; 'len' is the number of
 	bytes in 'data'. Returns cgiFormIO in the event
 	of error, cgiFormSuccess otherwise. */
-cgiFormResultType cgiValueEscapeData(char *data, int len)
+cgiFormResultType cgiValueEscapeData(char *data, int len,FCGX_Stream *out)
 {
 	while (len--) {
 		if (*data == '\"') {
-			TRYPUTC('&');
-			TRYPUTC('#');
-			TRYPUTC('3');
-			TRYPUTC('4');
-			TRYPUTC(';');
+			TRYPUTC('&',out);
+			TRYPUTC('#',out);
+			TRYPUTC('3',out);
+			TRYPUTC('4',out);
+			TRYPUTC(';',out);
 		} else {
-			TRYPUTC(*data);
+			TRYPUTC(*data,out);
 		}
 		data++;
 	}
 	return cgiFormSuccess;
 }
 
-cgiFormResultType cgiValueEscape(char *s)
+cgiFormResultType cgiValueEscape(char *s,FCGX_Stream *out)
 {
-	return cgiValueEscapeData(s, (int) strlen(s));
+	return cgiValueEscapeData(s, (int) strlen(s),out);
 }
 
 
