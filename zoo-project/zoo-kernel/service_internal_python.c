@@ -126,7 +126,7 @@ init_zoo ()
 
 int
 zoo_python_support (maps ** main_conf, map * request, service * s,
-                    maps ** real_inputs, maps ** real_outputs)
+                    maps ** real_inputs, maps ** real_outputs,FCGX_Stream * err)
 {
   char *pythonpath;
   char *python_path;
@@ -221,7 +221,7 @@ zoo_python_support (maps ** main_conf, map * request, service * s,
       map *err = createMap ("text",
                             "Unable to parse serviceProvider please check your zcfg file.");
       addToMap (err, "code", "NoApplicableCode");
-      printExceptionReportResponse (m, err);
+      //printExceptionReportResponse (m, err);
       exit (-1);
     }
   pModule = PyImport_Import (pName);
@@ -298,7 +298,7 @@ zoo_python_support (maps ** main_conf, map * request, service * s,
               free (tpbt);
               map *err = createMap ("text", pbt);
               addToMap (err, "code", "NoApplicableCode");
-              printExceptionReportResponse (m, err);
+              //printExceptionReportResponse (m, err);
               res = -1;
             }
         }
@@ -308,7 +308,7 @@ zoo_python_support (maps ** main_conf, map * request, service * s,
           sprintf (tmpS, "Cannot find the %s function in the %s file.\n",
                    s->name, tmp->value);
           map *tmps = createMap ("text", tmpS);
-          printExceptionReportResponse (m, tmps);
+          //printExceptionReportResponse (m, tmps);
           res = -1;
         }
     }
@@ -317,7 +317,7 @@ zoo_python_support (maps ** main_conf, map * request, service * s,
       char tmpS[1024];
       sprintf (tmpS, "Python module %s cannot be loaded.\n", tmp->value);
       map *tmps = createMap ("text", tmpS);
-      printExceptionReportResponse (m, tmps);
+      //printExceptionReportResponse (m, tmps);
       if (PyErr_Occurred ())
         PyErr_Print ();
       PyErr_Clear ();

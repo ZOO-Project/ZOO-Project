@@ -215,7 +215,7 @@ zoo_js_support (maps ** main_conf, map * request, service * s,
       free (filename);
       map *err = createMap ("text", tmp1);
       addToMap (err, "code", "NoApplicableCode");
-      printExceptionReportResponse (mc, err);
+      //printExceptionReportResponse (mc, err);
       freeMap (&err);
       free (err);
       JS_MaybeGC (cx);
@@ -267,7 +267,7 @@ zoo_js_support (maps ** main_conf, map * request, service * s,
 #endif
       map *err = createMap ("text", tmp1);
       addToMap (err, "code", "NoApplicableCode");
-      printExceptionReportResponse (*main_conf, err);
+      //printExceptionReportResponse (*main_conf, err);
       freeMap (&err);
       free (err);
       free (filename);

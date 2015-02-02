@@ -36,15 +36,15 @@ extern "C"
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
-#include "service_zcfg.h"
 #include <libgen.h>
 }
 #include "ulinet.h"
+#include "service_zcfg.h"
 #include <libintl.h>
 #include <locale.h>
 #include <string.h>
-#include "service.h"
-#include "service_internal.h"
+//#include "service.h"
+//#include "service_internal.h"
 #ifdef USE_PYTHON
 #include "service_internal_python.h"
 #endif
@@ -171,7 +171,7 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
                        _
                        ("You set maximum occurences for <%s> as %i but you tried to use it more than the limit you set. Please correct your ZCFG file or your request."),
                        mi->name, atoi (testMap->value));
-              errorException (m, emsg, "InternalError", NULL);
+              //errorException (m, emsg, "InternalError", NULL,stderr);
               return -1;
             }
         }
@@ -192,7 +192,7 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
                            _
                            ("ZOO-Kernel was unable to load your data for %s position %s."),
                            mi->name, tmpMap->value);
-                  errorException (m, emsg, "InternalError", NULL);
+                  //errorException (m, emsg, "InternalError", NULL,stderr);
                   return -1;
                 }
             }
@@ -203,7 +203,7 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
                        _
                        ("You set maximum occurences for <%s> to one but you tried to use it more than once. Please correct your ZCFG file or your request."),
                        mi->name);
-              errorException (m, emsg, "InternalError", NULL);
+              //errorException (m, emsg, "InternalError", NULL,request->out);
               return -1;
             }
         }
@@ -389,7 +389,7 @@ sig_handler (int sig)
            _
            ("ZOO Kernel failed to process your request receiving signal %d = %s"),
            sig, ssig);
-  errorException (NULL, tmp, "InternalError", NULL);
+  //errorException (NULL, tmp, "InternalError", NULL,request->out);
 #ifdef DEBUG
   fprintf (stderr, "Not this time!\n");
 #endif
@@ -398,9 +398,11 @@ sig_handler (int sig)
 
 void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
-                   maps ** inputs, maps ** ioutputs, int *eres)
+                   maps ** inputs, maps ** ioutputs, int *eres,FCGX_Stream *out, FCGX_Stream *err)
 {
-  char tmps1[1024];
+ 
+
+ char tmps1[1024];
   char ntmp[1024];
   maps *m = *myMap;
   maps *request_output_real_format = *ioutputs;
@@ -522,6 +524,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               execute_t execute =
                 (execute_t) GetProcAddress (so, s1->name);
 #else
+
               execute_t execute = (execute_t) dlsym (so, s1->name);
 #endif
 
@@ -538,15 +541,17 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                            _
                            ("Error occured while running the %s function: %s"),
                            s1->name, errstr);
-                  errorException (m, tmpMsg, "InternalError", NULL);
+                  errorException (m, tmpMsg, "InternalError", NULL,out);
                   free (tmpMsg);
 #ifdef DEBUG
                   fprintf (stderr, "Function %s error %s\n",
                            s1->name, errstr);
-#endif
+#endif              
+
                   *eres = -1;
                   return;
                 }
+
 #ifdef DEBUG
 #ifdef WIN32
               errstr = GetLastError ();
@@ -567,6 +572,9 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               fprintf (stderr, "Function loaded and returned %d\n", eres);
               fflush (stderr);
 #endif
+
+
+
             }
 #ifdef WIN32
           *ioutputs = dupMaps (&request_output_real_format);
@@ -588,7 +596,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
           sprintf (tmps, _("C Library can't be loaded %s"), errstr);
           map *tmps1 = createMap ("text", tmps);
-          printExceptionReportResponse (m, tmps1);
+          printExceptionReportResponse (m, tmps1,out);
           *eres = -1;
           freeMap (&tmps1);
           free (tmps1);
@@ -601,7 +609,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       *eres =
         zoo_python_support (&m, request_inputs, s1,
                             &request_input_real_format,
-                            &request_output_real_format);
+                            &request_output_real_format,err);
+
     }
   else
 #endif
@@ -669,7 +678,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                ("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),
                r_inputs->value);
       map *tmps = createMap ("text", tmpv);
-      printExceptionReportResponse (m, tmps);
+      printExceptionReportResponse (m, tmps,out);
       *eres = -1;
     }
   *myMap = m;
@@ -793,9 +802,11 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 #endif
 
 int
-runRequest (map ** inputs)
+runRequest (map ** inputs,struct cgi_env ** c,FCGX_Request *request)
 {
 
+
+struct cgi_env *cgi = *c;
 #ifndef USE_GDB
   (void) signal (SIGSEGV, sig_handler);
   (void) signal (SIGTERM, sig_handler);
@@ -812,12 +823,14 @@ runRequest (map ** inputs)
   /**
    * Parsing service specfic configuration file
    */
+  
   m = (maps *) malloc (MAPS_SIZE);
   if (m == NULL)
     {
       return errorException (m, _("Unable to allocate memory."),
-                             "InternalError", NULL);
+                             "InternalError", NULL,request->out);
     }
+   
   char ntmp[1024];
 #ifndef WIN32
   getcwd (ntmp, 1024);
@@ -826,16 +839,20 @@ runRequest (map ** inputs)
 #endif
   r_inputs = getMapOrFill (&request_inputs, "metapath", "");
 
+  //m = get_main_conf();
 
-  char conf_file[10240];
-  snprintf (conf_file, 10240, "%s/%s/main.cfg", ntmp, r_inputs->value);
+ char conf_file[10240];
+ snprintf (conf_file, 10240, "%s/%s/main.cfg", ntmp, r_inputs->value);
+  
   if (conf_read (conf_file, m) == 2)
     {
       errorException (NULL, _("Unable to load the main.cfg file."),
-                      "InternalError", NULL);
+                      "InternalError", NULL,request->out);
       free (m);
       return 1;
     }
+
+
 #ifdef DEBUG
   fprintf (stderr, "***** BEGIN MAPS\n");
   dumpMaps (m);
@@ -843,6 +860,10 @@ runRequest (map ** inputs)
 #endif
 
   map *getPath = getMapFromMaps (m, "main", "gettextPath");
+
+
+
+
   if (getPath != NULL)
     {
       bindtextdomain ("zoo-kernel", getPath->value);
@@ -853,7 +874,6 @@ runRequest (map ** inputs)
       bindtextdomain ("zoo-kernel", "/usr/share/locale/");
       bindtextdomain ("zoo-services", "/usr/share/locale/");
     }
-
 
   /**
    * Manage our own error log file (usefull to separate standard apache debug
@@ -877,7 +897,7 @@ runRequest (map ** inputs)
                    _
                    ("The value %s is not supported for the <language> parameter"),
                    r_inputs->value);
-          errorException (m, tmp, "InvalidParameterValue", "language");
+          errorException (m, tmp, "InvalidParameterValue", "language",request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -928,17 +948,17 @@ runRequest (map ** inputs)
   else
     setMapInMaps (m, "main", "isSoap", "false");
 
-  if (strlen (cgiServerName) > 0)
+  if (strlen (cgi->cgiServerName) > 0)
     {
       char tmpUrl[1024];
-      if (strncmp (cgiServerPort, "80", 2) == 0)
+      if (strncmp (cgi->cgiServerPort, "80", 2) == 0)
         {
-          sprintf (tmpUrl, "http://%s%s", cgiServerName, cgiScriptName);
+          sprintf (tmpUrl, "http://%s%s", cgi->cgiServerName, cgi->cgiScriptName);
         }
       else
         {
-          sprintf (tmpUrl, "http://%s:%s%s", cgiServerName,
-                   cgiServerPort, cgiScriptName);
+          sprintf (tmpUrl, "http://%s:%s%s", cgi->cgiServerName,
+                   cgi->cgiServerPort, cgi->cgiScriptName);
         }
 #ifdef DEBUG
       fprintf (stderr, "*** %s ***\n", tmpUrl);
@@ -953,7 +973,7 @@ runRequest (map ** inputs)
   if (request_inputs == NULL || r_inputs == NULL)
     {
       errorException (m, _("Parameter <request> was not specified"),
-                      "MissingParameterValue", "request");
+                      "MissingParameterValue", "request",request->out);
       if (count (request_inputs) == 1)
         {
           freeMap (&request_inputs);
@@ -973,7 +993,7 @@ runRequest (map ** inputs)
           errorException (m,
                           _
                           ("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."),
-                          "OperationNotSupported", r_inputs->value);
+                          "OperationNotSupported", r_inputs->value,request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -985,7 +1005,7 @@ runRequest (map ** inputs)
   if (r_inputs == NULLMAP)
     {
       errorException (m, _("Parameter <service> was not specified"),
-                      "MissingParameterValue", "service");
+                      "MissingParameterValue", "service",request->out);
       freeMaps (&m);
       free (m);
       free (REQUEST);
@@ -998,7 +1018,7 @@ runRequest (map ** inputs)
           errorException (m,
                           _
                           ("Unenderstood <service> value, WPS is the only acceptable value."),
-                          "InvalidParameterValue", "service");
+                          "InvalidParameterValue", "service",request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -1011,7 +1031,7 @@ runRequest (map ** inputs)
       if (r_inputs == NULL)
         {
           errorException (m, _("Parameter <version> was not specified"),
-                          "MissingParameterValue", "version");
+                          "MissingParameterValue", "version",request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -1024,7 +1044,7 @@ runRequest (map ** inputs)
               errorException (m,
                               _
                               ("Unenderstood <version> value, 1.0.0 is the only acceptable value."),
-                              "InvalidParameterValue", "service");
+                              "InvalidParameterValue", "service",request->out);
               freeMaps (&m);
               free (m);
               free (REQUEST);
@@ -1042,7 +1062,7 @@ runRequest (map ** inputs)
               errorException (m,
                               _
                               ("Unenderstood <AcceptVersions> value, 1.0.0 is the only acceptable value."),
-                              "VersionNegotiationFailed", NULL);
+                              "VersionNegotiationFailed", NULL,request->out);
               freeMaps (&m);
               free (m);
               free (REQUEST);
@@ -1080,6 +1100,9 @@ runRequest (map ** inputs)
   else
     snprintf (conf_dir, 1024, "%s", ntmp);
 
+
+
+
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
     {
 #ifdef DEBUG
@@ -1097,30 +1120,12 @@ runRequest (map ** inputs)
      * Here we need to close stdout to ensure that not supported chars 
      * has been found in the zcfg and then printed on stdout
      */
-      int saved_stdout = dup (fileno (stdout));
-      dup2 (fileno (stderr), fileno (stdout));
-
-        /**
-      if (int res =
-          recursReaddirF (m, n, conf_dir, NULL, saved_stdout, 0,
-                          printGetCapabilitiesForProcess) < 0)
-        {
-          freeMaps (&m);
-          free (m);
-          free (REQUEST);
-          free (SERVICE_URL);
-          fflush (stdout);
-          return res;
-        }
-      **/
       XML_CapabilitiesAllProcess (m, n);
-      dup2 (saved_stdout, fileno (stdout));
-      printDocument (m, doc, getpid ());
+      printDocument (m, doc, getpid (),request->out);
       freeMaps (&m);
       free (m);
       free (REQUEST);
       free (SERVICE_URL);
-      fflush (stdout);
       return 0;
     }
   else
@@ -1131,7 +1136,7 @@ runRequest (map ** inputs)
         {
           errorException (m,
                           _("Mandatory <identifier> was not specified"),
-                          "MissingParameterValue", "identifier");
+                          "MissingParameterValue", "identifier",request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -1145,7 +1150,7 @@ runRequest (map ** inputs)
         {
           errorException (m,
                           _("The specified path path doesn't exist."),
-                          "InvalidParameterValue", conf_dir);
+                          "InvalidParameterValue", conf_dir,request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -1172,28 +1177,29 @@ runRequest (map ** inputs)
           char *orig = zStrdup (r_inputs->value);
 
 
-          int saved_stdout = dup (fileno (stdout));
-          dup2 (fileno (stderr), fileno (stdout));
+          //int saved_stdout = dup (fileno (stdout));
+          //dup2 (fileno (stderr), fileno (stdout));
           XML_Describe_Process (m, n, orig);
           closedir (dirp);
-          fflush (stdout);
-          dup2 (saved_stdout, fileno (stdout));
+          //fflush (stdout);
+          //dup2 (saved_stdout, fileno (stdout));
           free (orig);
-          printDocument (m, doc, getpid ());
+          printDocument (m, doc, getpid (),request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
           free (SERVICE_URL);
-          fflush (stdout);
+          //fflush (stdout);
           return 0;
 
         }
       else if (strncasecmp (REQUEST, "Execute", strlen (REQUEST)) != 0)
         {
+          
           errorException (m,
                           _
                           ("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."),
-                          "InvalidParameterValue", "request");
+                          "InvalidParameterValue", "request",request->out);
 #ifdef DEBUG
           fprintf (stderr, "No request found %s", REQUEST);
 #endif
@@ -1202,7 +1208,7 @@ runRequest (map ** inputs)
           free (m);
           free (REQUEST);
           free (SERVICE_URL);
-          fflush (stdout);
+          //fflush (stdout);
           return 0;
         }
       closedir (dirp);
@@ -1249,8 +1255,8 @@ runRequest (map ** inputs)
   t = readServiceFile (m, tmps1, &s1, r_inputs->value);
   fflush (stdout);
   **/
-  int saved_stdout = dup (fileno (stdout));
-  dup2 (saved_stdout, fileno (stdout));
+  //int saved_stdout = dup (fileno (stdout));
+  //dup2 (saved_stdout, fileno (stdout));
   s1 = search_service (r_inputs->value);
   if (s1 == NULL)
     {
@@ -1259,7 +1265,7 @@ runRequest (map ** inputs)
                _
                ("The value for <identifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),
                r_inputs->value);
-      errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
+      errorException (m, tmpMsg, "InvalidParameterValue", "identifier",request->out);
       free (tmpMsg);
       //free (s1);
       freeMaps (&m);
@@ -1268,7 +1274,7 @@ runRequest (map ** inputs)
       free (SERVICE_URL);
       return 0;
     }
-  close (saved_stdout);
+  //close (saved_stdout);
 
 #ifdef DEBUG
   dumpService (s1);
@@ -1338,7 +1344,7 @@ runRequest (map ** inputs)
             {
               return errorException (m,
                                      _("Unable to allocate memory"),
-                                     "InternalError", NULL);
+                                     "InternalError", NULL,request->out);
             }
           i = 0;
           while (pToken != NULL)
@@ -1355,7 +1361,7 @@ runRequest (map ** inputs)
                   return errorException (m,
                                          _
                                          ("Unable to allocate memory"),
-                                         "InternalError", NULL);
+                                         "InternalError", NULL,request->out);
                 }
               snprintf (outputs_as_text[i], strlen (pToken) + 1, "%s",
                         pToken);
@@ -1381,7 +1387,7 @@ runRequest (map ** inputs)
                               return errorException (m,
                                                      _
                                                      ("Unable to allocate memory."),
-                                                     "InternalError", NULL);
+                                                     "InternalError", NULL,request->out);
                             }
                           tmp_output->name = zStrdup (tmpc);
                           tmp_output->content = NULL;
@@ -1446,7 +1452,7 @@ runRequest (map ** inputs)
         {
           errorException (m,
                           _("Parameter <DataInputs> was not specified"),
-                          "MissingParameterValue", "DataInputs");
+                          "MissingParameterValue", "DataInputs",request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -1478,7 +1484,7 @@ runRequest (map ** inputs)
       if (inputs_as_text == NULL)
         {
           return errorException (m, _("Unable to allocate memory."),
-                                 "InternalError", NULL);
+                                 "InternalError", NULL,request->out);
         }
       i = 0;
       while (pToken != NULL)
@@ -1497,7 +1503,7 @@ runRequest (map ** inputs)
             {
               return errorException (m,
                                      _("Unable to allocate memory."),
-                                     "InternalError", NULL);
+                                     "InternalError", NULL,request->out);
             }
           pToken = strtok (NULL, ";");
           i++;
@@ -1539,7 +1545,7 @@ runRequest (map ** inputs)
                       return errorException (m,
                                              _
                                              ("Unable to allocate memory."),
-                                             "InternalError", NULL);
+                                             "InternalError", NULL,request->out);
                     }
                   tmpmaps->name = zStrdup (tmpn);
                   if (tmpv != NULL)
@@ -1610,7 +1616,7 @@ runRequest (map ** inputs)
                                    _
                                    ("Unable to find a valid protocol to download the remote file %s"),
                                    tmpv1 + 1);
-                          errorException (m, emsg, "InternalError", NULL);
+                          errorException (m, emsg, "InternalError", NULL,request->out);
                           freeMaps (&m);
                           free (m);
                           free (REQUEST);
@@ -1701,7 +1707,7 @@ runRequest (map ** inputs)
       fprintf (stderr, "BEFORE %s\n", postRequest->value);
       fflush (stderr);
 #endif
-      xmlDocPtr doc = xmlParseMemory (postRequest->value, cgiContentLength);
+      xmlDocPtr doc = xmlParseMemory (postRequest->value, cgi->cgiContentLength);
 #ifdef DEBUG
       fprintf (stderr, "AFTER\n");
       fflush (stderr);
@@ -1752,7 +1758,7 @@ runRequest (map ** inputs)
                               return errorException (m,
                                                      _
                                                      ("Unable to allocate memory."),
-                                                     "InternalError", NULL);
+                                                     "InternalError", NULL,request->out);
                             }
                           tmpmaps->name = zStrdup ((char *) val);
                           tmpmaps->content = NULL;
@@ -1781,7 +1787,7 @@ runRequest (map ** inputs)
                               return errorException (m,
                                                      _
                                                      ("Unable to allocate memory."),
-                                                     "InternalError", NULL);
+                                                     "InternalError", NULL,request->out);
                             }
                           tmpmaps->name = zStrdup ("missingIndentifier");
                           tmpmaps->content =
@@ -1925,7 +1931,7 @@ runRequest (map ** inputs)
                                             (m,
                                              _
                                              ("Unable to allocate memory."),
-                                             "InternalError", NULL);
+                                             "InternalError", NULL,request->out);
                                         }
                                       snprintf (has,
                                                 (3 +
@@ -1964,8 +1970,8 @@ runRequest (map ** inputs)
                                   char *tmp =
                                     (char *)
                                     malloc
-                                    (cgiContentLength + 1 * sizeof (char));
-                                  memset (tmp, 0, cgiContentLength);
+                                    (cgi->cgiContentLength + 1 * sizeof (char));
+                                  memset (tmp, 0, cgi->cgiContentLength);
                                   xmlNodePtr cur4 = cur3->children;
                                   while (cur4 != NULL)
                                     {
@@ -2057,7 +2063,7 @@ runRequest (map ** inputs)
                                         (m,
                                          _
                                          ("Unable to allocate memory."),
-                                         "InternalError", NULL);
+                                         "InternalError", NULL,request->out);
                                     }
                                   size_t bRead;
                                   InternetReadFile
@@ -2379,7 +2385,7 @@ runRequest (map ** inputs)
                   return errorException (m,
                                          _
                                          ("Unable to allocate memory."),
-                                         "InternalError", NULL);
+                                         "InternalError", NULL,request->out);
                 }
               tmpmaps->name = zStrdup ("unknownIdentifier");
               tmpmaps->content = NULL;
@@ -2463,7 +2469,7 @@ runRequest (map ** inputs)
                         return errorException (m,
                                                _
                                                ("Unable to allocate memory."),
-                                               "InternalError", NULL);
+                                               "InternalError", NULL,request->out);
                       }
                     tmpmaps->name = zStrdup ("unknownIdentifier");
                     tmpmaps->content = NULL;
@@ -2519,7 +2525,7 @@ runRequest (map ** inputs)
                                 return errorException (m,
                                                        _
                                                        ("Unable to allocate memory."),
-                                                       "InternalError", NULL);
+                                                       "InternalError", NULL,request->out);
                               }
                             tmpmaps->name = zStrdup ((char *) val);
                             tmpmaps->content = NULL;
@@ -2579,7 +2585,7 @@ runRequest (map ** inputs)
                                 return errorException (m,
                                                        _
                                                        ("Unable to allocate memory."),
-                                                       "InternalError", NULL);
+                                                       "InternalError", NULL,request->out);
                               }
                             tmpmaps->name = zStrdup ("missingIndetifier");
                             tmpmaps->content =
@@ -2658,7 +2664,7 @@ runRequest (map ** inputs)
                                           (m,
                                            _
                                            ("Unable to allocate memory."),
-                                           "InternalError", NULL);
+                                           "InternalError", NULL,request->out);
                                       }
                                     tmpmaps->name = zStrdup ((char *) val);
                                     tmpmaps->content = NULL;
@@ -2699,7 +2705,7 @@ runRequest (map ** inputs)
                                           (m,
                                            _
                                            ("Unable to allocate memory."),
-                                           "InternalError", NULL);
+                                           "InternalError", NULL,request->out);
                                       }
                                     tmpmaps->name =
                                       zStrdup ("missingIndetifier");
@@ -2787,7 +2793,7 @@ runRequest (map ** inputs)
                         ptr->name, tmp1->value, i);
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
-              printExceptionReportResponse (m, tmpe);
+              printExceptionReportResponse (m, tmpe,request->out);
               //freeService (&s1);
               //free (s1);
               freeMap (&tmpe);
@@ -2831,7 +2837,7 @@ runRequest (map ** inputs)
           addToMap (tmpe, "locator", dfv1);
         }
       addToMap (tmpe, "text", tmps);
-      printExceptionReportResponse (m, tmpe);
+      printExceptionReportResponse (m, tmpe,request->out);
       //freeService (&s1);
       free (s1);
       freeMap (&tmpe);
@@ -2854,7 +2860,7 @@ runRequest (map ** inputs)
       char name[1024];
       if (getMap (tmpReqI->content, "isFile") != NULL)
         {
-          if (cgiFormFileName (tmpReqI->name, name, sizeof (name)) ==
+          if (cgiFormFileName (tmpReqI->name, name, sizeof (name),&cgi) ==
               cgiFormSuccess)
             {
               int BufferLen = 1024;
@@ -2868,10 +2874,10 @@ runRequest (map ** inputs)
               int size;
               int got, t;
               map *path = getMapFromMaps (m, "main", "tmpPath");
-              cgiFormFileSize (tmpReqI->name, &size);
+              cgiFormFileSize (tmpReqI->name, &size,&cgi);
               cgiFormFileContentType (tmpReqI->name, contentType,
-                                      sizeof (contentType));
-              if (cgiFormFileOpen (tmpReqI->name, &file) == cgiFormSuccess)
+                                      sizeof (contentType),&cgi);
+              if (cgiFormFileOpen (tmpReqI->name, &file,&cgi) == cgiFormSuccess)
                 {
                   t = -1;
                   while (1)
@@ -3017,7 +3023,7 @@ runRequest (map ** inputs)
       errorException (m,
                       _
                       ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
-                      "InvalidParameterValue", "storeExecuteResponse");
+                      "InvalidParameterValue", "storeExecuteResponse",request->out);
       //freeService (&s1);
       //free (s1);
       freeMaps (&m);
@@ -3068,10 +3074,10 @@ runRequest (map ** inputs)
     addToMap (_tmpMaps->content, "soap", ltmp->value);
   else
     addToMap (_tmpMaps->content, "soap", "false");
-  if (cgiCookie != NULL && strlen (cgiCookie) > 0)
+  if (cgi->cgiCookie != NULL && strlen (cgi->cgiCookie) > 0)
     {
       int hasValidCookie = -1;
-      char *tcook = zStrdup (cgiCookie);
+      char *tcook = zStrdup (cgi->cgiCookie);
       char *tmp = NULL;
       map *testing = getMapFromMaps (m, "main", "cookiePrefix");
       if (testing == NULL)
@@ -3084,10 +3090,10 @@ runRequest (map ** inputs)
             (char *) malloc ((strlen (testing->value) + 2) * sizeof (char));
           sprintf (tmp, "%s=", testing->value);
         }
-      if (strstr (cgiCookie, ";") != NULL)
+      if (strstr (cgi->cgiCookie, ";") != NULL)
         {
           char *token, *saveptr;
-          token = strtok_r (cgiCookie, ";", &saveptr);
+          token = strtok_r (cgi->cgiCookie, ";", &saveptr);
           while (token != NULL)
             {
               if (strcasestr (token, tmp) != NULL)
@@ -3103,9 +3109,9 @@ runRequest (map ** inputs)
       else
         {
           if (strstr
-              (cgiCookie, "=") != NULL && strcasestr (cgiCookie, tmp) != NULL)
+              (cgi->cgiCookie, "=") != NULL && strcasestr (cgi->cgiCookie, tmp) != NULL)
             {
-              tcook = zStrdup (cgiCookie);
+              tcook = zStrdup (cgi->cgiCookie);
               hasValidCookie = 1;
             }
           if (tmp != NULL)
@@ -3130,12 +3136,13 @@ runRequest (map ** inputs)
           else
             sprintf
               (session_file_path,
-               "%s/sess_%s.cfg", tmpPath->value, strstr (cgiCookie, "=") + 1);
+               "%s/sess_%s.cfg", tmpPath->value, strstr (cgi->cgiCookie, "=") + 1);
           free (tcook);
           maps *tmpSess = (maps *) malloc (MAPS_SIZE);
           struct stat file_status;
           int istat = stat (session_file_path,
                             &file_status);
+          
           if (istat == 0 && file_status.st_size > 0)
             {
               conf_read (session_file_path, tmpSess);
@@ -3143,6 +3150,7 @@ runRequest (map ** inputs)
               freeMaps (&tmpSess);
               free (tmpSess);
             }
+            
         }
     }
   addMapsToMaps (&m, _tmpMaps);
@@ -3165,7 +3173,9 @@ runRequest (map ** inputs)
       status = getMap (request_inputs, "status");
     }
 #endif
-  char *fbkp, *fbkp1;
+  
+
+char *fbkp, *fbkp1;
   FILE *f0, *f1;
   if (status != NULL)
     if (strcasecmp (status->value, "false") == 0)
@@ -3175,7 +3185,7 @@ runRequest (map ** inputs)
       loadServiceAndRun
         (&m, s1,
          request_inputs,
-         &request_input_real_format, &request_output_real_format, &eres);
+         &request_input_real_format, &request_output_real_format, &eres,request->out,request->err);
     }
   else
     {
@@ -3260,7 +3270,7 @@ runRequest (map ** inputs)
              cpid, s1,
              r_inputs1->value,
              SERVICE_STARTED,
-             request_input_real_format, request_output_real_format);
+             request_input_real_format, request_output_real_format,request->out);
 #ifndef WIN32
           fflush (stdout);
           rewind (stdout);
@@ -3276,7 +3286,7 @@ runRequest (map ** inputs)
           loadServiceAndRun
             (&m, s1,
              request_inputs,
-             &request_input_real_format, &request_output_real_format, &eres);
+             &request_input_real_format, &request_output_real_format, &eres,request->out,request->err);
         }
       else
         {
@@ -3288,19 +3298,20 @@ runRequest (map ** inputs)
           errorException (m,
                           _
                           ("Unable to run the child process properly"),
-                          "InternalError", NULL);
+                          "InternalError", NULL,request->out);
         }
     }
 
 #ifdef DEBUG
   dumpMaps (request_output_real_format);
 #endif
+
   if (eres != -1)
     outputResponse (s1,
                     request_input_real_format,
                     request_output_real_format,
-                    request_inputs, cpid, m, eres);
-  fflush (stdout);
+                    request_inputs, cpid, m, eres,request->out,request->err);
+  //fflush (stdout);
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 
@@ -3314,7 +3325,7 @@ runRequest (map ** inputs)
   (void) signal (SIGFPE, donothing);
   (void) signal (SIGABRT, donothing);
 #endif
-  if (((int) getpid ()) != cpid || cgiSid != NULL)
+  if (((int) getpid ()) != cpid || cgi->cgiSid != NULL)
     {
       fclose (stdout);
       fclose (stderr);

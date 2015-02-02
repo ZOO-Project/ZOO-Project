@@ -42,7 +42,7 @@ maps* mapsFromPyDict(PyDictObject* t);
 void createMapsFromPyDict(maps**,PyDictObject*);
 map* mapFromPyDict(PyDictObject* t);
 
-int zoo_python_support(maps**,map*,service*,maps**,maps**);
+int zoo_python_support(maps**,map*,service*,maps**,maps**,FCGX_Stream *);
 
 PyObject* PythonTranslate(PyObject*, PyObject*);
 PyObject* PythonUpdateStatus(PyObject*, PyObject*);
