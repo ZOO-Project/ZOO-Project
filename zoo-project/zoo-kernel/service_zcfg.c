@@ -5,18 +5,38 @@
 #include <sys/stat.h>
 #include "service.h"
 #include "service_internal.h"
+extern "C" {
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
-
+#include "service.h"
+#include "service_internal.h"
+}
 
 
 static int SCAN_DEPTH = 7;
 
 
 static GList *serviceCfgList;
+
+//static maps * main_conf = NULL;
+
+
+/*int
+load_main_conf(char * path){
+    if (main_conf != NULL)
+        freeMaps(&main_conf);
+    main_conf = (maps *) malloc (MAP_SIZE);
+    return conf_read (path, main_conf);
+}
+
+maps *  get_main_conf(){
+    return  dupMaps(&main_conf);
+}
+
+*/
 
 static int
 scanServiceCfg (char *rootDir, GList ** serviceList, int level)
@@ -117,7 +137,7 @@ init_services_conf (char *rootDir)
       readServiceFile (m, (char *) l->data, &s1, s1->identifier);
       serviceCfgList = g_list_append (serviceCfgList, s1);
     }
-  freeMap(&m);
+  freeMaps(&m);
 }
 
 

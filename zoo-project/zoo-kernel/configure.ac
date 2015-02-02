@@ -339,7 +339,7 @@ else
 	LIBS_SAVE="$LIBS"
 	LIBS="$PYTHON_LDFLAGS"
 	PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
-	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	#AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
 	AC_SUBST([PYTHON_CPPFLAGS])
 	AC_SUBST([PYTHON_LDFLAGS])
 fi

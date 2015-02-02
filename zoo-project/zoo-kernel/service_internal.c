@@ -1,5 +1,5 @@
 /**
- * Author : GÃ©rald FENOY
+ * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2013 GeoLabs SARL
  *
@@ -57,7 +57,7 @@ isValidLang (maps * conf, const char *str)
 }
 
 void
-printHeaders (maps * m)
+printHeaders (maps * m,FCGX_Stream *out)
 {
   maps *_tmp = getMaps (m, "headers");
   if (_tmp != NULL)
@@ -65,7 +65,8 @@ printHeaders (maps * m)
       map *_tmp1 = _tmp->content;
       while (_tmp1 != NULL)
         {
-          printf ("%s: %s\r\n", _tmp1->name, _tmp1->value);
+          FCGX_FPrintF(out,"%s: %s\r\n", _tmp1->name, _tmp1->value);
+          //printf ("%s: %s\r\n", _tmp1->name, _tmp1->value);
           _tmp1 = _tmp1->next;
         }
     }
@@ -99,7 +100,7 @@ to_hex (char code)
 #ifdef WIN32
 
 #include <windows.h>
-#include <fcgi_stdio.h>
+//#include <fcgi_stdio.h>
 #include <stdio.h>
 #include <conio.h>
 #include <tchar.h>
@@ -1688,7 +1689,7 @@ printFullDescription (int in, elements * elem, const char *type,
 void
 printProcessResponse (maps * m, map * request, int pid, service * serv,
                       const char *service, int status, maps * inputs,
-                      maps * outputs)
+                      maps * outputs, FCGX_Stream* out)
 {
   xmlNsPtr ns, ns_ows, ns_xlink, ns_xsi;
   xmlNodePtr nr, n, nc, nc1 = NULL, nc3;
@@ -1989,7 +1990,7 @@ printProcessResponse (maps * m, map * request, int pid, service * serv,
                    stored_path);
           map *errormap = createMap ("text", tmpMsg);
           addToMap (errormap, "code", "InternalError");
-          printExceptionReportResponse (m, errormap);
+          printExceptionReportResponse (m, errormap,out);
           freeMap (&errormap);
           free (errormap);
           xmlFreeDoc (doc);
@@ -2004,7 +2005,7 @@ printProcessResponse (maps * m, map * request, int pid, service * serv,
       xmlFree (xmlbuff);
       fclose (output);
     }
-  printDocument (m, doc, pid);
+  printDocument (m, doc, pid,out);
 
   xmlCleanupParser ();
   zooXmlCleanupNs ();
@@ -2012,16 +2013,16 @@ printProcessResponse (maps * m, map * request, int pid, service * serv,
 
 
 void
-printDocument (maps * m, xmlDocPtr doc, int pid)
+printDocument (maps * m, xmlDocPtr doc, int pid,FCGX_Stream * out)
 {
   char *encoding = getEncoding (m);
   if (pid == getpid ())
     {
-      printHeaders (m);
-      printf ("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",
-              encoding);
+      printHeaders (m,out);
+      FCGX_FPrintF(out,"Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+      //printf ("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
     }
-  fflush (stdout);
+  //fflush (stdout);
   xmlChar *xmlbuff;
   int buffersize;
   /*
@@ -2029,8 +2030,10 @@ printDocument (maps * m, xmlDocPtr doc, int pid)
    * for demonstration purposes.
    */
   xmlDocDumpFormatMemoryEnc (doc, &xmlbuff, &buffersize, encoding, 1);
-  printf ("%s", xmlbuff);
-  fflush (stdout);
+  FCGX_FPrintF(out,(char *)xmlbuff);
+  FCGX_FFlush(out);
+  //printf ("%s", xmlbuff);
+  //fflush (stdout);
   /*
    * Free associated memory.
    */
@@ -2461,7 +2464,7 @@ getVersion (maps * m)
 }
 
 void
-printExceptionReportResponse (maps * m, map * s)
+printExceptionReportResponse (maps * m, map * s,FCGX_Stream * out)
 {
   if (getMapFromMaps (m, "lenv", "hasPrinted") != NULL)
     return;
@@ -2503,29 +2506,31 @@ printExceptionReportResponse (maps * m, map * s)
         {
           if (getpid () == atoi (tmpSid->value))
             {
-              printHeaders (m);
-              printf
-                ("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",
-                 encoding, exceptionCode);
+              printHeaders (m,out);
+              FCGX_FPrintF(out,"Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding, exceptionCode);
+              //printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding, exceptionCode);
             }
         }
       else
         {
-          printHeaders (m);
-          printf ("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",
-                  encoding, exceptionCode);
+          printHeaders (m,out);
+          FCGX_FPrintF(out,"Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",
+                            encoding, exceptionCode);
+          //printf ("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding, exceptionCode);
         }
     }
   else
-    {
-      printf ("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",
-              encoding, exceptionCode);
+    { 
+      FCGX_FPrintF(out,"Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding, exceptionCode);
+      //printf ("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding, exceptionCode);
     }
   n = createExceptionReportNode (m, s, 1);
   xmlDocSetRootElement (doc, n);
   xmlDocDumpFormatMemoryEnc (doc, &xmlbuff, &buffersize, encoding, 1);
-  printf ("%s", xmlbuff);
-  fflush (stdout);
+  //printf ("%s", xmlbuff);
+  FCGX_FPrintF(out,"%s",xmlbuff);
+FCGX_FFlush(out);
+  //fflush (stdout);
   xmlFreeDoc (doc);
   xmlFree (xmlbuff);
   xmlCleanupParser ();
@@ -2594,8 +2599,10 @@ createExceptionReportNode (maps * m, map * s, int use_ns)
 
 void
 outputResponse (service * s, maps * request_inputs, maps * request_outputs,
-                map * request_inputs1, int cpid, maps * m, int res)
+                map * request_inputs1, int cpid, maps * m, int res,FCGX_Stream *out,FCGX_Stream *err)
 {
+
+
 #ifdef DEBUG
   dumpMaps (request_inputs);
   dumpMaps (request_outputs);
@@ -2654,7 +2661,7 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
           map *errormap = createMap ("text", tmpMsg);
           addToMap (errormap, "code", "InternalError");
 
-          printExceptionReportResponse (m, errormap);
+          printExceptionReportResponse (m, errormap,out);
           freeMap (&errormap);
           free (errormap);
           return;
@@ -2669,6 +2676,8 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
 
   if (asRaw == 0)
     {
+
+
 #ifdef DEBUG
       fprintf (stderr, "REQUEST_OUTPUTS FINAL\n");
       dumpMaps (request_outputs);
@@ -2759,7 +2768,8 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
                            file_name, tmpI->name);
                   map *errormap = createMap ("text", tmpMsg);
                   addToMap (errormap, "code", "InternalError");
-                  printExceptionReportResponse (m, errormap);
+
+                  printExceptionReportResponse (m, errormap,out);
                   freeMap (&errormap);
                   free (errormap);
                   free (file_name);
@@ -2832,12 +2842,14 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
 #endif
       printProcessResponse (m, request_inputs1, cpid,
                             s, r_inputs->value, res,
-                            request_inputs, request_outputs);
+                            request_inputs, request_outputs,out);
     }
   else
     {
+
       if (res == SERVICE_FAILED)
         {
+
           map *errormap;
           map *lenv;
           lenv = getMapFromMaps (m, "lenv", "message");
@@ -2870,7 +2882,7 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
           errormap = createMap ("text", tmp0);
           free (tmp0);
           addToMap (errormap, "code", "InternalError");
-          printExceptionReportResponse (m, errormap);
+          printExceptionReportResponse (m, errormap,out);
           freeMap (&errormap);
           free (errormap);
           return;
@@ -2879,6 +2891,8 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
        * We get the requested output or fallback to the first one if the 
        * requested one is not present in the resulting outputs maps.
        */
+
+
       maps *tmpI = NULL;
       map *tmpIV = getMap (request_inputs1, "RawDataOutput");
       if (tmpIV != NULL)
@@ -2904,19 +2918,20 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
                        tmpI->name);
               map *errormap = createMap ("text", tmpMsg);
               addToMap (errormap, "code", "InvalidParameterValue");
-              printExceptionReportResponse (m, errormap);
+              printExceptionReportResponse (m, errormap,out);
               freeMap (&errormap);
               free (errormap);
               return;
             }
           map *fname = getMapFromMaps (tmpI, tmpI->name, "filename");
           if (fname != NULL)
-            printf ("Content-Disposition: attachment; filename=\"%s\"\r\n",
-                    fname->value);
+            FCGX_FPrintF(out,"Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+            //printf ("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
           map *rs = getMapFromMaps (tmpI, tmpI->name, "size");
           if (rs != NULL)
-            printf ("Content-Length: %s\r\n", rs->value);
-          printHeaders (m);
+            FCGX_FPrintF(out,"Content-Length: %s\r\n", rs->value);
+            //printf ("Content-Length: %s\r\n", rs->value);
+          printHeaders (m,out);
           char mime[1024];
           map *mi = getMap (tmpI->content, "mimeType");
 #ifdef DEBUG
@@ -2936,11 +2951,17 @@ outputResponse (service * s, maps * request_inputs, maps * request_outputs,
           else
             sprintf (mime,
                      "Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-          printf ("%s", mime);
+          FCGX_FPrintF(out,"%s", mime);
+
+          //printf ("%s", mime);
           if (rs != NULL)
-            fwrite (toto->value, 1, atoi (rs->value), stdout);
+            FCGX_PutStr(toto->value,atoi(rs->value),out);
+            //fwrite (toto->value, 1, atoi (rs->value), stdout);
           else
-            fwrite (toto->value, 1, strlen (toto->value), stdout);
+             FCGX_PutStr(toto->value,strlen (toto->value),out);
+            //fwrite (toto->value, 1, strlen (toto->value), stdout);
+
+          FCGX_FFlush(out);
 #ifdef DEBUG
           dumpMap (toto);
 #endif
@@ -3399,8 +3420,8 @@ printBoundingBox (xmlNsPtr ns_ows, xmlNodePtr n, map * boundingbox)
 void
 printBoundingBoxDocument (maps * m, maps * boundingbox, FILE * file)
 {
-  if (file == NULL)
-    rewind (stdout);
+  //if (file == NULL)
+   // rewind (stdout);
   xmlNodePtr n;
   xmlDocPtr doc;
   xmlNsPtr ns_ows, ns_xsi;
@@ -3420,7 +3441,7 @@ printBoundingBoxDocument (maps * m, maps * boundingbox, FILE * file)
             ("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",
              encoding);
         }
-      fflush (stdout);
+      //fflush (stdout);
     }
 
   doc = xmlNewDoc (BAD_CAST "1.0");
@@ -3582,7 +3603,7 @@ runHttpRequests (maps ** m, maps ** inputs, HINTERNET * hInternet)
                     {
                       return errorException (*m,
                                              _("Unable to allocate memory."),
-                                             "InternalError", NULL);
+                                             "InternalError", NULL,NULL);
                     }
                   size_t dwRead;
                   InternetReadFile (hInternet->ihandle[index],
@@ -3602,7 +3623,7 @@ runHttpRequests (maps ** m, maps ** inputs, HINTERNET * hInternet)
                     {
                       return errorException (*m,
                                              _("Unable to allocate memory."),
-                                             "InternalError", NULL);
+                                             "InternalError", NULL,NULL);
                     }
                   memcpy (tmpMap->value, fcontent,
                           (fsize + 1) * sizeof (char));
@@ -3666,7 +3687,7 @@ loadRemoteFile (maps ** m, map ** content, HINTERNET * hInternet, char *url)
   if (fsize == 0)
     {
       return errorException (*m, _("Unable to download the file."),
-                             "InternalError", NULL);
+                             "InternalError", NULL,NULL);
     }
   if (mimeType != NULL)
     {
@@ -3679,7 +3700,7 @@ loadRemoteFile (maps ** m, map ** content, HINTERNET * hInternet, char *url)
   tmpMap->value = (char *) malloc ((fsize + 1) * sizeof (char));
   if (tmpMap->value == NULL)
     return errorException (*m, _("Unable to allocate memory."),
-                           "InternalError", NULL);
+                           "InternalError", NULL,NULL);
   memcpy (tmpMap->value, fcontent, (fsize + 1) * sizeof (char));
 
   char ltmp1[256];
@@ -3697,7 +3718,7 @@ loadRemoteFile (maps ** m, map ** content, HINTERNET * hInternet, char *url)
 
 int
 errorException (maps * m, const char *message, const char *errorcode,
-                const char *locator)
+                const char *locator,FCGX_Stream * out)
 {
   map *errormap = createMap ("text", message);
   addToMap (errormap, "code", errorcode);
@@ -3705,7 +3726,7 @@ errorException (maps * m, const char *message, const char *errorcode,
     addToMap (errormap, "locator", locator);
   else
     addToMap (errormap, "locator", "NULL");
-  printExceptionReportResponse (m, errormap);
+  printExceptionReportResponse (m, errormap,out);
   freeMap (&errormap);
   free (errormap);
   return -1;

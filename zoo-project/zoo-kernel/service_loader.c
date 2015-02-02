@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
       c_inputs=c_inputs->next;
     else{
       map* tmps=createMap("text","ERROR you provided more inputs than requested.");
-      printExceptionReportResponse(m,tmps);
+      printExceptionReportResponse(m,tmps,out);
       //printf("ERROR you provided more inputs than requested.");
       return -1;
     }

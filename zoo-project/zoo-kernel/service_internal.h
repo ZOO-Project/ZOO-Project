@@ -38,6 +38,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 //#include "cgic.h"
+#include <fcgiapp.h>
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -118,17 +119,17 @@ extern "C"
   int zooXmlAddDoc (xmlNodePtr, const char *, const char *);
   void zooXmlCleanupDocs ();
   void addPrefix (maps * conf, map * level, service * serv);
-  void printExceptionReportResponse (maps *, map *);
+  void printExceptionReportResponse (maps *, map *,FCGX_Stream * out);
   xmlNodePtr createExceptionReportNode (maps *, map *, int);
   void printProcessResponse (maps *, map *, int, service *, const char *, int,
-                             maps *, maps *);
+                             maps *, maps *,FCGX_Stream *);
   xmlNodePtr printGetCapabilitiesHeader (xmlDocPtr, const char *, maps *);
   void printGetCapabilitiesForProcess (maps *, xmlNodePtr, service *);
   xmlNodePtr printDescribeProcessHeader (xmlDocPtr, const char *, maps *);
   void printDescribeProcessForProcess (maps *, xmlNodePtr, service *);
   void printFullDescription (int, elements *, const char *, xmlNsPtr,
                              xmlNodePtr);
-  void printDocument (maps *, xmlDocPtr, int);
+  void printDocument (maps *, xmlDocPtr, int, FCGX_Stream *);
   void printDescription (xmlNodePtr, xmlNsPtr, const char *, map *);
   void printIOType (xmlDocPtr, xmlNodePtr, xmlNsPtr, xmlNsPtr, xmlNsPtr,
                     elements *, maps *, const char *);
@@ -138,7 +139,7 @@ extern "C"
   void printOutputDefinitions1 (xmlDocPtr, xmlNodePtr, xmlNsPtr, xmlNsPtr,
                                 elements *, maps *, const char *);
 
-  void outputResponse (service *, maps *, maps *, map *, int, maps *, int);
+  void outputResponse (service *, maps *, maps *, map *, int, maps *, int,FCGX_Stream *,FCGX_Stream *);
 
   char *base64 (const char *, int);
   char *base64d (const char *, int, int *);
@@ -146,7 +147,7 @@ extern "C"
 
   char *addDefaultValues (maps **, elements *, maps *, int);
 
-  int errorException (maps *, const char *, const char *, const char *);
+  int errorException (maps *, const char *, const char *, const char *,FCGX_Stream *);
 
   int checkForSoapEnvelope (xmlDocPtr);
 

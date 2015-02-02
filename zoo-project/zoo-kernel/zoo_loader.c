@@ -29,10 +29,16 @@
  * Specific includes
  */
 #ifndef WIN32
+/*
 #include "fcgio.h"
 #include "fcgi_config.h"
 #include "fcgi_stdio.h"
+*/
+#include <unistd.h>
+#include <fcgiapp.h>
 #endif
+#include <sys/wait.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include "service_internal.h"
@@ -55,13 +61,13 @@ extern "C"
 #include <stdlib.h>
 #include <glib.h>
 #include <sys/stat.h>
-#include "service_zcfg.h"
 }
 
-#include "service_internal.h"
+#include "service_zcfg.h"
+//#include "service_internal.h"
 
 xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
-int runRequest (map **);
+int runRequest (map **,struct cgi_env **,FCGX_Request *);
 
 using namespace std;
 
@@ -73,130 +79,112 @@ using namespace std;
 #endif
 
 
-int
-main (int argc, char *argv[])
+static void PrintEnv(FCGX_Stream *out, char *label, char **envp)
 {
-  maps *m;
-  m = (maps *) malloc (MAP_SIZE);
-  conf_read ("main.cfg", m);
-  char ntmp[1024];
-#ifndef WIN32
-  getcwd (ntmp, 1024);
-#else
-  _getcwd (ntmp, 1024);
-#endif
-  char *rootDir = "/var/www/zoo-wps/cgi-bin";
-  init_services_conf (rootDir);
+    FCGX_FPrintF(out, "%s:<br>\n<pre>\n", label);
+    for( ; *envp != NULL; envp++) {
+        FCGX_FPrintF(out, "%s\n", *envp);
+    }
+    FCGX_FPrintF(out, "</pre><p>\n");
+}
+
+#define PATH_SOCKET "/tmp/zoo.sock"
+#define THREAD_COUNT 50
+static int counts[THREAD_COUNT];
 
 
-  while (FCGI_Accept () >= 0)
-    {
-      cgiMain_init (argc, argv);
-/**
-   * We'll use cgiOut as the default output (stdout) to produce plain text 
-   * response.
-   */
-      dup2 (fileno (cgiOut), fileno (stdout));
+int process(FCGX_Request *request){
 
-#ifdef DEBUG
-      fprintf (cgiOut,
-               "Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-      fprintf (cgiOut, "Welcome on ZOO verbose debuging mode \r\n\r\n");
-      fflush (cgiOut);
-      fprintf (stderr, "Addr:%s\n", cgiRemoteAddr);
-      fprintf (stderr, "RequestMethod: (%s) %d %d\n", cgiRequestMethod,
-               strncasecmp (cgiRequestMethod, "post", 4),
-               strncmp (cgiContentType, "text/xml", 8) == 0
-               || strncasecmp (cgiRequestMethod, "post", 4) == 0);
-      fprintf (stderr, "Request: %s\n", cgiQueryString);
-      fprintf (stderr, "ContentType: %s\n", cgiContentType);
-      fprintf (stderr, "ContentLength: %d\n", cgiContentLength);
-      fflush (stderr);
-#endif
-
-
+      int pid = getpid();
+      struct cgi_env *cgi;
+      //PrintEnv(request.err, "Request environment", request.envp); 
+      cgi = (struct cgi_env*)malloc(sizeof(struct cgi_env));
+      cgiMain_init (NULL, NULL,&cgi,request);
       char *strQuery = NULL;
-      if (cgiQueryString != NULL)
-        strQuery = zStrdup (cgiQueryString);
+      if (cgi->cgiQueryString != NULL)
+        strQuery = zStrdup (cgi->cgiQueryString);
       map *tmpMap = NULL;
 
-      if (strncmp (cgiContentType, "text/xml", 8) == 0 ||
-          strncasecmp (cgiRequestMethod, "post", 4) == 0)
+      if (strncmp (cgi->cgiContentType, "text/xml", 8) == 0 ||
+          strncasecmp (cgi->cgiRequestMethod, "post", 4) == 0)
         {
-          if (cgiContentLength == 0)
+          if (cgi->cgiContentLength == 0)
             {
-              char *buffer = new char[2];
-              char *res = NULL;
-              int r = 0;
-              while ((r = fread (buffer, sizeof (char), 1, cgiIn)))
+              char *post_data = NULL;
+              int i = 0;
+              int ch = FCGX_GetChar(request->in);
+              while (ch != -1){
                 {
-                  buffer[1] = 0;
-                  cgiContentLength += r;
-                  if (res == NULL)
+                  i++;
+                  if (post_data == NULL)
                     {
-                      res = (char *) malloc (2 * sizeof (char));
-                      sprintf (res, "%s", buffer);
+                    post_data=(char*)malloc(sizeof(char));
+                    post_data[i-1] = (char) ch;
                     }
                   else
                     {
-                      char *tmp = zStrdup (res);
-                      res =
-                        (char *) realloc (res,
-                                          (strlen (tmp) + 2) * sizeof (char));
-                      sprintf (res, "%s%s", tmp, buffer);
-                      free (tmp);
+                    post_data=(char*)realloc(post_data,i*sizeof(char));
+                    post_data[i-1] = (char) ch;
+                    }
+                  ch = FCGX_GetChar(request->in);
+                  if (ch == -1 ){
+                    post_data=(char*)realloc(post_data,(i + 1)*sizeof(char));
+                    post_data[i] = '\0';
                     }
                 }
-              delete[]buffer;
-              if (res == NULL && (strQuery == NULL || strlen (strQuery) == 0))
+                cgi->cgiContentLength = i;
+              if (post_data == NULL && (strQuery == NULL || strlen (strQuery) == 0))
                 {
                   return errorException (NULL,
                                          "ZOO-Kernel failed to process your request cause the request was emtpty.",
-                                         "InternalError", NULL);
+                                         "InternalError", NULL,request->out);
                 }
               else
                 {
                   if (strQuery == NULL || strlen (strQuery) == 0)
-                    tmpMap = createMap ("request", res);
+                    tmpMap = createMap ("request", post_data);
                 }
-              if (res != NULL)
-                free (res);
+              if (post_data != NULL)
+                free (post_data);
+                }
             }
           else
             {
-              char *buffer = new char[cgiContentLength + 1];
-              if (fread (buffer, sizeof (char), cgiContentLength, cgiIn) > 0)
+              char *post_data = new char[cgi->cgiContentLength + 1];
+              int r = FCGX_GetStr(post_data,cgi->cgiContentLength,request->in);
+              if ( r > 0)
                 {
-                  buffer[cgiContentLength] = 0;
-                  tmpMap = createMap ("request", buffer);
+                  post_data[r] = '\0';
+                  cgi->cgiContentLength = r;
+                  tmpMap = createMap ("request", post_data);
                 }
               else
                 {
-                  buffer[0] = 0;
+                  post_data[0] = '\0';
                   char **array, **arrayStep;
-                  if (cgiFormEntries (&array) != cgiFormSuccess)
+                  if (cgiFormEntries (&array,&cgi) != cgiFormSuccess)
                     {
                       return 1;
                     }
                   arrayStep = array;
                   while (*arrayStep)
                     {
-                      char *ivalue = new char[cgiContentLength];
+                      char *ivalue = new char[cgi->cgiContentLength];
                       cgiFormStringNoNewlines (*arrayStep, ivalue,
-                                               cgiContentLength);
+                                               cgi->cgiContentLength,&cgi);
                       char *tmpValueFinal =
                         (char *)
                         malloc ((strlen (*arrayStep) + strlen (ivalue) +
                                  1) * sizeof (char));
                       sprintf (tmpValueFinal, "%s=%s", *arrayStep, ivalue);
-                      if (strlen (buffer) == 0)
+                      if (strlen (post_data) == 0)
                         {
-                          sprintf (buffer, "%s", tmpValueFinal);
+                          sprintf (post_data, "%s", tmpValueFinal);
                         }
                       else
                         {
-                          char *tmp = zStrdup (buffer);
-                          sprintf (buffer, "%s&%s", tmp, tmpValueFinal);
+                          char *tmp = zStrdup (post_data);
+                          sprintf (post_data, "%s&%s", tmp, tmpValueFinal);
                           free (tmp);
                         }
                       free (tmpValueFinal);
@@ -208,11 +196,11 @@ main (int argc, char *argv[])
                       arrayStep++;
                     }
                   if (tmpMap != NULL)
-                    addToMap (tmpMap, "request", buffer);
+                    addToMap (tmpMap, "request", post_data);
                   else
-                    tmpMap = createMap ("request", buffer);
+                    tmpMap = createMap ("request", post_data);
                 }
-              delete[]buffer;
+              delete[]post_data;
             }
         }
       else
@@ -220,16 +208,17 @@ main (int argc, char *argv[])
 #ifdef DEBUG
           dumpMap (tmpMap);
 #endif
-          char **array, **arrayStep;
-          if (cgiFormEntries (&array) != cgiFormSuccess)
+       
+       char **array, **arrayStep;
+          if (cgiFormEntries (&array,&cgi) != cgiFormSuccess)
             {
               return 1;
             }
           arrayStep = array;
           while (*arrayStep)
             {
-              char *value = new char[cgiContentLength];
-              cgiFormStringNoNewlines (*arrayStep, value, cgiContentLength);
+              char *value = new char[cgi->cgiContentLength];
+              cgiFormStringNoNewlines (*arrayStep, value, cgi->cgiContentLength,&cgi);
 #ifdef DEBUG
               fprintf (stderr, "(( \n %s \n %s \n ))", *arrayStep, value);
 #endif
@@ -264,7 +253,7 @@ main (int argc, char *argv[])
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-      if (strncasecmp (cgiRequestMethod, "post", 4) == 0 ||
+      if (strncasecmp (cgi->cgiRequestMethod, "post", 4) == 0 ||
           (count (tmpMap) == 1 && strncmp (tmpMap->value, "<", 1) == 0)
 #ifdef WIN32
           || tmpReq != NULL
@@ -279,7 +268,7 @@ main (int argc, char *argv[])
             {
               addToMap (tmpMap, "xrequest", t1->value);
               xmlInitParser ();
-              xmlDocPtr doc = xmlParseMemory (t1->value, cgiContentLength);
+              xmlDocPtr doc = xmlParseMemory (t1->value, cgi->cgiContentLength);
               {
                 xmlXPathObjectPtr reqptr = extractFromDoc (doc,
                                                            "/*[local-name()='Envelope']/*[local-name()='Body']/*");
@@ -383,7 +372,7 @@ main (int argc, char *argv[])
                         {
                           char *identifiers = NULL;
                           identifiers =
-                            (char *) calloc (cgiContentLength, sizeof (char));
+                            (char *) calloc (cgi->cgiContentLength, sizeof (char));
                           identifiers[0] = 0;
                           for (int k = 0; k < id->nodeNr; k++)
                             {
@@ -426,7 +415,7 @@ main (int argc, char *argv[])
             }
 
           char *token, *saveptr;
-          token = strtok_r (cgiQueryString, "&", &saveptr);
+          token = strtok_r (cgi->cgiQueryString, "&", &saveptr);
           while (token != NULL)
             {
               char *token1, *saveptr1;
@@ -451,7 +440,7 @@ main (int argc, char *argv[])
 
         }
 
-      if (strncasecmp (cgiContentType, "multipart/form-data", 19) == 0)
+      if (strncasecmp (cgi->cgiContentType, "multipart/form-data", 19) == 0)
         {
           map *tmp = getMap (tmpMap, "dataInputs");
           if (tmp != NULL)
@@ -464,7 +453,7 @@ main (int argc, char *argv[])
       if (strQuery != NULL)
         free (strQuery);
 
-      runRequest (&tmpMap);
+      runRequest (&tmpMap,&cgi,request);
 
   /** 
    * Required but can't be made after executing a process using POST requests.
@@ -474,9 +463,78 @@ main (int argc, char *argv[])
           freeMap (&tmpMap);
           free (tmpMap);
         }
-      cgiFreeResources ();
-    }
-  FCGI_Finish ();
-  return 0;
+        // a verifier fait planter
+      cgiFreeResources (&cgi);
 
+      FCGX_Finish_r(request);
+      return 0;
 }
+
+
+
+int
+main (int argc, char *argv[])
+{
+  maps *main_config;
+  int max_requests, start_servers;
+  start_servers = 10;
+  max_requests= 100;
+  main_config = (maps *) malloc (MAP_SIZE);
+  conf_read ("main.cfg", main_config);
+  char ntmp[1024];
+#ifndef WIN32
+  getcwd (ntmp, 1024);
+#else
+  _getcwd (ntmp, 1024);
+#endif
+  char *rootDir = "/var/www/zoo-wps/cgi-bin";
+  int fork_status = fork();
+  if (fork_status == 0){
+    //child
+    int forker_pid = getpid();
+    init_services_conf (rootDir);
+    int sock = FCGX_OpenSocket(PATH_SOCKET, 1000);
+    FCGX_Init();
+    FCGX_Request request;
+    FCGX_InitRequest(&request, sock, 0);
+    int i;
+    int count_request = 0;
+    for (i = 0; i< start_servers; i++){
+        fork_status = fork();
+        if (fork_status == 0){
+            fprintf(stderr,"child %d \n",i);
+            fflush(stderr);
+            break;
+        }
+    }
+    while(1){
+        if (forker_pid != getpid()){
+            while(FCGX_Accept_r(&request) == 0){
+                process(&request);
+                count_request ++;
+                if (count_request >= max_requests){
+                    fprintf(stderr,"Max request stop process\n");
+                    fflush(stderr);
+                    exit(0);
+                }
+            }
+        }
+        else {
+            wait(0);
+            fprintf(stderr,"new child\n");
+            fflush(stderr);
+            fork();
+        }
+    }
+  }
+  else {
+  
+  while(1);
+
+
+
+  }
+  
+  return 0;
+}
+ 
