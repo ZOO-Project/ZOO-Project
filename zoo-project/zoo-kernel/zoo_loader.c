@@ -61,6 +61,8 @@ extern "C"
 #include <stdlib.h>
 #include <glib.h>
 #include <sys/stat.h>
+#include <ctype.h>
+
 }
 
 #include "service_zcfg.h"
@@ -475,31 +477,244 @@ int process(FCGX_Request *request){
 int
 main (int argc, char *argv[])
 {
-  maps *main_config;
-  int max_requests, start_servers;
-  start_servers = 10;
-  max_requests= 100;
-  main_config = (maps *) malloc (MAP_SIZE);
-  conf_read ("main.cfg", main_config);
-  char ntmp[1024];
-#ifndef WIN32
-  getcwd (ntmp, 1024);
-#else
-  _getcwd (ntmp, 1024);
-#endif
-  char *rootDir = "/var/www/zoo-wps/cgi-bin";
+
+
+ int debug_flag = 0;
+ int background_flag = 0;
+ char *file_value = NULL;
+ int index;
+ int c;
+
+ opterr = 0;
+ while ((c = getopt (argc, argv, "dbhf:")) != -1)
+      switch (c)
+      {
+      case 'd':
+        debug_flag = 1;
+        break;
+      case 'b':
+        background_flag = 1;
+        break;
+      case 'h':
+        fprintf(stderr,"TODO: need to print help\n");
+        fflush(stderr);
+        return 0;
+      case 'f':
+        file_value = optarg;
+        break;
+      case '?':
+        if (optopt == 'f')
+          fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+        else if (isprint (optopt))
+          fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+        else
+          fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
+        return 1;
+      default:
+        abort ();
+      }
+
+
+  maps *conf;
+  conf = (maps *) malloc (MAPS_SIZE);
+  
+  int ret = conf_read (file_value, conf);
+  if ( ret == 2){
+    //a verifier mais conf_read ne renvoie jamais 0
+    fprintf(stderr,"Erreur lors de la lecture de %s\n",file_value);
+    return 1;
+  }
+
+  char *rootDir;
+  map *m_rootDir = getMapFromMaps (conf, "server", "rootDir");
+  if (m_rootDir == NULL){
+    fprintf(stderr,"Configuration error: rootDir");
+    return 2;
+  }
+  else {
+   rootDir = (char*)malloc((strlen(m_rootDir->value) +1)*sizeof(char*));
+   strncpy(rootDir,m_rootDir->value,strlen(m_rootDir->value));
+   rootDir[strlen(m_rootDir->value)] = '\0';
+   //freeMap(&m_rootDir);
+  }
+
+  int req_worker;
+  map *m_req_worker = getMapFromMaps (conf, "server", "req_worker");
+  if (m_req_worker == NULL){
+    fprintf(stderr,"Configuration error: req_worker not found");
+    return 2;
+  }
+  else {
+    req_worker=atoi(m_req_worker->value);
+    //freeMap(&m_req_worker);
+    if (req_worker == 0){
+        fprintf(stderr,"Configuration error: req_worker");
+        return 2;
+    }
+  }
+  
+  int async_worker;
+  map *m_async_worker = getMapFromMaps (conf, "server", "async_worker");  
+  if (m_async_worker == NULL){
+    fprintf(stderr,"Configuration error: async_worker not found");
+    return 2;
+  }
+  else {
+    async_worker = atoi(m_async_worker->value);
+    //freeMap(&m_async_worker);
+    if (async_worker == 0){
+        fprintf(stderr,"Configuration error: req_worker");
+        return 2;
+    }
+  }
+
+  int max_requests;
+  map *m_max_requests = getMapFromMaps (conf, "server", "max_requests");
+  if (m_max_requests == NULL){
+    fprintf(stderr,"Configuration error: max_requests");
+    return 2;
+  }
+  else {
+    max_requests = atoi(m_max_requests->value);
+    //freeMap(&m_max_requests);
+    if (max_requests == 0){
+        fprintf(stderr,"Configuration error: max_requests");
+        return 2;
+    }
+  }
+
+  map *m_listen = getMapFromMaps (conf, "server", "listen");
+  char *listen;
+  if (m_listen == NULL){
+    fprintf(stderr,"Configuration error: listen not found");
+    return 2;
+  }
+  else {
+    listen = (char *)malloc((strlen(m_listen->value) +1)*sizeof(char*));
+    strncpy(listen,m_listen->value,strlen(m_listen->value));
+    listen[strlen(m_listen->value)] = '\0';
+    //freeMap(&m_listen);
+  }
+  int listen_owner;
+  map *m_listen_owner = getMapFromMaps (conf, "server", "listen_owner");
+  if (m_listen_owner == NULL){
+    fprintf(stderr,"Configuration error: listen_owner");
+    return 2;
+  }
+  else {
+    listen_owner = atoi(m_listen_owner->value);
+    //freeMap(&m_listen_owner);
+    if (listen_owner == 0){
+        fprintf(stderr,"Configuration error: listen_owner");
+        return 2;
+    }
+  }
+
+  int listen_group;
+  map *m_listen_group = getMapFromMaps (conf, "server", "listen_group");
+  if (m_listen_group == NULL){
+    fprintf(stderr,"Configuration error: listen_group");
+    return 2;
+  }
+  else {
+    listen_group = atoi(m_listen_group->value);
+    //freeMap(&m_listen_group);
+    if (listen_group == 0){
+        fprintf(stderr,"Configuration error: listen_group");
+        return 2;
+    }
+  }
+
+  char * listen_mode;
+  map *m_listen_mode = getMapFromMaps (conf, "server", "listen_mode");
+  if (m_listen_mode == NULL){
+    fprintf(stderr,"Configuration error: listen_mode");
+    return 2;
+  }
+  else {
+    listen_mode = (char *)malloc((strlen(m_listen_mode->value) +1)*sizeof(char*));
+    strncpy(listen_mode,m_listen_mode->value,strlen(m_listen_mode->value));
+    listen_mode[strlen(m_listen_mode->value)] = '\0';
+    //freeMap(&m_listen_mode);
+  }
+
+  int listen_queue;
+  map *m_listen_queue = getMapFromMaps (conf, "server", "listen_queue");
+  if (m_listen_queue == NULL){
+    fprintf(stderr,"Configuration error: listen_queue");
+    return 2;
+  }
+  else {
+    listen_queue = atoi(m_listen_queue->value);
+    //freeMap(&m_listen_queue);
+    if (listen_queue == 0){
+        fprintf(stderr,"Configuration error: listen_queue");
+        return 2;
+    }
+  }
+
+  int id_user;
+  map *m_user = getMapFromMaps (conf, "server", "uid");
+  if (m_user == NULL){
+    fprintf(stderr,"Configuration error: id_user");
+    return 2;
+  }
+  else {
+    id_user = atoi(m_user->value);
+    //freeMap(&m_user);
+    if (id_user == 0){
+        fprintf(stderr,"Configuration error: id_user");
+        return 2;
+    }
+  }
+
+
+  int id_group;
+  map *m_group = getMapFromMaps (conf, "server", "gid");
+  if (m_group == NULL){
+    fprintf(stderr,"Configuration error: gid");
+    return 2;
+  }
+  else {
+    id_group = atoi(m_group->value);
+    //freeMap(&m_group);
+    if (id_group == 0){
+        fprintf(stderr,"Configuration error: id_group");
+        return 2;
+    }
+  }
+
+  int sock = FCGX_OpenSocket(listen, listen_queue); 
+  init_services_conf (rootDir);
+  
+  ret = chown(listen, listen_owner, listen_group); 
+  if (ret != 0){
+    fprintf(stderr,"Change owner error on : %s\n",listen);
+    return 3;
+  }
+  
+  ret = setgid(id_group);
+  if (ret != 0){
+    fprintf(stderr,"Change gid error\n");
+    return 3;
+  }
+
+  ret = setuid(id_user);
+  if (ret != 0){
+    fprintf(stderr,"Change uid error\n");
+    return 3;
+  }
+ 
   int fork_status = fork();
   if (fork_status == 0){
     //child
     int forker_pid = getpid();
-    init_services_conf (rootDir);
-    int sock = FCGX_OpenSocket(PATH_SOCKET, 1000);
     FCGX_Init();
     FCGX_Request request;
     FCGX_InitRequest(&request, sock, 0);
     int i;
     int count_request = 0;
-    for (i = 0; i< start_servers; i++){
+    for (i = 0; i< req_worker; i++){
         fork_status = fork();
         if (fork_status == 0){
             fprintf(stderr,"child %d \n",i);
@@ -530,8 +745,6 @@ main (int argc, char *argv[])
   else {
   
   while(1);
-
-
 
   }
   
