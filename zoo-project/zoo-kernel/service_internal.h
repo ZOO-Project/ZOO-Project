@@ -119,6 +119,8 @@ extern "C" {
   JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
 #endif
   
+  void readGeneratedFile(maps*,map*,char*);
+
   void URLDecode(char *);
   char *url_encode(char *);
   char *url_decode(char *);

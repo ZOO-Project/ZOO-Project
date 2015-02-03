@@ -930,6 +930,10 @@ void outputMapfile(maps* conf,maps* outputs){
   char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
   sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext); 
   int f=zOpen(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+  map *gfile=getMap(outputs->content,"generated_file");
+  if(gfile!=NULL){
+    readGeneratedFile(conf,outputs->content,gfile->value);	    
+  }
   map* sizeMap=getMap(outputs->content,"size");
   map* vData=getMap(outputs->content,"value");
   if(sizeMap!=NULL){

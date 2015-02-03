@@ -565,6 +565,49 @@ extern "C" {
     return NULL;
   }
 
+  static void loadMapBinary(map** out,map* in,int pos){
+    map* size=getMap(in,"size");
+    map *lout=*out;
+    if(size!=NULL && pos>0){
+      char tmp[11];
+      sprintf(tmp,"size_%d",pos);
+      size=getMap(in,tmp);
+      sprintf(tmp,"value_%d",pos);
+      map* tmpVin=getMap(in,tmp);
+      map* tmpVout=getMap(lout,tmp);
+      free(tmpVout->value);
+      tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
+      memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
+      tmpVout->value[atoi(size->value)]=0;
+    }else{
+      if(size!=NULL){
+	map* tmpVin=getMap(in,"value");
+	map* tmpVout=getMap(lout,"value");
+	free(tmpVout->value);
+	tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
+	memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
+	tmpVout->value[atoi(size->value)]=0;
+      }
+    }
+  }
+  
+  static void loadMapBinaries(map** out,map* in){
+    map* size=getMap(in,"size");
+    map* length=getMap(in,"length");
+    if(length!=NULL){
+      int len=atoi(length->value);
+      int i=0;
+      for(i=0;i<len;i++){
+	loadMapBinary(out,in,i);
+      }
+    }
+    else
+      if(size!=NULL)
+	loadMapBinary(out,in,-1);
+    char* tmpSized=NULL;
+    
+  }
+
   static maps* dupMaps(maps** mo){
     maps* _cursor=*mo;
     maps* res=NULL;
@@ -574,23 +617,9 @@ extern "C" {
       res->content=NULL;
       res->next=NULL;
       map* mc=_cursor->content;
-      map* tmp=getMap(mc,"size");
-      char* tmpSized=NULL;
-      if(tmp!=NULL){
-	map* tmpV=getMap(mc,"value");
-	tmpSized=(char*)malloc((atoi(tmp->value)+1)*sizeof(char));
-	memmove(tmpSized,tmpV->value,atoi(tmp->value)*sizeof(char));
-      }
       if(mc!=NULL){
 	addMapToMap(&res->content,mc);
-      }
-      if(tmp!=NULL){
-	map* tmpV=getMap(res->content,"value");
-	free(tmpV->value);
-	tmpV->value=(char*)malloc((atoi(tmp->value)+1)*sizeof(char));
-	memmove(tmpV->value,tmpSized,atoi(tmp->value)*sizeof(char));
-	tmpV->value[atoi(tmp->value)]=0;
-	free(tmpSized);
+	loadMapBinaries(&res->content,mc);
       }
       res->next=dupMaps(&_cursor->next);
     }
@@ -642,7 +671,7 @@ extern "C" {
       sprintf(tmp,"%s_%d",key,index);
     else
       sprintf(tmp,"%s",key);
-    map* tmpSize=getMapArray(m,(char*)"size",index);
+    map* tmpSize=getMapArray(m,"size",index);
     if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
 #ifdef DEBUG
       fprintf(stderr,"%s\n",tmpSize->value);
@@ -684,29 +713,32 @@ extern "C" {
       len=atoi(tmpLength->value);
     }
 
-    char *tmpV[8]={
+    char *tmpV[11]={
       (char*)"size",
       (char*)"value",
       (char*)"uom",
       (char*)"Reference",
+      (char*)"cache_file",
+      (char*)"fmimeType",
       (char*)"xlink:href",
       typ,
       (char*)"schema",
-      (char*)"encoding"
+      (char*)"encoding",
+      (char*)"isCached"
     };
     sprintf(tmpLen,"%d",len+1);
     addToMap(_cursor->content,"length",tmpLen);
     int i=0;
-    for(i=0;i<8;i++){
+    for(i=0;i<11;i++){
       map* tmpVI=getMap(tmp->content,tmpV[i]);
       if(tmpVI!=NULL){
 #ifdef DEBUG
 	fprintf(stderr,"%s = %s\n",tmpV[i],tmpVI->value);
 #endif
-	if(i<5)
+	if(i<7)
 	  setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
 	else
-	  if(strncasecmp(tmpV[5],"mimeType",8)==0)
+	  if(strncasecmp(tmpV[7],"mimeType",8)==0)
 	    setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
       }
     }

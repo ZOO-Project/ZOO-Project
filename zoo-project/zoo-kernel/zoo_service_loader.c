@@ -22,10 +22,16 @@
  * THE SOFTWARE.
  */
 
-#define length(x) (sizeof(x) / sizeof(x[0]))
+
 
 extern "C" int yylex ();
 extern "C" int crlex ();
+
+#ifdef USE_OTB
+#include "service_internal_otb.h"
+#else
+#define length(x) (sizeof(x) / sizeof(x[0]))
+#endif
 
 #include "cgic.h"
 
@@ -176,12 +182,13 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
       if (strncasecmp (testMap->value, "unbounded", 9) != 0
           && atoi (testMap->value) > 1)
         {
-          if (addMapsArrayToMaps (&mo, mi, tmap->name) < 0)
+	  addMapsArrayToMaps (&mo, mi, tmap->name);
+	  map* nb=getMapFromMaps(mo,mi->name,"length");
+          if (nb!=NULL && atoi(nb->value)>atoi(testMap->value))
             {
               char emsg[1024];
               sprintf (emsg,
-                       _
-                       ("You set maximum occurences for <%s> as %i but you tried to use it more than the limit you set. Please correct your ZCFG file or your request."),
+                       _("You set maximum occurences for <%s> as %i but you tried to use it more than the limit you set. Please correct your ZCFG file or your request."),
                        mi->name, atoi (testMap->value));
               errorException (m, emsg, "InternalError", NULL);
               return -1;
@@ -608,6 +615,18 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
         }
     }
   else
+
+#ifdef USE_OTB
+  if (strncasecmp (r_inputs->value, "OTB", 6) == 0)
+    {
+      *eres =
+        zoo_otb_support (&m, request_inputs, s1,
+                            &request_input_real_format,
+                            &request_output_real_format);
+    }
+  else
+#endif
+
 #ifdef USE_PYTHON
   if (strncasecmp (r_inputs->value, "PYTHON", 6) == 0)
     {
