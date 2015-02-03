@@ -125,7 +125,7 @@ get_identifier (char *root_dir, char *zcfg_path, char **identifier)
 void
 init_services_conf (char *rootDir)
 {
-  maps *m = (maps *) malloc (MAP_SIZE);
+  maps *m = (maps *) malloc (MAPS_SIZE);
   GList *L = NULL;
   scanServiceCfg (rootDir, &L, 0);
   GList *l = NULL;
@@ -137,7 +137,8 @@ init_services_conf (char *rootDir)
       readServiceFile (m, (char *) l->data, &s1, s1->identifier);
       serviceCfgList = g_list_append (serviceCfgList, s1);
     }
-  freeMaps(&m);
+
+  //freeMaps(&m);
 }
 
 
