@@ -10,9 +10,8 @@ To generate the zcfgs for the OTB Applications available, you should run the fol
 
  mkdir zcfgs
  cd zcfgs
- ../build/otb2zcfg
- cp *zcfg /location/to/your/cgi-bin
  export ITK_AUTOLOAD_PATH=/your/path/to/otb/applications
  ../build/otb2zcfg
+ cp *zcfg /location/to/your/cgi-bin
 
 This ITK_AUTOLOAD_PATH environment variable will be required in the [env] section of your main.cfg.
