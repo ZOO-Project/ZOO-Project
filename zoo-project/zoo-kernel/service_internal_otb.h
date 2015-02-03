@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- *  Copyright 2014 GeoLabs SARL. All rights reserved.
+ * Copyright (c) 2015 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,21 @@
  * THE SOFTWARE.
  */
 
+#ifndef ZOO_SERVICE_INTERNAL_OTB_H
+#define ZOO_SERVICE_INTERNAL_OTB_H 1
+
+#pragma once 
+
+#include "otbWrapperApplication.h"
+#include "otbWrapperApplicationRegistry.h"
 #include "service_internal.h"
 #include "service.h"
+#include "cgic.h"
+#ifdef WIN32
+#include <windows.h>
+#include <direct.h>
+#endif
 
-extern   int getServiceFromFile(maps*,const char*,service**);
+int zoo_otb_support(maps**,map*,service*,maps**,maps**);
 
-int main(int argc, char** argv){
-  service* s1=NULL;
-  maps *m=NULL;
-  char conf_file[1024];
-  snprintf(conf_file,1024,"%s",argv[1]);
-  s1=(service*)malloc(SERVICE_SIZE);
-  if(s1 == NULL){ 
-    return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
-  }
-  int t=getServiceFromFile(m,conf_file,&s1);
-  if(t>=0)
-    dumpServiceAsYAML(s1);
-  return 0;
-}
+#endif
