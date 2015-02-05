@@ -79,7 +79,7 @@ typedef struct {
   FILE* file;
   size_t size;
   unsigned char *pabyData;
-  unsigned char *mimeType;
+  char *mimeType;
   int hasCacheFile;
   int nDataLen;
   int nDataAlloc;

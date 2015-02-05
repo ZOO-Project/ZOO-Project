@@ -45,12 +45,18 @@ struct ztimeval {
   long tv_sec; /* seconds */
   long tv_usec; /* and microseconds */
 };
-void zGettimeofday(struct mstimeval* tp, void* tzp)
+static int zGettimeofday(struct ztimeval* tp, void* tzp)
 {
+  if (tp == 0) {
+    return -1;
+  }
+  
   struct _timeb theTime;
   _ftime(&theTime);
   tp->tv_sec = theTime.time;
   tp->tv_usec = theTime.millitm * 1000;
+  
+  return 0; // The gettimeofday() function shall return 0 on success
 }
 #else
 #define zStrdup strdup

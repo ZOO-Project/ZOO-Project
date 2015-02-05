@@ -36,6 +36,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "service_internal.h"
+
+
 #ifdef WIN32
 #include "windows.h"
 #define strtok_r strtok_s
