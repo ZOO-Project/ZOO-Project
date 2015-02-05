@@ -123,29 +123,33 @@ char* _getStatus(maps* conf,int pid){
 
 #define SHMEMSIZE 4096
 
-char* getKeyValue(maps* conf){
-  if(conf==NULL)
-     return "700666";
+size_t getKeyValue(maps* conf, char* key, size_t length){
+  
+  if(conf==NULL) {
+	 strncpy(key, "700666", length);
+	 return strlen(key);
+  }
+  
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
-    tmpMap=getMapFromMaps(conf,"lenv","usid");
-  char* key="-1";
+	tmpMap=getMapFromMaps(conf,"lenv","usid");
+
   if(tmpMap!=NULL){
-    key=(char*)malloc((strlen(tmpMap->value)+9)*sizeof(char));
-    sprintf(key,"zoo_sem_%s",tmpMap->value);
+	snprintf(key, length, "zoo_sem_%s", tmpMap->value);      
   }
-  return key;
-}
-
-
+  else {
+	strncpy(key, "-1", length);  
+  }
+  return strlen(key);
+} 
 semid getShmLockId(maps* conf, int nsems){
     semid sem_id;
-    char* key=getKeyValue(conf);
+	char key[MAX_PATH];
+	getKeyValue(conf, key, MAX_PATH);
     
     sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
     if(sem_id==NULL){
-      if(strncmp(key,"-1",2)!=0)
-	free(key);
+
 #ifdef DEBUG
       fprintf(stderr,"Semaphore failed to create ! %s\n",GetLastError());
 #endif
@@ -154,8 +158,7 @@ semid getShmLockId(maps* conf, int nsems){
 #ifdef DEBUG
     fprintf(stderr,"%s Accessed !\n",key);
 #endif
-    if(strncmp(key,"-1",2)!=0)
-      free(key);
+
     return sem_id;
 }
 
@@ -3334,7 +3337,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	    if(hInternet->ihandle[index].mimeType==NULL)
 	      mimeType=strdup("none");
 	    else
-	      mimeType=strdup((char*)hInternet->ihandle[index].mimeType);
+		  mimeType=strdup(hInternet->ihandle[index].mimeType);	      
 	    
 	    map* tmpMap=getMapOrFill(&content->content,vname,"");
 	    free(tmpMap->value);

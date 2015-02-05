@@ -780,6 +780,12 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 #ifdef DEBUG
   fprintf (stderr, "REQUEST IS : %s \n", tmp);
 #endif
+
+  map* usid = getMapFromMaps (m, "lenv", "usid");
+  if (usid != NULL && usid->value != NULL) {
+    SetEnvironmentVariable("USID", TEXT (usid->value));
+  }
+
   SetEnvironmentVariable ("CGISID", TEXT (sid->value));
   SetEnvironmentVariable ("QUERY_STRING", TEXT (tmpq));
   char clen[1000];
@@ -823,7 +829,9 @@ runRequest (map ** inputs)
 {
 
 #ifndef USE_GDB
+#ifndef WIN32
   signal (SIGCHLD, SIG_IGN);
+#endif  
   signal (SIGSEGV, sig_handler);
   signal (SIGTERM, sig_handler);
   signal (SIGINT, sig_handler);
@@ -3202,7 +3210,7 @@ runRequest (map ** inputs)
   maps *_tmpMaps = (maps *) malloc (MAPS_SIZE);
   _tmpMaps->name = zStrdup ("lenv");
   char tmpBuff[100];
-  int lid = getShmLockId (NULL, 1);
+  semid lid = getShmLockId (NULL, 1);
   lockShm (lid);
   struct ztimeval tp;
   if (zGettimeofday (&tp, NULL) == 0)
@@ -3306,6 +3314,12 @@ runRequest (map ** inputs)
   char *cgiSidL = NULL;
   if (getenv ("CGISID") != NULL)
     addToMap (request_inputs, "cgiSid", getenv ("CGISID"));
+
+  char* usidp;
+  if ( (usidp = getenv("USID")) != NULL ) {
+    setMapInMaps (m, "lenv", "usid", usidp);
+  }
+
   map *test1 = getMap (request_inputs, "cgiSid");
   if (test1 != NULL)
     {
