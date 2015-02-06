@@ -29,6 +29,7 @@
 
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationRegistry.h"
+#include "otbWrapperInputImageListParameter.h"
 #include "service_internal.h"
 #include "service.h"
 #include "cgic.h"

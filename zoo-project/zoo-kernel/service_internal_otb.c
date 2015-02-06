@@ -23,7 +23,6 @@
  */
 
 #include "service_internal_otb.h"
-#include "otbWrapperInputImageListParameter.h"
 #include <vector>
 #include <string>
 
@@ -39,13 +38,9 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 }
 
 int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
-  char *pythonpath;
-  char *python_path;
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
-  map* tmp0=getMapFromMaps(*main_conf,"lenv","cwd");
-  char *ntmp=tmp0->value;
   map* tmp=NULL;
   int res=-1;
 
@@ -181,7 +176,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		  if(tmpPath!=NULL){
 		    int len=atoi(tmpPath->value);
 		    for(int k=1;k<len;k++){
-		      char tmp[10];
+		      char tmp[15];
 		      sprintf(tmp,"cache_file_%d",k);
 		      map* tmpVal=getMapFromMaps(inputs,paramKey.c_str(),tmp);
 		      if(tmpVal!=NULL){
