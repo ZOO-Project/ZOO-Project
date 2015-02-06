@@ -129,7 +129,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
     std::cerr << "ERROR: Available modules :" << std::endl;
     for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it){
       std::string filename= *it + ".zcfg";
-      std::ofstream out(filename);
+      std::ofstream out(filename.c_str(),std::ofstream::out);
       std::streambuf *coutbuf = std::cout.rdbuf();
       std::cout.rdbuf(out.rdbuf());
 

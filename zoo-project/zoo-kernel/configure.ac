@@ -86,6 +86,14 @@ AC_SUBST([GDAL_LIBS])
 # Detect if otb is available
 # ===========================================================================
 
+AC_ARG_WITH([itk],
+        [AS_HELP_STRING([--with-itk=PATH], [specify an alternative location for the itk library])],
+        [ITKPATH="$withval"], [ITKPATH=""])
+
+AC_ARG_WITH([itk-version],
+        [AS_HELP_STRING([--with-itk-version=VERSION], [specify an alternative version for the itk library])],
+        [ITKVERS="$withval"], [ITKVERS=""])
+
 AC_ARG_WITH([otb],
         [AS_HELP_STRING([--with-otb=PATH], [specify an alternative location for the otb library])],
         [OTBPATH="$withval"], [OTBPATH=""])
@@ -97,10 +105,13 @@ then
 	OTB_FILE=""
 	OTB_ENABLED=""
 else
-
+    if test -z "$ITKVERS" 
+    then
+        ITKVERS="4.5"
+    fi
 	OTB_ENABLED="-DUSE_OTB"
-	OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -lITKBiasCorrection-4.5 -lITKCommon-4.5 -lITKIOImageBase-4.5 -lITKKLMRegionGrowing-4.5 -lITKLabelMap-4.5 -lITKMesh-4.5 -lITKMetaIO-4.5 -lITKOptimizers-4.5 -lITKPath-4.5 -lITKPolynomials-4.5 -lITKQuadEdgeMesh-4.5 -lITKSpatialObjects-4.5 -lITKStatistics-4.5 -lITKVNLInstantiation-4.5 -lITKWatersheds-4.5 -litkNetlibSlatec-4.5 -litksys-4.5 -litkdouble-conversion-4.5 -litkv3p_lsqr-4.5 -litkv3p_netlib-4.5 -litkvcl-4.5 -litkvnl-4.5 -litkvnl_algo-4.5 -litkzlib-4.5"
-	OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile"
+	OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib -lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkdouble-conversion-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS -litkzlib-$ITKVERS"
+	OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
 	OTB_FILE="service_internal_otb.o" #otbZooWatcher.o otbRunner.o"
 	
 	AC_LANG_PUSH([C++])
@@ -109,12 +120,9 @@ else
 	CPPFLAGS="$OTB_CPPFLAGS"
 	LDFLAGS_SAVE="$LDFLAGS"
 	LDFLAGS="$OTB_LDFLAGS"
-	for i in otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h; do
-	    AC_CHECK_HEADERS([$i],
+	AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
 			[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
-	done
 	AC_LANG_POP([C++])
-	##,otbWrapperInputImageListParameter,otbFilterWatcherBase.h,itksys/SystemTools.hxx,itkCommand.h,itkProcessObject.h,itkTimeProbe.h
 fi
 AC_SUBST([OTB_CPPFLAGS])
 AC_SUBST([OTB_LDFLAGS])
