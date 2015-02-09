@@ -47,9 +47,6 @@ service_internal_python.o: service_internal_python.c service.h
 service_internal_otb.o: service_internal_otb.c service.h
 	g++ ${XML2CFLAGS} ${OTBCFLAGS} ${CFLAGS} -c service_internal_otb.c
 
-otbRunner.o: otbRunner.cxx otbRunner.h service.h
-	g++ ${OTBCFLAGS} ${CFLAGS} -c otbRunner.cxx
-
 otbZooWatcher.o: otbZooWatcher.cxx otbZooWatcher.h  service.h
 	g++ ${OTBCFLAGS} ${CFLAGS} -c otbZooWatcher.cxx
 
