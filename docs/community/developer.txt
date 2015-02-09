@@ -4,7 +4,7 @@ ZOO-Project Committer Guildlines
 ================================
 
 :Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
-:Last Updated: $Date: 2011-12-07 14:19:47 +0100 (Mer, 07 déc 2011) $
+:Last Updated: $Date$
 
 .. contents:: Table of Contents
     :depth: 2
