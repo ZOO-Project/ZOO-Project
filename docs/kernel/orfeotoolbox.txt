@@ -3,7 +3,7 @@
 How To Use the Orfeo Toolbox support
 =============================================
 
-:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, GÃ©rald Fenoy, Jeff McKenna
 :Last Updated: $Date$ 
 
 The key idea of the ZOO `Orfeo Toolbox <http://orfeo-toolbox.org/otb/>`_  support implementation is to take advantage of the `OTB Applications <http://orfeo-toolbox.org/otb/otb-applications.html>`_ by using them directly as ZOO WPS Services, without any modifications.  
