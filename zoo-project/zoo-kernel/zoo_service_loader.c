@@ -297,7 +297,8 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
       }
     else
       {
-        if (dp->d_name[0] != '.' && strstr (dp->d_name, ".zcfg") != 0)
+        char* extn = strstr(dp->d_name, ".zcfg");
+        if(dp->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
           {
             int t;
             char tmps1[1024];
