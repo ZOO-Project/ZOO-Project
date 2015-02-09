@@ -1,0 +1,70 @@
+.. _workshop-foss4g-2014:
+
+##########################################
+Deploying Web Processing Services using ZOO-Project – Examples of Python based WPS using PgRouting 
+##########################################
+
+:Author:  Gérald Fenoy, Nicolas Bozon, Venkatesh Raghavan
+:Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com, venka at osgeo.org
+:Last Updated: $Date$
+
+****************************************
+FOSS4G 2014 Portland
+****************************************
+
+.. image:: ./images/FOSS4G_Ad_200x100_2x.jpg
+   :target: http://2014.foss4g.org/
+   :align: center
+
+**************
+Sponsored By
+**************
+
+.. image:: ../../_static/images/geolabs-logo.png
+   :target: http://www.geolabs.fr/
+
+.. image:: ../../_static/images/apptech-logo.png
+   :target: http://www.apptec.co.jp/
+
+.. image:: ../../_static/images/neogeo-logo.png
+   :target: http://www-neogeo-online.net/
+
+.. image:: ../../_static/images/3liz-logo.png
+   :target: http://www.3liz.com/
+
+.. image:: ../../_static/images/gateway-logo.png
+   :target: http://www.gatewaygeomatics.com/
+
+*******************************************
+Special thanks to our Knowledge Partners
+*******************************************
+
+.. image:: ../../_static/images/ocu-logo.png
+   :target: http://www.osaka-cu.ac.jp/english/
+
+.. image:: ../../_static/images/logo-fem.png
+    :target: http://www.fondazioneedmundmach.it/
+
+.. image:: ../../_static/images/polimi-logo.png
+    :target: http://geomatica.como.polimi.it/
+
+.. image:: ../../_static/images/gucas-logo.png
+    :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
+
+.. image:: ../../_static/images/cumtb-logo.png
+    :target: http://www.cumtb.edu.cn/
+
+.. image:: ../../_static/images/logo-supsi.png
+    :target: http://www.supsi.ch/home.html
+
+****************************
+WorkShop table of content
+****************************
+.. toctree::
+   :maxdepth: 5
+   
+   introduction
+   using_zoo_from_osgeolivevm
+   first_service
+   building_blocks_presentation
+   js_services_chaining
