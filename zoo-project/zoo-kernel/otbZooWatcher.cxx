@@ -11,7 +11,7 @@
      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
-  See Ref: http://hg.orfeo-toolbox.org/OTB/file/f93358065d51/Copyright
+  See Ref: http://hg.orfeo-toolbox.org/OTB/ Copyright
 
 =========================================================================*/
 #include "otbZooWatcher.h"
