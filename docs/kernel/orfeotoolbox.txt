@@ -29,7 +29,7 @@ Requirements
 Installation steps
 ********************
 
-.. Note:: For OTB and ITK, the CMAKE_C_FLAGS and CMAKE_CXX_FLAGS must first be set
+.. Note:: For OTB and ITK, the CMAKE_C_FLAGS and CMAKE_CXX_FLAGS must first be set to ``-fPIC``
 
 Download lastest ZOO-Kernel code from SVN.
 
@@ -43,7 +43,7 @@ Then compile ZOO-Kernel using the needed configuration options as shown bellow:
 
      cd zoo-kernel
      autoconf
-     ./configure  --with-xsltconfig=/usr/bin/xslt-config ** --with-otb=/usr/local --with-itk=/usr/local --with-itk-version=4.7 **
+     ./configure  --with-otb=/usr/local --with-itk=/usr/local --with-itk-version=4.7 
      make
      cp zoo_loader.cgi /usr/lib/cgi-bin
 
@@ -53,12 +53,12 @@ Configuration steps
 Main configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Add the following content to your ``/usr/lib/cgi-bin/main.cfg`` file
- in the ``[env]`` section:
+Add the following content to your ``/usr/lib/cgi-bin/main.cfg`` file 
+in the ``[env]`` section:
 
 .. code-block:: guess
 
-       TK_AUTOLOAD_PATH=/usr/local/lib/otb/applications
+       ITK_AUTOLOAD_PATH=/usr/local/lib/otb/applications
 
 Services configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
