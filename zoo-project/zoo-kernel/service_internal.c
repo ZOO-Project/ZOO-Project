@@ -2601,6 +2601,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  map *gfile=getMap(tmpI->content,"generated_file");
 	  char *file_name;
 	  if(gfile!=NULL){
+	    gfile=getMap(tmpI->content,"expected_generated_file");
+	    if(gfile==NULL){
+	      gfile=getMap(tmpI->content,"generated_file");
+	    }
 	    readGeneratedFile(m,tmpI->content,gfile->value);	    
 	    file_name=(char*)malloc((strlen(gfile->value)+strlen(tmp1->value)+1)*sizeof(char));
 	    for(int i=0;i<strlen(gfile->value);i++)

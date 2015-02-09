@@ -192,8 +192,12 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			      if(strncasecmp(tmpVal->value,"application/vnd.google-earth.kml+xml",36)==0)
 				ext="kml";
 			      else
-				if(strncasecmp(tmpVal->value,"application/vnd.google-earth.kmz",32)==0)
+				if(strncasecmp(tmpVal->value,"application/vnd.google-earth.kmz",32)==0){
 				  ext="kmz";
+				  sprintf(tmp,"%s/%s_%sxt.%s",tmpPath->value,s->name,tmpSid->value,ext);
+				  m_Application->SetParameterString(paramKey, tmp);
+				  setMapInMaps(outputs,paramKey.c_str(),"expected_generated_file",tmp);
+				}
 
 		      }
 		      sprintf(tmp,"%s/%s_%s.%s",tmpPath->value,s->name,tmpSid->value,ext);
