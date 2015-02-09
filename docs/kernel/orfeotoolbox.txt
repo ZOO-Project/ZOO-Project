@@ -3,7 +3,7 @@
 How To Use the Orfeo Toolbox support
 =============================================
 
-:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Authors: Nicolas Bozon, GÃ©rald Fenoy, Jeff McKenna
 :Last Updated: $Date$ 
 
 The key idea of the ZOO `Orfeo Toolbox <http://orfeo-toolbox.org/otb/>`_  support implementation is to take advantage of the `OTB Applications <http://orfeo-toolbox.org/otb/otb-applications.html>`_ by using them directly as ZOO WPS Services, without any modifications.  
@@ -107,8 +107,7 @@ And executed according to your needs, as for the following example executing OTB
 
    http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=OTB.BandMath&DataInputs=il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW.tif;il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW_nir.tif;out=float;exp=im1b3*cos%28im1b1%29,im1b2*cos%28im1b1%29,im1b1*cos%28im1b1%29&RawDataOutput=out@mimeType=image/png
 
-
-
+When executing OTB applications as WPS Services, it is also possible to check the OTB process status, using the usual ZOO GetStatus request.
 
 
 
