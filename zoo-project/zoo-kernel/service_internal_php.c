@@ -22,6 +22,10 @@
  * THE SOFTWARE.
  */
 
+#ifdef WIN32
+  #define NO_FCGI_DEFINES
+#endif
+ 
 #include "service_internal_php.h"
 
 #include <sapi/embed/php_embed.h>
@@ -36,7 +40,7 @@ zval*  php_Array_from_map(map*);
 maps* php_maps_from_Array(HashTable* t);
 map* php_map_from_HasTable(HashTable* t);
 
-int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
+int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){	
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
@@ -62,8 +66,9 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   }
 
   php_embed_init(0,NULL,&tsrm_ls);
-  
+   
   zend_try {
+
     php_execute_script(&iscript TSRMLS_CC);
 
     zval *iargs[3];
@@ -117,11 +122,13 @@ zval *php_Array_from_map(map* t){
   MAKE_STD_ZVAL(mapArray);
   tres=array_init(mapArray);
   while(tmp!=NULL){
-    map* sMap=getMapArray(tmp,"size",0);
-    if(strncmp(tmp->name,"value",5)==0 && sMap!=NULL){
+    map* sMap=getMapArray(tmp,"size",0);    
+	if(strncmp(tmp->name,"value",5)==0 && sMap!=NULL && tmp->value != NULL){
       tres=add_assoc_stringl(mapArray,tmp->name,tmp->value,atoi(sMap->value),1);
-    }else
+	} 
+	else if (tmp->value != NULL) {
       tres=add_assoc_string(mapArray,tmp->name,tmp->value,1);
+	}
     tmp=tmp->next;
   }
   return mapArray;
@@ -169,7 +176,9 @@ maps* php_maps_from_Array(HashTable *t){
       cursor=(maps*)malloc(MAPS_SIZE);
       cursor->name=strdup(key);
     }
+#ifdef DEBUG	
     fprintf(stderr,"key : %s\n",key);
+#endif	
     HashTable* t=HASH_OF(*ppzval);
 #ifdef DEBUG
     fprintf(stderr,"key : %s\n",key);
@@ -245,3 +254,17 @@ map* php_map_from_HasTable(HashTable* t){
   }
   return final_res;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

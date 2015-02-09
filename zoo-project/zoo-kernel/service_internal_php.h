@@ -25,7 +25,7 @@
 #ifndef ZOO_SERVICE_INTERNAL_PHP_H
 #define ZOO_SERVICE_INTERNAL_PHP_H 1
 
-#pragma once 
+#pragma once
 
 #include "service.h"
 #include "service_internal.h"
