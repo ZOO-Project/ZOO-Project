@@ -80,14 +80,15 @@ Run the following command to generate all the needed zcfg files for the availabl
 	 cd zcfgs
 	 export ITK_AUTOLOAD_PATH=/your/path/to/otb/applications
 	 ../build/otb2zcfg
-	 cp *zcfg /location/to/your/cgi-bin
+         mkdir /location/to/your/cgi-bin/OTB
+	 cp *zcfg /location/to/your/cgi-bin/OTB
 	
 .. warning 
 
      The ITK_AUTOLOAD_PATH environment variable is required in the [env] section of your main.cfg.
 
-Services configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+Test the ZOO OTB support
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Once done, OTB Applications should be listed as available WPS Services when runing a GetCapabilities request
 
