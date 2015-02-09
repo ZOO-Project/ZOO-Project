@@ -2458,16 +2458,16 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
  */
 void readGeneratedFile(maps* m,map* content,char* filename){
   FILE * file=fopen(filename,"rb");
-  fseek(file, 0, SEEK_END);
-  long count = ftell(file);
-  rewind(file);
-  struct stat file_status; 
-  stat(filename, &file_status);
   if(file==NULL){
     fprintf(stderr,"Failed to open file %s for reading purpose.\n",filename);
     setMapInMaps(m,"lenv","message","Unable to read produced file. Please try again later");
     return ;
   }
+  fseek(file, 0, SEEK_END);
+  long count = ftell(file);
+  rewind(file);
+  struct stat file_status; 
+  stat(filename, &file_status);
   map* tmpMap1=getMap(content,"value");
   if(tmpMap1==NULL){
     addToMap(content,"value","");
