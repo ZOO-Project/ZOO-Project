@@ -4,7 +4,7 @@ How To Use ZOO Status Service
 ===============================
 
 :Authors: Luca Delucchi
-:Last Updated: $Date: 2013-03-27 00:06:12 +0100 (Wed, 27 Mar 2013) $
+:Last Updated: $Date$
 
 *ZOO Status Service* is a utility of ZOO-Project to return the
 completion percent of your service.

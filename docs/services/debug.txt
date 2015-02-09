@@ -4,7 +4,7 @@ How To Debug ZOO Services
 =========================
 
 :Authors: Luca Delucchi
-:Last Updated: $Date: 2013-03-27 00:06:12 +0100 (Wed, 27 Mar 2013) $
+:Last Updated: $Date$
 
 There are different ways to debug your services, the most used solutions are via web
 or via command line.
