@@ -105,13 +105,12 @@ And executed according to your needs, as for the following example executing OTB
 
 .. code-block:: guess
 
-        http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=OTB.BandMath&DataInputs=il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW.tif;il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW_nir.tif;out=float;exp=im1b3*cos%28im1b1%29,im1b2*cos%28im1b1%29,im1b1*cos%28im1b1%29&RawDataOutput=out@mimeType=image/png
+   http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=OTB.BandMath&DataInputs=il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW.tif;il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW_nir.tif;out=float;exp=im1b3*cos%28im1b1%29,im1b2*cos%28im1b1%29,im1b1*cos%28im1b1%29&RawDataOutput=out@mimeType=image/png
 
-When executing OTB applications as WPS Services, it is also possible to check the OTB process status, as the following example suggests:
 
-.. code-block:: guess 
 
-      http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=1424457886&RawDataOutput=Result
+
+
 
     
 

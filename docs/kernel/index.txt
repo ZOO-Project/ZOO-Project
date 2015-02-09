@@ -11,4 +11,5 @@ The following sections will assist you with the ZOO Kernel:
    introduction
    installation
    mapserver
+   orfeotoolbox
 
