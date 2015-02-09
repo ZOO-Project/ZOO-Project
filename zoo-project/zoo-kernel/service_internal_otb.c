@@ -30,6 +30,9 @@
 
 using namespace otb::Wrapper;
 
+WatcherListType m_WatcherList;
+maps* m_Conf;
+
 class MyCommand : public itk::Command
 {
  public:
