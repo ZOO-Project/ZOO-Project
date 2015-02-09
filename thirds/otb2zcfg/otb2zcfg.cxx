@@ -82,7 +82,6 @@ void printImages(){
 void printKmz(){
   std::cout << "    <Default>" << std::endl;
   std::cout << "     mimeType = application/vnd.google-earth.kmz" << std::endl;
-  std::cout << "     encoding = utf-8" << std::endl;
   std::cout << "     extension = kmz" << std::endl;
   std::cout << "    </Default>" << std::endl;
 }
