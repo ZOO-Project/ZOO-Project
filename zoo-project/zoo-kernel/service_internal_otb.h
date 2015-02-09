@@ -30,6 +30,8 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationRegistry.h"
 #include "otbWrapperInputImageListParameter.h"
+#include "otbWrapperAddProcessToWatchEvent.h"
+#include "otbZooWatcher.h"
 #include "service_internal.h"
 #include "service.h"
 #include "cgic.h"
@@ -37,7 +39,12 @@
 #include <windows.h>
 #include <direct.h>
 #endif
+#include <vector>
+#include <string>
 
+typedef std::vector<ZooWatcher *> WatcherListType;
+WatcherListType m_WatcherList;
+maps* m_Conf;
 int zoo_otb_support(maps**,map*,service*,maps**,maps**);
 
 #endif

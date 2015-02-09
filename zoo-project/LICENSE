@@ -8,7 +8,7 @@ for credit requirements for instance.
 ZOO-Kernel License
 ------------------
 
-Copyright (c) 2009-2013 GeoLabs SARL
+Copyright (c) 2009-2015 GeoLabs SARL
 Copyright 2010-2011 Fondazione Edmund Mach. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
@@ -28,6 +28,21 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+ZOO-Kernel OTB Support
+----------------------
+
+Copyright (c) Centre National d'Etudes Spatiales. All rights reserved.
+See OTBCopyright.txt for details.
+
+Some parts of this code are derived from ITK. See ITKCopyright.txt
+for details.
+
+ This software is distributed WITHOUT ANY WARRANTY; without even
+ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.  See the above copyright notices for more information.
+
+See Ref: http://hg.orfeo-toolbox.org/OTB/ Copyright
 
 ZOO-API License
 ---------------

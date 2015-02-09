@@ -20,13 +20,42 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ *
+ * See Ref: http://hg.orfeo-toolbox.org/OTB/ Copyright
+ * Some parts of this code are derived from ITK. See ITKCopyright.txt for 
+ * details.
  */
 
 #include "service_internal_otb.h"
-#include <vector>
-#include <string>
 
 using namespace otb::Wrapper;
+
+class MyCommand : public itk::Command
+{
+ public:
+  itkNewMacro( MyCommand );
+ public:
+
+  void Execute(itk::Object *caller, const itk::EventObject & event)
+  {
+    Execute( (const itk::Object *)caller, event);
+  }
+ 
+  void Execute(const itk::Object * object, const itk::EventObject & event)
+  {
+    const AddProcessToWatchEvent* eventToWatch = dynamic_cast< const AddProcessToWatchEvent*> ( &event );
+    std::string m_CurrentDescription = eventToWatch->GetProcessDescription();
+    std::cerr << "err_service_zooo start ccalled." << m_CurrentDescription << std::endl;
+    ZooWatcher * watch = new ZooWatcher(eventToWatch->GetProcess(),
+					eventToWatch->GetProcessDescription());
+    watch->SetConf(&m_Conf);
+    m_WatcherList.push_back(watch);
+  }
+
+
+
+};
+
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
     size_t start_pos = 0;
@@ -41,6 +70,8 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
+  map* tmp0=getMapFromMaps(*main_conf,"lenv","cwd");
+  char *ntmp=tmp0->value;
   map* tmp=NULL;
   int res=-1;
 
@@ -67,8 +98,11 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  free(tmps);
 	  res=-1;
 	}else{
+	  // Create Observer on AddProcessToWatchEvent
+	  m_Conf=m;
+	  MyCommand::Pointer myCommand = MyCommand::New();
+	  m_Application->AddObserver(AddProcessToWatchEvent(), myCommand);
 	  char tmpS[1024];
-	  sprintf(tmpS, "The OTB Application %s was loaded correctly.", (*it).c_str());
 	  const std::vector<std::string> appKeyList = m_Application->GetParametersKeys(true);
 	  for (unsigned int i = 0; i < appKeyList.size(); i++){
 	    const std::string paramKey(appKeyList[i]);
@@ -79,6 +113,10 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	      map* test=getMapFromMaps(inputs,paramKey.c_str(),"cache_file");
 	      if(test==NULL){
 		test=getMapFromMaps(inputs,paramKey.c_str(),"inRequest");
+		map* tmpPath=getMapFromMaps(m,"main","tmpPath");
+		map* tmpSid=getMapFromMaps(m,"lenv","usid");
+		char tmp[1024];
+		map* tmpVal=getMapFromMaps(outputs,paramKey.c_str(),"mimeType");
 		if(test!=NULL && test->value!=NULL && strncasecmp(test->value,"true",4)==0){
 		  test=getMapFromMaps(inputs,paramKey.c_str(),"value");
 		  if(type == ParameterType_OutputImage){
@@ -95,10 +133,6 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		      outPixType = ImagePixelType_uint32;
 		    else if (strncasecmp(test->value,"double",6)==0)
 		      outPixType = ImagePixelType_double;
-		    map* tmpPath=getMapFromMaps(m,"main","tmpPath");
-		    map* tmpSid=getMapFromMaps(m,"lenv","sid");
-		    char tmp[1024];
-		    map* tmpVal=getMapFromMaps(outputs,paramKey.c_str(),"mimeType");
 		    char* ext="tiff";
 		    if(tmpVal!=NULL){
 		      if(strncasecmp(tmpVal->value,"image/jp2",9)==0)
@@ -121,10 +155,6 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 
 		}else{
 		  if(type == ParameterType_OutputVectorData){
-		      map* tmpPath=getMapFromMaps(m,"main","tmpPath");
-		      map* tmpSid=getMapFromMaps(m,"lenv","sid");
-		      char tmp[1024];
-		      map* tmpVal=getMapFromMaps(outputs,paramKey.c_str(),"mimeType");
 		      char* ext="json";
 		      if(tmpVal!=NULL){
 			if(strncasecmp(tmpVal->value,"text/xml",8)==0)
@@ -145,10 +175,6 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		  }
 		  else
 		    if(type == ParameterType_OutputFilename){
-		      map* tmpPath=getMapFromMaps(m,"main","tmpPath");
-		      map* tmpSid=getMapFromMaps(m,"lenv","sid");
-		      char tmp[1024];
-		      map* tmpVal=getMapFromMaps(outputs,paramKey.c_str(),"mimeType");
 		      char* ext="txt";
 		      if(tmpVal!=NULL){
 			if(strncasecmp(tmpVal->value,"text/xml",8)==0)
@@ -354,5 +380,13 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       }
     }
   }
+
+  for (unsigned int i = 0; i < m_WatcherList.size(); i++){
+    m_WatcherList[i]->FreeConf();
+    delete m_WatcherList[i];
+    m_WatcherList[i] = NULL;
+  }
+  m_WatcherList.clear();
+
   return res;
 }
