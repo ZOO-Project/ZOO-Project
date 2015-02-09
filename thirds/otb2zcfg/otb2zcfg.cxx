@@ -79,6 +79,14 @@ void printImages(){
   std::cout << "    </Supported>" << std::endl;
 }
 
+void printKmz(){
+  std::cout << "    <Default>" << std::endl;
+  std::cout << "     mimeType = application/vnd.google-earth.kmz" << std::endl;
+  std::cout << "     encoding = utf-8" << std::endl;
+  std::cout << "     extension = kmz" << std::endl;
+  std::cout << "    </Default>" << std::endl;
+}
+
 void printVector(){
   std::cout << "    <Default>" << std::endl;
   std::cout << "     mimeType = text/xml" << std::endl;
@@ -361,8 +369,14 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 			std::string dtype5("Vector");
 			if(descr.find(dtype4)!= std::string::npos || descr.find(dtype5)!= std::string::npos)
 			  printVector();
-			else
-			  printUnknown();
+		       	else{
+			  std::string dtype6("kmz");
+			  std::string dtype7("Kmz");
+			  if(descr.find(dtype6)!= std::string::npos || descr.find(dtype6)!= std::string::npos)
+			    printKmz();
+			  else
+			    printUnknown();
+			}
 		      }
 		    }
 		  }
