@@ -43,8 +43,6 @@
 #include <string>
 
 typedef std::vector<ZooWatcher *> WatcherListType;
-WatcherListType m_WatcherList;
-maps* m_Conf;
 int zoo_otb_support(maps**,map*,service*,maps**,maps**);
 
 #endif
