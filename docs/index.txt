@@ -13,7 +13,7 @@ Quick Links
 
     :ref:`kernel`,:ref:`services`,:ref:`api`
     :ref:`kernel-installation`,:ref:`community`,`Search mailing list <http://zoo-discuss.1049523.n5.nabble.com/>`__
-    :ref:`documentation_development`,:ref:`workshop-foss4g-2014`,:ref:`workshop-foss4g-japan-2010`
+    :ref:`documentation_development`,:ref:`workshop-foss4g-2014`
 
 .. note::
     The entire documentation is also available as a single
@@ -66,9 +66,6 @@ This section contains the official ZOO Project documentation.
    api/index
    client/index
    workshop/2014/index
-   workshop/2013/index
-   workshop/2012/index
-   workshop/2010/index
    community/index
    development/documentation
 
