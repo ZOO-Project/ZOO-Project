@@ -608,11 +608,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
           char *errstr = dlerror ();
 #endif
           sprintf (tmps, _("C Library can't be loaded %s"), errstr);
-          map *tmps1 = createMap ("text", tmps);
-          printExceptionReportResponse (m, tmps1);
+	  errorException(m,tmps,"InternalError",NULL);
           *eres = -1;
-          freeMap (&tmps1);
-          free (tmps1);
         }
     }
   else
@@ -696,8 +693,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                _
                ("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),
                r_inputs->value);
-      map *tmps = createMap ("text", tmpv);
-      printExceptionReportResponse (m, tmps);
+      errorException (m, tmpv, "InternalError", NULL);
       *eres = -1;
     }
   *myMap = m;
@@ -985,113 +981,66 @@ runRequest (map ** inputs)
   /**
    * Check for minimum inputs
    */
+  map* err=NULL;
+  const char *vvr[]={
+    "GetCapabilities",
+    "DescribeProcess",
+    "Execute",
+    NULL
+  };
+  checkValidValue(request_inputs,&err,"Request",(const char**)vvr,1);
+  const char *vvs[]={
+    "WPS",
+    NULL
+  };
+  if(err!=NULL){
+    checkValidValue(request_inputs,&err,"service",(const char**)vvs,1);
+    printExceptionReportResponse (m, err);
+    freeMap(&err);
+    free(err);
+    if (count (request_inputs) == 1)
+      {
+	freeMap (&request_inputs);
+	free (request_inputs);
+      }
+    freeMaps (&m);
+    free (m);
+    return 1;
+  }
+  checkValidValue(request_inputs,&err,"service",(const char**)vvs,1);
+  const char *vvv[]={
+    "1.0.0",
+    NULL
+  };
   r_inputs = getMap (request_inputs, "Request");
-  if (request_inputs == NULL || r_inputs == NULL)
-    {
-      errorException (m, _("Parameter <request> was not specified"),
-                      "MissingParameterValue", "request");
-      if (count (request_inputs) == 1)
-        {
-          freeMap (&request_inputs);
-          free (request_inputs);
-        }
-      freeMaps (&m);
-      free (m);
-      return 1;
-    }
-  else
-    {
-      REQUEST = zStrdup (r_inputs->value);
-      if (strncasecmp (r_inputs->value, "GetCapabilities", 15) != 0
-          && strncasecmp (r_inputs->value, "DescribeProcess", 15) != 0
-          && strncasecmp (r_inputs->value, "Execute", 7) != 0)
-        {
-          errorException (m,
-                          _
-                          ("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."),
-                          "OperationNotSupported", r_inputs->value);
-          freeMaps (&m);
-          free (m);
-          free (REQUEST);
-          return 1;
-        }
-    }
-  r_inputs = NULL;
-  r_inputs = getMap (request_inputs, "Service");
-  if (r_inputs == NULLMAP)
-    {
-      errorException (m, _("Parameter <service> was not specified"),
-                      "MissingParameterValue", "service");
-      freeMaps (&m);
-      free (m);
-      free (REQUEST);
-      return 1;
-    }
-  else
-    {
-      if (strcasecmp (r_inputs->value, "WPS") != 0)
-        {
-          errorException (m,
-                          _
-                          ("Unenderstood <service> value, WPS is the only acceptable value."),
-                          "InvalidParameterValue", "service");
-          freeMaps (&m);
-          free (m);
-          free (REQUEST);
-          return 1;
-        }
-    }
-  if (strncasecmp (REQUEST, "GetCapabilities", 15) != 0)
-    {
-      r_inputs = getMap (request_inputs, "Version");
-      if (r_inputs == NULL)
-        {
-          errorException (m, _("Parameter <version> was not specified"),
-                          "MissingParameterValue", "version");
-          freeMaps (&m);
-          free (m);
-          free (REQUEST);
-          return 1;
-        }
-      else
-        {
-          if (strcasecmp (r_inputs->value, "1.0.0") != 0)
-            {
-              errorException (m,
-                              _
-                              ("Unenderstood <version> value, 1.0.0 is the only acceptable value."),
-                              "InvalidParameterValue", "service");
-              freeMaps (&m);
-              free (m);
-              free (REQUEST);
-              return 1;
-            }
-        }
-    }
-  else
-    {
-      r_inputs = getMap (request_inputs, "AcceptVersions");
-      if (r_inputs != NULL)
-        {
-          if (strncmp (r_inputs->value, "1.0.0", 5) != 0)
-            {
-              errorException (m,
-                              _
-                              ("Unenderstood <AcceptVersions> value, 1.0.0 is the only acceptable value."),
-                              "VersionNegotiationFailed", NULL);
-              freeMaps (&m);
-              free (m);
-              free (REQUEST);
-              return 1;
-            }
-        }
-    }
+  REQUEST = zStrdup (r_inputs->value);
+  if (strncasecmp (REQUEST, "GetCapabilities", 15) != 0){
+    checkValidValue(request_inputs,&err,"version",(const char**)vvv,1);
+    checkValidValue(request_inputs,&err,"identifier",NULL,1);
+  }else{
+    checkValidValue(request_inputs,&err,"AcceptVersions",(const char**)vvv,-1);
+  }
+  if(err!=NULL){
+    printExceptionReportResponse (m, err);
+    freeMap(&err);
+    free(err);
+    if (count (request_inputs) == 1)
+      {
+	freeMap (&request_inputs);
+	free (request_inputs);
+      }
+    free(REQUEST);
+    freeMaps (&m);
+    free (m);
+    return 1;
+  }
 
   r_inputs = getMap (request_inputs, "serviceprovider");
   if (r_inputs == NULL)
     {
       addToMap (request_inputs, "serviceprovider", "");
     }
+
 
   maps *request_output_real_format = NULL;
   map *tmpm = getMapFromMaps (m, "main", "serverAddress");
@@ -1123,16 +1072,12 @@ runRequest (map ** inputs)
 #endif
       xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
       r_inputs = NULL;
-      r_inputs = getMap (request_inputs, "ServiceProvider");
-      xmlNodePtr n;
-      if (r_inputs != NULL)
-        n = printGetCapabilitiesHeader (doc, r_inputs->value, m);
-      else
-        n = printGetCapabilitiesHeader (doc, "", m);
-    /**
-     * Here we need to close stdout to ensure that not supported chars 
-     * has been found in the zcfg and then printed on stdout
-     */
+      //r_inputs = getMap (request_inputs, "ServiceProvider");
+      xmlNodePtr n=printGetCapabilitiesHeader(doc,m);
+      /**
+       * Here we need to close stdout to ensure that unsupported chars 
+       * has been found in the zcfg and then printed on stdout
+       */
       int saved_stdout = dup (fileno (stdout));
       dup2 (fileno (stderr), fileno (stdout));
       if (int res =
@@ -1158,17 +1103,6 @@ runRequest (map ** inputs)
   else
     {
       r_inputs = getMap (request_inputs, "Identifier");
-      if (r_inputs == NULL
-          || strlen (r_inputs->name) == 0 || strlen (r_inputs->value) == 0)
-        {
-          errorException (m, _("Mandatory <identifier> was not specified"),
-                          "MissingParameterValue", "identifier");
-          freeMaps (&m);
-          free (m);
-          free (REQUEST);
-          free (SERVICE_URL);
-          return 0;
-        }
 
       struct dirent *dp;
       DIR *dirp = opendir (conf_dir);
@@ -1184,18 +1118,13 @@ runRequest (map ** inputs)
         }
       if (strncasecmp (REQUEST, "DescribeProcess", 15) == 0)
         {
-      /**
-       * Loop over Identifier list
-       */
+	  /**
+	   * Loop over Identifier list
+	   */
           xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
           r_inputs = NULL;
-          r_inputs = getMap (request_inputs, "ServiceProvider");
-
-          xmlNodePtr n;
-          if (r_inputs != NULL)
-            n = printDescribeProcessHeader (doc, r_inputs->value, m);
-          else
-            n = printDescribeProcessHeader (doc, "", m);
+	  xmlNodePtr n = printWPSHeader(doc,m,"DescribeProcess",
+					"ProcessDescriptions");
 
           r_inputs = getMap (request_inputs, "Identifier");
 
@@ -1459,7 +1388,7 @@ runRequest (map ** inputs)
       char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
       sprintf (tmpMsg,
                _
-               ("The value for <indetifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),
+               ("The value for <identifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),
                r_inputs->value);
       errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
       free (tmpMsg);
@@ -1639,249 +1568,235 @@ runRequest (map ** inputs)
       fprintf (stderr, "DATA INPUTS [%s]\n", r_inputs->value);
 #endif
       char cursor_input[40960];
-      if (r_inputs != NULL)
+      if (r_inputs != NULL){
         snprintf (cursor_input, 40960, "%s", r_inputs->value);
-      else
-        {
-          errorException (m, _("Parameter <DataInputs> was not specified"),
-                          "MissingParameterValue", "DataInputs");
-          freeMaps (&m);
-          free (m);
-          free (REQUEST);
-          free (SERVICE_URL);
-          InternetCloseHandle (&hInternet);
-          freeService (&s1);
-          free (s1);
-          return 0;
-        }
-      j = 0;
+	j = 0;
 
-    /**
-     * Put each DataInputs into the inputs_as_text array
-     */
-      char *tmp1 = zStrdup (cursor_input);
-      char *pToken;
-      pToken = strtok (cursor_input, ";");
-      if (pToken != NULL && strncasecmp (pToken, tmp1, strlen (tmp1)) == 0)
-        {
-          char *tmp2 = url_decode (tmp1);
-          snprintf (cursor_input, (strlen (tmp2) + 1) * sizeof (char), "%s",
-                    tmp2);
-          free (tmp2);
-          pToken = strtok (cursor_input, ";");
-        }
-      free (tmp1);
-
-      char **inputs_as_text = (char **) malloc (100 * sizeof (char *));
-      if (inputs_as_text == NULL)
-        {
-          return errorException (m, _("Unable to allocate memory."),
-                                 "InternalError", NULL);
-        }
-      i = 0;
-      while (pToken != NULL)
-        {
+	/**
+	 * Put each DataInputs into the inputs_as_text array
+	 */
+	char *tmp1 = zStrdup (cursor_input);
+	char *pToken;
+	pToken = strtok (cursor_input, ";");
+	if (pToken != NULL && strncasecmp (pToken, tmp1, strlen (tmp1)) == 0)
+	  {
+	    char *tmp2 = url_decode (tmp1);
+	    snprintf (cursor_input, (strlen (tmp2) + 1) * sizeof (char), "%s",
+		      tmp2);
+	    free (tmp2);
+	    pToken = strtok (cursor_input, ";");
+	  }
+	free (tmp1);
+	
+	char **inputs_as_text = (char **) malloc (100 * sizeof (char *));
+	if (inputs_as_text == NULL)
+	  {
+	    return errorException (m, _("Unable to allocate memory."),
+				   "InternalError", NULL);
+	  }
+	i = 0;
+	while (pToken != NULL)
+	  {
 #ifdef DEBUG
-          fprintf (stderr, "***%s***\n", pToken);
+	    fprintf (stderr, "***%s***\n", pToken);
+	    fflush (stderr);
+	    fprintf (stderr, "***%s***\n", pToken);
 #endif
-          fflush (stderr);
+	    inputs_as_text[i] =
+	      (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
+	    if (inputs_as_text[i] == NULL)
+	      {
+		return errorException (m, _("Unable to allocate memory."),
+				       "InternalError", NULL);
+	      }
+	    snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
+	    pToken = strtok (NULL, ";");
+	    i++;
+	  }
+	
+	for (j = 0; j < i; j++)
+	  {
+	    char *tmp = zStrdup (inputs_as_text[j]);
+	    free (inputs_as_text[j]);
+	    char *tmpc;
+	    tmpc = strtok (tmp, "@");
+	    while (tmpc != NULL)
+	      {
 #ifdef DEBUG
-          fprintf (stderr, "***%s***\n", pToken);
+		fprintf (stderr, "***\n***%s***\n", tmpc);
 #endif
-          inputs_as_text[i] =
-            (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
-          snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
-          if (inputs_as_text[i] == NULL)
-            {
-              return errorException (m, _("Unable to allocate memory."),
-                                     "InternalError", NULL);
-            }
-          pToken = strtok (NULL, ";");
-          i++;
-        }
-
-      for (j = 0; j < i; j++)
-        {
-          char *tmp = zStrdup (inputs_as_text[j]);
-          free (inputs_as_text[j]);
-          char *tmpc;
-          tmpc = strtok (tmp, "@");
-          while (tmpc != NULL)
-            {
+		char *tmpv = strstr (tmpc, "=");
+		char tmpn[256];
+		memset (tmpn, 0, 256);
+		if (tmpv != NULL)
+		  {
+		    strncpy (tmpn, tmpc,
+			     (strlen (tmpc) - strlen (tmpv)) * sizeof (char));
+		    tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
+		  }
+		else
+		  {
+		    strncpy (tmpn, tmpc, strlen (tmpc) * sizeof (char));
+		    tmpn[strlen (tmpc)] = 0;
+		  }
 #ifdef DEBUG
-              fprintf (stderr, "***\n***%s***\n", tmpc);
+		fprintf (stderr, "***\n*** %s = %s ***\n", tmpn, tmpv + 1);
 #endif
-              char *tmpv = strstr (tmpc, "=");
-              char tmpn[256];
-              memset (tmpn, 0, 256);
-              if (tmpv != NULL)
-                {
-                  strncpy (tmpn, tmpc,
-                           (strlen (tmpc) - strlen (tmpv)) * sizeof (char));
-                  tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
-                }
-              else
-                {
-                  strncpy (tmpn, tmpc, strlen (tmpc) * sizeof (char));
-                  tmpn[strlen (tmpc)] = 0;
-                }
+		if (tmpmaps == NULL)
+		  {
+		    tmpmaps = (maps *) malloc (MAPS_SIZE);
+		    if (tmpmaps == NULL)
+		      {
+			return errorException (m,
+					       _("Unable to allocate memory."),
+					       "InternalError", NULL);
+		      }
+		    tmpmaps->name = zStrdup (tmpn);
+		    if (tmpv != NULL)
+		      {
+			char *tmpvf = url_decode (tmpv + 1);
+			tmpmaps->content = createMap ("value", tmpvf);
+			free (tmpvf);
+		      }
+		    else
+		      tmpmaps->content = createMap ("value", "Reference");
+		    tmpmaps->next = NULL;
+		  }
+		tmpc = strtok (NULL, "@");
+		while (tmpc != NULL)
+		  {
 #ifdef DEBUG
-              fprintf (stderr, "***\n*** %s = %s ***\n", tmpn, tmpv + 1);
+		    fprintf (stderr, "*** KVP NON URL-ENCODED \n***%s***\n",
+			     tmpc);
 #endif
-              if (tmpmaps == NULL)
-                {
-                  tmpmaps = (maps *) malloc (MAPS_SIZE);
-                  if (tmpmaps == NULL)
-                    {
-                      return errorException (m,
-                                             _("Unable to allocate memory."),
-                                             "InternalError", NULL);
-                    }
-                  tmpmaps->name = zStrdup (tmpn);
-                  if (tmpv != NULL)
-                    {
-                      char *tmpvf = url_decode (tmpv + 1);
-                      tmpmaps->content = createMap ("value", tmpvf);
-                      free (tmpvf);
-                    }
-                  else
-                    tmpmaps->content = createMap ("value", "Reference");
-                  tmpmaps->next = NULL;
-                }
-              tmpc = strtok (NULL, "@");
-              while (tmpc != NULL)
-                {
+		    char *tmpv1 = strstr (tmpc, "=");
 #ifdef DEBUG
-                  fprintf (stderr, "*** KVP NON URL-ENCODED \n***%s***\n",
-                           tmpc);
+		    fprintf (stderr, "*** VALUE NON URL-ENCODED \n***%s***\n",
+			     tmpv1 + 1);
 #endif
-                  char *tmpv1 = strstr (tmpc, "=");
+		    char tmpn1[1024];
+		    memset (tmpn1, 0, 1024);
+		    if (tmpv1 != NULL)
+		      {
+			strncpy (tmpn1, tmpc, strlen (tmpc) - strlen (tmpv1));
+			tmpn1[strlen (tmpc) - strlen (tmpv1)] = 0;
+			addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
+		      }
+		    else
+		      {
+			strncpy (tmpn1, tmpc, strlen (tmpc));
+			tmpn1[strlen (tmpc)] = 0;
+			map *lmap = getLastMap (tmpmaps->content);
+			char *tmpValue =
+			  (char *) malloc ((strlen (tmpv) + strlen (tmpc) + 1) *
+					   sizeof (char));
+			sprintf (tmpValue, "%s@%s", tmpv + 1, tmpc);
+			free (lmap->value);
+			lmap->value = zStrdup (tmpValue);
+			free (tmpValue);
+			tmpc = strtok (NULL, "@");
+			continue;
+		      }
 #ifdef DEBUG
-                  fprintf (stderr, "*** VALUE NON URL-ENCODED \n***%s***\n",
-                           tmpv1 + 1);
+		    fprintf (stderr, "*** NAME NON URL-ENCODED \n***%s***\n",
+			     tmpn1);
+		    fprintf (stderr, "*** VALUE NON URL-ENCODED \n***%s***\n",
+			     tmpv1 + 1);
 #endif
-                  char tmpn1[1024];
-                  memset (tmpn1, 0, 1024);
-                  if (tmpv1 != NULL)
-                    {
-                      strncpy (tmpn1, tmpc, strlen (tmpc) - strlen (tmpv1));
-                      tmpn1[strlen (tmpc) - strlen (tmpv1)] = 0;
-                      addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
-                    }
-                  else
-                    {
-                      strncpy (tmpn1, tmpc, strlen (tmpc));
-                      tmpn1[strlen (tmpc)] = 0;
-                      map *lmap = getLastMap (tmpmaps->content);
-                      char *tmpValue =
-                        (char *) malloc ((strlen (tmpv) + strlen (tmpc) + 1) *
-                                         sizeof (char));
-                      sprintf (tmpValue, "%s@%s", tmpv + 1, tmpc);
-                      free (lmap->value);
-                      lmap->value = zStrdup (tmpValue);
-                      free (tmpValue);
-                      tmpc = strtok (NULL, "@");
-                      continue;
-                    }
+		    if (strcmp (tmpn1, "xlink:href") != 0)
+		      addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
+		    else if (tmpv1 != NULL)
+		      {
+			char *tmpx2 = url_decode (tmpv1 + 1);
+			if (strncasecmp (tmpx2, "http://", 7) != 0 &&
+			    strncasecmp (tmpx2, "ftp://", 6) != 0 &&
+			    strncasecmp (tmpx2, "https://", 8) != 0)
+			  {
+			    char emsg[1024];
+			    sprintf (emsg,
+				     _
+				     ("Unable to find a valid protocol to download the remote file %s"),
+				     tmpv1 + 1);
+			    errorException (m, emsg, "InternalError", NULL);
+			    freeMaps (&m);
+			    free (m);
+			    free (REQUEST);
+			    free (SERVICE_URL);
+			    InternetCloseHandle (&hInternet);
+			    freeService (&s1);
+			    free (s1);
+			    return 0;
+			  }
 #ifdef DEBUG
-                  fprintf (stderr, "*** NAME NON URL-ENCODED \n***%s***\n",
-                           tmpn1);
-                  fprintf (stderr, "*** VALUE NON URL-ENCODED \n***%s***\n",
-                           tmpv1 + 1);
+			fprintf (stderr,
+				 "REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",
+				 tmpv1 + 1);
 #endif
-                  if (strcmp (tmpn1, "xlink:href") != 0)
-                    addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
-                  else if (tmpv1 != NULL)
-                    {
-                      char *tmpx2 = url_decode (tmpv1 + 1);
-                      if (strncasecmp (tmpx2, "http://", 7) != 0 &&
-                          strncasecmp (tmpx2, "ftp://", 6) != 0 &&
-                          strncasecmp (tmpx2, "https://", 8) != 0)
-                        {
-                          char emsg[1024];
-                          sprintf (emsg,
-                                   _
-                                   ("Unable to find a valid protocol to download the remote file %s"),
-                                   tmpv1 + 1);
-                          errorException (m, emsg, "InternalError", NULL);
-                          freeMaps (&m);
-                          free (m);
-                          free (REQUEST);
-                          free (SERVICE_URL);
-                          InternetCloseHandle (&hInternet);
-                          freeService (&s1);
-                          free (s1);
-                          return 0;
-                        }
-#ifdef DEBUG
-                      fprintf (stderr,
-                               "REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n",
-                               tmpv1 + 1);
-#endif
-                      addToMap (tmpmaps->content, tmpn1, tmpx2);
+			addToMap (tmpmaps->content, tmpn1, tmpx2);
 #ifndef WIN32
-                      if (CHECK_INET_HANDLE (hInternet))
+			if (CHECK_INET_HANDLE (hInternet))
 #endif
-                        {
-                          if (loadRemoteFile
-                              (&m, &tmpmaps->content, &hInternet, tmpx2) < 0)
-                            {
-                              freeMaps (&m);
-                              free (m);
-                              free (REQUEST);
-                              free (SERVICE_URL);
-                              InternetCloseHandle (&hInternet);
-                              freeService (&s1);
-                              free (s1);
-                              return 0;
-                            }
-                        }
-                      free (tmpx2);
-                      addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
-                    }
-                  tmpc = strtok (NULL, "@");
-                }
+			  {
+			    if (loadRemoteFile
+				(&m, &tmpmaps->content, &hInternet, tmpx2) < 0)
+			      {
+				freeMaps (&m);
+				free (m);
+				free (REQUEST);
+				free (SERVICE_URL);
+				InternetCloseHandle (&hInternet);
+				freeService (&s1);
+				free (s1);
+				return 0;
+			      }
+			  }
+			free (tmpx2);
+			addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
+		      }
+		    tmpc = strtok (NULL, "@");
+		  }
 #ifdef DEBUG
-              dumpMaps (tmpmaps);
-              fflush (stderr);
+		dumpMaps (tmpmaps);
+		fflush (stderr);
 #endif
-              if (request_input_real_format == NULL)
-                request_input_real_format = dupMaps (&tmpmaps);
-              else
-                {
-                  maps *testPresence =
-                    getMaps (request_input_real_format, tmpmaps->name);
-                  if (testPresence != NULL)
-                    {
-                      elements *elem =
-                        getElements (s1->inputs, tmpmaps->name);
-                      if (elem != NULL)
-                        {
-                          if (appendMapsToMaps
-                              (m, request_input_real_format, tmpmaps,
-                               elem) < 0)
-                            {
-                              freeMaps (&m);
-                              free (m);
-                              free (REQUEST);
-                              free (SERVICE_URL);
-                              InternetCloseHandle (&hInternet);
-                              freeService (&s1);
-                              free (s1);
-                              return 0;
-                            }
-                        }
-                    }
-                  else
-                    addMapsToMaps (&request_input_real_format, tmpmaps);
-                }
-              freeMaps (&tmpmaps);
-              free (tmpmaps);
-              tmpmaps = NULL;
-              free (tmp);
-            }
-        }
-      free (inputs_as_text);
+		if (request_input_real_format == NULL)
+		  request_input_real_format = dupMaps (&tmpmaps);
+		else
+		  {
+		    maps *testPresence =
+		      getMaps (request_input_real_format, tmpmaps->name);
+		    if (testPresence != NULL)
+		      {
+			elements *elem =
+			  getElements (s1->inputs, tmpmaps->name);
+			if (elem != NULL)
+			  {
+			    if (appendMapsToMaps
+				(m, request_input_real_format, tmpmaps,
+				 elem) < 0)
+			      {
+				freeMaps (&m);
+				free (m);
+				free (REQUEST);
+				free (SERVICE_URL);
+				InternetCloseHandle (&hInternet);
+				freeService (&s1);
+				free (s1);
+				return 0;
+			      }
+			  }
+		      }
+		    else
+		      addMapsToMaps (&request_input_real_format, tmpmaps);
+		  }
+		freeMaps (&tmpmaps);
+		free (tmpmaps);
+		tmpmaps = NULL;
+		free (tmp);
+	      }
+	  }
+	free (inputs_as_text);
+      }
     }
   else
     {
@@ -2579,7 +2494,6 @@ runRequest (map ** inputs)
               xmlNodePtr cur2 = cur0->children;
               while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
                 cur2 = cur2->next;
-              int cur1cnt = 0;
               while (cur2 != NULL)
                 {
                   if (xmlStrncasecmp
@@ -2927,7 +2841,10 @@ runRequest (map ** inputs)
    * Ensure that each requested arguments are present in the request
    * DataInputs and ResponseDocument / RawDataOutput
    */
-  char *dfv = addDefaultValues (&request_input_real_format, s1->inputs, m, 0);
+  map* errI=NULL;
+  dumpMaps(request_input_real_format);
+  char *dfv = addDefaultValues (&request_input_real_format, s1->inputs, m, 0,&errI);
+  dumpMaps(request_input_real_format);
   maps *ptr = request_input_real_format;
   while (ptr != NULL)
     {
@@ -2967,29 +2884,59 @@ runRequest (map ** inputs)
       ptr = ptr->next;
     }
 
+  map* errO=NULL;
   char *dfv1 =
-    addDefaultValues (&request_output_real_format, s1->outputs, m, 1);
+    addDefaultValues (&request_output_real_format, s1->outputs, m, 1,&errO);
   if (strcmp (dfv1, "") != 0 || strcmp (dfv, "") != 0)
     {
       char tmps[1024];
-      map *tmpe = createMap ("code", "MissingParameterValue");
+      map *tmpe = NULL;
       if (strcmp (dfv, "") != 0)
         {
-          snprintf (tmps, 1024,
-                    _
-                    ("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),
-                    dfv);
-          addToMap (tmpe, "locator", dfv);
-        }
-      else if (strcmp (dfv1, "") != 0)
+	  tmpe = createMap ("code", "MissingParameterValue");
+	  int nb=0;
+	  int length=1;
+	  map* len=getMap(errI,"length");
+	  if(len!=NULL)
+	    length=atoi(len->value);
+	  for(nb=0;nb<length;nb++){
+	    map* errp=getMapArray(errI,"value",nb);
+	    snprintf (tmps, 1024,
+		      _
+		      ("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),
+		      errp->value);
+	    setMapArray (tmpe, "locator", nb , errp->value);
+	    setMapArray (tmpe, "text", nb , tmps);
+	    setMapArray (tmpe, "code", nb , "MissingParameterValue");
+	  }
+	}
+      if (strcmp (dfv1, "") != 0)
         {
-          snprintf (tmps, 1024,
-                    _
-                    ("The <%s> argument was specified as Output identifier but not defined in the ZOO Configuration File. Please, correct your query or the ZOO Configuration File."),
-                    dfv1);
-          addToMap (tmpe, "locator", dfv1);
-        }
-      addToMap (tmpe, "text", tmps);
+	  int ilength=0;
+	  if(tmpe==NULL)
+	    tmpe = createMap ("code", "InvalidParameterValue");
+	  else{
+	    map* len=getMap(tmpe,"length");
+	    if(len!=NULL)
+	      ilength=atoi(len->value);
+	  }
+	  int nb=0;
+	  int length=1;
+	  map* len=getMap(errO,"length");
+	  if(len!=NULL)
+	    length=atoi(len->value);
+	  for(nb=0;nb<length;nb++){
+	    map* errp=getMapArray(errO,"value",nb);
+	    snprintf (tmps, 1024,
+		      _
+		      ("The <%s> argument was specified as %s identifier but not defined in the ZOO Configuration File. Please, correct your query or the ZOO Configuration File."),
+		      errp->value,
+		      ((getMap(request_inputs,"RawDataOutput")!=NULL)?"RawDataOutput":"ResponseDocument"));
+	    setMapArray (tmpe, "locator", nb+ilength , errp->value);
+	    setMapArray (tmpe, "text", nb+ilength , tmps);
+	    setMapArray (tmpe, "code", nb+ilength , "InvalidParameterValue");
+	  }
+	}
       printExceptionReportResponse (m, tmpe);
       freeService (&s1);
       free (s1);
@@ -3005,6 +2952,14 @@ runRequest (map ** inputs)
       free (request_output_real_format);
       freeMaps (&tmpmaps);
       free (tmpmaps);
+      if(errI!=NULL){
+	freeMap(&errI);
+	free(errI);
+      }
+      if(errO!=NULL){
+	freeMap(&errO);
+	free(errO);
+      }
       return 1;
     }
   maps *tmpReqI = request_input_real_format;

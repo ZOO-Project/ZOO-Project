@@ -214,9 +214,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     }
   }
   else{
-    map* err=createMap("text","Unable to parse serviceProvider please check your zcfg file.");
-    addToMap(err,"code","NoApplicableCode");
-    printExceptionReportResponse(m,err);
+    errorException (m, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
     exit(-1);
   }
   pModule = PyImport_Import(pName);
@@ -249,59 +247,18 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	dumpMaps(*real_outputs);
 #endif
       }else{	  
-	PyObject *ptype,*pvalue, *ptraceback;
-	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-	PyObject *trace=PyObject_Str(pvalue);
-	char pbt[10240];
-	if(PyString_Check(trace))
-	  sprintf(pbt,"TRACE : %s",PyString_AsString(trace));
-	else
-	  fprintf(stderr,"EMPTY TRACE ?");
-	trace=NULL;
-	trace=PyObject_Str(ptype);
-	if(PyString_Check(trace)){
-	  char *tpbt=zStrdup(pbt);
-	  sprintf(pbt,"%s\n%s",tpbt,PyString_AsString(trace));
-	  free(tpbt);
-	}
-	else
-	  fprintf(stderr,"EMPTY TRACE ?");
-	
-	char *tpbt=zStrdup(pbt);
-	pName = PyString_FromString("traceback");
-	pModule = PyImport_Import(pName);
-	pArgs = PyTuple_New(1);
-	PyTuple_SetItem(pArgs, 0, ptraceback);
-	pFunc = PyObject_GetAttrString(pModule,"format_tb");
-	pValue = PyObject_CallObject(pFunc, pArgs);
-	trace=NULL;
-	trace=PyObject_Str(pValue);
-	if(PyString_Check(trace))
-	  sprintf(pbt,"%s\nUnable to run your python process properly. Please check the following messages : %s",tpbt,PyString_AsString(trace));
-	else
-	  sprintf(pbt,"%s \n Unable to run your python process properly. Unable to provide any futher informations.",tpbt);
-	free(tpbt);
-	map* err=createMap("text",pbt);
-	addToMap(err,"code","NoApplicableCode");
-	printExceptionReportResponse(m,err);
+	PythonZooReport(m,tmp->value,0);
 	res=-1;
       }
     }
     else{
       char tmpS[1024];
       sprintf(tmpS, "Cannot find the %s function in the %s file.\n", s->name, tmp->value);
-      map* tmps=createMap("text",tmpS);
-      printExceptionReportResponse(m,tmps);
+      errorException(m,tmpS,"NoApplicableCode",NULL);
       res=-1;
     }
   } else{
-    char tmpS[1024];
-    sprintf(tmpS, "Python module %s cannot be loaded.\n", tmp->value);
-    map* tmps=createMap("text",tmpS);
-    printExceptionReportResponse(m,tmps);
-    if (PyErr_Occurred())
-      PyErr_Print();
-    PyErr_Clear();
+    PythonZooReport(m,tmp->value,1);
     res=-1;
   } 
 #if PY_MAJOR_VERSION < 3
@@ -311,6 +268,70 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyThreadState_Swap(mainstate);
   Py_Finalize();
   return res;
+}
+
+void PythonZooReport(maps* m,const char* module,int load){
+  PyObject *pName, *pModule, *pFunc;
+  PyObject *ptype, *pvalue, *ptraceback,*pValue,*pArgs;
+  PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+  char *pStrErrorMessage = PyString_AsString(pvalue);
+  char *tmp0=_("Python module %s cannot be loaded. Message: %s\n");
+  
+  PyObject *trace=PyObject_Str(pvalue);
+  char *pbt=NULL;
+  if(PyString_Check(trace)){
+    pbt=(char*)malloc((7+strlen(PyString_AsString(trace))+1)*sizeof(char));
+    sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
+  }
+  else
+    fprintf(stderr,"EMPTY TRACE ?");
+  
+  trace=NULL;
+  
+  trace=PyObject_Str(ptype);
+  if(PyString_Check(trace)){
+    char *tpbt=zStrdup(pbt);
+    if(pbt!=NULL)
+      free(pbt);
+    pbt=(char*)malloc((1+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
+    sprintf(pbt,"%s\n%s",tpbt,PyString_AsString(trace));
+    free(tpbt);
+  }
+  else
+    fprintf(stderr,"EMPTY TRACE ?");
+  
+  if(ptraceback!=NULL){
+    char *tpbt=zStrdup(pbt);
+    pName = PyString_FromString("traceback");
+    pModule = PyImport_Import(pName);
+    pArgs = PyTuple_New(1);
+    PyTuple_SetItem(pArgs, 0, ptraceback);
+    pFunc = PyObject_GetAttrString(pModule,"format_tb");
+    pValue = PyObject_CallObject(pFunc, pArgs);
+    trace=NULL;
+    trace=PyObject_Str(pValue);
+    if(PyString_Check(trace)){
+      if(pbt!=NULL)
+	free(pbt);
+      pbt=(char*)malloc((90+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
+      sprintf(pbt,_("%s\nUnable to run your python process properly. Please check the following messages : %s"),tpbt,PyString_AsString(trace));
+    }
+    else{
+      if(pbt!=NULL)
+	free(pbt);
+      pbt=(char*)malloc((90+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));      
+      sprintf(pbt,_("%s \n Unable to run your python process properly. Unable to provide any futher informations."),tpbt);
+    }
+    free(tpbt);
+  }
+  if(load>0){
+    char *tmpS=(char*)malloc((strlen(tmp0)+strlen(module)+strlen(pbt)+1)*sizeof(char));
+    sprintf(tmpS,tmp0,module,pbt);
+    errorException(m,tmpS,"NoApplicableCode",NULL);
+    free(tmpS);
+  }else
+    errorException(m,pbt,"NoApplicableCode",NULL);
+  free(pbt);
 }
 
 PyDictObject* PyDict_FromMaps(maps* t){
