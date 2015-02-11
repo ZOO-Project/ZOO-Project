@@ -2409,7 +2409,6 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   map* len=getMap(s,"length");
   if(len!=NULL)
     length=atoi(len->value);
-  fprintf(stderr,"LEN %d %s %d \n",length,__FILE__,__LINE__);
   for(cnt=0;cnt<length;cnt++){
     nc = xmlNewNode(ns, BAD_CAST "Exception");
     
