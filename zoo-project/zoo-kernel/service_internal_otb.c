@@ -136,7 +136,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		      outPixType = ImagePixelType_uint32;
 		    else if (strncasecmp(test->value,"double",6)==0)
 		      outPixType = ImagePixelType_double;
-		    char* ext="tiff";
+		    const char* ext="tiff";
 		    if(tmpVal!=NULL){
 		      if(strncasecmp(tmpVal->value,"image/jp2",9)==0)
 			 ext="j2k";

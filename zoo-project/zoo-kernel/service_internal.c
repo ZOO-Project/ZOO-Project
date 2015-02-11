@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2013 GeoLabs SARL
+ * Copyright (c) 2009-2015 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -398,7 +398,7 @@ int getShmLockId(maps* conf, int nsems){
 	      sleep(1);
             }
         }
-	errno = NULL;
+	errno = ZOO_LOCK_ACQUIRE_FAILED;
         if (!ready) {
 #ifdef DEBUG
 	  fprintf(stderr,"Unable to access the semaphore ...\n");
@@ -427,7 +427,6 @@ int removeShmLock(maps* conf, int nsems){
 
 int lockShm(int id){
   struct sembuf sb;
-  int i;
   sb.sem_num = 0;
   sb.sem_op = -1;  /* set to allocate resource */
   sb.sem_flg = SEM_UNDO;
@@ -628,15 +627,15 @@ char *url_decode(char *str) {
 }
 
 char *zCapitalize1(char *tmp){
-        char *res=strdup(tmp);
-        if(res[0]>=97 && res[0]<=122)
-                res[0]-=32;
-        return res;
+  char *res=zStrdup(tmp);
+  if(res[0]>=97 && res[0]<=122)
+    res[0]-=32;
+  return res;
 }
 
 char *zCapitalize(char *tmp){
   int i=0;
-  char *res=strdup(tmp);
+  char *res=zStrdup(tmp);
   for(i=0;i<strlen(res);i++)
     if(res[i]>=97 && res[i]<=122)
       res[i]-=32;
@@ -712,6 +711,19 @@ void zooXmlCleanupDocs(){
 }
 
 
+/************************************************************************/
+/*                             soapEnvelope()                           */
+/************************************************************************/
+
+/**
+ * Generate a SOAP Envelope node when required (if the isSoap key of the [main]
+ * section is set to true).
+ * 
+ * @param conf the conf maps containing the main.cfg settings
+ * @param n the node used as children of the generated soap:Envelope
+ * @return the generated soap:Envelope (if isSoap=true) or the input node n 
+ *  (when isSoap=false)
+ */
 xmlNodePtr soapEnvelope(maps* conf,xmlNodePtr n){
   map* soap=getMapFromMaps(conf,"main","isSoap");
   if(soap!=NULL && strcasecmp(soap->value,"true")==0){
@@ -736,42 +748,72 @@ xmlNodePtr soapEnvelope(maps* conf,xmlNodePtr n){
     return n;
 }
 
-xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m){
+/************************************************************************/
+/*                            printWPSHeader()                          */
+/************************************************************************/
 
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
-  xmlNodePtr n,nc,nc1,nc2,nc3,nc4,nc5,nc6;
-  /**
-   * Create the document and its temporary root.
-   */
-  int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
+/**
+ * Generate a WPS header.
+ * 
+ * @param doc the document to add the header
+ * @param m the conf maps containing the main.cfg settings
+ * @param req the request type (GetCapabilities,DescribeProcess,Execute)
+ * @param rname the root node name
+ * @return the generated wps:rname xmlNodePtr (can be wps: Capabilities, 
+ *  wps:ProcessDescriptions,wps:ExecuteResponse)
+ */
+xmlNodePtr printWPSHeader(xmlDocPtr doc,maps* m,const char* req,const char* rname){
+
+  xmlNsPtr ns,ns_xsi;
+  xmlNodePtr n;
+
+  int wpsId=zooXmlAddNs(NULL,"http://schemas.opengis.net/wps/1.0.0","wps");
   ns=usedNs[wpsId];
-  maps* toto1=getMaps(m,"main");
-
-  n = xmlNewNode(ns, BAD_CAST "Capabilities");
-  int owsId=zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
-  ns_ows=usedNs[owsId];
+  n = xmlNewNode(ns, BAD_CAST rname);
+  zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
   xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
+  zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
   int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
   ns_xsi=usedNs[xsiId];
-  int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
-  ns_xlink=usedNs[xlinkId];
-  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsGetCapabilities_response.xsd"); 
+  
+  char *tmp=(char*) malloc((86+strlen(req)+1)*sizeof(char));
+  sprintf(tmp,"http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wps%s_response.xsd",req);
+  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST tmp);
+  free(tmp);
   xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
+  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
   addLangAttr(n,m);
-  
-  if(toto1!=NULL){
-    map* tmp=getMap(toto1->content,"version");
-    if(tmp!=NULL){
-      xmlNewProp(n,BAD_CAST "version",BAD_CAST tmp->value);
-    }
-    else
-      xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  }
-  else
-    xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
+  xmlNodePtr fn=soapEnvelope(m,n);
+  xmlDocSetRootElement(doc, fn);
+  return n;
+}
 
+/************************************************************************/
+/*                     printGetCapabilitiesHeader()                     */
+/************************************************************************/
+
+/**
+ * Generate a Capabilities header.
+ * 
+ * @param doc the document to add the header
+ * @param m the conf maps containing the main.cfg settings
+ * @return the generated wps:ProcessOfferings xmlNodePtr 
+ */
+xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m){
+
+  xmlNsPtr ns,ns_ows,ns_xlink;
+  xmlNodePtr n,nc,nc1,nc2,nc3,nc4,nc5,nc6;
+  n = printWPSHeader(doc,m,"GetCapabilities","Capabilities");
+  maps* toto1=getMaps(m,"main");
   char tmp[256];
-  
+
+  int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
+  ns=usedNs[wpsId];
+  int xlinkId=zooXmlAddNs(NULL,"http://www.w3.org/1999/xlink","xlink");
+  ns_xlink=usedNs[xlinkId];
+  int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
+  ns_ows=usedNs[owsId];
+
   nc = xmlNewNode(ns_ows, BAD_CAST "ServiceIdentification");
   maps* tmp4=getMaps(m,"identification");
   if(tmp4!=NULL){
@@ -826,7 +868,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m)
 	    xmlAddChild(nc,nc2);
 	    nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceTypeVersion");
 	    xmlAddChild(nc2,xmlNewText(BAD_CAST "1.0.0"));
-	    xmlAddChild(nc,nc2);	  
+	    xmlAddChild(nc,nc2);
 	  }
 	tmp2=tmp2->next;
       }
@@ -971,10 +1013,10 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m)
       SERVICE_URL = strdup(tmp->value);
     }
     else
-      SERVICE_URL = strdup("not_found");
+      SERVICE_URL = strdup("not_defined");
   }
   else
-    SERVICE_URL = strdup("not_found");
+    SERVICE_URL = strdup("not_defined");
 
   for(j=0;j<3;j++){
     nc1 = xmlNewNode(ns_ows, BAD_CAST "Operation");
@@ -982,14 +1024,12 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m)
     nc2 = xmlNewNode(ns_ows, BAD_CAST "DCP");
     nc3 = xmlNewNode(ns_ows, BAD_CAST "HTTP");
     nc4 = xmlNewNode(ns_ows, BAD_CAST "Get");
-    sprintf(tmp,"%s/%s",SERVICE_URL,service);
+    sprintf(tmp,"%s",SERVICE_URL);
     xmlNewNsProp(nc4,ns_xlink,BAD_CAST "href",BAD_CAST tmp);
     xmlAddChild(nc3,nc4);
-    if(j>0){
-      nc4 = xmlNewNode(ns_ows, BAD_CAST "Post");
-      xmlNewNsProp(nc4,ns_xlink,BAD_CAST "href",BAD_CAST tmp);
-      xmlAddChild(nc3,nc4);
-    }
+    nc4 = xmlNewNode(ns_ows, BAD_CAST "Post");
+    xmlNewNsProp(nc4,ns_xlink,BAD_CAST "href",BAD_CAST tmp);
+    xmlAddChild(nc3,nc4);
     xmlAddChild(nc2,nc3);
     xmlAddChild(nc1,nc2);    
     xmlAddChild(nc,nc1);    
@@ -1044,12 +1084,10 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,const char* service,maps* m)
   xmlAddChild(nc1,nc3);
   xmlAddChild(n,nc1);
   
-  xmlNodePtr fn=soapEnvelope(m,n);
-  xmlDocSetRootElement(doc, fn);
-  //xmlFreeNs(ns);
   free(SERVICE_URL);
   return nc;
 }
+
 
 void addPrefix(maps* conf,map* level,service* serv){
   if(level!=NULL){
@@ -1114,31 +1152,6 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
     }
     xmlAddChild(nc,nc1);
   }
-}
-
-xmlNodePtr printDescribeProcessHeader(xmlDocPtr doc,const char* service,maps* m){
-
-  xmlNsPtr ns,ns_xsi;
-  xmlNodePtr n;
-
-  int wpsId=zooXmlAddNs(NULL,"http://schemas.opengis.net/wps/1.0.0","wps");
-  ns=usedNs[wpsId];
-  n = xmlNewNode(ns, BAD_CAST "ProcessDescriptions");
-  zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
-  int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
-  ns_xsi=usedNs[xsiId];
-  
-  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsDescribeProcess_response.xsd");
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  addLangAttr(n,m);
-
-  xmlNodePtr fn=soapEnvelope(m,n);
-  xmlDocSetRootElement(doc, fn);
-
-  return n;
 }
 
 void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
@@ -1667,33 +1680,20 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 }
 
 void printProcessResponse(maps* m,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
-  xmlNsPtr ns,ns_ows,ns_xlink,ns_xsi;
+  xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr nr,n,nc,nc1=NULL,nc3;
   xmlDocPtr doc;
   time_t time1;  
   time(&time1);
   nr=NULL;
-  /**
-   * Create the document and its temporary root.
-   */
   doc = xmlNewDoc(BAD_CAST "1.0");
+  n = printWPSHeader(doc,m,"Execute","ExecuteResponse");
   int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
   ns=usedNs[wpsId];
-
-  n = xmlNewNode(ns, BAD_CAST "ExecuteResponse");
-  xmlNewNs(n,BAD_CAST "http://www.opengis.net/wps/1.0.0",BAD_CAST "wps");
-  int owsId=zooXmlAddNs(n,"http://www.opengis.net/ows/1.1","ows");
+  int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
   ns_ows=usedNs[owsId];
-  int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+  int xlinkId=zooXmlAddNs(NULL,"http://www.w3.org/1999/xlink","xlink");
   ns_xlink=usedNs[xlinkId];
-  int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
-  ns_xsi=usedNs[xsiId];
-  
-  xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsExecute_response.xsd");
-  
-  xmlNewProp(n,BAD_CAST "service",BAD_CAST "WPS");
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.0.0");
-  addLangAttr(n,m);
 
   char tmp[256];
   char url[1024];
@@ -1875,7 +1875,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     scursor=NULL;
     while(mcursor!=NULL){
       scursor=getElements(serv->outputs,mcursor->name);
-      printOutputDefinitions1(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
+      printOutputDefinitions(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
       mcursor=mcursor->next;
     }
     xmlAddChild(n,nc);
@@ -1914,12 +1914,6 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     xmlAddChild(n,nc);
   }
 
-#ifdef DEBUG
-  fprintf(stderr,"printProcessResponse 1 202\n");
-#endif
-  nr=soapEnvelope(m,n);
-  xmlDocSetRootElement(doc, nr);
-
   if(hasStoredExecuteResponse==true && status!=SERVICE_STARTED){
     semid lid=getShmLockId(m,1);
     if(lid<0)
@@ -1935,11 +1929,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	/* If the file cannot be created return an ExceptionReport */
 	char tmpMsg[1024];
 	sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the ExecuteResponse."),stored_path);
-	map * errormap = createMap("text",tmpMsg);
-	addToMap(errormap,"code", "InternalError");
-	printExceptionReportResponse(m,errormap);
-	freeMap(&errormap);
-	free(errormap);
+
+	errorException(m,tmpMsg,"InternalError",NULL);
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	zooXmlCleanupNs();
@@ -1994,7 +1985,7 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
   zooXmlCleanupNs();
 }
 
-void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,const char* type){
+void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,const char* type){
   xmlNodePtr nc1;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;  
@@ -2011,34 +2002,6 @@ void printOutputDefinitions1(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPt
        || strncasecmp(tmp->name,"ENCODING",strlen(tmp->name))==0
        || strncasecmp(tmp->name,"SCHEMA",strlen(tmp->name))==0
        || strncasecmp(tmp->name,"UOM",strlen(tmp->name))==0)
-    xmlNewProp(nc1,BAD_CAST tmp->name,BAD_CAST tmp->value);
-    tmp=tmp->next;
-  }
-  tmp=getMap(e->defaults->content,"asReference");
-  if(tmp==NULL)
-    xmlNewProp(nc1,BAD_CAST "asReference",BAD_CAST "false");
-
-  tmp=e->content;
-
-  printDescription(nc1,ns_ows,m->name,e->content);
-
-  xmlAddChild(nc,nc1);
-
-}
-
-void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,map* m,const char* type){
-  xmlNodePtr nc1;
-  nc1=xmlNewNode(ns_wps, BAD_CAST type);
-  map *tmp=NULL;  
-  if(e!=NULL && e->defaults!=NULL)
-    tmp=e->defaults->content;
-  else{
-    /*
-    dumpElements(e);
-    */
-    return;
-  }
-  while(tmp!=NULL){
     xmlNewProp(nc1,BAD_CAST tmp->name,BAD_CAST tmp->value);
     tmp=tmp->next;
   }
@@ -2211,7 +2174,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	bool isSized=true;
 	if(rs==NULL){
 	  char tmp1[1024];
-	  sprintf(tmp1,"%u",strlen(tmp3->value));
+	  sprintf(tmp1,"%ld",strlen(tmp3->value));
 	  rs=createMap("size",tmp1);
 	  isSized=false;
 	}
@@ -2334,6 +2297,18 @@ char* getVersion(maps* m){
     return (char*)"1.0.0";
 }
 
+/************************************************************************/
+/*                    printExceptionReportResponse()                    */
+/************************************************************************/
+
+/**
+ * Print an OWS ExceptionReport Document and HTTP headers (when required) 
+ * depending on the code.
+ * Set hasPrinted value to true in the [lenv] section.
+ * 
+ * @param m the conf maps
+ * @param s the map containing the text,code,locator keys
+ */
 void printExceptionReportResponse(maps* m,map* s){
   if(getMapFromMaps(m,"lenv","hasPrinted")!=NULL)
     return;
@@ -2350,7 +2325,8 @@ void printExceptionReportResponse(maps* m,map* s){
   
   map* tmp=getMap(s,"code");
   if(tmp!=NULL){
-    if(strcmp(tmp->value,"OperationNotSupported")==0)
+    if(strcmp(tmp->value,"OperationNotSupported")==0 ||
+       strcmp(tmp->value,"NoApplicableCode")==0)
       exceptionCode="501 Not Implemented";
     else
       if(strcmp(tmp->value,"MissingParameterValue")==0 ||
@@ -2360,10 +2336,7 @@ void printExceptionReportResponse(maps* m,map* s){
 	 strcmp(tmp->value,"InvalidParameterValue")==0)
 	exceptionCode="400 Bad request";
       else
-	if(strcmp(tmp->value,"NoApplicableCode")==0)
-	  exceptionCode="501 Internal Server Error";
-	else
-	  exceptionCode="501 Internal Server Error";
+	exceptionCode="501 Internal Server Error";
   }
   else
     exceptionCode="501 Internal Server Error";
@@ -2396,6 +2369,19 @@ void printExceptionReportResponse(maps* m,map* s){
     setMapInMaps(m,"lenv","hasPrinted","true");
 }
 
+/************************************************************************/
+/*                      createExceptionReportNode()                     */
+/************************************************************************/
+
+/**
+ * Create an OWS ExceptionReport Node.
+ * 
+ * @param m the conf maps
+ * @param s the map containing the text,code,locator keys
+ * @param use_ns (0/1) choose if you want to generate an ExceptionReport or 
+ *  ows:ExceptionReport node respectively
+ * @return the ExceptionReport/ows:ExceptionReport node
+ */
 xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   
   xmlNsPtr ns,ns_xsi;
@@ -2403,12 +2389,12 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
 
   int nsid=zooXmlAddNs(NULL,"http://www.opengis.net/ows","ows");
   ns=usedNs[nsid];
-  if(use_ns==1){
+  if(use_ns==0){
     ns=NULL;
   }
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
   if(use_ns==1){
-    xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",NULL);
+    xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST"ows");
     int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
     ns_xsi=usedNs[xsiId];
     xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
@@ -2418,31 +2404,68 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   addLangAttr(n,m);
   xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
   
-  nc = xmlNewNode(ns, BAD_CAST "Exception");
+  int length=1;
+  int cnt=0;
+  map* len=getMap(s,"length");
+  if(len!=NULL)
+    length=atoi(len->value);
+  fprintf(stderr,"LEN %d %s %d \n",length,__FILE__,__LINE__);
+  for(cnt=0;cnt<length;cnt++){
+    nc = xmlNewNode(ns, BAD_CAST "Exception");
+    
+    map* tmp=getMapArray(s,"code",cnt);
+    if(tmp==NULL)
+      tmp=getMap(s,"code");
+    if(tmp!=NULL)
+      xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST tmp->value);
+    else
+      xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST "NoApplicableCode");
+    
+    tmp=getMapArray(s,"locator",cnt);
+    if(tmp==NULL)
+      tmp=getMap(s,"locator");
+    if(tmp!=NULL && strcasecmp(tmp->value,"NULL")!=0)
+      xmlNewProp(nc,BAD_CAST "locator",BAD_CAST tmp->value);
 
-  map* tmp=getMap(s,"code");
-  if(tmp!=NULL)
-    xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST tmp->value);
-  else
-    xmlNewProp(nc,BAD_CAST "exceptionCode",BAD_CAST "NoApplicableCode");
-
-  tmp=getMap(s,"locator");
-  if(tmp!=NULL && strcasecmp(tmp->value,"NULL")!=0)
-    xmlNewProp(nc,BAD_CAST "locator",BAD_CAST tmp->value);
-
-
-  tmp=getMap(s,"text");
-  nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
-  if(tmp!=NULL){
-    xmlNodePtr txt=xmlNewText(BAD_CAST tmp->value);
-    xmlAddChild(nc1,txt);
+    tmp=getMapArray(s,"text",cnt);
+    nc1 = xmlNewNode(ns, BAD_CAST "ExceptionText");
+    if(tmp!=NULL){
+      xmlNodePtr txt=xmlNewText(BAD_CAST tmp->value);
+      xmlAddChild(nc1,txt);
+    }
+    else{
+      xmlNodeSetContent(nc1, BAD_CAST _("No debug message available"));
+    }
+    xmlAddChild(nc,nc1);
+    xmlAddChild(n,nc);
   }
-  else{
-    xmlNodeSetContent(nc1, BAD_CAST _("No debug message available"));
-  }
-  xmlAddChild(nc,nc1);
-  xmlAddChild(n,nc);
   return n;
+}
+
+/************************************************************************/
+/*                           errorException()                           */
+/************************************************************************/
+
+/**
+ * Print an OWS ExceptionReport.
+ * 
+ * @param m the conf maps
+ * @param message the error message 
+ * @param errorcode the error code
+ * @param locator the potential locator
+ */
+int errorException(maps *m, const char *message, const char *errorcode, const char *locator) 
+{
+  map* errormap = createMap("text", message);
+  addToMap(errormap,"code", errorcode);
+  if(locator!=NULL)
+    addToMap(errormap,"locator", locator);
+  else
+    addToMap(errormap,"locator", "NULL");
+  printExceptionReportResponse(m,errormap);
+  freeMap(&errormap);
+  free(errormap);
+  return -1;
 }
 
 /************************************************************************/
@@ -2478,7 +2501,7 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   fread(tmpMap1->value,1,count*sizeof(char),file);
   fclose(file);
   char rsize[100];
-  sprintf(rsize,"%d",count*sizeof(char));
+  sprintf(rsize,"%ld",count*sizeof(char));
   addToMap(tmpMap1,"size",rsize);
 }
 
@@ -2528,12 +2551,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     if(teste==NULL){
       char tmpMsg[1024];
       sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the session maps."),session_file_path);
-      map * errormap = createMap("text",tmpMsg);
-      addToMap(errormap,"code", "InternalError");
-      
-      printExceptionReportResponse(m,errormap);
-      freeMap(&errormap);
-      free(errormap);
+      errorException(m,tmpMsg,"InternalError",NULL);
+
       return;
     }
     else{
@@ -2542,36 +2561,32 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
   }
   
-    if(res==SERVICE_FAILED){
-      map * errormap;
-      map *lenv;
-      lenv=getMapFromMaps(m,"lenv","message");
-      char *tmp0;
-      if(lenv!=NULL){
-	tmp0=(char*)malloc((strlen(lenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "))+1)*sizeof(char));
-	sprintf(tmp0,_("Unable to run the Service. The message returned back by the Service was the following: %s"),lenv->value);
-      }
-      else{
-	tmp0=(char*)malloc((strlen(_("Unable to run the Service. No more information was returned back by the Service."))+1)*sizeof(char));
-	sprintf(tmp0,_("Unable to run the Service. No more information was returned back by the Service."));
-      }
-      errormap = createMap("text",tmp0);
-      free(tmp0);
-      addToMap(errormap,"code", "InternalError");
-      dumpMap(errormap);
-      printExceptionReportResponse(m,errormap);
-      freeMap(&errormap);
-      free(errormap);
-      return;
+  if(res==SERVICE_FAILED){
+    map *lenv;
+    lenv=getMapFromMaps(m,"lenv","message");
+    char *tmp0;
+    if(lenv!=NULL){
+      tmp0=(char*)malloc((strlen(lenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "))+1)*sizeof(char));
+      sprintf(tmp0,_("Unable to run the Service. The message returned back by the Service was the following: %s"),lenv->value);
     }
+    else{
+      tmp0=(char*)malloc((strlen(_("Unable to run the Service. No more information was returned back by the Service."))+1)*sizeof(char));
+      sprintf(tmp0,"%s",_("Unable to run the Service. No more information was returned back by the Service."));
+    }
+    errorException(m,tmp0,"InternalError",NULL);
+    free(tmp0);
+    return;
+  }
 
 
+  map *tmp1=getMapFromMaps(m,"main","tmpPath");
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
     dumpMaps(request_outputs);
 #endif
     maps* tmpI=request_outputs;
+
     while(tmpI!=NULL){
 #ifdef USE_MS
       map* testMap=getMap(tmpI->content,"useMapserver");	
@@ -2595,8 +2610,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    addToMap(tmpI->content,"encoding","UTF-8");
 	    addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
 	  }
-
-	  map *tmp1=getMapFromMaps(m,"main","tmpPath");
 
 	  map *gfile=getMap(tmpI->content,"generated_file");
 	  char *file_name;
@@ -2647,11 +2660,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    if(ofile==NULL){
 	      char tmpMsg[1024];
 	      sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the %s final result."),file_name,tmpI->name);
-	      map * errormap = createMap("text",tmpMsg);
-	      addToMap(errormap,"code", "InternalError");
-	      printExceptionReportResponse(m,errormap);
-	      freeMap(&errormap);
-	      free(errormap);
+	      errorException(m,tmpMsg,"InternalError",NULL);
 	      free(file_name);
 	      free(file_path);
 	      return;
@@ -2729,17 +2738,17 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }else{
       map *gfile=getMap(tmpI->content,"generated_file");
       if(gfile!=NULL){
+	gfile=getMap(tmpI->content,"expected_generated_file");
+	if(gfile==NULL){
+	  gfile=getMap(tmpI->content,"generated_file");
+	}
 	readGeneratedFile(m,tmpI->content,gfile->value);
       }
       toto=getMap(tmpI->content,"value");
       if(toto==NULL){
 	char tmpMsg[1024];
 	sprintf(tmpMsg,_("Wrong RawDataOutput parameter, unable to fetch any result for the name your provided : \"%s\"."),tmpI->name);
-	map * errormap = createMap("text",tmpMsg);
-	addToMap(errormap,"code", "InvalidParameterValue");
-	printExceptionReportResponse(m,errormap);
-	freeMap(&errormap);
-	free(errormap);
+	errorException(m,tmpMsg,"InvalidParameterValue","RawDataOutput");
 	return;
       }
       map* fname=getMapFromMaps(tmpI,tmpI->name,"filename");
@@ -2841,14 +2850,28 @@ void ensureDecodedBase64(maps **in){
   }
 }
 
-char* addDefaultValues(maps** out,elements* in,maps* m,int type){
+char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
+  map *res=*err;
   elements* tmpInputs=in;
   maps* out1=*out;
+  char *result=NULL;
+  int nb=0;
   if(type==1){
     while(out1!=NULL){
-      if(getElements(in,out1->name)==NULL)
-	return out1->name;
+      if(getElements(in,out1->name)==NULL){
+	if(res==NULL){
+	  res=createMap("value",out1->name);
+	}else{
+	  setMapArray(res,"value",nb,out1->name);
+	}
+	nb++;
+	result=out1->name;
+      }
       out1=out1->next;
+    }
+    if(res!=NULL){
+      *err=res;
+      return result;
     }
     out1=*out;
   }
@@ -2866,7 +2889,13 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	  if(atoi(tmpMapMinO->value)>=1){
 	    freeMaps(&tmpMaps2);
 	    free(tmpMaps2);
-	    return tmpInputs->name;
+	    if(res==NULL){
+	      res=createMap("value",tmpInputs->name);
+	    }else{
+	      setMapArray(res,"value",nb,tmpInputs->name);
+	    }
+	    nb++;
+	    result=tmpInputs->name;
 	  }
 	  else{
 	    if(tmpMaps2->content==NULL)
@@ -2875,51 +2904,55 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 	      addToMap(tmpMaps2->content,"minOccurs",tmpMapMinO->value);
 	  }
 	}
-	map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
-	if(tmpMaxO!=NULL){
-	  if(tmpMaps2->content==NULL)
-	    tmpMaps2->content=createMap("maxOccurs",tmpMaxO->value);
-	  else
-	    addToMap(tmpMaps2->content,"maxOccurs",tmpMaxO->value);
-	}
-	map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
-	if(tmpMaxMB!=NULL){
-	  if(tmpMaps2->content==NULL)
-	    tmpMaps2->content=createMap("maximumMegabytes",tmpMaxMB->value);
-	  else
-	    addToMap(tmpMaps2->content,"maximumMegabytes",tmpMaxMB->value);
+	if(res==NULL){
+	  map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
+	  if(tmpMaxO!=NULL){
+	    if(tmpMaps2->content==NULL)
+	      tmpMaps2->content=createMap("maxOccurs",tmpMaxO->value);
+	    else
+	      addToMap(tmpMaps2->content,"maxOccurs",tmpMaxO->value);
+	  }
+	  map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
+	  if(tmpMaxMB!=NULL){
+	    if(tmpMaps2->content==NULL)
+	      tmpMaps2->content=createMap("maximumMegabytes",tmpMaxMB->value);
+	    else
+	      addToMap(tmpMaps2->content,"maximumMegabytes",tmpMaxMB->value);
+	  }
 	}
       }
 
-      iotype* tmpIoType=tmpInputs->defaults;
-      if(tmpIoType!=NULL){
-	map* tmpm=tmpIoType->content;
-	while(tmpm!=NULL){
-	  if(tmpMaps2->content==NULL)
-	    tmpMaps2->content=createMap(tmpm->name,tmpm->value);
-	  else
-	    addToMap(tmpMaps2->content,tmpm->name,tmpm->value);
-	  tmpm=tmpm->next;
+      if(res==NULL){
+	iotype* tmpIoType=tmpInputs->defaults;
+	if(tmpIoType!=NULL){
+	  map* tmpm=tmpIoType->content;
+	  while(tmpm!=NULL){
+	    if(tmpMaps2->content==NULL)
+	      tmpMaps2->content=createMap(tmpm->name,tmpm->value);
+	    else
+	      addToMap(tmpMaps2->content,tmpm->name,tmpm->value);
+	    tmpm=tmpm->next;
+	  }
 	}
+	addToMap(tmpMaps2->content,"inRequest","false");
+	if(type==0){
+	  map *tmpMap=getMap(tmpMaps2->content,"value");
+	  if(tmpMap==NULL)
+	    addToMap(tmpMaps2->content,"value","NULL");
+	}
+	if(out1==NULL){
+	  *out=dupMaps(&tmpMaps2);
+	  out1=*out;
+	}
+	else
+	  addMapsToMaps(&out1,tmpMaps2);
+	freeMap(&tmpMaps2->content);
+	free(tmpMaps2->content);
+	tmpMaps2->content=NULL;
+	freeMaps(&tmpMaps2);
+	free(tmpMaps2);
+	tmpMaps2=NULL;
       }
-      addToMap(tmpMaps2->content,"inRequest","false");
-      if(type==0){
-	map *tmpMap=getMap(tmpMaps2->content,"value");
-	if(tmpMap==NULL)
-	  addToMap(tmpMaps2->content,"value","NULL");
-      }
-      if(out1==NULL){
-	*out=dupMaps(&tmpMaps2);
-	out1=*out;
-      }
-      else
-	addMapsToMaps(&out1,tmpMaps2);
-      freeMap(&tmpMaps2->content);
-      free(tmpMaps2->content);
-      tmpMaps2->content=NULL;
-      freeMaps(&tmpMaps2);
-      free(tmpMaps2);
-      tmpMaps2=NULL;
     }
     else{
       iotype* tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
@@ -3047,6 +3080,10 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type){
 
     }
     tmpInputs=tmpInputs->next;
+  }
+  if(res!=NULL){
+    *err=res;
+    return result;
   }
   return "";
 }
@@ -3380,6 +3417,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
     }
     
   }
+  return 0;
 }
 
 /**
@@ -3479,28 +3517,13 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   return 0;
 }
 
-int errorException(maps *m, const char *message, const char *errorcode, const char *locator) 
-{
-  map* errormap = createMap("text", message);
-  addToMap(errormap,"code", errorcode);
-  if(locator!=NULL)
-    addToMap(errormap,"locator", locator);
-  else
-    addToMap(errormap,"locator", "NULL");
-  printExceptionReportResponse(m,errormap);
-  freeMap(&errormap);
-  free(errormap);
-  return -1;
-}
-
-
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
     VSIStatBufL file_status;
     VSIStatL(dataSource, &file_status);
     if(fichier==NULL){
       char tmp[1024];
-      sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %d.",
+      sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %lld.",
 	      dataSource,file_status.st_size);
       setMapInMaps(conf,"lenv","message",tmp);
       return NULL;
@@ -3618,4 +3641,95 @@ int  setOutputValue( maps* outputs, const char* parameterName, char* data, size_
     setMapInMaps(outputs,parameterName,"size",size);
   }
   return 0;
+}
+
+/************************************************************************/
+/*                           checkValidValue()                          */
+/************************************************************************/
+
+/**
+ * Verify if a parameter value is valid.
+ * 
+ * @param request the request map
+ * @param res the error map potentially generated
+ * @param avalues the acceptable values (or null if testing only for presence)
+ * @param mandatory verify the presence of the parameter if mandatory > 0 
+ */
+void checkValidValue(map* request,map** res,const char* toCheck,const char** avalues,int mandatory){
+  map* lres=*res;
+  map* r_inputs = getMap (request,toCheck);
+  if (r_inputs == NULL){
+    if(mandatory>0){
+      char *replace=_("Mandatory parameter <%s> was not specified");
+      char *message=(char*)malloc((strlen(replace)+strlen(toCheck)+1)*sizeof(char));
+      sprintf(message,replace,toCheck);
+      if(lres==NULL){
+	lres=createMap("code","MissingParameterValue");
+	addToMap(lres,"text",message);
+	addToMap(lres,"locator",toCheck);       
+      }else{
+	int length=1;
+	map* len=getMap(lres,"length");
+	if(len!=NULL){
+	  length=atoi(len->value);
+	}
+	setMapArray(lres,"text",length,message);
+	setMapArray(lres,"locator",length,toCheck);
+	setMapArray(lres,"code",length,"MissingParameter");
+      }
+      free(message);
+    }
+  }else{
+    if(avalues==NULL)
+      return;
+    int nb=0;
+    int hasValidValue=-1;
+    while(avalues[nb]!=NULL){
+      if(strcasecmp(avalues[nb],r_inputs->value)==0){
+	hasValidValue=1;
+	break;
+      }
+      nb++;
+    }
+    if(hasValidValue<0){
+      char *replace=_("Ununderstood <%s> value, %s %s the only acceptable value.");
+      nb=0;
+      char *vvalues=NULL;
+      char* num=_("is");
+      while(avalues[nb]!=NULL){
+	char *tvalues;
+	if(vvalues==NULL){
+	  vvalues=(char*)malloc((strlen(avalues[nb])+3)*sizeof(char));
+	  sprintf(vvalues,"%s",avalues[nb]);
+	}
+	else{
+	  tvalues=zStrdup(vvalues);
+	  vvalues=(char*)realloc(vvalues,(strlen(tvalues)+strlen(avalues[nb])+3)*sizeof(char));
+	  sprintf(vvalues,"%s, %s",tvalues,avalues[nb]);
+	  free(tvalues);
+	  num=_("are");
+	}
+	nb++;
+      }
+      char *message=(char*)malloc((strlen(replace)+strlen(num)+strlen(vvalues)+strlen(toCheck)+1)*sizeof(char));
+      sprintf(message,replace,toCheck,vvalues,num);
+      if(lres==NULL){
+	lres=createMap("code","InvalidParameterValue");
+	addToMap(lres,"text",message);
+	addToMap(lres,"locator",toCheck);       
+      }else{
+	int length=1;
+	map* len=getMap(lres,"length");
+	if(len!=NULL){
+	  length=atoi(len->value);
+	}
+	setMapArray(lres,"text",length,message);
+	setMapArray(lres,"locator",length,toCheck);
+	setMapArray(lres,"code",length,"InvalidParameterValue");
+      }
+    }
+  }
+  if(lres!=NULL){
+    *res=lres;
+  }
 }

@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2012 GeoLabs SARL
+ * Copyright (c) 2009-2015 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -474,7 +474,7 @@ extern "C" {
     memmove(tmp->value,v,size*sizeof(char));
     tmp->value[size]=0;
     char sin[128];
-    sprintf(sin,"%ld",size);
+    sprintf(sin,"%d",size);
     addToMap(m,"size",sin);
   }
 
@@ -610,8 +610,6 @@ extern "C" {
     else
       if(size!=NULL)
 	loadMapBinary(out,in,-1);
-    char* tmpSized=NULL;
-    
   }
 
   static maps* dupMaps(maps** mo){
@@ -671,10 +669,17 @@ extern "C" {
   }
 
 
-  static void setMapArray(map* m,char* key,int index,char* value){
+  static void setMapArray(map* m,const char* key,int index,const char* value){
     char tmp[1024];
-    if(index>0)
+    if(index>0){
       sprintf(tmp,"%s_%d",key,index);
+      map* len=getMap(m,"length");
+      if((len!=NULL && atoi(len->value)<index+1) || len==NULL){
+	char tmp0[5];
+	sprintf(tmp0,"%d",index+1);
+	addToMap(m,"length",tmp0);
+      }
+    }
     else
       sprintf(tmp,"%s",key);
     map* tmpSize=getMapArray(m,"size",index);

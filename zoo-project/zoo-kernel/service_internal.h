@@ -98,6 +98,7 @@ extern "C" {
   int getServiceFromYAML(maps*,char*,service**,char *name);
   int readServiceFile(maps*, char*,service**,char *);
   int isValidLang(maps*,const char*);
+  void addLangAttr(xmlNodePtr,maps*);
 
   void printHeaders(maps*);
   void unhandleStatus(maps*);
@@ -136,9 +137,9 @@ extern "C" {
   void printExceptionReportResponse(maps*,map*);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
-  xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,const char*,maps*);
+  xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*);
+  xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*);
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
-  xmlNodePtr printDescribeProcessHeader(xmlDocPtr,const char*,maps*);
   void printDescribeProcessForProcess(maps*,xmlNodePtr,service*);
   void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNodePtr);
   void printDocument(maps*,xmlDocPtr,int);
@@ -147,18 +148,19 @@ extern "C" {
   map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
   void printBoundingBoxDocument(maps*,maps*,FILE*);
-  void printOutputDefinitions1(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
-  
+  void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
+
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
   char *base64(const char*,int);
   char *base64d(const char*,int,int*);
   void ensureDecodedBase64(maps**);
-
-  char* addDefaultValues(maps**,elements*,maps*,int);
+  void checkValidValue(map*,map**,const char*,const char**,int);
+  char* addDefaultValues(maps**,elements*,maps*,int,map**);
 
   int errorException(maps *, const char *, const char *, const char*);
 
+  xmlNodePtr soapEnvelope(maps*,xmlNodePtr);
   int checkForSoapEnvelope(xmlDocPtr);
 
   void addToCache(maps*,char*,char*,char*,int);
