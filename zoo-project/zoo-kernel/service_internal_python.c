@@ -612,8 +612,7 @@ map* mapFromPyDict(PyDictObject* t){
  *
  * @param self the Python object on which we can run the method
  * @param args the Python arguments given from the Python environment
- * @return a new Python string containing the translated value to the Python
- *  environment
+ * @return a new Python string containing the translated value
  * @see _ss
  */
 PyObject*
