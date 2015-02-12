@@ -20,30 +20,52 @@
 #include "otbFilterWatcherBase.h"
 #include "service.h"
 
+/**
+ * Observer used to access the ongoing status of a running OTB Application
+ */
 class /*ITK_EXPORT*/ ZooWatcher : public otb::FilterWatcherBase
 {
 public:
 
-  /** Constructor. Takes a ProcessObject to monitor and an optional
-   * comment string that is prepended to each event message. */
+  /**
+   * Constructor
+   * @param process the itk::ProcessObject to monitor
+   * @param comment comment string that is prepended to each event message
+   */
   ZooWatcher(itk::ProcessObject* process,
                         const char *comment = "");
 
+  /**
+   * Constructor
+   * @param process the itk::ProcessObject to monitor
+   * @param comment comment string that is prepended to each event message
+   */
   ZooWatcher(itk::ProcessObject* process,
                         const std::string& comment = "");
 
   /** Default constructor */
   ZooWatcher();
 
-  /** Get/Set/Free Configuration maps */
+  /** 
+   * Copy the original conf in the m_Conf property
+   *
+   * @param conf the maps pointer to copy
+   */
   void SetConf(maps **conf)
   {
     m_Conf=dupMaps(conf);
   }
+  /**  
+   * Get Configuration maps (m_Conf)
+   * @return the m_Conf property
+   */
   const maps& GetConf() const
   {
     return *m_Conf;
   }
+  /**  
+   * Free Configuration maps (m_Conf)
+   */
   void FreeConf(){
     freeMaps(&m_Conf);
     free(m_Conf);

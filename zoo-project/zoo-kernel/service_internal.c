@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2015 GeoLabs SARL
@@ -42,6 +42,14 @@
 
 #define ERROR_MSG_MAX_LENGTH 1024
 
+/**
+ * Verify if a given language is listed in the lang list defined in the [main] 
+ * section of the main.cfg file.
+ * 
+ * @param conf the map containing the settings from the main.cfg file
+ * @param str the specific language
+ * @return 1 if the specific language is listed, -1 in other case.
+ */
 int isValidLang(maps* conf,const char *str){
   map *tmpMap=getMapFromMaps(conf,"main","lang");
   char *tmp=zStrdup(tmpMap->value);
@@ -58,6 +66,11 @@ int isValidLang(maps* conf,const char *str){
   return res;
 }
 
+/**
+ * Print the HTTP headers based on a map.
+ * 
+ * @param m the map containing the headers informations
+ */
 void printHeaders(maps* m){
   maps *_tmp=getMaps(m,"headers");
   if(_tmp!=NULL){
@@ -69,6 +82,12 @@ void printHeaders(maps* m){
   }
 }
 
+/**
+ * Add a land attribute to a XML node
+ *
+ * @param n the XML node to add the attribute
+ * @param m the map containing the language key to add as xml:lang
+ */
 void addLangAttr(xmlNodePtr n,maps *m){
   map *tmpLmap=getMapFromMaps(m,"main","language");
   if(tmpLmap!=NULL)
@@ -77,17 +96,34 @@ void addLangAttr(xmlNodePtr n,maps *m){
     xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST "en-US");
 }
 
-/* Converts a hex character to its integer value */
+/**
+ * Converts a hex character to its integer value 
+ *
+ * @param ch the char to convert
+ * @return the converted char 
+ */
 char from_hex(char ch) {
   return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
 }
 
-/* Converts an integer value to its hex character*/
+/**
+ * Converts an integer value to its hec character 
+ *
+ * @param code the char to convert
+ * @return the converted char 
+ */
 char to_hex(char code) {
   static char hex[] = "0123456789abcdef";
   return hex[code & 15];
 }
 
+/**
+ * Get the ongoing status of a running service 
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ * @return the reported status char* (MESSAGE|POURCENTAGE)
+ */
 char* _getStatus(maps* conf,int pid){
   char lid[1024];
   sprintf(lid,"%d",pid);
@@ -130,10 +166,9 @@ char* _getStatus(maps* conf,int pid){
 #define SHMEMSIZE 4096
 
 size_t getKeyValue(maps* conf, char* key, size_t length){
-  
   if(conf==NULL) {
-	 strncpy(key, "700666", length);
-	 return strlen(key);
+    strncpy(key, "700666", length);
+    return strlen(key);
   }
   
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
@@ -147,7 +182,9 @@ size_t getKeyValue(maps* conf, char* key, size_t length){
 	strncpy(key, "-1", length);  
   }
   return strlen(key);
-} 
+}
+
+
 semid getShmLockId(maps* conf, int nsems){
     semid sem_id;
 	char key[MAX_PATH];
@@ -335,7 +372,10 @@ void unhandleStatus(maps *conf){
 }
 
 #else
-
+/**
+ * Number of time to try to access a semaphores set
+ * @see getShmLockId
+ */
 #define MAX_RETRIES 10
 
 #ifndef __APPLE__
@@ -346,6 +386,12 @@ union semun {
 };
 #endif
 
+/**
+ * Set in the pre-allocated key the zoo_sem_[SID] string 
+ * where [SID] is the lid (if any) or usid value from the [lenv] section.
+ *
+ * @param conf the map containing the setting of the main.cfg file
+ */
 int getKeyValue(maps* conf){
   if(conf==NULL)
      return 700666;
@@ -358,6 +404,14 @@ int getKeyValue(maps* conf){
   return key;
 }
 
+/**
+ * Try to create or access a semaphore set.
+ *
+ * @see getKeyValue
+ * @param conf the map containing the setting of the main.cfg file
+ * @param nsems number of semaphores
+ * @return a semaphores set indentifier on success, -1 in other case
+ */
 int getShmLockId(maps* conf, int nsems){
     int i;
     union semun arg;
@@ -421,6 +475,13 @@ int getShmLockId(maps* conf, int nsems){
     return sem_id;
 }
 
+/**
+ * Try to remove a semaphore set.
+ *
+ * @param conf the map containing the setting of the main.cfg file
+ * @param nsems number of semaphores
+ * @return 0 if the semaphore can be removed, -1 in other case.
+ */
 int removeShmLock(maps* conf, int nsems){
   union semun arg;
   int sem_id=getShmLockId(conf,nsems);
@@ -431,6 +492,12 @@ int removeShmLock(maps* conf, int nsems){
   return 0;
 }
 
+/**
+ * Lock a semaphore set.
+ *
+ * @param id the semaphores set indetifier
+ * @return 0 if the semaphore can be locked, -1 in other case.
+ */
 int lockShm(int id){
   struct sembuf sb;
   sb.sem_num = 0;
@@ -443,6 +510,12 @@ int lockShm(int id){
   return 0;
 }
 
+/**
+ * unLock a semaphore set.
+ *
+ * @param id the semaphores set indetifier
+ * @return 0 if the semaphore can be locked, -1 in other case.
+ */
 int unlockShm(int id){
   struct sembuf sb;
   sb.sem_num = 0;
@@ -455,6 +528,11 @@ int unlockShm(int id){
   return 0;
 }
 
+/**
+ * Stop handling status repport.
+ *
+ * @param conf the map containing the setting of the main.cfg file
+ */
 void unhandleStatus(maps *conf){
   int shmid;
   key_t key;
@@ -480,6 +558,13 @@ void unhandleStatus(maps *conf){
   }
 }
 
+/**
+ * Update the current of the running service.
+ *
+ * @see getKeyValue, getShmLockId, lockShm
+ * @param conf the map containing the setting of the main.cfg file
+ * @return 0 on success, -2 if shmget failed, -1 if shmat failed
+ */
 int _updateStatus(maps *conf){
   int shmid;
   char *shm,*s,*s1;
@@ -527,6 +612,13 @@ int _updateStatus(maps *conf){
   return 0;
 }
 
+/**
+ * Update the current of the running service.
+ *
+ * @see getKeyValue, getShmLockId, lockShm
+ * @param pid the semaphores 
+ * @return 0 on success, -2 if shmget failed, -1 if shmat failed
+ */
 char* getStatus(int pid){
   int shmid;
   key_t key;
@@ -593,9 +685,13 @@ JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
 #endif
 
 
-
-/* Returns a url-encoded version of str */
-/* IMPORTANT: be sure to free() the returned string after use */
+/**
+ * URLEncode an url
+ *
+ * @param str the url to encode
+ * @return a url-encoded version of str
+ * @warning be sure to free() the returned string after use
+ */
 char *url_encode(char *str) {
   char *pstr = str, *buf = (char*) malloc(strlen(str) * 3 + 1), *pbuf = buf;
   while (*pstr) {
@@ -611,8 +707,13 @@ char *url_encode(char *str) {
   return buf;
 }
 
-/* Returns a url-decoded version of str */
-/* IMPORTANT: be sure to free() the returned string after use */
+/**
+ * Decode an URLEncoded url
+ *
+ * @param str the URLEncoded url to decode
+ * @return a url-decoded version of str
+ * @warning be sure to free() the returned string after use
+ */
 char *url_decode(char *str) {
   char *pstr = str, *buf = (char*) malloc(strlen(str) + 1), *pbuf = buf;
   while (*pstr) {
@@ -632,6 +733,13 @@ char *url_decode(char *str) {
   return buf;
 }
 
+/**
+ * Replace the first letter by its upper case version in a new char array
+ *
+ * @param tmp the char*
+ * @return a new char* with first letter in upper case
+ * @warning be sure to free() the returned string after use
+ */
 char *zCapitalize1(char *tmp){
   char *res=zStrdup(tmp);
   if(res[0]>=97 && res[0]<=122)
@@ -639,6 +747,13 @@ char *zCapitalize1(char *tmp){
   return res;
 }
 
+/**
+ * Replace all letters by their upper case version in a new char array
+ *
+ * @param tmp the char*
+ * @return a new char* with first letter in upper case
+ * @warning be sure to free() the returned string after use
+ */
 char *zCapitalize(char *tmp){
   int i=0;
   char *res=zStrdup(tmp);
@@ -648,7 +763,12 @@ char *zCapitalize(char *tmp){
   return res;
 }
 
-
+/**
+ * Search for an existing XML namespace in usedNS.
+ * 
+ * @param name the name of the XML namespace to search
+ * @return the index of the XML namespace found or -1 if not found.
+ */
 int zooXmlSearchForNs(const char* name){
   int i;
   int res=-1;
@@ -660,6 +780,14 @@ int zooXmlSearchForNs(const char* name){
   return res;
 }
 
+/**
+ * Add an XML namespace to the usedNS if it was not already used.
+ * 
+ * @param nr the xmlNodePtr to attach the XML namspace (can be NULL)
+ * @param url the url of the XML namespace to add
+ * @param name the name of the XML namespace to add
+ * @return the index of the XML namespace added.
+ */
 int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
 #ifdef DEBUG
   fprintf(stderr,"zooXmlAddNs %d %s \n",nbNs,name);
@@ -682,6 +810,9 @@ int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
   return currId;
 }
 
+/**
+ * Free allocated memory to store used XML namespace.
+ */
 void zooXmlCleanupNs(){
   int j;
 #ifdef DEBUG
@@ -699,7 +830,12 @@ void zooXmlCleanupNs(){
   nbNs=0;
 }
 
-
+/**
+ * Add a XML document to the iDocs.
+ * 
+ * @param value the string containing the XML document
+ * @return the index of the XML document added.
+ */
 int zooXmlAddDoc(const char* value){
   int currId=0;
   nbDocs++;
@@ -708,6 +844,9 @@ int zooXmlAddDoc(const char* value){
   return currId;
 }
 
+/**
+ * Free allocated memort to store XML documents
+ */
 void zooXmlCleanupDocs(){
   int j;
   for(j=nbDocs-1;j>=0;j--){
@@ -715,11 +854,6 @@ void zooXmlCleanupDocs(){
   }
   nbDocs=0;
 }
-
-
-/************************************************************************/
-/*                             soapEnvelope()                           */
-/************************************************************************/
 
 /**
  * Generate a SOAP Envelope node when required (if the isSoap key of the [main]
@@ -753,10 +887,6 @@ xmlNodePtr soapEnvelope(maps* conf,xmlNodePtr n){
   }else
     return n;
 }
-
-/************************************************************************/
-/*                            printWPSHeader()                          */
-/************************************************************************/
 
 /**
  * Generate a WPS header.
@@ -793,10 +923,6 @@ xmlNodePtr printWPSHeader(xmlDocPtr doc,maps* m,const char* req,const char* rnam
   xmlDocSetRootElement(doc, fn);
   return n;
 }
-
-/************************************************************************/
-/*                     printGetCapabilitiesHeader()                     */
-/************************************************************************/
 
 /**
  * Generate a Capabilities header.
@@ -1094,7 +1220,13 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m){
   return nc;
 }
 
-
+/**
+ * Add prefix to the service name.
+ * 
+ * @param conf the conf maps containing the main.cfg settings
+ * @param level the map containing the level information
+ * @param serv the service structure created from the zcfg file
+ */
 void addPrefix(maps* conf,map* level,service* serv){
   if(level!=NULL){
     char key[25];
@@ -1127,6 +1259,14 @@ void addPrefix(maps* conf,map* level,service* serv){
   }
 }
 
+/**
+ * Generate a wps:Process node for a servie and add it to a given node.
+ * 
+ * @param m the conf maps containing the main.cfg settings
+ * @param nc the XML node to add the Process node
+ * @param serv the service structure created from the zcfg file
+ * @return the generated wps:ProcessOfferings xmlNodePtr 
+ */
 void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n=NULL,nc1,nc2;
@@ -1160,6 +1300,14 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
   }
 }
 
+/**
+ * Generate a ProcessDescription node for a servie and add it to a given node.
+ * 
+ * @param m the conf maps containing the main.cfg settings
+ * @param nc the XML node to add the Process node
+ * @param serv the servive structure created from the zcfg file
+ * @return the generated wps:ProcessOfferings xmlNodePtr 
+ */
 void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc1;
@@ -1229,6 +1377,16 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
 
 }
 
+/**
+ * Generate the required XML tree for the detailled metadata informations of 
+ * inputs or outputs
+ *
+ * @param in 1 in case of inputs, 0 for outputs
+ * @param elem the elements structure containing the metadata informations
+ * @param type the name ("Input" or "Output") of the XML node to create
+ * @param ns_ows the ows XML namespace
+ * @param nc1 the XML node to use to add the created tree
+ */
 void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows,xmlNodePtr nc1){
   const char *orderedFields[13];
   orderedFields[0]="mimeType";
@@ -1685,6 +1843,18 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
   }
 }
 
+/**
+ * Generate a wps:Execute XML document.
+ * 
+ * @param m the conf maps containing the main.cfg settings
+ * @param request the map representing the HTTP request
+ * @param pid the process identifier linked to a service
+ * @param serv the serv structure created from the zcfg file
+ * @param service the service name
+ * @param status the status returned by the service
+ * @param inputs the inputs provided
+ * @param outputs the outputs generated by the service
+ */
 void printProcessResponse(maps* m,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr nr,n,nc,nc1=NULL,nc3;
@@ -1965,7 +2135,13 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   zooXmlCleanupNs();
 }
 
-
+/**
+ * Print a XML document.
+ * 
+ * @param m the conf maps containing the main.cfg settings
+ * @param doc the XML document
+ * @param pid the process identifier linked to a service
+ */
 void printDocument(maps* m, xmlDocPtr doc,int pid){
   char *encoding=getEncoding(m);
   if(pid==getpid()){
@@ -1991,6 +2167,17 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
   zooXmlCleanupNs();
 }
 
+/**
+ * Print a XML document.
+ * 
+ * @param doc the XML document (unused)
+ * @param nc the XML node to add the output definition
+ * @param ns_wps the wps XML namespace
+ * @param ns_ows the ows XML namespace
+ * @param e the output elements 
+ * @param m the conf maps containing the main.cfg settings
+ * @param type the type (unused)
+ */
 void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,const char* type){
   xmlNodePtr nc1;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
@@ -2023,6 +2210,18 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 
 }
 
+/**
+ * Generate XML nodes describing inputs or outputs metadata.
+ * 
+ * @param doc the XML document 
+ * @param nc the XML node to add the definition
+ * @param ns_wps the wps namespace
+ * @param ns_ows the ows namespace
+ * @param ns_xlink the xlink namespace
+ * @param e the output elements 
+ * @param m the conf maps containing the main.cfg settings
+ * @param type the type
+ */
 void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,const char* type){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
@@ -2257,6 +2456,14 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 
 }
 
+/**
+ * Create XML node with basic ows metadata informations (Identifier,Title,Abstract)
+ *
+ * @param root the root XML node to add the description
+ * @param ns_ows the ows XML namespace
+ * @param identifier the identifier to use
+ * @param amap the map containing the ows metadata informations 
+ */
 void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map* amap){
   xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "Identifier");
   
@@ -2277,6 +2484,13 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map
   }
 }
 
+/**
+ * Access the value of the encoding key in a maps
+ *
+ * @param m the maps to search for the encoding key
+ * @return the value of the encoding key in a maps if encoding key exists,
+ *  "UTF-8" in other case.
+ */
 char* getEncoding(maps* m){
   if(m!=NULL){
     map* tmp=getMap(m->content,"encoding");
@@ -2290,6 +2504,13 @@ char* getEncoding(maps* m){
     return (char*)"UTF-8";  
 }
 
+/**
+ * Access the value of the version key in a maps
+ *
+ * @param m the maps to search for the version key
+ * @return the value of the version key in a maps if encoding key exists,
+ *  "1.0.0" in other case.
+ */
 char* getVersion(maps* m){
   if(m!=NULL){
     map* tmp=getMap(m->content,"version");
@@ -2303,16 +2524,12 @@ char* getVersion(maps* m){
     return (char*)"1.0.0";
 }
 
-/************************************************************************/
-/*                    printExceptionReportResponse()                    */
-/************************************************************************/
-
 /**
  * Print an OWS ExceptionReport Document and HTTP headers (when required) 
  * depending on the code.
  * Set hasPrinted value to true in the [lenv] section.
  * 
- * @param m the conf maps
+ * @param m the maps containing the settings of the main.cfg file
  * @param s the map containing the text,code,locator keys
  */
 void printExceptionReportResponse(maps* m,map* s){
@@ -2374,10 +2591,6 @@ void printExceptionReportResponse(maps* m,map* s){
   if(m!=NULL)
     setMapInMaps(m,"lenv","hasPrinted","true");
 }
-
-/************************************************************************/
-/*                      createExceptionReportNode()                     */
-/************************************************************************/
 
 /**
  * Create an OWS ExceptionReport Node.
@@ -2447,10 +2660,6 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   return n;
 }
 
-/************************************************************************/
-/*                           errorException()                           */
-/************************************************************************/
-
 /**
  * Print an OWS ExceptionReport.
  * 
@@ -2472,10 +2681,6 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
   free(errormap);
   return -1;
 }
-
-/************************************************************************/
-/*                          readGeneratedFile()                         */
-/************************************************************************/
 
 /**
  * Read a file generated by a service.
@@ -2510,6 +2715,17 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   addToMap(tmpMap1,"size",rsize);
 }
 
+/**
+ * Generate the output response (RawDataOutput or ResponseDocument)
+ *
+ * @param s the service structure containing the metadata informations
+ * @param request_inputs the inputs provided to the service for execution
+ * @param request_outputs the outputs updated by the service execution
+ * @param request_inputs1 the map containing the HTTP request
+ * @param cpid the process identifier attached to a service execution
+ * @param m the conf maps containing the main.cfg settings
+ * @param res the value returned by the service execution
+ */
 void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 		    map* request_inputs1,int cpid,maps* m,int res){
 #ifdef DEBUG
@@ -2794,6 +3010,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   }
 }
 
+
+/**
+ * Base64 encoding of a char*
+ *
+ * @param input the value to encode
+ * @param length the value length
+ * @return the buffer containing the base64 value
+ * @warning make sure to free the returned value
+ */
 char *base64(const char *input, int length)
 {
   BIO *bmem, *b64;
@@ -2816,6 +3041,15 @@ char *base64(const char *input, int length)
   return buff;
 }
 
+/**
+ * Base64 decoding of a char*
+ *
+ * @param input the value to decode
+ * @param length the value length
+ * @param red the value length
+ * @return the buffer containing the base64 value 
+ * @warning make sure to free the returned value
+ */
 char *base64d(const char *input, int length,int* red)
 {
   BIO *b64, *bmem;
@@ -2835,6 +3069,11 @@ char *base64d(const char *input, int length,int* red)
   return buffer;
 }
 
+/**
+ * Make sure that each value encoded in base64 in a maps is decoded.
+ *
+ * @param in the maps containing the values
+ */
 void ensureDecodedBase64(maps **in){
   maps* cursor=*in;
   while(cursor!=NULL){
@@ -2855,6 +3094,19 @@ void ensureDecodedBase64(maps **in){
   }
 }
 
+/**
+ * Add the default values defined in the zcfg to a maps.
+ *
+ * @param out the maps containing the inputs or outputs given in the initial
+ *  HTTP request
+ * @param in the description of all inputs or outputs available for a service
+ * @param m the maps containing the settings of the main.cfg file
+ * @param type 0 for inputs and 1 for outputs
+ * @param err the map to store potential missing mandatory input parameters or
+ *  wrong output names depending on the type.
+ * @return "" if no error was detected, the name of last input or output causing
+ *  an error.
+ */
 char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
   map *res=*err;
   elements* tmpInputs=in;
@@ -3094,20 +3346,25 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 }
 
 /**
- * parseBoundingBox : parse a BoundingBox string
+ * Parse a BoundingBox string
  *
- * OGC 06-121r3 : 10.2 Bounding box
+ * [OGC 06-121r3](http://portal.opengeospatial.org/files/?artifact_id=20040):
+ *  10.2 Bounding box
+ * 
  *
- * value is provided as : lowerCorner,upperCorner,crs,dimension
- * exemple : 189000,834000,285000,962000,urn:ogc:def:crs:OGC:1.3:CRS84
+ * Value is provided as : lowerCorner,upperCorner,crs,dimension
+ * Exemple : 189000,834000,285000,962000,urn:ogc:def:crs:OGC:1.3:CRS84
  *
- * Need to create a map to store boundingbox informations :
+ * A map to store boundingbox informations should contain:
  *  - lowerCorner : double,double (minimum within this bounding box)
  *  - upperCorner : double,double (maximum within this bounding box)
  *  - crs : URI (Reference to definition of the CRS)
  *  - dimensions : int 
  * 
  * Note : support only 2D bounding box.
+ *
+ * @param value the char* containing the KVP bouding box
+ * @return a map containing all the bounding box keys
  */
 map* parseBoundingBox(const char* value){
   map *res=NULL;
@@ -3155,9 +3412,11 @@ map* parseBoundingBox(const char* value){
 }
 
 /**
- * printBoundingBox : fill a BoundingBox node (ows:BoundingBox or 
- * wps:BoundingBoxData). Set crs and dimensions attributes, add 
- * Lower/UpperCorner nodes to a pre-existing XML node.
+ * Create required XML nodes for boundingbox and update the current XML node
+ *
+ * @param ns_ows the ows XML namespace
+ * @param n the XML node to update
+ * @param boundingbox the map containing the boundingbox definition
  */
 void printBoundingBox(xmlNsPtr ns_ows,xmlNodePtr n,map* boundingbox){
 
@@ -3190,6 +3449,14 @@ void printBoundingBox(xmlNsPtr ns_ows,xmlNodePtr n,map* boundingbox){
 
 }
 
+/**
+ * Print an ows:BoundingBox XML document
+ *
+ * @param m the maps containing the settings of the main.cfg file
+ * @param boundingbox the maps containing the boundingbox definition
+ * @param file the file to print the BoundingBox (if NULL then print on stdout)
+ * @see parseBoundingBox, printBoundingBox
+ */
 void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   if(file==NULL)
     rewind(stdout);
@@ -3242,7 +3509,13 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   
 }
 
-
+/**
+ * Compute md5
+ * 
+ * @param url the char* 
+ * @return a char* representing the md5 of the url
+ * @warning make sure to free ressources returned by this function
+ */
 char* getMd5(char* url){
   EVP_MD_CTX md5ctx;
   char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
@@ -3266,7 +3539,15 @@ char* getMd5(char* url){
 }
 
 /**
- * Cache a file for a given request
+ * Cache a file for a given request.
+ * For each cached file, the are two files stored, a .zca and a .zcm containing
+ * the downloaded content and the mimeType respectively. 
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param request the url used too fetch the content
+ * @param content the downloaded content
+ * @param mimeType the content mimeType 
+ * @param length the content size
  */
 void addToCache(maps* conf,char* request,char* content,char* mimeType,int length){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
@@ -3299,6 +3580,14 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
   }
 }
 
+/**
+ * Verify if a url is available in the cache
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param request the url
+ * @return the full name of the cached file if any, NULL in other case
+ * @warning make sure to free ressources returned by this function (if not NULL)
+ */
 char* isInCache(maps* conf,char* request){
   map* tmpM=getMapFromMaps(conf,"main","cacheDir");
   if(tmpM!=NULL){
@@ -3320,6 +3609,15 @@ char* isInCache(maps* conf,char* request){
   return NULL;
 }
 
+/**
+ * Effectively run all the HTTP requests in the queue
+ *
+ * @param m the maps containing the settings of the main.cfg file
+ * @param inputs the maps containing the inputs (defined in the requests+added
+ *  per default based on the zcfg file)
+ * @param hInternet the HINTERNET pointer
+ * @return 0 on success
+ */
 int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
   if(hInternet->nb>0){
     processDownloads(hInternet);
@@ -3426,8 +3724,13 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 }
 
 /**
- * loadRemoteFile:
  * Try to load file from cache or download a remote file if not in cache
+ *
+ * @param m the maps containing the settings of the main.cfg file
+ * @param content the map to update
+ * @param hInternet the HINTERNET pointer
+ * @param url the url to fetch
+ * @return 0
  */
 int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   char* fcontent;
@@ -3522,6 +3825,13 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   return 0;
 }
 
+/**
+ * Read a file using the GDAL VSI API 
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param dataSource the datasource name to read
+ * @warning make sure to free ressources returned by this function
+ */
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
     VSIStatBufL file_status;
@@ -3541,6 +3851,18 @@ char *readVSIFile(maps* conf,const char* dataSource){
     return res1;
 }
 
+/**
+ * Extract the service identifier from the full service identifier
+ * ie: 
+ *  - Full service name: OTB.BandMath
+ *  - Service name: BandMath
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param conf_dir the full path to the ZOO-Kernel directory
+ * @param identifier the full service name (potentialy including a prefix, ie:
+ *  Prefix.MyService)
+ * @param buffer the resulting service identifier (without any prefix)
+ */
 void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
   setMapInMaps(conf,"lenv","oIdentifier",identifier);
   char *lid=zStrdup(identifier);
@@ -3606,6 +3928,15 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
   free(lid);
 }
 
+/**
+ * Update the status of an ongoing service 
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param percentCompleted percentage of completude of execution of the service
+ * @param message information about the current step executed
+ * @return the value of _updateStatus
+ * @see _updateStatus
+ */
 int updateStatus( maps* conf, const int percentCompleted, const char* message ){
   char tmp[4];
   snprintf(tmp,4,"%d",percentCompleted);
@@ -3614,6 +3945,15 @@ int updateStatus( maps* conf, const int percentCompleted, const char* message ){
   return _updateStatus( conf );
 }
 
+/**
+ * Access an input value 
+ *
+ * @param inputs the maps to search for the input value
+ * @param parameterName the input name to fetch the value
+ * @param numberOfBytes the resulting size of the value to add (for binary
+ *  values), -1 for basic char* data
+ * @return a pointer to the input value if found, NULL in other case.
+ */
 char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBytes){
   map* res=getMapFromMaps(inputs,parameterName,"value");
   if(res!=NULL){
@@ -3629,6 +3969,16 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
   return NULL;
 }
 
+/**
+ * Set an output value 
+ *
+ * @param outputs the maps to define the output value
+ * @param parameterName the output name to set the value
+ * @param data the value to set
+ * @param numberOfBytes size of the value to add (for binary values), -1 for
+ *  basic char* data
+ * @return 0
+ */
 int  setOutputValue( maps* outputs, const char* parameterName, char* data, size_t numberOfBytes ){
   if(numberOfBytes==-1){
     setMapInMaps(outputs,parameterName,"value",data);
@@ -3648,15 +3998,12 @@ int  setOutputValue( maps* outputs, const char* parameterName, char* data, size_
   return 0;
 }
 
-/************************************************************************/
-/*                           checkValidValue()                          */
-/************************************************************************/
-
 /**
  * Verify if a parameter value is valid.
  * 
  * @param request the request map
  * @param res the error map potentially generated
+ * @param toCheck the parameter to use
  * @param avalues the acceptable values (or null if testing only for presence)
  * @param mandatory verify the presence of the parameter if mandatory > 0 
  */
@@ -3739,39 +4086,43 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
   }
 }
 
-/* 
- * The character string returned from getLastErrorMessage resides
+/**
+ * Access the last error message returned by the OS when trying to dynamically
+ * load a shared library.
+ *
+ * @return the last error message
+ * @warning The character string returned from getLastErrorMessage resides
  * in a static buffer. The application should not write to this
  * buffer or attempt to free() it.
  */ 
-char* getLastErrorMessage() {                                                                                                                                                    
-#ifdef WIN32	
-	LPVOID lpMsgBuf;
-	DWORD errCode = GetLastError();
-	static char msg[ERROR_MSG_MAX_LENGTH];
-	size_t i;
-
-	DWORD length = FormatMessage(
-					 FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-					 FORMAT_MESSAGE_FROM_SYSTEM |
-					 FORMAT_MESSAGE_IGNORE_INSERTS,
-					 NULL,
-					 errCode,
-					 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					 (LPTSTR) &lpMsgBuf,
-					 0, NULL );	
-	
-	#ifdef UNICODE		
-		wcstombs_s( &i, msg, ERROR_MSG_MAX_LENGTH,
-					(wchar_t*) lpMsgBuf, _TRUNCATE );
-	#else
-		strcpy_s( msg, ERROR_MSG_MAX_LENGTH,
-	              (char *) lpMsgBuf );		
-	#endif	
-	LocalFree(lpMsgBuf);
-	
-	return msg;
+char* getLastErrorMessage() {                                              
+#ifdef WIN32
+  LPVOID lpMsgBuf;
+  DWORD errCode = GetLastError();
+  static char msg[ERROR_MSG_MAX_LENGTH];
+  size_t i;
+  
+  DWORD length = FormatMessage(
+			       FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+			       FORMAT_MESSAGE_FROM_SYSTEM |
+			       FORMAT_MESSAGE_IGNORE_INSERTS,
+			       NULL,
+			       errCode,
+			       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			       (LPTSTR) &lpMsgBuf,
+			       0, NULL );	
+  
+#ifdef UNICODE		
+  wcstombs_s( &i, msg, ERROR_MSG_MAX_LENGTH,
+	      (wchar_t*) lpMsgBuf, _TRUNCATE );
 #else
-	return dlerror();
+  strcpy_s( msg, ERROR_MSG_MAX_LENGTH,
+	    (char *) lpMsgBuf );		
+#endif	
+  LocalFree(lpMsgBuf);
+  
+  return msg;
+#else
+  return dlerror();
 #endif
 }

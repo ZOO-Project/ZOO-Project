@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2013 GeoLabs SARL
@@ -27,16 +27,37 @@
 
 #pragma once 
 
+/**
+ * The default service url (overriden by serverAddress)
+ */
 #define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
+/**
+ * The time size
+ */
 #define TIME_SIZE 40
 
 #include <libintl.h>
 #include <locale.h>
+/**
+ * ZOO-Kernel internal messages translation function
+ */
 #define _(String) dgettext ("zoo-kernel",String)
+/**
+ * ZOO-Services messages translation function
+ */
 #define _ss(String) dgettext ("zoo-services",String)
 
+/**
+ * ZOO-Kernel was unable to create a lock
+ */
 #define ZOO_LOCK_CREATE_FAILED -4
+/**
+ * ZOO-Kernel was unable to acquire a lock
+ */
 #define ZOO_LOCK_ACQUIRE_FAILED -5
+/**
+ * ZOO-Kernel was unable to release a lock
+ */
 #define ZOO_LOCK_RELEASE_FAILED -6
 
 #include <sys/stat.h>
@@ -88,11 +109,38 @@ extern "C" {
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
+  /**
+   * Maximum number of XML namespaces
+   */
+#define ZOO_NS_MAX 10
+  /**
+   * Maximum number of XML docs
+   */
+#define ZOO_DOC_MAX 20
+
+  /**
+   * Global char* to store the serverAddress value of the mmmmmain section
+   */
   static char* SERVICE_URL;
-  static xmlNsPtr usedNs[10];
-  static char* nsName[10];
-  static xmlDocPtr iDocs[10];
+  /**
+   * Array of xmlNsPtr storing all used XML namespace
+   */
+  static xmlNsPtr usedNs[ZOO_NS_MAX];
+  /**
+   * Array storing names of the used XML namespace
+   */
+  static char* nsName[ZOO_NS_MAX];
+  /**
+   * Number of XML namespaces
+   */
   static int nbNs=0;
+  /**
+   * Array of xmlDocPtr storing XML docs
+   */
+  static xmlDocPtr iDocs[ZOO_DOC_MAX];
+  /**
+   * Number of XML docs
+   */
   static int nbDocs=0;
 
   int getServiceFromYAML(maps*,char*,service**,char *name);
@@ -106,6 +154,9 @@ extern "C" {
   char* _getStatus(maps*,int);
   char* getStatus(int);
   int removeShmLock(maps*, int);
+  /**
+   * Cross platform type used for Lock identifier
+   */
 #ifndef WIN32
 #define semid int
 #else

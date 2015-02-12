@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2015 GeoLabs SARL
@@ -59,12 +59,33 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
   return 0; // The gettimeofday() function shall return 0 on success
 }
 #else
+/**
+ * The crossplatform strdup alias
+ */
 #define zStrdup strdup
+/**
+ * The crossplatform mkdir alias
+ */
 #define zMkdir mkdir
+/**
+ * The crossplatform open alias
+ */
 #define zOpen open
+/**
+ * The crossplatform write alias
+ */
 #define zWrite write
+/**
+ * The crossplatform sleep alias
+ */
 #define zSleep sleep
+/**
+ * The crossplatform gettimeofday alias
+ */
 #define zGettimeofday gettimeofday
+/**
+ * The crossplatform timeval alias
+ */
 #define ztimeval timeval
 #endif 
 
@@ -86,21 +107,57 @@ extern "C" {
 #define bool int
 #endif
 #ifndef true
+  /**
+   * Local true definition
+   */
 #define true 1
+  /**
+   * Local false definition
+   */
 #define false -1
 #endif
 #endif
 
+/**
+ * The global accepted status for a service
+ */
 #define SERVICE_ACCEPTED 0
+/**
+ * The global started status for a service
+ */
 #define SERVICE_STARTED 1
+/**
+ * The global paused status for a service
+ */
 #define SERVICE_PAUSED 2
+/**
+ * The global succeeded status for a service
+ */
 #define SERVICE_SUCCEEDED 3
+/**
+ * The global failed status for a service
+ */
 #define SERVICE_FAILED 4
 
+/**
+ * The memory size to create an elements
+ */
 #define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*2)+sizeof(char*)+(((2*sizeof(char*))+sizeof(iotype*))*2)+sizeof(elements*))
+/**
+ * The memory size to create a map
+ */
 #define MAP_SIZE (2*sizeof(char*))+sizeof(NULL)
+/**
+ * The memory size to create an iotype
+ */
 #define IOTYPE_SIZE MAP_SIZE+sizeof(NULL)
+/**
+ * The memory size to create a maps
+ */
 #define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
+/**
+ * The memory size to create a service
+ */
 #define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
 
 #define SHMSZ     27
@@ -115,8 +172,7 @@ extern "C" {
 #endif
 
   /**
-   * \struct map
-   * \brief KVP linked list
+   * KVP linked list
    *
    * Deal with WPS KVP (name,value).
    * A map is defined as:
@@ -137,8 +193,7 @@ extern "C" {
 #endif
 
   /**
-   * \struct maps
-   * \brief linked list of map pointer
+   * linked list of map pointer
    *
    * Small object to store WPS KVP set.
    * Maps is defined as:
@@ -153,7 +208,9 @@ extern "C" {
   } maps;
 
   /**
-   * \brief Dump a map on stderr
+   * Dump a map on stderr
+   *
+   * @param t the map to dump
    */
   static void _dumpMap(map* t){
     if(t!=NULL){
@@ -165,6 +222,11 @@ extern "C" {
     }
   }
 
+  /**
+   * Dump a map on stderr, see _dumpMap()
+   *
+   * @param t the map to dump
+   */
   static void dumpMap(map* t){
     map* tmp=t;
     while(tmp!=NULL){
@@ -173,6 +235,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Dump a map to a file
+   *
+   * @param t the map to dump to file
+   * @param file the file to store the map
+   */
   static void dumpMapToFile(map* t,FILE* file){
     map* tmp=t;
     while(tmp!=NULL){
@@ -184,6 +252,11 @@ extern "C" {
     }
   }
 
+  /**
+   * Dump a maps on stderr, see dumpMap().
+   *
+   * @param m the map to dump
+   */
   static void dumpMaps(maps* m){
     maps* tmp=m;
     while(tmp!=NULL){
@@ -193,6 +266,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Dump a maps to a file, see dumpMapToFile().
+   *
+   * @param m the map to dump
+   * @param file_path the full path to the file name to store the map
+   */
   static void dumpMapsToFile(maps* m,char* file_path){
     FILE* file=fopen(file_path,"w");
     maps* tmp=m;
@@ -204,6 +283,13 @@ extern "C" {
     fclose(file);
   }
 
+  /**
+   * Create a new map
+   *
+   * @param name the key to add to the map
+   * @param value the corresponding value to add to the map
+   * @return the allocated map
+   */
   static map* createMap(const char* name,const char* value){
     map* tmp=(map *)malloc(MAP_SIZE);
     tmp->name=zStrdup(name);
@@ -212,6 +298,12 @@ extern "C" {
     return tmp;
   }
 
+  /**
+   * Count number of map in a map
+   *
+   * @param m the maps to count
+   * @return number of map in a map
+   */
   static int count(map* m){
     map* tmp=m;
     int c=0;
@@ -222,6 +314,13 @@ extern "C" {
     return c;
   }
     
+  /**
+   * Verify if a key exist in a map
+   *
+   * @param m the map to search for the key
+   * @param key the key to search in the map
+   * @return true if the key wwas found, false in other case
+   */
   static bool hasKey(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
@@ -235,6 +334,13 @@ extern "C" {
     return false;
   }
 
+  /**
+   * Access a specific maps
+   *
+   * @param m the maps to search for the key
+   * @param key the key to search in the maps
+   * @return a pointer on the maps found or NULL if not found
+   */
   static maps* getMaps(maps* m,const char *key){
     maps* tmp=m;
     while(tmp!=NULL){
@@ -246,6 +352,13 @@ extern "C" {
     return NULL;
   }
 
+  /**
+   * Access a specific map
+   *
+   * @param m the map to search for the key
+   * @param key the key to search in the map
+   * @return a pointer on the map found or NULL if not found
+   */
   static map* getMap(map* m,const char *key){
     map* tmp=m;
     while(tmp!=NULL){
@@ -258,6 +371,12 @@ extern "C" {
   }
 
 
+  /**
+   * Access the last map
+   *
+   * @param m the map to search for the lastest map
+   * @return a pointer on the lastest map found or NULL if not found
+   */
   static map* getLastMap(map* m){
     map* tmp=m;
     while(tmp!=NULL){
@@ -269,6 +388,14 @@ extern "C" {
     return NULL;
   }
 
+  /**
+   * Access a specific map from a maps
+   *
+   * @param m the maps to search for the key
+   * @param key the key to search in the maps
+   * @param subkey the key to search in the map (found for the key, if any)
+   * @return a pointer on the map found or NULL if not found
+   */
   static map* getMapFromMaps(maps* m,const char* key,const char* subkey){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
@@ -278,7 +405,12 @@ extern "C" {
     else return NULL;
   }
 
-
+  /**
+   * Free allocated memory of a map.
+   * Require to call free on mo after calling this function.
+   *
+   * @param mo the map to free
+   */
   static void freeMap(map** mo){
     map* _cursor=*mo;
     if(_cursor!=NULL){
@@ -294,6 +426,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Free allocated memory of a maps.
+   * Require to call free on mo after calling this function.
+   *
+   * @param mo the maps to free
+   */
   static void freeMaps(maps** mo){
     maps* _cursor=*mo;
     if(_cursor && _cursor!=NULL){
@@ -313,7 +451,7 @@ extern "C" {
   }
 
   /**
-   * \brief Not named linked list
+   * Not named linked list
    *
    * Used to store informations about formats, such as mimeType, encoding ... 
    *
@@ -327,11 +465,11 @@ extern "C" {
   } iotype;
 
   /**
-   * \brief Metadata information about input or output.
+   * Metadata information about input or output.
    *
    * The elements are used to store metadata informations defined in the ZCFG.
    *
-   * An elements is defined as :
+   * An elements is defined as:
    *  - a name,
    *  - a content map,
    *  - a metadata map,
@@ -350,6 +488,16 @@ extern "C" {
     struct elements* next;
   } elements;
 
+  /**
+   * Metadata informations about a full Service.
+   *
+   * An element is defined as:
+   *  - a name,
+   *  - a content map,
+   *  - a metadata map,
+   *  - an inputs elements
+   *  - an outputs elements
+   */
   typedef struct service{
     char* name;
     struct map* content;
@@ -358,11 +506,21 @@ extern "C" {
     struct elements* outputs; 
   } service;
 
+  /**
+   * Multiple services chained list.
+   */
   typedef struct services{
     struct service* content; 
     struct services* next; 
   } services;
 
+  /**
+   * Verify if an elements contains a name equal to the given key.
+   *
+   * @param e the elements to search for the key
+   * @param key the elements name to search
+   * @return true if the elements contains the name, false in other cases.
+   */ 
   static bool hasElement(elements* e,const char* key){
     elements* tmp=e;
     while(tmp!=NULL){
@@ -373,6 +531,13 @@ extern "C" {
     return false;
   }
 
+  /**
+   * Access a specific elements named key.
+   *
+   * @param m the elements to search
+   * @param key the elements name to search
+   * @return a pointer to the specific element if found, NULL in other case.
+   */ 
   static elements* getElements(elements* m,char *key){
     elements* tmp=m;
     while(tmp!=NULL){
@@ -383,7 +548,12 @@ extern "C" {
     return NULL;
   }
 
-
+  /**
+   * Free allocated memory of an iotype.
+   * Require to call free on i after calling this function.
+   *
+   * @param i the iotype to free
+   */
   static void freeIOType(iotype** i){
     iotype* _cursor=*i;
     if(_cursor!=NULL){
@@ -396,6 +566,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Free allocated memory of an elements.
+   * Require to call free on e after calling this function.
+   *
+   * @param e the iotype to free
+   */
   static void freeElements(elements** e){
     elements* tmp=*e;
     if(tmp!=NULL){
@@ -422,6 +598,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Free allocated memory of a service.
+   * Require to call free on e after calling this function.
+   *
+   * @param s the service to free
+   */
   static void freeService(service** s){
     service* tmp=*s;
     if(tmp!=NULL){
@@ -442,6 +624,13 @@ extern "C" {
     }
   }
 
+  /**
+   * Add key value pair to an existing map.
+   *
+   * @param m the map to add the KVP
+   * @param n the key to add
+   * @param v the corresponding value to add
+   */
   static void addToMap(map* m,const char* n,const char* v){
     if(hasKey(m,n)==false){
       map* _cursor=m;
@@ -458,6 +647,14 @@ extern "C" {
     }
   }
 
+  /**
+   * Add a key and a binary value to an existing map.
+   *
+   * @param m the map to add the KVP
+   * @param n the key to add
+   * @param v the corresponding value to add
+   * @param size the size of the given value
+   */
   static void addToMapWithSize(map* m,const char* n,const char* v,int size){
     if(hasKey(m,n)==false){
       map* _cursor=m;
@@ -478,6 +675,12 @@ extern "C" {
     addToMap(m,"size",sin);
   }
 
+  /**
+   * Add a map at the end of another map.
+   *
+   * @param mo the map to add mi
+   * @param mi the map to add to mo
+   */
   static void addMapToMap(map** mo,map* mi){
     map* tmp=mi;
     map* _cursor=*mo;
@@ -510,6 +713,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Add a map to iotype.
+   *
+   * @param io the iotype to add the map
+   * @param mi the map to add to io
+   */
   static void addMapToIoType(iotype** io,map* mi){
     iotype* tmp=*io;
     while(tmp->next!=NULL){
@@ -521,6 +730,14 @@ extern "C" {
     tmp->next->next=NULL;
   }
 
+  /**
+   * Access a specific map or set its value.
+   *
+   * @param m the map to search for the key
+   * @param key the key to search/add in the map
+   * @param value the value to add if the key does not exist
+   * @return a pointer on the map found or NULL if not found
+   */
   static map* getMapOrFill(map** m,const char *key,const char* value){
     map* tmp=*m;
     map* tmpMap=getMap(tmp,key);
@@ -535,6 +752,13 @@ extern "C" {
     return tmpMap;
   }
 
+  /**
+   * Verify if a map is contained in another map.
+   *
+   * @param m the map to search for i
+   * @param i the map to search in m
+   * @return true if i was found in m, false in other case
+   */
   static bool contains(map* m,map* i){
     while(i!=NULL){      
       if(strcasecmp(i->name,"value")!=0 &&
@@ -551,6 +775,15 @@ extern "C" {
     return true;
   }
 
+  /**
+   * Access a specific iotype from an elements.
+   *
+   * @param e the elements to search for the name
+   * @param name the name to search in the elements e
+   * @param values the map to verify it was contained in the defaults or 
+   *  supported content of the elements e
+   * @return a pointer on the iotype found or NULL if not found
+   */
   static iotype* getIoTypeFromElement(elements* e,char *name, map* values){
     elements* cursor=e;
     while(cursor!=NULL){
@@ -571,6 +804,13 @@ extern "C" {
     return NULL;
   }
 
+  /**
+   * Load binary values from a map (in) and add them to another map (out)
+   *
+   * @param out the map to add binaries values
+   * @param in the map containing the binary values to add ti out
+   * @param pos index of the binary in an array (in case of "MapArray")
+   */
   static void loadMapBinary(map** out,map* in,int pos){
     map* size=getMap(in,"size");
     map *lout=*out;
@@ -597,6 +837,14 @@ extern "C" {
     }
   }
   
+  /**
+   * Load binary values from a map (in) and add them to another map (out).
+   * This function will take care of MapArray.
+   * @see loadMapBinary
+   *
+   * @param out the map to add binaries values
+   * @param in the map containing the binary values to add ti out
+   */
   static void loadMapBinaries(map** out,map* in){
     map* size=getMap(in,"size");
     map* length=getMap(in,"length");
@@ -612,6 +860,12 @@ extern "C" {
 	loadMapBinary(out,in,-1);
   }
 
+  /**
+   * Duplicate a Maps
+   * 
+   * @param mo the maps to clone
+   * @return the allocated maps containing a copy of the mo maps
+   */
   static maps* dupMaps(maps** mo){
     maps* _cursor=*mo;
     maps* res=NULL;
@@ -630,6 +884,13 @@ extern "C" {
     return res;
   }
 
+  /**
+   * Add a maps at the end of another maps.
+   *
+   * @see addMapToMap, dupMaps, getMaps
+   * @param mo the maps to add mi
+   * @param mi the maps to add to mo
+   */
   static void addMapsToMaps(maps** mo,maps* mi){
     maps* tmp=mi;
     maps* _cursor=*mo;
@@ -651,6 +912,14 @@ extern "C" {
     }
   }
 
+  /**
+   * Access a specific map array element
+   *
+   * @param m the map to search for the key
+   * @param key the key to search in the map
+   * @param index of the MapArray 
+   * @return a pointer on the map found or NULL if not found
+   */
   static map* getMapArray(map* m,const char* key,int index){
     char tmp[1024];
     if(index>0)
@@ -669,6 +938,15 @@ extern "C" {
   }
 
 
+  /**
+   * Add a key value in a MapArray for a specific index
+   *
+   * @param m the map to search for the key
+   * @param key the key to search in the map
+   * @param index the index of the MapArray 
+   * @param value the value to set in the MapArray 
+   * @return a pointer on the map found or NULL if not found
+   */
   static void setMapArray(map* m,const char* key,int index,const char* value){
     char tmp[1024];
     if(index>0){
@@ -696,6 +974,13 @@ extern "C" {
       addToMap(m,tmp,value);
   }
 
+  /**
+   * Access the map "type"
+   *
+   * @param mt the map
+   * @return a pointer on the map for mimeType/dataType/CRS if found, NULL in
+   *  other case
+   */
   static map* getMapType(map* mt){
     map* tmap=getMap(mt,(char *)"mimeType");
     if(tmap==NULL){
@@ -710,6 +995,15 @@ extern "C" {
     return tmap;
   }
 
+  /**
+   * Add a Maps containing a MapArray to a Maps
+   *
+   * @see getMapType
+   * @param mo the maps
+   * @param mi the maps
+   * @param typ the map "type"
+   * @return 
+   */
   static int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
     maps* tmp=mi;    
     maps* _cursor=getMaps(*mo,tmp->name);
@@ -758,6 +1052,14 @@ extern "C" {
     return 0;
   }
 
+  /**
+   * Set a key value pair to a map contained in a Maps
+   *
+   * @param m the maps
+   * @param key the maps name
+   * @param subkey the map name included in the maps corresponding to key
+   * @param value the corresponding value to add in the map
+   */
   static void setMapInMaps(maps* m,const char* key,const char* subkey,const char *value){
     maps* _tmpm=getMaps(m,key);
     if(_tmpm!=NULL){
@@ -786,7 +1088,11 @@ extern "C" {
     }
   }
 
-
+  /**
+   * Dump an elements on stderr
+   *
+   * @param e the elements to dump
+   */
   static void dumpElements(elements* e){
     elements* tmp=e;
     while(tmp!=NULL){
@@ -817,6 +1123,11 @@ extern "C" {
     }
   }
 
+  /**
+   * Dump an elements on stderr using the YAML syntaxe
+   *
+   * @param e the elements to dump
+   */
   static void dumpElementsAsYAML(elements* e){
     elements* tmp=e;
     int i;
@@ -888,7 +1199,12 @@ extern "C" {
     }
   }
 
-
+  /**
+   * Duplicate an elements
+   * 
+   * @param e the elements to clone
+   * @return the allocated elements containing a copy of the elements e
+   */
   static elements* dupElements(elements* e){
     elements* cursor=e;
     elements* tmp=NULL;
@@ -938,6 +1254,13 @@ extern "C" {
     return tmp;
   }
 
+  /**
+   * Add an elements to another elements.
+   *
+   * @see dupElements
+   * @param m the elements to add the e
+   * @param e the elements to be added to m
+   */
   static void addToElements(elements** m,elements* e){
     elements* tmp=e;
     if(*m==NULL){
@@ -947,6 +1270,11 @@ extern "C" {
     }
   }
 
+  /**
+   * Dump a service on stderr
+   *
+   * @param s the service to dump
+   */
   static void dumpService(service* s){
     fprintf(stderr,"++++++++++++++++++\nSERVICE [%s]\n++++++++++++++++++\n",s->name);
     if(s->content!=NULL){
@@ -966,6 +1294,11 @@ extern "C" {
     fprintf(stderr,"++++++++++++++++++\n");
   }
 
+  /**
+   * Dump a service on stderr using the YAML syntaxe
+   *
+   * @param s the service to dump
+   */
   static void dumpServiceAsYAML(service* s){
     int i;
     fprintf(stderr,"# %s\n\n",s->name);
@@ -993,6 +1326,12 @@ extern "C" {
     }
   }
 
+  /**
+   * Convert a maps to a char*** (only used for Fortran support)
+   *
+   * @param m the maps to convert
+   * @param c the resulting array
+   */
   static void mapsToCharXXX(maps* m,char*** c){
     maps* tm=m;
     int i=0;
@@ -1023,6 +1362,12 @@ extern "C" {
     memcpy(c,tmp,10*10*1024);
   }
 
+  /**
+   * Convert a char*** to a maps (only used for Fortran support)
+   *
+   * @param c the array to convert
+   * @param m the resulting maps
+   */
   static void charxxxToMaps(char*** c,maps**m){
     maps* trorf=*m;
     int i,j;

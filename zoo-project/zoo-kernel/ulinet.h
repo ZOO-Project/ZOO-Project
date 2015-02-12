@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
@@ -55,7 +55,9 @@
 #ifdef _ULINET
 static char CCookie[MAX_REQ][1024];
 #else
-extern char HEADER[MAX_REQ][3072];
+/**
+ * The cookies found
+ */
 extern char CCookie[MAX_REQ][1024];
 #endif
 
@@ -63,46 +65,43 @@ extern char CCookie[MAX_REQ][1024];
 extern "C" {
 #endif
 
-  //static pthread_mutex_t hMutexConnect = PTHREAD_MUTEX_INITIALIZER;
-
-static char* waitingRequests[MAX_REQ];
-
 struct MemoryStruct {
-  char *memory;
-  size_t size;
+  char *memory; //!< the memory space to store data 
+  size_t size; //!< side of the memory space
 };
 
+  /**
+   * Individual CURL handler
+   */
 typedef struct {
-  CURL *handle;
-  struct curl_slist *header;
-  char* filename;
-  FILE* file;
-  size_t size;
-  unsigned char *pabyData;
-  char *mimeType;
-  int hasCacheFile;
-  int nDataLen;
-  int nDataAlloc;
-  int id;
+  CURL *handle; //!< the CURL handler
+  struct curl_slist *header; //!< the headers to send
+  char* filename; //!< the cached file name
+  FILE* file; //!< the file pointer
+  unsigned char *pabyData; //!< the downloaded content
+  char *mimeType; //!< the mimeType returned by the server
+  int hasCacheFile; //!< 1 if we used a cache file
+  int nDataLen; //!< the length of the downloaded content
+  int nDataAlloc; //!< 
+  int id; //!< The position of the element in the queue
 } _HINTERNET;
 
+  /**
+   * Multiple CURL handlers
+   */
 typedef struct {
-  CURLM *handle;
-  _HINTERNET ihandle[MAX_REQ];
-  char *waitingRequests[MAX_REQ];
-  char *agent;
-  int nb;
+  CURLM *handle; //!< the CURLM handler
+  _HINTERNET ihandle[MAX_REQ]; //!< individual handlers in the queue 
+  char *waitingRequests[MAX_REQ]; //!< request in the queue
+  char *agent; //!< The User-Agent to use for HTTP request
+  int nb; //!< number of element in the queue 
 } HINTERNET;
 
 size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data);
 
-size_t content_write_data(void *buffer, size_t size, size_t nmemb, void *data);
-
 size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data);
 
-
 void setProxy(CURL* handle,char* host,long port);
-
 
 #if defined(macintosh) || (defined(__MACH__) && defined(__APPLE__))
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2014 GeoLabs SARL
@@ -24,8 +24,11 @@
 
 #include "service_internal_python.h"
 
+/**
+ * The state for the zoo Python module
+ */
 struct module_state {
-    PyObject *error;
+   PyObject *error;
 };
 
 #if PY_MAJOR_VERSION >= 3
@@ -42,8 +45,20 @@ struct module_state {
 static struct module_state _state;
 #endif
 
+/**
+ * The exception for the zoo Python module
+ */
 static PyObject* ZooError;
 
+/**
+ * Function definitions for the zoo Python Module
+ *
+ * Define the following functions available from a service loaded and running
+ * from the ZOO-Kernel Python environment:
+ *  - "_" corresponding to the PythonTranslate function
+ *  - "updte_status" corresponding to the PythonUpdateStatus function
+ * @see PythonTranslate, PythonUpdateStatus
+ */
 PyMethodDef zooMethods[] = {
   {"_", PythonTranslate, METH_VARARGS, "Translate a string using the zoo-services textdomain."},
   {"update_status", PythonUpdateStatus, METH_VARARGS, "Update status percentage of a running process."},
@@ -75,6 +90,11 @@ static struct PyModuleDef moduledef = {
 };
 #endif
 
+/**
+ * Function to create and initialize the zoo Python module
+ *
+ * @return the Python module (for Python versions < 3, nothing for version >=3)
+ */
 PyMODINIT_FUNC init_zoo(){
   PyObject *tmp,*d;
   PyObject *module = 
@@ -114,6 +134,16 @@ PyMODINIT_FUNC init_zoo(){
 #endif
 }
 
+/**
+ * Loading a Python module then run the function corresponding to the service
+ * by passing the conf, inputs and outputs parameters by reference. 
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request the map containing the HTTP request
+ * @param s the service structure
+ * @param real_inputs the maps containing the inputs
+ * @param real_outputs the maps containing the outputs
+ */
 int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
   char *pythonpath;
   char *python_path;
@@ -270,6 +300,14 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   return res;
 }
 
+/**
+ * Repport Python error which may occur on loading the Python module or at 
+ * runtime.
+ * 
+ * @param m the conf maps containing the main.cfg settings
+ * @param module the service name
+ * @param load 1 if the Python module was not loaded yet
+ */
 void PythonZooReport(maps* m,const char* module,int load){
   PyObject *pName, *pModule, *pFunc;
   PyObject *ptype, *pvalue, *ptraceback,*pValue,*pArgs;
@@ -334,6 +372,14 @@ void PythonZooReport(maps* m,const char* module,int load){
   free(pbt);
 }
 
+/**
+ * Convert a maps to a Python dictionary
+ *
+ * @param t the maps to convert
+ * @return a new PyDictObject containing the converted maps
+ * @see PyDict_FromMap
+ * @warning make sure to free ressources returned by this function
+ */
 PyDictObject* PyDict_FromMaps(maps* t){
   PyObject* res=PyDict_New( );
   maps* tmp=t;
@@ -350,6 +396,13 @@ PyDictObject* PyDict_FromMaps(maps* t){
   return (PyDictObject*) res;
 }
 
+/**
+ * Convert a map to a Python dictionary
+ *
+ * @param t the map to convert
+ * @return a new PyDictObject containing the converted maps
+ * @warning make sure to free ressources returned by this function
+ */
 PyDictObject* PyDict_FromMap(map* t){
   PyObject* res=PyDict_New( );
   map* tmp=t;
@@ -460,6 +513,13 @@ PyDictObject* PyDict_FromMap(map* t){
   return (PyDictObject*) res;
 }
 
+/**
+ * Convert a Python dictionary to a maps 
+ *
+ * @param t the PyDictObject to convert
+ * @return a new maps containing the converted PyDictObject
+ * @warning make sure to free ressources returned by this function
+ */
 maps* mapsFromPyDict(PyDictObject* t){
   maps* res=NULL;
   maps* cursor=res;
@@ -500,6 +560,13 @@ maps* mapsFromPyDict(PyDictObject* t){
   return res;
 }
 
+/**
+ * Convert a Python dictionary to a map 
+ *
+ * @param t the PyDictObject to convert
+ * @return a new map containing the converted PyDictObject
+ * @warning make sure to free ressources returned by this function
+ */
 map* mapFromPyDict(PyDictObject* t){
   map* res=NULL;
   PyObject* list=PyDict_Keys((PyObject*)t);
@@ -539,6 +606,16 @@ map* mapFromPyDict(PyDictObject* t){
   return res;
 }
 
+/**
+ * Use the ZOO-Services messages translation function  from the Python
+ * environment
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value to the Python
+ *  environment
+ * @see _ss
+ */
 PyObject*
 PythonTranslate(PyObject* self, PyObject* args)
 {
@@ -552,6 +629,14 @@ PythonTranslate(PyObject* self, PyObject* args)
   return PyString_FromString(_ss(str));
 }
 
+/**
+ * Update the ongoing status of a running service from the Python environment
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return None to the Python environment
+ * @see _updateStatus
+ */
 PyObject*
 PythonUpdateStatus(PyObject* self, PyObject* args)
 {
