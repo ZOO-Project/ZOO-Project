@@ -454,14 +454,13 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       void *so = dlopen (tmps1, RTLD_LAZY);
 #endif
 #ifdef WIN32
-      DWORD errstr;
-      errstr = GetLastError ();
+      char* errstr = getLastErrorMessage();
 #else
       char *errstr;
       errstr = dlerror ();
 #endif
 #ifdef DEBUG
-      fprintf (stderr, "%s loaded (%d) \n", tmps1, errstr);
+	  fprintf (stderr, "%s loaded (%s) \n", tmps1, errstr);
 #endif
       if (so != NULL)
         {
@@ -493,7 +492,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 #ifdef DEBUG
 #ifdef WIN32
-              errstr = GetLastError ();
+			  errstr = getLastErrorMessage();
 #else
               errstr = dlerror ();
 #endif
@@ -528,8 +527,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
             {
 #ifdef DEBUG
 #ifdef WIN32
-              errstr = GetLastError ();
-              fprintf (stderr, "Function %s failed to load because of %d\n",
+			  errstr = getLastErrorMessage();
+              fprintf (stderr, "Function %s failed to load because of %s\n",
                        r_inputs->value, errstr);
 #endif
 #endif
@@ -548,7 +547,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               if (execute == NULL)
                 {
 #ifdef WIN32
-                  errstr = GetLastError ();
+				  errstr = getLastErrorMessage();
 #else
                   errstr = dlerror ();
 #endif
@@ -570,7 +569,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 
 #ifdef DEBUG
 #ifdef WIN32
-              errstr = GetLastError ();
+			  errstr = getLastErrorMessage();
 #else
               errstr = dlerror ();
 #endif
@@ -603,9 +602,9 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
        */
           char tmps[1024];
 #ifdef WIN32
-          DWORD errstr = GetLastError ();
+		  errstr = getLastErrorMessage();
 #else
-          char *errstr = dlerror ();
+	      errstr = dlerror ();
 #endif
           sprintf (tmps, _("C Library can't be loaded %s"), errstr);
 	  errorException(m,tmps,"InternalError",NULL);
@@ -2842,9 +2841,13 @@ runRequest (map ** inputs)
    * DataInputs and ResponseDocument / RawDataOutput
    */
   map* errI=NULL;
+#ifdef DEBUG  
   dumpMaps(request_input_real_format);
+#endif  
   char *dfv = addDefaultValues (&request_input_real_format, s1->inputs, m, 0,&errI);
+#ifdef DEBUG  
   dumpMaps(request_input_real_format);
+#endif  
   maps *ptr = request_input_real_format;
   while (ptr != NULL)
     {

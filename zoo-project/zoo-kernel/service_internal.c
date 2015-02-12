@@ -36,6 +36,12 @@
 #define FALSE -1
 #endif
 
+#ifndef WIN32
+#include <dlfcn.h>
+#endif
+
+#define ERROR_MSG_MAX_LENGTH 1024
+
 int isValidLang(maps* conf,const char *str){
   map *tmpMap=getMapFromMaps(conf,"main","lang");
   char *tmp=zStrdup(tmpMap->value);
@@ -151,7 +157,7 @@ semid getShmLockId(maps* conf, int nsems){
     if(sem_id==NULL){
 
 #ifdef DEBUG
-      fprintf(stderr,"Semaphore failed to create ! %s\n",GetLastError());
+      fprintf(stderr,"Semaphore failed to create: %s\n", getLastErrorMessage());
 #endif
       return NULL;
     }
@@ -165,7 +171,7 @@ semid getShmLockId(maps* conf, int nsems){
 int removeShmLock(maps* conf, int nsems){
   semid sem_id=getShmLockId(conf,1);
   if (CloseHandle(sem_id) == 0) {
-    fprintf(stderr,"Unable to remove semaphore %s",GetLastError());
+    fprintf(stderr,"Unable to remove semaphore: %s\n", getLastErrorMessage());
     return -1;
   }
 #ifdef DEBUG
@@ -231,7 +237,7 @@ int _updateStatus(maps *conf){
 				    TEXT(tmpMap->value));   // name of map object
   if (hMapObjectG == NULL){
 #ifdef DEBUG
-    fprintf(stderr,"Unable to create shared memory segment %d !! \n",GetLastError());
+    fprintf(stderr,"Unable to create shared memory segment: %s\n", getLastErrorMessage());
 #endif
     return -2;
   }
@@ -291,7 +297,7 @@ char* getStatus(int pid){
   if((GetLastError() != ERROR_ALREADY_EXISTS)){
 #ifdef DEBUG
     fprintf(stderr,"ERROR on line %d\n",__LINE__);
-    fprintf(stderr,"READING STRING S %s\n",GetLastError());
+    fprintf(stderr,"READING STRING S %s\n", getLastErrorMessage());
 #endif
     fIgnore = UnmapViewOfFile(lpvMem); 
     fIgnore = CloseHandle(hMapObject);
@@ -308,7 +314,7 @@ char* getStatus(int pid){
   if (lpvMem == NULL){
 #ifdef DEBUG
     fprintf(stderr,"READING STRING S %d\n",__LINE__);
-    fprintf(stderr,"READING STRING S %s\n",GetLastError());
+    fprintf(stderr,"READING STRING S %s\n", getLastErrorMessage());
 #endif
     return "-1"; 
   }
@@ -3731,4 +3737,41 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
   if(lres!=NULL){
     *res=lres;
   }
+}
+
+/* 
+ * The character string returned from getLastErrorMessage resides
+ * in a static buffer. The application should not write to this
+ * buffer or attempt to free() it.
+ */ 
+char* getLastErrorMessage() {                                                                                                                                                    
+#ifdef WIN32	
+	LPVOID lpMsgBuf;
+	DWORD errCode = GetLastError();
+	static char msg[ERROR_MSG_MAX_LENGTH];
+	size_t i;
+
+	DWORD length = FormatMessage(
+					 FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+					 FORMAT_MESSAGE_FROM_SYSTEM |
+					 FORMAT_MESSAGE_IGNORE_INSERTS,
+					 NULL,
+					 errCode,
+					 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					 (LPTSTR) &lpMsgBuf,
+					 0, NULL );	
+	
+	#ifdef UNICODE		
+		wcstombs_s( &i, msg, ERROR_MSG_MAX_LENGTH,
+					(wchar_t*) lpMsgBuf, _TRUNCATE );
+	#else
+		strcpy_s( msg, ERROR_MSG_MAX_LENGTH,
+	              (char *) lpMsgBuf );		
+	#endif	
+	LocalFree(lpMsgBuf);
+	
+	return msg;
+#else
+	return dlerror();
+#endif
 }
