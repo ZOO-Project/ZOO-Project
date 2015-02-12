@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2014 GeoLabs SARL
@@ -29,6 +29,19 @@ int argc=0;
 char **argv=NULL;
 #endif
 
+/**
+ * Load a Ruby file then run the function corresponding to the service by
+ * passing the conf, inputs and outputs parameters by value as JavaScript
+ * Objects.
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request the map containing the HTTP request
+ * @param s the service structure
+ * @param real_inputs the maps containing the inputs
+ * @param real_outputs the maps containing the outputs
+ * @return SERVICE_SUCCEEDED or SERVICE_FAILED if the service run, -1 
+ *  if the service failed to load or throw error at runtime.
+ */
 int zoo_ruby_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
 #if RUBY_API_VERSION_MAJOR >= 2 || RUBY_API_VERSION_MINOR == 9
   ruby_sysinit(&argc,&argv);
@@ -124,17 +137,35 @@ int zoo_ruby_support(maps** main_conf,map* request,service* s,maps **real_inputs
   return res;
 }
 
+/**
+ * Load a ruby file
+ *
+ * @arg the file to load
+ * @return Qnil
+ */
 VALUE LoadWrap(VALUE arg) {
   const char *filename = reinterpret_cast<const char*>(arg);
   rb_load_file(filename);
   return Qnil;
 }
 
+/**
+ * Call a ruby function with parameters
+ *
+ * @arg the callback structure
+ * @return the value returned the called ruby function
+ */
 VALUE FunCallWrap(VALUE rdata) {
   struct my_callback* data = (struct my_callback*) rdata;
   return rb_funcall2(data->obj,data->method_id,data->nargs,data->args);
 }
 
+/**
+ * Print the Ruby Stack Trace in an ows:ExceptionReport XML Document
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @see printExceptionReportResponse
+ */
 void ruby_trace_error(maps* m){
 #if RUBY_VERSION_MINOR == 8
   VALUE lasterr = rb_gv_get("$!");
@@ -173,6 +204,12 @@ void ruby_trace_error(maps* m){
   printExceptionReportResponse(m,err);
 }
 
+/**
+ * Convert a maps to a Ruby Hash
+ *
+ * @param t the maps to convert
+ * @return a new Ruby Hash
+ */
 VALUE RubyHash_FromMaps(maps* t){
   VALUE res=rb_hash_new();
   maps* tmp=t;
@@ -185,6 +222,14 @@ VALUE RubyHash_FromMaps(maps* t){
   return res;
 }
 
+/**
+ * Push the key on the array
+ *
+ * @param key the key to push
+ * @param value not used
+ * @param ary the Array
+ * @return ST_CONTINUE
+ */
 int
 keys_i(VALUE key,VALUE value,VALUE ary)
 {
@@ -193,12 +238,23 @@ keys_i(VALUE key,VALUE value,VALUE ary)
   return ST_CONTINUE;
 }
 
+/**
+ * Return the size of a Ruby Hash
+ * 
+ * @param hash the input Hash
+ */
 VALUE
 rb_hash_size(VALUE hash)
 {
     return INT2FIX(RHASH_TBL(hash)->num_entries);
 }
 
+/**
+ * Convert a map to a Ruby Hash
+ *
+ * @param t the map to convert
+ * @return a new Ruby Hash
+ */
 VALUE RubyHash_FromMap(map* t){
   VALUE res=rb_hash_new( );
   map* tmp=t;
@@ -276,7 +332,12 @@ VALUE RubyHash_FromMap(map* t){
   return res;
 }
 
-
+/**
+ * Convert a Ruby Hash to a maps
+ *
+ * @param t the Ruby Hash to convert
+ * @return a new maps
+ */
 maps* mapsFromRubyHash(VALUE t){
   maps* res=NULL;
   maps* cursor=res;
@@ -308,6 +369,12 @@ maps* mapsFromRubyHash(VALUE t){
   return res;
 }
 
+/**
+ * Convert a Ruby Hash to a map
+ *
+ * @param t the Ruby Hash to convert
+ * @return a new map
+ */
 map* mapFromRubyHash(VALUE t){
   map* res=NULL;
   VALUE list;
@@ -353,12 +420,32 @@ map* mapFromRubyHash(VALUE t){
   return res;
 }
 
+/**
+ * Use the ZOO-Services messages translation function from the Ruby
+ * environment (ZOO-API)
+ *
+ * @param argc the number of parameters
+ * @param argv the parameter values given from the Ruby environment
+ * @param obj the Ruby object on which we run the method
+ * @return a new Ruby string containing the translated value
+ * @see _ss
+ */
 VALUE
 RubyTranslate(int argc, VALUE *argv, VALUE obj)
 {
   return rb_str_new2(_ss(StringValueCStr(argv[0])));
 }
 
+/**
+ * Update the ongoing status of a running service from the Ruby environment
+ * (ZOO-API)
+ *
+ * @param argc the number of parameters
+ * @param argv the parameter values given from the Ruby environment
+ * @param obj the Ruby object on which we run the method
+ * @return a new Ruby string containing the translated value
+ * @see _updateStatus
+ */
 VALUE
 RubyUpdateStatus(int argc, VALUE *argv, VALUE obj)
 {
@@ -391,7 +478,7 @@ RubyUpdateStatus(int argc, VALUE *argv, VALUE obj)
     }
     else
       setMapInMaps(conf,"lenv","status","15");
-    updateStatus(conf);
+    _updateStatus(conf);
   }
   freeMaps(&conf);
   free(conf);

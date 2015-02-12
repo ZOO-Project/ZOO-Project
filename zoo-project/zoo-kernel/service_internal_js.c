@@ -104,7 +104,7 @@ JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
  * @param s the service structure
  * @param inputs the maps containing the inputs
  * @param outputs the maps containing the outputs
- * @return ZOO_SERVICE_SUCCEEDED or ZOO_SERVICE_FAILED if the service run, -1 
+ * @return SERVICE_SUCCEEDED or SERVICE_FAILED if the service run, -1 
  *  if the service failed to load or throw error at runtime.
  */
 int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps **outputs)
@@ -958,7 +958,7 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
  * @param argc the number of parameters
  * @param argv1 the parameter values
  * @return true
- * @see setHeader
+ * @see setHeader,_updateStatus
  */
 JSBool
 JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
