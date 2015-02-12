@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2010 GeoLabs SARL
@@ -47,6 +47,7 @@ extern "C" {
   map* mapFromJSObject(JSContext *,jsval);
   JSBool JSTranslate(JSContext*, uintN, jsval*);
   JSBool JSRequest(JSContext*, uintN, jsval*);
+  JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
 
   void reportError(JSContext *cx, const char *message, JSErrorReport *report);
   

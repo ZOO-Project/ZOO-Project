@@ -135,7 +135,7 @@ PyMODINIT_FUNC init_zoo(){
 }
 
 /**
- * Loading a Python module then run the function corresponding to the service
+ * Load a Python module then run the function corresponding to the service
  * by passing the conf, inputs and outputs parameters by reference. 
  *
  * @param main_conf the conf maps containing the main.cfg settings
@@ -301,7 +301,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 }
 
 /**
- * Repport Python error which may occur on loading the Python module or at 
+ * Report Python error which may occur on loading the Python module or at 
  * runtime.
  * 
  * @param m the conf maps containing the main.cfg settings
@@ -607,7 +607,7 @@ map* mapFromPyDict(PyDictObject* t){
 }
 
 /**
- * Use the ZOO-Services messages translation function  from the Python
+ * Use the ZOO-Services messages translation function from the Python
  * environment
  *
  * @param self the Python object on which we can run the method

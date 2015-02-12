@@ -644,46 +644,6 @@ char* getStatus(int pid){
 
 #endif
 
-#ifdef USE_JS
-
-JSBool
-JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
-{
-  jsval *argv = JS_ARGV(cx,argv1);
-  JS_MaybeGC(cx);
-  int istatus=0;
-  char *status=NULL;
-  maps *conf;
-  if(argc>2){
-#ifdef JS_DEBUG
-    fprintf(stderr,"Number of arguments used to call the function : %i",argc);
-#endif
-    return JS_FALSE;
-  }
-  conf=mapsFromJSObject(cx,argv[0]);
-  if(JS_ValueToInt32(cx,argv[1],&istatus)==JS_TRUE){
-    char tmpStatus[4];
-    sprintf(tmpStatus,"%i",istatus);
-    tmpStatus[3]=0;
-    status=strdup(tmpStatus);
-  }
-  if(getMapFromMaps(conf,"lenv","status")!=NULL){
-    if(status!=NULL){
-      setMapInMaps(conf,"lenv","status",status);
-      free(status);
-    }
-    else
-      setMapInMaps(conf,"lenv","status","15");
-    _updateStatus(conf);
-  }
-  freeMaps(&conf);
-  free(conf);
-  JS_MaybeGC(cx);
-  return JS_TRUE;
-}
-
-#endif
-
 
 /**
  * URLEncode an url

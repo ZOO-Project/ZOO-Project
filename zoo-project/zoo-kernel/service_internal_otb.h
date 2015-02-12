@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2015 GeoLabs SARL
@@ -42,7 +42,11 @@
 #include <vector>
 #include <string>
 
+/**
+ * A vector to store the ZooWatcher
+ */
 typedef std::vector<ZooWatcher *> WatcherListType;
+
 int zoo_otb_support(maps**,map*,service*,maps**,maps**);
 
 #endif

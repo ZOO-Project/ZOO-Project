@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2012 GeoLabs SARL
@@ -30,6 +30,14 @@
 
 static char dbg[1024];
 
+/**
+ * The function used as alert from the JavaScript environment (ZOO-API)
+ *
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ */
 JSBool
 JSAlert(JSContext *cx, uintN argc, jsval *argv1)
 {
@@ -47,6 +55,14 @@ JSAlert(JSContext *cx, uintN argc, jsval *argv1)
   return JS_TRUE;
 }
 
+/**
+ * The function used as importScript from the JavaScript environment (ZOO-API)
+ * 
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ */
 JSBool 
 JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
 {
@@ -78,9 +94,20 @@ JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
   return JS_TRUE;
 }
 
-
-int zoo_js_support(maps** main_conf,map* request,service* s,
-		   maps **inputs,maps **outputs)
+/**
+ * Load a JavaScript file then run the function corresponding to the service by
+ * passing the conf, inputs and outputs parameters by value as JavaScript
+ * Objects.
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request the map containing the HTTP request
+ * @param s the service structure
+ * @param inputs the maps containing the inputs
+ * @param outputs the maps containing the outputs
+ * @return ZOO_SERVICE_SUCCEEDED or ZOO_SERVICE_FAILED if the service run, -1 
+ *  if the service failed to load or throw error at runtime.
+ */
+int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps **outputs)
 {
   maps* main=*main_conf;
   maps* _inputs=*inputs;
@@ -354,6 +381,14 @@ int zoo_js_support(maps** main_conf,map* request,service* s,
   return res;
 }
 
+/**
+ * Load a JavaScript file
+ *
+ * @param cx the JavaScript context
+ * @param globale the global JavaScript object (not used)
+ * @param filename the file name to load
+ * @return a JavaScript Object on success, NULL if an errro occured
+ */
 JSObject * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
   struct stat api_status;
   int s=stat(filename, &api_status);
@@ -380,8 +415,14 @@ JSObject * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
   return NULL;
 }
 
+/**
+ * Convert a maps to a JavaScript Object
+ *
+ * @param cx the JavaScript context
+ * @param t the maps to convert
+ * @return a new JavaScript Object
+ */
 JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
-
   JSObject* res=JS_NewObject(cx, NULL, NULL, NULL);
   //JSObject *res = JS_NewArrayObject(cx, 0, NULL);
   if(res==NULL)
@@ -401,6 +442,13 @@ JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
   return res;
 }
 
+/**
+ * Convert a map to a JavaScript Object
+ *
+ * @param cx the JavaScript context
+ * @param t the map to convert
+ * @return a new JavaScript Object
+ */
 JSObject* JSObject_FromMap(JSContext *cx,map* t){
   JSObject* res=JS_NewObject(cx, NULL, NULL, NULL);
   jsval resf =  OBJECT_TO_JSVAL(res);
@@ -453,6 +501,13 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
   return res;
 }
 
+/**
+ * Convert a JavaScript Object to a maps
+ *
+ * @param cx the JavaScript context
+ * @param t the JavaScript Object to convert
+ * @return a new maps containing the JavaScript Object
+ */
 maps* mapsFromJSObject(JSContext *cx,jsval t){
   maps *res=NULL;
   maps *tres=NULL;
@@ -628,6 +683,13 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
   return res;
 }
 
+/**
+ * Convert a JavaScript Object to a map
+ *
+ * @param cx the JavaScript context
+ * @param t the JavaScript Object to convert
+ * @return a new map containing the JavaScript Object
+ */
 map* mapFromJSObject(JSContext *cx,jsval t){
   map *res=NULL;
   JSIdArray *idp=JS_Enumerate(cx,JSVAL_TO_OBJECT(t));
@@ -683,7 +745,13 @@ map* mapFromJSObject(JSContext *cx,jsval t){
   return res;
 }
 
-/* The error reporter callback. */
+/**
+ * Print debug information messages on stderr
+ *
+ * @param cx the JavaScript context
+ * @param message the error message
+ * @param report the JavaScript Error Report
+ */
 void reportError(JSContext *cx, const char *message, JSErrorReport *report)
 {
   sprintf(dbg,"%s:%u:%s\n",
@@ -696,6 +764,14 @@ void reportError(JSContext *cx, const char *message, JSErrorReport *report)
   fflush(stderr);
 }
 
+/**
+ * Convert a JavaScript value to a char*
+ *
+ * @param context the JavaScript context
+ * @param arg the JavaScript value
+ * @return a new char*
+ * @warning be sure to free the ressources returned by this function
+ */
 char* JSValToChar(JSContext* context, jsval* arg) {
   char *c;
   char *tmp;
@@ -723,6 +799,14 @@ char* JSValToChar(JSContext* context, jsval* arg) {
   return c;
 }
 
+/**
+ * Set the HTTP header of a request
+ *
+ * @param handle the HINTERNET handle
+ * @param cx the JavaScript context
+ * @param header the JavaScript Array containing the headers to send
+ * @return the HINTERNET handle
+ */
 HINTERNET setHeader(HINTERNET* handle,JSContext *cx,JSObject *header){
   jsuint length=0;
   jsint i=0;
@@ -757,6 +841,16 @@ HINTERNET setHeader(HINTERNET* handle,JSContext *cx,JSObject *header){
   return *handle;
 }
 
+/**
+ * The function used as ZOOTranslate from the JavaScript environment.
+ * Use the ZOO-Services messages translation function from the Python
+ * environment (ZOO-API)
+ *
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ */
 JSBool
 JSTranslate(JSContext *cx, uintN argc, jsval *argv1)
 {
@@ -768,6 +862,15 @@ JSTranslate(JSContext *cx, uintN argc, jsval *argv1)
   return JS_TRUE;
 }
 
+/**
+ * The function used as ZOORequest from the JavaScript environment (ZOO-API)
+ *
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ * @see setHeader
+ */
 JSBool
 JSRequest(JSContext *cx, uintN argc, jsval *argv1)
 {
@@ -846,3 +949,50 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
   JS_MaybeGC(cx);
   return JS_TRUE;
 }
+
+/**
+ * The function used as ZOOUpdateStatus from the JavaScript environment
+ * (ZOO-API).
+ *
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ * @see setHeader
+ */
+JSBool
+JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
+{
+  jsval *argv = JS_ARGV(cx,argv1);
+  JS_MaybeGC(cx);
+  int istatus=0;
+  char *status=NULL;
+  maps *conf;
+  if(argc>2){
+#ifdef JS_DEBUG
+    fprintf(stderr,"Number of arguments used to call the function : %i",argc);
+#endif
+    return JS_FALSE;
+  }
+  conf=mapsFromJSObject(cx,argv[0]);
+  if(JS_ValueToInt32(cx,argv[1],&istatus)==JS_TRUE){
+    char tmpStatus[4];
+    sprintf(tmpStatus,"%i",istatus);
+    tmpStatus[3]=0;
+    status=strdup(tmpStatus);
+  }
+  if(getMapFromMaps(conf,"lenv","status")!=NULL){
+    if(status!=NULL){
+      setMapInMaps(conf,"lenv","status",status);
+      free(status);
+    }
+    else
+      setMapInMaps(conf,"lenv","status","15");
+    _updateStatus(conf);
+  }
+  freeMaps(&conf);
+  free(conf);
+  JS_MaybeGC(cx);
+  return JS_TRUE;
+}
+

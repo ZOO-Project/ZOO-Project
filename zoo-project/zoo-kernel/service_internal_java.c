@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2013 GeoLabs SARL
@@ -24,6 +24,16 @@
 
 #include "service_internal_java.h"
 
+/**
+ * Load a JAVA class then run the static public method corresponding to the 
+ * service by passing the conf, inputs and outputs parameters by reference.
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request the map containing the HTTP request
+ * @param s the service structure
+ * @param real_inputs the maps containing the inputs
+ * @param real_outputs the maps containing the outputs
+ */
 int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
@@ -248,6 +258,9 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 
 /**
  * Error handling: display stack trace in an ExceptionReport Document
+ *
+ * @param env the JNI environment pointer
+ * @param main_conf the conf maps containing the main.cfg settings
  */
 void displayStack(JNIEnv *env,maps* main_conf){
   map *tmpm=getMapFromMaps(main_conf,"main","tmpPath");
@@ -286,6 +299,16 @@ void displayStack(JNIEnv *env,maps* main_conf){
   free(err);
 }
 
+/**
+ * Create a string containing the JVM -XX:* option for a given map
+ * Depending on the map' name:
+ *  - in case the value is minus then the reult will be : -XX:-name
+ *  - in case the value is plus then the reult will be : -XX:+name
+ *  - in other cases the reult will be : -XX:name=value
+ *
+ * @param m the map containing the option
+ * @return a char* containing the valide JVM option (-XX:*)
+ */
 char *parseJVMXXOption(map* m){
   char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+5)*sizeof(char));
   if(strncasecmp(m->value,"minus",5)==0)
@@ -297,12 +320,30 @@ char *parseJVMXXOption(map* m){
   return res;
 }
 
+/**
+ * Create a string containing the JVM -X*:* option for a given map.
+ * The reult will be in the following format: -Xname:value
+ *
+ * @param m the map containing the option
+ * @return a char* containing the valide JVM option (-XX:*)
+ */
 char *parseJVMXOption(map* m){
   char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+5)*sizeof(char));
   sprintf(res,"-X%s:%s",m->name,m->value);
   return res;
 }
 
+/**
+ * Convert a maps to a JAVA HashMap<String,HashMap<String,String>>
+ *
+ * @param env the JNI environment pointer
+ * @param t the maps to convert
+ * @param scHashMapClass the HashMap class
+ * @param scHashMap_class the HashMap class
+ * @param scHashMap_constructor the pointer to the hashMap constructor method
+ * @return a created JAVA HashMap containing the converted maps
+ * @warning make sure to free ressources returned by this function
+ */
 jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHashMap_class,jmethodID scHashMap_constructor){
   jobject scObject,scObject1;
   if(scHashMap_constructor!=NULL){
@@ -438,6 +479,15 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
     return NULL;
 }
 
+/**
+ * Convert a JAVA HashMap<String,HashMap<String,String>> to a maps
+ *
+ * @param env the JNI environment pointer
+ * @param t the HashMap 
+ * @param scHashMapClass the hashMap class
+ * @return a created maps containing the converted HashMap
+ * @warning make sure to free ressources returned by this function
+ */
 maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 #ifdef DEBUG
   fprintf(stderr,"mapsFromHashMap start\n");
