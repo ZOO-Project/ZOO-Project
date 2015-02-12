@@ -173,7 +173,8 @@ extern "C" {
   int updateStatus( maps*,const int,const char*);
   char* getInputValue( maps*,const char*,size_t*);
   int  setOutputValue( maps*, const char*, char*, size_t);
-
+  
+  char* getLastErrorMessage();
 #ifdef __cplusplus
 }
 #endif
