@@ -167,8 +167,6 @@ extern "C" {
   int unlockShm(semid);
 
 #ifdef USE_JS
-  char* JSValToChar(JSContext*,jsval*);
-  JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
 #endif
   
   void readGeneratedFile(maps*,map*,char*);

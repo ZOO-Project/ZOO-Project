@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2015 GeoLabs SARL
@@ -30,36 +30,63 @@
 
 using namespace otb::Wrapper;
 
+/**
+ * The ZooWatcher list
+ */
 WatcherListType m_WatcherList;
+/**
+ * A pointer to the conf maps containing the main.cfg settings
+ */
 maps* m_Conf;
 
+/**
+ * The command to create a ZooWatcher and add it to the global m_WatcherList
+ */
 class MyCommand : public itk::Command
 {
  public:
   itkNewMacro( MyCommand );
  public:
 
+  /**
+   * The method that defines the action to be taken by the command. 
+   *
+   * @param caller an itk::Object pointer
+   * @param event an itk::EventObject pointer
+   */
   void Execute(itk::Object *caller, const itk::EventObject & event)
   {
     Execute( (const itk::Object *)caller, event);
   }
  
-  void Execute(const itk::Object * object, const itk::EventObject & event)
+  /**
+   * The method that defines the action to be taken by the command. 
+   * Create a new ZooWatcher instance then add it to the m_WatcherList.
+   *
+   * @param caller a const itk::Object pointer
+   * @param event an itk::EventObject pointer
+   * @see ZooWatcher,ZooWatcher::SetConf
+   */
+  void Execute(const itk::Object *caller, const itk::EventObject & event)
   {
     const AddProcessToWatchEvent* eventToWatch = dynamic_cast< const AddProcessToWatchEvent*> ( &event );
     std::string m_CurrentDescription = eventToWatch->GetProcessDescription();
-    std::cerr << "err_service_zooo start ccalled." << m_CurrentDescription << std::endl;
     ZooWatcher * watch = new ZooWatcher(eventToWatch->GetProcess(),
 					eventToWatch->GetProcessDescription());
     watch->SetConf(&m_Conf);
     m_WatcherList.push_back(watch);
   }
 
-
-
 };
 
-
+/**
+ * Replace all occurence of from by to in a str string
+ *
+ * @param str the string to transform
+ * @param from the string to replace
+ * @param to the string used as replacement
+ * @return the resulting string 
+ */
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
@@ -69,6 +96,16 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
+/**
+ * Load and run an OTB Application corresponding to the service by using inputs parameters.
+ * Define the m_Conf 
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request the map containing the HTTP request
+ * @param s the service structure
+ * @param real_inputs the maps containing the inputs
+ * @param real_outputs the maps containing the outputs
+ */
 int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
   maps* m=*main_conf;
   maps* inputs=*real_inputs;

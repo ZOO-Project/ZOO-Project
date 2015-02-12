@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  *  Copyright 2014 GeoLabs SARL. All rights reserved.
@@ -30,17 +30,20 @@
 static service* my_service=NULL;
 static map* current_content=NULL;
 static elements* current_element=NULL;
-static char* curr_key;
 
-/**
- * getServiceFromFile :
- * set service given as second parameter with informations extracted from the
- * definition file.
- */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * Read and parse a ZCFG file in YAML format 
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param file the file name to read
+ * @param service the service structure to fill
+ * @param name the service name
+ * @return 1 on success, -1 if error occured
+ */
 int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
   FILE *fh = fopen("test.yml", "r");
   if(current_content!=NULL){

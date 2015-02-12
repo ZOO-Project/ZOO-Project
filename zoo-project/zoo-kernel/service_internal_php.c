@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2010 GeoLabs SARL
@@ -40,6 +40,16 @@ zval*  php_Array_from_map(map*);
 maps* php_maps_from_Array(HashTable* t);
 map* php_map_from_HasTable(HashTable* t);
 
+/**
+ * Load a PHP script then run the function corresponding to the service by
+ * passing the conf, inputs and outputs parameters by reference.
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request the map containing the HTTP request
+ * @param s the service structure
+ * @param real_inputs the maps containing the inputs
+ * @param real_outputs the maps containing the outputs
+ */
 int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){	
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
@@ -100,6 +110,12 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   return res;
 }
 
+/**
+ * Convert a maps to a php Array
+ *
+ * @param t the maps to convert
+ * @return the php Array
+ */
 zval *php_Array_from_maps(maps* t){
   zval *mapArray;
   zval *mapArrayTmp;
@@ -114,6 +130,12 @@ zval *php_Array_from_maps(maps* t){
   return mapArray;
 }
 
+/**
+ * Convert a map to a php Array
+ *
+ * @param t the map to convert
+ * @return the php Array
+ */
 zval *php_Array_from_map(map* t){
   zval *mapArray;
   zval *mapArrayTmp;
@@ -134,6 +156,12 @@ zval *php_Array_from_map(map* t){
   return mapArray;
 }
 
+/**
+ * Convert a php Array to a maps
+ *
+ * @param t the php Array to convert
+ * @return the created maps
+ */
 maps* php_maps_from_Array(HashTable *t){
   maps* final_res=NULL;
   maps* cursor=final_res;
@@ -200,6 +228,12 @@ maps* php_maps_from_Array(HashTable *t){
   return final_res;
 }
 
+/**
+ * Convert a php Array to a map
+ *
+ * @param t the php Array to convert
+ * @return the created map
+ */
 map* php_map_from_HasTable(HashTable* t){
 #ifdef DEBUG
   fprintf(stderr,"mapsFromPHPArray start\n");
