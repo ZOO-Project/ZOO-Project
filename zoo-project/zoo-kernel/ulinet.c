@@ -1,9 +1,9 @@
-/**
+/*
  *  ulinet.c
  *
  * Author : Gérald FENOY
  *
- * Copyright (c) 2008-2010 GeoLabs SARL
+ * Copyright (c) 2008-2015 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,16 @@
 #define MAX_WAIT_MSECS 180*1000 /* Wait max. 180 seconds */
 #include "ulinet.h"
 #include <assert.h>
-  
+
+/**
+ * Write the downloaded content to a _HINTERNET structure
+ *
+ * @param buffer the buffer to read
+ * @param size size of each member
+ * @param nmemb number of element to read
+ * @param data the _HINTERNET structure to write in
+ * @return the size red, -1 if buffer is NULL
+ */
 size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
   size_t realsize = size * nmemb;
   _HINTERNET *psInternet;
@@ -57,6 +66,17 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
   return realsize;
 }
 
+/**
+ * In case of presence of "Set-Cookie" in the headers red, store the cookie
+ * identifier in CCookie
+ *
+ * @param buffer the buffer to read
+ * @param size size of each member
+ * @param nmemb number of element to read
+ * @param data the _HINTERNET structure to write in
+ * @return the size red, -1 if buffer is NULL
+ * @see CCookie
+ */
 size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
   if(strncmp("Set-Cookie: ",(char*)buffer,12)==0){
     int i;
@@ -81,8 +101,18 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
   return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
 };
 
-
+/**
+ * Define the proxy to use for a CURL handler
+ * 
+ * @param handle the CURL handler
+ * @param host the proxy host (including http://)
+ * @param port the proxy port
+ */
 void setProxy(CURL* handle,char* host,long port){
+  char* proxyDef=(char*)malloc((strlen(host)+10+2)*sizeof(char));
+  sprintf(proxyDef,"%s:%ld",host,port);
+  curl_easy_setopt(handle,CURLOPT_PROXY,proxyDef);
+  free(proxyDef);
 }
 
 /**
@@ -153,7 +183,10 @@ OSStatus setProxiesForProtcol(CURL* handle,const char *proto){
 }
 #else
 /**
- * Linux (Gnome)
+ * Should autodetect the proxy configuration (do nothing on linux)
+ *
+ * @param handle a CURL handle
+ * @param proto the protocol requiring the use of a proxy
  */
 bool setProxiesForProtcol(CURL* handle,const char *proto){
 #ifdef MSG_LAF_VERBOSE
@@ -163,6 +196,17 @@ bool setProxiesForProtcol(CURL* handle,const char *proto){
 }
 #endif
 
+/**
+ * Create a HINTERNET
+ *
+ * @param lpszAgent the HTPP User-Agent to use to send requests
+ * @param  dwAccessType type of access required
+ * @param  lpszProxyName the name of the proxy server(s) to use 
+ * @param  lpszProxyBypass ip address or host names which should not be routed
+ *  through the proxy
+ * @param  dwFlags Options (INTERNET_FLAG_ASYNC,INTERNET_FLAG_FROM_CACHE,INTERNET_FLAG_OFFLINE)
+ * @return the created HINTERNET
+ */
 HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags){
   HINTERNET ret;
   ret.handle=curl_multi_init();
@@ -172,6 +216,11 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
   return ret;
 }
 
+/**
+ * Close a HINTERNET connection and free allocated ressources
+ *
+ * @param handle0 the HINTERNET connection to close
+ */
 void InternetCloseHandle(HINTERNET* handle0){
   int i=0;
   for(i=0;i<handle0->nb;i++){
@@ -199,6 +248,16 @@ void InternetCloseHandle(HINTERNET* handle0){
   }
 }
 
+/**
+ * Create a new element in the download queue
+ *
+ * @param hInternet the HINTERNET connection to add the download link
+ * @param lpszUrl the url to download
+ * @param lpszHeaders the additional headers to be sent to the HTTP server
+ * @param dwHeadersLength the size of the additional headers
+ * @param dwFlags desired download mode (INTERNET_FLAG_NO_CACHE_WRITE for not using cache file)
+ * @param dwContext not used
+ */
 HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
 
   char filename[255];
@@ -288,6 +347,12 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   return *hInternet;
 };
 
+/**
+ * Download all opened urls in the queue
+ *
+ * @param hInternet the HINTERNET structure containing the queue
+ * @return 0
+ */
 int processDownloads(HINTERNET* hInternet){
   int still_running=0;
   int msgs_left=0;
@@ -306,6 +371,13 @@ int processDownloads(HINTERNET* hInternet){
   return 0;
 }
 
+/**
+ * Initialize the CCookie for a specific index (hInternet.nb)
+ *
+ * @param hInternet the HINTERNET structure to know the CCookie index to reset
+ * @return 1
+ * @see HINTERNET
+ */
 int freeCookieList(HINTERNET hInternet){
   memset(&CCookie[hInternet.nb][0],0,1024);
 #ifndef TIGER
@@ -314,6 +386,15 @@ int freeCookieList(HINTERNET hInternet){
   return 1;
 }
 
+/**
+ * Copy a downloaded content
+ * 
+ * @param hInternet the _HINTERNET structure
+ * @param lpBuffer the memory space to copy the downloaded content
+ * @param dwNumberOfBytesToRead the size of lpBuffer
+ * @param lpdwNumberOfBytesRead number of bytes red
+ * @return 1 on success, 0 if failure
+ */
 int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead, size_t *lpdwNumberOfBytesRead){
   int dwDataSize;
 

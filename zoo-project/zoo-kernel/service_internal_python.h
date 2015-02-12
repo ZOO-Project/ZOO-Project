@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  * Copyright (c) 2009-2010 GeoLabs SARL
@@ -39,7 +39,6 @@ PyDictObject* PyDict_FromMaps(maps* t);
 PyDictObject* PyDict_FromMap(map* t);
 
 maps* mapsFromPyDict(PyDictObject* t);
-void createMapsFromPyDict(maps**,PyDictObject*);
 map* mapFromPyDict(PyDictObject* t);
 
 int zoo_python_support(maps**,map*,service*,maps**,maps**);

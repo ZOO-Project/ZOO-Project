@@ -2680,7 +2680,7 @@ runRequest (map ** inputs)
                            xmlStrlen (cur1->name)) == 0)
                       {
               /**
-	       * Get every attribute from a Output node
+	       * Get every attribute from an Output node
 	       * mimeType, encoding, schema, uom, asReference
 	       */
                         const char *outs[5] =

@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  *  Copyright 2010  Fondazione Edmund Mach. All rights reserved.
