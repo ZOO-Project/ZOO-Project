@@ -725,8 +725,12 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   map *id = getMap (request_inputs, "identifier");
   map *di = getMap (request_inputs, "DataInputs");
 
-  char *dataInputsKVP = getMapsAsKVP (inputs, cgiContentLength, 0);
-  char *dataOutputsKVP = getMapsAsKVP (outputs, cgiContentLength, 1);
+  // The required size for the dataInputsKVP and dataOutputsKVP buffers
+  // may exceed cgiContentLength, hence a 2 kb extension. However, a 
+  // better solution would be to have getMapsAsKVP() determine the required
+  // buffer size before allocating memory.	
+  char *dataInputsKVP = getMapsAsKVP (inputs, cgiContentLength + 2048, 0);
+  char *dataOutputsKVP = getMapsAsKVP (outputs, cgiContentLength + 2048, 1);
 #ifdef DEBUG
   fprintf (stderr, "DATAINPUTSKVP %s\n", dataInputsKVP);
   fprintf (stderr, "DATAOUTPUTSKVP %s\n", dataOutputsKVP);
