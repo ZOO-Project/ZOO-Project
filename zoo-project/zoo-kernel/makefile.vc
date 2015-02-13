@@ -7,7 +7,7 @@
 
 !INCLUDE nmake.opt
 
-all:  zoo_loader.cgi zcfg2yaml
+all:  $(PROGRAMNAME) zcfg2yaml
 
 version.h:
 	set VERS=`svnversion .`
@@ -67,8 +67,8 @@ zoo_service_loader.obj: zoo_service_loader.c service.h
 zoo_loader.obj: zoo_loader.c service.h
 	$(CPP) /EHsc /c $(CFLAGS) zoo_loader.c
 
-zoo_loader.cgi: version.h zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
-	link zoo_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:zoo_loader.cgi $(LDFLAGS) $(LDFLAGSCGI)
+$(PROGRAMNAME): version.h zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
+	link zoo_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:$(PROGRAMNAME) $(LDFLAGS) $(LDFLAGSCGI)
 
 zcfg2yaml: version.h zcfg2yaml.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
 	link zcfg2yaml.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj /out:zcfg2yaml.exe $(LDFLAGS) $(LDFLAGSCGI)

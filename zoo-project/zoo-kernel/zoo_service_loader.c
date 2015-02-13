@@ -122,6 +122,12 @@ extern "C"
 #define _(String) dgettext ("zoo-kernel",String)
 #define __(String) dgettext ("zoo-service",String)
 
+#ifdef WIN32
+  #ifndef PROGRAMNAME
+    #define PROGRAMNAME "zoo_loader.cgi"
+  #endif
+#endif
+
 extern int getServiceFromFile (maps *, const char *, service **);
 
 int
@@ -769,8 +775,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
       free (r_inputs1);
     }
   char *tmp1 = zStrdup (tmp);
-  sprintf (tmp, "\"zoo_loader.cgi\" %s \"%s\"", tmp1, sid->value);
-
+  sprintf (tmp, "\"%s\" %s \"%s\"", PROGRAMNAME, tmp1, sid->value);
   free (dataInputsKVP);
   free (dataOutputsKVP);
 #ifdef DEBUG
