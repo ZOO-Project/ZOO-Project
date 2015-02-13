@@ -968,23 +968,31 @@ runRequest (map ** inputs)
   else
     setMapInMaps (m, "main", "isSoap", "false");
 
-  if (strlen (cgiServerName) > 0)
-    {
-      char tmpUrl[1024];
-      if (strncmp (cgiServerPort, "80", 2) == 0)
-        {
-          sprintf (tmpUrl, "http://%s%s", cgiServerName, cgiScriptName);
-        }
-      else
-        {
-          sprintf (tmpUrl, "http://%s:%s%s", cgiServerName, cgiServerPort,
-                   cgiScriptName);
-        }
+  if(strlen(cgiServerName)>0)
+  {
+    char tmpUrl[1024];
+	
+	if ( getenv("HTTPS") != NULL && strncmp(getenv("HTTPS"), "on", 2) == 0 ) { // Knut: check if non-empty instead of "on"?		
+		if ( strncmp(cgiServerPort, "443", 3) == 0 ) { 
+			sprintf(tmpUrl, "https://%s%s", cgiServerName, cgiScriptName);
+		}
+		else {
+			sprintf(tmpUrl, "https://%s:%s%s", cgiServerName, cgiServerPort, cgiScriptName);
+		}
+	}
+	else {
+		if ( strncmp(cgiServerPort, "80", 2) == 0 ) { 
+			sprintf(tmpUrl, "http://%s%s", cgiServerName, cgiScriptName);
+		}
+		else {
+			sprintf(tmpUrl, "http://%s:%s%s", cgiServerName, cgiServerPort, cgiScriptName);
+		}
+	}
 #ifdef DEBUG
-      fprintf (stderr, "*** %s ***\n", tmpUrl);
+    fprintf(stderr,"*** %s ***\n",tmpUrl);
 #endif
-      setMapInMaps (m, "main", "serverAddress", tmpUrl);
-    }
+    setMapInMaps(m,"main","serverAddress",tmpUrl);
+  }
 
   /**
    * Check for minimum inputs
@@ -1088,7 +1096,7 @@ runRequest (map ** inputs)
        */
       int saved_stdout = dup (fileno (stdout));
       dup2 (fileno (stderr), fileno (stdout));
-      if (int res =
+      if (int res =		  
           recursReaddirF (m, n, conf_dir, NULL, saved_stdout, 0,
                           printGetCapabilitiesForProcess) < 0)
         {
