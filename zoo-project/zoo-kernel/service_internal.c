@@ -136,14 +136,14 @@ char* _getStatus(maps* conf,int pid){
      lockid<0
 #endif
      ){
-    char tmp[3];
+	char* tmp = (char*) malloc(3*sizeof(char));
     sprintf(tmp,"%d",ZOO_LOCK_CREATE_FAILED);
     return tmp;
   }
   if(lockShm(lockid)<0){
     fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-    fflush(stderr);
-    char tmp[3];
+    fflush(stderr);    
+	char* tmp = (char*) malloc(3*sizeof(char));
     sprintf(tmp,"%d",ZOO_LOCK_ACQUIRE_FAILED);
     return tmp;
   }
@@ -2825,6 +2825,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 		  ext=createMap("extension","kml");
 		else if(strncmp(mtype->value,"image/",6)==0)
 		  ext=createMap("extension",strstr(mtype->value,"/")+1);
+	    else if(strcasecmp(mtype->value,"text/html")==0)
+	      ext=createMap("extension","html");	  
 		else
 		  ext=createMap("extension","txt");
 	      }
