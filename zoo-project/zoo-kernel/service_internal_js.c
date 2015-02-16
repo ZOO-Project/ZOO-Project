@@ -385,7 +385,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
  * Load a JavaScript file
  *
  * @param cx the JavaScript context
- * @param globale the global JavaScript object (not used)
+ * @param global the global JavaScript object (not used)
  * @param filename the file name to load
  * @return a JavaScript Object on success, NULL if an errro occured
  */

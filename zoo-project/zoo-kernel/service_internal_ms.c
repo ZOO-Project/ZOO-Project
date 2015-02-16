@@ -22,7 +22,9 @@
  * THE SOFTWARE.
  */
 
-#ifdef USE_MS
+/**
+ * Cross platform definition of layerObj->class
+ */
 #ifndef WIN32
 #define CLASS class
 #else
@@ -31,12 +33,16 @@
 #include "service_internal_ms.h"
 
 /**
+ * Get a list of configuration keys having a corresponding mandatory ows_*.
  * Map composed by a main.cfg maps name as key and the corresponding 
  * MapServer Mafile Metadata name to use
  * see doc from here :
  *  - http://mapserver.org/ogc/wms_server.html
  *  - http://mapserver.org/ogc/wfs_server.html
  *  - http://mapserver.org/ogc/wcs_server.html
+ *
+ * @return a new map containing a table linking a name of a configuration key
+ * to a corresponding mandatory ows_* keyword (ie. "fees" => "ows_fees").
  */
 map* getCorrespondance(){
   map* res=createMap("encoding","ows_encoding");
@@ -66,6 +72,17 @@ map* getCorrespondance(){
   return res;
 }
 
+/**
+ * Add width and height keys to an output maps containing the maximum width
+ * and height for displaying the full data extent.
+ * Restriction to an image having a size of 640x480 (width * height)
+ *
+ * @param output 
+ * @param minx the lower left x coordinate
+ * @param miny the lower left y coordinate
+ * @param maxx the upper right x coordinate
+ * @param maxy the upper right y coordinate
+ */
 void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
   double maxWidth=640;
   double maxHeight=480;
@@ -103,6 +120,13 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
   }
 }
 
+/**
+ * Add a Reference key to an output containing the WMFS/WFS/WCS request for
+ * accessing service result
+ * 
+ * @param m the conf maps containing the main.cfg settings
+ * @param tmpI the specific output maps to add the Reference key
+ */
 void setReferenceUrl(maps* m,maps* tmpI){
   outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
@@ -204,8 +228,14 @@ void setReferenceUrl(maps* m,maps* tmpI){
 }
 
 /**
- * Set projection using Authority Code and Name if available or fallback to 
- * proj4 definition if available or fallback to default EPSG:4326
+ * Set projection for a layer in a MAPFILE using Authority Code and Name if
+ * available or fallback to proj4 definition if available or fallback to
+ * default EPSG:4326
+ *
+ * @param output the output maps
+ * @param m the opened mapObj
+ * @param myLayer the layerObj
+ * @param pszProjection a char* containing the SRS definition in WKT format
  */
 void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 			char* pszProjection){
@@ -298,6 +328,19 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
   OSRDestroySpatialReference( hSRS );
 }
 
+/**
+ * Set the MAPFILE extent, the the ows_extent for the layer, add wms_extent and
+ * wfs_extent to the output maps and call setMapSize.
+ *
+ * @param output the specific output
+ * @param m the mapObj
+ * @param myLayer the layerObj
+ * @param minX the lower left x coordinate
+ * @param minY the lower left y coordinate
+ * @param maxX the upper right x coordinate
+ * @param maxY the upper right y coordinate
+ * @see setMapSize
+ */
 void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
 		 double minX,double minY,double maxX,double maxY){
   msMapSetExtent(m,minX,minY,maxX,maxY);
@@ -356,6 +399,13 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
   setMapSize(output,minX,minY,maxX,maxY);
 }
 
+/**
+ * Try to open a vector output and define the corresponding layer in the MAPFILE
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param output the specific output maps
+ * @param m the mapObj
+ */
 int tryOgr(maps* conf,maps* output,mapObj* m){
 
   map* tmpMap=getMap(output->content,"storage");
@@ -662,7 +712,13 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   return 1;
 }
 
-
+/**
+ * Try to open a raster output and define the corresponding layer in the MAPFILE
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param output the specific output maps
+ * @param m the mapObj
+ */
 int tryGdal(maps* conf,maps* output,mapObj* m){
   map* tmpMap=getMap(output->content,"storage");
   char *pszFilename=tmpMap->value;
@@ -913,11 +969,14 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 
 /**
  * Create a MapFile for WMS, WFS or WCS Service output
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param outputs a specific output maps
  */
 void outputMapfile(maps* conf,maps* outputs){
 
   /**
-   * Firs store the value on disk
+   * First store the value on disk
    */
   map* mime=getMap(outputs->content,"mimeType");
   char *ext="data";
@@ -1105,4 +1164,3 @@ void outputMapfile(maps* conf,maps* outputs){
   msFreeMap(myMap);
 }
 
-#endif

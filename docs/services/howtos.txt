@@ -145,20 +145,58 @@ Service, the HelloPy one.
 
 .. code-block:: python
 
+  import zoo
   import sys
   def HelloPy(conf,inputs,outputs):
      outputs["Result"]["value"]="Hello "+inputs["a"]["value"]+" from Python World !"
-     return 3
+     return zoo.SERVICE_SUCCEEDED
 
 PHP
 ---
+
+ZOO-API
+*******
+
+The ZOO-API for the PHP language is automatically available from your
+service code. Tthe following functions are defined in the ZOO-API:
+
+int zoo_SERVICE_SUCCEEDED()
+    return the value of SERVICE_SUCCEEDED
+int zoo_SERVICE_FAILED()
+    return the value of SERVICE_FAILED
+string zoo_Translate(string a)
+    return the translated string (using the "zoo-service" `textdomain
+    <http://www.gnu.org/software/libc/manual/html_node/Locating-gettext-catalog.html#index-textdomain>`__)
+
+void zoo_UpdateStatus(Array conf,string message,int pourcent)
+    update the status of the running service
+
+PHP ZCFG requirements
+**********************************
+
+The ZCFG file should contain the following :
+
+serviceType
+    PHP 
+serviceProvider
+    The name of the php script (ie. service.php) to use as a ZOO Service Provider.
+
+PHP Data Structure used
+********************************
+
+The three parameters are passed to the PHP function as 
+`Arrays <php.net/manual/language.types.array.php>`__.
+
+Sample ZOO PHP Services Provider
+******************************************
 
 .. code-block:: php
 
   <?
   function HelloPHP(&$main_conf,&$inputs,&$outputs){
-     $outputs["Result"]["value"]="Hello ".$inputs[S][value]." from PHP world !";
-     return 3;
+     $tmp="Hello ".$inputs[S][value]." from PHP world !";
+     $outputs["Result"]["value"]=zoo_Translate($tmp)
+     return zoo_SERVICE_SUCCEEDED();
   }
   ?>
 
@@ -202,12 +240,11 @@ serviceProvider
     java class, located in the same directory as your ZOO-Kernel, was
     named ``HelloWorld.class`` then you should use ``HelloWorld``.
 
-
 Java Data Structure used
 ********************************
 
-The three parameters of the function are passed to the Java function
-as `java.util.HashMap <http://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html>`__.
+The three parameters are passed to the Java function as 
+`java.util.HashMap <http://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html>`__.
 
 Sample ZOO Java Services Provider
 ******************************************
