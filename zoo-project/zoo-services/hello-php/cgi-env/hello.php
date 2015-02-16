@@ -25,9 +25,10 @@
  */
 
 function HelloPHP(&$main_conf,&$inputs,&$outputs){
-  $outputs=Array();
-  $outputs["Result"]["value"]="Hello ".$inputs[S][value]." from the PHP world !!";
-  return 3;
+  $tmp="Hello ".$inputs["S"]["value"]." from the PHP world !!";
+  $outputs["Result"]["value"]=zoo_Translate($tmp);
+  zoo_UpdateStatus($main_conf,"Final step",99);
+  return zoo_SERVICE_SUCCEEDED();
 }
 
 ?>
