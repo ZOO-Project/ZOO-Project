@@ -25,6 +25,10 @@
 #ifdef WIN32
   #define NO_FCGI_DEFINES
 #endif
+
+#ifndef ZEND_DEBUG
+  #define ZEND_DEBUG 0
+#endif  
  
 #include "service_internal_php.h"
 

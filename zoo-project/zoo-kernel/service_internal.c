@@ -3510,8 +3510,11 @@ char* getMd5(char* url){
  * @param content the downloaded content
  * @param mimeType the content mimeType 
  * @param length the content size
+ * @param filepath a buffer for storing the path of the cached file; may be NULL
+ * @param max_path the size of the allocated filepath buffer  
  */
-void addToCache(maps* conf,char* request,char* content,char* mimeType,int length){
+void addToCache(maps* conf,char* request,char* content,char* mimeType,int length, 
+                char* filepath, size_t max_path){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
   if(tmp!=NULL){
     char* md5str=getMd5(request);
@@ -3523,11 +3526,18 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
 #endif
     FILE* fo=fopen(fname,"w+");
     if(fo==NULL){
-      fprintf (stderr, "Failed to open %s for writting: %s\n",fname, strerror(errno));
+#ifdef DEBUG		
+      fprintf (stderr, "Failed to open %s for writing: %s\n",fname, strerror(errno));
+#endif
+      filepath = NULL;	
       return;
     }
     fwrite(content,sizeof(char),length,fo);
     fclose(fo);
+	
+	if (filepath != NULL) {
+		strncpy(filepath, fname, max_path);
+	}	
 
     sprintf(fname,"%s/%s.zcm",tmp->value,md5str);
     fo=fopen(fname,"w+");
@@ -3540,6 +3550,9 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
     free(md5str);
     free(fname);
   }
+  else {
+	  filepath = NULL;
+  }	  
 }
 
 /**
@@ -3664,7 +3677,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	      free(fname);
 	    }
 	    addToMap(content->content,sname,ltmp1);
-	    addToCache(*m,tmp1->value,fcontent,mimeType,fsize);
+	    addToCache(*m,tmp1->value,fcontent,mimeType,fsize, NULL, 0);
 	    free(fcontent);
 	    free(mimeType);
 	    dumpMaps(content);
@@ -3766,7 +3779,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   sprintf(ltmp1,"%d",fsize);
   addToMap(*content,"size",ltmp1);
   if(cached==NULL){
-    addToCache(*m,url,fcontent,mimeType,fsize);
+    addToCache(*m,url,fcontent,mimeType,fsize, NULL, 0);
   }
   else{
     addToMap(*content,"isCached","true");

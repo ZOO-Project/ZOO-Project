@@ -750,27 +750,45 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   map *tmpPath = getMapFromMaps (m, "lenv", "cwd");
 
   map *tmpReq = getMap (request_inputs, "xrequest");
-  if (r_inputs2 != NULL)
+  
+  if(r_inputs2 != NULL && tmpReq != NULL) {
+	const char key[] = "rfile=";
+	char* kvp = (char*) malloc((FILENAME_MAX + strlen(key))*sizeof(char));
+	char* filepath = kvp + strlen(key);
+	strncpy(kvp, key, strlen(key));
+	addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value), 
+	           filepath, FILENAME_MAX);				   
+    if (filepath == NULL) {
+        errorException( m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);  
+		return;
+    }	
+	sprintf(tmp,"\"metapath=%s&%s&cgiSid=%s",
+	        r_inputs1->value,kvp,sid->value);
+    sprintf(tmpq,"metapath=%s&%s",
+	        r_inputs1->value,kvp);
+	free(kvp);		
+  }
+  else if (r_inputs2 != NULL)
     {
       sprintf (tmp,
-               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s\"",
+               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
                r_inputs2->name, dataOutputsKVP, sid->value);
       sprintf (tmpq,
                "metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
-               r_inputs2->name, dataOutputsKVP);
+               r_inputs2->name, dataOutputsKVP);		   
     }
   else
     {
       sprintf (tmp,
-               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s\"",
+               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
                sid->value);
       sprintf (tmpq,
                "metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
-               sid->value);
+               sid->value);   
     }
 
   if (hasIn > 0)
@@ -779,7 +797,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
       free (r_inputs1);
     }
   char *tmp1 = zStrdup (tmp);
-  sprintf (tmp, "\"%s\" %s \"%s\"", PROGRAMNAME, tmp1, sid->value);
+  sprintf (tmp, "\"%s\" %s \"%s\"", PROGRAMNAME, tmp1, sid->value);  
   free (dataInputsKVP);
   free (dataOutputsKVP);
 #ifdef DEBUG
@@ -793,6 +811,9 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 
   SetEnvironmentVariable ("CGISID", TEXT (sid->value));
   SetEnvironmentVariable ("QUERY_STRING", TEXT (tmpq));
+  // knut: Prevent REQUEST_METHOD=POST in background process call to cgic:main (process hangs when reading cgiIn):
+  SetEnvironmentVariable("REQUEST_METHOD", "GET");
+  
   char clen[1000];
   sprintf (clen, "%d", strlen (tmpq));
   SetEnvironmentVariable ("CONTENT_LENGTH", TEXT (clen));
@@ -812,17 +833,31 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 #ifdef DEBUG
       fprintf (stderr, "CreateProcess failed (%d).\n", GetLastError ());
 #endif
+      if (tmp != NULL) {
+        free(tmp);
+      }
+      if (tmpq != NULL) {
+        free(tmpq);
+      }		
       return;
     }
   else
     {
 #ifdef DEBUG
-      fprintf (stderr, "CreateProcess successfull (%d).\n\n\n\n",
+      fprintf (stderr, "CreateProcess successful (%d).\n\n\n\n",
                GetLastError ());
 #endif
     }
   CloseHandle (pi.hProcess);
   CloseHandle (pi.hThread);
+  
+  if (tmp != NULL) {
+    free(tmp);
+  }
+  if (tmpq != NULL) {
+    free(tmpq);
+  }
+  
 #ifdef DEBUG
   fprintf (stderr, "CreateProcess finished !\n");
 #endif
@@ -1366,6 +1401,7 @@ runRequest (map ** inputs)
       return errorException (m, _("Unable to allocate memory."),
                              "InternalError", NULL);
     }
+
   r_inputs = getMap (request_inputs, "MetaPath");
   if (r_inputs != NULL)
     snprintf (tmps1, 1024, "%s/%s", ntmp, r_inputs->value);
@@ -2820,17 +2856,12 @@ runRequest (map ** inputs)
                     cur1 = cur1->next;
                     while (cur1 != NULL && cur1->type != XML_ELEMENT_NODE)
                       cur1 = cur1->next;
+				  
+					if (request_output_real_format == NULL)
+					  request_output_real_format = dupMaps (&tmpmaps);
+					else
+					  addMapsToMaps (&request_output_real_format, tmpmaps);
                   }
-              }
-            if (request_output_real_format == NULL)
-              request_output_real_format = dupMaps (&tmpmaps);
-            else
-              addMapsToMaps (&request_output_real_format, tmpmaps);
-            if (tmpmaps != NULL)
-              {
-                freeMaps (&tmpmaps);
-                free (tmpmaps);
-                tmpmaps = NULL;
               }
           }
       xmlXPathFreeObject (tmpsptr);

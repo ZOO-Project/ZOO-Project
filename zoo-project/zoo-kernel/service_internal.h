@@ -211,8 +211,8 @@ extern "C" {
 
   xmlNodePtr soapEnvelope(maps*,xmlNodePtr);
   int checkForSoapEnvelope(xmlDocPtr);
-
-  void addToCache(maps*,char*,char*,char*,int);
+  
+  void addToCache(maps*,char*,char*,char*,int,char*,size_t);
   char* isInCache(maps*,char*);
   int runHttpRequests(maps**,maps**,HINTERNET*);
   int loadRemoteFile(maps**,map**,HINTERNET*,char*);
