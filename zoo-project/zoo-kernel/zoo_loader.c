@@ -172,10 +172,19 @@ int cgiMain(){
 #ifdef DEBUG
       fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,value);
 #endif
+#ifdef WIN32
+      char* tmp = url_decode(value); 
+      if(tmpMap!=NULL)		
+        addToMap(tmpMap,*arrayStep,tmp);
+      else		
+        tmpMap=createMap(*arrayStep,tmp);
+      free(tmp);
+#else
       if(tmpMap!=NULL)
-	addToMap(tmpMap,*arrayStep,value);
+        addToMap(tmpMap,*arrayStep,value);
       else
-	tmpMap=createMap(*arrayStep,value);
+        tmpMap=createMap(*arrayStep,value);
+#endif	
       arrayStep++;
       delete[]value;
     }
@@ -329,13 +338,19 @@ int cgiMain(){
       char *value=NULL;
       token1=strtok_r(token,"=",&saveptr1);
       while(token1!=NULL){
-	if(name==NULL)
-	  name=zStrdup(token1);
-	else
-	  value=zStrdup(token1);
-	token1=strtok_r(NULL,"=",&saveptr1);
+        if(name==NULL)
+          name=zStrdup(token1);
+        else
+          value=zStrdup(token1);
+        token1=strtok_r(NULL,"=",&saveptr1);
       }
-      addToMap(tmpMap,name,value);
+      //addToMap(tmpMap,name,value);
+	  /* knut: strtok(_r) ignores delimiter bytes at start and end of string; 
+	   * it will return non-empty string or NULL, e.g. "metapath=" yields value=NULL.
+	   * This modification sets value="" instead of NULL.
+	   */
+	  addToMap(tmpMap,name, value != NULL ? value : "");
+
       free(name);
       free(value);
       name=NULL;
