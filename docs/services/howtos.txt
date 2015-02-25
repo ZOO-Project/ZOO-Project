@@ -195,7 +195,7 @@ Sample ZOO PHP Services Provider
   <?
   function HelloPHP(&$main_conf,&$inputs,&$outputs){
      $tmp="Hello ".$inputs[S][value]." from PHP world !";
-     $outputs["Result"]["value"]=zoo_Translate($tmp)
+     $outputs["Result"]["value"]=zoo_Translate($tmp);
      return zoo_SERVICE_SUCCEEDED();
   }
   ?>
