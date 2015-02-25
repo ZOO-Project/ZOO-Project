@@ -14,8 +14,7 @@ Documentation Development Guide
 License
 -----------------
 
-The ZOO-Project documentation is released under the `Creative Commons Attribution-ShareAlike 4.0 International Public License <https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__
-(CC-BY-SA). This license must be kept when editing or creating a new documentation file.
+The ZOO-Project documentation is released under the `Creative Commons Attribution-ShareAlike 4.0 International Public License <https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__ (CC-BY-SA). This license must be kept when editing or creating a new documentation file.
 
 .. image:: ../../_static/images/by-sa.png
    :target: https://creativecommons.org/licenses/by-sa/4.0/legalcode/
