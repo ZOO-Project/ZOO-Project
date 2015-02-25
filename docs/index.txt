@@ -40,7 +40,21 @@ The committee would like to thank ``Hirofumi Hayashi`` and ``Daisuke Yoshida`` f
   
 The committee would also like to thank the early contributors to the documentation: ``Luca Delucchi``, ``René-Luc D'Hont``,  ``Angelos Tzotsos`` and ``Guillaume Sueur``.
 
-  
+License
+=======================
+
+The ZOO-Project documentation is released under the
+`Creative Commons Attribution-ShareAlike 4.0 International Public
+License < https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__
+(CC-BY-SA). This license must be kept when editing or creating a new
+documentation file.
+
+.. image:: ../../_static/images/by-sa.png
+   :target: https://creativecommons.org/licenses/by-sa/4.0/legalcode/
+   :height: 31px
+   :width:  88px
+
+
 ZOO Wiki
 ========
 
