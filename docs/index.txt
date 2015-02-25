@@ -19,19 +19,6 @@ Quick Links
     The entire documentation is also available as a single
     `PDF document <./ZOOProject.pdf>`__ |image|  and `ePub document <./ZOOProject.epub>`__
 
-License
-=======================
-
-The ZOO-Project documentation is released under the 
-`Creative Commons Attribution-ShareAlike 4.0 International Public License <https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__
-(CC-BY-SA). This license must be kept when editing or creating a new documentation file.
-
-.. image:: ../../_static/images/by-sa.png
-   :target: https://creativecommons.org/licenses/by-sa/4.0/legalcode/
-   :height: 31px
-   :width: 88px
-
-
 About ZOO Documentation
 =======================
 
