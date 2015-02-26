@@ -83,7 +83,6 @@ int cgiMain(){
   fprintf (stderr, "ContentLength: %d\n", cgiContentLength);
   fflush(stderr);
 #endif
-
   
   char *strQuery=NULL;
   if(cgiQueryString!=NULL)
@@ -133,29 +132,30 @@ int cgiMain(){
 	while (*arrayStep) {
 	  char *ivalue=new char[cgiContentLength];
 	  cgiFormStringNoNewlines(*arrayStep, ivalue, cgiContentLength);
-	  char* tmpValueFinal=(char*) malloc((strlen(*arrayStep)+strlen(ivalue)+1)*sizeof(char));
+	  char* tmpValueFinal=(char*) malloc((strlen(*arrayStep)+strlen(ivalue)+2)*sizeof(char));	
 	  sprintf(tmpValueFinal,"%s=%s",*arrayStep,ivalue);
-	  if(strlen(buffer)==0){
+
+	  if(strlen(buffer)==0){		
 	    sprintf(buffer,"%s",tmpValueFinal);
-	  }else{
+	  }else{		
 	    char *tmp=zStrdup(buffer);
 	    sprintf(buffer,"%s&%s",tmp,tmpValueFinal);
 	    free(tmp);
-	  }
+	  }	  
 	  free(tmpValueFinal);
 #ifdef DEBUG
 	  fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,ivalue);
 #endif
 	  delete[]ivalue;
 	  arrayStep++;
-	}
+	}	
 	if(tmpMap!=NULL)
 	  addToMap(tmpMap,"request",buffer);
 	else
 	  tmpMap=createMap("request",buffer);
       }
       delete[]buffer;
-    }
+    }	
   }
   else{
 #ifdef DEBUG
@@ -343,7 +343,7 @@ int cgiMain(){
         else
           value=zStrdup(token1);
         token1=strtok_r(NULL,"=",&saveptr1);
-      }
+      }	  
       //addToMap(tmpMap,name,value);
 	  /* knut: strtok(_r) ignores delimiter bytes at start and end of string; 
 	   * it will return non-empty string or NULL, e.g. "metapath=" yields value=NULL.

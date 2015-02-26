@@ -32,7 +32,7 @@ lex.sr.o: lex.sr.c service.h
 ulinet.o: ulinet.c
 	gcc -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
 
-service_internal.o: service_internal.c service.h
+service_internal.o: service_internal.c service.h mimetypes.h
 	g++ ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
 service_yaml.o: service_yaml.c service.h
