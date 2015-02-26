@@ -251,7 +251,7 @@ extern "C" {
       tmp=tmp->next;
     }
   }
-
+  
   /**
    * Dump a maps on stderr, see dumpMap().
    *
@@ -282,7 +282,7 @@ extern "C" {
     }
     fclose(file);
   }
-
+  
   /**
    * Create a new map
    *

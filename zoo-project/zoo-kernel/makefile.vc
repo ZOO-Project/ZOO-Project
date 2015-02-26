@@ -40,7 +40,7 @@ lex.sr.obj: lex.sr.c service.h
 zcfg2yaml.obj: zcfg2yaml.c
 	$(CPP) $(CFLAGS) /c zcfg2yaml.c
 
-service_internal.obj: service_internal.c
+service_internal.obj: service_internal.c mimetypes.h
 	$(CPP) $(CFLAGS) /c service_internal.c
 
 service_internal_js.obj: service_internal_js.c service.h
