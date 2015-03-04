@@ -28,7 +28,8 @@ extern "C" int yylex ();
 extern "C" int crlex ();
 
 #include "cgic.h"
-
+#include "zoo_amqp.h"
+#include "zoo_sql.h"
 extern "C"
 {
 #include <libxml/tree.h>
@@ -38,6 +39,8 @@ extern "C"
 #include <libxml/xpathInternals.h>
 #include <libgen.h>
 }
+
+
 #include "ulinet.h"
 #include "service_zcfg.h"
 #include <libintl.h>
@@ -271,11 +274,34 @@ sig_handler (int sig)
   exit (0);
 }
 
+#include "zoo_json.h"
 void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                    maps ** inputs, maps ** ioutputs, int *eres,FCGX_Stream *out, FCGX_Stream *err)
 {
  
+ json_object *obj;
+ mapstojson(&obj,*myMap);
+ fprintf(stderr,"myMaps: %s\n",json_object_to_json_string(obj));
+
+
+json_object *obj3;
+mapstojson(&obj3,*inputs);
+fprintf(stderr,"inputs: %s\n",json_object_to_json_string(obj3));
+
+
+json_object *obj1;
+ maptojson(&obj1,request_inputs);
+ fprintf(stderr,"request_inputs: %s\n",json_object_to_json_string(obj1));
+
+json_object *obj2;
+mapstojson(&obj2,*ioutputs);
+fprintf(stderr,"ioutputs: %s\n",json_object_to_json_string(obj2));
+
+
+
+ fflush(stderr);
+
 
  char tmps1[1024];
   char ntmp[1024];
@@ -424,7 +450,6 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif              
 
                   *eres = -1;
-                  return;
                 }
 
 #ifdef DEBUG
@@ -680,7 +705,6 @@ int
 runRequest (map ** inputs,struct cgi_env ** c,FCGX_Request *request)
 {
 
-
 struct cgi_env *cgi = *c;
 #ifndef USE_GDB
   (void) signal (SIGSEGV, sig_handler);
@@ -693,18 +717,52 @@ struct cgi_env *cgi = *c;
 
   map *r_inputs = NULL;
   map *request_inputs = *inputs;
-  maps *m = NULL;
-  char *REQUEST = NULL;
-  /**
-   * Parsing service specfic configuration file
-   */
-  
-  m = (maps *) malloc (MAPS_SIZE);
+  maps *m = (maps *) malloc (MAPS_SIZE);
+ 
   if (m == NULL)
     {
       return errorException (m, _("Unable to allocate memory."),
                              "InternalError", NULL,request->out);
     }
+
+  char *REQUEST = NULL;
+   map *store = getMap (request_inputs,"storeExecuteResponse");
+   map *status = getMap (request_inputs, "status");
+
+ /**
+   * 05-007r7 WPS 1.0.0 page 57 :
+   * 'If status="true" and storeExecuteResponse is "false" then the service 
+   * shall raise an exception.'
+   */
+  if (status != NULL && strcmp(status->value,"true") == 0 && store != NULL && strcmp (store->value, "false") == 0)
+    {
+      errorException (m,
+                      _
+                      ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
+                      "InvalidParameterValue", "storeExecuteResponse",request->out);
+      //freeService (&s1);
+      //free (s1);
+      freeMaps (&m);
+      free (m);
+      free (REQUEST);
+      return 1;
+    }
+
+
+
+/*
+ Si status =! NULLMAP le service est executÃ© enbackground
+*/
+ if (status != NULL)
+    if (strcasecmp (status->value, "false") == 0)
+      status = NULLMAP;
+
+
+
+  /**
+   * Parsing service specfic configuration file
+   */
+  
    
   char ntmp[1024];
 #ifndef WIN32
@@ -1090,49 +1148,9 @@ struct cgi_env *cgi = *c;
     }
 
   s1 = NULL;
-  /**s1 = (service *) malloc (SERVICE_SIZE);
-  if (s1 == NULL)
-    {
-      freeMaps (&m);
-      free (m);
-      free (REQUEST);
-      free (SERVICE_URL);
-      return errorException (m, _("Unable to allocate memory."),
-                             "InternalError", NULL);
-    }
-  r_inputs = getMap (request_inputs, "MetaPath");
-  if (r_inputs != NULL)
-    snprintf (tmps1, 1024, "%s/%s", ntmp, r_inputs->value);
-  else
-    snprintf (tmps1, 1024, "%s/", ntmp);
-   **/
   r_inputs = getMap (request_inputs, "Identifier");
-/**
-  char *ttmp = zStrdup (tmps1);
-  snprintf (tmps1, 1024, "%s/%s.zcfg", ttmp, r_inputs->value);
-  free (ttmp);
-#ifdef DEBUG
-  fprintf (stderr, "Trying to load %s\n", tmps1);
-#endif
-  if (strstr (r_inputs->value, ".") != NULL)
-    {
-      char *identifier = zStrdup (r_inputs->value);
-      parseIdentifier (m, conf_dir, identifier, tmps1);
-      map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
-      if (tmpMap != NULL)
-        addToMap (request_inputs, "metapath", tmpMap->value);
-      free (identifier);
-    }
-  else
-    setMapInMaps (m, "lenv", "Identifier", r_inputs->value);
-  int saved_stdout = dup (fileno (stdout));
-  dup2 (fileno (stderr), fileno (stdout));
-  t = readServiceFile (m, tmps1, &s1, r_inputs->value);
-  fflush (stdout);
-  **/
-  //int saved_stdout = dup (fileno (stdout));
-  //dup2 (saved_stdout, fileno (stdout));
-  s1 = search_service (r_inputs->value);
+  char * service_identifier = zStrdup (r_inputs->value);
+  s1 = search_service (service_identifier);
   if (s1 == NULL)
     {
       char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
@@ -1368,9 +1386,6 @@ struct cgi_env *cgi = *c;
           fprintf (stderr, "***%s***\n", pToken);
 #endif
           fflush (stderr);
-#ifdef DEBUG
-          fprintf (stderr, "***%s***\n", pToken);
-#endif
           inputs_as_text[i] =
             (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
           snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
@@ -1507,10 +1522,13 @@ struct cgi_env *cgi = *c;
                                tmpv1 + 1);
 #endif
                       addToMap (tmpmaps->content, tmpn1, tmpx2);
+                        
+                      if (status == NULLMAP){
+
 #ifndef WIN32
-                      if (CHECK_INET_HANDLE (hInternet))
+                        if (CHECK_INET_HANDLE (hInternet))
 #endif
-                        {
+                        {    
                           if (loadRemoteFile
                               (&m, &tmpmaps->content, &hInternet, tmpx2) < 0)
                             {
@@ -1524,15 +1542,14 @@ struct cgi_env *cgi = *c;
                               return 0;
                             }
                         }
+                        }
+                        
                       free (tmpx2);
                       addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
                     }
                   tmpc = strtok (NULL, "@");
                 }
-#ifdef DEBUG
-              dumpMaps (tmpmaps);
-              fflush (stderr);
-#endif
+              
               if (request_input_real_format == NULL)
                 request_input_real_format = dupMaps (&tmpmaps);
               else
@@ -1693,9 +1710,7 @@ struct cgi_env *cgi = *c;
 	     * mimeType, encoding, schema, href, method
 	     * Header and Body gesture should be added here
 	     */
-#ifdef DEBUG
-                      fprintf (stderr, "REFERENCE\n");
-#endif
+
                       const char *refs[5] =
                         { "mimeType", "encoding", "schema",
                         "method",
@@ -1727,6 +1742,7 @@ struct cgi_env *cgi = *c;
                                                    4) == 0)
                                       && CHECK_INET_HANDLE (hInternet))
                                     {
+                                      if (status == NULLMAP)
                                       if (loadRemoteFile
                                           (&m,
                                            &tmpmaps->content,
@@ -2881,37 +2897,7 @@ struct cgi_env *cgi = *c;
    * Need to check if we need to fork to load a status enabled 
    */
   r_inputs = NULL;
-  map *store = getMap (request_inputs,
-                       "storeExecuteResponse");
-  map *status = getMap (request_inputs, "status");
-  /**
-   * 05-007r7 WPS 1.0.0 page 57 :
-   * 'If status="true" and storeExecuteResponse is "false" then the service 
-   * shall raise an exception.'
-   */
-  if (status != NULL
-      &&
-      strcmp
-      (status->value,
-       "true") == 0 && store != NULL && strcmp (store->value, "false") == 0)
-    {
-      errorException (m,
-                      _
-                      ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
-                      "InvalidParameterValue", "storeExecuteResponse",request->out);
-      //freeService (&s1);
-      //free (s1);
-      freeMaps (&m);
-      free (m);
-      freeMaps (&request_input_real_format);
-      free (request_input_real_format);
-      freeMaps (&request_output_real_format);
-      free (request_output_real_format);
-      free (REQUEST);
-      free (SERVICE_URL);
-      return 1;
-    }
-  r_inputs = getMap (request_inputs, "storeExecuteResponse");
+  //r_inputs = getMap (request_inputs, "storeExecuteResponse");
   int eres = SERVICE_STARTED;
   int cpid = getpid ();
   /**
@@ -2935,8 +2921,9 @@ struct cgi_env *cgi = *c;
   maps *_tmpMaps = (maps *) malloc (MAPS_SIZE);
   _tmpMaps->name = zStrdup ("lenv");
   char tmpBuff[100];
-  sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
-  _tmpMaps->content = createMap ("usid", tmpBuff);
+  //sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
+  char *uuid = get_uuid();
+  _tmpMaps->content = createMap ("usid", uuid);
   _tmpMaps->next = NULL;
   sprintf (tmpBuff, "%i", cpid);
   addToMap (_tmpMaps->content, "sid", tmpBuff);
@@ -3050,8 +3037,6 @@ struct cgi_env *cgi = *c;
 #endif
   
 
-char *fbkp, *fbkp1;
-  FILE *f0, *f1;
   if (status != NULL)
     if (strcasecmp (status->value, "false") == 0)
       status = NULLMAP;
@@ -3062,120 +3047,45 @@ char *fbkp, *fbkp1;
          request_inputs,
          &request_input_real_format, &request_output_real_format, &eres,request->out,request->err);
     }
-  else
+
+/* processus en background */
+
+else
     {
-      int pid;
-#ifdef DEBUG
-      fprintf (stderr, "\nPID : %d\n", cpid);
-#endif
-#ifndef WIN32
-      pid = fork ();
-#else
-      if (cgiSid == NULL)
-        {
-          createProcess (m,
-                         request_inputs,
-                         s1,
-                         NULL,
-                         cpid,
-                         request_input_real_format,
-                         request_output_real_format);
-          pid = cpid;
-        }
-      else
-        {
-          pid = 0;
-          cpid = atoi (cgiSid);
-        }
-#endif
-      if (pid > 0)
-        {
-      /**
-       * dady :
-       * set status to SERVICE_ACCEPTED
-       */
-#ifdef DEBUG
-          fprintf (stderr,
-                   "father pid continue (origin %d) %d ...\n",
-                   cpid, getpid ());
-#endif
-          eres = SERVICE_ACCEPTED;
-        }
-      else if (pid == 0)
-        {
-      /**
-       * son : have to close the stdout, stdin and stderr to let the parent
-       * process answer to http client.
-       */
-          r_inputs = getMapFromMaps (m, "main", "tmpPath");
-          map *r_inputs1 = getMap (s1->content,
-                                   "ServiceProvider");
-          fbkp = (char *)
-            malloc ((strlen
-                     (r_inputs->value) +
-                     strlen (r_inputs1->value) + 1024) * sizeof (char));
-          sprintf (fbkp, "%s/%s_%d.xml", r_inputs->value,
-                   r_inputs1->value, cpid);
-          char *flog =
-            (char *)
-            malloc ((strlen (r_inputs->value) +
-                     strlen (r_inputs1->value) + 1024) * sizeof (char));
-          sprintf (flog, "%s/%s_%d_error.log", r_inputs->value,
-                   r_inputs1->value, cpid);
-#ifdef DEBUG
-          fprintf (stderr, "RUN IN BACKGROUND MODE \n");
-          fprintf (stderr,
-                   "son pid continue (origin %d) %d ...\n", cpid, getpid ());
-          fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
-#endif
-          freopen (flog, "w+", stderr);
-          f0 = freopen (fbkp, "w+", stdout);
-#ifndef WIN32
-          fclose (stdin);
-#endif
-          free (flog);
-      /**
-       * set status to SERVICE_STARTED and flush stdout to ensure full 
-       * content was outputed (the file used to store the ResponseDocument).
-       * The rewind stdout to restart writing from the bgining of the file,
-       * this way the data will be updated at the end of the process run.
-       */
-          printProcessResponse
-            (m, request_inputs,
-             cpid, s1,
-             r_inputs1->value,
-             SERVICE_STARTED,
-             request_input_real_format, request_output_real_format,request->out);
-#ifndef WIN32
-          fflush (stdout);
-          rewind (stdout);
-#else
-#endif
-          fbkp1 = (char *)
-            malloc ((strlen
-                     (r_inputs->value) +
-                     strlen (r_inputs1->value) + 1024) * sizeof (char));
-          sprintf (fbkp1, "%s/%s_final_%d.xml", r_inputs->value,
-                   r_inputs1->value, cpid);
-          f1 = freopen (fbkp1, "w+", stdout);
-          loadServiceAndRun
-            (&m, s1,
-             request_inputs,
-             &request_input_real_format, &request_output_real_format, &eres,request->out,request->err);
-        }
-      else
-        {
-      /**
-       * error server don't accept the process need to output a valid 
-       * error response here !!!
-       */
-          eres = -1;
-          errorException (m,
-                          _
-                          ("Unable to run the child process properly"),
-                          "InternalError", NULL,request->out);
-        }
+
+    eres = SERVICE_ACCEPTED;
+    json_object * msg_jobj = json_object_new_object();
+    json_object_object_add(msg_jobj,"service_identifier",json_object_new_string(service_identifier));
+
+
+    json_object *maps_obj;
+    mapstojson(&maps_obj,m);
+    json_object_object_add(msg_jobj,"maps",maps_obj);
+
+
+    json_object *req_format_jobj;
+    mapstojson(&req_format_jobj,request_input_real_format);
+    json_object_object_add(msg_jobj,"request_input_real_format",req_format_jobj);
+
+    json_object *req_jobj;
+    maptojson(&req_jobj,request_inputs);
+    json_object_object_add(msg_jobj,"request_inputs",req_jobj);
+
+
+    json_object *outputs_jobj;
+    mapstojson(&outputs_jobj,request_output_real_format);
+    json_object_object_add(msg_jobj,"request_output_real_format",outputs_jobj);
+   
+    if ( (send_msg(json_object_to_json_string(msg_jobj),"application/json") != 0) || (add_status(uuid) != 0) ){     
+        eres = SERVICE_FAILED;
     }
+
+}
+
+free(uuid);
+
+/* fin processus background */
+
 
 #ifdef DEBUG
   dumpMaps (request_output_real_format);
@@ -3200,31 +3110,6 @@ char *fbkp, *fbkp1;
   (void) signal (SIGFPE, donothing);
   (void) signal (SIGABRT, donothing);
 #endif
-  if (((int) getpid ()) != cpid || cgi->cgiSid != NULL)
-    {
-      fclose (stdout);
-      fclose (stderr);
-      unhandleStatus (m);
-    /**
-     * Dump back the final file fbkp1 to fbkp
-     */
-      fclose (f0);
-      fclose (f1);
-      FILE *f2 = fopen (fbkp1, "rb");
-      FILE *f3 = fopen (fbkp, "wb+");
-      free (fbkp);
-      fseek (f2, 0, SEEK_END);
-      long flen = ftell (f2);
-      fseek (f2, 0, SEEK_SET);
-      char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
-      fread (tmps1, flen, 1, f2);
-      fwrite (tmps1, 1, flen, f3);
-      fclose (f2);
-      fclose (f3);
-      unlink (fbkp1);
-      free (fbkp1);
-      free (tmps1);
-    }
 
   //freeService (&s1);
   //free (s1);
