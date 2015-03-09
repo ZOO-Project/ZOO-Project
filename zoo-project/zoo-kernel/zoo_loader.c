@@ -110,7 +110,7 @@ int cgiMain(){
        }
        delete[] buffer;
        if(res==NULL && (strQuery==NULL || strlen(strQuery)==0)){
-	 return errorException(NULL,"ZOO-Kernel failed to process your request cause the request was emtpty.","InternalError",NULL);
+	 return errorException(NULL,"ZOO-Kernel failed to process your request because the request was empty.","InternalError",NULL);
        }else{
 	 if(strQuery==NULL || strlen(strQuery)==0)
 	   tmpMap=createMap("request",res);

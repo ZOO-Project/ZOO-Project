@@ -1942,7 +1942,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   switch(status){
   case SERVICE_SUCCEEDED:
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
-    sprintf(sMsg,_("Service \"%s\" run successfully."),serv->name);
+    sprintf(sMsg,_("The service \"%s\" ran successfully."),serv->name);
     nc3=xmlNewText(BAD_CAST sMsg);
     xmlAddChild(nc1,nc3);
     break;
@@ -1950,13 +1950,13 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
     tmpStatus=getMapFromMaps(m,"lenv","status");
     xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST tmpStatus->value);
-    sprintf(sMsg,_("ZOO Service \"%s\" is currently running. Please, reload this document to get the up-to-date status of the Service."),serv->name);
+    sprintf(sMsg,_("The ZOO service \"%s\" is currently running. Please reload this document to get the up-to-date status of the service."),serv->name);
     nc3=xmlNewText(BAD_CAST sMsg);
     xmlAddChild(nc1,nc3);
     break;
   case SERVICE_ACCEPTED:
     nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
-    sprintf(sMsg,_("Service \"%s\" was accepted by the ZOO Kernel and it run as a background task. Please consult the statusLocation attribtue providen in this document to get the up-to-date document."),serv->name);
+    sprintf(sMsg,_("The service \"%s\" was accepted by the ZOO kernel and is running as a background task. Please access the URL in the statusLocation attribute provided in this document to get the up-to-date status and results."),serv->name);
     nc3=xmlNewText(BAD_CAST sMsg);
     xmlAddChild(nc1,nc3);
     break;
@@ -2066,7 +2066,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       if(output==NULL){
 	/* If the file cannot be created return an ExceptionReport */
 	char tmpMsg[1024];
-	sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the ExecuteResponse."),stored_path);
+	sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the ExecuteResponse."),stored_path);
 
 	errorException(m,tmpMsg,"InternalError",NULL);
 	xmlFreeDoc(doc);
@@ -2250,7 +2250,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       if(tmpV!=NULL)
 	    nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
       else
-	    nc3=xmlNewNode(ns_wps, BAD_CAST "LitteralData");
+	    nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
     } 
     tmp=m->content;
 
@@ -2710,7 +2710,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     FILE* teste=fopen(session_file_path,"w");
     if(teste==NULL){
       char tmpMsg[1024];
-      sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the session maps."),session_file_path);
+      sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
       errorException(m,tmpMsg,"InternalError",NULL);
 
       return;
@@ -2803,11 +2803,11 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 		sprintf(file_name,"%s_%s_%i.%s",s->name,tmpI->name,cpid0,file_ext);
 	    file_path=(char*)malloc((strlen(tmp1->value)+strlen(file_name)+2)*sizeof(char));
 	    sprintf(file_path,"%s/%s",tmp1->value,file_name);
-	    
+    
 		FILE *ofile=fopen(file_path,"wb");
 	    if(ofile==NULL){
 	      char tmpMsg[1024];
-	      sprintf(tmpMsg,_("Unable to create the file : \"%s\" for storing the %s final result."),file_name,tmpI->name);
+	      sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the %s final result."),file_name,tmpI->name);
 	      errorException(m,tmpMsg,"InternalError",NULL);
 	      free(file_name);
 	      free(file_path);
@@ -2861,7 +2861,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     dumpMaps(m);
 #endif
     printProcessResponse(m,request_inputs1,cpid,
-			 s,r_inputs->value,res,
+		//	 s,r_inputs->value,res,
+			 s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
 			 request_inputs,
 			 request_outputs);
   }
@@ -2892,7 +2893,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       toto=getMap(tmpI->content,"value");
       if(toto==NULL){
 	char tmpMsg[1024];
-	sprintf(tmpMsg,_("Wrong RawDataOutput parameter, unable to fetch any result for the name your provided : \"%s\"."),tmpI->name);
+	sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),tmpI->name);
 	errorException(m,tmpMsg,"InvalidParameterValue","RawDataOutput");
 	return;
       }
@@ -3831,8 +3832,12 @@ void parseIdentifier(maps* conf,char* conf_dir,char *identifier,char* buffer){
       sprintf(buffer,"%s/%s",tmp0,tmp00->value);
     free(tmp0);
     buffer[strlen(buffer)-1]=0;
-    if(i+1<level){
-      map* tmpMap=getMapFromMaps(conf,"lenv","metapath");
+    if(i+1<level){ 
+      #ifdef IGNORE_METAPATH
+        map* tmpMap = createMap("metapath", "");
+      #else  
+        map* tmpMap=getMapFromMaps(conf,"lenv","metapath");
+      #endif	  
       if(tmpMap==NULL || strlen(tmpMap->value)==0){
 	char *tmp01=zStrdup(tmp00->value);
 	tmp01[strlen(tmp01)-1]=0;
@@ -3981,7 +3986,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       nb++;
     }
     if(hasValidValue<0){
-      char *replace=_("Ununderstood <%s> value, %s %s the only acceptable value.");
+      char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
       nb=0;
       char *vvalues=NULL;
       char* num=_("is");
