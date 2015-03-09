@@ -194,7 +194,7 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
             {
               char emsg[1024];
               sprintf (emsg,
-                       _("You set maximum occurences for <%s> as %i but you tried to use it more than the limit you set. Please correct your ZCFG file or your request."),
+                       _("The maximum allowed occurrences for <%s> (%i) was exceeded."),
                        mi->name, atoi (testMap->value));
               errorException (m, emsg, "InternalError", NULL);
               return -1;
@@ -226,7 +226,7 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
               char emsg[1024];
               sprintf (emsg,
                        _
-                       ("You set maximum occurences for <%s> to one but you tried to use it more than once. Please correct your ZCFG file or your request."),
+                       ("The maximum allowed occurrences for <%s> is one."),
                        mi->name);
               errorException (m, emsg, "InternalError", NULL);
               return -1;
@@ -370,7 +370,7 @@ void
 donothing (int sig)
 {
 #ifdef DEBUG
-  fprintf (stderr, "Signal %d after the ZOO-Kernel returned result !\n", sig);
+  fprintf (stderr, "Signal %d after the ZOO-Kernel returned result!\n", sig);
 #endif
   exit (0);
 }
@@ -406,7 +406,7 @@ sig_handler (int sig)
     }
   sprintf (tmp,
            _
-           ("ZOO Kernel failed to process your request receiving signal %d = %s"),
+           ("ZOO Kernel failed to process your request, receiving signal %d = %s"),
            sig, ssig);
   errorException (NULL, tmp, "InternalError", NULL);
 #ifdef DEBUG
@@ -438,18 +438,28 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   fprintf (stderr, "LOAD A %s SERVICE PROVIDER \n", r_inputs->value);
   fflush (stderr);
 #endif
+
+  map* libp = getMapFromMaps(m, "main", "libPath");
+  
   if (strlen (r_inputs->value) == 1
       && strncasecmp (r_inputs->value, "C", 1) == 0)
-    {
-      r_inputs = getMap (request_inputs, "metapath");
-      if (r_inputs != NULL)
-        sprintf (tmps1, "%s/%s", ntmp, r_inputs->value);
-      else
-        sprintf (tmps1, "%s/", ntmp);
-      char *altPath = zStrdup (tmps1);
-      r_inputs = getMap (s1->content, "ServiceProvider");
-      sprintf (tmps1, "%s/%s", altPath, r_inputs->value);
-      free (altPath);
+  {
+     if (libp != NULL && libp->value != NULL) {
+	    r_inputs = getMap (s1->content, "ServiceProvider");
+		sprintf (tmps1, "%s/%s", libp->value, r_inputs->value);
+	 }
+     else {	 
+        r_inputs = getMap (request_inputs, "metapath");
+        if (r_inputs != NULL)
+          sprintf (tmps1, "%s/%s", ntmp, r_inputs->value);
+        else
+          sprintf (tmps1, "%s/", ntmp);
+	  
+        char *altPath = zStrdup (tmps1);
+        r_inputs = getMap (s1->content, "ServiceProvider");
+        sprintf (tmps1, "%s/%s", altPath, r_inputs->value);
+        free (altPath);
+	 }
 #ifdef DEBUG
       fprintf (stderr, "Trying to load %s\n", tmps1);
 #endif
@@ -612,7 +622,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #else
 	      errstr = dlerror ();
 #endif
-          sprintf (tmps, _("C Library can't be loaded %s"), errstr);
+          sprintf (tmps, _("Unable to load C Library %s"), errstr);
 	  errorException(m,tmps,"InternalError",NULL);
           *eres = -1;
         }
@@ -738,6 +748,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   map *sid = getMapFromMaps (m, "lenv", "sid");
   map *r_inputs = getMapFromMaps (m, "main", "tmpPath");
   map *r_inputs1 = getMap (request_inputs, "metapath");
+  
   int hasIn = -1;
   if (r_inputs1 == NULL)
     {
@@ -882,6 +893,9 @@ runRequest (map ** inputs)
 
   map *r_inputs = NULL;
   map *request_inputs = *inputs;
+#ifdef IGNORE_METAPATH
+  addToMap(request_inputs, "metapath", "");
+#endif  
   maps *m = NULL;
   char *REQUEST = NULL;
   /**
@@ -900,7 +914,6 @@ runRequest (map ** inputs)
   _getcwd (ntmp, 1024);
 #endif
   r_inputs = getMapOrFill (&request_inputs, "metapath", "");
-
 
   char conf_file[10240];
   snprintf (conf_file, 10240, "%s/%s/main.cfg", ntmp, r_inputs->value);
@@ -1092,7 +1105,6 @@ runRequest (map ** inputs)
       addToMap (request_inputs, "serviceprovider", "");
     }
 
-
   maps *request_output_real_format = NULL;
   map *tmpm = getMapFromMaps (m, "main", "serverAddress");
   if (tmpm != NULL)
@@ -1111,6 +1123,7 @@ runRequest (map ** inputs)
 
   r_inputs = NULL;
   r_inputs = getMap (request_inputs, "metapath");
+  
   if (r_inputs != NULL)
     snprintf (conf_dir, 1024, "%s/%s", ntmp, r_inputs->value);
   else
@@ -1159,7 +1172,7 @@ runRequest (map ** inputs)
       DIR *dirp = opendir (conf_dir);
       if (dirp == NULL)
         {
-          errorException (m, _("The specified path path doesn't exist."),
+          errorException (m, _("The specified path path does not exist."),
                           "InvalidParameterValue", conf_dir);
           freeMaps (&m);
           free (m);
@@ -1374,7 +1387,7 @@ runRequest (map ** inputs)
         {
           errorException (m,
                           _
-                          ("Unenderstood <request> value. Please check that it was set to GetCapabilities, DescribeProcess or Execute."),
+                          ("The <request> value was not recognized. Allowed values are GetCapabilities, DescribeProcess, and Execute."),
                           "InvalidParameterValue", "request");
 #ifdef DEBUG
           fprintf (stderr, "No request found %s", REQUEST);
@@ -1440,7 +1453,7 @@ runRequest (map ** inputs)
       char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
       sprintf (tmpMsg,
                _
-               ("The value for <identifier> seems to be wrong (%s). Please, ensure that the process exist using the GetCapabilities request."),
+               ("The value for <identifier> seems to be wrong (%s). Please specify one of the processes in the list returned by a GetCapabilities request."),
                r_inputs->value);
       errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
       free (tmpMsg);
@@ -2785,7 +2798,7 @@ runRequest (map ** inputs)
               map *tmpe = createMap ("code", "FileSizeExceeded");
               snprintf (tmps, 1024,
                         _
-                        ("The <%s> parameter has a limited size (%sMB) defined in ZOO ServicesProvider configuration file but the reference you provided exceed this limitation (%fMB), please correct your query or the ZOO Configuration file."),
+                        ("The <%s> parameter has a size limit (%s MB) defined in the ZOO ServicesProvider configuration file, but the reference you provided exceeds this limit (%f MB)."),
                         ptr->name, tmp1->value, i);
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
@@ -2829,7 +2842,7 @@ runRequest (map ** inputs)
 	    map* errp=getMapArray(errI,"value",nb);
 	    snprintf (tmps, 1024,
 		      _
-		      ("The <%s> argument was not specified in DataInputs but defined as requested in ZOO ServicesProvider configuration file, please correct your query or the ZOO Configuration file."),
+		      ("The <%s> argument was not specified in DataInputs but is required according to the ZOO ServicesProvider configuration file."),
 		      errp->value);
 	    setMapArray (tmpe, "locator", nb , errp->value);
 	    setMapArray (tmpe, "text", nb , tmps);
@@ -2855,7 +2868,7 @@ runRequest (map ** inputs)
 	    map* errp=getMapArray(errO,"value",nb);
 	    snprintf (tmps, 1024,
 		      _
-		      ("The <%s> argument was specified as %s identifier but not defined in the ZOO Configuration File. Please, correct your query or the ZOO Configuration File."),
+		      ("The <%s> argument specified as %s identifier was not recognized (not defined in the ZOO Configuration File)."),
 		      errp->value,
 		      ((getMap(request_inputs,"RawDataOutput")!=NULL)?"RawDataOutput":"ResponseDocument"));
 	    setMapArray (tmpe, "locator", nb+ilength , errp->value);
@@ -3050,7 +3063,7 @@ runRequest (map ** inputs)
     {
       errorException (m,
                       _
-                      ("Status cannot be set to true with storeExecuteResponse to false. Please, modify your request parameters."),
+                      ("The status parameter cannot be set to true if storeExecuteResponse is set to false. Please modify your request parameters."),
                       "InvalidParameterValue", "storeExecuteResponse");
       freeService (&s1);
       free (s1);
@@ -3269,7 +3282,9 @@ runRequest (map ** inputs)
           r_inputs = getMapFromMaps (m, "lenv", "usid");
           int cpid = atoi (r_inputs->value);
           r_inputs = getMapFromMaps (m, "main", "tmpPath");
-          map *r_inputs1 = getMap (s1->content, "ServiceProvider");
+          //map *r_inputs1 = getMap (s1->content, "ServiceProvider");
+		  map* r_inputs1 = createMap("ServiceName", s1->name);
+
           fbkp =
             (char *)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
@@ -3356,6 +3371,7 @@ runRequest (map ** inputs)
                     request_output_real_format, request_inputs,
                     cpid, m, eres);
   fflush (stdout);
+  
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 

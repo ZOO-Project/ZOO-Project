@@ -185,21 +185,36 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   maps* outputs=*real_outputs;
   char ntmp[1024];
   getcwd(ntmp,1024);
-  map* tmp=getMap(request,"metapath");
-
+    
+  map* libp = getMapFromMaps(m, "main", "libPath"); // KLa  
   int res=SERVICE_FAILED;
 
-  tmp=getMap(s->content,"serviceProvider");
-  map* cwd=getMapFromMaps(m,"lenv","cwd");
-  map* mp=getMap(request,"metapath");
-  char *scriptName;
-  if(mp!=NULL && strlen(mp->value)>0){
-    scriptName=(char*)malloc((strlen(cwd->value)+strlen(mp->value)+strlen(tmp->value)+3)*sizeof(char));
-    sprintf(scriptName,"%s/%s/%s",cwd->value,mp->value,tmp->value);
-  }else{
-    scriptName=(char*)malloc((strlen(cwd->value)+strlen(tmp->value)+2)*sizeof(char));
-    sprintf(scriptName,"%s/%s",cwd->value,tmp->value);
+  map* tmp=getMap(s->content,"serviceProvider");
+  if (tmp == NULL || tmp->value == NULL) {
+	  return errorException(m, "Missing serviceProvider (library file)", "NoApplicableCode", NULL);
   }
+  
+  map* cwd=getMapFromMaps(m,"lenv","cwd");
+#ifdef IGNORE_METAPATH
+  map* mp = createMap("metapath", "");
+#else  
+  map* mp = getMap(request, "metapath");
+#endif
+  char *scriptName;
+  
+  if (libp != NULL && libp->value != NULL) {
+	scriptName = (char*) malloc((strlen(libp->value) + strlen(tmp->value) + 2)*sizeof(char));
+    sprintf (scriptName, "%s/%s", libp->value, tmp->value);	
+  }
+  else {	
+    if(mp!=NULL && strlen(mp->value)>0){
+      scriptName=(char*)malloc((strlen(cwd->value)+strlen(mp->value)+strlen(tmp->value)+3)*sizeof(char));
+      sprintf(scriptName,"%s/%s/%s",cwd->value,mp->value,tmp->value);
+    }else{
+      scriptName=(char*)malloc((strlen(cwd->value)+strlen(tmp->value)+2)*sizeof(char));
+      sprintf(scriptName,"%s/%s",cwd->value,tmp->value);
+    }
+  } 
   zend_file_handle iscript;
   iscript.type=ZEND_HANDLE_FD;
   iscript.opened_path=NULL;
