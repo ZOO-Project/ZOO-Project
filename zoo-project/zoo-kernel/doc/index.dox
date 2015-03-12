@@ -1,0 +1,20 @@
+#ifndef DOXYGEN_SKIP                                                            
+/* $Id$ */               
+#endif /* DOXYGEN_SKIP */                                                       
+
+/*! \mainpage ZOO-Project C-API Documentation
+
+
+<a href="http://zoo-project.org/">ZOO-Project</a> is an open source WPS platform
+that is released under an <a href="http://zoo-project.org/trac/browser/trunk/zoo-project/LICENSE">X/MIT</a> style 
+<a href="http://www.opensource.org/"> Open Source</a> license. ZOO-Project software is incubating at the <a href="http://www.osgeo.org/">Open Source
+Geospatial Foundation</a>. 
+
+Home: http://www.zoo-project.org<br>
+Download: 
+ <a href="http://zoo-project.org/site/Downloads#Downloads">http at zoo-project.org</a>,
+ <a href="http://zoo-project.org/site/Downloads#Fordevelopers">svn at zoo-project.org</a>
+
+This documentation describes the ZOO-Project C-API. You can start your visit by the Data Structures link above which details all available structures in ZOO-Project. The Files link presents all source files used to generate this documentation.
+
+*/
