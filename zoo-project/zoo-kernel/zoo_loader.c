@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  *  Copyright 2008-2011 GeoLabs SARL. All rights reserved.
@@ -66,6 +66,10 @@ using namespace std;
 #define FALSE -1
 #endif
 
+/**
+ * Main entry point for cgic.
+ * @return 0 on sucess.
+ */
 int cgiMain(){
   /**
    * We'll use cgiOut as the default output (stdout) to produce plain text 

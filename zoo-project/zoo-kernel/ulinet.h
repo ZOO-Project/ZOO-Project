@@ -65,55 +65,56 @@ extern char CCookie[MAX_REQ][1024];
 extern "C" {
 #endif
 
-struct MemoryStruct {
-  char *memory; //!< the memory space to store data 
-  size_t size; //!< side of the memory space
-};
+  struct MemoryStruct {
+    char *memory; //!< the memory space to store data 
+    size_t size; //!< size of the memory space
+  };
 
   /**
    * Individual CURL handler
    */
-typedef struct {
-  CURL *handle; //!< the CURL handler
-  struct curl_slist *header; //!< the headers to send
-  char* filename; //!< the cached file name
-  FILE* file; //!< the file pointer
-  unsigned char *pabyData; //!< the downloaded content
-  char *mimeType; //!< the mimeType returned by the server
-  int hasCacheFile; //!< 1 if we used a cache file
-  int nDataLen; //!< the length of the downloaded content
-  int nDataAlloc; //!< 
-  int id; //!< The position of the element in the queue
-} _HINTERNET;
+  typedef struct {
+    CURL *handle; //!< the CURL handler
+    struct curl_slist *header; //!< the headers to send
+    char* filename; //!< the cached file name
+    FILE* file; //!< the file pointer
+    unsigned char *pabyData; //!< the downloaded content
+    char *mimeType; //!< the mimeType returned by the server
+    int hasCacheFile; //!< 1 if we used a cache file
+    int nDataLen; //!< the length of the downloaded content
+    int nDataAlloc; //!< 
+    long code; //!< the last received response code
+    int id; //!< The position of the element in the queue
+  } _HINTERNET;
 
   /**
    * Multiple CURL handlers
    */
-typedef struct {
-  CURLM *handle; //!< the CURLM handler
-  _HINTERNET ihandle[MAX_REQ]; //!< individual handlers in the queue 
-  char *waitingRequests[MAX_REQ]; //!< request in the queue
-  char *agent; //!< The User-Agent to use for HTTP request
-  int nb; //!< number of element in the queue 
-} HINTERNET;
+  typedef struct {
+    CURLM *handle; //!< the CURLM handler
+    _HINTERNET ihandle[MAX_REQ]; //!< individual handlers in the queue 
+    char *waitingRequests[MAX_REQ]; //!< request in the queue
+    char *agent; //!< The User-Agent to use for HTTP request
+    int nb; //!< number of element in the queue 
+  } HINTERNET;
 
-size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data);
+  size_t write_data_into(void*,size_t,size_t,void*);
 
-size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data);
+  size_t header_write_data(void*,size_t,size_t,void*);
 
-void setProxy(CURL* handle,char* host,long port);
+  void setProxy(CURL*,char*,long);
 
 #if defined(macintosh) || (defined(__MACH__) && defined(__APPLE__))
 
 #include <CoreServices/CoreServices.h>
 #include <SystemConfiguration/SystemConfiguration.h>
-char* CFStringToCString(CFStringRef dest,char * buffer);
-OSStatus setProxiesForProtcol(CURL* handle,const char *proto);
+  char* CFStringToCString(CFStringRef,char*);
+  OSStatus setProxiesForProtcol(CURL*,const char*);
 
 #else
 
 //#include <gconf/gconf-client.h>
-int setProxiesForProtcol(CURL* handle,const char *proto);
+  int setProxiesForProtcol(CURL*,const char*);
 
 #endif
 
@@ -125,9 +126,9 @@ int setProxiesForProtcol(CURL* handle,const char *proto);
 #ifndef WIN32
 typedef char* LPCTSTR;
 #endif
-HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags);
+  HINTERNET InternetOpen(char*,int,char*,char*,int);
 
-void InternetCloseHandle(HINTERNET* handle);
+  void InternetCloseHandle(HINTERNET*);
 
 #define INTERNET_FLAG_EXISTING_CONNECT         0
 #define INTERNET_FLAG_HYPERLINK                1
@@ -142,9 +143,9 @@ void InternetCloseHandle(HINTERNET* handle);
 #define INTERNET_FLAG_NO_CACHE_WRITE          10
 //typedef char* LPVOID;
 #ifndef WIN32
-typedef void* LPVOID;
-typedef void* LPTSTR;
-typedef size_t* LPDWORD;
+  typedef void* LPVOID;
+  typedef void* LPTSTR;
+  typedef size_t* LPDWORD;
 #endif
 #ifndef bool
 #define bool int
@@ -152,13 +153,15 @@ typedef size_t* LPDWORD;
 
 #  define CHECK_INET_HANDLE(h) (h.handle != 0)
 
-HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext);
+  HINTERNET InternetOpenUrl(HINTERNET*,LPCTSTR,LPCTSTR,size_t,size_t,size_t);
 
-int processDownloads(HINTERNET* hInternet);
+  int processDownloads(HINTERNET*);
 
-int freeCookieList(HINTERNET hInternet);
+  int freeCookieList(HINTERNET);
 
-int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead,size_t *lpdwNumberOfBytesRead);
+  int InternetReadFile(_HINTERNET,LPVOID,int,size_t*);
+
+  int setBasicAuth(HINTERNET,char*,char*);
 
 #ifdef __cplusplus
 }
