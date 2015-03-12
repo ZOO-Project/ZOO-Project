@@ -1,10 +1,7 @@
 %{
-//======================================================
-/**
-   Zoo main configuration file parser
-**/
-//======================================================
-
+/*
+ * Zoo main configuration file parser
+ */
 #include <service.h>
 
 static maps* my_maps=NULL;
@@ -284,20 +281,23 @@ processid
 
 %%
 
-// crerror
-//======================================================
-/* fonction qui affiche l erreur si il y en a une */
-//======================================================
+/**
+ * Print on stderr the message and the line number of the error which occured.
+ *
+ * @param s the error message
+ */
 void crerror(const char *s)
 {
   if(debug)
     printf("\nligne %d : %s\n",crlineno,s);
 }
 
-// main
-//======================================================
-/* fonction principale : entrée dans le programme */
-//======================================================
+/**
+ * Parse the main.cfg file and fill the maps structure.
+ *
+ * @param file the filename to parse
+ * @param my_map the maps structure to fill
+ */
 int conf_read(const char* file,maps* my_map){
   
   crin = fopen(file,"r");
@@ -325,7 +325,3 @@ int conf_read(const char* file,maps* my_map){
   return resultatYYParse;
 }
 
-
-//======================================================
-// FIN //
-//======================================================

@@ -159,6 +159,14 @@ extern "C" {
  * The memory size to create a service
  */
 #define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
+/**
+ * The memory size to create a services
+ */
+#define SERVICES_SIZE SERVICE_SIZE+sizeof(services*)
+/**
+ * The memory size to create a registry
+ */
+#define REGISTRY_SIZE SERVICES_SIZE+sizeof(char*)
 
 #define SHMSZ     27
 
@@ -173,17 +181,11 @@ extern "C" {
 
   /**
    * KVP linked list
-   *
-   * Deal with WPS KVP (name,value).
-   * A map is defined as:
-   *  - name : a key,
-   *  - value: a value,
-   *  - next : a pointer to the next map if any.
    */
   typedef struct map{
-    char* name;
-    char* value;
-    struct map* next;
+    char* name; //!< the key
+    char* value; //!< the value
+    struct map* next; //!< the pointer to the next map if any or NULL
   } map;
 
 #ifdef WIN32
@@ -196,15 +198,11 @@ extern "C" {
    * linked list of map pointer
    *
    * Small object to store WPS KVP set.
-   * Maps is defined as:
-   *  - a name, 
-   *  - a content map,
-   *  - a pointer to the next maps if any.
    */
   typedef struct maps{
-    char* name;          
-    struct map* content; 
-    struct maps* next;   
+    char* name; //!< the maps name
+    struct map* content; //!< the content map
+    struct maps* next; //!< the pointer to the next maps if any or NULL
   } maps;
 
   /**
@@ -454,65 +452,54 @@ extern "C" {
    * Not named linked list
    *
    * Used to store informations about formats, such as mimeType, encoding ... 
-   *
-   * An iotype is defined as :
-   *  - a content map,
-   *  - a pointer to the next iotype if any.
    */
   typedef struct iotype{
-    struct map* content;
-    struct iotype* next;
+    struct map* content; //!< the content map
+    struct iotype* next; //!< the pointer to the next iotype if any or NULL
   } iotype;
 
   /**
    * Metadata information about input or output.
    *
    * The elements are used to store metadata informations defined in the ZCFG.
-   *
-   * An elements is defined as:
-   *  - a name,
-   *  - a content map,
-   *  - a metadata map,
-   *  - a format (possible values are LiteralData, ComplexData or 
-   * BoundingBoxData),
-   *  - a default iotype,
-   *  - a pointer to the next elements id any.
    */
   typedef struct elements{
-    char* name;
-    struct map* content;
-    struct map* metadata;
-    char* format;
-    struct iotype* defaults;
-    struct iotype* supported;
-    struct elements* next;
+    char* name; //!< the name
+    struct map* content; //!< the content map
+    struct map* metadata; //!< the metadata map
+    char* format; //!< the format: LiteralData or ComplexData or BoundingBoxData
+    struct iotype* defaults; //!< the default iotype 
+    struct iotype* supported; //!< the supported iotype 
+    struct elements* next; //!< the pointer to the next element if any (or NULL)
   } elements;
 
   /**
    * Metadata informations about a full Service.
-   *
-   * An element is defined as:
-   *  - a name,
-   *  - a content map,
-   *  - a metadata map,
-   *  - an inputs elements
-   *  - an outputs elements
    */
   typedef struct service{
-    char* name;
-    struct map* content;
-    struct map* metadata;
-    struct elements* inputs;
-    struct elements* outputs; 
+    char* name; //!< the name
+    struct map* content; //!< the content map
+    struct map* metadata; //!< the metadata map
+    struct elements* inputs; //!< the inputs elements
+    struct elements* outputs; //!< the outputs elements
   } service;
 
   /**
-   * Multiple services chained list.
+   * Services chained list.
    */
   typedef struct services{
-    struct service* content; 
-    struct services* next; 
+    struct service* content; //!< the content service pointer
+    struct services* next; //!< the pointer to the next services*
   } services;
+
+  /**
+   * Profile registry.
+   */
+  typedef struct registry{
+    char *name; //!< the name
+    struct services* content; //!< the content services pointer
+    struct registry* next; //!< the next registry pointer
+  } registry;
 
   /**
    * Verify if an elements contains a name equal to the given key.
@@ -1220,7 +1207,10 @@ extern "C" {
       addMapToMap(&tmp->content,e->content);
       tmp->metadata=NULL;
       addMapToMap(&tmp->metadata,e->metadata);
-      tmp->format=zStrdup(e->format);
+      if(e->format!=NULL)
+	tmp->format=zStrdup(e->format);
+      else
+	tmp->format=NULL;
       if(e->defaults!=NULL){
 	tmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
 	tmp->defaults->content=NULL;
@@ -1323,6 +1313,256 @@ extern "C" {
     if(s->outputs!=NULL){
       fprintf(stderr,"\noutputs:\n");
       dumpElementsAsYAML(s->outputs);
+    }
+  }
+
+  /**
+   * Duplicate a service
+   * 
+   * @param s the service to clone
+   * @return the allocated service containing a copy of the serfvice s
+   */
+  static service* dupService(service* s){
+    service *res=(service*)malloc(SERVICE_SIZE);
+    res->name=zStrdup(s->name);
+    res->content=NULL;
+    addMapToMap(&res->content,s->content);
+    res->metadata=NULL;
+    addMapToMap(&res->metadata,s->metadata);
+    res->inputs=dupElements(s->inputs);
+    res->outputs=dupElements(s->outputs);
+    return res;
+  }
+
+  /**
+   * Print the registry on stderr.
+   * 
+   * @param r the registry
+   */
+  static void dumpRegistry(registry* r){
+    registry* p=r;
+    while(p!=NULL){
+      fprintf(stderr,"%s \n",p->name);
+      services* s=p->content;
+      s=p->content;
+      while(s!=NULL){
+	dumpService(s->content);
+	s=s->next;
+      }
+      p=p->next;
+    }
+  }
+
+  /**
+   * Add a service to the registry
+   *
+   * @param reg the resgitry to add the service
+   * @param name the registry name to update
+   * @param content the service to add
+   */
+  static bool addServiceToRegistry(registry** reg,char* name,service* content){
+    registry *l=*reg;
+    int isInitial=-1;
+    if(l==NULL){
+      l=(registry*)malloc(REGISTRY_SIZE);
+      isInitial=1;
+    }
+    if(l!=NULL){
+      int hasLevel=-1;
+      while(isInitial<0 && l!=NULL){
+	if(l->name!=NULL && strcasecmp(name,l->name)==0){
+	  hasLevel=1;
+	  break;
+	}
+	l=l->next;
+      }
+      if(hasLevel<0){
+	if(isInitial<0)
+	  l=(registry*)malloc(REGISTRY_SIZE);
+	l->name=zStrdup(name);
+	l->content=NULL;
+	l->next=NULL;
+      }
+      if(l->content==NULL){
+	l->content=(services*)malloc(SERVICES_SIZE);
+	l->content->content=dupService(content);
+	l->content->next=NULL;
+      }
+      else{
+	services* s=l->content;
+	while(s->next!=NULL)
+	  s=s->next;
+	s->next=(services*)malloc(SERVICES_SIZE);
+	s->next->content=dupService(content);
+	s->next->next=NULL;
+      }
+      l->next=NULL;
+      if(isInitial>0)
+	*reg=l;
+      else{
+	registry *r=*reg;
+	while(r->next!=NULL)
+	  r=r->next;
+	r->next=l;
+	r->next->next=NULL;
+      }
+      return true;
+    }
+    else
+      return false;
+  }
+
+  /**
+   * Free memory allocated for the registry
+   *
+   * @param r the registry
+   */
+  static void freeRegistry(registry** r){
+    registry* lr=*r;
+    while(lr!=NULL){
+      services* s=lr->content;
+      free(lr->name);
+      while(s!=NULL){
+	service* s1=s->content;
+	s=s->next;
+	if(s1!=NULL){
+	  freeService(&s1);
+	  free(s1);
+	  s1=NULL;
+	}
+      }
+      lr=lr->next;
+    }    
+  }
+
+  /**
+   * Access a service in the registry
+   *
+   * @param r the registry
+   * @param level the regitry to search ("concept", "generic" or "implementation")
+   * @param sname the service name
+   * @return the service pointer if a corresponding service was found or NULL
+   */
+  static service* getServiceFromRegistry(registry* r,char  *level,char* sname){
+    registry *lr=r;
+    while(lr!=NULL){
+      if(strcasecmp(lr->name,level)==0){
+	services* s=lr->content;
+	while(s!=NULL){
+	  if(s->content!=NULL && strcasecmp(s->content->name,sname)==0)
+	    return s->content;
+	  s=s->next;
+	}
+	break;
+      }
+      lr=lr->next;
+    }
+    return NULL;
+  }
+
+  /**
+   * Apply inheritance to an out map from a reference in map
+   *
+   * @param out the map to update
+   * @param in the reference map (containing inherited properties)
+   */
+  static void inheritMap(map** out,map* in){
+    map* content=in;
+    while(content!=NULL && *out!=NULL){
+      map* cmap=getMap(*out,content->name);
+      if(cmap==NULL)
+	addToMap(*out,content->name,content->value);
+      content=content->next;
+    }
+  }
+
+  /**
+   * Apply inheritance to an out iotype from a reference in iotype
+   * 
+   * @param out the iotype to update
+   * @param in the reference iotype (containing inherited properties)
+   */
+  static void inheritIOType(iotype** out,iotype* in){
+    iotype* io=in;
+    iotype* oio=*out;
+    if(io!=NULL){
+      if(*out==NULL){
+	*out=(iotype*)malloc(IOTYPE_SIZE);
+	(*out)->content=NULL;
+	addMapToMap(&(*out)->content,io->content);
+	(*out)->next=NULL;
+	oio=*out;
+	inheritIOType(&oio->next,io->next);
+      }else{
+	inheritIOType(&oio->next,io->next);
+      }
+    }
+  }
+
+  /**
+   * Apply inheritance to an out elements from a reference in elements
+   * 
+   * @param out the elements to update
+   * @param in the reference elements (containing inherited properties)
+   */
+  static void inheritElements(elements** out,elements* in){
+    elements* content=in;
+    while(content!=NULL && *out!=NULL){
+      elements* cmap=getElements(*out,content->name);
+      if(cmap==NULL)
+	addToElements(out,content);
+      else{
+	inheritMap(&cmap->content,content->content);
+	inheritMap(&cmap->metadata,content->metadata);
+	if(cmap->format==NULL && content->format!=NULL)
+	  cmap->format=zStrdup(content->format);
+	inheritIOType(&cmap->defaults,content->defaults);
+	if(cmap->supported==NULL)
+	  inheritIOType(&cmap->supported,content->supported);
+	else{
+	  iotype* p=content->supported;
+	  while(p!=NULL){
+	    addMapToIoType(&cmap->supported,p->content);
+	    p=p->next;
+	  }
+	}
+      }
+      content=content->next;
+    }
+  }
+
+  /**
+   * Apply inheritance to a service based on a registry
+   * 
+   * @param r the registry storing profiles hierarchy
+   * @param s the service to update depending on its inheritance
+   */
+  static void inheritance(registry *r,service** s){
+    if(r==NULL)
+      return;
+    service* ls=*s;
+    if(ls->content==NULL)
+      return;
+    map* profile=getMap(ls->content,"extend");
+    map* level=getMap(ls->content,"level");
+    if(profile!=NULL&&level!=NULL){
+      service* s1;
+      if(strncasecmp(level->value,"profile",7)==0)
+	s1=getServiceFromRegistry(r,"generic",profile->value);
+      else
+	s1=getServiceFromRegistry(r,level->value,profile->value);
+      
+      inheritMap(&ls->content,s1->content);
+      inheritMap(&ls->metadata,s1->metadata);
+      if(ls->inputs==NULL && s1->inputs!=NULL){
+	ls->inputs=dupElements(s1->inputs);
+      }else{
+	inheritElements(&ls->inputs,s1->inputs);
+      }
+      if(ls->outputs==NULL && s1->outputs!=NULL){
+	ls->outputs=dupElements(s1->outputs);
+      }else
+	inheritElements(&ls->outputs,s1->outputs);
     }
   }
 

@@ -246,6 +246,10 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       
       HashTable* t=HASH_OF(iargs[2]);
       HashTable* t1=HASH_OF(iargs[0]);
+      freeMaps(real_outputs);
+      free(*real_outputs);
+      freeMaps(main_conf);
+      free(*main_conf);
       *real_outputs=php_maps_from_Array(t);
       *main_conf=php_maps_from_Array(t1);
 

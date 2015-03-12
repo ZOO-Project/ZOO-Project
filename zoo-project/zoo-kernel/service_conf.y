@@ -1,12 +1,10 @@
-%{
-//======================================================
-/**
+/*
  * Thx to Jean-Marie CODOL and Naitan GROLLEMUND
  * copyright 2009 GeoLabs SARL 
  * Author : Gérald FENOY
  *
  */
-//======================================================
+%{
 
 #include <string>
 #include <stdio.h>
@@ -21,7 +19,7 @@ static bool wait_metadata=false;
 static bool wait_inputs=false;
 static bool wait_defaults=false;
 static bool wait_supporteds=false;
-static bool wait_outputs=false;
+static bool wait_outputs=-1;
 static bool wait_data=false;
 static service* my_service=NULL;
 static map* current_content=NULL;
@@ -33,35 +31,27 @@ static int previous_data=0;
 static int current_data=0;
 // namespace
 using namespace std;
-//======================================================
 
 // srerror
 void srerror(const char *s);
-//======================================================
 
 // usage ()
 void usage(void) ;
-//======================================================
 
 // srdebug
 extern int srdebug;
-//======================================================
 
 extern char srtext[];
 
 // srlineno
 extern int srlineno;
-//======================================================
 
 // srin
 extern FILE* srin;
-//======================================================
 
 // srlex
 extern int srlex(void);
 extern int srlex_destroy(void);
-
-//vector<char*> lattribute;
 
 %}
 
@@ -75,37 +65,34 @@ extern int srlex_destroy(void);
 %token <s> CHAINE
 /* STARTXMLDECL et ENDXMLDECL qui sont <?xml et ?>*/
 %token STARTXMLDECL ENDXMLDECL
-//======================================================
+
 /* version="xxx" et encoding="xxx" */
 %token VERSIONDECL ENCODINGDECL SDDECL
-//======================================================
+
 /* < et > */
 %token INFCAR SUPCAR 
-//======================================================
+
 /* / = a1  texte "texte" */
 %token SLASH Eq CHARDATA ATTVALUE PAIR SPAIR EPAIR ANID
 %type <chaine> PAIR
 %type <chaine> EPAIR
 %type <chaine> SPAIR
-//======================================================
+
 /* <!-- xxx -> <? xxx yyy ?> */
 %token PI PIERROR /** COMMENT **/
-//======================================================
+
 /* <!-- xxx -> <? xxx yyy ?> */
 %token ERREURGENERALE CDATA WHITESPACE NEWLINE
 %type <s> STag
 %type <s> ETag
 %type <s> ANID
-//======================================================
-// %start
-//======================================================
+
+// % start
 
 %%
-// document <//===
-//======================================================
+// document 
 // regle 1
 // on est a la racine du fichier xml
-//======================================================
 document
  : miscetoile element miscetoile {}
  | contentetoile processid contentetoile document {}
@@ -117,13 +104,11 @@ miscetoile
  | {}
  ;
 // element
-//======================================================
 // regle 39
 // OUVRANTE CONTENU FERMANTE obligatoirement
 // ou neutre
 // on ne peut pas avoir Epsilon
 // un fichier xml ne peut pas etre vide ou seulement avec un prolog
-//======================================================
 element
  : STag contentetoile ETag	
 {
@@ -135,20 +120,18 @@ element
  | EmptyElemTag          {}
  ;
 
-//======================================================
 // STag
-//======================================================
 // regle 40
 // BALISE OUVRANTE
 // on est obligé de faire appel a infcar et supcar
 // pour acceder aux start conditions DANSBALISE et INITIAL
-//======================================================
 STag
 : INFCAR ID Attributeetoile SUPCAR
 {
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"(%s %d) %s\n",__FILE__,__LINE__,$2);
   fflush(stderr);
+  dumpMap(current_content);
 #endif
   if(my_service->content==NULL){
 #ifdef DEBUG_SERVICE_CONF
@@ -162,7 +145,7 @@ STag
     wait_maincontent=false;
   }
   if(strncasecmp($2,"DataInputs",10)==0){
-    if(wait_mainmetadata==true){
+    if(wait_mainmetadata==true && current_content!=NULL){
       addMapToMap(&my_service->metadata,current_content);
       freeMap(&current_content);
       free(current_content);
@@ -237,7 +220,7 @@ STag
 	current_element->supported=NULL;
 	current_element->next=NULL;
       }
-      wait_outputs=true;
+      wait_outputs=1;
       current_data=2;
       previous_data=2;
     }
@@ -322,27 +305,21 @@ STag
 }
  ;
 
-//======================================================
 // Attributeetoile
-//======================================================
 // regle 41
 // une liste qui peut etre vide d'attributs
 // utiliser la récursivité a gauche
-//======================================================
 Attributeetoile
  : Attributeetoile attribute  {}
  | 	                          {/* Epsilon */}
  ;
 
-//======================================================
 // attribute
-//======================================================
 // regle 41
 // un attribut est compose d'un identifiant
 // d'un "="
 // et d'une définition de chaine de caractere
 // ( "xxx" ou 'xxx' )
-//======================================================
 attribute
  : ID Eq ATTVALUE		
 {
@@ -352,15 +329,12 @@ attribute
 }
  ;
 
-//======================================================
 // EmptyElemTag
-//======================================================
 // regle 44
 // ICI ON DEFINIT NEUTRE
 // on ne renvoie pas de char*
 // parce qu'il n'y a pas de comparaisons a faire
 // avec un identifiant d'une balise jumelle
-//======================================================
 EmptyElemTag
  : INFCAR ID Attributeetoile SLASH SUPCAR	{
 #ifdef DEBUG_SERVICE_CONF
@@ -385,13 +359,9 @@ EmptyElemTag
  }
  ;
 
-//======================================================
 // ETag
-//======================================================
-// regle 42
 // BALISE FERMANTE
 // les separateurs après ID sont filtrés
-//======================================================
 ETag
  : INFCAR SLASH ID SUPCAR
 {
@@ -400,6 +370,29 @@ ETag
 #endif
   if(strcmp($3,"DataInputs")==0){
     current_data=1;
+    if(current_content!=NULL){
+      if(current_element->content==NULL){
+	addMapToMap(&current_element->content,current_content);
+      }
+      freeMap(&current_content);
+      free(current_content);
+      current_content=NULL;
+    }
+    if(current_element!=NULL){
+      if(my_service->content!=NULL && current_element->name!=NULL){
+	if(my_service->inputs==NULL){
+	  my_service->inputs=dupElements(current_element);
+	  my_service->inputs->next=NULL;
+	  tmp_count++;
+	}
+	else{
+	  addToElements(&my_service->inputs,current_element);
+	}
+	freeElements(&current_element);
+	free(current_element);
+	current_element=NULL;
+      }
+    }
   }
   if(strcmp($3,"DataOutputs")==0){
     current_data=2;
@@ -488,9 +481,7 @@ contentetoile
  | {/* Epsilon */}
  ;
 
-//======================================================
 // texteinterbalise
-//======================================================
 // regle 14
 // DU TEXTE quelconque
 // c'est du CHARDATA
@@ -498,11 +489,9 @@ contentetoile
 // on a mis des starts conditions,
 // maintenant on croise les ID dans les dbalises
 // et des CHARDATA hors des balises
-//======================================================
 texteinterbalise
  : CHARDATA		{}
  ;
-//======================================================
 
 pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free(curr_key);curr_key=NULL;} }
 | EPAIR {
@@ -636,7 +625,7 @@ processid
     }
     else
       if(current_data==2){ 
-	wait_outputs=true;
+	wait_outputs=1;
 	if(wait_inputs){
 	  if(current_element!=NULL && current_element->name!=NULL){
 	    if(my_service->outputs==NULL){
@@ -745,7 +734,7 @@ processid
 	    }
 	  }
 	wait_inputs=false;
-	wait_outputs=true;
+	wait_outputs=1;
 	//wait_outputs=true;
       }
   }
@@ -754,10 +743,11 @@ processid
 
 %%
 
-// srerror
-//======================================================
-/* fonction qui affiche l erreur si il y en a une */
-//======================================================
+/**
+ * Print on stderr the message and the line number of the error which occured.
+ * 
+ * @param s the error message
+ */
 void srerror(const char *s)
 {
   if(debug)
@@ -765,9 +755,12 @@ void srerror(const char *s)
 }
 
 /**
- * getServiceFromFile :
- * set service given as second parameter with informations extracted from the
- * definition file.
+ * Parse a ZCFG file and fill the service structure.
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param file the fullpath to the ZCFG file
+ * @param service the service structure to fill
+ * @return 0 on success, -1 on failure
  */
 int getServiceFromFile(maps* conf,const char* file,service** service){
   if(current_content!=NULL){
@@ -791,7 +784,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   wait_inputs=false;
   wait_defaults=false;
   wait_supporteds=false;
-  wait_outputs=false;
+  wait_outputs=-1;
   wait_data=false;
   data=-1;
   previous_data=1;
@@ -809,9 +802,10 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"RESULT: %d %d\n",resultatYYParse,wait_outputs);
+  dumpElements(current_element);
 #endif
-  if(wait_outputs && current_element!=NULL && current_element->name!=NULL){
-    if(my_service->outputs==NULL){      
+  if(wait_outputs>0 && current_element!=NULL && current_element->name!=NULL){
+    if(my_service->outputs==NULL){  
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAOUTPUTS - %d) DUP current_element\n",__LINE__);
 #endif
@@ -839,7 +833,12 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
     free(current_element);
     current_element=NULL;
   }
+  int contentOnly=-1;
   if(current_content!=NULL){
+    if(my_service->content==NULL){
+      addMapToMap(&my_service->content,current_content);
+      contentOnly=1;
+    }
     freeMap(&current_content);
     free(current_content);
     current_content=NULL;
@@ -848,8 +847,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 #ifdef DEBUG_SERVICE_CONF
   dumpService(my_service);
 #endif
-  if(wait_outputs<0 || my_service==NULL || my_service->name==NULL || my_service->content==NULL || my_service->outputs==NULL){
-    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  if(contentOnly<0 && ((wait_outputs<0 && current_data==2 && my_service->outputs==NULL) || my_service==NULL || my_service->name==NULL || my_service->content==NULL)){
     setMapInMaps(conf,"lenv","message",srlval.chaine);
 #ifndef WIN32
     srlex_destroy();

@@ -48,6 +48,9 @@ You can see below a description of the main metadata information:
      title = Metadata title of your service
    </MetaData>
 
+.. Note:: you may add an ``extend`` key in case you use the `Process
+   Profile Registry <process-profiles.html>`__.
+
 List of Inputs
 --------------
 

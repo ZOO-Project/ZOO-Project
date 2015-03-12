@@ -1225,6 +1225,7 @@ void addPrefix(maps* conf,map* level,service* serv){
  * Generate a wps:Process node for a servie and add it to a given node.
  * 
  * @param m the conf maps containing the main.cfg settings
+ * @param registry the profile registry if any
  * @param nc the XML node to add the Process node
  * @param serv the service structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 

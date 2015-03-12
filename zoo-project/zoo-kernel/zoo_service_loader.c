@@ -1,4 +1,4 @@
-/**
+/*
  * Author : Gérald FENOY
  *
  *  Copyright 2008-2013 GeoLabs SARL. All rights reserved.
@@ -119,7 +119,13 @@ extern "C"
 }
 #endif
 
+/**
+ * Translation function for zoo-kernel
+ */
 #define _(String) dgettext ("zoo-kernel",String)
+/**
+ * Translation function for zoo-service
+ */
 #define __(String) dgettext ("zoo-service",String)
 
 #ifdef WIN32
@@ -130,6 +136,17 @@ extern "C"
 
 extern int getServiceFromFile (maps *, const char *, service **);
 
+/**
+ * Parse the service file using getServiceFromFile or use getServiceFromYAML
+ * if YAML support was activated.
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param file the file name to parse
+ * @param service the service to update witht the file content
+ * @param name the service name
+ * @return true if the file can be parsed or false
+ * @see getServiceFromFile, getServiceFromYAML
+ */
 int
 readServiceFile (maps * conf, char *file, service ** service, char *name)
 {
@@ -143,6 +160,13 @@ readServiceFile (maps * conf, char *file, service ** service, char *name)
   return t;
 }
 
+/**
+ * Replace a char by another one in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
 void
 translateChar (char *str, char toReplace, char toReplaceBy)
 {
@@ -155,8 +179,13 @@ translateChar (char *str, char toReplace, char toReplaceBy)
 }
 
 /**
- * Create (or append to) an array valued maps
- * value = "["",""]"
+ * Create (or append to) an array valued maps value = "["",""]"
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @param mo the map to update
+ * @param mi the map to append
+ * @param elem the elements containing default definitions
+ * @return 0 on success, -1 on failure
  */
 int
 appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
@@ -236,8 +265,119 @@ appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem)
   return 0;
 }
 
+/**
+ * Create the profile registry.
+ *
+ * The profile registry is optional (created only if the registry key is
+ * available in the [main] section of the main.cfg file) and can be used to
+ * store the profiles hierarchy. The registry is a directory which should
+ * contain the following sub-directories: 
+ *  * concept: direcotry containing .html files describing concept
+ *  * generic: directory containing .zcfg files for wps:GenericProcess
+ *  * implementation: directory containing .zcfg files for wps:Process
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @param r the registry to update
+ * @param reg_dir the resgitry 
+ * @param saved_stdout the saved stdout identifier
+ * @return 0 if the resgitry is null or was correctly updated, -1 on failure
+ */
 int
-recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
+createRegistry (maps* m,registry ** r, char *reg_dir, int saved_stdout)
+{
+  struct dirent *dp;
+  int scount = 0;
+
+  if (reg_dir == NULL)
+    return 0;
+  DIR *dirp = opendir (reg_dir);
+  if (dirp == NULL)
+    {
+      return -1;
+    }
+  while ((dp = readdir (dirp)) != NULL){
+    if ((dp->d_type == DT_DIR || dp->d_type == DT_LNK) && dp->d_name[0] != '.')
+      {
+
+        char * tmpName =
+          (char *) malloc ((strlen (reg_dir) + strlen (dp->d_name) + 2) *
+                           sizeof (char));
+        sprintf (tmpName, "%s/%s", reg_dir, dp->d_name);
+	
+	DIR *dirp1 = opendir (tmpName);
+	struct dirent *dp1;
+	while ((dp1 = readdir (dirp1)) != NULL){
+	  char* extn = strstr(dp1->d_name, ".zcfg");
+	  if(dp1->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
+	    {
+	      int t;
+	      char *tmps1=
+		(char *) malloc ((strlen (tmpName) + strlen (dp1->d_name) + 2) *
+				 sizeof (char));
+	      sprintf (tmps1, "%s/%s", tmpName, dp1->d_name);
+	      char *tmpsn = zStrdup (dp1->d_name);
+	      tmpsn[strlen (tmpsn) - 5] = 0;
+	      service* s1 = (service *) malloc (SERVICE_SIZE);
+	      if (s1 == NULL)
+		{
+		  dup2 (saved_stdout, fileno (stdout));
+		  errorException (m, _("Unable to allocate memory."),
+				  "InternalError", NULL);
+		  return -1;
+		}
+	      t = readServiceFile (m, tmps1, &s1, tmpsn);
+	      free (tmpsn);
+	      if (t < 0)
+		{
+		  map *tmp00 = getMapFromMaps (m, "lenv", "message");
+		  char tmp01[1024];
+		  if (tmp00 != NULL)
+		    sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+			     dp1->d_name, tmp00->value);
+		  else
+		    sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+			     dp1->d_name);
+		  dup2 (saved_stdout, fileno (stdout));
+		  errorException (m, tmp01, "InternalError", NULL);
+		  return -1;
+		}
+#ifdef DEBUG
+	      dumpService (s1);
+	      fflush (stdout);
+	      fflush (stderr);
+#endif
+	      if(strncasecmp(dp->d_name,"implementation",14)==0){
+		inheritance(*r,&s1);
+	      }
+	      addServiceToRegistry(r,dp->d_name,s1);
+	      freeService (&s1);
+	      free (s1);
+	      scount++;
+	    }
+	}
+	(void) closedir (dirp1);
+      }
+  }
+  (void) closedir (dirp);
+  return 0;
+}
+
+/**
+ * Recursivelly parse zcfg starting from the ZOO-Kernel cwd.
+ * Call the func function given in arguments after parsing the ZCFG file.
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @param r the registry containing profiles hierarchy
+ * @param n the root XML Node to add the sub-elements
+ * @param conf_dir the location of the main.cfg file (basically cwd)
+ * @param prefix the current prefix if any, or NULL
+ * @param saved_stdout the saved stdout identifier
+ * @param level the current level (number of sub-directories to reach the
+ * current path)
+ * @see inheritance, readServiceFile
+ */
+int
+recursReaddirF (maps * m, registry *r, xmlNodePtr n, char *conf_dir, char *prefix,
                 int saved_stdout, int level, void (func) (maps *, xmlNodePtr,
                                                           service *))
 {
@@ -286,7 +426,7 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
             sprintf (levels1, "%d", level + 1);
             setMapInMaps (m, "lenv", "level", levels1);
             res =
-              recursReaddirF (m, n, tmp, prefix, saved_stdout, level + 1,
+              recursReaddirF (m, r, n, tmp, prefix, saved_stdout, level + 1,
                               func);
             sprintf (levels1, "%d", level);
             setMapInMaps (m, "lenv", "level", levels1);
@@ -345,6 +485,7 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
             fflush (stdout);
             fflush (stderr);
 #endif
+	    inheritance(r,&s1);
             func (m, n, s1);
             freeService (&s1);
             free (s1);
@@ -355,6 +496,13 @@ recursReaddirF (maps * m, xmlNodePtr n, char *conf_dir, char *prefix,
   return 1;
 }
 
+/**
+ * Apply XPath Expression on XML document.
+ *
+ * @param doc the XML Document
+ * @param search the XPath expression
+ * @return xmlXPathObjectPtr containing the resulting nodes set
+ */
 xmlXPathObjectPtr
 extractFromDoc (xmlDocPtr doc, const char *search)
 {
@@ -366,6 +514,11 @@ extractFromDoc (xmlDocPtr doc, const char *search)
   return xpathObj;
 }
 
+/**
+ * Signal handling function which simply call exit(0).
+ *
+ * @param sig the signal number
+ */
 void
 donothing (int sig)
 {
@@ -375,6 +528,12 @@ donothing (int sig)
   exit (0);
 }
 
+/**
+ * Signal handling function which create an ExceptionReport node containing the
+ * information message corresponding to the signal number.
+ *
+ * @param sig the signal number
+ */
 void
 sig_handler (int sig)
 {
@@ -415,6 +574,16 @@ sig_handler (int sig)
   exit (0);
 }
 
+/**
+ * Load a service provider and run the service function.
+ *
+ * @param myMap the conf maps containing the main.cfg settings
+ * @param s1 the service structure
+ * @param request_inputs map storing all the request parameters
+ * @param inputs the inputs maps
+ * @param ioutputs the outputs maps
+ * @param eres the result returned by the service execution
+ */
 void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                    maps ** inputs, maps ** ioutputs, int *eres)
@@ -875,6 +1044,13 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 }
 #endif
 
+/**
+ * Process the request.
+ *
+ * @param inputs the request parameters map 
+ * @return 0 on sucess, other value on failure
+ * @see conf_read,recursReaddirF
+ */
 int
 runRequest (map ** inputs)
 {
@@ -1112,6 +1288,8 @@ runRequest (map ** inputs)
   else
     SERVICE_URL = zStrdup (DEFAULT_SERVICE_URL);
 
+
+
   service *s1;
   int scount = 0;
 #ifdef DEBUG
@@ -1129,6 +1307,15 @@ runRequest (map ** inputs)
   else
     snprintf (conf_dir, 1024, "%s", ntmp);
 
+  map* reg = getMapFromMaps (m, "main", "registry");
+  registry* zooRegistry=NULL;
+  if(reg!=NULL){
+    int saved_stdout = dup (fileno (stdout));
+    dup2 (fileno (stderr), fileno (stdout));
+    createRegistry (m,&zooRegistry,reg->value,saved_stdout);
+    dup2 (saved_stdout, fileno (stdout));
+  }
+
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
     {
 #ifdef DEBUG
@@ -1145,11 +1332,15 @@ runRequest (map ** inputs)
       int saved_stdout = dup (fileno (stdout));
       dup2 (fileno (stderr), fileno (stdout));
       if (int res =		  
-          recursReaddirF (m, n, conf_dir, NULL, saved_stdout, 0,
+          recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
                           printGetCapabilitiesForProcess) < 0)
         {
           freeMaps (&m);
           free (m);
+	  if(zooRegistry!=NULL){
+	    freeRegistry(&zooRegistry);
+	    free(zooRegistry);
+	  }
           free (REQUEST);
           free (SERVICE_URL);
           fflush (stdout);
@@ -1159,6 +1350,10 @@ runRequest (map ** inputs)
       printDocument (m, doc, getpid ());
       freeMaps (&m);
       free (m);
+      if(zooRegistry!=NULL){
+	freeRegistry(&zooRegistry);
+	free(zooRegistry);
+      }
       free (REQUEST);
       free (SERVICE_URL);
       fflush (stdout);
@@ -1176,6 +1371,10 @@ runRequest (map ** inputs)
                           "InvalidParameterValue", conf_dir);
           freeMaps (&m);
           free (m);
+	  if(zooRegistry!=NULL){
+	    freeRegistry(&zooRegistry);
+	    free(zooRegistry);
+	  }
           free (REQUEST);
           free (SERVICE_URL);
           return 0;
@@ -1199,7 +1398,7 @@ runRequest (map ** inputs)
           if (strcasecmp ("all", orig) == 0)
             {
               if (int res =
-                  recursReaddirF (m, n, conf_dir, NULL, saved_stdout, 0,
+                  recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
                                   printDescribeProcessForProcess) < 0)
                 return res;
             }
@@ -1244,6 +1443,10 @@ runRequest (map ** inputs)
                                           "identifier");
                           freeMaps (&m);
                           free (m);
+			  if(zooRegistry!=NULL){
+			    freeRegistry(&zooRegistry);
+			    free(zooRegistry);
+			  }
                           free (REQUEST);
                           free (corig);
                           free (orig);
@@ -1258,6 +1461,7 @@ runRequest (map ** inputs)
 #ifdef DEBUG
                       dumpService (s1);
 #endif
+		      inheritance(zooRegistry,&s1);
                       printDescribeProcessForProcess (m, n, s1);
                       freeService (&s1);
                       free (s1);
@@ -1320,6 +1524,10 @@ runRequest (map ** inputs)
                                                   NULL);
                                   freeMaps (&m);
                                   free (m);
+				  if(zooRegistry!=NULL){
+				    freeRegistry(&zooRegistry);
+				    free(zooRegistry);
+				  }
                                   free (orig);
                                   free (REQUEST);
                                   closedir (dirp);
@@ -1331,6 +1539,7 @@ runRequest (map ** inputs)
 #ifdef DEBUG
                               dumpService (s1);
 #endif
+			      inheritance(zooRegistry,&s1);
                               printDescribeProcessForProcess (m, n, s1);
                               freeService (&s1);
                               free (s1);
@@ -1357,6 +1566,10 @@ runRequest (map ** inputs)
                                       "Identifier");
                       freeMaps (&m);
                       free (m);
+		      if(zooRegistry!=NULL){
+			freeRegistry(&zooRegistry);
+			free(zooRegistry);
+		      }
                       free (orig);
                       free (REQUEST);
                       closedir (dirp);
@@ -1378,6 +1591,10 @@ runRequest (map ** inputs)
           printDocument (m, doc, getpid ());
           freeMaps (&m);
           free (m);
+	  if(zooRegistry!=NULL){
+	    freeRegistry(&zooRegistry);
+	    free(zooRegistry);
+	  }
           free (REQUEST);
           free (SERVICE_URL);
           fflush (stdout);
@@ -1395,6 +1612,10 @@ runRequest (map ** inputs)
           closedir (dirp);
           freeMaps (&m);
           free (m);
+	  if(zooRegistry!=NULL){
+	    freeRegistry(&zooRegistry);
+	    free(zooRegistry);
+	  }
           free (REQUEST);
           free (SERVICE_URL);
           fflush (stdout);
@@ -1409,6 +1630,10 @@ runRequest (map ** inputs)
     {
       freeMaps (&m);
       free (m);
+      if(zooRegistry!=NULL){
+	freeRegistry(&zooRegistry);
+	free(zooRegistry);
+      }
       free (REQUEST);
       free (SERVICE_URL);
       return errorException (m, _("Unable to allocate memory."),
@@ -1446,6 +1671,11 @@ runRequest (map ** inputs)
   int saved_stdout = dup (fileno (stdout));
   dup2 (fileno (stderr), fileno (stdout));
   t = readServiceFile (m, tmps1, &s1, r_inputs->value);
+  inheritance(zooRegistry,&s1);
+  if(zooRegistry!=NULL){
+    freeRegistry(&zooRegistry);
+    free(zooRegistry);
+  }
   fflush (stdout);
   dup2 (saved_stdout, fileno (stdout));
   if (t < 0)

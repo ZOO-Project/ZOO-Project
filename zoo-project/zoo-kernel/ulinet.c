@@ -328,10 +328,10 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
 #endif
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,lpszHeaders);
-    //curl_easy_setopt(hInternet->handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
-    if(hInternet->ihandle[hInternet->nb].header!=NULL)
-      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
   }
+  if(hInternet->ihandle[hInternet->nb].header!=NULL)
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
 
@@ -365,6 +365,7 @@ int processDownloads(HINTERNET* hInternet){
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
     if(tmp!=NULL)
       hInternet->ihandle[i].mimeType=strdup(tmp);
+    curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_RESPONSE_CODE,&hInternet->ihandle[i].code);
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
   }
@@ -436,3 +437,23 @@ int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToR
       return 1; // TRUE
 }
 
+
+/**
+ * Use basic authentication for accessing a ressource
+ * 
+ * @param hInternet the _HINTERNET structure
+ * @param login the login to use to authenticate
+ * @param passwd the password to use to authenticate
+ */
+int setBasicAuth(HINTERNET hInternet,char* login,char* passwd){
+  char *tmp;
+  tmp=(char*)malloc((strlen(login)+strlen(passwd)+2)*sizeof(char));
+  sprintf(tmp,"%s:%s",login,passwd);
+  if(curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle,CURLOPT_USERPWD,tmp)==CURLE_OUT_OF_MEMORY){
+    free(tmp);
+    return -1;
+  }
+  curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle, CURLOPT_HTTPAUTH,CURLAUTH_ANY);
+  free(tmp);
+  return 0;
+}

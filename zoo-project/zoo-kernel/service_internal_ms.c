@@ -130,6 +130,11 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
 void setReferenceUrl(maps* m,maps* tmpI){
   outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
+  if(msUrl==NULL){
+    errorException (m, _("Unable to find any mapserverAddress defined in the main.cfg file"),
+		    "InternalError", NULL);
+    exit(-1);
+  }
   map *msOgcVersion=getMapFromMaps(m,"main","msOgcVersion");
   map *dataPath=getMapFromMaps(m,"main","dataPath");
   map *sid=getMapFromMaps(m,"lenv","usid");
@@ -793,9 +798,9 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   if( tRef != NULL && strlen(tRef)>0 ){
     char *pszProjection;
     pszProjection = (char *) GDALGetProjectionRef( hDataset );
-    //#ifdef DEBUGMS
+#ifdef DEBUGMS
     fprintf(stderr,"Accessing the DataSource %s\n",GDALGetProjectionRef( hDataset ));
-    //#endif
+#endif
     setSrsInformations(output,m,myLayer,pszProjection);
   }else{
     fprintf(stderr,"NO SRS FOUND ! %s\n",GDALGetProjectionRef( hDataset ));    

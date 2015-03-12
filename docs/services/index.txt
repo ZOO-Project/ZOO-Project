@@ -10,6 +10,7 @@ The following sections will assist you with ZOO Services:
    
    introduction
    zcfg-reference
+   process-profiles
    howtos
    status
    debug
