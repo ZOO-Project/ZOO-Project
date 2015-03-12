@@ -614,10 +614,10 @@ else
 	else
 		if test -d "$JDKHOME/jre/lib/i386";
 		then
-			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/client/ -ljvm -lpthread"
+			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/server/ -ljvm -lpthread"
 			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
 		else
-			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/client/ -ljvm -lpthread"
+			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
 			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
 		fi
 	fi
@@ -626,14 +626,14 @@ else
 	CPPFLAGS_SAVE="$CPPFLAGS"
 	CPPFLAGS="$JAVA_CPPFLAGS"
 	AC_CHECK_HEADERS([jni.h],
-			 [], [AC_MSG_ERROR([could not find headers include related to libjava])])
+			 [], [AC_MSG_ERROR([could not find jni.h file])])
 
 	# Ensure we can link against libjava
 	LIBS_SAVE="$LIBS"
 	LIBS="$JAVA_LDFLAGS"
 	if test "x$JDKHOME" != "xmacos";
 	then
-		AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjava])], [])
+		AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjvm])], [])
 	fi
 
 	AC_SUBST([JAVA_CPPFLAGS])
