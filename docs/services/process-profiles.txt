@@ -4,7 +4,7 @@ Process Profiles Registry
 =========================================  
 
 :Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
-:Last Updated: $Date:$
+:Last Updated: $Date$
 
 .. contents:: Table of Contents
     :depth: 3
@@ -146,10 +146,10 @@ ZCFG inheritance
 ----------------------------------
 
 For the ZCFG files at the service level, you can inherit the metadata
-from a profile available in the registry. As before, you simply need
-to add a ``extend`` key refering the ZCFG you want to inherit from
-and a ``level`` key taking the `ìmplementation`` value to your main
-metadata informations.
+from a Process Implementation Profile available in the registry. As
+before, you simply need to add a ``extend`` key refering the ZCFG you
+want to inherit from and a ``level`` key taking the `ìmplementation``
+value to your main metadata informations.
 
 So, for example, the original `ConvexHull.zcfg
 <http://www.zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/ogr/base-vect-ops/cgi-env/ConvexHull.zcfg?rev=491>`__
