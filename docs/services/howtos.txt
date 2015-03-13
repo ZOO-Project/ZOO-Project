@@ -203,10 +203,31 @@ Sample ZOO PHP Services Provider
 Java
 ----
 
+Specifically for the Java support, you may add the following two
+sections to your ``main.cfg`` file:
+
+:[javaxx]:
+   This section is used to pass -XX:* parameters to the JVM  created by the
+   ZOO-Kernel to handle your ZOO-Service (see `ref. 1
+   <http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html#BehavioralOptions>`__
+   or `ref. 2
+   <http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html#PerformanceTuning>`__
+   for sample available). 
+   For each map ``a = b`` available in the ``[javaxx]`` section, the
+   option ``-XX:a=b`` will be passed to the JVM. In case of a map ``a =
+   minus`` (respectively ``a=plus``) then the option ``-XX:-a``
+   (respectivelly ``-XX:+a``) will be passed.
+:[javax]:
+   The section is used to pass -X* options to the JVM (see
+   `ref. <http://docs.oracle.com/cd/E22289_01/html/821-1274/configuring-the-default-jvm-and-java-arguments.html>`__). For
+   each map ``a = b`` available in the ``[javax]`` section, the option
+   ``-Xab`` will be passed to the JVM (ie. set ``mx=2G`` to pass
+   ``-Xmx2G``).
+
 ZOO-API
 *******
 
-Before you build your first ZOO-Service implemented inn Java, it is
+Before you build your first ZOO-Service implemented in Java, it is
 recommended that you first build the ZOO class of the Java ZOO-API.
 
 .. Note:: You should build ZOO-Kernel prior to follow this instructions.
@@ -227,9 +248,9 @@ Java ZCFG requirements
 **********************************
 
 .. Note:: For each Service provided by your ZOO Java Services Provider
-          (your corresponding Java class), the ZCFG File must be
-          named the same as the Java public method name (also the
-          case of characters is important).
+          (your corresponding Java class), the ZCFG File should have
+          the name of the Java public method corresponding to the
+          service (case-sensitive).
 
 The ZCFG file should contain the following :
 
@@ -238,7 +259,7 @@ serviceType
 serviceProvider
     The name of the Java class to use as a ZOO Service Provider. For instance, if your
     java class, located in the same directory as your ZOO-Kernel, was
-    named ``HelloWorld.class`` then you should use ``HelloWorld``.
+    named ``HelloJava.class`` then you should use ``HelloJava``.
 
 Java Data Structure used
 ********************************

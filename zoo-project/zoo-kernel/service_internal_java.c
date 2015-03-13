@@ -302,9 +302,9 @@ void displayStack(JNIEnv *env,maps* main_conf){
 /**
  * Create a string containing the JVM -XX:* option for a given map
  * Depending on the map' name:
- *  - in case the value is minus then the reult will be : -XX:-name
- *  - in case the value is plus then the reult will be : -XX:+name
- *  - in other cases the reult will be : -XX:name=value
+ *  - in case the value is minus then the result will be : -XX:-name
+ *  - in case the value is plus then the result will be : -XX:+name
+ *  - in other cases the result will be : -XX:name=value
  *
  * @param m the map containing the option
  * @return a char* containing the valide JVM option (-XX:*)
@@ -321,15 +321,15 @@ char *parseJVMXXOption(map* m){
 }
 
 /**
- * Create a string containing the JVM -X*:* option for a given map.
- * The reult will be in the following format: -Xname:value
+ * Create a string containing the JVM -X** option for a given map.
+ * The result will be in the following format: -Xnamevalue
  *
  * @param m the map containing the option
- * @return a char* containing the valide JVM option (-XX:*)
+ * @return a char* containing the valide JVM option (-X**)
  */
 char *parseJVMXOption(map* m){
   char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+5)*sizeof(char));
-  sprintf(res,"-X%s:%s",m->name,m->value);
+  sprintf(res,"-X%s%s",m->name,m->value);
   return res;
 }
 
