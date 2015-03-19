@@ -1976,8 +1976,12 @@ printProcessResponse (maps * m, map * request, int pid, service * serv,
   nr = soapEnvelope (m, n);
   xmlDocSetRootElement (doc, nr);
 
-  if (hasStoredExecuteResponse == true)
-    {
+
+  map * background = NULL;
+  background = getMapFromMaps(m,"lenv","background");
+
+    if (background != NULL){
+        /* requete asynchrone */
       /* We need to write the ExecuteResponse Document somewhere */
       FILE *output = fopen (stored_path, "w");
       if (output == NULL)
@@ -2005,8 +2009,9 @@ printProcessResponse (maps * m, map * request, int pid, service * serv,
       xmlFree (xmlbuff);
       fclose (output);
     }
+    else {
   printDocument (m, doc, pid,out);
-
+    }
   xmlCleanupParser ();
   zooXmlCleanupNs ();
 }
@@ -2030,8 +2035,12 @@ printDocument (maps * m, xmlDocPtr doc, int pid,FCGX_Stream * out)
    * for demonstration purposes.
    */
   xmlDocDumpFormatMemoryEnc (doc, &xmlbuff, &buffersize, encoding, 1);
-  FCGX_FPrintF(out,(char *)xmlbuff);
-  FCGX_FFlush(out);
+  
+  
+  if (out != NULL){
+    FCGX_FPrintF(out,(char *)xmlbuff);
+    FCGX_FFlush(out);
+    }
   //printf ("%s", xmlbuff);
   //fflush (stdout);
   /*
@@ -3686,6 +3695,7 @@ loadRemoteFile (maps ** m, map ** content, HINTERNET * hInternet, char *url)
     }
   if (fsize == 0)
     {
+      
       return errorException (*m, _("Unable to download the file."),
                              "InternalError", NULL,NULL);
     }
@@ -3698,9 +3708,11 @@ loadRemoteFile (maps ** m, map ** content, HINTERNET * hInternet, char *url)
 
   free (tmpMap->value);
   tmpMap->value = (char *) malloc ((fsize + 1) * sizeof (char));
-  if (tmpMap->value == NULL)
+  if (tmpMap->value == NULL){
+
     return errorException (*m, _("Unable to allocate memory."),
                            "InternalError", NULL,NULL);
+  }
   memcpy (tmpMap->value, fcontent, (fsize + 1) * sizeof (char));
 
   char ltmp1[256];

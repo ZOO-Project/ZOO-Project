@@ -15,6 +15,7 @@ AC_CHECK_LIB([fl], [main])
 AC_CHECK_LIB([pthread], [main])
 AC_CHECK_LIB([ssl], [main])
 
+
 # Checks for header files.
 AC_FUNC_ALLOCA
 AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h unistd.h])
@@ -134,6 +135,47 @@ AC_CHECK_HEADERS([fcgi_stdio.h],
 
 AC_SUBST([FCGI_CPPFLAGS])
 AC_SUBST([FCGI_LDFLAGS])
+
+
+# ===========================================================================
+# Detect if json-c is available
+# ===========================================================================
+
+AC_CHECK_LIB([json-c], [main])
+JSON_LDFLAGS=`pkg-config --libs json-c`
+JSON_CPPFLAGS=`pkg-config --cflags json-c`
+
+AC_SUBST([JSON_LDFLAGS])
+AC_SUBST([JSON_CPPFLAGS])
+
+
+
+
+# ===========================================================================
+# Detect if librabbitmq is available
+# ===========================================================================
+
+
+AC_CHECK_LIB([rabbitmq], [main])
+RABBITMQ_LDFLAGS=`pkg-config --libs librabbitmq`
+RABBITMQ_CPPFLAGS=`pkg-config --cflags librabbitmq`
+
+AC_SUBST([RABBITMQ_LDFLAGS])
+AC_SUBST([RABBITMQ_CPPFLAGS])
+
+# ===========================================================================
+# Detect if libmysql is available
+# ===========================================================================
+
+
+AC_CHECK_LIB([mysqlclient], [main])
+MYSQL_LDFLAGS=`mysql_config --libs`
+MYSQL_CPPFLAGS=`mysql_config --cflags`
+
+AC_SUBST([MYSQL_LDFLAGS])
+AC_SUBST([MYSQL_CPPFLAGS])
+
+
 
 # ===========================================================================
 # Detect if proj is installed

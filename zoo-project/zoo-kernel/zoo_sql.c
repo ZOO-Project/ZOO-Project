@@ -1,3 +1,29 @@
+/**
+ * Author : David Saggiorato
+ *
+ *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,7 +83,7 @@ char * get_uuid(){
     return tmp;
  }
 
-int add_status(const char * uuid) {
+int add_job(const char * uuid) {
     init_connection();
     const char * query = "insert into status (uuid,status,created_time) values ('%s','queue',now())";
     char * query_f = (char*) malloc(strlen(query) + strlen(uuid) + 1);
@@ -71,3 +97,20 @@ int add_status(const char * uuid) {
     mysql_close(con);
     return 0;
 }
+
+int start_job(const char *uuid){
+    init_connection();
+    const char * query = "update status set start_date=now(), status='running', progress=0 where uuid='%s';";
+    char * query_f = (char*) malloc(strlen(query) + strlen(uuid) + 1);
+    sprintf(query_f,query,uuid);
+    if (mysql_query(con, query_f) != 0){
+        fprintf(stderr, "%s\n", mysql_error(con));
+        free(query_f);
+        return -1;
+    }
+    free(query_f);
+    mysql_close(con);
+    return 0;
+}
+
+
