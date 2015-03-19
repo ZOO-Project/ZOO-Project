@@ -30,6 +30,7 @@ extern "C" int crlex ();
 #include "cgic.h"
 #include "zoo_amqp.h"
 #include "zoo_sql.h"
+#include "zoo_json.h"
 extern "C"
 {
 #include <libxml/tree.h>
@@ -274,40 +275,22 @@ sig_handler (int sig)
   exit (0);
 }
 
-#include "zoo_json.h"
 void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                    maps ** inputs, maps ** ioutputs, int *eres,FCGX_Stream *out, FCGX_Stream *err)
 {
  
- json_object *obj;
- mapstojson(&obj,*myMap);
- fprintf(stderr,"myMaps: %s\n",json_object_to_json_string(obj));
-
-
-json_object *obj3;
-mapstojson(&obj3,*inputs);
-fprintf(stderr,"inputs: %s\n",json_object_to_json_string(obj3));
-
-
-json_object *obj1;
- maptojson(&obj1,request_inputs);
- fprintf(stderr,"request_inputs: %s\n",json_object_to_json_string(obj1));
-
-json_object *obj2;
-mapstojson(&obj2,*ioutputs);
-fprintf(stderr,"ioutputs: %s\n",json_object_to_json_string(obj2));
-
-
-
- fflush(stderr);
-
 
  char tmps1[1024];
   char ntmp[1024];
   maps *m = *myMap;
   maps *request_output_real_format = *ioutputs;
   maps *request_input_real_format = *inputs;
+  map * background = NULL;
+  map * uuid = getMapFromMaps(m,"lenv","usid");
+  background = getMapFromMaps(m,"lenv","background");
+
+
   /**
    * Extract serviceType to know what kind of service should be loaded
    */
@@ -442,7 +425,13 @@ fprintf(stderr,"ioutputs: %s\n",json_object_to_json_string(obj2));
                            _
                            ("Error occured while running the %s function: %s"),
                            s1->name, errstr);
-                  errorException (m, tmpMsg, "InternalError", NULL,out);
+
+                  if (background == NULL){
+                    errorException (m, tmpMsg, "InternalError", NULL,out);
+                  }
+                  else {
+                    /* mise a jour de la table status */
+                   }
                   free (tmpMsg);
 #ifdef DEBUG
                   fprintf (stderr, "Function %s error %s\n",
@@ -465,11 +454,12 @@ fprintf(stderr,"ioutputs: %s\n",json_object_to_json_string(obj2));
               fprintf (stderr, "Now run the function \n");
               fflush (stderr);
 #endif
-              *eres =
+
+            *eres =
                 execute (&m, &request_input_real_format,
                          &request_output_real_format);
 #ifdef DEBUG
-              fprintf (stderr, "Function loaded and returned %d\n", eres);
+              fprintf (stderr, "Function loaded and returned %d\n", *eres);
               fflush (stderr);
 #endif
 
@@ -496,7 +486,12 @@ fprintf(stderr,"ioutputs: %s\n",json_object_to_json_string(obj2));
 #endif
           sprintf (tmps, _("C Library can't be loaded %s"), errstr);
           map *tmps1 = createMap ("text", tmps);
-          printExceptionReportResponse (m, tmps1,out);
+          if (background == NULL){
+             printExceptionReportResponse (m, tmps1,out);
+          }
+          else {
+            /* mise a jour table status */
+           }
           *eres = -1;
           freeMap (&tmps1);
           free (tmps1);
@@ -577,8 +572,13 @@ fprintf(stderr,"ioutputs: %s\n",json_object_to_json_string(obj2));
                _
                ("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),
                r_inputs->value);
-      map *tmps = createMap ("text", tmpv);
-      printExceptionReportResponse (m, tmps,out);
+      if (background == NULL){
+        map *tmps = createMap ("text", tmpv);
+        printExceptionReportResponse (m, tmps,out);
+      }
+      else {
+      /* mise jour table status */
+      }
       *eres = -1;
     }
   *myMap = m;
@@ -3042,6 +3042,7 @@ struct cgi_env *cgi = *c;
       status = NULLMAP;
   if (status == NULLMAP)
     {
+
       loadServiceAndRun
         (&m, s1,
          request_inputs,
@@ -3054,10 +3055,7 @@ else
     {
 
     eres = SERVICE_ACCEPTED;
-    json_object * msg_jobj = json_object_new_object();
-    json_object_object_add(msg_jobj,"service_identifier",json_object_new_string(service_identifier));
-
-
+    json_object *msg_jobj = json_object_new_object();
     json_object *maps_obj;
     mapstojson(&maps_obj,m);
     json_object_object_add(msg_jobj,"maps",maps_obj);
@@ -3075,10 +3073,15 @@ else
     json_object *outputs_jobj;
     mapstojson(&outputs_jobj,request_output_real_format);
     json_object_object_add(msg_jobj,"request_output_real_format",outputs_jobj);
-   
-    if ( (send_msg(json_object_to_json_string(msg_jobj),"application/json") != 0) || (add_status(uuid) != 0) ){     
+  
+    bind_amqp();
+
+    if ( (send_msg(json_object_to_json_string(msg_jobj),"application/json") != 0) || (add_job(uuid) != 0) ){     
         eres = SERVICE_FAILED;
     }
+    close_amqp();
+    json_object_put(msg_jobj);
+    
 
 }
 

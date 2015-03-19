@@ -66,7 +66,15 @@ extern "C"
 }
 
 #include "service_zcfg.h"
+#include "zoo_json.h"
+#include "zoo_amqp.h"
+#include "zoo_sql.h"
 //#include "service_internal.h"
+
+
+void
+loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
+                   maps ** inputs, maps ** ioutputs, int *eres,FCGX_Stream *out, FCGX_Stream *err);
 
 xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
 int runRequest (map **,struct cgi_env **,FCGX_Request *);
@@ -99,7 +107,6 @@ int process(FCGX_Request *request){
 
       int pid = getpid();
       struct cgi_env *cgi;
-      //PrintEnv(request.err, "Request environment", request.envp); 
       cgi = (struct cgi_env*)malloc(sizeof(struct cgi_env));
       cgiMain_init (NULL, NULL,&cgi,request);
       char *strQuery = NULL;
@@ -454,7 +461,12 @@ int process(FCGX_Request *request){
 
       if (strQuery != NULL)
         free (strQuery);
-
+/*
+      json_object *obj;
+      maptojson(&obj,tmpMap);
+      fprintf(stderr,"%s\n",json_object_to_json_string(obj));
+      fflush(stderr);
+  */    
       runRequest (&tmpMap,&cgi,request);
 
   /** 
@@ -524,7 +536,17 @@ main (int argc, char *argv[])
     fprintf(stderr,"Erreur lors de la lecture de %s\n",file_value);
     return 1;
   }
-
+/* 
+ json_object *jobj;
+  mapstojson(&jobj,conf);
+  fprintf (stderr,"The json object created: %s\n",json_object_to_json_string(jobj));
+    freeMaps(&conf);
+ 
+  maps *conf_tmp;
+  jsontomaps(jobj,&conf_tmp);
+  dumpMaps(conf_tmp);
+   return 1;
+*/
   char *rootDir;
   map *m_rootDir = getMapFromMaps (conf, "server", "rootDir");
   if (m_rootDir == NULL){
@@ -684,6 +706,157 @@ main (int argc, char *argv[])
     }
   }
 
+
+  char * amqp_host;
+  map * m_amqp_host = getMapFromMaps (conf, "rabbitmq", "host");
+  if (m_amqp_host == NULL){
+    fprintf(stderr,"Configuration error: [rabbitmq] host");
+    return 2;
+  }
+  else {
+    amqp_host = (char *)malloc((strlen(m_amqp_host->value) +1)*sizeof(char*));
+    strncpy(amqp_host,m_amqp_host->value,strlen(m_amqp_host->value));
+    amqp_host[strlen(m_amqp_host->value)] = '\0';
+ }
+
+  int amqp_port;
+  map *m_amqp_port = getMapFromMaps (conf, "rabbitmq", "port");
+  if (m_amqp_port == NULL){
+    fprintf(stderr,"Configuration error: [rabbitmq] port");
+    return 2;
+  }
+  else {
+    amqp_port = atoi(m_amqp_port->value);
+    if (amqp_port == 0){
+        fprintf(stderr,"Configuration error: [rabbitmq] port");
+        return 2;
+    }
+  }
+
+  char * amqp_user;
+  map * m_amqp_user = getMapFromMaps (conf, "rabbitmq", "user");
+  if (m_amqp_user == NULL){
+    fprintf(stderr,"Configuration error: [rabbitmq] user");
+    return 2;
+  }
+  else {
+    amqp_user = (char *)malloc((strlen(m_amqp_user->value) +1)*sizeof(char*));
+    strncpy(amqp_user,m_amqp_user->value,strlen(m_amqp_user->value));
+    amqp_user[strlen(m_amqp_user->value)] = '\0';
+ }
+
+  char * amqp_passwd;
+  map * m_amqp_passwd = getMapFromMaps (conf, "rabbitmq", "passwd");
+  if (m_amqp_passwd == NULL){
+    fprintf(stderr,"Configuration error: [rabbitmq] passwd");
+    return 2;
+  }
+  else {
+    amqp_passwd = (char *)malloc((strlen(m_amqp_passwd->value) +1)*sizeof(char*));
+    strncpy(amqp_passwd,m_amqp_passwd->value,strlen(m_amqp_passwd->value));
+    amqp_passwd[strlen(m_amqp_passwd->value)] = '\0';
+ }
+
+  char * amqp_exchange;
+  map * m_amqp_exchange = getMapFromMaps (conf, "rabbitmq", "exchange");
+  if (m_amqp_exchange == NULL){
+    fprintf(stderr,"Configuration error: [rabbitmq] exchange");
+    return 2;
+  }
+  else {
+    amqp_exchange = (char *)malloc((strlen(m_amqp_exchange->value) +1)*sizeof(char*));
+    strncpy(amqp_exchange,m_amqp_exchange->value,strlen(m_amqp_exchange->value));
+    amqp_exchange[strlen(m_amqp_exchange->value)] = '\0';
+ }
+
+  char * amqp_routingkey;
+  map * m_amqp_routingkey = getMapFromMaps (conf, "rabbitmq", "routingkey");
+  if (m_amqp_routingkey == NULL){
+    fprintf(stderr,"Configuration error: [amqp] routingkey");
+    return 2;
+  }
+  else {
+    amqp_routingkey = (char *)malloc((strlen(m_amqp_routingkey->value) +1)*sizeof(char*));
+    strncpy(amqp_routingkey,m_amqp_routingkey->value,strlen(m_amqp_routingkey->value));
+    amqp_routingkey[strlen(m_amqp_routingkey->value)] = '\0';
+ }
+
+  char * amqp_queue;
+  map * m_amqp_queue = getMapFromMaps (conf, "rabbitmq", "queue");
+  if (m_amqp_queue == NULL){
+    fprintf(stderr,"Configuration error: [rabbitmq] queue");
+    return 2;
+  }
+  else {
+    amqp_queue = (char *)malloc((strlen(m_amqp_queue->value) +1)*sizeof(char*));
+    strncpy(amqp_queue,m_amqp_queue->value,strlen(m_amqp_queue->value));
+    amqp_queue[strlen(m_amqp_queue->value)] = '\0';
+ }
+
+  char * status_user;
+  map * m_status_user = getMapFromMaps (conf, "status", "user");
+  if (m_status_user == NULL){
+    fprintf(stderr,"Configuration error: [status] user");
+    return 2;
+  }
+  else {
+    status_user = (char *)malloc((strlen(m_status_user->value) +1)*sizeof(char*));
+    strncpy(status_user,m_status_user->value,strlen(m_status_user->value));
+    status_user[strlen(m_status_user->value)] = '\0';
+  }
+
+
+  char * status_passwd;
+  map * m_status_passwd = getMapFromMaps (conf, "status", "passwd");
+  if (m_status_passwd == NULL){
+    fprintf(stderr,"Configuration error: [status] passwd");
+    return 2;
+  }
+  else {
+    status_passwd = (char *)malloc((strlen(m_status_passwd->value) +1)*sizeof(char*));
+    strncpy(status_passwd,m_status_passwd->value,strlen(m_status_passwd->value));
+    status_passwd[strlen(m_status_passwd->value)] = '\0';
+  }
+
+  char * status_bdd;
+  map * m_status_bdd = getMapFromMaps (conf, "status", "bdd");
+  if (m_status_bdd == NULL){
+    fprintf(stderr,"Configuration error: [status] bdd");
+    return 2;
+  }
+  else {
+    status_bdd = (char *)malloc((strlen(m_status_bdd->value) +1)*sizeof(char*));
+    strncpy(status_bdd,m_status_bdd->value,strlen(m_status_bdd->value));
+    status_bdd[strlen(m_status_bdd->value)] = '\0';
+  }
+
+  char * status_host;
+  map * m_status_host = getMapFromMaps (conf, "status", "host");
+  if (m_status_host == NULL){
+    fprintf(stderr,"Configuration error: [status] host");
+    return 2;
+  }
+  else {
+    status_host = (char *)malloc((strlen(m_status_host->value) +1)*sizeof(char*));
+    strncpy(status_host,m_status_host->value,strlen(m_status_host->value));
+    status_host[strlen(m_status_host->value)] = '\0';
+  }
+
+  int status_port;
+  map *m_status_port = getMapFromMaps (conf, "status", "port");
+  if (m_status_port == NULL){
+    fprintf(stderr,"Configuration error: [status] port");
+    return 2;
+  }
+  else {
+    status_port = atoi(m_status_port->value);
+    if (status_port == 0){
+        fprintf(stderr,"Configuration error: [status] port");
+        return 2;
+    }
+  }
+  init_sql(status_host,status_user,status_passwd,status_bdd,status_port);
+
   int sock = FCGX_OpenSocket(listen, listen_queue); 
   init_services_conf (rootDir);
   
@@ -704,11 +877,15 @@ main (int argc, char *argv[])
     fprintf(stderr,"Change uid error\n");
     return 3;
   }
- 
+
+  init_amqp(amqp_host,amqp_port,amqp_user, amqp_passwd, amqp_exchange, amqp_routingkey,amqp_queue);
+
+
   int fork_status = fork();
   if (fork_status == 0){
     //child
-    int forker_pid = getpid();
+    int master_sync= getpid();
+    fprintf(stderr,"Master sync%d\n",getpid());
     FCGX_Init();
     FCGX_Request request;
     FCGX_InitRequest(&request, sock, 0);
@@ -717,13 +894,14 @@ main (int argc, char *argv[])
     for (i = 0; i< req_worker; i++){
         fork_status = fork();
         if (fork_status == 0){
-            fprintf(stderr,"child %d \n",i);
+            fprintf(stderr,"child sync %d \n",getpid());
             fflush(stderr);
             break;
         }
     }
     while(1){
-        if (forker_pid != getpid()){
+        /* mode synchrone */
+        if (master_sync != getpid()){
             while(FCGX_Accept_r(&request) == 0){
                 process(&request);
                 count_request ++;
@@ -736,15 +914,151 @@ main (int argc, char *argv[])
         }
         else {
             wait(0);
-            fprintf(stderr,"new child\n");
+            fprintf(stderr,"Master sync %d\n",getpid());
+            fprintf(stderr,"New sync Child\n");
             fflush(stderr);
             fork();
         }
     }
   }
   else {
-  
-  while(1);
+   int master_async = getpid();
+   fprintf(stderr,"Master async %d\n",master_async);
+    int fork_s;
+    int j;
+    for (j = 0; j< async_worker; j++){
+        fork_s = fork();
+        if (fork_s == 0){
+            fprintf(stderr,"child async %d \n",getpid());
+            fflush(stderr);
+            break;
+        }
+    }
+    json_object *msg_obj;
+    json_object *maps_obj;
+    maps * map_c;
+    json_object *req_format_jobj;
+    maps * request_input_real_format;
+    json_object *req_jobj;
+    map * request_inputs;
+    json_object *outputs_jobj;
+    maps * request_output_real_format;
+
+    char *msg;
+    int c;
+    int eres;
+    char * service_identifier;
+    service * s1 = NULL;
+    while(1){
+        /* mode asynchrone */
+        if( master_async != getpid()){
+            /*traitement des requetes de la queue */
+            bind_amqp();
+            init_consumer();
+            while(1){
+                
+                c = consumer_amqp(&msg);
+                if (c == 0)
+                    break;
+                msg_obj = json_tokener_parse(msg);
+                
+                free(msg);
+                maps_obj = json_object_object_get(msg_obj,"maps");
+
+                map_c = jsontomaps(maps_obj);
+
+                req_format_jobj = json_object_object_get(msg_obj,"request_input_real_format");
+                request_input_real_format = jsontomaps(req_format_jobj);
+
+                req_jobj = json_object_object_get(msg_obj,"request_inputs");
+                request_inputs = jsontomap(req_jobj);
+
+                outputs_jobj = json_object_object_get(msg_obj,"request_output_real_format");
+                request_output_real_format = jsontomaps(outputs_jobj);
+                
+                json_object_put(msg_obj);
+
+                /* traitemement du message */
+                /* Recherche des references */
+                maps* tmp=request_input_real_format;
+                HINTERNET hInternet = InternetOpen ((LPCTSTR) "ZooWPSClient\0",INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+                while(tmp!=NULL){
+                    map * tmp_map = getMap(tmp->content,"xlink:href");
+                    if (tmp_map != NULL){
+                        if (loadRemoteFile(&map_c, &tmp_map, &hInternet,tmp_map->value) < 0) {
+                            /* passer le status failed dans la base de donnÃ©e */
+                            fprintf(stderr,"Erreur de chargement \n");
+                        }
+                    }
+                    tmp=tmp->next;
+                }
+                runHttpRequests (&map_c, &request_input_real_format, &hInternet);
+                InternetCloseHandle (&hInternet);
+                free(tmp); 
+                map * uuid = getMapFromMaps(map_c,"lenv","usid");
+                if (uuid != NULL)
+                    start_job(uuid->value);
+                map *t=createMap("background","1");
+                maps * lenv = getMaps(map_c,"lenv");
+                addMapToMap(&lenv->content,t);
+                freeMap(&t);
+                free(t);
+                
+                map * m_identifier = getMap (request_inputs, "Identifier");
+                
+                service_identifier = zStrdup (m_identifier->value);
+
+                s1 = search_service (service_identifier);
+                free(service_identifier);
+                
+
+                //dumpMaps(request_input_real_format);
+
+                loadServiceAndRun(&map_c, s1,request_inputs,&request_input_real_format, &request_output_real_format, &eres,NULL,NULL);
+                if (eres == SERVICE_SUCCEEDED) {
+                    outputResponse (s1,request_input_real_format,request_output_real_format,request_inputs, 0, map_c, eres,NULL,NULL);
+                }
+                    
+                    
+                //dumpMaps(request_output_real_format);
+                //fprintf(stderr,"################################################################\n");
+                //dumpMaps(map_c);
+
+                outputResponse (s1,request_input_real_format,request_output_real_format,request_inputs, 0, map_c, eres,NULL,NULL);
+
+                
+                freeMaps(&map_c);
+                map_c= NULL;
+               
+                freeMaps(&request_input_real_format);
+                request_input_real_format = NULL;
+
+                //dumpMap(request_inputs);
+                freeMap(&request_inputs);
+                request_inputs = NULL;
+                
+                //dumpMaps(request_output_real_format);
+                freeMaps(&request_output_real_format);
+                request_output_real_format = NULL;
+                consumer_ack_amqp(c);
+                
+
+            }
+            close_amqp();
+            
+
+
+
+            
+        }
+        else {
+            wait(0);
+            fprintf(stderr,"Master async %d\n",getpid());
+            fprintf(stderr,"New async Child\n");
+            fflush(stderr);
+            fork();
+        }
+    }
 
   }
   

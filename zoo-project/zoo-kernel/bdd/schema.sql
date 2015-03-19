@@ -7,7 +7,8 @@ create table status (
     start_date DATETIME,
     end_date DATETIME,
     progress int,
-    info TEXT
+    info TEXT,
+    identifier TEXT
     );
 
 
