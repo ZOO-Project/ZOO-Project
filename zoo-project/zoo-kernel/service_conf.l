@@ -21,7 +21,7 @@ int affichetrace = 1;
 int affichetrace = 0;
 #endif
 
-char *lmsg;
+char *lmsg=NULL;
 int attentionImpossibleDeTrouverXMLDeclapres = 0 ;
 
 int attentionImpossibleDeTrouverPIapres = 0 ;
@@ -40,7 +40,7 @@ Name		([_:]|[\x41-\x5A]|[\x61-\x7A]|[\xC0-\xD6]|[\xD8-\xF6]|[\xF8-\xFF])(([\x41-
 chardata	[^<]*
 
 attname	[a-zA-Z0-9._\-]+
-attvalue1	[°²θé#\^\*\+,;@a-zA-Z0-9%_\-::.:" "\"\'/\\\(\)\t\|\$\&>\[\]]+
+attvalue1	[#°²θé\^\*\+,;@a-zA-Z0-9%_\-:\:.:" "\"\'/\\\(\)\t\|\$\&>\[\]]+
 
 attvalue		\"[^"]*\"|\'[^']*\'\(\)
 

@@ -33,6 +33,7 @@
 #include "otbWrapperAddProcessToWatchEvent.h"
 #include "otbZooWatcher.h"
 #include "service_internal.h"
+#include "mimetypes.h"
 #include "service.h"
 #include "cgic.h"
 #ifdef WIN32
