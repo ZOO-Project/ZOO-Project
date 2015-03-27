@@ -157,6 +157,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		map* tmpSid=getMapFromMaps(m,"lenv","usid");
 		char tmp[1024];
 		map* tmpVal=getMapFromMaps(outputs,paramKey.c_str(),"mimeType");
+		maps* tmpMaps=getMaps(outputs,paramKey.c_str());
 		if(test!=NULL && test->value!=NULL && strncasecmp(test->value,"true",4)==0){
 		  test=getMapFromMaps(inputs,paramKey.c_str(),"value");
 		  if(type == ParameterType_OutputImage){
@@ -189,8 +190,98 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    setMapInMaps(inputs,paramKey.c_str(),"generated_file",tmp);
 		    dynamic_cast<OutputImageParameter *> (param.GetPointer())->SetPixelType(outPixType);
 		  }else{
-		    if(test->value!=NULL)
-		      m_Application->SetParameterString(paramKey, test->value);
+		    map* tmpVal=getMapFromMaps(inputs,paramKey.c_str(),"mimeType");
+		    char file_ext[32];
+		    getFileExtension(tmpVal != NULL ? tmpVal->value : NULL, file_ext, 32);
+		    if(type == ParameterType_InputImageList){
+		      values.push_back(test->value);
+		      map* tmpLength=getMapFromMaps(inputs,paramKey.c_str(),"length");
+		      if(tmpLength!=NULL){
+			int len=atoi(tmpLength->value);
+			for(int k=1;k<len;k++){
+			  char *val=(char*)malloc((strlen(tmpPath->value)+strlen(s->name)+strlen(tmpSid->value)+strlen(file_ext)+13)*sizeof(char));
+			  sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,s->name,tmpSid->value,k,file_ext);
+			  FILE* of=fopen(val,"wb");
+			  int length=0;
+			  map* tmpSize=getMap(test,"size");
+			  if(tmpSize!=NULL){
+			    length=atoi(tmpSize->value);
+			  }
+			  fwrite(test->value,sizeof(char),length,of);
+			  fclose(of);
+			  values.push_back(val);
+			  free(val);
+			}
+		      }
+		      dynamic_cast<InputImageListParameter *> (param.GetPointer())->SetListFromFileName(values);
+		    }
+		    else
+		      if(type == ParameterType_InputVectorData || type == ParameterType_InputImage
+			   || type == ParameterType_ComplexInputImage || type == ParameterType_InputVectorData
+			   || type == ParameterType_InputFilename){
+			map* tmpPath=getMapFromMaps(m,"main","tmpPath");
+			map* tmpSid=getMapFromMaps(m,"lenv","sid");
+			char tmp[1024];
+			char* ext="json";
+			if(tmpVal!=NULL){
+			  char *val=(char*)malloc((strlen(tmpPath->value)+strlen(s->name)+strlen(tmpSid->value)+strlen(file_ext)+10)*sizeof(char));
+			  sprintf(val,"%s/Input_%s_%s.%s",tmpPath->value,s->name,tmpSid->value,file_ext);
+			  FILE* of=fopen(val,"wb");
+			  int length=0;
+			  map* tmpSize=getMap(test,"size");
+			  if(tmpSize!=NULL){
+			    length=atoi(tmpSize->value);
+			  }
+			  fwrite(test->value,sizeof(char),length,of);
+			  fclose(of);
+
+			  if(strncasecmp(tmpVal->value,"application/zip",14)==0){
+
+			    char tmpName[1024];
+			    sprintf(tmpName,"/vsizip/%s",val);
+			    char **files=VSIReadDir(tmpName);
+			    int nFiles = CSLCount( files );
+			    char tmpSSName[1024];
+			    sprintf(tmpSSName,"%s/Input_%s_%s",tmpPath->value,s->name,tmpSid->value);
+			    mkdir(tmpSSName,0777);
+			    
+			    char tmpSName[1024];
+			    for(int kk=0;kk<nFiles;kk++){
+			      sprintf(tmpSName,"%s/%s",tmpName,files[kk]);
+			      VSILFILE* fmain=VSIFOpenL(tmpSName, "rb");
+			      if(fmain!=NULL){
+				VSIFSeekL(fmain,0,SEEK_END);
+				long count=VSIFTellL(fmain);
+				VSIRewindL(fmain);
+				
+				char *content=(char*) malloc((count+1)*sizeof(char));  
+				VSIFReadL(content,1,count*sizeof(char),fmain);
+				
+				char tmpSSSName[1024];
+				sprintf(tmpSSSName,"%s/%s",tmpSSName,files[kk]);
+				
+				FILE* fx=fopen(tmpSSSName, "wb");
+				fwrite(content,1,count,fx);
+				fclose(fx);
+				VSIFCloseL(fmain);
+				free(content);
+				std::string test1(tmpSSSName);
+				if(test1.find(".shp")!=std::string::npos){
+				  setMapInMaps(inputs,paramKey.c_str(),"cache_file",tmpSSSName);
+				  test=getMapFromMaps(inputs,paramKey.c_str(),"cache_file");
+				}
+			      }
+			    }
+			    m_Application->SetParameterString(paramKey, test->value);
+			  }else{
+			    m_Application->SetParameterString(paramKey, val);
+			  }
+			  free(val);
+			}
+		      }
+		      else
+			if(test->value!=NULL)
+			  m_Application->SetParameterString(paramKey, test->value);
 		  }
 
 		}else{
@@ -315,7 +406,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		       || type == ParameterType_ComplexInputImage || type == ParameterType_InputVectorData
 		       || type == ParameterType_InputFilename){
 		      m_Application->SetParameterString(paramKey, test->value);
-		  }		  
+		  }
 	      }
 	    }
 	    param->SetUserValue(true);

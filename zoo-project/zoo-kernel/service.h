@@ -103,6 +103,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #ifndef WIN32
+#include <ctype.h>
 #ifndef bool
 #define bool int
 #endif
@@ -114,7 +115,7 @@ extern "C" {
   /**
    * Local false definition
    */
-#define false -1
+#define false 0
 #endif
 #endif
 
@@ -1266,6 +1267,8 @@ extern "C" {
    * @param s the service to dump
    */
   static void dumpService(service* s){
+    if(s==NULL)
+      return;
     fprintf(stderr,"++++++++++++++++++\nSERVICE [%s]\n++++++++++++++++++\n",s->name);
     if(s->content!=NULL){
       fprintf(stderr,"CONTENT MAP\n");

@@ -2787,21 +2787,21 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  else{
 	    map *ext=getMap(tmpI->content,"extension");
 	    char *file_path;
-		char file_ext[32];
+	    char file_ext[32];
 
 	    if( ext != NULL && ext->value != NULL) {
-			strncpy(file_ext, ext->value, 32);
-		}
-		else {
+	      strncpy(file_ext, ext->value, 32);
+	    }
+	    else {
 	      // Obtain default file extension (see mimetypes.h).	      
 	      // If the MIME type is not recognized, txt is used as the default extension
 	      map* mtype=getMap(tmpI->content,"mimeType");
-		  getFileExtension(mtype != NULL ? mtype->value : NULL, file_ext, 32);
+	      getFileExtension(mtype != NULL ? mtype->value : NULL, file_ext, 32);
 	    }
 		
-		file_name=(char*)malloc((strlen(s->name)+strlen(file_ext)+strlen(tmpI->name)+1024)*sizeof(char));
+	    file_name=(char*)malloc((strlen(s->name)+strlen(file_ext)+strlen(tmpI->name)+1024)*sizeof(char));
 	    int cpid0=cpid+time(NULL);	    
-		sprintf(file_name,"%s_%s_%i.%s",s->name,tmpI->name,cpid0,file_ext);
+	    sprintf(file_name,"%s_%s_%i.%s",s->name,tmpI->name,cpid0,file_ext);
 	    file_path=(char*)malloc((strlen(tmp1->value)+strlen(file_name)+2)*sizeof(char));
 	    sprintf(file_path,"%s/%s",tmp1->value,file_name);
     

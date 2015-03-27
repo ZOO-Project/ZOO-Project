@@ -19,7 +19,7 @@ static bool wait_metadata=false;
 static bool wait_inputs=false;
 static bool wait_defaults=false;
 static bool wait_supporteds=false;
-static bool wait_outputs=-1;
+static bool wait_outputs=false;
 static bool wait_data=false;
 static service* my_service=NULL;
 static map* current_content=NULL;
@@ -804,7 +804,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   fprintf(stderr,"RESULT: %d %d\n",resultatYYParse,wait_outputs);
   dumpElements(current_element);
 #endif
-  if(wait_outputs>0 && current_element!=NULL && current_element->name!=NULL){
+  if(wait_outputs && current_element!=NULL && current_element->name!=NULL){
     if(my_service->outputs==NULL){  
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAOUTPUTS - %d) DUP current_element\n",__LINE__);
@@ -833,11 +833,12 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
     free(current_element);
     current_element=NULL;
   }
-  int contentOnly=-1;
+  int contentOnly=false;
   if(current_content!=NULL){
     if(my_service->content==NULL){
       addMapToMap(&my_service->content,current_content);
-      contentOnly=1;
+      contentOnly=true;
+      wait_maincontent=false;
     }
     freeMap(&current_content);
     free(current_content);
@@ -847,7 +848,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 #ifdef DEBUG_SERVICE_CONF
   dumpService(my_service);
 #endif
-  if(contentOnly<0 && ((wait_outputs<0 && current_data==2 && my_service->outputs==NULL) || my_service==NULL || my_service->name==NULL || my_service->content==NULL)){
+  if(wait_maincontent==true || (contentOnly==false && ((!wait_outputs && current_data==2 && my_service->outputs==NULL) || my_service==NULL || my_service->name==NULL || my_service->content==NULL))){
     setMapInMaps(conf,"lenv","message",srlval.chaine);
 #ifndef WIN32
     srlex_destroy();
