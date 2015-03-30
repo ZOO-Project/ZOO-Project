@@ -97,6 +97,28 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 }
 
 /**
+ * Write a file from value and length
+ *
+ * @param fname the file name
+ * @param val the value
+ * @param length the value length
+ */
+int writeFile(char* fname,char* val,int length){
+  FILE* of=fopen(fname,"wb");
+  if(of==NULL){
+    return -1;
+  }
+  size_t ret=fwrite(val,sizeof(char),length,of);
+  if(ret<length){
+    fprintf(stderr,"Write error occured!\n");
+    fclose(of);
+    return -1;
+  }
+  fclose(of);
+  return 1;
+}
+
+/**
  * Load and run an OTB Application corresponding to the service by using inputs parameters.
  * Define the m_Conf 
  *
@@ -190,25 +212,36 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    setMapInMaps(inputs,paramKey.c_str(),"generated_file",tmp);
 		    dynamic_cast<OutputImageParameter *> (param.GetPointer())->SetPixelType(outPixType);
 		  }else{
+		    map* tmpPath=getMapFromMaps(m,"main","tmpPath");
+		    map* tmpSid=getMapFromMaps(m,"lenv","sid");
 		    map* tmpVal=getMapFromMaps(inputs,paramKey.c_str(),"mimeType");
 		    char file_ext[32];
 		    getFileExtension(tmpVal != NULL ? tmpVal->value : NULL, file_ext, 32);
 		    if(type == ParameterType_InputImageList){
-		      values.push_back(test->value);
+		      char *val=(char*)malloc((strlen(tmpPath->value)+strlen(s->name)+strlen(tmpSid->value)+strlen(file_ext)+13)*sizeof(char));
+		      sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,s->name,tmpSid->value,0,file_ext);
+		      int length=0;
+		      map* tmpSize=getMap(test,"size");
+		      if(tmpSize!=NULL){
+			length=atoi(tmpSize->value);
+		      }
+		      writeFile(val,test->value,length);
+		      values.push_back(val);
+		      free(val);
 		      map* tmpLength=getMapFromMaps(inputs,paramKey.c_str(),"length");
 		      if(tmpLength!=NULL){
 			int len=atoi(tmpLength->value);
+			maps* tmpI=getMaps(inputs,paramKey.c_str());
 			for(int k=1;k<len;k++){
-			  char *val=(char*)malloc((strlen(tmpPath->value)+strlen(s->name)+strlen(tmpSid->value)+strlen(file_ext)+13)*sizeof(char));
+			  val=(char*)malloc((strlen(tmpPath->value)+strlen(s->name)+strlen(tmpSid->value)+strlen(file_ext)+13)*sizeof(char));
 			  sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,s->name,tmpSid->value,k,file_ext);
-			  FILE* of=fopen(val,"wb");
-			  int length=0;
-			  map* tmpSize=getMap(test,"size");
+			  length=0;
+			  map* tmpV=getMapArray(tmpI->content,"value",k);
+			  tmpSize=getMapArray(tmpI->content,"size",k);
 			  if(tmpSize!=NULL){
 			    length=atoi(tmpSize->value);
 			  }
-			  fwrite(test->value,sizeof(char),length,of);
-			  fclose(of);
+			  writeFile(val,tmpV->value,length);
 			  values.push_back(val);
 			  free(val);
 			}
@@ -219,21 +252,17 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		      if(type == ParameterType_InputVectorData || type == ParameterType_InputImage
 			   || type == ParameterType_ComplexInputImage || type == ParameterType_InputVectorData
 			   || type == ParameterType_InputFilename){
-			map* tmpPath=getMapFromMaps(m,"main","tmpPath");
-			map* tmpSid=getMapFromMaps(m,"lenv","sid");
 			char tmp[1024];
 			char* ext="json";
 			if(tmpVal!=NULL){
 			  char *val=(char*)malloc((strlen(tmpPath->value)+strlen(s->name)+strlen(tmpSid->value)+strlen(file_ext)+10)*sizeof(char));
 			  sprintf(val,"%s/Input_%s_%s.%s",tmpPath->value,s->name,tmpSid->value,file_ext);
-			  FILE* of=fopen(val,"wb");
 			  int length=0;
 			  map* tmpSize=getMap(test,"size");
 			  if(tmpSize!=NULL){
 			    length=atoi(tmpSize->value);
 			  }
-			  fwrite(test->value,sizeof(char),length,of);
-			  fclose(of);
+			  writeFile(val,test->value,length);
 
 			  if(strncasecmp(tmpVal->value,"application/zip",14)==0){
 

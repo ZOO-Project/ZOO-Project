@@ -3016,6 +3016,28 @@ void ensureDecodedBase64(maps **in){
       sprintf(sizes,"%d",size);
       addToMap(cursor->content,"size",sizes);
     }
+    map* length=getMap(cursor->content,"length");
+    if(length!=NULL){
+      int len=atoi(length->value);
+      for(int i=1;i<len;i++){
+	tmp=getMapArray(cursor->content,"encoding",i);
+	if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
+	  char key[17];
+	  sprintf(key,"base64_value_%d",i);
+	  tmp=getMapArray(cursor->content,"value",i);
+	  addToMap(cursor->content,key,tmp->value);
+	  int size=0;
+	  char *s=strdup(tmp->value);
+	  free(tmp->value);
+	  tmp->value=base64d(s,strlen(s),&size);
+	  free(s);
+	  char sizes[1024];
+	  sprintf(sizes,"%d",size);
+	  sprintf(key,"size_%d",i);
+	  addToMap(cursor->content,key,sizes);
+	}
+      }
+    }
     cursor=cursor->next;
   }
 }
