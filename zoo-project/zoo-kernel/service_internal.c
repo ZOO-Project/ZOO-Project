@@ -194,7 +194,6 @@ semid getShmLockId(maps* conf, int nsems){
     
     sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
     if(sem_id==NULL){
-
 #ifdef DEBUG
       fprintf(stderr,"Semaphore failed to create: %s\n", getLastErrorMessage());
 #endif
@@ -2055,8 +2054,14 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 
   if(hasStoredExecuteResponse==true && status!=SERVICE_STARTED){
     semid lid=getShmLockId(m,1);
-    if(lid<0)
+    if(lid<0){
+      /* If the lock failed */
+      errorException(m,_("Lock failed."),"InternalError",NULL);
+      xmlFreeDoc(doc);
+      xmlCleanupParser();
+      zooXmlCleanupNs();
       return;
+    }
     else{
 #ifdef DEBUG
       fprintf(stderr,"LOCK %s %d !\n",__FILE__,__LINE__);

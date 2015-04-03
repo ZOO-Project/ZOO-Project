@@ -2625,8 +2625,35 @@ runRequest (map ** inputs)
                                       addToMap (tmpmaps->content, "size",
                                                 size);
                                       xmlFreeDoc (doc1);
-                                    }									
-                                }
+                                    }
+				  else
+				    {
+				      if (cur5 != NULL
+					  && cur5->type == XML_CDATA_SECTION_NODE){
+					xmlDocPtr doc2 = xmlParseMemory((const char*)cur5->content,xmlStrlen(cur5->content));
+					xmlDocSetRootElement (doc1,xmlDocGetRootElement(doc2));
+					xmlDocDumpFormatMemoryEnc (doc1, &mv,
+								   &buffersize,
+								   "utf-8", 1);
+					char size[1024];
+					sprintf (size, "%d", buffersize);
+					addToMap (tmpmaps->content, "size",
+						  size);
+					xmlFreeDoc (doc2);
+					xmlFreeDoc (doc1);
+				      }
+				    }
+                                }else{
+				xmlNodePtr cur5 = cur4->children;
+				while (cur5 != NULL
+				       && cur5->type != XML_CDATA_SECTION_NODE)
+				  cur5 = cur5->next;
+				if (cur5 != NULL
+				    && cur5->type == XML_CDATA_SECTION_NODE){
+				  xmlFree(mv);
+				  mv=xmlStrdup(cur5->content);
+				}
+			      }
                               if (mv != NULL)
                                 {
                                   addToMap (tmpmaps->content, "value",
