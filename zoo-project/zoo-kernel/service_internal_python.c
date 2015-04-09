@@ -580,7 +580,7 @@ map* mapFromPyDict(PyDictObject* t){
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
     
-    if(strcmp(PyString_AsString(key),"value")==0){
+    if(strncmp(PyString_AsString(key),"value",5)==0){
       char *buffer=NULL;
       Py_ssize_t size;
 #if PY_MAJOR_VERSION >= 3
@@ -588,7 +588,7 @@ map* mapFromPyDict(PyDictObject* t){
 #else
       PyString_AsStringAndSize(value,&buffer,&size);
 #endif
-      addToMapWithSize(res,"value",buffer,size);
+      addToMapWithSize(res,PyString_AsString(key),buffer,size);
     }else{
       char* lkey=PyString_AsString(key);
       char* lvalue=PyString_AsString(value);

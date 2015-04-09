@@ -652,6 +652,9 @@ extern "C" {
 	m=createMap(n,"");
       }
     }
+    char sname[10]="size";
+    if(strlen(n)>5)
+      sprintf(sname,"size_%s",n+6);
     map *tmp=getMap(m,n);
     if(tmp->value!=NULL)
       free(tmp->value);
@@ -660,7 +663,7 @@ extern "C" {
     tmp->value[size]=0;
     char sin[128];
     sprintf(sin,"%d",size);
-    addToMap(m,"size",sin);
+    addToMap(m,sname,sin);
   }
 
   /**
