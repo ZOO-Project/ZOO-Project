@@ -32,6 +32,9 @@ lex.sr.o: lex.sr.c service.h
 ulinet.o: ulinet.c
 	gcc -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
 
+request_parser.o: request_parser.c request_parser.h
+	gcc -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c
+
 service_internal.o: service_internal.c service.h mimetypes.h
 	g++ ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
@@ -71,9 +74,9 @@ service_loader.o: service_loader.c service.h
 zoo_service_loader.o: zoo_service_loader.c service.h
 	g++ -g -O2 ${XML2CFLAGS} ${CFLAGS} ${OTBCFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${OTB_ENABLED} ${PYTHON_ENABLED} ${JS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
-zoo_loader.cgi: version.h zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE}
+zoo_loader.cgi: version.h zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o request_parser.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE}
 	g++ -g -O2 ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
-	g++  ${JSCFLAGS} ${OTBCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ${YAML_FILE} ${OTB_FILE} ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi ${LDFLAGS}
+	g++  ${JSCFLAGS} ${OTBCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o service_internal.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ${YAML_FILE} ${OTB_FILE} request_parser.o ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi ${LDFLAGS}
 
 zcfg2yaml: zcfg2yaml.c  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o service_internal.o ${MS_FILE} ${JS_FILE} ${RUBY_FILE}  ${YAML_FILE}
 	g++ -g -O2 ${JSCFLAGS} ${RUBYCFLAGS} ${XML2CFLAGS} ${CFLAGS} -c zcfg2yaml.c  -fno-common -DPIC -o zcfg2yaml.o

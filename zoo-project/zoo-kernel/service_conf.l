@@ -1,30 +1,36 @@
+/*
+ * Author : Gérald FENOY
+ *
+ * Copyright (c) 209-2015 GeoLabs SARL
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 %option noyywrap
 %option yylineno
 
 
 %{
-//======================================================
-/**
-
- authors : Jean-Marie CODOL, Naitan GROLLEMUND
-
-**/
-//======================================================
-
 
 #include <string.h>
 #include "service_conf.tab.h"
 
-#ifdef DEBUG_SERVICE_CONF
-int affichetrace = 1;
-#else
-int affichetrace = 0;
-#endif
-
 char *lmsg=NULL;
-int attentionImpossibleDeTrouverXMLDeclapres = 0 ;
-
-int attentionImpossibleDeTrouverPIapres = 0 ;
 
 %}
 
@@ -40,7 +46,7 @@ Name		([_:]|[\x41-\x5A]|[\x61-\x7A]|[\xC0-\xD6]|[\xD8-\xF6]|[\xF8-\xFF])(([\x41-
 chardata	[^<]*
 
 attname	[a-zA-Z0-9._\-]+
-attvalue1	[#°²θé\^\*\+,;@a-zA-Z0-9%_\-:\:.:" "\"\'/\\\(\)\t\|\$\&>\[\]]+
+attvalue1	[#°²θé\^\*\+,;?!~`Ãº@a-zA-Z0-9%_\-:\:.:" "\"\'/\\\(\)\t\|\$\&>\[\]]+
 
 attvalue		\"[^"]*\"|\'[^']*\'\(\)
 
@@ -57,9 +63,9 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 %%
 
-"\n" {  if (affichetrace==1) fprintf (stderr,"\n\nNEWLINE\n") ;return NEWLINE;}
+"\n" { }
 
-{newline}+{whitesp}*			{  if (affichetrace==1) fprintf (stderr,"\n\nNEWLINE 1\n") ; return NEWLINE;}
+{newline}+{whitesp}*			{ return NEWLINE; }
 
 <INITIAL,HORSBALISE>"["{attname}"]"             {  srlval.chaine=yytext;return ANID; }
 
@@ -69,32 +75,9 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 <PAIRSTART,INITIAL,HORSBALISE>{whitesp}*"="{whitesp}*             {  BEGIN(PAIRSTART);}
 
-<PAIRSTART,INITIAL,HORSBALISE,DANSBALISE>{newline}+{whitesp}*             { BEGIN(INITIAL);  return NEWLINE;}
-
-<INITIAL>"<?"[Xx][Mm][Ll]  {   if (attentionImpossibleDeTrouverXMLDeclapres == 1 || attentionImpossibleDeTrouverPIapres == 1) {/* il y a eut un commentaire ou une balise applicative avant la declaration xml */ fprintf(stderr,"\nerror : a la ligne %d : il y a eut un commentaire ou un PI avant la declaration xml\n",srlineno); exit (10) ; } ; return STARTXMLDECL;}
-
-<INITIAL>"version"{egalevolue}\"1.0\"|"version"{egalevolue}\'1.0\'  { return VERSIONDECL;  }
-<INITIAL>"version"{egalevolue}\"[^"]*\"|"version"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ fprintf(stderr,"\nerror : a la ligne %d : la version xml n est pas reconnue : %s\n",srlineno,yytext); exit (9) ; }
-
-
-<INITIAL>"encoding"{egalevolue}\"[Ii][Ss][Oo]"-8859-1"\"|"encoding"{egalevolue}\'[Ii][Ss][Oo]"-8859-1"\'  { return ENCODINGDECL;}
-<INITIAL>"encoding"{egalevolue}\"[^"]*\"|"encoding"{egalevolue}\'[^']*\'  {/* erreur de version encoding */ 	fprintf(stderr,"\nerror : a la ligne %d : la version d encodage n est pas reconnue : %s\n",srlineno,yytext); exit (8) ; }
-
-
-<INITIAL>"standalone"{egalevolue}\"yes\"|"standalone"{egalevolue}\'yes\'|"standalone"{egalevolue}\"no\"|"standalone"{egalevolue}\'no\'  { return SDDECL;}
-
-<INITIAL>"standalone"{egalevolue}\"[^"]*\"|"standalone"{egalevolue}\'[^']*\'|"standalone"{egalevolue}\"[^"]*\"|"standalone"{egalevolue}\'[^']*\'  { /* erreur de version encoding */ 	fprintf(stderr,"\nerror : a la ligne %d : la version standalone n est pas reconnue : %s\n",srlineno,yytext); exit (7) ; }
-
-
-<INITIAL>"?>"  { BEGIN(HORSBALISE); return ENDXMLDECL;}
-
+<PAIRSTART,INITIAL,HORSBALISE>{newline}+{whitesp}*             { BEGIN(INITIAL);  return NEWLINE;}
 
 <DANSBALISE,INITIAL,HORSBALISE>{S}   {  }
-
-
-<HORSBALISE>"<?"[Xx][Mm][Ll]{S}({S}|{chardata})*"?>"|"<?"[Xx][Mm][Ll]"?>"	{ return PIERROR;}
-<INITIAL,HORSBALISE>"<?"([^xX]|([xX][^mM])|([xX][mM][^lL]))({S}|([^?]|("?"[^>])))*"?>"		{ attentionImpossibleDeTrouverPIapres=1 ; return PI;}
-
 
 <INITIAL,HORSBALISE>{newline}*"<"		    { BEGIN(DANSBALISE); return INFCAR;}
 
@@ -112,9 +95,6 @@ newlines                 [\r\n]{1,}|[\n]{1,}
 
 
 <DANSBALISE>{attvalue}		{return ATTVALUE;}
-
-
-<INITIAL,HORSBALISE>"<!--"([^-]|"-"[^-])*"-->"		{attentionImpossibleDeTrouverXMLDeclapres=1; }
 
 
 <INITIAL,DANSBALISE,HORSBALISE>.|\n	{lmsg=(char*)malloc(1024*sizeof(char));sprintf(lmsg,"error: line %d: character not allowed '%s'",srlineno,yytext);fprintf(stderr,"%s \n",lmsg);srlval.chaine=lmsg;fprintf(stderr,"%s \n",lmsg);return -1;}

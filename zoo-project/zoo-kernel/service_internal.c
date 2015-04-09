@@ -1248,6 +1248,8 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
     tmp1=getMap(serv->content,"processVersion");
     if(tmp1!=NULL)
       xmlNewNsProp(nc1,ns,BAD_CAST "processVersion",BAD_CAST tmp1->value);
+    else
+      xmlNewNsProp(nc1,ns,BAD_CAST "processVersion",BAD_CAST "1");
     map* tmp3=getMapFromMaps(m,"lenv","level");
     addPrefix(m,tmp3,serv);
     printDescription(nc1,ns_ows,serv->name,serv->content);
@@ -1300,7 +1302,9 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
     }
     else{
       if(j>0)
-	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST "false");      
+	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST "true");
+      else
+	xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST "1");
     }
   }
   
@@ -1451,7 +1455,7 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 	xmlAddChild(nc3,nc8);
 	datatype=1;
       }
-      
+
       if(strncmp(type,"Input",5)==0){
 
 	if((tmp1=getMap(_tmp->content,"AllowedValues"))!=NULL){
@@ -1520,9 +1524,9 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 		nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
 		const char* bkt;
 		if ( ( bkt = strchr(pToken, '[') ) != NULL || ( bkt = strchr(pToken, ']') ) != NULL ){
-		    strncpy( tmpStr, pToken, bkt - pToken );
-		    tmpStr[bkt - pToken] = '\0';
-		  }
+		  strncpy( tmpStr, pToken, bkt - pToken );
+		  tmpStr[bkt - pToken] = '\0';
+		}
 	      }
 	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmpStr));
 	      free(tmpStr);
@@ -1607,39 +1611,38 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 	}
 	
       }
-    
       
-    int oI=0;
-    for(oI=0;oI<13;oI++)
-      if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+      int oI=0;
+      for(oI=0;oI<13;oI++)
+	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 #ifdef DEBUG
-	printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
+	  printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
 #endif
-	if(strcmp(tmp1->name,"asReference")!=0 &&
-	   strncasecmp(tmp1->name,"DataType",8)!=0 &&
-	   strcasecmp(tmp1->name,"extension")!=0 &&
-	   strcasecmp(tmp1->name,"value")!=0 &&
-	   strcasecmp(tmp1->name,"AllowedValues")!=0 &&
-	   strncasecmp(tmp1->name,"range",5)!=0){
-	  if(datatype!=1){
-	    char *tmp2=zCapitalize1(tmp1->name);
-	    nc9 = xmlNewNode(NULL, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  else{
-	    char *tmp2=zCapitalize(tmp1->name);
-	    nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	    free(tmp2);
-	  }
-	  xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc9);
-	  if(strcasecmp(tmp1->name,"uom")==0)
-	    hasUOM1=true;
-	  hasUOM=true;
-	}else 
+	  if(strcmp(tmp1->name,"asReference")!=0 &&
+	     strncasecmp(tmp1->name,"DataType",8)!=0 &&
+	     strcasecmp(tmp1->name,"extension")!=0 &&
+	     strcasecmp(tmp1->name,"value")!=0 &&
+	     strcasecmp(tmp1->name,"AllowedValues")!=0 &&
+	     strncasecmp(tmp1->name,"range",5)!=0){
+	    if(datatype!=1){
+	      char *tmp2=zCapitalize1(tmp1->name);
+	      nc9 = xmlNewNode(NULL, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    else{
+	      char *tmp2=zCapitalize(tmp1->name);
+	      nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	      free(tmp2);
+	    }
+	    xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
+	    xmlAddChild(nc5,nc9);
+	    if(strcasecmp(tmp1->name,"uom")==0)
+	      hasUOM1=true;
+	    hasUOM=true;
+	  }else 
 	  
-	  tmp1=tmp1->next;
-      }
+	    tmp1=tmp1->next;
+	}
     
     
       if(datatype!=2){
@@ -1791,7 +1794,7 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns_ows
 	xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
     }
     
-    if((tmp1=getMap(_tmp->content,"value"))!=NULL){
+    if(_tmp!=NULL && (tmp1=getMap(_tmp->content,"value"))!=NULL){
       nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
       xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
       xmlAddChild(nc3,nc7);
@@ -3199,7 +3202,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	 * lowerCorner, upperCorner, srs and dimensions
 	 * cf. parseBoundingBox
 	 */
-	if(strcasecmp(tmpInputs->format,"BoundingBoxData")==0){
+	if(tmpInputs->format!=NULL && strcasecmp(tmpInputs->format,"BoundingBoxData")==0){
 	  maps* tmpI=getMaps(*out,tmpInputs->name);
 	  if(tmpI!=NULL){
 	    map* tmpV=getMap(tmpI->content,"value");
@@ -3517,7 +3520,7 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
 #endif
     FILE* fo=fopen(fname,"w+");
     if(fo==NULL){
-#ifdef DEBUG		
+#ifdef DEBUG
       fprintf (stderr, "Failed to open %s for writing: %s\n",fname, strerror(errno));
 #endif
       filepath = NULL;	
@@ -3599,7 +3602,6 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	shouldClean=1;
       }
       for(int i=0;i<atoi(length->value);i++){
-	
 	char* fcontent;
 	char *mimeType=NULL;
 	int fsize=0;
@@ -3607,6 +3609,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	char vname[11];
 	char vname1[11];
 	char sname[9];
+	char mname[15];
 	char icname[14];
 	char xname[16];
 	if(index>0)
@@ -3619,18 +3622,21 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	  sprintf(cname,"cache_file_%d",i);
 	  sprintf(vname,"value_%d",i);
 	  sprintf(sname,"size_%d",i);
+	  sprintf(mname,"mimeType_%d",i);
 	  sprintf(icname,"isCached_%d",i);
 	  sprintf(xname,"Reference_%d",i);
 	}else{
 	  sprintf(cname,"cache_file");
 	  sprintf(vname,"value");
-	  sprintf(icname,"isCached");
 	  sprintf(sname,"size");
+	  sprintf(mname,"mimeType");
+	  sprintf(icname,"isCached");
 	  sprintf(xname,"Reference");
 	}
 
 	map* tmap=getMapFromMaps(*m,"orequests",vname1);
-	if((tmp1=getMap(content->content,xname))!=NULL && strcasecmp(tmap->value,tmp1->value)==0 ){
+	if((tmp1=getMap(content->content,xname))!=NULL /*&& ((tmap!=NULL && strcasecmp(tmap->value,tmp1->value)==0) )*/){
+
 	  if(getMap(content->content,icname)==NULL){
 	    
 	    fcontent=(char*)malloc((hInternet->ihandle[index].nDataLen+1)*sizeof(char));
@@ -3647,7 +3653,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	    if(hInternet->ihandle[index].mimeType==NULL)
 	      mimeType=strdup("none");
 	    else
-		  mimeType=strdup(hInternet->ihandle[index].mimeType);	      
+	      mimeType=strdup(hInternet->ihandle[index].mimeType);	      
 	    
 	    map* tmpMap=getMapOrFill(&content->content,vname,"");
 	    free(tmpMap->value);
@@ -3668,10 +3674,10 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	      free(fname);
 	    }
 	    addToMap(content->content,sname,ltmp1);
+	    addToMap(content->content,mname,mimeType);
 	    addToCache(*m,tmp1->value,fcontent,mimeType,fsize, NULL, 0);
 	    free(fcontent);
 	    free(mimeType);
-	    dumpMaps(content);
 	    index++;
 
 	  }
@@ -3687,6 +3693,30 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
     
   }
   return 0;
+}
+
+/**
+ * Add a request in the download queue
+ *
+ * @param m the maps containing the settings of the main.cfg file
+ * @param url the url to add to the queue
+ */
+void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
+  hInternet->waitingRequests[hInternet->nb]=strdup(url);
+  if(req)
+    InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
+  maps *oreq=getMaps(*m,"orequests");
+  if(oreq==NULL){
+    oreq=(maps*)malloc(MAPS_SIZE);
+    oreq->name=zStrdup("orequests");
+    oreq->content=createMap("value",url);
+    oreq->next=NULL;
+    addMapsToMaps(m,oreq);
+    freeMaps(&oreq);
+    free(oreq);
+  }else{
+    setMapArray(oreq->content,"value",hInternet->nb-1,url);
+  }
 }
 
 /**
@@ -3733,21 +3763,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       fclose(f);
     }
 
-  }else{
-    hInternet->waitingRequests[hInternet->nb]=strdup(url);
-    InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
-    maps *oreq=getMaps(*m,"orequests");
-    if(oreq==NULL){
-      oreq=(maps*)malloc(MAPS_SIZE);
-      oreq->name=zStrdup("orequests");
-      oreq->content=createMap("value",url);
-      oreq->next=NULL;
-      addMapsToMaps(m,oreq);
-      freeMaps(&oreq);
-      free(oreq);
-    }else{
-      setMapArray(oreq->content,"value",hInternet->nb-1,url);
-    }
+  }else{    
+    addRequestToQueue(m,hInternet,url,true);
     return 0;
   }
   if(fsize==0){
@@ -3774,7 +3791,6 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
   else{
     addToMap(*content,"isCached","true");
-
     map* tmp=getMapFromMaps(*m,"main","cacheDir");
     if(tmp!=NULL){
       map *c=getMap((*content),"xlink:href");
