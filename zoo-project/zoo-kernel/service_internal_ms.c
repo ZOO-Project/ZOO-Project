@@ -429,7 +429,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   char *dsName=(char*)malloc((8+strlen(pszDataSource)+1)*sizeof(char));
   char *odsName=zStrdup(pszDataSource);
   char *sdsName=zStrdup(pszDataSource);
-  char *demo=strstr(odsName,".");
+  char *demo=".data";
   sdsName[strlen(sdsName)-(strlen(demo)-1)]='d';
   sdsName[strlen(sdsName)-(strlen(demo)-2)]='i';
   sdsName[strlen(sdsName)-(strlen(demo)-3)]='r';

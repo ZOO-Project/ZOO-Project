@@ -291,7 +291,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		      }
 		  }
 		else
-		  addMapsToMaps (&(*request_output), tmpmaps);
+		  addMapsToMaps (request_output, tmpmaps);
 	      }
 	    freeMaps (&tmpmaps);
 	    free (tmpmaps);
@@ -402,7 +402,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	  if (*request_output == NULL)
 	    *request_output = dupMaps (&tmp_output);
 	  else
-	    addMapsToMaps (&(*request_output), tmp_output);
+	    addMapsToMaps (request_output, tmp_output);
 	  freeMaps (&tmp_output);
 	  free (tmp_output);
 	  tmp_output = NULL;
@@ -529,7 +529,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
 				{
 				  if (loadRemoteFile
-				      (&(*main_conf), &tmpmaps->content, hInternet,
+				      (main_conf, &tmpmaps->content, hInternet,
 				       (char *) val) != 0)
 				    {
 				      return errorException (*main_conf,
@@ -646,7 +646,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					getMap (tmpmaps->content, "Reference");
 				      if (btmp != NULL)
 					{
-					  addRequestToQueue(&(*main_conf),hInternet,(char *) btmp->value,false);
+					  addRequestToQueue(main_conf,hInternet,(char *) btmp->value,false);
 					  InternetOpenUrl (hInternet,
 							   btmp->value,
 							   tmp,
@@ -713,7 +713,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  getMap (tmpmaps->content, "href");
 				if (btmp != NULL)
 				  {
-				    addRequestToQueue(&(*main_conf),hInternet,(char *) btmp->value,false);
+				    addRequestToQueue(main_conf,hInternet,(char *) btmp->value,false);
 
 				    res =
 				      InternetOpenUrl (hInternet,
@@ -938,7 +938,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		  }
 	      }
 	    else
-	      addMapsToMaps (&(*request_output), tmpmaps);
+	      addMapsToMaps (request_output, tmpmaps);
 	  }
 	  freeMaps (&tmpmaps);
 	  free (tmpmaps);
@@ -1020,7 +1020,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	  if (*request_output == NULL)
 	    *request_output = dupMaps (&tmpmaps);
 	  else
-	    addMapsToMaps (&(*request_output), tmpmaps);
+	    addMapsToMaps (request_output, tmpmaps);
 	  if (tmpmaps != NULL)
 	    {
 	      freeMaps (&tmpmaps);
