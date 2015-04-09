@@ -237,6 +237,8 @@ void InternetCloseHandle(HINTERNET* handle0){
       curl_slist_free_all(handle0->ihandle[i].header);
       handle0->ihandle[i].header=NULL;
     }
+    if(handle.post!=NULL)
+      free(handle.post);
     free(handle.mimeType);
     handle.mimeType = NULL;
   }
@@ -271,6 +273,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
   hInternet->ihandle[hInternet->nb].pabyData = NULL;
+  hInternet->ihandle[hInternet->nb].post = NULL;
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIEFILE, "ALL");
 #ifndef TIGER
@@ -320,15 +323,16 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   if(lpszHeaders!=NULL && strlen(lpszHeaders)>0){
 #ifdef MSG_LAF_VERBOSE
     fprintf(stderr,"FROM ULINET !!");
-    fprintf(stderr,"HEADER : %s\n",lpszHeaders);
+    fprintf(stderr,"HEADER : [%s] %d\n",lpszHeaders,dwHeadersLength);
 #endif
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
 #endif
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,lpszHeaders);
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,dwHeadersLength+1);
+    hInternet->ihandle[hInternet->nb].post=strdup(lpszHeaders);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
   }
   if(hInternet->ihandle[hInternet->nb].header!=NULL)
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
@@ -337,8 +341,8 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 
   curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
   
-  ++hInternet->nb;
   hInternet->ihandle[hInternet->nb].header=NULL;
+  ++hInternet->nb;
 
 #ifdef ULINET_DEBUG
   fprintf(stderr,"DEBUG MIMETYPE: %s\n",hInternet.mimeType);

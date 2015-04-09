@@ -1,8 +1,25 @@
 /*
- * Thx to Jean-Marie CODOL and Naitan GROLLEMUND
- * copyright 2009 GeoLabs SARL 
  * Author : Gérald FENOY
  *
+ * Copyright (c) 209-2015 GeoLabs SARL
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 %{
 
@@ -63,13 +80,7 @@ extern int srlex_destroy(void);
 // jetons //
 %token <s> ID
 %token <s> CHAINE
-/* STARTXMLDECL et ENDXMLDECL qui sont <?xml et ?>*/
-%token STARTXMLDECL ENDXMLDECL
 
-/* version="xxx" et encoding="xxx" */
-%token VERSIONDECL ENCODINGDECL SDDECL
-
-/* < et > */
 %token INFCAR SUPCAR 
 
 /* / = a1  texte "texte" */
@@ -129,7 +140,7 @@ STag
 : INFCAR ID Attributeetoile SUPCAR
 {
 #ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(%s %d) %s\n",__FILE__,__LINE__,$2);
+  fprintf(stderr,"STag (%s %d) %s %d %d \n",__FILE__,__LINE__,$2,current_data,previous_data);
   fflush(stderr);
   dumpMap(current_content);
 #endif
@@ -145,13 +156,6 @@ STag
     wait_maincontent=false;
   }
   if(strncasecmp($2,"DataInputs",10)==0){
-    if(wait_mainmetadata==true && current_content!=NULL){
-      addMapToMap(&my_service->metadata,current_content);
-      freeMap(&current_content);
-      free(current_content);
-      current_content=NULL;
-      wait_mainmetadata=false;
-    }
     if(current_element==NULL){
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAINPUTS - %d) FREE current_element\n",__LINE__);
@@ -254,36 +258,15 @@ STag
 	   || strncasecmp($2,"ComplexOutput",13)==0 || strncasecmp($2,"LiteralOutput",12)==0
 	   || strncasecmp($2,"BoundingBoxOutput",13)==0 || strncasecmp($2,"BoundingBoxData",12)==0){
 	  current_data=4;
-	  if(wait_metadata==true){
-	    if(current_content!=NULL){
-#ifdef DEBUG_SERVICE_CONF
-	      fprintf(stderr,"add current_content to current_element->content\n");
-	      fprintf(stderr,"LINE %d",__LINE__);
-#endif
-	      addMapToMap(&current_element->metadata,current_content);
-	      current_element->next=NULL;
-	      if($2!=NULL)
-		current_element->format=zStrdup($2);
-	      
-	      current_element->defaults=NULL;
-	      current_element->supported=NULL;
-	      freeMap(&current_content);
-	      free(current_content);
-	    }
-	  }else{ 
-	    // No MainMetaData
-	    addMapToMap(&current_element->content,current_content);
-	    freeMap(&current_content);
-	    free(current_content);
-	    current_element->metadata=NULL;
-	    current_element->next=NULL;
-	    if($2!=NULL)
-	      current_element->format=zStrdup($2);
-	    current_element->defaults=NULL;
-	    current_element->supported=NULL;
-	  }
+	  addMapToMap(&current_element->content,current_content);
+	  freeMap(&current_content);
+	  free(current_content);
+	  current_element->next=NULL;
+	  if($2!=NULL)
+	    current_element->format=zStrdup($2);
+	  current_element->defaults=NULL;
+	  current_element->supported=NULL;
 	  current_content=NULL;
-	  wait_metadata=false;
 	}
 	else
 	  if(strncasecmp($2,"Default",7)==0){
@@ -310,7 +293,7 @@ STag
 // une liste qui peut etre vide d'attributs
 // utiliser la récursivité a gauche
 Attributeetoile
- : Attributeetoile attribute  {}
+: Attributeetoile attribute  {}
  | 	                          {/* Epsilon */}
  ;
 
@@ -366,7 +349,7 @@ ETag
  : INFCAR SLASH ID SUPCAR
 {
 #ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
+  fprintf(stderr,"ETag %s (%s %d) %d %d \n",$3,__FILE__,__LINE__,current_data,previous_data);
 #endif
   if(strcmp($3,"DataInputs")==0){
     current_data=1;
@@ -398,10 +381,35 @@ ETag
     current_data=2;
   }
   if(strcmp($3,"MetaData")==0){
+    if(current_content!=NULL){
+#ifdef DEBUG_SERVICE_CONF
+      fprintf(stderr,"add current_content to current_element->content\n");
+      fprintf(stderr,"LINE %d",__LINE__);
+#endif
+      if(wait_metadata){
+	current_element->metadata=NULL;
+	addMapToMap(&current_element->metadata,current_content);
+	current_element->next=NULL;
+	current_element->defaults=NULL;
+	current_element->supported=NULL;
+      }else{
+	if(wait_mainmetadata){
+	  addMapToMap(&my_service->metadata,current_content);
+	}
+      }
+
+      freeMap(&current_content);
+      free(current_content);
+      current_content=NULL;
+    }
     current_data=previous_data;
+    wait_mainmetadata=false;
+    wait_metadata=false;
   }
   if(strcmp($3,"ComplexData")==0 || strcmp($3,"LiteralData")==0 
      || strcmp($3,"ComplexOutput")==0 || strcmp($3,"LiteralOutput")==0){
+    if(current_element->format==NULL)
+      current_element->format=zStrdup($3);
     current_content=NULL;
   }
   if(strcmp($3,"Default")==0){
@@ -496,10 +504,8 @@ texteinterbalise
 pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free(curr_key);curr_key=NULL;} }
 | EPAIR {
 #ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
-  fprintf(stderr,"EPAIR FOUND !! \n"); 
+  fprintf(stderr,"EPAIR (%s %d)\n",__FILE__,__LINE__);
   fprintf(stderr,"[%s=>%s]\n",curr_key,$1);
-  fprintf(stderr,"[ZOO: service_conf.y line %d free(%s)]\n",__LINE__,curr_key);
   dumpMap(current_content);
   fflush(stderr);
 #endif
@@ -542,7 +548,7 @@ pair: PAIR { if(debug) fprintf(stderr,"PAIR FOUND !!\n");if(curr_key!=NULL){free
 processid
 : ANID  {
 #ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(%s %d)\n",__FILE__,__LINE__);
+  fprintf(stderr,"processid (%s %d) %s\n",__FILE__,__LINE__,$1);
 #endif
   if(data==-1){
     data=1;

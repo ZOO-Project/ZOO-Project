@@ -53,8 +53,8 @@ extern "C" {
 }
 
 #include "service_internal.h"
+#include "request_parser.h"
 
-xmlXPathObjectPtr extractFromDoc(xmlDocPtr,const char*);
 int runRequest(map**);
 
 using namespace std;
@@ -215,6 +215,7 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
+
   if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
      (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
 #ifdef WIN32
@@ -225,7 +226,7 @@ int cgiMain(){
      * Store the original XML request in xrequest map
      */
     map* t1=getMap(tmpMap,"request");
-    if(t1!=NULL && strncasecmp(t1->value,"<",1)==0){
+    if(t1!=NULL && strncasecmp(t1->value,"<",1)==0) {
       addToMap(tmpMap,"xrequest",t1->value);
       xmlInitParser();
       xmlDocPtr doc = xmlParseMemory(t1->value,cgiContentLength);

@@ -1260,7 +1260,7 @@ extern "C" {
       addToElements(&(*m)->next,tmp);
     }
   }
-
+  
   /**
    * Dump a service on stderr
    *

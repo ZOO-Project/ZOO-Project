@@ -47,7 +47,7 @@
 #endif
 #ifndef true
 #define true 1
-#define false -1
+#define false 0
 #endif
 
 #define MAX_REQ 50
@@ -80,6 +80,7 @@ extern "C" {
     FILE* file; //!< the file pointer
     unsigned char *pabyData; //!< the downloaded content
     char *mimeType; //!< the mimeType returned by the server
+    char *post; //!< the potential POST XML content
     int hasCacheFile; //!< 1 if we used a cache file
     int nDataLen; //!< the length of the downloaded content
     int nDataAlloc; //!< 
