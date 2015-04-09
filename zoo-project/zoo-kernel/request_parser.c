@@ -425,7 +425,9 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
  * @return 0 on success, -1 on failure
  */
 int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes,HINTERNET* hInternet){
-  for (int k = 0; k < nodes->nodeNr; k++)
+  int k = 0;
+  int l = 0;
+  for (k=0; k < nodes->nodeNr; k++)
     {
       maps *tmpmaps = NULL;
       xmlNodePtr cur = nodes->nodeTab[k];
@@ -508,7 +510,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		    { "mimeType", "encoding", "schema", "method",
 		      "href"
 		    };
-		  for (int l = 0; l < 5; l++)
+		  for (l = 0; l < 5; l++)
 		    {
 		      xmlChar *val = xmlGetProp (cur2, BAD_CAST refs[l]);
 		      if (val != NULL && xmlStrlen (val) > 0)
@@ -745,7 +747,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  char *list[2];
 			  list[0] = zStrdup ("dataType");
 			  list[1] = zStrdup ("uom");
-			  for (int l = 0; l < 2; l++)
+			  for (l = 0; l < 2; l++)
 			    {
 			      xmlChar *val =
 				xmlGetProp (cur4, BAD_CAST list[l]);
@@ -771,7 +773,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			    // mimeType, encoding, schema
 			    const char *coms[3] =
 			      { "mimeType", "encoding", "schema" };
-			    for (int l = 0; l < 3; l++)
+			    for (l = 0; l < 3; l++)
 			      {
 				xmlChar *val =
 				  xmlGetProp (cur4, BAD_CAST coms[l]);
@@ -883,7 +885,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  map *tmpv = getMap (tmpmaps->content, "value");
 			  char *res = NULL;
 			  char *curs = tmpv->value;
-			  for (int i = 0; i <= strlen (tmpv->value) / 64;
+			  int i = 0;
+			  for (i = 0; i <= strlen (tmpv->value) / 64;
 			       i++)
 			    {
 			      if (res == NULL)
@@ -957,6 +960,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
  * @return 0 on success, -1 on failure
  */
 int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,xmlDocPtr doc,xmlNodePtr cur,bool raw){
+  int l=0;
   if( raw == true)
     {
       addToMap (*request_inputs, "RawDataOutput", "");
@@ -977,7 +981,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	  // mimeType, encoding, schema, uom
 	  const char *outs[4] =
 	    { "mimeType", "encoding", "schema", "uom" };
-	  for (int l = 0; l < 4; l++)
+	  for (l = 0; l < 4; l++)
 	    {
 	      xmlChar *val = xmlGetProp (cur, BAD_CAST outs[l]);
 	      if (val != NULL)
@@ -1034,7 +1038,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	const char *ress[3] =
 	  { "storeExecuteResponse", "lineage", "status" };
 	xmlChar *val;
-	for (int l = 0; l < 3; l++)
+	for (l = 0; l < 3; l++)
 	  {
 	    val = xmlGetProp (cur, BAD_CAST ress[l]);
 	    if (val != NULL && strlen ((char *) val) > 0)
@@ -1126,7 +1130,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	    const char *outs[5] =
 	      { "mimeType", "encoding", "schema", "uom", "asReference" };
 					  
-	    for (int l = 0; l < 5; l++) {
+	    for (l = 0; l < 5; l++) {
 	      xmlChar *val = xmlGetProp (cur1, BAD_CAST outs[l]);				
 	      if (val != NULL && xmlStrlen(val) > 0) {
 		if (tmpmaps->content != NULL) {
