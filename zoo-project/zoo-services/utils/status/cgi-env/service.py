@@ -2,7 +2,7 @@ def demo(conf,inputs,outputs):
     import zoo,time
     i=0
     while i < 100:
-        conf["lenv"]["status"]=str(i)
+        conf["lenv"]["message"]="Step "+str(i)
         zoo.update_status(conf,i)
         time.sleep(0.5)
         i+=1

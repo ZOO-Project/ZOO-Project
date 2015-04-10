@@ -189,8 +189,8 @@ size_t getKeyValue(maps* conf, char* key, size_t length){
 
 semid getShmLockId(maps* conf, int nsems){
     semid sem_id;
-	char key[MAX_PATH];
-	getKeyValue(conf, key, MAX_PATH);
+    char key[MAX_PATH];
+    getKeyValue(conf, key, MAX_PATH);
     
     sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
     if(sem_id==NULL){
