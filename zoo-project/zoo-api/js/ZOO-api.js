@@ -3670,12 +3670,19 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
   parseExecuteResponse: function(node) {
     var outputs = node.*::ProcessOutputs.*::Output;
     if (outputs.length() > 0) {
-      var data = outputs[0].*::Data.*::*[0];
-      var builder = this.parseData[data.localName().toLowerCase()];
-      if (builder)
-        return builder.apply(this,[data]);
-      else
-        return null;
+      var res=[];
+      for(var i=0;i<outputs.length();i++){
+        var data = outputs[i].*::Data.*::*[0];
+	if(!data){
+          data = outputs[i].*::Reference;
+	}
+	var builder = this.parseData[data.localName().toLowerCase()];
+	if (builder)
+	  res.push(builder.apply(this,[data]));
+	else
+	  res.push(null);
+      }
+      return res.length>1?res:res[0];
     } else
       return null;
   },
@@ -3733,7 +3740,7 @@ ZOO.Format.WPS = ZOO.Class(ZOO.Format, {
      * {Object} A WPS reference response.
      */
     'reference': function(node) {
-      var result = {type:'reference',value:node.*::href};
+      var result = {type:'reference',value:node.@href};
       return result;
     }
   },
