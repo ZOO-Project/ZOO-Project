@@ -550,7 +550,6 @@ maps* mapsFromPyDict(PyDictObject* t){
     freeMap(&cursor->content);
     free(cursor->content);
     free(cursor);
-    Py_DECREF(key);
 #ifdef DEBUG
     dumpMaps(res);
     fprintf(stderr,">> parsed maps %d\n",i);
@@ -642,41 +641,30 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
   maps* conf;
   PyObject* confdict;
   int istatus;
-  char* status;
+  char* status=NULL;
   if (!PyArg_ParseTuple(args, "O!i", &PyDict_Type, &confdict, &istatus)){
 #ifdef DEBUG
     fprintf(stderr,"Incorrect arguments to update status function");
 #endif
-    return NULL;
+    Py_RETURN_NONE;
   }
   if (istatus < 0 || istatus > 100){
      PyErr_SetString(ZooError, "Status must be a percentage.");
-     return NULL;
+     Py_RETURN_NONE;
   }else{
      char tmpStatus[4];
      snprintf(tmpStatus, 4, "%i", istatus);
      status = zStrdup(tmpStatus);
   }
-  /* now update the map */
-  {
-    PyObject* lenv = PyMapping_GetItemString(confdict, (char *)"lenv");
-    if (lenv && PyMapping_Check(lenv)){
-      PyObject* valobj = PyString_FromString(status);
-      PyMapping_SetItemString(lenv, (char *)"status", valobj);
-      Py_DECREF(valobj);
-    }
-    Py_DECREF(lenv);
-  }
+  // create a local copy and update the lenv map
   conf = mapsFromPyDict((PyDictObject*)confdict);
-  if (getMapFromMaps(conf,"lenv","status") != NULL){
-    if(status!=NULL){
-      setMapInMaps(conf,"lenv","status",status);
-      free(status);
-    }
-    else
-      setMapInMaps(conf,"lenv","status","15");
-    _updateStatus(conf);
+  if(status!=NULL){
+    setMapInMaps(conf,"lenv","status",status);
+    free(status);
   }
+  else
+    setMapInMaps(conf,"lenv","status","15");
+  _updateStatus(conf);
   freeMaps(&conf);
   free(conf);
   Py_RETURN_NONE;
