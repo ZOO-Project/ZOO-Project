@@ -145,7 +145,10 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
   char* cursor_input;
   if (r_inputs != NULL){
     //snprintf (cursor_input, 40960, "%s", r_inputs->value);
-    cursor_input = zStrdup (r_inputs->value);
+    if(strstr(r_inputs->value,"=")==NULL)
+      cursor_input = url_decode (r_inputs->value);
+    else
+      cursor_input = zStrdup (r_inputs->value);
     int j = 0;
 
     // Put each DataInputs into the inputs_as_text array
@@ -1180,9 +1183,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
  */
 int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
   xmlInitParser ();
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   xmlDocPtr doc = xmlParseMemory (post, cgiContentLength);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
   /**
    * Extract Input nodes from the XML Request.
@@ -1197,17 +1198,14 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
     return -1;
   }
   xmlXPathFreeObject (tmpsptr);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
   // Extract ResponseDocument / RawDataOutput from the XML Request 
   tmpsptr =
     extractFromDoc (doc, "/*/*/*[local-name()='ResponseDocument']");
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   bool asRaw = false;
   tmps = tmpsptr->nodesetval;
   if (tmps->nodeNr == 0)
     {
-      fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
       xmlXPathFreeObject (tmpsptr);
       tmpsptr =
 	extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
@@ -1215,7 +1213,6 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
       asRaw = true;
     }
   if(tmps->nodeNr != 0){
-    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     if(xmlParseOutputs(main_conf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
       xmlXPathFreeObject (tmpsptr);
       xmlFreeDoc (doc);
@@ -1223,7 +1220,6 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
       return -1;
     }
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   xmlXPathFreeObject (tmpsptr);
   xmlFreeDoc (doc);
   xmlCleanupParser ();
