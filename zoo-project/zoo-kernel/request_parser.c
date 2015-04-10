@@ -157,6 +157,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
     char **inputs_as_text = (char **) malloc (100 * sizeof (char *));
     if (inputs_as_text == NULL)
       {
+	free(cursor_input);
 	return errorException (*main_conf, _("Unable to allocate memory."),
 			       "InternalError", NULL);
       }
@@ -167,6 +168,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 	  (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
 	if (inputs_as_text[i] == NULL)
 	  {
+	    free(cursor_input);
 	    return errorException (*main_conf, _("Unable to allocate memory."),
 				   "InternalError", NULL);
 	  }
@@ -202,6 +204,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		tmpmaps = (maps *) malloc (MAPS_SIZE);
 		if (tmpmaps == NULL)
 		  {
+		    free(cursor_input);
 		    return errorException (*main_conf,
 					   _("Unable to allocate memory."),
 					   "InternalError", NULL);
@@ -258,6 +261,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 				 _
 				 ("Unable to find a valid protocol to download the remote file %s"),
 				 tmpv1 + 1);
+			free(cursor_input);
 			return errorException (*main_conf, emsg, "InternalError", NULL);
 		      }
 		    addToMap (tmpmaps->content, tmpn1, tmpx2);
@@ -265,8 +269,9 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		      if (loadRemoteFile
 			  (&*main_conf, &tmpmaps->content, hInternet, tmpx2) < 0)
 			{
+			  free(cursor_input);
 			  return errorException (*main_conf, "Unable to fetch any ressource", "InternalError", NULL);
-			  }
+			}
 		      }
 		    free (tmpx2);
 		    addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
@@ -289,6 +294,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 			    (*main_conf, *request_output, tmpmaps,
 			     elem) < 0)
 			  {
+			    free(cursor_input);
 			    return errorException (*main_conf, "Unable to append maps", "InternalError", NULL);
 			  }
 		      }
@@ -303,6 +309,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 	  }
       }
     free (inputs_as_text);
+    free(cursor_input);
   }
   return 1;
 }
@@ -338,6 +345,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
       char **outputs_as_text = (char **) malloc (128 * sizeof (char *));
       if (outputs_as_text == NULL)
 	{
+	  free(cursor_output);
 	  return errorException (*main_conf, _("Unable to allocate memory"),
 				 "InternalError", NULL);
 	}
@@ -348,6 +356,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	    (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
 	  if (outputs_as_text[i] == NULL)
 	    {
+	      free(cursor_output);
 	      return errorException (*main_conf, _("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
@@ -372,6 +381,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 		      tmp_output = (maps *) malloc (MAPS_SIZE);
 		      if (tmp_output == NULL)
 			{
+			  free(cursor_output);
 			  return errorException (*main_conf,
 						 _
 						 ("Unable to allocate memory."),
@@ -412,6 +422,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	  free (tmp);
 	}
       free (outputs_as_text);
+      free(cursor_output);
     }
   return 1;
 }
