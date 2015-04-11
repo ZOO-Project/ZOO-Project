@@ -65,6 +65,10 @@ extern char CCookie[MAX_REQ][1024];
 extern "C" {
 #endif
 
+  /**
+   * Headers storage
+   * @see header_write_data
+   */
   struct MemoryStruct {
     char *memory; //!< the memory space to store data 
     size_t size; //!< size of the memory space
