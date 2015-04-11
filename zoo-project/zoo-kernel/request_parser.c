@@ -551,6 +551,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							     "InternalError",
 							     NULL);
 				    }
+				  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				}
 			      addToMap (tmpmaps->content, "Reference", (char*) val);
 			    }
