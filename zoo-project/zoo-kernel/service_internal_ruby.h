@@ -49,11 +49,14 @@
 #endif
 
 #define MAX_ARGS 3
+/**
+ * The Ruby method pointer
+ */
 struct my_callback {
-  VALUE obj;
-  ID method_id;
-  int nargs;
-  VALUE args[MAX_ARGS];
+  VALUE obj; //!< Object used to call a method
+  ID method_id; //!< The method to call
+  int nargs; //!< The arguments number
+  VALUE args[MAX_ARGS]; //!< The arguments values
 };
 
 void ruby_trace_error(maps*);

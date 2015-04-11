@@ -380,10 +380,13 @@ void unhandleStatus(maps *conf){
 #define MAX_RETRIES 10
 
 #ifndef __APPLE__
+/**
+ * arg for semctl system calls. 
+ */
 union semun {
-  int val;
-  struct semid_ds *buf;
-  ushort *array;
+  int val; //!< value for SETVAL 
+  struct semid_ds *buf; //!< buffer for IPC_STAT & IPC_SET
+  ushort *array; //!< array for GETALL & SETALL
 };
 #endif
 
