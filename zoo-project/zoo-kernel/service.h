@@ -636,6 +636,31 @@ extern "C" {
   }
 
   /**
+   * Add a key and an integer value to an existing map.
+   *
+   * @param m the map to add the KVP
+   * @param n the key to add
+   * @param v the corresponding value to add
+   */
+  static void addIntToMap(map* m,const char* n,const int v){
+    char svalue[10];
+    sprintf(svalue,"%d",v);
+    if(hasKey(m,n)==false){
+      map* _cursor=m;
+      while(_cursor->next!=NULL){
+	_cursor=_cursor->next;
+      }
+      _cursor->next=createMap(n,svalue);
+    }
+    else{
+      map *tmp=getMap(m,n);
+      if(tmp->value!=NULL)
+	free(tmp->value);
+      tmp->value=zStrdup(svalue);
+    }
+  }
+
+  /**
    * Add a key and a binary value to an existing map.
    *
    * @param m the map to add the KVP
@@ -1009,11 +1034,12 @@ extern "C" {
       len=atoi(tmpLength->value);
     }
 
-    char *tmpV[11]={
+    char *tmpV[12]={
       (char*)"size",
       (char*)"value",
       (char*)"uom",
       (char*)"Reference",
+      (char*)"Order",
       (char*)"cache_file",
       (char*)"fmimeType",
       (char*)"xlink:href",
@@ -1025,7 +1051,7 @@ extern "C" {
     sprintf(tmpLen,"%d",len+1);
     addToMap(_cursor->content,"length",tmpLen);
     int i=0;
-    for(i=0;i<11;i++){
+    for(i=0;i<12;i++){
       map* tmpVI=getMap(tmp->content,tmpV[i]);
       if(tmpVI!=NULL){
 #ifdef DEBUG
