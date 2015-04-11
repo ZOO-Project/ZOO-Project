@@ -611,6 +611,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				}
 			      xmlFree (val);
 			    }
+			  hInternet->ihandle[hInternet->nb].header = NULL;
 			  hInternet->ihandle[hInternet->nb].header =
 			    curl_slist_append (hInternet->ihandle
 					       [hInternet->nb].header,
