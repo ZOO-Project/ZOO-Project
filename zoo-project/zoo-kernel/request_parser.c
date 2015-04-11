@@ -274,6 +274,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 			}
 		      }
 		    free (tmpx2);
+		    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 		    addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
 		  }
 		tmpc = strtok (NULL, "@");
@@ -539,7 +540,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  map *ltmp = getMap (tmpmaps->content, "method");
 			  if (l == 4 )
 			    {
-			      addToMap (tmpmaps->content, "Reference", (char*) val);
 			      if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
 				{
 				  if (loadRemoteFile
@@ -552,6 +552,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							     NULL);
 				    }
 				}
+			      addToMap (tmpmaps->content, "Reference", (char*) val);
 			    }
 			}
 		      xmlFree (val);
@@ -667,6 +668,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							   xmlStrlen(btmps),
 							   INTERNET_FLAG_NO_CACHE_WRITE,
 							   0);
+					  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 					}
 				      xmlFree (btmps);
 				      free (tmp);
@@ -736,6 +738,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						       strlen(tmp),
 						       INTERNET_FLAG_NO_CACHE_WRITE,
 						       0);
+				    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				  }
 				free (tmp);
 			      }

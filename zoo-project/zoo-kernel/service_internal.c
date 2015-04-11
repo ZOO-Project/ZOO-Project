@@ -3593,6 +3593,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
     maps* content=*inputs;
     map* tmp1;
     int index=0;
+    char sindex[5];
     while(content!=NULL){
       
       map* length=getMap(content->content,"length");
@@ -3612,6 +3613,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	char mname[15];
 	char icname[14];
 	char xname[16];
+	char oname[12];
 	if(index>0)
 	  sprintf(vname1,"value_%d",index);
 	else
@@ -3625,6 +3627,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	  sprintf(mname,"mimeType_%d",i);
 	  sprintf(icname,"isCached_%d",i);
 	  sprintf(xname,"Reference_%d",i);
+	  sprintf(oname,"Order_%d",i);
 	}else{
 	  sprintf(cname,"cache_file");
 	  sprintf(vname,"value");
@@ -3632,10 +3635,12 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	  sprintf(mname,"mimeType");
 	  sprintf(icname,"isCached");
 	  sprintf(xname,"Reference");
+	  sprintf(oname,"Order");
 	}
 
-	map* tmap=getMapFromMaps(*m,"orequests",vname1);
-	if((tmp1=getMap(content->content,xname))!=NULL /*&& ((tmap!=NULL && strcasecmp(tmap->value,tmp1->value)==0) )*/){
+	map* tmap=getMap(content->content,oname);
+	sprintf(sindex,"%d",index+1);
+	if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
 
 	  if(getMap(content->content,icname)==NULL){
 	    
