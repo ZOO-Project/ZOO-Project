@@ -271,17 +271,21 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    char* ext="json";
 		    if(tmpVal!=NULL){
 		      if(strncasecmp(tmpVal->value,"application/zip",14)==0){
-			char tmpName[1024];
-			symlink(test->value,ReplaceAll(test->value,".zca",".zip").c_str());
-			sprintf(tmpName,"/vsizip/%s",ReplaceAll(test->value,".zca",".zip").c_str());
+			char *tmpName=(char*)malloc((strlen(test->value)+9)*sizeof(char));
+			std::string test0(test->value);
+			if(test0.find(".zca")!=std::string::npos){
+			  symlink(test->value,ReplaceAll(test->value,".zca",".zip").c_str());
+			  sprintf(tmpName,"/vsizip/%s",ReplaceAll(test->value,".zca",".zip").c_str());
+			}else
+			  sprintf(tmpName,"/vsizip/%s",test->value);
 			char **files=VSIReadDir(tmpName);
 			int nFiles = CSLCount( files );
-			char tmpSSName[1024];
-			sprintf(tmpSSName,"%s/Input_%s_%s",tmpPath->value,s->name,tmpSid->value);
+			char *tmpSSName=(char*)malloc((strlen(tmpPath->value)+strlen(paramKey.c_str())+strlen(tmpSid->value)+9)*sizeof(char));
+			sprintf(tmpSSName,"%s/Input_%s_%s",tmpPath->value,paramKey.c_str(),tmpSid->value);
 			mkdir(tmpSSName,0777);
 			    
-			char tmpSName[1024];
 			for(int kk=0;kk<nFiles;kk++){
+			  char *tmpSName=(char*)malloc((strlen(tmpName)+strlen(files[kk])+2)*sizeof(char));
 			  sprintf(tmpSName,"%s/%s",tmpName,files[kk]);
 			  VSILFILE* fmain=VSIFOpenL(tmpSName, "rb");
 			  if(fmain!=NULL){
@@ -292,7 +296,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			    char *content=(char*) malloc((count+1)*sizeof(char));  
 			    VSIFReadL(content,1,count*sizeof(char),fmain);
 			  
-			    char tmpSSSName[1024];
+			    char *tmpSSSName=(char*)malloc((strlen(tmpSSName)+strlen(files[kk])+2)*sizeof(char));
 			    sprintf(tmpSSSName,"%s/%s",tmpSSName,files[kk]);
 			    
 			    FILE* fx=fopen(tmpSSSName, "wb");
@@ -305,8 +309,12 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			      setMapInMaps(inputs,paramKey.c_str(),"cache_file",tmpSSSName);
 			      test=getMapFromMaps(inputs,paramKey.c_str(),"cache_file");
 			    }
+			    free(tmpSSSName);
 			  }
+			  free(tmpSName);
 			}
+			free(tmpSSName);
+			free(tmpName);
 		      }
 		    }
 		    
