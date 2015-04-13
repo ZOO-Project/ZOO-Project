@@ -1057,11 +1057,7 @@ extern "C" {
 #ifdef DEBUG
 	fprintf(stderr,"%s = %s\n",tmpV[i],tmpVI->value);
 #endif
-	if(i<7)
-	  setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
-	else
-	  if(strncasecmp(tmpV[7],"mimeType",8)==0)
-	    setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
+	setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
       }
     }
     

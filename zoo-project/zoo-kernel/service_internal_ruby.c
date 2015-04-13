@@ -31,8 +31,7 @@ char **argv=NULL;
 
 /**
  * Load a Ruby file then run the function corresponding to the service by
- * passing the conf, inputs and outputs parameters by value as JavaScript
- * Objects.
+ * passing the conf, inputs and outputs parameters by refernce as Ruby Hash.
  *
  * @param main_conf the conf maps containing the main.cfg settings
  * @param request the map containing the HTTP request

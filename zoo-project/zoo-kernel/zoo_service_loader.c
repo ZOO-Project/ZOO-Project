@@ -1967,26 +1967,45 @@ runRequest (map ** inputs)
           fflush (stderr);
           if (lid < 0)
             {
-              fprintf (stderr, "ERROR %s %d\n", __FILE__, __LINE__);
-              fflush (stderr);
-              return -1;
+              return errorException (m, _("Lock failed"),
+			      "InternalError", NULL);
             }
           else
             {
               if (lockShm (lid) < 0)
                 {
-                  fprintf (stderr, "ERROR %s %d\n", __FILE__, __LINE__);
-                  fflush (stderr);
-                  return -1;
+		  return errorException (m, _("Lock failed"),
+					 "InternalError", NULL);
                 }
-              fflush (stderr);
             }
           f0 = freopen (fbkp, "w+", stdout);
           rewind (stdout);
 #ifndef WIN32
           fclose (stdin);
 #endif
+
+	  /**
+	   * set status to SERVICE_STARTED and flush stdout to ensure full 
+	   * content was outputed (the file used to store the ResponseDocument).
+	   * The rewind stdout to restart writing from the bgining of the file,
+	   * this way the data will be updated at the end of the process run.
+	   */
+          printProcessResponse (m, request_inputs, cpid, s1, r_inputs1->value,
+                                SERVICE_STARTED, request_input_real_format,
+                                request_output_real_format);
+          fflush (stdout);
+          unlockShm (lid);
+          fflush (stderr);
+          fbkp1 =
+            (char *)
+            malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+                     1024) * sizeof (char));
+          sprintf (fbkp1, "%s/%s_final_%d.xml", r_inputs->value,
+                   r_inputs1->value, cpid);
+
+          f1 = freopen (fbkp1, "w+", stdout);
           free (flog);
+
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
 	    free (s1);
@@ -2005,28 +2024,10 @@ runRequest (map ** inputs)
 	    fflush (stderr);
 	    return -1;
 	  }
-      /**
-       * set status to SERVICE_STARTED and flush stdout to ensure full 
-       * content was outputed (the file used to store the ResponseDocument).
-       * The rewind stdout to restart writing from the bgining of the file,
-       * this way the data will be updated at the end of the process run.
-       */
-          printProcessResponse (m, request_inputs, cpid, s1, r_inputs1->value,
-                                SERVICE_STARTED, request_input_real_format,
-                                request_output_real_format);
-          fflush (stdout);
-          unlockShm (lid);
-          fflush (stderr);
-          fbkp1 =
-            (char *)
-            malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-                     1024) * sizeof (char));
-          sprintf (fbkp1, "%s/%s_final_%d.xml", r_inputs->value,
-                   r_inputs1->value, cpid);
-          f1 = freopen (fbkp1, "w+", stdout);
           loadServiceAndRun (&m, s1, request_inputs,
                              &request_input_real_format,
                              &request_output_real_format, &eres);
+
         }
       else
         {

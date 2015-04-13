@@ -201,6 +201,8 @@ extern "C" {
 
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
+  void dumpMapsValuesToFiles(maps**,maps**);
+
   char *base64(const char*,int);
   char *base64d(const char*,int,int*);
   void ensureDecodedBase64(maps**);
