@@ -2947,6 +2947,83 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   }
 }
 
+/**
+ * Write a file from value and length
+ *
+ * @param fname the file name
+ * @param val the value
+ * @param length the value length
+ */
+int writeFile(char* fname,char* val,int length){
+  FILE* of=fopen(fname,"wb");
+  if(of==NULL){
+    return -1;
+  }
+  size_t ret=fwrite(val,sizeof(char),length,of);
+  if(ret<length){
+    fprintf(stderr,"Write error occured!\n");
+    fclose(of);
+    return -1;
+  }
+  fclose(of);
+  return 1;
+}
+
+/**
+ * Dump all values in a maps as files
+ *
+ * @param main_conf the maps containing the settings of the main.cfg file
+ * @param in the maps containing values to dump as files
+ */
+void dumpMapsValuesToFiles(maps** main_conf,maps** in){
+  map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
+  map* tmpSid=getMapFromMaps(*main_conf,"lenv","sid");
+  maps* inputs=*in;
+  int length=0;
+  while(inputs!=NULL){
+    if(getMap(inputs->content,"mimeType")!=NULL &&
+       getMap(inputs->content,"cache_file")==NULL){
+      map* cMap=inputs->content;
+      if(getMap(cMap,"length")!=NULL){
+	map* tmpLength=getMap(cMap,"length");
+	int len=atoi(tmpLength->value);
+	int k=0;
+	for(k=0;k<len;k++){
+	  map* cMimeType=getMapArray(cMap,"mimeType",k);
+	  map* cValue=getMapArray(cMap,"value",k);
+	  map* cSize=getMapArray(cMap,"size",k);
+	  char file_ext[32];
+	  getFileExtension(cMimeType != NULL ? cMimeType->value : NULL, file_ext, 32);
+	  char* val=(char*)malloc((strlen(tmpPath->value)+strlen(inputs->name)+strlen(tmpSid->value)+strlen(file_ext)+16)*sizeof(char));
+	  sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,inputs->name,tmpSid->value,k,file_ext);
+	  length=0;
+	  if(cSize!=NULL){
+	    length=atoi(cSize->value);
+	  }
+	  writeFile(val,cValue->value,length);
+	  setMapArray(cMap,"cache_file",k,val);
+	  free(val);
+	}
+      }else{
+	int length=0;
+	map* cMimeType=getMap(cMap,"mimeType");
+	map* cValue=getMap(cMap,"value");
+	map* cSize=getMap(cMap,"size");
+	char file_ext[32];
+	getFileExtension(cMimeType != NULL ? cMimeType->value : NULL, file_ext, 32);
+	char *val=(char*)malloc((strlen(tmpPath->value)+strlen(inputs->name)+strlen(tmpSid->value)+strlen(file_ext)+16)*sizeof(char));
+	sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,inputs->name,tmpSid->value,0,file_ext);
+	if(cSize!=NULL){
+	  length=atoi(cSize->value);
+	}
+	writeFile(val,cValue->value,length);
+	addToMap(cMap,"cache_file",val);
+	free(val);
+      }
+    }
+    inputs=inputs->next;
+  }
+}
 
 /**
  * Base64 encoding of a char*
@@ -3007,9 +3084,46 @@ char *base64d(const char *input, int length,int* red)
 }
 
 /**
+ * Read Base64 value and split it value by lines of 64 char.
+ *
+ * @param in the map containing the value to split
+ */
+void readBase64(map **in){
+  char *res = NULL;
+  char *curs = (*in)->value;
+  int i = 0;
+  for (i = 0; i <= strlen ((*in)->value) / 64;
+       i++)
+    {
+      if (res == NULL)
+	res =
+	  (char *) malloc (65 * sizeof (char));
+      else
+	res =
+	  (char *) realloc (res,
+			    (((i + 1) * 65) +
+			     i) * sizeof (char));
+      int csize = i * 65;
+      strncpy (res + csize, curs, 64);
+      if (i == strlen ((*in)->value) / 64)
+	strcat (res, "\n\0");
+      else
+	{
+	  strncpy (res + (((i + 1) * 64) + i),
+		   "\n\0", 2);
+	  curs += 64;
+	}
+    }
+  free ((*in)->value);
+  (*in)->value = zStrdup (res);
+  free (res);
+}
+
+/**
  * Make sure that each value encoded in base64 in a maps is decoded.
  *
  * @param in the maps containing the values
+ * @see readBase64
  */
 void ensureDecodedBase64(maps **in){
   maps* cursor=*in;
@@ -3017,6 +3131,7 @@ void ensureDecodedBase64(maps **in){
     map *tmp=getMap(cursor->content,"encoding");
     if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
       tmp=getMap(cursor->content,"value");
+      readBase64(&tmp);
       addToMap(cursor->content,"base64_value",tmp->value);
       int size=0;
       char *s=strdup(tmp->value);
@@ -3036,6 +3151,7 @@ void ensureDecodedBase64(maps **in){
 	  char key[17];
 	  sprintf(key,"base64_value_%d",i);
 	  tmp=getMapArray(cursor->content,"value",i);
+	  readBase64(&tmp);
 	  addToMap(cursor->content,key,tmp->value);
 	  int size=0;
 	  char *s=strdup(tmp->value);
@@ -4121,3 +4237,4 @@ char* getLastErrorMessage() {
   return dlerror();
 #endif
 }
+

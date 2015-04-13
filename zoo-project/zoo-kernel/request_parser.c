@@ -901,43 +901,16 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 								  0);
 			  addToMap (tmpmaps->content, "value",
 				    (char *) tmp);
-			  map *tmpv = getMap (tmpmaps->content, "value");
-			  char *res = NULL;
-			  char *curs = tmpv->value;
-			  int i = 0;
-			  for (i = 0; i <= strlen (tmpv->value) / 64;
-			       i++)
-			    {
-			      if (res == NULL)
-				res =
-				  (char *) malloc (67 * sizeof (char));
-			      else
-				res =
-				  (char *) realloc (res,
-						    (((i + 1) * 65) +
-						     i) * sizeof (char));
-			      int csize = i * 65;
-			      strncpy (res + csize, curs, 64);
-			      if (i == xmlStrlen (tmp) / 64)
-				strcat (res, "\n\0");
-			      else
-				{
-				  strncpy (res + (((i + 1) * 64) + i),
-					   "\n\0", 2);
-				  curs += 64;
-				}
-			    }
-			  free (tmpv->value);
-			  tmpv->value = zStrdup (res);
-			  free (res);
 			  xmlFree (tmp);
 			}
 		      cur4 = cur4->next;
 		    }
 		}
 	      cur2 = cur2->next;
+	      while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE){
+		cur2 = cur2->next;
+	      }
 	    }
-
 	  {
 	    maps *testPresence =
 	      getMaps (*request_output, tmpmaps->name);
