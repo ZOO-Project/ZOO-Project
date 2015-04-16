@@ -2659,11 +2659,11 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   }
   free(tmpMap1->value);
   tmpMap1->value=(char*) malloc((count+1)*sizeof(char));  
-  fread(tmpMap1->value,1,count*sizeof(char),file);
+  fread(tmpMap1->value,count,sizeof(char),file);
   fclose(file);
   char rsize[100];
-  sprintf(rsize,"%ld",count*sizeof(char));
-  addToMap(tmpMap1,"size",rsize);
+  sprintf(rsize,"%ld",count);
+  addToMap(content,"size",rsize);
 }
 
 /**
@@ -2763,6 +2763,19 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #ifdef USE_MS
       map* testMap=getMap(tmpI->content,"useMapserver");	
 #endif
+      map *gfile=getMap(tmpI->content,"generated_file");
+      char *file_name;
+      if(gfile!=NULL){
+	gfile=getMap(tmpI->content,"expected_generated_file");
+	if(gfile==NULL){
+	  gfile=getMap(tmpI->content,"generated_file");
+	}
+	readGeneratedFile(m,tmpI->content,gfile->value);	    
+	file_name=(char*)malloc((strlen(gfile->value)+strlen(tmp1->value)+1)*sizeof(char));
+	for(int i=0;i<strlen(gfile->value);i++)
+	  file_name[i]=gfile->value[i+strlen(tmp1->value)];
+      }
+
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
       if(toto!=NULL && strcasecmp(toto->value,"true")==0 && testMap==NULL)
@@ -2783,19 +2796,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
 	  }
 
-	  map *gfile=getMap(tmpI->content,"generated_file");
-	  char *file_name;
-	  if(gfile!=NULL){
-	    gfile=getMap(tmpI->content,"expected_generated_file");
-	    if(gfile==NULL){
-	      gfile=getMap(tmpI->content,"generated_file");
-	    }
-	    readGeneratedFile(m,tmpI->content,gfile->value);	    
-	    file_name=(char*)malloc((strlen(gfile->value)+strlen(tmp1->value)+1)*sizeof(char));
-	    for(int i=0;i<strlen(gfile->value);i++)
-	      file_name[i]=gfile->value[i+strlen(tmp1->value)];
-	  }
-	  else{
+	  if(gfile==NULL){
 	    map *ext=getMap(tmpI->content,"extension");
 	    char *file_path;
 	    char file_ext[32];
