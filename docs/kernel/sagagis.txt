@@ -4,7 +4,7 @@ How To Use the SAGA-GIS support
 =============================================
 
 :Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
-:Last Updated: $Date: 2015-02-09 18:33:28 +0100 (Lun, 09 fév 2015) $ 
+:Last Updated: $Date$ 
 
 The key idea of the ZOO `SAGA GIS <http://saga-gis.org/>`_  support implementation is to take advantage of the `SAGA-GIS Modules <http://www.saga-gis.org/saga_module_doc/2.1.4/index.html>`_ by using them directly as ZOO-Services, without any modifications.  
 
