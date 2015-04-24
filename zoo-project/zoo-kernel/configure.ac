@@ -372,10 +372,10 @@ then
 	OTB_FILE=""
 	OTB_ENABLED=""
 else
-    if test -z "$ITKVERS" 
-    then
-        ITKVERS="4.5"
-    fi
+	if test -z "$ITKVERS" 
+    	then
+		ITKVERS="4.5"
+    	fi
 	OTB_ENABLED="-DUSE_OTB"
 	OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib -lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkdouble-conversion-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS -litkzlib-$ITKVERS"
 	OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
@@ -438,8 +438,8 @@ else
 	AC_CHECK_HEADERS([module_library.h],
 			[], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
 	LIBS_SAVE="$LIBS"
-	AC_LANG_POP([C++])
 	AC_CHECK_LIB([saga_api], [SG_Set_UI_Callback,SG_Get_Module_Library_Manager])
+	AC_LANG_POP([C++])
 fi
 AC_SUBST([SAGA_CPPFLAGS])
 AC_SUBST([SAGA_LDFLAGS])

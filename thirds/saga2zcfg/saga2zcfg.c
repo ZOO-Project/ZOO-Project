@@ -16,12 +16,15 @@ TSG_PFNC_UI_Callback Get_Callback(void){
 
 const char* cleanAbstract(CSG_String abstract){
   char* tmp=strdup(abstract.b_str());
-  CSG_String val=CSG_String("")+tmp;
+  CSG_String val=CSG_String(" ")+tmp;
   if(val.Contains("¸")){
     val.Replace("¸"," ");
   }
   if(val.Contains("\n")){
     val.Replace("\n","<br/>");
+  }
+  if(val.Contains("\r")){
+    val.Replace("\r","");
   }
   if(val.Contains("<")){
     val.Replace("<","&lt;");
@@ -41,7 +44,7 @@ void printBasicMetadata(FILE* stdout,CSG_Parameter* param,bool out=false,bool ra
   if(CSG_String(param->Get_Description()).is_Empty())
     fprintf(stdout,"  Abstract = %s\n",CSG_String(param->Get_Name()).b_str());
   else{
-    fprintf(stdout,"  Abstract = %s\n",cleanAbstract(CSG_String(param->Get_Description()).BeforeFirst('\n')));
+    fprintf(stdout,"  Abstract = %s\n",cleanAbstract(CSG_String(param->Get_Description())));
   }
   if(!out){
     if(param->is_Option() || param->is_Optional()){
@@ -144,13 +147,22 @@ int main(int argc, char *argv[]) {
 	if(module!=NULL && !module->needs_GUI() /*&& !module->is_Interactive()*/ ){
 
 	  mkdir(library->Get_Library_Name().b_str(),0755);
+	  fprintf(stderr,"%s %s \n",library->Get_Library_Name().b_str(),CSG_String(module->Get_ID()).b_str());
 	  FILE *stdout1=fopen((library->Get_Library_Name()+"/"+module->Get_ID()+".zcfg").b_str(),"w+");
 	  fprintf(stdout1,"[%d]\n",j);
 	  fprintf(stdout1," Title = %s\n",module->Get_Name().b_str());
-	  if(CSG_String(module->Get_Description()).is_Empty())
+	  if(CSG_String(module->Get_Description()).is_Empty() ||
+	     module->Get_Description().Length()<module->Get_Name().Length() )
 	    fprintf(stdout1," Abstract = %s\n",module->Get_Name().b_str());
-	  else
-	    fprintf(stdout1," Abstract = %s\n",cleanAbstract(module->Get_Description()));
+	  else{
+	    const char *tmp=cleanAbstract(module->Get_Description());
+	    if(tmp==NULL || strlen(tmp)<7 ){
+	      fprintf(stdout1," Abstract = %s\n",module->Get_Name().b_str());
+	    }
+	    else{
+	      fprintf(stdout1," Abstract = %s\n",tmp);
+	    }
+	  }
 	  fprintf(stdout1," storeSupported = true\n");
 	  fprintf(stdout1," statusSupported = true\n");
 	  fprintf(stdout1," serviceType = SAGA\n");
@@ -293,7 +305,7 @@ int main(int argc, char *argv[]) {
 		  if(clen>0){
 		    for(int l=0;l<clen;l++){
 		      //fprintf(stdout1,"%d",l);
-		      fprintf(stdout1,"%s",cleanAbstract(CSG_String(choice->Get_Item(l))));
+		      fprintf(stdout1,"%s",(CSG_String(choice->Get_Item(l))).b_str());
 		      if(l+1<clen)
 			fprintf(stdout1,",");
 		    }
@@ -301,7 +313,7 @@ int main(int argc, char *argv[]) {
 		  }
 		  fprintf(stdout1,"   <Default>\n");
 		  if( !param->Get_Data()->Get_Default().is_Empty() ){
-		    fprintf(stdout1,"    value = %s\n",cleanAbstract(CSG_String(choice->Get_Item(atoi(param->Get_Data()->Get_Default())))));
+		    fprintf(stdout1,"    value = %s\n",CSG_String(choice->Get_Item(atoi(param->Get_Data()->Get_Default()))).b_str());
 		  }
 		  fprintf(stdout1,"   </Default>\n");
 		  fprintf(stdout1,"  </LiteralData>\n");

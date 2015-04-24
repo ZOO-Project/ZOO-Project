@@ -27,21 +27,9 @@
 
 #pragma once 
 
-#include <locale.h>
-#define _WX_WXCRTVARARG_H_
-#include <wx/string.h>
-#include <wx/app.h>
-#include <api_core.h>
-#include <data_manager.h>
-#include <module_library.h>
-
 #include "service.h"
 #include "service_internal.h"
 
-/**
- * Global SAGA-GIS output counter 
- */
-int sagaOutputCounter=0;
 int zoo_saga_support(maps**,map*,service*,maps**,maps**);
 
 #endif
