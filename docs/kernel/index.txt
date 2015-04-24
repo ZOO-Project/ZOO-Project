@@ -12,4 +12,5 @@ The following sections will assist you with the ZOO Kernel:
    installation
    mapserver
    orfeotoolbox
+   sagagis
 

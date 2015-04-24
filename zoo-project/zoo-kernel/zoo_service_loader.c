@@ -59,6 +59,10 @@ extern "C"
 #include "service_internal_python.h"
 #endif
 
+#ifdef USE_SAGA
+#include "service_internal_saga.h"
+#endif
+
 #ifdef USE_JAVA
 #include "service_internal_java.h"
 #endif
@@ -694,6 +698,17 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
         }
     }
   else
+
+#ifdef USE_SAGA
+  if (strncasecmp (r_inputs->value, "SAGA", 6) == 0)
+    {
+      *eres =
+        zoo_saga_support (&m, request_inputs, s1,
+                            &request_input_real_format,
+                            &request_output_real_format);
+    }
+  else
+#endif
 
 #ifdef USE_OTB
   if (strncasecmp (r_inputs->value, "OTB", 6) == 0)

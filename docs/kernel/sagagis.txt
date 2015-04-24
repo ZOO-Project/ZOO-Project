@@ -1,0 +1,91 @@
+.. _kernel-sagagis:
+    
+How To Use the SAGA-GIS support
+=============================================
+
+:Authors: Nicolas Bozon, Gérald Fenoy, Jeff McKenna
+:Last Updated: $Date: 2015-02-09 18:33:28 +0100 (Lun, 09 fév 2015) $ 
+
+The key idea of the ZOO `SAGA GIS <http://saga-gis.org/>`_  support implementation is to take advantage of the `SAGA-GIS Modules <http://www.saga-gis.org/saga_module_doc/2.1.4/index.html>`_ by using them directly as ZOO-Services, without any modifications.  
+
+Here is an overview of the installation procedure and the required configuration to activate the SAGA-GIS support in ZOO-Project. 
+
+.. contents:: Table of Contents
+    :depth: 3
+    :backlinks: top
+
+How to make it working ?
+------------------------
+
+Requirements
+**************
+
+   * latest `ZOO-Kernel <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel>`_ trunk version
+   * SAGA-GIS (`SAGA-GIS 2.1.4 <http://saga-gis.org/>`_ )
+   * libLAS-1.2  (`LibLAS-1.2 <https://github.com/libLAS/libLAS-1.2>`_ )
+
+Installation steps
+********************
+
+Download lastest ZOO-Kernel code from SVN.
+
+.. code-block:: guess
+
+    svn checkout http://svn.zoo-project.org/svn/trunk/zoo-kernel zoo-kernel
+
+Then compile ZOO-Kernel using the needed configuration options as shown bellow:
+
+.. code-block:: guess
+
+     cd zoo-kernel
+     autoconf
+     ./configure  --with-saga=/usr/local/
+     make
+     cp zoo_loader.cgi /usr/lib/cgi-bin
+
+Configuration steps
+*************************
+
+Services configuration file
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Building the `saga2zcfg  <http://zoo-project.org/trac/browser/trunk/thirds/otb2zcfg>`_ utility is required to activate the available SAGA-GIS Modules as WPS Services. This can be done using the following command: 
+
+.. code-block:: guess
+	
+	cd thirds/saga2zcfg
+	 make
+	
+Run the following command to generate all the needed zcfg files for the available SAGA-GIS Modules:
+
+.. code-block:: guess
+	
+	 mkdir zcfgs
+	 cd zcfgs
+	 ../saga2zcfg
+         mkdir /location/to/your/cgi-bin/SAGA
+	 cp *zcfg /location/to/your/cgi-bin/SAGA
+	
+Test the ZOO SAGA support
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Once done, SAGA-GIS Modules should be listed as available WPS Services when runing a GetCapabilities request
+
+.. code-block:: guess 
+
+        http://localhost/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS 
+
+Each SAGA-GIS Service can then be described individually using the DescribeProcess request, as for example:
+
+.. code-block:: guess
+
+   http://localhost/cgi-bin/zoo_loader.cgi?request=DescribeProcess&service=WPS&version=1.0.0&Identifier=SAGA.garden_fractals.1
+
+And executed according to your needs, as for the following example
+executing SAGA.garden_fractals.1 with no optional parameter
+
+.. code-block:: guess
+
+   http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=SAGA.garden_fractals.1&DataInputs=&ResponseDocument=RESULT@mimeType=application/json@asReference=true
+
+When executing SAGA-GIS Modules as WPS Services, it is also possible to check its ongoing status, using the usual asynchronous Execute requests and polling the ZOO GetStatus request.

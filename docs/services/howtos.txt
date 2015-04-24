@@ -18,8 +18,17 @@ HelloWorlds in Python, PHP, Java  and JavaScript with links to their correspondi
 Common informations
 ----------------------
 
-The function of the process for each programming language take three arguments: the main
-configuration, inputs and outputs.
+A ZOO-Service is a couple composed of a ZCFG file and a
+ServiceProvider. This last depend of the programming language but
+should expose at least one function corresponding to the Service. This
+function take three arguments: the main configuration, inputs and
+outputs and return an integer:
+* 3 if the process run sucessfully
+* 4 in case any error occur. In such a case, programmer may add
+detailler message map
+
+Data structures for those arguments depend on the programming
+-UMRlanguage and is detailled below.
 
 .. Note:: The service has to **return 3 if the process run successfully instead it 
 	  return 4** if the process end with an error.
