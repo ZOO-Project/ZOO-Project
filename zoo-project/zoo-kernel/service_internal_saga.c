@@ -24,8 +24,20 @@
 
 #include <stdlib.h>
 #include <limits.h>
+#include <locale.h>
+#include <wx/string.h>
+#include <wx/app.h>
+#include <api_core.h>
+#include <data_manager.h>
+#include <module_library.h>
+#define _ZOO_SAGA
 #include "service_internal_saga.h"
 #include "mimetypes.h"
+
+/**
+ * Global SAGA-GIS output counter 
+ */
+int sagaOutputCounter=0;
 
 /**
  * Observer used to access the ongoing status of a running OTB Application
