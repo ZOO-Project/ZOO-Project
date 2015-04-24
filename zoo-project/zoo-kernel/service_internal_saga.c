@@ -34,7 +34,6 @@ class SagaWatcher
 {
  public:
   static int Callback(TSG_UI_Callback_ID ID, CSG_UI_Parameter &Param_1, CSG_UI_Parameter &Param_2);
-  //int Callback(TSG_UI_Callback_ID ID, CSG_UI_Parameter &Param_1, CSG_UI_Parameter &Param_2);
   /** 
    * Define the message value
    *
@@ -189,8 +188,7 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
   return( res );
 }
 
-TSG_PFNC_UI_Callback	Get_Callback	(SagaWatcher watcher)
-{
+TSG_PFNC_UI_Callback Get_Callback (SagaWatcher watcher){
   return( &(watcher.Callback) );
 }
 
@@ -393,7 +391,7 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 	      {
 		for(int i=0; i<param->asList()->Get_Count(); i++)
 		  {
-		    CSG_Data_Object	*pObject	= param->asList()->asDataObject(i);
+		    CSG_Data_Object *pObject = param->asList()->asDataObject(i);
 		    
 		    if( pObject->is_Modified() && SG_File_Exists(pObject->Get_File_Name()) )
 		      {
@@ -431,20 +429,20 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 		
 		  while( fileName.Length() > 0 )
 		    {
-		      CSG_String	s(&fileName); s = s.BeforeFirst(';');
-		    
-		      if( s.Length() > 0 )
+		      CSG_String current_file(&fileName);
+		      current_file = current_file.BeforeFirst(';');
+		      if( current_file.Length() > 0 )
 			{
-			  fileNames	+= s;
-			  fileName	 = fileName.AfterFirst(';');
+			  fileNames += current_file;
+			  fileName = fileName.AfterFirst(';');
 			}
 		      else
 			{
-			  fileNames	+= &fileName;
-			  fileName	.Clear();
+			  fileNames += &fileName;
+			  fileName.Clear();
 			}
 		    }
-		
+		  
 		  int nFileNames = param->asList()->Get_Count() <= fileNames.Get_Count() ? fileNames.Get_Count() : fileNames.Get_Count() - 1;
 		  for(int i=0; i<param->asList()->Get_Count(); i++)
 		    {
@@ -467,7 +465,7 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 		}
 	    }
       }
-    } 
+    }
   return( true );
 }
 
@@ -668,7 +666,6 @@ int sagaExportGDAL(maps** conf, maps** in/*,CSG_Parameter* param*/){
  * @see sagaExportOGR
  */
 int sagaExportTIN(maps** conf, maps** in,const char* tname/*,CSG_Parameter* param*/){
-  dumpMaps(*in);
   map* mtype=getMap((*in)->content,"mimeType");
   map* gfile=getMap((*in)->content,"generated_file");
   char* fext="shp";
