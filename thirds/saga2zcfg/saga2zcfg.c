@@ -14,28 +14,26 @@ TSG_PFNC_UI_Callback Get_Callback(void){
   return( &Callback );
 }
 
-const char* cleanAbstract(CSG_String abstract){
+void cleanAbstract(CSG_String abstract,char**res){
   char* tmp=strdup(abstract.b_str());
-  CSG_String val=CSG_String(" ")+tmp;
-  if(val.Contains("¸")){
-    val.Replace("¸"," ");
+  CSG_String val=CSG_String("")+tmp;
+  if(val.Contains("\r")){
+    val.Replace("\r","<br/>");
   }
   if(val.Contains("\n")){
     val.Replace("\n","<br/>");
-  }
-  if(val.Contains("\r")){
-    val.Replace("\r","");
   }
   if(val.Contains("<")){
     val.Replace("<","&lt;");
   }
   if(val.Contains(">")){
     val.Replace(">","&gt;");
-    fprintf(stderr,"%s\n",val.b_str());
   }
   free(tmp);
-  fprintf(stderr,"%s\n",val.b_str());
-  return val.b_str();
+  if(val.is_Empty())
+    *res=NULL;
+  else
+    *res=strdup(val.b_str());
 }
 
 void printBasicMetadata(FILE* stdout,CSG_Parameter* param,bool out=false,bool range=false,bool min=true,bool tin=false,char* tname=NULL,char* ttitle=NULL){
@@ -44,7 +42,22 @@ void printBasicMetadata(FILE* stdout,CSG_Parameter* param,bool out=false,bool ra
   if(CSG_String(param->Get_Description()).is_Empty())
     fprintf(stdout,"  Abstract = %s\n",CSG_String(param->Get_Name()).b_str());
   else{
-    fprintf(stdout,"  Abstract = %s\n",cleanAbstract(CSG_String(param->Get_Description())));
+    char* tmp=strdup(CSG_String(param->Get_Description()).b_str());
+    CSG_String val=CSG_String("")+tmp;
+    if(val.Contains("\r")){
+      val.Replace("\r","<br/>");
+    }
+    if(val.Contains("\n")){
+      val.Replace("\n","<br/>");
+    }
+    if(val.Contains("<")){
+      val.Replace("<","&lt;");
+    }
+    if(val.Contains(">")){
+      val.Replace(">","&gt;");
+    }
+    free(tmp);
+    fprintf(stdout,"  Abstract = %s\n",val.b_str());
   }
   if(!out){
     if(param->is_Option() || param->is_Optional()){
@@ -147,7 +160,7 @@ int main(int argc, char *argv[]) {
 	if(module!=NULL && !module->needs_GUI() /*&& !module->is_Interactive()*/ ){
 
 	  mkdir(library->Get_Library_Name().b_str(),0755);
-	  fprintf(stderr,"%s %s \n",library->Get_Library_Name().b_str(),CSG_String(module->Get_ID()).b_str());
+
 	  FILE *stdout1=fopen((library->Get_Library_Name()+"/"+module->Get_ID()+".zcfg").b_str(),"w+");
 	  fprintf(stdout1,"[%d]\n",j);
 	  fprintf(stdout1," Title = %s\n",module->Get_Name().b_str());
@@ -155,12 +168,13 @@ int main(int argc, char *argv[]) {
 	     module->Get_Description().Length()<module->Get_Name().Length() )
 	    fprintf(stdout1," Abstract = %s\n",module->Get_Name().b_str());
 	  else{
-	    const char *tmp=cleanAbstract(module->Get_Description());
-	    if(tmp==NULL || strlen(tmp)<7 ){
+	    char *val0;
+	    cleanAbstract(module->Get_Description(),&val0);
+	    if(val0==NULL)
 	      fprintf(stdout1," Abstract = %s\n",module->Get_Name().b_str());
-	    }
 	    else{
-	      fprintf(stdout1," Abstract = %s\n",tmp);
+	      fprintf(stdout1," Abstract = %s\n",val0);
+	      free(val0);
 	    }
 	  }
 	  fprintf(stdout1," storeSupported = true\n");
