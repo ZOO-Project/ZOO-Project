@@ -418,8 +418,8 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 	    {
 	      char *realFileName=(char*)malloc((strlen(file_ext)+strlen(sid->value)+strlen(cMaps->name)+14)*sizeof(char));
 	      char *fullFileName=(char*)malloc((strlen(file_ext)+strlen(sid->value)+strlen(cMaps->name)+strlen(tmpPath->value)+16)*sizeof(char));
-	      sprintf(realFileName,"Output_%s_%d_%s",cMaps->name,sagaOutputCounter,sid->value);
-	      sprintf(fullFileName,"%s/Output_%s_%d_%s.%s",tmpPath->value,cMaps->name,sagaOutputCounter,sid->value,file_ext);
+	      sprintf(realFileName,"Output_%s_%s_%d",cMaps->name,sid->value,sagaOutputCounter);
+	      sprintf(fullFileName,"%s/Output_%s_%s_%d.%s",tmpPath->value,cMaps->name,sid->value,sagaOutputCounter,file_ext);
 	      sagaOutputCounter+=1;
 	      wxString fileName(fullFileName);
 	      addToMap(cMaps->content,"generated_name",realFileName);
