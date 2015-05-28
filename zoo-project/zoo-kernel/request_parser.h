@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef SERVICE_PARSER_H
-#define SERVICE_PARSER_H 1
+#ifndef ZOO_REQUEST_PARSER_H
+#define ZOO_REQUEST_PARSER_H 1
 
 #pragma once 
 
@@ -38,12 +38,14 @@ extern "C" {
 
   xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
   int appendMapsToMaps (maps*, maps*, maps*, elements*);
+  void ensureDecodedBase64(maps**);
   int kvpParseInputs(maps**,service*,map*,maps**,HINTERNET*);
   int kvpParseOutputs(maps**,map *,maps**);
   int xmlParseInputs(maps**,service*,maps**,xmlDocPtr,xmlNodeSet*,HINTERNET*);
   int xmlParseOutputs(maps**,map**,maps**,xmlDocPtr,xmlNodePtr,bool);
   int xmlParseRequest(maps**,const char*,map**,service*,maps**,maps**,HINTERNET*);
   int parseRequest(maps**,map**,service*,maps**,maps**,HINTERNET*);
+  void checkValidValue(map*,map**,const char*,const char**,int);
   int validateRequest(maps**,service*,map*,maps**,maps**,HINTERNET*);
 
 #ifdef __cplusplus

@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "service_internal.h"
+#include "response_print.h"
 
 
 #ifdef WIN32
@@ -215,7 +216,6 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-
   if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
      (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
 #ifdef WIN32
@@ -286,10 +286,24 @@ int cgiMain(){
       if(strncasecmp(t1->value,"GetCapabilities",15)==0){
 	xmlXPathObjectPtr versptr=extractFromDoc(doc,"/*/*/*[local-name()='Version']");
 	xmlNodeSet* vers=versptr->nodesetval;
-	xmlChar* content=xmlNodeListGetString(doc, vers->nodeTab[0]->xmlChildrenNode,1);
-	addToMap(tmpMap,"version",(char*)content);
+	if(vers!=NULL && vers->nodeTab!=NULL && vers->nodeTab[0]!=NULL){
+	  xmlChar* content=xmlNodeListGetString(doc, vers->nodeTab[0]->xmlChildrenNode,1);
+	  addToMap(tmpMap,"version",(char*)content);
+	  xmlFree(content);
+	}
+	if(cur->ns){
+	  addToMap(tmpMap,"wps_schemas",(char*)cur->ns->href);
+	  xmlFree(tval);
+	  int j=0;
+	  for(j=0;j<2;j++)
+	    if(strncasecmp(schemas[j][2],(char*)cur->ns->href,strlen(schemas[j][2]))==0){
+	      char vers[6];
+	      sprintf(vers,"%d.0.0",j+1);
+	      addToMap(tmpMap,"version",(char*)vers);
+	    }
+	}
+	dumpMap(tmpMap);
 	xmlXPathFreeObject(versptr);
-	xmlFree(content);
       }else{
 	tval=NULL;
 	tval = (char*) xmlGetProp(cur,BAD_CAST "version");
@@ -375,6 +389,7 @@ int cgiMain(){
   if(strQuery!=NULL)
     free(strQuery);
 
+  
   runRequest(&tmpMap);
 
   if(tmpMap!=NULL){

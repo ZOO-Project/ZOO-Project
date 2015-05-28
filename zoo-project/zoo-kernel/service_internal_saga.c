@@ -32,6 +32,7 @@
 #include <module_library.h>
 #define _ZOO_SAGA
 #include "service_internal_saga.h"
+#include "server_internal.h"
 #include "mimetypes.h"
 
 /**

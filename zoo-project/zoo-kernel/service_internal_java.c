@@ -23,6 +23,7 @@
  */
 
 #include "service_internal_java.h"
+#include "response_print.h"
 
 /**
  * Load a JAVA class then run the static public method corresponding to the 
@@ -86,12 +87,12 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 
   int nb=1;
   int nbc0=0;
-  maps* javaXXMap=getMaps(main_conf,"javaxx");
+  maps* javaXXMap=getMaps(*main_conf,"javaxx");
   if(javaXXMap!=NULL){
     nbc0+=count(javaXXMap->content);
   }
   int nbc1=0;
-  maps* javaXMap=getMaps(main_conf,"javax");
+  maps* javaXMap=getMaps(*main_conf,"javax");
   if(javaXMap!=NULL){
     nbc1+=count(javaXMap->content);
   }
@@ -106,8 +107,6 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   JNIEnv *env;
   long result;
   jmethodID pmid;
-  jfieldID fid;
-  jobject jobj;
   jclass cls;
 #ifdef JAVA7
   jobject cls_gr;
@@ -501,9 +500,8 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
    *   System.out.println(me.getKey() + " : " + me.getValue() );
    * }
    */
-  jclass scHashMap_class,scSetClass,scIteratorClass,scMapEntryClass,scSet_class,scMapClass;
+  jclass scSetClass,scIteratorClass,scMapEntryClass;
   jmethodID entrySet_mid,containsKey_mid,get_mid,iterator_mid,hasNext_mid,next_mid,getKey_mid,getValue_mid;
-  jobject scObject,scObject1;
   if(scHashMapClass==NULL){
 #ifdef DEBUG
     fprintf(stderr,"Unable to load java.util.HashMap\n");

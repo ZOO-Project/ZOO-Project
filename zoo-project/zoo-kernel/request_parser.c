@@ -24,6 +24,9 @@
 
 #include "request_parser.h"
 #include "service_internal.h"
+#include "server_internal.h"
+#include "response_print.h"
+#include "caching.h"
 
 /**
  * Apply XPath Expression on XML document.
@@ -126,6 +129,56 @@ int appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem){
 	}
     }
   return 0;
+}
+
+/**
+ * Make sure that each value encoded in base64 in a maps is decoded.
+ *
+ * @param in the maps containing the values
+ * @see readBase64
+ */
+void ensureDecodedBase64(maps **in){
+  maps* cursor=*in;
+  while(cursor!=NULL){
+    map *tmp=getMap(cursor->content,"encoding");
+    if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
+      tmp=getMap(cursor->content,"value");
+      readBase64(&tmp);
+      addToMap(cursor->content,"base64_value",tmp->value);
+      int size=0;
+      char *s=strdup(tmp->value);
+      free(tmp->value);
+      tmp->value=base64d(s,strlen(s),&size);
+      free(s);
+      char sizes[1024];
+      sprintf(sizes,"%d",size);
+      addToMap(cursor->content,"size",sizes);
+    }
+    map* length=getMap(cursor->content,"length");
+    if(length!=NULL){
+      int len=atoi(length->value);
+      for(int i=1;i<len;i++){
+	tmp=getMapArray(cursor->content,"encoding",i);
+	if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
+	  char key[17];
+	  sprintf(key,"base64_value_%d",i);
+	  tmp=getMapArray(cursor->content,"value",i);
+	  readBase64(&tmp);
+	  addToMap(cursor->content,key,tmp->value);
+	  int size=0;
+	  char *s=strdup(tmp->value);
+	  free(tmp->value);
+	  tmp->value=base64d(s,strlen(s),&size);
+	  free(s);
+	  char sizes[1024];
+	  sprintf(sizes,"%d",size);
+	  sprintf(key,"size_%d",i);
+	  addToMap(cursor->content,key,sizes);
+	}
+      }
+    }
+    cursor=cursor->next;
+  }
 }
 
 /**
@@ -1446,4 +1499,120 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
 
   ensureDecodedBase64 (request_inputs);
   return 1;
+}
+
+
+/**
+ * Verify if a parameter value is valid.
+ * 
+ * @param request the request map
+ * @param res the error map potentially generated
+ * @param toCheck the parameter to use
+ * @param avalues the acceptable values (or null if testing only for presence)
+ * @param mandatory verify the presence of the parameter if mandatory > 0 
+ */
+void checkValidValue(map* request,map** res,const char* toCheck,const char** avalues,int mandatory){
+  map* lres=*res;
+  map* r_inputs = getMap (request,toCheck);
+  if (r_inputs == NULL){
+    if(mandatory>0){
+      char *replace=_("Mandatory parameter <%s> was not specified");
+      char *message=(char*)malloc((strlen(replace)+strlen(toCheck)+1)*sizeof(char));
+      sprintf(message,replace,toCheck);
+      if(lres==NULL){
+	lres=createMap("code","MissingParameterValue");
+	addToMap(lres,"text",message);
+	addToMap(lres,"locator",toCheck);       
+      }else{
+	int length=1;
+	map* len=getMap(lres,"length");
+	if(len!=NULL){
+	  length=atoi(len->value);
+	}
+	setMapArray(lres,"text",length,message);
+	setMapArray(lres,"locator",length,toCheck);
+	setMapArray(lres,"code",length,"MissingParameter");
+      }
+      free(message);
+    }
+  }else{
+    if(avalues==NULL)
+      return;
+    int nb=0;
+    int hasValidValue=-1;
+    if(strncasecmp(toCheck,"Accept",6)==0){
+      char *tmp=zStrdup(r_inputs->value);
+      char *pToken,*saveptr;
+      pToken=strtok_r(tmp,",",&saveptr);
+      while(pToken!=NULL){
+	while(avalues[nb]!=NULL){
+	  if(strcasecmp(avalues[nb],pToken)==0){
+	    hasValidValue=1;
+	    break;
+	  }
+	  nb++;
+	}
+	pToken=strtok_r(NULL,",",&saveptr);
+      }
+      free(tmp);
+    }else{
+      while(avalues[nb]!=NULL){
+	if(strcasecmp(avalues[nb],r_inputs->value)==0){
+	  hasValidValue=1;
+	  break;
+	}
+	nb++;
+      }
+    }
+    if(hasValidValue<0){
+      char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
+      nb=0;
+      char *vvalues=NULL;
+      char* num=_("is");
+      while(avalues[nb]!=NULL){
+	char *tvalues;
+	if(vvalues==NULL){
+	  vvalues=(char*)malloc((strlen(avalues[nb])+3)*sizeof(char));
+	  sprintf(vvalues,"%s",avalues[nb]);
+	}
+	else{
+	  tvalues=zStrdup(vvalues);
+	  vvalues=(char*)realloc(vvalues,(strlen(tvalues)+strlen(avalues[nb])+3)*sizeof(char));
+	  sprintf(vvalues,"%s, %s",tvalues,avalues[nb]);
+	  free(tvalues);
+	  num=_("are");
+	}
+	nb++;
+      }
+      char *message=(char*)malloc((strlen(replace)+strlen(num)+strlen(vvalues)+strlen(toCheck)+1)*sizeof(char));
+      sprintf(message,replace,toCheck,vvalues,num);
+      const char *code="VersionNegotiationFailed";
+      code="InvalidParameterValue";
+      const char *locator=toCheck;
+      if( strncasecmp(toCheck,"version",7)==0 ||
+	  strncasecmp(toCheck,"AcceptVersions",14)==0 )
+	code="VersionNegotiationFailed";
+      if( strncasecmp(toCheck,"request",7)==0){
+	code="OperationNotSupported";
+	locator=r_inputs->value;
+      }
+      if(lres==NULL){
+	lres=createMap("code","InvalidParameterValue");
+	addToMap(lres,"text",message);
+	addToMap(lres,"locator",locator);       
+      }else{
+	int length=1;
+	map* len=getMap(lres,"length");
+	if(len!=NULL){
+	  length=atoi(len->value);
+	}
+	setMapArray(lres,"text",length,message);
+	setMapArray(lres,"locator",length,locator);
+	setMapArray(lres,"code",length,"InvalidParameterValue");
+      }
+    }
+  }
+  if(lres!=NULL){
+    *res=lres;
+  }
 }

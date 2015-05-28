@@ -28,6 +28,7 @@
 #pragma once 
 
 #include "service_internal.h"
+#include "response_print.h"
 #include <Python.h>
 #include "cgic.h"
 #ifdef WIN32

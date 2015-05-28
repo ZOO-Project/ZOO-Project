@@ -22,7 +22,8 @@
  * THE SOFTWARE.
  */
 
-#include "service_internal.h"
+#include "server_internal.h"
+#include "response_print.h"
 #include "service.h"
 
 extern   int getServiceFromFile(maps*,const char*,service**);

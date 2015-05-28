@@ -31,6 +31,8 @@
 #define CLASS _class
 #endif
 #include "service_internal_ms.h"
+#include "server_internal.h"
+#include "response_print.h"
 
 /**
  * Get a list of configuration keys having a corresponding mandatory ows_*.

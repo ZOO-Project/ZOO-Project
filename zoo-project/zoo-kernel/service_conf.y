@@ -173,6 +173,7 @@ STag
       current_element->format=NULL;
       current_element->defaults=NULL;
       current_element->supported=NULL;
+      current_element->child=NULL;
       current_element->next=NULL;
     }
     wait_inputs=true;
@@ -222,6 +223,7 @@ STag
 	current_element->format=NULL;
 	current_element->defaults=NULL;
 	current_element->supported=NULL;
+	current_element->child=NULL;
 	current_element->next=NULL;
       }
       wait_outputs=1;

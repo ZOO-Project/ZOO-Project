@@ -50,401 +50,6 @@ AC_ARG_WITH([cgi-dir],
     [CGI_DIR="$withval"], [CGI_DIR="/usr/lib/cgi-bin"])
 AC_SUBST([CGI_DIR])
 
-# ===========================================================================
-# Detect if python is installed
-# ===========================================================================
-
-AC_ARG_WITH([python], 
-	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
-	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
-
-AC_ARG_WITH([pyvers], 
-	[AS_HELP_STRING([--with-pyvers=NUM], [To use a specific python version])], 
-	[PYTHON_VERS="$withval"], [PYTHON_VERS=""])
-
-
-if test -z "$PYTHON_ENABLED"
-then
-	PYTHON_FILE=""
-else
-	PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
-	PYTHON_FILE="service_internal_python.o"
-	if test  "$PYTHON_PATH" = "yes"
-	then
-		# PHP was not specified, so search within the current path
-		PYTHONCFG_PATH=`which python${PYTHON_VERS}-config`
-		if test -z "${PYTHONCFG_PATH}" ; then
-		AC_PATH_PROG([PYTHONCONFIG], [python-config-${PYTHON_VERS}])
-		else
-		AC_PATH_PROG([PYTHONCONFIG], [python${PYTHON_VERS}-config])
-		fi
-	else
-		PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
-	fi
-
-	# Extract the linker and include flags 
-	PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
-	PYTHON_CPPFLAGS=`$PYTHONCONFIG --includes`
-
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$PYTHON_CPPFLAGS"
-	AC_CHECK_HEADERS([Python.h],
-		 [], [AC_MSG_ERROR([could not find headers include related to libpython])])
-
-	# Ensure we can link against libphp
-	LIBS_SAVE="$LIBS"
-	LIBS="$PYTHON_LDFLAGS"
-	PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
-	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
-	AC_SUBST([PYTHON_CPPFLAGS])
-	AC_SUBST([PYTHON_LDFLAGS])
-fi
-
-AC_SUBST([PYTHON_ENABLED])
-AC_SUBST([PYTHON_FILE])
-
-# ===========================================================================
-# Detect if spidermonkey is installed
-# ===========================================================================
-
-AC_ARG_WITH([js], 
-	[AS_HELP_STRING([--with-js=PATH], [specify --with-js=path-to-js to enable js support, specify --with-js on linux debian like, js support is disabled by default ])], 
-	[JSHOME="$withval";JS_ENABLED="-DUSE_JS"], [JS_ENABLED=""])
-
-if test -z "$JS_ENABLED"
-then
-	JS_FILE=""
-else
-	JS_FILE="service_internal_js.o"
-	if test "$JSHOME" = "yes"
-	then
-
-		#on teste si on est sous debian like 
-		if test -f "/usr/bin/dpkg"
-		then
-			if test -n "`dpkg -l | grep libmozjs185-dev`"
-			then
-				JS_CPPFLAGS="-I/usr/include/js/"
-                        	JS_LDFLAGS="-L/usr/lib -lmozjs185 -lm"
-                        	JS_LIB="mozjs185"
-			else 
-				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | head -1| awk '{print $3;}' | cut -d'+' -f1`"
-				if test -n "$XUL_VERSION"
-				then
-					JS_CPPFLAGS="-I/usr/include/xulrunner-$XUL_VERSION"
-					JS_LDFLAGS="-L/usr/lib/xulrunner-$XUL_VERSION -lmozjs -lm"
-					JS_LIB="mozjs"
-				else
-					AC_MSG_ERROR([You must install libmozjs185-dev or xulrunner-dev ])
-				fi
-			fi
-		else
-			AC_MSG_ERROR([You must  specify your custom install of libmozjs185])
-		fi
-	else
-		JS_CPPFLAGS="-I$JSHOME/include/js/"
-                JS_LDFLAGS="-L$JSHOME/lib -lmozjs185 -lm"
-                JS_LIB="mozjs185"
-
-	fi 
-	CPPFLAGS_SAVE="$CPPFLAGS"
-        CPPFLAGS="$JS_CPPFLAGS"
-
-	#AC_CHECK_HEADERS([jsapi.h],
-        #                [], [AC_MSG_ERROR([could not find headers include related to libjs])])
-
-	
-	LIBS_SAVE="$LIBS"
-        LIBS="$JS_LDFLAGS"
-
-        AC_CHECK_LIB([$JS_LIB], [JS_CompileFile,JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
-			
-        AC_SUBST([JS_CPPFLAGS])
-        AC_SUBST([JS_LDFLAGS])
-fi
-
-AC_SUBST([JS_ENABLED])
-AC_SUBST([JS_FILE])
-
-# ===========================================================================
-# Detect if php is installed
-# ===========================================================================
-
-AC_ARG_WITH([php], 
-	[AS_HELP_STRING([--with-php=PATH], [To enable php support or specify an alternative directory for php installation,  disabled by default])], 
-	[PHP_PATH="$withval"; PHP_ENABLED="-DUSE_PHP"], [PHP_ENABLED=""])
-
-
-if test -z "$PHP_ENABLED"
-then
-	PHP_FILE=""
-else
-	PHPCONFIG="$PHP_PATH/bin/php-config"
-	PHP_FILE="service_internal_php.o"
-	if test  "$PHP_PATH" = "yes"
-	then
-		# PHP was not specified, so search within the current path
-		AC_PATH_PROG([PHPCONFIG], [php-config])
-	else
-		PHPCONFIG="$PHP_PATH/bin/php-config"
-	fi
-
-	# Extract the linker and include flags 
-	PHP_LDFLAGS="-L/`$PHPCONFIG --prefix`/lib -lphp5"
-	PHP_CPPFLAGS=`$PHPCONFIG --includes`
-
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$PHP_CPPFLAGS"
-	AC_CHECK_HEADERS([sapi/embed/php_embed.h],
-		 [], [AC_MSG_ERROR([could not find headers include related to libphp])])
-
-	# Ensure we can link against libphp
-	LIBS_SAVE="$LIBS"
-	LIBS="$PHP_LDFLAGS"
-	# Shouldn't we get php here rather than php5 :) ??
-	AC_CHECK_LIB([php5], [call_user_function], [], [AC_MSG_ERROR([could not find libphp])], [])
-	AC_SUBST([PHP_CPPFLAGS])
-	AC_SUBST([PHP_LDFLAGS])
-fi
-
-AC_SUBST([PHP_ENABLED])
-AC_SUBST([PHP_FILE])
-
-# ===========================================================================
-# Detect if java is installed
-# ===========================================================================
-
-AC_ARG_WITH([java], 
-	[AS_HELP_STRING([--with-java=PATH], [To enable java support, specify a JDK_HOME,  disabled by default])], 
-	[JDKHOME="$withval"; JAVA_ENABLED="-DUSE_JAVA"], [JAVA_ENABLED=""])
-
-if test -z "$JAVA_ENABLED"
-then
-	JAVA_FILE=""
-else
-	JAVA_FILE="service_internal_java.o"
-	if test "x$JDKHOME" = "x"; 
-	then
-		AC_MSG_ERROR([could not find java installation path within the current path. You may need to try re-running configure with a --with-java parameter.])
-	fi	# JAVA was specified; display a message to the user
-	if test "x$JDKHOME" = "xyes"; 
-	then
-		AC_MSG_ERROR([you must specify a parameter to --with-java, e.g. --with-java=/path/to/java])
-	fi
-
-	# Extract the linker and include flags
-	if test "x$JDKHOME" = "xmacos";
-	then
-		JAVA_LDFLAGS="-framework JavaVM"
-		JAVA_CPPFLAGS="-I/Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
-	else
-		if test -d "$JDKHOME/jre/lib/i386";
-		then
-			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/server/ -ljvm -lpthread"
-			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
-		else
-			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
-			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
-		fi
-	fi
-
-	# Check headers file (second time we check that in fact)
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$JAVA_CPPFLAGS"
-	AC_CHECK_HEADERS([jni.h],
-			 [], [AC_MSG_ERROR([could not find jni.h file])])
-
-	# Ensure we can link against libjava
-	LIBS_SAVE="$LIBS"
-	LIBS="$JAVA_LDFLAGS"
-	if test "x$JDKHOME" != "xmacos";
-	then
-		AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjvm])], [])
-	fi
-
-	AC_SUBST([JAVA_CPPFLAGS])
-	AC_SUBST([JAVA_LDFLAGS])
-fi 
-
-AC_SUBST([JAVA_ENABLED])
-AC_SUBST([JAVA_FILE])
-
-# ===========================================================================
-# Detect if ruby is installed
-# ===========================================================================
-AC_ARG_WITH([ruby], 
-	[AS_HELP_STRING([--with-ruby=PATH], [To enable ruby support or specify an alternative directory for ruby installation,  disabled by default])], 
-	[RUBY_PATH="$withval"; RUBY_ENABLED="-DUSE_RUBY"], [RUBY_ENABLED=""])
-
-AC_ARG_WITH([rvers], 
-	[AS_HELP_STRING([--with-rvers=NUM], [To use a specific ruby version])], 
-	[RUBY_VERS="$withval"], [RUBY_VERS=""])
-
-
-if test -z "$RUBY_ENABLED"
-then
-	RUBY_FILE=""
-else
-	RUBY_FILE="service_internal_ruby.o"
-
-	# Extract the linker and include flags 
-	RUBY_LDFLAGS="-lruby"
-	RUBY_CPPFLAGS="-I$RUBY_PATH -I$RUBY_PATH/x86_64-darwin13.0/ -DZRUBY_VERSION=$RUBY_VERS"
-
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$RUBY_CPPFLAGS"
-	AC_CHECK_HEADERS([ruby.h],
-		 [], [AC_MSG_ERROR([could not find headers include related to libruby])])
-
-	# Ensure we can link against libphp
-	LIBS_SAVE="$LIBS"
-	LIBS="$RUBY_LDFLAGS"
-	# AC_CHECK_LIB([lruby], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
-	AC_SUBST([RUBY_CPPFLAGS])
-	AC_SUBST([RUBY_LDFLAGS])
-fi
-
-AC_SUBST([RUBY_ENABLED])
-AC_SUBST([RUBY_FILE])
-
-# ===========================================================================
-# Detect if perl is installed
-# ===========================================================================
-
-AC_ARG_WITH([perl], 
-	[AS_HELP_STRING([--with-perl=PATH], [To enable perl support or specify an alternative directory for perl installation,  disabled by default])], 
-	[PERL_PATH="$withval"; PERL_ENABLED="-DUSE_PERL"], [PERL_ENABLED=""])
-
-
-if test -z "$PERL_ENABLED"
-then
-	PERL_FILE=""
-else
-	PERL_FILE="service_internal_perl.o"
-	if test  "$PERL_PATH" = "yes"
-	then
-		# Perl was not specified, so search within the current path
-		AC_PATH_PROG([PERLCONFIG], [perl])
-	else
-		PERLCONFIG="$PERL_PATH/bin/perl"
-	fi
-
-	# Extract the linker and include flags 
-	PERL_LDFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ldopts`
-	PERL_CPPFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ccopts`
-
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$PERL_CPPFLAGS"
-	AC_CHECK_HEADERS([EXTERN.h],
-		 [], [AC_MSG_ERROR([could not find headers include related to libperl])])
-
-	AC_SUBST([PERL_CPPFLAGS])
-	AC_SUBST([PERL_LDFLAGS])
-fi
-
-AC_SUBST([PERL_ENABLED])
-AC_SUBST([PERL_FILE])
-
-# ===========================================================================
-# Detect if otb is available
-# ===========================================================================
-
-AC_ARG_WITH([itk],
-        [AS_HELP_STRING([--with-itk=PATH], [specify an alternative location for the itk library])],
-        [ITKPATH="$withval"], [ITKPATH=""])
-
-AC_ARG_WITH([itk-version],
-        [AS_HELP_STRING([--with-itk-version=VERSION], [specify an alternative version for the itk library])],
-        [ITKVERS="$withval"], [ITKVERS=""])
-
-AC_ARG_WITH([otb],
-        [AS_HELP_STRING([--with-otb=PATH], [specify an alternative location for the otb library])],
-        [OTBPATH="$withval"], [OTBPATH=""])
-
-if test -z "$OTBPATH"
-then
-	OTB_LDFLAGS=""
-	OTB_CPPFLAGS=""
-	OTB_FILE=""
-	OTB_ENABLED=""
-else
-	if test -z "$ITKVERS" 
-    	then
-		ITKVERS="4.5"
-    	fi
-	OTB_ENABLED="-DUSE_OTB"
-	OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib -lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkdouble-conversion-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS -litkzlib-$ITKVERS"
-	OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
-	OTB_FILE="otbZooWatcher.o service_internal_otb.o"
-	
-	AC_LANG_PUSH([C++])
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$OTB_CPPFLAGS"
-	LDFLAGS_SAVE="$LDFLAGS"
-	LDFLAGS="$OTB_LDFLAGS"
-	AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
-			[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
-	AC_LANG_POP([C++])
-fi
-AC_SUBST([OTB_CPPFLAGS])
-AC_SUBST([OTB_LDFLAGS])
-AC_SUBST([OTB_FILE])
-AC_SUBST([OTB_ENABLED])
-
-# ===========================================================================
-# Detect if saga-gis is available
-# ===========================================================================
-
-AC_ARG_WITH([wx-config],
-        [AS_HELP_STRING([--with-wx-config=PATH], [specify an alternative path for the wx-config tool])],
-        [WXCFG="$withval"], [WXCFG=""])
-
-AC_ARG_WITH([saga],
-        [AS_HELP_STRING([--with-saga=PATH], [specify an alternative location for the SAGA-GIS library])],
-        [SAGAPATH="$withval"], [SAGAPATH=""])
-
-if test -z "$SAGAPATH"
-then
-	SAGA_LDFLAGS=""
-	SAGA_CPPFLAGS=""
-	SAGA_FILE=""
-	SAGA_ENABLED=""
-else
-	if test -z "$WXCFG" ; then
-	   WXCFG="$(which wx-config)"
-	fi
-	if test "`$WXCFG --list | grep unicode`" == "" ; then
-	   AC_MSG_ERROR(SAGA requires a unicode build of wxGTK)
-	fi
-	WX_ISSUE="-D_WX_WXCRTVARARG_H_"
-	SAGA_DEFS="-D_SAGA_LINUX -D_TYPEDEF_BYTE -D_TYPEDEF_WORD -DMODULE_LIBRARY_PATH=\\\"$SAGAPATH/lib/saga\\\""
-	SAGA_CPPFLAGS=" -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
-	SAGA_LDFLAGS="-fPIC `$WXCFG --unicode=yes --static=no --libs` -lsaga_api"
-	SAGA_ENABLED="-DUSE_SAGA"
-	SAGA_FILE="service_internal_saga.o"
-	
-	AC_LANG_PUSH([C++])
-	# Check headers file
-	CPPFLAGS_SAVE="$CPPFLAGS"
-	CPPFLAGS="$SAGA_CPPFLAGS"
-	LIBS_SAVE="$LIBS"
-	LIBS="$SAGA_LDFLAGS"
-	AC_MSG_RESULT(CPPFLAGS are $CPPFLAGS)
-	AC_CHECK_HEADERS([module_library.h],
-			[], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
-	LIBS_SAVE="$LIBS"
-	AC_CHECK_LIB([saga_api], [SG_Set_UI_Callback,SG_Get_Module_Library_Manager])
-	AC_LANG_POP([C++])
-fi
-AC_SUBST([SAGA_CPPFLAGS])
-AC_SUBST([SAGA_LDFLAGS])
-AC_SUBST([SAGA_FILE])
-AC_SUBST([SAGA_ENABLED])
 
 # ===========================================================================
 # Detect if libyaml is available
@@ -507,7 +112,6 @@ LIBS="$LIBS_SAVE"
 AC_SUBST([FCGI_CPPFLAGS])
 AC_SUBST([FCGI_LDFLAGS])
 
-
 # ===========================================================================
 # Detect if libxml2 is installed
 # ===========================================================================
@@ -554,6 +158,8 @@ AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([could not find libxml2]
 
 AC_SUBST([XML2_CPPFLAGS])
 AC_SUBST([XML2_LDFLAGS])
+LIBS="$LIBS_SAVE"
+
 
 # ===========================================================================
 # Detect if libxslt is installed
@@ -749,6 +355,414 @@ MS_LIBS="$MS_LDFLAGS"
 AC_SUBST([MS_CFLAGS])
 AC_SUBST([MS_LIBS])
 AC_SUBST([MS_FILE])
+
+# ===========================================================================
+# Detect if python is installed
+# ===========================================================================
+
+AC_ARG_WITH([python], 
+	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
+	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
+
+AC_ARG_WITH([pyvers], 
+	[AS_HELP_STRING([--with-pyvers=NUM], [To use a specific python version])], 
+	[PYTHON_VERS="$withval"], [PYTHON_VERS=""])
+
+
+if test -z "$PYTHON_ENABLED"
+then
+	PYTHON_FILE=""
+else
+	PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
+	PYTHON_FILE="service_internal_python.o"
+	if test  "$PYTHON_PATH" = "yes"
+	then
+		# PHP was not specified, so search within the current path
+		PYTHONCFG_PATH=`which python${PYTHON_VERS}-config`
+		if test -z "${PYTHONCFG_PATH}" ; then
+		AC_PATH_PROG([PYTHONCONFIG], [python-config-${PYTHON_VERS}])
+		else
+		AC_PATH_PROG([PYTHONCONFIG], [python${PYTHON_VERS}-config])
+		fi
+	else
+		PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
+	fi
+
+	# Extract the linker and include flags 
+	PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
+	PYTHON_CPPFLAGS=`$PYTHONCONFIG --includes`
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$PYTHON_CPPFLAGS"
+	AC_CHECK_HEADERS([Python.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libpython])])
+
+	# Ensure we can link against libphp
+	LIBS_SAVE="$LIBS"
+	LIBS="$PYTHON_LDFLAGS"
+	PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
+	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	AC_SUBST([PYTHON_CPPFLAGS])
+	AC_SUBST([PYTHON_LDFLAGS])
+	LIBS="$LIBS_SAVE"
+fi
+
+AC_SUBST([PYTHON_ENABLED])
+AC_SUBST([PYTHON_FILE])
+
+# ===========================================================================
+# Detect if spidermonkey is installed
+# ===========================================================================
+
+AC_ARG_WITH([js], 
+	[AS_HELP_STRING([--with-js=PATH], [specify --with-js=path-to-js to enable js support, specify --with-js on linux debian like, js support is disabled by default ])], 
+	[JSHOME="$withval";JS_ENABLED="-DUSE_JS"], [JS_ENABLED=""])
+
+if test -z "$JS_ENABLED"
+then
+	JS_FILE=""
+else
+	JS_FILE="service_internal_js.o"
+	if test "$JSHOME" = "yes"
+	then
+
+		#on teste si on est sous debian like 
+		if test -f "/usr/bin/dpkg"
+		then
+			if test -n "`dpkg -l | grep libmozjs185-dev`"
+			then
+				JS_CPPFLAGS="-I/usr/include/js/"
+                        	JS_LDFLAGS="-L/usr/lib -lmozjs185 -lm"
+                        	JS_LIB="mozjs185"
+			else 
+				XUL_VERSION="`dpkg -l | grep xulrunner | grep dev | head -1| awk '{print $3;}' | cut -d'+' -f1`"
+				if test -n "$XUL_VERSION"
+				then
+					JS_CPPFLAGS="-I/usr/include/xulrunner-$XUL_VERSION"
+					JS_LDFLAGS="-L/usr/lib/xulrunner-$XUL_VERSION -lmozjs -lm"
+					JS_LIB="mozjs"
+				else
+					AC_MSG_ERROR([You must install libmozjs185-dev or xulrunner-dev ])
+				fi
+			fi
+		else
+			AC_MSG_ERROR([You must  specify your custom install of libmozjs185])
+		fi
+	else
+		JS_CPPFLAGS="-I$JSHOME/include/js/"
+                JS_LDFLAGS="-L$JSHOME/lib -lmozjs185 -lm"
+                JS_LIB="mozjs185"
+
+	fi 
+	CPPFLAGS_SAVE="$CPPFLAGS"
+        CPPFLAGS="$JS_CPPFLAGS"
+	AC_LANG_PUSH([C++])
+	AC_CHECK_HEADERS([jsapi.h],
+                        [], [AC_MSG_ERROR([could not find headers include related to libjs])])
+
+	AC_LANG_POP([C++])
+	LIBS_SAVE="$LIBS"
+        LIBS="$JS_LDFLAGS"
+
+        AC_CHECK_LIB([$JS_LIB], [JS_CompileFile,JS_CallFunctionName], [], [AC_MSG_ERROR([could not find $JS_LIB])], [])
+	LIBS="$LIBS_SAVE"
+	
+        AC_SUBST([JS_CPPFLAGS])
+        AC_SUBST([JS_LDFLAGS])
+fi
+
+AC_SUBST([JS_ENABLED])
+AC_SUBST([JS_FILE])
+
+# ===========================================================================
+# Detect if php is installed
+# ===========================================================================
+
+AC_ARG_WITH([php], 
+	[AS_HELP_STRING([--with-php=PATH], [To enable php support or specify an alternative directory for php installation,  disabled by default])], 
+	[PHP_PATH="$withval"; PHP_ENABLED="-DUSE_PHP"], [PHP_ENABLED=""])
+
+
+if test -z "$PHP_ENABLED"
+then
+	PHP_FILE=""
+else
+	PHPCONFIG="$PHP_PATH/bin/php-config"
+	PHP_FILE="service_internal_php.o"
+	if test  "$PHP_PATH" = "yes"
+	then
+		# PHP was not specified, so search within the current path
+		AC_PATH_PROG([PHPCONFIG], [php-config])
+	else
+		PHPCONFIG="$PHP_PATH/bin/php-config"
+	fi
+
+	# Extract the linker and include flags 
+	PHP_LDFLAGS="-L/`$PHPCONFIG --prefix`/lib -lphp5"
+	PHP_CPPFLAGS=`$PHPCONFIG --includes`
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$PHP_CPPFLAGS"
+	AC_CHECK_HEADERS([sapi/embed/php_embed.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libphp])])
+
+	# Ensure we can link against libphp
+	LIBS_SAVE="$LIBS"
+	LIBS="$PHP_LDFLAGS"
+	# Shouldn't we get php here rather than php5 :) ??
+	AC_CHECK_LIB([php5], [call_user_function], [], [AC_MSG_ERROR([could not find libphp])], [])
+	LIBS="$LIBS_SAVE"
+	AC_SUBST([PHP_CPPFLAGS])
+	AC_SUBST([PHP_LDFLAGS])
+fi
+
+AC_SUBST([PHP_ENABLED])
+AC_SUBST([PHP_FILE])
+
+# ===========================================================================
+# Detect if java is installed
+# ===========================================================================
+
+AC_ARG_WITH([java], 
+	[AS_HELP_STRING([--with-java=PATH], [To enable java support, specify a JDK_HOME,  disabled by default])], 
+	[JDKHOME="$withval"; JAVA_ENABLED="-DUSE_JAVA"], [JAVA_ENABLED=""])
+
+if test -z "$JAVA_ENABLED"
+then
+	JAVA_FILE=""
+else
+	JAVA_FILE="service_internal_java.o"
+	if test "x$JDKHOME" = "x"; 
+	then
+		AC_MSG_ERROR([could not find java installation path within the current path. You may need to try re-running configure with a --with-java parameter.])
+	fi	# JAVA was specified; display a message to the user
+	if test "x$JDKHOME" = "xyes"; 
+	then
+		AC_MSG_ERROR([you must specify a parameter to --with-java, e.g. --with-java=/path/to/java])
+	fi
+
+	# Extract the linker and include flags
+	if test "x$JDKHOME" = "xmacos";
+	then
+		JAVA_LDFLAGS="-framework JavaVM"
+		JAVA_CPPFLAGS="-I/Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
+	else
+		if test -d "$JDKHOME/jre/lib/i386";
+		then
+			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/server/ -ljvm -lpthread"
+			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+		else
+			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
+			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+		fi
+	fi
+
+	# Check headers file (second time we check that in fact)
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$JAVA_CPPFLAGS"
+	AC_CHECK_HEADERS([jni.h],
+			 [], [AC_MSG_ERROR([could not find jni.h file])])
+
+	# Ensure we can link against libjava
+	LIBS_SAVE="$LIBS"
+	LIBS="$JAVA_LDFLAGS"
+	if test "x$JDKHOME" != "xmacos";
+	then
+		AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [AC_MSG_ERROR([could not find libjvm])], [])
+	fi
+	LIBS="$LIBS_SAVE"
+
+	AC_SUBST([JAVA_CPPFLAGS])
+	AC_SUBST([JAVA_LDFLAGS])
+fi 
+
+AC_SUBST([JAVA_ENABLED])
+AC_SUBST([JAVA_FILE])
+
+# ===========================================================================
+# Detect if ruby is installed
+# ===========================================================================
+AC_ARG_WITH([ruby], 
+	[AS_HELP_STRING([--with-ruby=PATH], [To enable ruby support or specify an alternative directory for ruby installation,  disabled by default])], 
+	[RUBY_PATH="$withval"; RUBY_ENABLED="-DUSE_RUBY"], [RUBY_ENABLED=""])
+
+AC_ARG_WITH([rvers], 
+	[AS_HELP_STRING([--with-rvers=NUM], [To use a specific ruby version])], 
+	[RUBY_VERS="$withval"], [RUBY_VERS=""])
+
+
+if test -z "$RUBY_ENABLED"
+then
+	RUBY_FILE=""
+else
+	RUBY_FILE="service_internal_ruby.o"
+
+	# Extract the linker and include flags 
+	RUBY_LDFLAGS="-lruby"
+	RUBY_CPPFLAGS="-I$RUBY_PATH -I$RUBY_PATH/x86_64-darwin13.0/ -DZRUBY_VERSION=$RUBY_VERS"
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$RUBY_CPPFLAGS"
+	AC_CHECK_HEADERS([ruby.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libruby])])
+
+	# Ensure we can link against libphp
+	LIBS_SAVE="$LIBS"
+	LIBS="$RUBY_LDFLAGS"
+	# AC_CHECK_LIB([lruby], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	LIBS="$LIBS_SAVE"
+	AC_SUBST([RUBY_CPPFLAGS])
+	AC_SUBST([RUBY_LDFLAGS])
+fi
+
+AC_SUBST([RUBY_ENABLED])
+AC_SUBST([RUBY_FILE])
+
+# ===========================================================================
+# Detect if perl is installed
+# ===========================================================================
+
+AC_ARG_WITH([perl], 
+	[AS_HELP_STRING([--with-perl=PATH], [To enable perl support or specify an alternative directory for perl installation,  disabled by default])], 
+	[PERL_PATH="$withval"; PERL_ENABLED="-DUSE_PERL"], [PERL_ENABLED=""])
+
+
+if test -z "$PERL_ENABLED"
+then
+	PERL_FILE=""
+else
+	PERL_FILE="service_internal_perl.o"
+	if test  "$PERL_PATH" = "yes"
+	then
+		# Perl was not specified, so search within the current path
+		AC_PATH_PROG([PERLCONFIG], [perl])
+	else
+		PERLCONFIG="$PERL_PATH/bin/perl"
+	fi
+
+	# Extract the linker and include flags 
+	PERL_LDFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ldopts`
+	PERL_CPPFLAGS=`$PERLCONFIG -MExtUtils::Embed -e ccopts`
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$PERL_CPPFLAGS"
+	AC_CHECK_HEADERS([EXTERN.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to libperl])])
+
+	AC_SUBST([PERL_CPPFLAGS])
+	AC_SUBST([PERL_LDFLAGS])
+fi
+
+AC_SUBST([PERL_ENABLED])
+AC_SUBST([PERL_FILE])
+
+# ===========================================================================
+# Detect if otb is available
+# ===========================================================================
+
+AC_ARG_WITH([itk],
+        [AS_HELP_STRING([--with-itk=PATH], [specify an alternative location for the itk library])],
+        [ITKPATH="$withval"], [ITKPATH=""])
+
+AC_ARG_WITH([itk-version],
+        [AS_HELP_STRING([--with-itk-version=VERSION], [specify an alternative version for the itk library])],
+        [ITKVERS="$withval"], [ITKVERS=""])
+
+AC_ARG_WITH([otb],
+        [AS_HELP_STRING([--with-otb=PATH], [specify an alternative location for the otb library])],
+        [OTBPATH="$withval"], [OTBPATH=""])
+
+if test -z "$OTBPATH"
+then
+	OTB_LDFLAGS=""
+	OTB_CPPFLAGS=""
+	OTB_FILE=""
+	OTB_ENABLED=""
+else
+	if test -z "$ITKVERS" 
+    	then
+		ITKVERS="4.5"
+    	fi
+	OTB_ENABLED="-DUSE_OTB"
+	OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib -lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkdouble-conversion-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS -litkzlib-$ITKVERS"
+	OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
+	OTB_FILE="otbZooWatcher.o service_internal_otb.o"
+	
+	AC_LANG_PUSH([C++])
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$OTB_CPPFLAGS"
+	LDFLAGS_SAVE="$LDFLAGS"
+	LIBS="$LIBS_SAVE $OTB_LDFLAGS"
+	AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
+			[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
+	AC_LANG_POP([C++])
+	AC_LANG(C++)
+	LDFLAGS_SAVE="$LDFLAGS"
+	LDFLAGS="$OTB_LDFLAGS"
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"],[std::vector<std::string> list = otb::Wrapwper::ApplicationRegistry::GetAvailableApplication();]])],
+		[AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
+	LDFLAGS="$LDFLAGS_SAVE"
+			
+fi
+AC_SUBST([OTB_CPPFLAGS])
+AC_SUBST([OTB_LDFLAGS])
+AC_SUBST([OTB_FILE])
+AC_SUBST([OTB_ENABLED])
+
+# ===========================================================================
+# Detect if saga-gis is available
+# ===========================================================================
+
+AC_ARG_WITH([wx-config],
+        [AS_HELP_STRING([--with-wx-config=PATH], [specify an alternative path for the wx-config tool])],
+        [WXCFG="$withval"], [WXCFG=""])
+
+AC_ARG_WITH([saga],
+        [AS_HELP_STRING([--with-saga=PATH], [specify an alternative location for the SAGA-GIS library])],
+        [SAGAPATH="$withval"], [SAGAPATH=""])
+
+if test -z "$SAGAPATH"
+then
+	SAGA_LDFLAGS=""
+	SAGA_CPPFLAGS=""
+	SAGA_FILE=""
+	SAGA_ENABLED=""
+else
+	if test -z "$WXCFG" ; then
+	   WXCFG="$(which wx-config)"
+	fi
+	if test "`$WXCFG --list | grep unicode`" == "" ; then
+	   AC_MSG_ERROR(SAGA requires a unicode build of wxGTK)
+	fi
+	WX_ISSUE="-D_WX_WXCRTVARARG_H_"
+	SAGA_DEFS="-D_SAGA_LINUX -D_TYPEDEF_BYTE -D_TYPEDEF_WORD -DMODULE_LIBRARY_PATH=\\\"$SAGAPATH/lib/saga\\\""
+	SAGA_CPPFLAGS=" -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
+	SAGA_LDFLAGS="-fPIC `$WXCFG --unicode=yes --static=no --libs` -lsaga_api"
+	SAGA_ENABLED="-DUSE_SAGA"
+	SAGA_FILE="service_internal_saga.o"
+	
+	AC_LANG_PUSH([C++])
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$SAGA_CPPFLAGS"
+	LIBS_SAVE="$LIBS"
+	LIBS="$SAGA_LDFLAGS"
+	AC_CHECK_HEADERS([module_library.h],
+			[], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "module_library.h"],[SG_Get_Module_Library_Manager();]])],
+		[AC_MSG_RESULT([checking for SG_Get_Module_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Module_Library_Manager... failed])])
+	LIBS="$LIBS_SAVE"
+	AC_LANG_POP([C++])
+fi
+AC_SUBST([SAGA_CPPFLAGS])
+AC_SUBST([SAGA_LDFLAGS])
+AC_SUBST([SAGA_FILE])
+AC_SUBST([SAGA_ENABLED])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([ZOOMakefile.opts])
