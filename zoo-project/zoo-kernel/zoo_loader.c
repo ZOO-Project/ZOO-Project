@@ -302,7 +302,6 @@ int cgiMain(){
 	      addToMap(tmpMap,"version",(char*)vers);
 	    }
 	}
-	dumpMap(tmpMap);
 	xmlXPathFreeObject(versptr);
       }else{
 	tval=NULL;
