@@ -198,6 +198,10 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    setMapInMaps(inputs,paramKey.c_str(),"generated_file",tmp);
 		    dynamic_cast<OutputImageParameter *> (param.GetPointer())->SetPixelType(outPixType);
 		  }
+		  else{   	 	 
+		    if(test!=NULL && test->value!=NULL)  	 	 
+		      m_Application->SetParameterString(paramKey, test->value);  	 	 
+		  } 
 		}else{
 		  if(type == ParameterType_OutputVectorData){
 		      char* ext="json";
