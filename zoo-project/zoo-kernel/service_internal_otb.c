@@ -154,13 +154,11 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  const std::vector<std::string> appKeyList = m_Application->GetParametersKeys(true);
 	  for (unsigned int i = 0; i < appKeyList.size(); i++){
 	    const std::string paramKey(appKeyList[i]);
-	    fprintf(stderr,"%s %d %s !\n",__FILE__,__LINE__,paramKey.c_str());
 	    Parameter::Pointer param = m_Application->GetParameterByKey(paramKey);
 	    ParameterType type = m_Application->GetParameterType(paramKey);
 	    if (type != ParameterType_Group && paramKey!="inxml" && paramKey!="outxml"){
 	      map* test=getMapFromMaps(inputs,paramKey.c_str(),"cache_file");
 	      if(test==NULL){
-		fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,paramKey.c_str());
 		test=getMapFromMaps(inputs,paramKey.c_str(),"inRequest");
 		map* tmpPath=getMapFromMaps(m,"main","tmpPath");
 		map* tmpSid=getMapFromMaps(m,"lenv","usid");
