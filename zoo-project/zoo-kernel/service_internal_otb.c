@@ -27,8 +27,15 @@
  */
 
 #include "service_internal_otb.h"
+#include "response_print.h"
+#include "server_internal.h"
 
 using namespace otb::Wrapper;
+
+/**
+ * Global OTB counter 
+ */
+int otbCounter=0;
 
 /**
  * The ZooWatcher list
@@ -147,19 +154,20 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  const std::vector<std::string> appKeyList = m_Application->GetParametersKeys(true);
 	  for (unsigned int i = 0; i < appKeyList.size(); i++){
 	    const std::string paramKey(appKeyList[i]);
-	    std::vector<std::string> values;
+	    fprintf(stderr,"%s %d %s !\n",__FILE__,__LINE__,paramKey.c_str());
 	    Parameter::Pointer param = m_Application->GetParameterByKey(paramKey);
 	    ParameterType type = m_Application->GetParameterType(paramKey);
 	    if (type != ParameterType_Group && paramKey!="inxml" && paramKey!="outxml"){
 	      map* test=getMapFromMaps(inputs,paramKey.c_str(),"cache_file");
 	      if(test==NULL){
+		fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,paramKey.c_str());
 		test=getMapFromMaps(inputs,paramKey.c_str(),"inRequest");
 		map* tmpPath=getMapFromMaps(m,"main","tmpPath");
 		map* tmpSid=getMapFromMaps(m,"lenv","usid");
 		char tmp[1024];
 		map* tmpVal=getMapFromMaps(outputs,paramKey.c_str(),"mimeType");
 		maps* tmpMaps=getMaps(outputs,paramKey.c_str());
-		if(test!=NULL && test->value!=NULL && strncasecmp(test->value,"true",4)==0){
+		if(tmpMaps!=NULL && test!=NULL && test->value!=NULL && strncasecmp(test->value,"true",4)==0){
 		  test=getMapFromMaps(inputs,paramKey.c_str(),"value");
 		  if(type == ParameterType_OutputImage){
 		    ImagePixelType outPixType = ImagePixelType_float;
@@ -186,14 +194,11 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			  if(strncasecmp(tmpVal->value,"image/jpeg",10)==0)
 			    ext="jpeg";
 		    }
-		    sprintf(tmp,"%s/%s_%s.%s",tmpPath->value,s->name,tmpSid->value,ext);
+		    sprintf(tmp,"%s/%s_%d_%s.%s",tmpPath->value,s->name,otbCounter,tmpSid->value,ext);
+		    otbCounter++;
 		    m_Application->SetParameterString(paramKey, tmp);
 		    setMapInMaps(inputs,paramKey.c_str(),"generated_file",tmp);
 		    dynamic_cast<OutputImageParameter *> (param.GetPointer())->SetPixelType(outPixType);
-		  }
-		  else{ 
-		    if(test!=NULL && test->value!=NULL)
-		      m_Application->SetParameterString(paramKey, test->value);
 		  }
 		}else{
 		  if(type == ParameterType_OutputVectorData){
@@ -211,7 +216,8 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			    if(strncasecmp(tmpVal->value,"application/vnd.google-earth.kml+xml",36)==0)
 			      ext="kml";
 		      }
-		      sprintf(tmp,"%s/%s_%s.%s",tmpPath->value,s->name,tmpSid->value,ext);
+		      sprintf(tmp,"%s/%s_%d_%s.%s",tmpPath->value,s->name,otbCounter,tmpSid->value,ext);
+		      otbCounter++;
 		      m_Application->SetParameterString(paramKey, tmp);
 		      setMapInMaps(inputs,paramKey.c_str(),"generated_file",tmp);
 		  }
@@ -233,20 +239,45 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			      else
 				if(strncasecmp(tmpVal->value,"application/vnd.google-earth.kmz",32)==0){
 				  ext="kmz";
-				  sprintf(tmp,"%s/%s_%sxt.%s",tmpPath->value,s->name,tmpSid->value,ext);
+				  sprintf(tmp,"%s/%s_%d_%sxt.%s",tmpPath->value,s->name,otbCounter,tmpSid->value,ext);
 				  m_Application->SetParameterString(paramKey, tmp);
 				  setMapInMaps(outputs,paramKey.c_str(),"expected_generated_file",tmp);
 				}
 
 		      }
-		      sprintf(tmp,"%s/%s_%s.%s",tmpPath->value,s->name,tmpSid->value,ext);
+		      sprintf(tmp,"%s/%s_%d_%s.%s",tmpPath->value,s->name,otbCounter,tmpSid->value,ext);
+		      otbCounter++;
 		      m_Application->SetParameterString(paramKey, tmp);
 		      setMapInMaps(inputs,paramKey.c_str(),"generated_file",tmp);
 		    }
-
+		    else{
+		      test=getMapFromMaps(inputs,paramKey.c_str(),"value");
+		      if(test!=NULL && type!=ParameterType_ListView){
+			m_Application->SetParameterString(paramKey, test->value);
+		      }
+		      else
+			if(type==ParameterType_ListView){
+			  std::vector<std::string> values;
+			  values.push_back(test->value);
+			  map* tmpLength=getMapFromMaps(inputs,paramKey.c_str(),"length");
+			  if(tmpLength!=NULL){
+			    int len=atoi(tmpLength->value);
+			    for(int k=1;k<len;k++){
+			      char tmp[15];
+			      sprintf(tmp,"cache_file_%d",k);
+			      map* tmpVal=getMapFromMaps(inputs,paramKey.c_str(),tmp);
+			      if(tmpVal!=NULL){
+				values.push_back(tmpVal->value);
+			      }
+			    }
+			  }
+			  dynamic_cast<ListViewParameter *> (param.GetPointer())->SetSelectedItems(values);
+			}
+		    }
 		}
 	      }else{
 		if(type == ParameterType_InputImageList){
+		  std::vector<std::string> values;
 		  values.push_back(test->value);
 		  map* tmpPath=getMapFromMaps(inputs,paramKey.c_str(),"length");
 		  if(tmpPath!=NULL){

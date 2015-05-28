@@ -22,7 +22,8 @@
  * THE SOFTWARE.
  */
 
-#include "service_internal.h"
+#include "service_internal_js.h"
+#include "response_print.h"
 
 #ifndef JSCLASS_GLOBAL_FLAGS
 #define JSCLSAS_GLOBAL_FLAGS 0
@@ -66,8 +67,6 @@ JSAlert(JSContext *cx, uintN argc, jsval *argv1)
 JSBool 
 JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
 {
-  //map* request = JS_GetContextPrivate(cx);
-  //map* tmpm1=getMap(request,"metapath");
   JS_MaybeGC(cx);
 
   char ntmp[1024];
@@ -77,7 +76,6 @@ JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
   int i=0;
   JS_MaybeGC(cx);
   for(i=0;i<argc;i++){
-    JSString* jsmsg = JS_ValueToString(cx,argv[i]);
     char *filename = JSValToChar(cx,&argv[i]);
     char *api0=(char*)malloc((strlen(ntmp)+strlen(filename)+2)*sizeof(char));
     sprintf(api0,"%s/%s",ntmp,filename);
@@ -109,9 +107,9 @@ JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
  */
 int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps **outputs)
 {
-  maps* main=*main_conf;
+  /*maps* main=*main_conf;
   maps* _inputs=*inputs;
-  maps* _outputs=*outputs;
+  maps* _outputs=*outputs;*/
 
   /* The class of the global object. */
   JSClass global_class= {
@@ -201,9 +199,9 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
 
   /* Your application code here. This may include JSAPI calls
      to create your own custom JS objects and run scripts. */
-  maps* out=*outputs;
+  //maps* out=*outputs;
   int res=SERVICE_FAILED;
-  maps* mc=*main_conf;
+  //maps* mc=*main_conf;
   map* tmpm2=getMap(s->content,"serviceProvider");
 
   char *filename=(char*)malloc(strlen(tmpm1->value)+strlen(tmpm2->value)+strlen(ntmp)+3);
@@ -215,7 +213,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
   struct stat file_status;
   stat(filename, &file_status);
   //char *source=(char*)malloc(file_status.st_size);
-  uint16 lineno;
+  //uint16 lineno;
   jsval rval;
   JSBool ok ;
   JSObject *script = JS_CompileFile(cx, global, filename);
@@ -280,7 +278,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
     return -1;
   }
 
-  jsval t=OBJECT_TO_JSVAL(d);
+  //jsval t=OBJECT_TO_JSVAL(d);
   if(JS_IsArrayObject(cx,d)){
 #ifdef JS_DEBUG
     fprintf(stderr,"An array was returned !\n");
@@ -394,7 +392,6 @@ JSObject * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
   int s=stat(filename, &api_status);
   if(s==0){
     jsval rval;
-    JSBool ok ;
     JSObject *script = JS_CompileFile(cx, JS_GetGlobalObject(cx), filename);
     if(script!=NULL){
       (void)JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &rval);
@@ -424,13 +421,10 @@ JSObject * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
  */
 JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
   JSObject* res=JS_NewObject(cx, NULL, NULL, NULL);
-  //JSObject *res = JS_NewArrayObject(cx, 0, NULL);
   if(res==NULL)
     fprintf(stderr,"Array Object is NULL!\n");
   maps* tmp=t;
   while(tmp!=NULL){
-    jsuint len;
-    JSObject* res1=JS_NewObject(cx, NULL, NULL, NULL);
     JSObject *pval=JSObject_FromMap(cx,tmp->content);
     jsval pvalj=OBJECT_TO_JSVAL(pval);
     JS_SetProperty(cx, res, tmp->name, &pvalj);
@@ -451,7 +445,6 @@ JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
  */
 JSObject* JSObject_FromMap(JSContext *cx,map* t){
   JSObject* res=JS_NewObject(cx, NULL, NULL, NULL);
-  jsval resf =  OBJECT_TO_JSVAL(res);
   map* tmpm=t;
   map* isArray=getMap(t,"isArray");
   map* isBinary=getMap(t,"size");
@@ -462,9 +455,9 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
   else
     fprintf(stderr,"tmap is not null ! (%s = %s)\n",tmap->name,tmap->value);
 #endif
-  while(tmpm!=NULL){
+  while(isArray==NULL && tmpm!=NULL){
     jsval jsstr;
-    if((isArray==NULL && isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0))
+    if((isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0))
       jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,atoi(isBinary->value)));
     else
       jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
@@ -533,9 +526,8 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
       for (index=0,argNum=idp->length;index<argNum;index++) { 
 	jsval id = idp->vector[index];
 	jsval vp;
-	JSString* str; 
 	JS_IdToValue(cx,id,&vp);
-	char *c, *tmp;
+	char *tmp;
 	JSString *jsmsg;
 	size_t len1;
 	jsmsg = JS_ValueToString(cx,vp);
@@ -582,7 +574,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
   }
   fprintf(stderr,"outputs array length : %d\n",len);
 #endif
-  for(oi=0;oi < len;oi++){
+  for(oi=0;hasLen && oi < len;oi++){
 #ifdef JS_DEBUG
     fprintf(stderr,"outputs array length : %d step %d \n",len,oi);
 #endif
@@ -604,9 +596,8 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
       for (index=0,argNum=idp->length;index<argNum;index++) { 
 	jsval id = idp->vector[index];
 	jsval vp;
-	JSString* str; 
 	JS_IdToValue(cx,id,&vp);
-	char *c, *tmp;
+	char *tmp;
 	JSString *jsmsg;
 	size_t len1;
 	jsmsg = JS_ValueToString(cx,vp);
@@ -705,9 +696,8 @@ map* mapFromJSObject(JSContext *cx,jsval t){
     for (index=0,argNum=idp->length;index<argNum;index++) { 
       jsval id = idp->vector[index];
       jsval vp;
-      JSString* str; 
       JS_IdToValue(cx,id,&vp);
-      char *c, *tmp, *tmp1;
+      char *tmp, *tmp1;
       JSString *jsmsg,*jsmsg1;
       size_t len,len1;
       jsmsg = JS_ValueToString(cx,vp);
@@ -876,14 +866,11 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
 {
   jsval *argv = JS_ARGV(cx,argv1);
   HINTERNET hInternet;
-  HINTERNET res;
-  HINTERNET res1;
   JSObject *header;
   char *url;
   char *method;
   char* tmpValue;
   size_t dwRead;
-  int i=0;
   JS_MaybeGC(cx);
   hInternet=InternetOpen("ZooWPSClient\0",
 			 INTERNET_OPEN_TYPE_PRECONFIG,

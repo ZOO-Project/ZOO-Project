@@ -53,7 +53,10 @@ extern "C"
 #include "service.h"
 
 #include "service_internal.h"
+#include "server_internal.h"
+#include "response_print.h"
 #include "request_parser.h"
+#include "sqlapi.h"
 
 #ifdef USE_PYTHON
 #include "service_internal_python.h"
@@ -1043,6 +1046,8 @@ runRequest (map ** inputs)
 
   r_inputs = getMap (request_inputs, "language");
   if (r_inputs == NULL)
+    r_inputs = getMap (request_inputs, "AcceptLanguages");
+  if (r_inputs == NULL)
     r_inputs = getMapFromMaps (m, "main", "language");
   if (r_inputs != NULL)
     {
@@ -1140,7 +1145,7 @@ runRequest (map ** inputs)
     "Execute",
     NULL
   };
-  checkValidValue(request_inputs,&err,"Request",(const char**)vvr,1);
+  checkValidValue(request_inputs,&err,"request",(const char**)vvr,1);
   const char *vvs[]={
     "WPS",
     NULL
@@ -1160,8 +1165,10 @@ runRequest (map ** inputs)
     return 1;
   }
   checkValidValue(request_inputs,&err,"service",(const char**)vvs,1);
+
   const char *vvv[]={
     "1.0.0",
+    "2.0.0",
     NULL
   };
   r_inputs = getMap (request_inputs, "Request");
@@ -1171,7 +1178,18 @@ runRequest (map ** inputs)
     checkValidValue(request_inputs,&err,"identifier",NULL,1);
   }else{
     checkValidValue(request_inputs,&err,"AcceptVersions",(const char**)vvv,-1);
+    map* version=getMap(request_inputs,"AcceptVersions");
+    if(version!=NULL){
+      if(strstr(version->value,schemas[1][0])!=NULL)
+	addToMap(request_inputs,"version",schemas[1][0]);
+      else
+	addToMap(request_inputs,"version",version->value);
+    }
   }
+  map* version=getMap(request_inputs,"version");
+  if(version==NULL)
+    version=getMapFromMaps(m,"main","version");
+  setMapInMaps(m,"main","rversion",version->value);
   if(err!=NULL){
     printExceptionReportResponse (m, err);
     freeMap(&err);
@@ -1236,7 +1254,8 @@ runRequest (map ** inputs)
       xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
       r_inputs = NULL;
       //r_inputs = getMap (request_inputs, "ServiceProvider");
-      xmlNodePtr n=printGetCapabilitiesHeader(doc,m);
+      r_inputs = getMap (request_inputs, "version");
+      xmlNodePtr n=printGetCapabilitiesHeader(doc,m,(r_inputs!=NULL?r_inputs->value:"1.0.0"));
       /**
        * Here we need to close stdout to ensure that unsupported chars 
        * has been found in the zcfg and then printed on stdout
@@ -1298,8 +1317,11 @@ runRequest (map ** inputs)
 	   */
           xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
           r_inputs = NULL;
+	  r_inputs = getMap (request_inputs, "version");
+	  map* version=getMapFromMaps(m,"main","rversion");
+	  int vid=getVersionId(version->value);
 	  xmlNodePtr n = printWPSHeader(doc,m,"DescribeProcess",
-					"ProcessDescriptions");
+					root_nodes[vid][1],(r_inputs!=NULL?r_inputs->value:"1.0.0"),1);
 
           r_inputs = getMap (request_inputs, "Identifier");
 
@@ -1747,6 +1769,7 @@ runRequest (map ** inputs)
    * 
    *  - usid : it is an unique identification number 
    *  - sid : it is the process idenfitication number (OS)
+   *  - uusid : it is an universally unique identification number 
    *  - status : value between 0 and 100 to express the  completude of 
    * the operations of the running service 
    *  - message : is a string where you can store error messages, in case 
@@ -1776,6 +1799,9 @@ runRequest (map ** inputs)
   _tmpMaps->next = NULL;
   sprintf (tmpBuff, "%i", cpid);
   addToMap (_tmpMaps->content, "sid", tmpBuff);
+  char* tmpUuid=get_uuid();
+  addToMap (_tmpMaps->content, "uusid", tmpUuid);
+  free(tmpUuid);
   addToMap (_tmpMaps->content, "status", "0");
   addToMap (_tmpMaps->content, "cwd", ntmp);
   addToMap (_tmpMaps->content, "message", _("No message provided"));
