@@ -4,8 +4,7 @@ CFLAGS=${ZOO_CFLAGS} ${XML2CFLAGS} ${GDAL_CFLAGS} ${PYTHONCFLAGS} -DLINUX_FREE_I
 CC=gcc
 
 cgi-env/warp_service.zo: service.c
-	g++ ${CFLAGS} -shared -fpic -o cgi-env/warp_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS}
-
+	g++ ${CFLAGS} -shared -fpic -o cgi-env/warp_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS} -lzoo_service
 
 install:
 	install -d ${CGI_DIR}/gdal/warp

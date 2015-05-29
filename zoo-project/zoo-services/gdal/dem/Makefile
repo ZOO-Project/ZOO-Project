@@ -4,7 +4,7 @@ CFLAGS=-DZOO_SERVICE ${ZOO_CFLAGS} ${XML2CFLAGS} ${GDAL_CFLAGS} ${PYTHONCFLAGS} 
 CC=gcc
 
 cgi-env/dem_service.zo: service.c
-	g++ ${CFLAGS} -shared -fpic -o cgi-env/dem_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS}
+	g++ ${CFLAGS} -shared -fpic -o cgi-env/dem_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS} -lzoo_service
 
 install:
 	install -d ${CGI_DIR}/gdal/dem

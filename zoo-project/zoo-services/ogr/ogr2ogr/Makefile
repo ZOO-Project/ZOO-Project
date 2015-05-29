@@ -4,7 +4,7 @@ CFLAGS=-DZOO_SERVICE ${ZOO_CFLAGS} ${XML2CFLAGS} ${GDAL_CFLAGS} ${PYTHONCFLAGS} 
 CC=gcc
 
 cgi-env/ogr2ogr_service.zo: service.c $(DEP_LIBS)
-	g++ $(CFLAGS) $(CPPFLAGS) -shared -fpic $<  -o $@
+	g++ $(CFLAGS) $(CPPFLAGS) -shared -fpic $<  -o $@ ${GDAL_LIBS} -lzoo_service
 
 install:
 	install -d ${CGI_DIR}/ogr/ogr2ogr
