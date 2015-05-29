@@ -93,6 +93,7 @@
 extern "C" {
 #endif
 
+  char *readVSIFile(maps*,const char*);
   int  setOutputValue( maps*, const char*, char*, size_t);
   char* getInputValue( maps*,const char*,size_t*);
 

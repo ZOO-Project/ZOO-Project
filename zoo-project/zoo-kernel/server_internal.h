@@ -48,7 +48,6 @@ extern "C" {
   int getServiceFromYAML(maps*,char*,service**,char *name);
   char* addDefaultValues(maps**,elements*,maps*,int,map**);
   char* getEncoding(maps*);
-  char *readVSIFile(maps*,const char*);
   void parseIdentifier(maps*,char*,char*,char*);
   void dumpMapsValuesToFiles(maps**,maps**);
 
