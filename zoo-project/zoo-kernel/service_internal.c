@@ -24,6 +24,11 @@
 
 #include "fcgi_stdio.h"
 #include "service_internal.h"
+#ifdef USE_MS
+#include "service_internal_ms.h"
+#else
+#include "cpl_vsi.h"
+#endif
 
 #ifndef TRUE
 #define TRUE 1
@@ -602,6 +607,32 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
     }
   }
   return NULL;
+}
+
+/**
+ * Read a file using the GDAL VSI API 
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param dataSource the datasource name to read
+ * @warning make sure to free ressources returned by this function
+ */
+char *readVSIFile(maps* conf,const char* dataSource){
+    VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
+    VSIStatBufL file_status;
+    VSIStatL(dataSource, &file_status);
+    if(fichier==NULL){
+      char tmp[1024];
+      sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %lld.",
+	      dataSource,file_status.st_size);
+      setMapInMaps(conf,"lenv","message",tmp);
+      return NULL;
+    }
+    char *res1=(char *)malloc(file_status.st_size*sizeof(char));
+    VSIFReadL(res1,1,file_status.st_size*sizeof(char),fichier);
+    res1[file_status.st_size-1]=0;
+    VSIFCloseL(fichier);
+    VSIUnlink(dataSource);
+    return res1;
 }
 
 /**
