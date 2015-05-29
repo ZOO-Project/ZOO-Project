@@ -9,7 +9,7 @@ else
 endif
 
 cgi-env/ogr_service.zo: service.c
-	g++ ${CFLAGS} -shared -fpic -o cgi-env/ogr_service.zo ./service.c ../../../zoo-kernel/service_internal.o ${JS_LDFLAGS} ${JSLDFLAGS} ${GDAL_LIBS} ${XML2LDFLAGS} ${MACOS_LD_FLAGS} ${ZOO_LDFLAGS} ${MACOS_LD_NET_FLAGS} ${GEOS_LDFLAGS}  ${MS_FILES} -lfcgi  -lpthread
+	g++ ${CFLAGS} -shared -fpic -o cgi-env/ogr_service.zo ./service.c ${GDAL_LIBS} ${XML2LDFLAGS} ${MACOS_LD_FLAGS} ${ZOO_LDFLAGS} ${MACOS_LD_NET_FLAGS} ${GEOS_LDFLAGS} -lfcgi  -lpthread -lzoo_service
 
 install:
 	install -d ${CGI_DIR}/ogr/base-vect-ops
