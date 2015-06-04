@@ -25,6 +25,7 @@
 #include "response_print.h"
 #include "request_parser.h"
 #include "server_internal.h"
+#include "service_internal.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
 #else
