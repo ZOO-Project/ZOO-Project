@@ -38,7 +38,7 @@ char *get_uuid(){
   char *res=(char*)malloc(37*sizeof(char));
   uuid_t uuid;
   uuid_generate_time(uuid);
-  uuid_string_t rest;
+  char * rest;
   uuid_unparse(uuid,rest);
   sprintf(res,"%s", rest);
   return res;
