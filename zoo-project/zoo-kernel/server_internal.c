@@ -28,6 +28,7 @@
 #ifndef WIN32
 #include <dlfcn.h>
 #endif
+#include <uuid/uuid.h>
 
 int getVersionId(const char* version){
   int schemaId=0;
@@ -36,6 +37,23 @@ int getVersionId(const char* version){
       return schemaId;
   }
   return 0;
+}
+
+/**
+ * Generate a UUID.
+ * ref: https://www.ietf.org/rfc/rfc4122.txt / 4.2 
+ *
+ * @return a new char* containing the UUID, make sure to free the returned 
+ *  ressource once used.
+ */
+char *get_uuid(){
+  char *res=(char*)malloc(37*sizeof(char));
+  uuid_t uuid;
+  uuid_generate_time(uuid);
+  char * rest;
+  uuid_unparse(uuid,rest);
+  sprintf(res,"%s", rest);
+  return res;
 }
 
 /**
@@ -324,7 +342,7 @@ int writeFile(char* fname,char* val,int length){
  */
 void dumpMapsValuesToFiles(maps** main_conf,maps** in){
   map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
-  map* tmpSid=getMapFromMaps(*main_conf,"lenv","sid");
+  map* tmpSid=getMapFromMaps(*main_conf,"lenv","usid");
   maps* inputs=*in;
   int length=0;
   while(inputs!=NULL){

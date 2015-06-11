@@ -92,13 +92,14 @@ void dumpMaps(maps* m){
 void dumpMapsToFile(maps* m,char* file_path){
   FILE* file=fopen(file_path,"w");
   maps* tmp=m;
-  if(tmp!=NULL){
+  while(tmp!=NULL){
     fprintf(file,"[%s]\n",tmp->name);
-      dumpMapToFile(tmp->content,file);
-      fflush(file);
-    }
-    fclose(file);
+    dumpMapToFile(tmp->content,file);
+    fflush(file);
+    tmp=tmp->next;
   }
+  fclose(file);
+}
   
 /**
  * Create a new map

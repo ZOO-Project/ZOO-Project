@@ -1,4 +1,8 @@
 Version 1.5.0-dev
+  * Fix concurrency access to status informations
+  * Use simple file rather than shared memory for storing status informations
+  * Add support for db backend to store status informations
+  * Add the lib_zoo_service shared library to be linked against C services
   * Add ZOO-API for the PHP language (with documentation)
   * Add doxygen comments in source code
   * Add support for multiple Exception nodes

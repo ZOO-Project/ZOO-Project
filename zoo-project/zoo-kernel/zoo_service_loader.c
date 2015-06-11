@@ -1668,6 +1668,8 @@ runRequest (map ** inputs)
     return 0;
   }
 
+
+  // Define each env variable in runing environment
   maps *curs = getMaps (m, "env");
   if (curs != NULL)
     {
@@ -1727,9 +1729,7 @@ runRequest (map ** inputs)
   dumpMap (request_inputs);
 #endif
 
-  /**
-   * Need to check if we need to fork to load a status enabled 
-   */
+  // Need to check if we need to fork to load a status enabled 
   r_inputs = NULL;
   map *store = getMap (request_inputs, "storeExecuteResponse");
   map *status = getMap (request_inputs, "status");
@@ -1786,21 +1786,18 @@ runRequest (map ** inputs)
   maps *_tmpMaps = (maps *) malloc (MAPS_SIZE);
   _tmpMaps->name = zStrdup ("lenv");
   char tmpBuff[100];
-  semid lid = getShmLockId (NULL, 1);
-  lockShm (lid);
   struct ztimeval tp;
   if (zGettimeofday (&tp, NULL) == 0)
     sprintf (tmpBuff, "%i", (cpid + ((int) tp.tv_sec + (int) tp.tv_usec)));
   else
     sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
-  unlockShm (lid);
-  removeShmLock (NULL, 1);
-  _tmpMaps->content = createMap ("usid", tmpBuff);
+  _tmpMaps->content = createMap ("osid", tmpBuff);
   _tmpMaps->next = NULL;
   sprintf (tmpBuff, "%i", cpid);
   addToMap (_tmpMaps->content, "sid", tmpBuff);
   char* tmpUuid=get_uuid();
   addToMap (_tmpMaps->content, "uusid", tmpUuid);
+  addToMap (_tmpMaps->content, "usid", tmpUuid);
   free(tmpUuid);
   addToMap (_tmpMaps->content, "status", "0");
   addToMap (_tmpMaps->content, "cwd", ntmp);
@@ -1909,7 +1906,7 @@ runRequest (map ** inputs)
       status = getMap (request_inputs, "status");
     }
 #endif
-  char *fbkp, *fbkp1;
+  char *fbkp, *fbkpid, *fbkp1, *flog;
   FILE *f0, *f1;
   if (status != NULL)
     if (strcasecmp (status->value, "false") == 0)
@@ -1976,27 +1973,49 @@ runRequest (map ** inputs)
 	   * son : have to close the stdout, stdin and stderr to let the parent
 	   * process answer to http client.
 	   */
-#ifndef WIN32
-          zSleep (1);
-#endif
-          r_inputs = getMapFromMaps (m, "lenv", "usid");
+	  map* usid = getMapFromMaps (m, "lenv", "uusid");
+          r_inputs = getMapFromMaps (m, "lenv", "osid");
           int cpid = atoi (r_inputs->value);
           r_inputs = getMapFromMaps (m, "main", "tmpPath");
-          //map *r_inputs1 = getMap (s1->content, "ServiceProvider");
-		  map* r_inputs1 = createMap("ServiceName", s1->name);
+	  map* r_inputs1 = createMap("ServiceName", s1->name);
+
+	  // Create PID file referencing the OS process identifier
+          fbkpid =
+            (char *)
+            malloc ((strlen (r_inputs->value) +
+                     strlen (usid->value) + 7) * sizeof (char));
+          sprintf (fbkpid, "%s/%s.pid", r_inputs->value, usid->value);
+
+          f0 = freopen (fbkpid, "w+", stdout);
+	  fprintf(stdout,"%d",getpid());
+	  fflush(stdout);
+
+	  // Create SID file referencing the semaphore name
+          fbkp =
+            (char *)
+            malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+                     strlen (usid->value) + 7) * sizeof (char));
+          sprintf (fbkp, "%s/%s.sid", r_inputs->value, usid->value);
+
+          FILE* f2 = fopen (fbkp, "w+");
+	  map* tmpm=getMapFromMaps (m, "lenv", "osid");
+	  fprintf(f2,"%s",tmpm->value);
+	  fflush(f2);
+	  fclose(f2);
+	  free(fbkp);
 
           fbkp =
             (char *)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-                     1024) * sizeof (char));
-          sprintf (fbkp, "%s/%s_%d.xml", r_inputs->value, r_inputs1->value,
-                   cpid);
-          char *flog =
+                     strlen (usid->value) + 7) * sizeof (char));
+          sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
+                   usid->value);
+          flog =
             (char *)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-                     1024) * sizeof (char));
-          sprintf (flog, "%s/%s_%d_error.log", r_inputs->value,
-                   r_inputs1->value, cpid);
+                     strlen (usid->value) + 13) * sizeof (char));
+          sprintf (flog, "%s/%s_%s_error.log", r_inputs->value,
+                   r_inputs1->value, usid->value);
 #ifdef DEBUG
           fprintf (stderr, "RUN IN BACKGROUND MODE \n");
           fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
@@ -2004,21 +2023,7 @@ runRequest (map ** inputs)
           fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
 #endif
           freopen (flog, "w+", stderr);
-          semid lid = getShmLockId (m, 1);
           fflush (stderr);
-          if (lid < 0)
-            {
-              return errorException (m, _("Lock failed"),
-			      "InternalError", NULL);
-            }
-          else
-            {
-              if (lockShm (lid) < 0)
-                {
-		  return errorException (m, _("Lock failed"),
-					 "InternalError", NULL);
-                }
-            }
           f0 = freopen (fbkp, "w+", stdout);
           rewind (stdout);
 #ifndef WIN32
@@ -2035,17 +2040,20 @@ runRequest (map ** inputs)
                                 SERVICE_STARTED, request_input_real_format,
                                 request_output_real_format);
           fflush (stdout);
-          unlockShm (lid);
+#ifdef RELY_ON_DB
+	  init_sql(m);
+	  recordServiceStatus(m);
+	  recordResponse(m,fbkp);
+#endif
           fflush (stderr);
           fbkp1 =
             (char *)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-                     1024) * sizeof (char));
-          sprintf (fbkp1, "%s/%s_final_%d.xml", r_inputs->value,
-                   r_inputs1->value, cpid);
+                     strlen (usid->value) + 13) * sizeof (char));
+          sprintf (fbkp1, "%s/%s_final_%s.xml", r_inputs->value,
+                   r_inputs1->value, usid->value);
 
           f1 = freopen (fbkp1, "w+", stdout);
-          free (flog);
 
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
@@ -2061,8 +2069,8 @@ runRequest (map ** inputs)
 	    freeMaps (&tmpmaps);
 	    free (tmpmaps);
 	    fflush (stdout);
-	    unlockShm (lid);
 	    fflush (stderr);
+	    unhandleStatus (m);
 	    return -1;
 	  }
           loadServiceAndRun (&m, s1, request_inputs,
@@ -2072,10 +2080,10 @@ runRequest (map ** inputs)
         }
       else
         {
-      /**
-       * error server don't accept the process need to output a valid 
-       * error response here !!!
-       */
+	  /**
+	   * error server don't accept the process need to output a valid 
+	   * error response here !!!
+	   */
           eres = -1;
           errorException (m, _("Unable to run the child process properly"),
                           "InternalError", NULL);
@@ -2108,16 +2116,18 @@ runRequest (map ** inputs)
     {
       fclose (stdout);
       fclose (stderr);
-    /**
-     * Dump back the final file fbkp1 to fbkp
-     */
+      /**
+       * Dump back the final file fbkp1 to fbkp
+       */
       fclose (f0);
       fclose (f1);
       FILE *f2 = fopen (fbkp1, "rb");
+#ifndef RELY_ON_DB
       semid lid = getShmLockId (m, 1);
       if (lid < 0)
         return -1;
       lockShm (lid);
+#endif
       FILE *f3 = fopen (fbkp, "wb+");
       free (fbkp);
       fseek (f2, 0, SEEK_END);
@@ -2128,11 +2138,19 @@ runRequest (map ** inputs)
       fwrite (tmps1, 1, flen, f3);
       fclose (f2);
       fclose (f3);
-      unlockShm (lid);
+      unlink (fbkpid);
+#ifndef RELY_ON_DB
+      removeShmLock (m, 1);
+#else
+      recordResponse(m,fbkp1);
+#endif
       unlink (fbkp1);
+      unlink (flog);
+      unhandleStatus (m);
+      free(fbkpid);
+      free (flog);
       free (fbkp1);
       free (tmps1);
-      unhandleStatus (m);
     }
 
   freeService (&s1);
