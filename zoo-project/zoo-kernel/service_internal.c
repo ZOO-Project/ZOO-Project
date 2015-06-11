@@ -38,6 +38,139 @@
 #endif
 
 #define ERROR_MSG_MAX_LENGTH 1024
+#ifndef RELY_ON_DB
+#include <dirent.h>
+
+/**
+ * Read the sid file attached of a service if any
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ * @return the reported status char* (temporary/final result)
+ */
+char* getStatusId(maps* conf,char* pid){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  char* fbkpid =
+    (char *)
+    malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
+  sprintf (fbkpid, "%s/%s.sid", r_inputs->value, pid);
+  FILE* f0 = fopen (fbkpid, "r");
+  if(f0!=NULL){
+    fseek (f0, 0, SEEK_END);
+    long flen = ftell (f0);
+    fseek (f0, 0, SEEK_SET);
+    char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
+    fread(tmps1,flen,1,f0);
+    tmps1[flen]=0;
+    fclose(f0);
+    return tmps1;
+  }else
+    return NULL;
+}
+
+/**
+ * Acquire the global lock
+ * 
+ * @param conf the maps containing the setting of the main.cfg file
+ * @return a semid 
+ */
+semid acquireLock(maps* conf){
+  semid lockid;
+  int itn=0;
+ toRetry1:
+  lockid=getShmLockId(conf,1);
+  if(
+#ifdef WIN32
+     lockid==NULL
+#else
+     lockid<0
+#endif
+     ){
+#ifdef WIN32
+    return NULL
+#else
+    return -1;
+#endif
+  }
+  if(lockShm(lockid)<0){
+    if(itn<ZOO_LOCK_MAX_RETRY){
+      itn++;
+      goto toRetry1;
+    }else
+#ifdef WIN32
+    return NULL
+#else
+    return -1;
+#endif
+  }else
+    return lockid;
+}
+
+/**
+ * Read the cache file of a running service 
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ * @return the reported status char* (temporary/final result)
+ */
+char* _getStatusFile(maps* conf,char* pid){
+  map* tmpTmap = getMapFromMaps (conf, "main", "tmpPath");
+
+  struct dirent *dp;
+  DIR *dirp = opendir(tmpTmap->value);
+  char fileName[1024];
+  int hasFile=-1;
+  if(dirp!=NULL){
+    char tmp[128];
+    sprintf(tmp,"_%s.xml",pid);
+    while ((dp = readdir(dirp)) != NULL){
+#ifdef DEBUG
+      fprintf(stderr,"File : %s searched : %s\n",dp->d_name,tmp);
+#endif
+      if(strstr(dp->d_name,"final_")==0 && strstr(dp->d_name,tmp)!=0){
+	sprintf(fileName,"%s/%s",tmpTmap->value,dp->d_name);
+	hasFile=1;
+	break;
+      }
+    }
+  }
+  if(hasFile>0){
+    semid lockid;
+    char* stat=getStatusId(conf,pid);
+    if(stat!=NULL){
+      setMapInMaps(conf,"lenv","lid",stat);
+      lockid=acquireLock(conf);
+      if(lockid<0)
+	return NULL;
+    }
+
+    FILE* f0 = fopen (fileName, "r");
+    if(f0!=NULL){
+      fseek (f0, 0, SEEK_END);
+      long flen = ftell (f0);
+      fseek (f0, 0, SEEK_SET);
+      char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
+      fread(tmps1,flen,1,f0);
+      tmps1[flen]=0;
+      fclose(f0);
+      if(stat!=NULL){
+	unlockShm(lockid);
+	free(stat);
+      }
+
+      return tmps1;
+    }
+    else{
+      if(stat!=NULL){
+	unlockShm(lockid);
+	free(stat);
+      }
+      return NULL;
+    }
+  }
+  else
+    return NULL;
+}
 
 /**
  * Get the ongoing status of a running service 
@@ -46,36 +179,109 @@
  * @param pid the service identifier (usid key from the [lenv] section)
  * @return the reported status char* (MESSAGE|POURCENTAGE)
  */
-char* _getStatus(maps* conf,int pid){
-  char lid[1024];
-  sprintf(lid,"%d",pid);
-  setMapInMaps(conf,"lenv","lid",lid);
-  semid lockid=getShmLockId(conf,1);
-  if(
-#ifdef WIN32
-     lockid==NULL
-#else
-     lockid<0
-#endif
-     ){
-	char* tmp = (char*) malloc(3*sizeof(char));
-    sprintf(tmp,"%d",ZOO_LOCK_CREATE_FAILED);
-    return tmp;
-  }
-  if(lockShm(lockid)<0){
-    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-    fflush(stderr);    
-	char* tmp = (char*) malloc(3*sizeof(char));
-    sprintf(tmp,"%d",ZOO_LOCK_ACQUIRE_FAILED);
-    return tmp;
-  }
-  char *tmp=getStatus(pid);
-  unlockShm(lockid);
-  if(tmp==NULL || strncmp(tmp,"-1",2)==0){
+char* _getStatus(maps* conf,char* lid){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  char* fbkpid =
+    (char *)
+    malloc ((strlen (r_inputs->value) + strlen (lid) + 9) * sizeof (char));
+  sprintf (fbkpid, "%s/%s.status", r_inputs->value, lid);
+  FILE* f0 = fopen (fbkpid, "r");
+  if(f0!=NULL){
+    char* stat=getStatusId(conf,lid);
+    if(stat!=NULL){
+      setMapInMaps(conf,"lenv","lid",stat);
+      semid lockid=acquireLock(conf);
+      if(lockid<0)
+	return NULL;
+    }
+    fseek (f0, 0, SEEK_END);
+    long flen = ftell (f0);
+    if(flen>0){
+      fseek (f0, 0, SEEK_SET);
+      char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
+      fread(tmps1,flen,1,f0);
+      tmps1[flen]=0;
+      fclose(f0);
+      free(fbkpid);
+      if(stat!=NULL){
+	removeShmLock(conf,1);
+	free(stat);
+      }
+      return tmps1;
+    }
+    fclose(f0);
+    free(fbkpid);
+    if(stat!=NULL){
+      removeShmLock(conf,1);
+      free(stat);
+    }
+    return NULL;
+  }else{
+    free(fbkpid);
+    char* stat=getStatusId(conf,lid);
+    setMapInMaps(conf,"lenv","lid",stat);
     removeShmLock(conf,1);
+    return NULL;
   }
-  return tmp;
 }
+
+/**
+ * Stop handling status repport.
+ *
+ * @param conf the map containing the setting of the main.cfg file
+ */
+void unhandleStatus(maps *conf){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  map* usid = getMapFromMaps (conf, "lenv", "usid");
+  char* fbkpid =
+    (char *) malloc ((strlen (r_inputs->value) + strlen (usid->value) + 9) 
+		     * sizeof (char));
+  sprintf (fbkpid, "%s/%s.status", r_inputs->value, usid->value);
+  unlink(fbkpid);
+  free(fbkpid);
+}
+
+/**
+ * Update the current status of the running service.
+ *
+ * @see acquireLock, lockShm
+ * @param conf the map containing the setting of the main.cfg file
+ * @return 0 on success, -2 if shmget failed, -1 if shmat failed
+ */
+int _updateStatus(maps *conf){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  map* sid = getMapFromMaps (conf, "lenv", "usid");
+  char* fbkpid =
+    (char *)
+    malloc ((strlen (r_inputs->value) + strlen (sid->value) + 9) * sizeof (char));
+  sprintf (fbkpid, "%s/%s.status", r_inputs->value, sid->value);
+  map* status=getMapFromMaps(conf,"lenv","status");
+  map* msg=getMapFromMaps(conf,"lenv","message");
+  if(status!=NULL && msg!=NULL &&
+     status->value!=NULL && msg->value!=NULL && 
+     strlen(status->value)>0 && strlen(msg->value)>1){
+    semid lockid;
+    char* stat=getStatusId(conf,sid->value);
+    if(stat!=NULL){
+      lockid=acquireLock(conf);
+      if(lockid<0)
+	return ZOO_LOCK_ACQUIRE_FAILED;
+    }
+    FILE* fstatus=fopen(fbkpid,"w");
+    if(fstatus!=NULL){
+      fprintf(fstatus,"%s|%s\n",status->value,msg->value);
+      fflush(fstatus);
+      fclose(fstatus);
+    }
+    if(stat!=NULL){
+      unlockShm(lockid);
+      free(stat);
+    }
+  }
+  return 0;
+}
+
+#endif
 
 #ifdef WIN32
 
@@ -95,7 +301,7 @@ size_t getKeyValue(maps* conf, char* key, size_t length){
   
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
-	tmpMap=getMapFromMaps(conf,"lenv","usid");
+	tmpMap=getMapFromMaps(conf,"lenv","osid");
 
   if(tmpMap!=NULL){
 	snprintf(key, length, "zoo_sem_%s", tmpMap->value);      
@@ -129,7 +335,9 @@ semid getShmLockId(maps* conf, int nsems){
 int removeShmLock(maps* conf, int nsems){
   semid sem_id=getShmLockId(conf,1);
   if (CloseHandle(sem_id) == 0) {
+#ifdef DEBUG
     fprintf(stderr,"Unable to remove semaphore: %s\n", getLastErrorMessage());
+#endif
     return -1;
   }
 #ifdef DEBUG
@@ -164,70 +372,6 @@ int unlockShm(semid id){
 static LPVOID lpvMemG = NULL;      // pointer to shared memory
 static HANDLE hMapObjectG = NULL;  // handle to file mapping
 
-int _updateStatus(maps *conf){
-  LPWSTR lpszTmp;
-  BOOL fInit;
-  char *final_string=NULL;
-  char *s=NULL;
-  map *tmpMap1;
-  map *tmpMap=getMapFromMaps(conf,"lenv","usid");
-  semid lockid=getShmLockId(conf,1);
-  if(lockid==NULL){
-#ifdef DEBUG
-    fprintf(stderr,"Unable to create semaphore on line %d!! \n",__LINE__);
-#endif
-    return ZOO_LOCK_CREATE_FAILED;
-  }
-  if(lockShm(lockid)<0){
-#ifdef DEBUG
-    fprintf(stderr,"Unable to create semaphore on line %d!! \n",__LINE__);
-#endif
-    return ZOO_LOCK_ACQUIRE_FAILED;
-  }
-  
-  if(hMapObjectG==NULL)
-    hMapObjectG = CreateFileMapping( 
-				    INVALID_HANDLE_VALUE,   // use paging file
-				    NULL,                   // default security attributes
-				    PAGE_READWRITE,         // read/write access
-				    0,                      // size: high 32-bits
-				    SHMEMSIZE,              // size: low 32-bits
-				    TEXT(tmpMap->value));   // name of map object
-  if (hMapObjectG == NULL){
-#ifdef DEBUG
-    fprintf(stderr,"Unable to create shared memory segment: %s\n", getLastErrorMessage());
-#endif
-    return -2;
-  }
-  fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
-  if(lpvMemG==NULL)
-    lpvMemG = MapViewOfFile( 
-			    hMapObjectG,     // object to map view of
-			    FILE_MAP_WRITE, // read/write access
-			    0,              // high offset:  map from
-			    0,              // low offset:   beginning
-			    0);             // default: map entire file
-  if (lpvMemG == NULL){
-#ifdef DEBUG
-    fprintf(stderr,"Unable to create or access the shared memory segment %s !! \n",tmpMap->value);
-#endif
-    return -1;
-  } 
-  memset(lpvMemG, '\0', SHMEMSIZE);
-  tmpMap=getMapFromMaps(conf,"lenv","status");
-  tmpMap1=NULL;
-  tmpMap1=getMapFromMaps(conf,"lenv","message");
-  lpszTmp = (LPWSTR) lpvMemG;
-  final_string=(char*)malloc((strlen(tmpMap1->value)+strlen(tmpMap->value)+2)*sizeof(char));
-  sprintf(final_string,"%s|%s",tmpMap->value,tmpMap1->value);
-  for(s=final_string;*s!='\0';*s++){
-    *lpszTmp++ = *s;
-  }
-  *lpszTmp++ = '\0';
-  free(final_string);
-  unlockShm(lockid);
-  return 0;
-}
 
 char* getStatus(int pid){
   char *lpszBuf=(char*) malloc(SHMEMSIZE*sizeof(char));
@@ -286,12 +430,6 @@ char* getStatus(int pid){
   return (char*)lpszBuf;
 }
 
-void unhandleStatus(maps *conf){
-  BOOL fIgnore;
-  fIgnore = UnmapViewOfFile(lpvMemG); 
-  fIgnore = CloseHandle(hMapObjectG);
-}
-
 #else
 /**
  * Number of time to try to access a semaphores set
@@ -311,8 +449,8 @@ union semun {
 #endif
 
 /**
- * Set in the pre-allocated key the zoo_sem_[SID] string 
- * where [SID] is the lid (if any) or usid value from the [lenv] section.
+ * Set in the pre-allocated key the zoo_sem_[OSID] string 
+ * where [OSID] is the lid (if any) or osid value from the [lenv] section.
  *
  * @param conf the map containing the setting of the main.cfg file
  */
@@ -321,7 +459,7 @@ int getKeyValue(maps* conf){
      return 700666;
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
-    tmpMap=getMapFromMaps(conf,"lenv","usid");
+    tmpMap=getMapFromMaps(conf,"lenv","osid");
   int key=-1;
   if(tmpMap!=NULL)
     key=atoi(tmpMap->value);
@@ -379,7 +517,7 @@ int getShmLockId(maps* conf, int nsems){
 #ifdef DEBUG
 	      fprintf(stderr,"Retry to access the semaphore later ...\n");
 #endif
-	      sleep(1);
+	      zSleep(1);
             }
         }
 	errno = ZOO_LOCK_ACQUIRE_FAILED;
@@ -410,9 +548,14 @@ int removeShmLock(maps* conf, int nsems){
   union semun arg;
   int sem_id=getShmLockId(conf,nsems);
   if (semctl(sem_id, 0, IPC_RMID, arg) == -1) {
-    perror("semctl");
+#ifdef DEBUG
+    perror("semctl remove");
+#endif
     return -1;
   }
+#ifdef DEBUG
+  fprintf(stderr,"Semaphore removed!\n");
+#endif
   return 0;
 }
 
@@ -428,7 +571,9 @@ int lockShm(int id){
   sb.sem_op = -1;  /* set to allocate resource */
   sb.sem_flg = SEM_UNDO;
   if (semop(id, &sb, 1) == -1){
-    perror("semop");
+#ifdef DEBUG
+    perror("semop lock");
+#endif
     return -1;
   }
   return 0;
@@ -446,98 +591,16 @@ int unlockShm(int id){
   sb.sem_op = 1;  /* free resource */
   sb.sem_flg = SEM_UNDO;
   if (semop(id, &sb, 1) == -1) {
-    perror("semop");
+#ifdef DEBUG
+    perror("semop unlock");
+#endif
     return -1;
   }
   return 0;
 }
 
 /**
- * Stop handling status repport.
- *
- * @param conf the map containing the setting of the main.cfg file
- */
-void unhandleStatus(maps *conf){
-  int shmid;
-  key_t key;
-  void *shm;
-  struct shmid_ds shmids;
-  map *tmpMap=getMapFromMaps(conf,"lenv","usid");
-  if(tmpMap!=NULL){
-    key=atoi(tmpMap->value);
-    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
-#ifdef DEBUG
-      fprintf(stderr,"shmget failed to update value\n");
-#endif
-    }else{
-      if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
-#ifdef DEBUG
-	fprintf(stderr,"shmat failed to update value\n");
-#endif
-      }else{
-	shmdt(shm);
-	shmctl(shmid,IPC_RMID,&shmids);
-      }
-    }
-  }
-}
-
-/**
- * Update the current of the running service.
- *
- * @see getKeyValue, getShmLockId, lockShm
- * @param conf the map containing the setting of the main.cfg file
- * @return 0 on success, -2 if shmget failed, -1 if shmat failed
- */
-int _updateStatus(maps *conf){
-  int shmid;
-  char *shm,*s,*s1;
-  map *tmpMap=NULL;
-  key_t key=getKeyValue(conf);
-  if(key!=-1){
-    semid lockid=getShmLockId(conf,1);
-    if(lockid<0)
-      return ZOO_LOCK_CREATE_FAILED;
-    if(lockShm(lockid)<0){
-      return ZOO_LOCK_ACQUIRE_FAILED;
-    }
-    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
-#ifdef DEBUG
-      fprintf(stderr,"shmget failed to create new Shared memory segment\n");
-#endif
-      unlockShm(lockid);
-      return -2;
-    }else{
-      if ((shm = (char*) shmat(shmid, NULL, 0)) == (char *) -1) {
-#ifdef DEBUG
-	fprintf(stderr,"shmat failed to update value\n");
-#endif
-	unlockShm(lockid);
-	return -1;
-      }
-      else{
-	tmpMap=getMapFromMaps(conf,"lenv","status");
-	s1=shm;
-	for(s=tmpMap->value;*s!=NULL && *s!=0;s++){
-	  *s1++=*s;
-	}
-	*s1++='|';
-	tmpMap=getMapFromMaps(conf,"lenv","message");
-	if(tmpMap!=NULL)
-	  for(s=tmpMap->value;*s!=NULL && *s!=0;s++){
-	    *s1++=*s;
-	}
-	*s1=NULL;
-	shmdt((void *)shm);
-	unlockShm(lockid);
-      }
-    }
-  }
-  return 0;
-}
-
-/**
- * Update the current of the running service.
+ * Get the current status of the running service.
  *
  * @see getKeyValue, getShmLockId, lockShm
  * @param pid the semaphores 

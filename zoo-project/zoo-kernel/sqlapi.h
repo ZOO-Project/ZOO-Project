@@ -29,10 +29,16 @@
 extern "C" {
 #endif
 
-char *get_uuid();
-void init_sql(const char* host,const char *user, const char *passwd, const char * bdd,int port);
-int add_job(const char * uuid);
-int start_job(const char *uuid);
+#ifdef RELY_ON_DB
+#include "service.h"
+#include "service_internal.h"
+  void init_sql(maps*);
+  void close_sql(maps*);
+  int execSql(maps*,const char*);
+  void recordStoredFile(maps*,const char*,const char*,const char*);
+  void recordServiceStatus(maps*);
+  void recordResponse(maps*,char*,bool);
+#endif
 
 #ifdef __cplusplus
 }

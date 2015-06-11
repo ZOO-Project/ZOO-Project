@@ -46,9 +46,14 @@ fi
 AC_SUBST([DEB_DEF])
 
 AC_ARG_WITH([cgi-dir],
-    [AS_HELP_STRING([--with-cgi-dir=PATH], [specify an alternative cgi directory path ( default: /usr/lib/cgi-bin) ])],
+    [AS_HELP_STRING([--with-cgi-dir=PATH], [Specifies an alternative cgi directory path ( default: /usr/lib/cgi-bin) ])],
     [CGI_DIR="$withval"], [CGI_DIR="/usr/lib/cgi-bin"])
 AC_SUBST([CGI_DIR])
+
+AC_ARG_WITH([db-backend],
+    [AS_HELP_STRING([--with-db-backend], [Relies on a database for storing status messages and response files ])],
+    [RELY_ON_DB="-DRELY_ON_DB"], [RELY_ON_DB=""])
+AC_SUBST([RELY_ON_DB])
 
 
 # ===========================================================================
@@ -56,7 +61,7 @@ AC_SUBST([CGI_DIR])
 # ===========================================================================
 
 AC_ARG_WITH([yaml],
-        [AS_HELP_STRING([--with-yaml=PATH], [specify an alternative location for the yaml library])],
+        [AS_HELP_STRING([--with-yaml=PATH], [Specifies an alternative location for the yaml library])],
         [YAMLPATH="$withval"], [YAMLPATH=""])
 
 if test -z "$YAMLPATH"
@@ -93,7 +98,7 @@ AC_SUBST([YAML_FILE1])
 # ===========================================================================
 
 AC_ARG_WITH([fastcgi],
-        [AS_HELP_STRING([--with-fastcgi=PATH], [specify an alternative location for the fastcgi library])],
+        [AS_HELP_STRING([--with-fastcgi=PATH], [Specifies an alternative location for the fastcgi library])],
         [FCGIPATH="$withval"], [FCGIPATH="/usr"])
 
 # Extract the linker and include flags
@@ -117,7 +122,7 @@ AC_SUBST([FCGI_LDFLAGS])
 # ===========================================================================
 
 AC_ARG_WITH([xml2config], 
-	[AS_HELP_STRING([--with-xml2config=FILE], [specify an alternative xml2-config file])], 
+	[AS_HELP_STRING([--with-xml2config=FILE], [Specifies an alternative xml2-config file])], 
 	[XML2CONFIG="$withval"], [XML2CONFIG=""])
 
 if test "x$XML2CONFIG" = "x"; then
@@ -131,7 +136,7 @@ if test "x$XML2CONFIG" = "x"; then
 else
 	# XML2CONFIG was specified; display a message to the user
 	if test "x$XML2CONFIG" = "xyes"; then
-		AC_MSG_ERROR([you must specify a parameter to --with-xml2config, e.g. --with-xml2config=/path/to/xml2-config])
+		AC_MSG_ERROR([you must Specifies a parameter to --with-xml2config, e.g. --with-xml2config=/path/to/xml2-config])
 	else
 		if test -f $XML2CONFIG; then
 			AC_MSG_RESULT([Using user-specified xml2-config file: $XML2CONFIG])
@@ -166,7 +171,7 @@ LIBS="$LIBS_SAVE"
 # ===========================================================================
 
 AC_ARG_WITH([xsltconfig], 
-	[AS_HELP_STRING([--with-xsltconfig=FILE], [specify an alternative xslt-config file])], 
+	[AS_HELP_STRING([--with-xsltconfig=FILE], [Specifies an alternative xslt-config file])], 
 	[XSLTCONFIG="$withval"], [XSLTCONFIG=""])
 
 if test "x$XSLTCONFIG" = "x"; then
@@ -180,7 +185,7 @@ if test "x$XSLTCONFIG" = "x"; then
 else
 	# XSLTCONFIG was specified; display a message to the user
 	if test "x$XSLTCONFIG" = "xyes"; then
-		AC_MSG_ERROR([you must specify a parameter to --with-xsltconfig, e.g. --with-xsltconfig=/path/to/xslt-config])
+		AC_MSG_ERROR([you must Specifies a parameter to --with-xsltconfig, e.g. --with-xsltconfig=/path/to/xslt-config])
 	else
 		if test -f $XSLTCONFIG; then
 			AC_MSG_RESULT([Using user-specified xslt-config file: $XSLTCONFIG])
@@ -208,7 +213,7 @@ AC_SUBST([XSLT_LDFLAGS])
 #============================================================================
 
 AC_ARG_WITH([gdal-config], 
-	[AS_HELP_STRING([--with-gdal-config=FILE], [specify an alternative gdal-config file])], 
+	[AS_HELP_STRING([--with-gdal-config=FILE], [Specifies an alternative gdal-config file])], 
 	[GDAL_CONFIG="$withval"], [GDAL_CONFIG=""])
 if test -z $GDAL_CONFIG;
 then
@@ -237,7 +242,7 @@ AC_SUBST([GDAL_LIBS])
 # ===========================================================================
 
 AC_ARG_WITH([proj],
-        [AS_HELP_STRING([--with-proj=PATH], [specify an alternative location for PROJ4 setup])],
+        [AS_HELP_STRING([--with-proj=PATH], [Specifies an alternative location for PROJ4 setup])],
         [PROJPATH="$withval"], [PROJPATH=""])
 
 # Extract the linker and include flags
@@ -258,7 +263,7 @@ AC_SUBST([PROJ_LDFLAGS])
 # ===========================================================================
 
 AC_ARG_WITH([geosconfig], 
-	[AS_HELP_STRING([--with-geosconfig=FILE], [specify an alternative geos-config file])], 
+	[AS_HELP_STRING([--with-geosconfig=FILE], [Specifies an alternative geos-config file])], 
 	[GEOSCONFIG="$withval"], [GEOSCONFIG=""])
 
 if test "x$GEOSCONFIG" = "x"; then
@@ -272,7 +277,7 @@ if test "x$GEOSCONFIG" = "x"; then
 else
 	# GEOSCONFIG was specified; display a message to the user
 	if test "x$GEOSCONFIG" = "xyes"; then
-		AC_MSG_WARN([you must specify a parameter to --with-geosconfig, e.g. --with-geosconfig=/path/to/geos-config])
+		AC_MSG_WARN([you must Specifies a parameter to --with-geosconfig, e.g. --with-geosconfig=/path/to/geos-config])
 	else
 		if test -f $GEOSCONFIG; then
 			AC_MSG_RESULT([Using user-specified geos-config file: $GEOSCONFIG])
@@ -300,7 +305,7 @@ AC_SUBST([GEOS_LDFLAGS])
 # ===========================================================================
 
 AC_ARG_WITH([cgal],
-        [AS_HELP_STRING([--with-cgal=PATH], [specify an alternative location for CGAL setup])],
+        [AS_HELP_STRING([--with-cgal=PATH], [Specifies an alternative location for CGAL setup])],
         [CGALPATH="$withval"], [CGALPATH="/usr"])
 
 
@@ -322,7 +327,7 @@ AC_SUBST([CGAL_LDFLAGS])
 #============================================================================
 
 AC_ARG_WITH([mapserver], 
-       [AS_HELP_STRING([--with-mapserver=PATH], [specify the path for MapServer compiled source tree])], 
+       [AS_HELP_STRING([--with-mapserver=PATH], [Specifies the path for MapServer compiled source tree])], 
        [MS_SRC_PATH="$withval"], [MS_SRC_PATH=""])
 
 if test -z $MS_SRC_PATH;
@@ -361,7 +366,7 @@ AC_SUBST([MS_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([python], 
-	[AS_HELP_STRING([--with-python=PATH], [To enable python support or specify an alternative directory for python installation,  disabled by default])], 
+	[AS_HELP_STRING([--with-python=PATH], [To enable python support or Specifies an alternative directory for python installation,  disabled by default])], 
 	[PYTHON_PATH="$withval"; PYTHON_ENABLED="-DUSE_PYTHON"], [PYTHON_ENABLED=""])
 
 AC_ARG_WITH([pyvers], 
@@ -416,7 +421,7 @@ AC_SUBST([PYTHON_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([js], 
-	[AS_HELP_STRING([--with-js=PATH], [specify --with-js=path-to-js to enable js support, specify --with-js on linux debian like, js support is disabled by default ])], 
+	[AS_HELP_STRING([--with-js=PATH], [Specifies --with-js=path-to-js to enable js support, specify --with-js on linux debian like, js support is disabled by default ])], 
 	[JSHOME="$withval";JS_ENABLED="-DUSE_JS"], [JS_ENABLED=""])
 
 if test -z "$JS_ENABLED"
@@ -665,15 +670,15 @@ AC_SUBST([PERL_FILE])
 # ===========================================================================
 
 AC_ARG_WITH([itk],
-        [AS_HELP_STRING([--with-itk=PATH], [specify an alternative location for the itk library])],
+        [AS_HELP_STRING([--with-itk=PATH], [Specifies an alternative location for the itk library])],
         [ITKPATH="$withval"], [ITKPATH=""])
 
 AC_ARG_WITH([itk-version],
-        [AS_HELP_STRING([--with-itk-version=VERSION], [specify an alternative version for the itk library])],
+        [AS_HELP_STRING([--with-itk-version=VERSION], [Specifies an alternative version for the itk library])],
         [ITKVERS="$withval"], [ITKVERS=""])
 
 AC_ARG_WITH([otb],
-        [AS_HELP_STRING([--with-otb=PATH], [specify an alternative location for the otb library])],
+        [AS_HELP_STRING([--with-otb=PATH], [Specifies an alternative location for the otb library])],
         [OTBPATH="$withval"], [OTBPATH=""])
 
 if test -z "$OTBPATH"
@@ -719,11 +724,11 @@ AC_SUBST([OTB_ENABLED])
 # ===========================================================================
 
 AC_ARG_WITH([wx-config],
-        [AS_HELP_STRING([--with-wx-config=PATH], [specify an alternative path for the wx-config tool])],
+        [AS_HELP_STRING([--with-wx-config=PATH], [Specifies an alternative path for the wx-config tool])],
         [WXCFG="$withval"], [WXCFG=""])
 
 AC_ARG_WITH([saga],
-        [AS_HELP_STRING([--with-saga=PATH], [specify an alternative location for the SAGA-GIS library])],
+        [AS_HELP_STRING([--with-saga=PATH], [Specifies an alternative location for the SAGA-GIS library])],
         [SAGAPATH="$withval"], [SAGAPATH=""])
 
 if test -z "$SAGAPATH"

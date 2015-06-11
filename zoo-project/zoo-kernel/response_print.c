@@ -1514,24 +1514,22 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     }else{
       int lpid;
       map* tmpm2=getMapFromMaps(m,"lenv","usid");
-      lpid=atoi(tmpm2->value);
-      tmpm2=getMap(tmp_maps->content,"tmpUrl");
-      if(tmpm1!=NULL && tmpm2!=NULL){
-	if( strncasecmp( tmpm2->value, "http://", 7) == 0 ||
-	    strncasecmp( tmpm2->value, "https://", 8 ) == 0 ){
-	  sprintf(url,"%s/%s_%i.xml",tmpm2->value,service,lpid);
+      map* tmpm3=getMap(tmp_maps->content,"tmpUrl");
+      if(tmpm1!=NULL && tmpm3!=NULL){
+	if( strncasecmp( tmpm3->value, "http://", 7) == 0 ||
+	    strncasecmp( tmpm3->value, "https://", 8 ) == 0 ){
+	  sprintf(url,"%s/%s_%s.xml",tmpm3->value,service,tmpm2->value);
 	}else
-	  sprintf(url,"%s/%s/%s_%i.xml",tmpm1->value,tmpm2->value,service,lpid);
+	  sprintf(url,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
       }
     }
     if(tmpm1!=NULL){
       sprintf(tmp,"%s",tmpm1->value);
     }
     int lpid;
-    tmpm1=getMapFromMaps(m,"lenv","usid");
-    lpid=atoi(tmpm1->value);
+    map* tmpm2=getMapFromMaps(m,"lenv","usid");
     tmpm1=getMapFromMaps(m,"main","TmpPath");
-    sprintf(stored_path,"%s/%s_%i.xml",tmpm1->value,service,lpid);
+    sprintf(stored_path,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
   }
 
   xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
@@ -1682,8 +1680,9 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     xmlAddChild(n,nc);
   }
 
-  if(hasStoredExecuteResponse==true && status!=SERVICE_STARTED){
-    semid lid=getShmLockId(m,1);
+  if(hasStoredExecuteResponse==true && status!=SERVICE_STARTED && status!=SERVICE_ACCEPTED){
+#ifndef RELY_ON_DB
+    semid lid=acquireLock(m);//,1);
     if(lid<0){
       /* If the lock failed */
       errorException(m,_("Lock failed."),"InternalError",NULL);
@@ -1693,10 +1692,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       return;
     }
     else{
-#ifdef DEBUG
-      fprintf(stderr,"LOCK %s %d !\n",__FILE__,__LINE__);
 #endif
-      lockShm(lid);
       /* We need to write the ExecuteResponse Document somewhere */
       FILE* output=fopen(stored_path,"w");
       if(output==NULL){
@@ -1708,7 +1704,9 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	zooXmlCleanupNs();
+#ifndef RELY_ON_DB
 	unlockShm(lid);
+#endif
 	return;
       }
       xmlChar *xmlbuff;
@@ -1717,15 +1715,18 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       fwrite(xmlbuff,1,xmlStrlen(xmlbuff)*sizeof(char),output);
       xmlFree(xmlbuff);
       fclose(output);
+#ifndef RELY_ON_DB
 #ifdef DEBUG
       fprintf(stderr,"UNLOCK %s %d !\n",__FILE__,__LINE__);
 #endif
       unlockShm(lid);
-      map* test1=getMap(request,"status");
-      if(test1==NULL || strcasecmp(test1->value,"true")!=0){
-	removeShmLock(m,1);
+      map* v=getMapFromMaps(m,"lenv","sid");
+      // Remove the lock when running as a normal task
+      if(getpid()==atoi(v->value)){
+	removeShmLock (m, 1);
       }
     }
+#endif
   }
   printDocument(m,doc,pid);
 
@@ -2315,7 +2316,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     dumpMaps(request_outputs);
 #endif
     maps* tmpI=request_outputs;
-
+    map* usid=getMapFromMaps(m,"lenv","usid");
+    int itn=0;
     while(tmpI!=NULL){
 #ifdef USE_MS
       map* testMap=getMap(tmpI->content,"useMapserver");	
@@ -2353,7 +2355,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
 	  }
 
-	  if(gfile==NULL){
+	  if(gfile==NULL) {
 	    map *ext=getMap(tmpI->content,"extension");
 	    char *file_path;
 	    char file_ext[32];
@@ -2368,13 +2370,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      getFileExtension(mtype != NULL ? mtype->value : NULL, file_ext, 32);
 	    }
 		
-	    file_name=(char*)malloc((strlen(s->name)+strlen(file_ext)+strlen(tmpI->name)+1024)*sizeof(char));
-	    int cpid0=cpid+time(NULL);	    
-	    sprintf(file_name,"%s_%s_%i.%s",s->name,tmpI->name,cpid0,file_ext);
+	    file_name=(char*)malloc((strlen(s->name)+strlen(usid->value)+strlen(file_ext)+strlen(tmpI->name)+45)*sizeof(char));
+	    sprintf(file_name,"%s_%s_%s_%d.%s",s->name,tmpI->name,usid->value,itn,file_ext);
+	    itn++;
 	    file_path=(char*)malloc((strlen(tmp1->value)+strlen(file_name)+2)*sizeof(char));
 	    sprintf(file_path,"%s/%s",tmp1->value,file_name);
     
-		FILE *ofile=fopen(file_path,"wb");
+	    FILE *ofile=fopen(file_path,"wb");
 	    if(ofile==NULL){
 	      char tmpMsg[1024];
 	      sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the %s final result."),file_name,tmpI->name);

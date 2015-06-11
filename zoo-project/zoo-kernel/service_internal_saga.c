@@ -101,7 +101,7 @@ class SagaWatcher
 };
 
 maps* SagaWatcher::m_conf;
-char* SagaWatcher::message=zStrdup("");
+char* SagaWatcher::message=zStrdup("No message left");
 int SagaWatcher::status=1;
 
 /**
@@ -120,13 +120,23 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
   switch( id )
     {
     default:
-      res = 0;
+      return 0;
       break;
 
-    case CALLBACK_PROCESS_GET_OKAY:
+    case CALLBACK_DLG_ERROR:
+      return 1;
       break;
 
+    case CALLBACK_DLG_PARAMETERS:
     case CALLBACK_PROCESS_SET_OKAY:
+    case CALLBACK_DATAOBJECT_COLORS_GET:
+    case CALLBACK_DATAOBJECT_COLORS_SET:
+    case CALLBACK_DATAOBJECT_PARAMS_GET:
+    case CALLBACK_DATAOBJECT_PARAMS_SET:
+    case CALLBACK_DATAOBJECT_UPDATE:
+    case CALLBACK_DATAOBJECT_SHOW:
+    case CALLBACK_DLG_CONTINUE:
+    case CALLBACK_PROCESS_SET_READY:
       break;
 
     case CALLBACK_PROCESS_SET_PROGRESS:
@@ -138,7 +148,7 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
       }
       break;
 
-    case CALLBACK_PROCESS_SET_READY:
+    case CALLBACK_PROCESS_GET_OKAY:
       status=1;
       break;
 
@@ -162,38 +172,11 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
       SetMessage((param2.String + ": " + param1.String).b_str());
       break;
 
-    case CALLBACK_DLG_CONTINUE:
-      break;
-
-    case CALLBACK_DLG_ERROR:
-      break;
-
     case CALLBACK_DATAOBJECT_ADD:
       if(SG_Get_Data_Manager().Add((CSG_Data_Object *)param1.Pointer))
 	res = 1 ;
       else
 	res = 0;
-      break;
-
-    case CALLBACK_DATAOBJECT_UPDATE:
-      break;
-
-    case CALLBACK_DATAOBJECT_SHOW:
-      break;
-
-    case CALLBACK_DATAOBJECT_COLORS_GET:
-      break;
-
-    case CALLBACK_DATAOBJECT_COLORS_SET:
-      break;
-
-    case CALLBACK_DATAOBJECT_PARAMS_GET:
-      break;
-
-    case CALLBACK_DATAOBJECT_PARAMS_SET:
-      break;
-
-    case CALLBACK_DLG_PARAMETERS:
       break;
 
     }

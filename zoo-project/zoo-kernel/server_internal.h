@@ -38,7 +38,8 @@ extern "C" {
 #endif
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-  
+
+  char *get_uuid();  
   char *base64(const char*,int);
   char *base64d(const char*,int,int*);
   void readBase64(map **);

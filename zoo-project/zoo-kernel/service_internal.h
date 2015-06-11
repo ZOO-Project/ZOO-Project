@@ -59,6 +59,10 @@
  * ZOO-Kernel was unable to release a lock
  */
 #define ZOO_LOCK_RELEASE_FAILED -6
+/**
+ * Number of time the ZOO-Kernel will try to acquire lock
+ */
+#define ZOO_LOCK_MAX_RETRY 10
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -99,8 +103,10 @@ extern "C" {
 
   void unhandleStatus(maps*);
   int _updateStatus(maps*);
-  char* _getStatus(maps*,int);
+  char* _getStatus(maps*,char*);
+  char* _getStatusFile(maps*,char*);
   char* getStatus(int);
+
   int updateStatus( maps*,const int,const char*);
   int removeShmLock(maps*, int);
   /**
@@ -111,13 +117,11 @@ extern "C" {
 #else
 #define semid HANDLE
 #endif
+  semid acquireLock(maps*);
   semid getShmLockId(maps*,int);
   int lockShm(semid);
   int unlockShm(semid);
 
-#ifdef USE_JS
-#endif
-  
 #ifdef __cplusplus
 }
 #endif

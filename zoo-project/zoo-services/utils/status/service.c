@@ -64,30 +64,10 @@ extern "C" {
     if(tmpMmap==NULL)
       tmpMmap=tmpTmap;
     xmlInitParser();
-    struct dirent *dp;
-    DIR *dirp = opendir(tmpTmap->value);
-    char fileName[1024],xslFileName[1024];
     int hasFile=-1;
-    if(dirp!=NULL){
-      char tmp[128];
-      sprintf(tmp,"_%s.xml",tmpMap->value);
-      while ((dp = readdir(dirp)) != NULL){
-#ifdef DEBUG
-	fprintf(stderr,"File : %s searched : %s\n",dp->d_name,tmp);
-#endif
-	if(strstr(dp->d_name,"final_")==0 && strstr(dp->d_name,tmp)!=0){
-	  sprintf(fileName,"%s/%s",tmpTmap->value,dp->d_name);
-	  hasFile=1;
-	  break;
-	}
-      }
-    }else{
-      char tmp[1024];
-      snprintf(tmp,1024,_ss("GetStatus was unable to use the tmpPath value set in main.cfg file as directory %s."),tmpTmap->value);
-      setMapInMaps(conf,"lenv","message",tmp);
-      return SERVICE_FAILED;
-    }
-    if(hasFile<0){
+    char xslFileName[1024];
+    char* mem=_getStatusFile(conf,tmpMap->value);
+    if(mem==NULL){
       char tmp[1024];
       snprintf(tmp,1024,_ss("GetStatus was unable to find any cache file for Service ID %s."),tmpMap->value);
       setMapInMaps(conf,"lenv","message",tmp);
@@ -99,12 +79,13 @@ extern "C" {
     xsltStylesheetPtr cur = NULL;
     xmlDocPtr doc, res;
     cur = xsltParseStylesheetFile(BAD_CAST xslFileName);
-    doc = xmlParseFile(fileName);
+    doc = xmlParseMemory(mem,strlen(mem));
+    //doc = xmlParseFile(fileName);
     if(cur!=NULL && doc!=NULL){
       /**
        * Parse Status to extract Status / Message
        */
-      char *tmpStr=_getStatus(conf,atoi(tmpMap->value));
+      char *tmpStr=_getStatus(conf,tmpMap->value);
 #ifdef DEBUG
       fprintf(stderr,"DEBUG: %s \n",tmpStr);
 #endif
