@@ -30,13 +30,19 @@
 #endif
 #include <uuid/uuid.h>
 
+/**
+ * Detect WPS version used (1.0.0 or 2.0.0).
+ *
+ * @param version number as char* (1.0.0 or 2.0.0)
+ * @return 0 in case of version 1.0.0, 1 for 2.0.0, -1 in other case
+ */
 int getVersionId(const char* version){
   int schemaId=0;
   for(;schemaId<2;schemaId++){
     if(strncasecmp(version,schemas[schemaId][0],5)==0)
       return schemaId;
   }
-  return 0;
+  return -1;
 }
 
 /**
@@ -50,7 +56,7 @@ char *get_uuid(){
   char *res=(char*)malloc(37*sizeof(char));
   uuid_t uuid;
   uuid_generate_time(uuid);
-  char * rest;
+  char rest[128];
   uuid_unparse(uuid,rest);
   sprintf(res,"%s", rest);
   return res;

@@ -37,7 +37,7 @@ extern "C" {
   int execSql(maps*,const char*);
   void recordStoredFile(maps*,const char*,const char*,const char*);
   void recordServiceStatus(maps*);
-  void recordResponse(maps*,char*,bool);
+  void recordResponse(maps*,char*);
 #endif
 
 #ifdef __cplusplus

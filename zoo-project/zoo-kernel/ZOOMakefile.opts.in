@@ -14,6 +14,9 @@ ifeq ($(OS),Darwin)
 	MACOS_CFLAGS=-arch $(shell uname -m)
 	EXT=dylib
 	DEFAULT_OPTS=-Wl,-compatibility_version,${VERSION},-current_version,${VERSION},-install_name,${DESTDIR}${INST_LIB}/libzoo_service.${VERSION}.${REVISION}.dylib
+	LIBZOO_SERVICE=libzoo_service.${VERSION}.${REVISION}.${EXT}
+else
+	LIBZOO_SERVICE=libzoo_service.${EXT}.${VERSION}
 endif
 
 CGI_DIR=@CGI_DIR@
