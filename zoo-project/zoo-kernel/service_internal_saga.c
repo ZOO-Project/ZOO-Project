@@ -137,6 +137,8 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
     case CALLBACK_DATAOBJECT_SHOW:
     case CALLBACK_DLG_CONTINUE:
     case CALLBACK_PROCESS_SET_READY:
+    case CALLBACK_PROCESS_GET_OKAY:
+      return res;
       break;
 
     case CALLBACK_PROCESS_SET_PROGRESS:
@@ -144,12 +146,9 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
 	int cPercent= param2.Number != 0.0 ? 1 + (int)(100.0 * param1.Number / param2.Number) : 100 ;
 	if( cPercent != status ){
 	  status=cPercent;
-	}
+	}else
+	  return res;
       }
-      break;
-
-    case CALLBACK_PROCESS_GET_OKAY:
-      status=1;
       break;
 
     case CALLBACK_PROCESS_SET_TEXT:
@@ -177,6 +176,7 @@ Callback(TSG_UI_Callback_ID id, CSG_UI_Parameter &param1, CSG_UI_Parameter &para
 	res = 1 ;
       else
 	res = 0;
+      return res;
       break;
 
     }

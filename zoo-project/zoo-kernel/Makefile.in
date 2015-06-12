@@ -106,10 +106,10 @@ zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main
 install:
 	install -d ${CGI_DIR}
 	install zoo_loader.cgi ${CGI_DIR}/
-	install libzoo_service.${EXT} ${DESTDIR}${INST_LIB}/libzoo_service.${VERSION}.${REVISION}.${EXT}
+	install libzoo_service.${EXT} ${DESTDIR}${INST_LIB}/${LIBZOO_SERVICE}
 	(cd ${DESTDIR}${INST_LIB} ; \
 	 if [ -e "libzoo_service.${EXT}" ]; then rm  libzoo_service.${EXT}; fi ; \
-	 ln -s libzoo_service.${VERSION}.${REVISION}.${EXT} libzoo_service.${EXT})
+	 ln -s ${LIBZOO_SERVICE} libzoo_service.${EXT})
 	install -d ${DESTDIR}${INST_INCLUDE}/zoo
 	install service.h service_internal.h ${DESTDIR}${INST_INCLUDE}/zoo
 

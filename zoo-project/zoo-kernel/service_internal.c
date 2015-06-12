@@ -56,14 +56,16 @@ char* getStatusId(maps* conf,char* pid){
   sprintf (fbkpid, "%s/%s.sid", r_inputs->value, pid);
   FILE* f0 = fopen (fbkpid, "r");
   if(f0!=NULL){
+    long flen;
+    char *fcontent;
     fseek (f0, 0, SEEK_END);
-    long flen = ftell (f0);
+    flen = ftell (f0);
     fseek (f0, 0, SEEK_SET);
-    char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
-    fread(tmps1,flen,1,f0);
-    tmps1[flen]=0;
+    fcontent = (char *) malloc ((flen + 1) * sizeof (char));
+    fread(fcontent,flen,1,f0);
+    fcontent[flen]=0;
     fclose(f0);
-    return tmps1;
+    return fcontent;
   }else
     return NULL;
 }
@@ -187,27 +189,31 @@ char* _getStatus(maps* conf,char* lid){
   sprintf (fbkpid, "%s/%s.status", r_inputs->value, lid);
   FILE* f0 = fopen (fbkpid, "r");
   if(f0!=NULL){
-    char* stat=getStatusId(conf,lid);
+    semid lockid;
+    char* stat;
+    long flen;
+    stat=getStatusId(conf,lid);
     if(stat!=NULL){
       setMapInMaps(conf,"lenv","lid",stat);
-      semid lockid=acquireLock(conf);
+      lockid=acquireLock(conf);
       if(lockid<0)
 	return NULL;
     }
     fseek (f0, 0, SEEK_END);
-    long flen = ftell (f0);
+    flen = ftell (f0);
     if(flen>0){
+      char *fcontent;
       fseek (f0, 0, SEEK_SET);
-      char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
-      fread(tmps1,flen,1,f0);
-      tmps1[flen]=0;
+      fcontent = (char *) malloc ((flen + 1) * sizeof (char));
+      fread(fcontent,flen,1,f0);
+      fcontent[flen]=0;
       fclose(f0);
       free(fbkpid);
       if(stat!=NULL){
 	removeShmLock(conf,1);
 	free(stat);
       }
-      return tmps1;
+      return fcontent;
     }
     fclose(f0);
     free(fbkpid);
