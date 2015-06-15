@@ -495,6 +495,8 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes,HINTERNET* hInternet){
   int k = 0;
   int l = 0;
+  map* version=getMapFromMaps(*main_conf,"main","rversion");
+  int vid=getVersionId(version->value);
   for (k=0; k < nodes->nodeNr; k++)
     {
       maps *tmpmaps = NULL;
@@ -503,6 +505,14 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
       if (nodes->nodeTab[k]->type == XML_ELEMENT_NODE)
 	{
 	  // A specific Input node.
+	  if(vid==1){
+	    tmpmaps = (maps *) malloc (MAPS_SIZE);
+	    xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
+	    tmpmaps->name = zStrdup ((char *) val);
+	    tmpmaps->content = NULL;
+	    tmpmaps->next = NULL;
+	  }
+
 	  xmlNodePtr cur2 = cur->children;
 	  while (cur2 != NULL)
 	    {
@@ -804,6 +814,42 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Data") == 0)
 		{
 		  xmlNodePtr cur4 = cur2->children;
+		  if(vid==1){
+		    // Get every dataEncodingAttributes from a Data node:
+		    // mimeType, encoding, schema
+		    const char *coms[3] =
+		      { "mimeType", "encoding", "schema" };
+		    for (l = 0; l < 3; l++){
+		      xmlChar *val =
+			  xmlGetProp (cur4, BAD_CAST coms[l]);
+			if (val != NULL && strlen ((char *) val) > 0){
+			  if (tmpmaps->content != NULL)
+			    addToMap (tmpmaps->content,coms[l],(char *) val);
+			  else
+			    tmpmaps->content =
+			      createMap (coms[l],(char *) val);
+			}
+			xmlFree (val);
+		    }
+		    while (cur4 != NULL){
+		      while(cur4 != NULL && 
+			    cur4->type != XML_CDATA_SECTION_NODE &&
+			    cur4->type != XML_TEXT_NODE)
+			cur4=cur4->next;
+		      if(cur4!=NULL){
+			if(cur4->content!=NULL)
+			  if (tmpmaps->content != NULL)
+			    addToMap (tmpmaps->content, "value",
+				      (char *) cur4->content);
+			  else
+			    tmpmaps->content =
+			      createMap ("value", (char *) cur4->content);
+			cur4=cur4->next;
+		      }
+		    }
+		  }
+
+
 		  while (cur4 != NULL)
 		    {
 		      while (cur4 != NULL
@@ -896,8 +942,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      xmlNodePtr cur5 = cur4->children;
 			      while (cur5 != NULL
 				     && cur5->type != XML_ELEMENT_NODE
-				     && cur5->type !=
-				     XML_CDATA_SECTION_NODE)
+				     && cur5->type != XML_CDATA_SECTION_NODE)
 				cur5 = cur5->next;
 			      if (cur5 != NULL
 				  && cur5->type != XML_CDATA_SECTION_NODE)
@@ -991,6 +1036,57 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	}
     }
   return 1;
+}
+
+/**
+ * Parse outputs from XML nodes and store them in a maps (WPS version 2.0.0).
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request_inputs the map storing KVP raw value 
+ * @param request_output the maps to store the KVP pairs 
+ * @param doc the xmlDocPtr containing the original request
+ * @param cur the xmlNodePtr corresponding to the ResponseDocument or RawDataOutput XML node
+ * @param raw true if the node is RawDataOutput, false in case of ResponseDocument
+ * @return 0 on success, -1 on failure
+ */
+int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes){
+  int k = 0;
+  int l = 0;
+  for (k=0; k < nodes->nodeNr; k++){
+    maps *tmpmaps = NULL;
+    xmlNodePtr cur = nodes->nodeTab[k];
+    if (cur->type == XML_ELEMENT_NODE){
+      maps *tmpmaps = (maps *) malloc (MAPS_SIZE);
+      xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
+      if(val!=NULL)
+	tmpmaps->name = zStrdup ((char*)val);
+      else
+	tmpmaps->name = zStrdup ("unknownIdentifier");
+      tmpmaps->content = NULL;
+      tmpmaps->next = NULL;
+      const char ress[4][13] =
+	{ "mimeType", "encoding", "schema", "transmission" };
+      for (l = 0; l < 4; l++){
+	val = xmlGetProp (cur, BAD_CAST ress[l]);
+	if (val != NULL && strlen ((char *) val) > 0)
+	  {
+	    if (tmpmaps->content != NULL)
+	      addToMap (tmpmaps->content, ress[l],
+			(char *) val);
+	    else
+	      tmpmaps->content =
+		createMap (ress[l], (char *) val);
+	    if(l==3 && strncasecmp((char*)val,"reference",xmlStrlen(val))==0)
+	      addToMap (tmpmaps->content,"asReference","true");
+	  }
+	xmlFree (val);
+      }
+      if (*request_output == NULL)
+	*request_output = dupMaps(&tmpmaps);
+      else
+	addMapsToMaps(request_output,tmpmaps);
+    }
+  }
 }
 
 /**
@@ -1224,6 +1320,10 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
  * @return 0 on success, -1 on failure
  */
 int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
+
+  map* version=getMapFromMaps(*main_conf,"main","rversion");
+  int vid=getVersionId(version->value);
+
   xmlInitParser ();
   xmlDocPtr doc = xmlParseMemory (post, cgiContentLength);
 
@@ -1231,9 +1331,9 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
    * Extract Input nodes from the XML Request.
    */
   xmlXPathObjectPtr tmpsptr =
-    extractFromDoc (doc, "/*/*/*[local-name()='Input']");
+    extractFromDoc (doc, (vid==0?"/*/*/*[local-name()='Input']":"/*/*[local-name()='Input']"));
   xmlNodeSet *tmps = tmpsptr->nodesetval;
-  if(xmlParseInputs(main_conf,s,inputs,doc,tmps,hInternet)<0){
+  if(tmps==NULL || xmlParseInputs(main_conf,s,inputs,doc,tmps,hInternet)<0){
     xmlXPathFreeObject (tmpsptr);
     xmlFreeDoc (doc);
     xmlCleanupParser ();
@@ -1241,25 +1341,71 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
   }
   xmlXPathFreeObject (tmpsptr);
 
-  // Extract ResponseDocument / RawDataOutput from the XML Request 
-  tmpsptr =
-    extractFromDoc (doc, "/*/*/*[local-name()='ResponseDocument']");
-  bool asRaw = false;
-  tmps = tmpsptr->nodesetval;
-  if (tmps->nodeNr == 0)
-    {
-      xmlXPathFreeObject (tmpsptr);
-      tmpsptr =
-	extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
-      tmps = tmpsptr->nodesetval;
-      asRaw = true;
+  if(vid==1){
+    tmpsptr =
+      extractFromDoc (doc, "/*[local-name()='Execute']");
+    bool asRaw = false;
+    tmps = tmpsptr->nodesetval;
+    if(tmps->nodeNr > 0){
+      int k = 0;
+      for (k=0; k < tmps->nodeNr; k++){
+	maps *tmpmaps = NULL;
+	xmlNodePtr cur = tmps->nodeTab[k];
+	if (cur->type == XML_ELEMENT_NODE){
+	  xmlChar *val = xmlGetProp (cur, BAD_CAST "mode");
+	  if(val!=NULL)
+	    addToMap(*request_inputs,"mode",(char*)val);
+	  else
+	    addToMap(*request_inputs,"mode","auto");
+	  val = xmlGetProp (cur, BAD_CAST "response");
+	  if(val!=NULL){
+	    addToMap(*request_inputs,"response",(char*)val);
+	    if(strncasecmp((char*)val,"raw",xmlStrlen(val))==0)
+	      addToMap(*request_inputs,"RawDataOutput","");
+	    else
+	      addToMap(*request_inputs,"ResponseDocument","");
+	  }
+	  else{
+	    addToMap(*request_inputs,"response","document");
+	    addToMap(*request_inputs,"ResponseDocument","");
+	  }
+	}
+      }
     }
-  if(tmps->nodeNr != 0){
-    if(xmlParseOutputs(main_conf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
-      xmlXPathFreeObject (tmpsptr);
-      xmlFreeDoc (doc);
-      xmlCleanupParser ();
-      return -1;
+    xmlXPathFreeObject (tmpsptr);
+    tmpsptr =
+      extractFromDoc (doc, "/*/*[local-name()='Output']");
+    tmps = tmpsptr->nodesetval;
+    if(tmps->nodeNr > 0){
+      if(xmlParseOutputs2(main_conf,request_inputs,outputs,doc,tmps)<0){
+	xmlXPathFreeObject (tmpsptr);
+	xmlFreeDoc (doc);
+	xmlCleanupParser ();
+	return -1;
+      }
+    }
+  }
+  else{
+    // Extract ResponseDocument / RawDataOutput from the XML Request 
+    tmpsptr =
+      extractFromDoc (doc, "/*/*/*[local-name()='ResponseDocument']");
+    bool asRaw = false;
+    tmps = tmpsptr->nodesetval;
+    if (tmps->nodeNr == 0)
+      {
+	xmlXPathFreeObject (tmpsptr);
+	tmpsptr =
+	  extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
+	tmps = tmpsptr->nodesetval;
+	asRaw = true;
+      }
+    if(tmps->nodeNr != 0){
+      if(xmlParseOutputs(main_conf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
+	xmlXPathFreeObject (tmpsptr);
+	xmlFreeDoc (doc);
+	xmlCleanupParser ();
+	return -1;
+      }
     }
   }
   xmlXPathFreeObject (tmpsptr);

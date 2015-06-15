@@ -226,7 +226,7 @@ void recordResponse(maps* conf,char* filename){
   map *sid=getMapFromMaps(conf,"lenv","usid");
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+flen+strlen(sid->value)+51+1)*sizeof(char));
-  sprintf(sqlQuery,"UPDATE %s.services set response=$$%s$$ where uuid=$$%s$$;",schema->value,tmps,sid->value);
+  sprintf(sqlQuery,"INSERT INTO %s.responses (content,uuid) VALUES ($$%s$$,$$%s$$);",schema->value,tmps,sid->value);
   execSql(conf,sqlQuery);
   cleanUpResultSet(conf);
 }
@@ -291,8 +291,10 @@ char* _getStatus(maps* conf,char* pid){
  */
 char* _getStatusFile(maps* conf,char* pid){
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
-  sprintf(sqlQuery,"select response from %s.services where uuid=$$%s$$;",schema->value,pid);
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+82+1)*sizeof(char));
+  sprintf(sqlQuery,
+	  "select content from %s.responses where uuid=$$%s$$"
+	  " order by creation_time desc limit 1",schema->value,pid);
   if( zoo_DS == NULL )
     init_sql(conf);
   execSql(conf,sqlQuery);
@@ -317,18 +319,147 @@ char* _getStatusFile(maps* conf,char* pid){
 }
 
 /**
+ * Delete a service reference from the database.
+ *
+ * @param conf the map containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ */
+void removeService(maps* conf,char* pid){
+  map *schema=getMapFromMaps(conf,"database","schema");
+  char *sqlQuery=(char*)
+    malloc((strlen(pid)+strlen(schema->value)+38+1)
+	   *sizeof(char));
+  if( zoo_DS == NULL )
+    init_sql(conf);
+  sprintf(sqlQuery,
+	  "DELETE FROM %s.services where uuid=$$%s$$;",
+	  schema->value,pid);
+  execSql(conf,sqlQuery);
+  cleanUpResultSet(conf);
+  close_sql(conf);
+  end_sql();
+}
+
+/**
  * Stop handling status repport.
  *
  * @param conf the map containing the setting of the main.cfg file
  */
 void unhandleStatus(maps* conf){
+  map *schema=getMapFromMaps(conf,"database","schema");
   map *sid=getMapFromMaps(conf,"lenv","usid");
-  char *sqlQuery=(char*)malloc((strlen(sid->value)+52+1)*sizeof(char));
-  sprintf(sqlQuery,"UPDATE services set end_time=now() where uuid=$$%s$$;",sid->value);
+  map *fstate=getMapFromMaps(conf,"lenv","fstate");
+  char *sqlQuery=(char*)malloc((strlen(sid->value)+
+				strlen(schema->value)+
+				(fstate!=NULL?
+				 strlen(fstate->value):
+				 6)
+				+66+1)*sizeof(char));
+  sprintf(sqlQuery,
+	  "UPDATE %s.services set end_time=now(), fstate=$$%s$$"
+	  " where uuid=$$%s$$;",
+	  schema->value,(fstate!=NULL?fstate->value:"Failed"),sid->value);
   execSql(conf,sqlQuery);
   cleanUpResultSet(conf);
   close_sql(conf);
   end_sql();
+}
+
+/**
+ * Read the sid identifier attached of a service if any
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ * @return the sid value
+ */
+char* getStatusId(maps* conf,char* pid){
+  map *schema=getMapFromMaps(conf,"database","schema");
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
+  sprintf(sqlQuery,
+	  "select osid from %s.services where uuid=$$%s$$",
+	  schema->value,pid);
+  if( zoo_DS == NULL )
+    init_sql(conf);
+  execSql(conf,sqlQuery);
+  OGRFeature  *poFeature = NULL;
+  const char *tmp1;
+  int hasRes=-1;
+  while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+    for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+      if( poFeature->IsFieldSet( iField ) ){
+	tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
+	hasRes=1;
+	break;
+      }
+    }
+    OGRFeature::DestroyFeature( poFeature );
+  }
+  if(hasRes<0)
+    tmp1=NULL;
+  return (char*)tmp1;
+}
+
+/**
+ * Read the Result file (.res).
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ */
+void readFinalRes(maps* conf,char* pid,map* statusInfo){
+  map *schema=getMapFromMaps(conf,"database","schema");
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
+  sprintf(sqlQuery,
+	  "select fstate from %s.services where uuid=$$%s$$",
+	  schema->value,pid);
+  if( zoo_DS == NULL )
+    init_sql(conf);
+  execSql(conf,sqlQuery);
+  OGRFeature  *poFeature = NULL;
+  int hasRes=-1;
+  while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+    for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+      if( poFeature->IsFieldSet( iField ) ){
+	addToMap(statusInfo,"Status",poFeature->GetFieldAsString( iField ));
+	hasRes=1;
+	break;
+      }
+    }
+    OGRFeature::DestroyFeature( poFeature );
+  }
+  if(hasRes<0)
+    addToMap(statusInfo,"Status","Failed");
+  return;
+}
+
+/**
+ * Check if a service is running.
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the unique service identifier (usid from the lenv section)
+ * @return 1 in case the service is still running, 0 otherwise
+ */
+int isRunning(maps* conf,char* pid){
+  int res=0;
+  map *schema=getMapFromMaps(conf,"database","schema");
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+73+1)*sizeof(char));
+  sprintf(sqlQuery,"select count(*) as t from %s.services where uuid=$$%s$$ and end_time is null;",schema->value,pid);
+  if( zoo_DS == NULL )
+    init_sql(conf);
+  execSql(conf,sqlQuery);
+  OGRFeature  *poFeature = NULL;
+  const char *tmp1;
+  while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+    for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+      if( poFeature->IsFieldSet( iField ) && 
+	  atoi(poFeature->GetFieldAsString( iField ))>0 ){
+	res=1;
+	break;
+      }
+    }
+    OGRFeature::DestroyFeature( poFeature );
+  }
+  cleanUpResultSet(conf);
+  return res;
 }
 
 #endif

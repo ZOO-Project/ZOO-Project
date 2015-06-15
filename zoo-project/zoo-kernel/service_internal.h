@@ -106,6 +106,7 @@ extern "C" {
   char* _getStatus(maps*,char*);
   char* _getStatusFile(maps*,char*);
   char* getStatus(int);
+  char* getStatusId(maps*,char*);
 
   int updateStatus( maps*,const int,const char*);
   int removeShmLock(maps*, int);

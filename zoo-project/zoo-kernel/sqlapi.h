@@ -1,4 +1,4 @@
-/**
+/*
  * Author : David Saggiorato
  *
  *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
@@ -38,6 +38,10 @@ extern "C" {
   void recordStoredFile(maps*,const char*,const char*,const char*);
   void recordServiceStatus(maps*);
   void recordResponse(maps*,char*);
+  void readFinalRes(maps*,char*,map*);
+  int isRunning(maps*,char*);
+  char* getStatusId(maps*,char*);
+  void removeService(maps*,char*);
 #endif
 
 #ifdef __cplusplus

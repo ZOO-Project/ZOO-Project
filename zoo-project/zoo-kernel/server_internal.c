@@ -23,6 +23,7 @@
  */
 
 #include "server_internal.h"
+#include "service_internal.h"
 #include "response_print.h"
 #include "mimetypes.h"
 #ifndef WIN32
@@ -784,5 +785,199 @@ char* getLastErrorMessage() {
 #endif
 }
 
+#include <dirent.h>
+#ifndef RELY_ON_DB
+/**
+ * Read the Result file (.res).
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ */
+void readFinalRes(maps* conf,char* pid,map* statusInfo){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  char* fbkpid =
+    (char *)
+    malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
+  sprintf (fbkpid, "%s/%s.res", r_inputs->value, pid);
+  struct stat file_status;
+  int istat = stat (fbkpid, &file_status);
+  if (istat == 0 && file_status.st_size > 0)
+    {
+      maps *res = (maps *) malloc (MAPS_SIZE);
+      conf_read (fbkpid, res);
+      map* status=getMapFromMaps(res,"status","status");
+      addToMap(statusInfo,"Status",status->value);
+      freeMaps(&res);
+      free(res);
+    }
+  else
+    addToMap(statusInfo,"Status","Failed");  
+  free(fbkpid);
+}
 
+/**
+ * Check if a service is running.
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the unique service identifier (usid from the lenv section)
+ * @return 1 in case the service is still running, 0 otherwise
+ */
+int isRunning(maps* conf,char* pid){
+  int res=0;
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  char* fbkpid =
+    (char *)
+    malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
+  sprintf (fbkpid, "%s/%s.pid", r_inputs->value, pid);
+  FILE* f0 = fopen (fbkpid, "r");
+  if(f0!=NULL){
+    fclose(f0);
+    res=1;
+  }
+  free(fbkpid);
+  return res;
+}
+#else
+#include "sqlapi.h"
+#endif
 
+/**
+ * Run GetStatus requests.
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ * @param req the request (GetStatus / GetResult)
+ */
+void runGetStatus(maps* conf,char* pid,char* req){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  char *sid=getStatusId(conf,pid);
+  if(sid==NULL){
+    errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+		    "NoSuchJob", pid);
+  }else{
+    map* statusInfo=createMap("JobID",pid);
+    if(isRunning(conf,pid)>0){
+      if(strncasecmp(req,"GetResult",strlen(req))==0){
+	errorException (conf, _("The result for the requested JobID has not yet been generated. "),
+			"ResultNotReady", pid);
+	return;
+      }
+      else
+	if(strncasecmp(req,"GetStatus",strlen(req))==0){
+	  addToMap(statusInfo,"Status","Running");
+	  char* tmpStr=_getStatus(conf,pid);
+	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+	    char *tmpStr1=strdup(tmpStr);
+	    char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	    free(tmpStr);
+	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
+	    addToMap(statusInfo,"Message",tmpStr0);
+	    free(tmpStr0);
+	    free(tmpStr1);
+	  }
+	}
+    }
+    else{
+      if(strncasecmp(req,"GetResult",strlen(req))==0){
+	char* result=_getStatusFile(conf,pid);
+	if(result!=NULL){
+	  char *encoding=getEncoding(conf);
+	  fprintf(stdout,"Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+	  fprintf(stdout,"%s",result);
+	  fflush(stdout);
+	  freeMap(&statusInfo);
+	  free(statusInfo);
+	  return;
+	}else{
+	  errorException (conf, _("The result for the requested JobID has not yet been generated. "),
+			  "ResultNotReady", pid);
+	  freeMap(&statusInfo);
+	  free(statusInfo);
+	  return;
+	}
+      }else
+	if(strncasecmp(req,"GetStatus",strlen(req))==0){
+	  readFinalRes(conf,pid,statusInfo);
+	  char* tmpStr=_getStatus(conf,pid);
+	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+	    char *tmpStr1=strdup(tmpStr);
+	    char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	    free(tmpStr);
+	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
+	    addToMap(statusInfo,"Message",tmpStr0);
+	    free(tmpStr0);
+	    free(tmpStr1);
+	  }
+	}
+    }
+    printStatusInfo(conf,statusInfo,req);
+    freeMap(&statusInfo);
+    free(statusInfo);
+  }
+  return;
+}
+
+/**
+ * Run Dismiss requests.
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ */
+void runDismiss(maps* conf,char* pid){
+  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  char *sid=getStatusId(conf,pid);
+  if(sid==NULL){
+    errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+		    "NoSuchJob", pid);
+  }else{
+    // We should send the Dismiss request to the target host if it differs
+    char* fbkpid =
+      (char *)
+      malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
+    sprintf (fbkpid, "%s/%s.pid", r_inputs->value, pid);
+    FILE* f0 = fopen (fbkpid, "r");
+    if(f0!=NULL){
+      long flen;
+      char *fcontent;
+      fseek (f0, 0, SEEK_END);
+      flen = ftell (f0);
+      fseek (f0, 0, SEEK_SET);
+      fcontent = (char *) malloc ((flen + 1) * sizeof (char));
+      fread(fcontent,flen,1,f0);
+      fcontent[flen]=0;
+      fclose(f0);
+      kill(atoi(fcontent),SIGKILL);
+      free(fcontent);
+    }
+    free(fbkpid);
+    struct dirent *dp;
+    DIR *dirp = opendir(r_inputs->value);
+    char fileName[1024];
+    int hasFile=-1;
+    if(dirp!=NULL){
+      while ((dp = readdir(dirp)) != NULL){
+#ifdef DEBUG
+	fprintf(stderr,"File : %s searched : %s\n",dp->d_name,tmp);
+#endif
+	if(strstr(dp->d_name,pid)!=0){
+	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
+	  if(unlink(fileName)!=0){
+	    errorException (conf, _("The job cannot be removed, a file cannot be removed"),
+			    "NoApplicableCode", NULL);
+	    return;
+	  }
+	}
+      }
+    }
+#ifdef RELY_ON_DB
+    removeService(conf,pid);
+#endif
+    map* statusInfo=createMap("JobID",pid);
+    addToMap(statusInfo,"Status","Dismissed");
+    printStatusInfo(conf,statusInfo,"Dismiss");
+    free(statusInfo);
+  }
+  return;
+}

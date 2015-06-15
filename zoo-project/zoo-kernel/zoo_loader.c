@@ -338,6 +338,31 @@ int cgiMain(){
 	    addToMap(tmpMap,"Identifier",identifiers);
 	    free(identifiers);
 	  }
+	}else{
+	  idptr=extractFromDoc(doc,"/*/*[local-name()='JobID']");
+	  if(idptr!=NULL){
+	    xmlNodeSet* id=idptr->nodesetval;
+	    if(id!=NULL){
+	      char* identifiers=NULL;
+	      identifiers=(char*)calloc(cgiContentLength,sizeof(char));
+	      identifiers[0]=0;
+	      for(int k=0;k<id->nodeNr;k++){
+		xmlChar* content=xmlNodeListGetString(doc, id->nodeTab[k]->xmlChildrenNode,1);
+		if(strlen(identifiers)>0){
+		  char *tmp=zStrdup(identifiers);
+		  snprintf(identifiers,strlen(tmp)+xmlStrlen(content)+2,"%s,%s",tmp,content);
+		  free(tmp);
+		}
+		else{
+		  snprintf(identifiers,xmlStrlen(content)+1,"%s",content);
+		}
+		xmlFree(content);
+	      }
+	      xmlXPathFreeObject(idptr);
+	      addToMap(tmpMap,"JobID",identifiers);
+	      free(identifiers);
+	    }
+	}
 	}
       }
       xmlFreeDoc(doc);
