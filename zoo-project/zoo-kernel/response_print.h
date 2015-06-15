@@ -133,11 +133,18 @@ extern "C" {
   static int nbDocs=0;
 
   /**
+   * Definitions of acceptable final status
+   */
+  static char wpsStatus[2][11]={
+    "Succeeded",
+    "Failed"
+  };
+  /**
    * Definitions of schemas depending on the WPS version
    */
-  static const char* schemas[2][5]={
-    {"1.0.0","http://www.opengis.net/ows/1.1","http://www.opengis.net/wps/1.0.0","http://schemas.opengis.net/wps/1.0.0","%s %s/wps%s_response.xsd"},
-    {"2.0.0","http://www.opengis.net/ows/2.0","http://www.opengis.net/wps/2.0","http://schemas.opengis.net/wps/2.0","%s %s/wps%s.xsd"},
+  static const char* schemas[2][7]={
+    {"1.0.0","http://www.opengis.net/ows/1.1","http://www.opengis.net/wps/1.0.0","http://schemas.opengis.net/wps/1.0.0","%s %s/wps%s_response.xsd","http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd","1.1.0"},
+    {"2.0.0","http://www.opengis.net/ows/2.0","http://www.opengis.net/wps/2.0","http://schemas.opengis.net/wps/2.0","%s %s/wps%s.xsd","http://schemas.opengis.net/ows/2.0/owsExceptionReport.xsd","2.0.2"},
   };
   /**
    * Definitions of support requests (depending on the WPS version)
@@ -151,11 +158,19 @@ extern "C" {
     {"GetCapabilities","DescribeProcess","Execute","GetStatus","GetResult","Dismiss",NULL},
   };
   /**
+   * Definitions requests requiring identifier (depending on the WPS version)
+   */
+  static int nbReqIdentifier=2;
+  /**
+   * Definitions requests requiring jobid (only for WPS version 2.0.0)
+   */
+  static int nbReqJob=3;
+  /**
    * Definitions of root node for response depending on the request and the WPS version
    */
-  static const char* root_nodes[2][6]={
-    {"ProcessOfferings","ProcessDescriptions",NULL},
-    {"Contents","ProcessOfferings",NULL}
+  static const char root_nodes[2][4][20]={
+    {"ProcessOfferings","ProcessDescriptions","ExecuteResponse",NULL},
+    {"Contents","ProcessOfferings","Result",NULL}
   };
 
   /**
@@ -197,11 +212,12 @@ extern "C" {
   void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
-  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
+  void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
   map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
   void printBoundingBoxDocument(maps*,maps*,FILE*);
   void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
+  void printStatusInfo(maps*,map*,char*);
 
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 

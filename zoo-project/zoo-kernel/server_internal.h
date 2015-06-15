@@ -51,6 +51,8 @@ extern "C" {
   char* getEncoding(maps*);
   void parseIdentifier(maps*,char*,char*,char*);
   void dumpMapsValuesToFiles(maps**,maps**);
+  void runDismiss(maps*,char*);
+  void runGetStatus(maps*,char*,char*);
 
   int isValidLang(maps*,const char*);
   

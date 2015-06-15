@@ -1454,207 +1454,204 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   nr=NULL;
 
   doc = xmlNewDoc(BAD_CAST "1.0");
-  map* version=getMap(request,"version");
-  n = printWPSHeader(doc,m,"Execute","ExecuteResponse",(version!=NULL?version->value:"1.0.0"),2);
-  int wpsId=zooXmlAddNs(NULL,"http://www.opengis.net/wps/1.0.0","wps");
+  map* version=getMapFromMaps(m,"main","rversion");
+  int vid=getVersionId(version->value);
+  n = printWPSHeader(doc,m,"Execute",root_nodes[vid][2],(version!=NULL?version->value:"1.0.0"),2);
+  int wpsId=zooXmlAddNs(NULL,schemas[vid][2],"wps");
   ns=usedNs[wpsId];
-  int owsId=zooXmlAddNs(NULL,"http://www.opengis.net/ows/1.1","ows");
+  int owsId=zooXmlAddNs(NULL,schemas[vid][1],"ows");
   ns_ows=usedNs[owsId];
   int xlinkId=zooXmlAddNs(NULL,"http://www.w3.org/1999/xlink","xlink");
   ns_xlink=usedNs[xlinkId];
-
-  char tmp[256];
-  char url[1024];
+  bool hasStoredExecuteResponse=false;
   char stored_path[1024];
-  memset(tmp,0,256);
-  memset(url,0,1024);
   memset(stored_path,0,1024);
-  maps* tmp_maps=getMaps(m,"main");
-  if(tmp_maps!=NULL){
-    map* tmpm1=getMap(tmp_maps->content,"serverAddress");
-    /**
-     * Check if the ZOO Service GetStatus is available in the local directory.
-     * If yes, then it uses a reference to an URL which the client can access
-     * to get information on the status of a running Service (using the 
-     * percentCompleted attribute). 
-     * Else fallback to the initial method using the xml file to write in ...
-     */
-    char ntmp[1024];
+    
+  if(vid==0){
+    char tmp[256];
+    char url[1024];
+    memset(tmp,0,256);
+    memset(url,0,1024);
+    maps* tmp_maps=getMaps(m,"main");
+    if(tmp_maps!=NULL){
+      map* tmpm1=getMap(tmp_maps->content,"serverAddress");
+      /**
+       * Check if the ZOO Service GetStatus is available in the local directory.
+       * If yes, then it uses a reference to an URL which the client can access
+       * to get information on the status of a running Service (using the 
+       * percentCompleted attribute). 
+       * Else fallback to the initial method using the xml file to write in ...
+       */
+      char ntmp[1024];
 #ifndef WIN32
-    getcwd(ntmp,1024);
+      getcwd(ntmp,1024);
 #else
-    _getcwd(ntmp,1024);
+      _getcwd(ntmp,1024);
 #endif
-    struct stat myFileInfo;
-    int statRes;
-    char file_path[1024];
-    sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
-    statRes=stat(file_path,&myFileInfo);
-    if(statRes==0){
-      char currentSid[128];
-      map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
-      map *tmp_lenv=NULL;
-      tmp_lenv=getMapFromMaps(m,"lenv","usid");
-      if(tmp_lenv==NULL)
-	sprintf(currentSid,"%i",pid);
-      else
-	sprintf(currentSid,"%s",tmp_lenv->value);
-      if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
-	sprintf(url,"%s?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
-      }else{
-	if(strlen(tmpm->value)>0)
-	  if(strcasecmp(tmpm->value,"true")!=0)
-	    sprintf(url,"%s/%s/GetStatus/%s",tmpm1->value,tmpm->value,currentSid);
-	  else
-	    sprintf(url,"%s/GetStatus/%s",tmpm1->value,currentSid);
+      struct stat myFileInfo;
+      int statRes;
+      char file_path[1024];
+      sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
+      statRes=stat(file_path,&myFileInfo);
+      if(statRes==0){
+	char currentSid[128];
+	map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
+	map *tmp_lenv=NULL;
+	tmp_lenv=getMapFromMaps(m,"lenv","usid");
+	if(tmp_lenv==NULL)
+	  sprintf(currentSid,"%i",pid);
 	else
-	  sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
-	fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+	  sprintf(currentSid,"%s",tmp_lenv->value);
+	if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
+	  sprintf(url,"%s?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
+	}else{
+	  if(strlen(tmpm->value)>0)
+	    if(strcasecmp(tmpm->value,"true")!=0)
+	      sprintf(url,"%s/%s/GetStatus/%s",tmpm1->value,tmpm->value,currentSid);
+	    else
+	      sprintf(url,"%s/GetStatus/%s",tmpm1->value,currentSid);
+	  else
+	    sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
+	}
+      }else{
+	int lpid;
+	map* tmpm2=getMapFromMaps(m,"lenv","usid");
+	map* tmpm3=getMap(tmp_maps->content,"tmpUrl");
+	if(tmpm1!=NULL && tmpm3!=NULL){
+	  if( strncasecmp( tmpm3->value, "http://", 7) == 0 ||
+	      strncasecmp( tmpm3->value, "https://", 8 ) == 0 ){
+	    sprintf(url,"%s/%s_%s.xml",tmpm3->value,service,tmpm2->value);
+	  }else
+	    sprintf(url,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
+	}
       }
-    }else{
+      if(tmpm1!=NULL){
+	sprintf(tmp,"%s",tmpm1->value);
+      }
       int lpid;
       map* tmpm2=getMapFromMaps(m,"lenv","usid");
-      map* tmpm3=getMap(tmp_maps->content,"tmpUrl");
-      if(tmpm1!=NULL && tmpm3!=NULL){
-	if( strncasecmp( tmpm3->value, "http://", 7) == 0 ||
-	    strncasecmp( tmpm3->value, "https://", 8 ) == 0 ){
-	  sprintf(url,"%s/%s_%s.xml",tmpm3->value,service,tmpm2->value);
-	}else
-	  sprintf(url,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
+      tmpm1=getMapFromMaps(m,"main","TmpPath");
+      sprintf(stored_path,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
+    }
+
+    xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
+    map* test=getMap(request,"storeExecuteResponse");
+    if(test!=NULL && strcasecmp(test->value,"true")==0){
+      xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
+      hasStoredExecuteResponse=true;
+    }
+
+    nc = xmlNewNode(ns, BAD_CAST "Process");
+    map* tmp2=getMap(serv->content,"processVersion");
+    if(tmp2!=NULL)
+      xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
+  
+    map* tmpI=getMapFromMaps(m,"lenv","oIdentifier");
+    printDescription(nc,ns_ows,tmpI->value,serv->content,0);
+
+    xmlAddChild(n,nc);
+
+    nc = xmlNewNode(ns, BAD_CAST "Status");
+    const struct tm *tm;
+    size_t len;
+    time_t now;
+    char *tmp1;
+    map *tmpStatus;
+  
+    now = time ( NULL );
+    tm = localtime ( &now );
+
+    tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
+
+    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+
+    xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
+
+    char sMsg[2048];
+    switch(status){
+    case SERVICE_SUCCEEDED:
+      nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
+      sprintf(sMsg,_("The service \"%s\" ran successfully."),serv->name);
+      nc3=xmlNewText(BAD_CAST sMsg);
+      xmlAddChild(nc1,nc3);
+      break;
+    case SERVICE_STARTED:
+      nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
+      tmpStatus=getMapFromMaps(m,"lenv","status");
+      xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST tmpStatus->value);
+      sprintf(sMsg,_("The ZOO service \"%s\" is currently running. Please reload this document to get the up-to-date status of the service."),serv->name);
+      nc3=xmlNewText(BAD_CAST sMsg);
+      xmlAddChild(nc1,nc3);
+      break;
+    case SERVICE_ACCEPTED:
+      nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
+      sprintf(sMsg,_("The service \"%s\" was accepted by the ZOO kernel and is running as a background task. Please access the URL in the statusLocation attribute provided in this document to get the up-to-date status and results."),serv->name);
+      nc3=xmlNewText(BAD_CAST sMsg);
+      xmlAddChild(nc1,nc3);
+      break;
+    case SERVICE_FAILED:
+      nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
+      map *errorMap;
+      map *te;
+      te=getMapFromMaps(m,"lenv","code");
+      if(te!=NULL)
+	errorMap=createMap("code",te->value);
+      else
+	errorMap=createMap("code","NoApplicableCode");
+      te=getMapFromMaps(m,"lenv","message");
+      if(te!=NULL)
+	addToMap(errorMap,"text",_ss(te->value));
+      else
+	addToMap(errorMap,"text",_("No more information available"));
+      nc3=createExceptionReportNode(m,errorMap,0);
+      freeMap(&errorMap);
+      free(errorMap);
+      xmlAddChild(nc1,nc3);
+      break;
+    default :
+      printf(_("error code not know : %i\n"),status);
+      //exit(1);
+      break;
+    }
+    xmlAddChild(nc,nc1);
+    xmlAddChild(n,nc);
+    free(tmp1);
+
+#ifdef DEBUG
+    fprintf(stderr,"printProcessResponse %d\n",__LINE__);
+#endif
+
+    map* lineage=getMap(request,"lineage");
+    if(lineage!=NULL && strcasecmp(lineage->value,"true")==0){
+      nc = xmlNewNode(ns, BAD_CAST "DataInputs");
+      maps* mcursor=inputs;
+      elements* scursor=NULL;
+      while(mcursor!=NULL /*&& scursor!=NULL*/){
+	scursor=getElements(serv->inputs,mcursor->name);
+	printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Input",vid);
+	mcursor=mcursor->next;
       }
+      xmlAddChild(n,nc);
+
+      nc = xmlNewNode(ns, BAD_CAST "OutputDefinitions");
+      mcursor=outputs;
+      scursor=NULL;
+      while(mcursor!=NULL){
+	scursor=getElements(serv->outputs,mcursor->name);
+	printOutputDefinitions(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
+	mcursor=mcursor->next;
+      }
+      xmlAddChild(n,nc);
     }
-    if(tmpm1!=NULL){
-      sprintf(tmp,"%s",tmpm1->value);
-    }
-    int lpid;
-    map* tmpm2=getMapFromMaps(m,"lenv","usid");
-    tmpm1=getMapFromMaps(m,"main","TmpPath");
-    sprintf(stored_path,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
   }
-
-  xmlNewProp(n,BAD_CAST "serviceInstance",BAD_CAST tmp);
-  map* test=getMap(request,"storeExecuteResponse");
-  bool hasStoredExecuteResponse=false;
-  if(test!=NULL && strcasecmp(test->value,"true")==0){
-    xmlNewProp(n,BAD_CAST "statusLocation",BAD_CAST url);
-    hasStoredExecuteResponse=true;
-  }
-
-  nc = xmlNewNode(ns, BAD_CAST "Process");
-  map* tmp2=getMap(serv->content,"processVersion");
-  if(tmp2!=NULL)
-    xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
-  
-  map* tmpI=getMapFromMaps(m,"lenv","oIdentifier");
-  printDescription(nc,ns_ows,tmpI->value,serv->content,0);
-
-  xmlAddChild(n,nc);
-
-  nc = xmlNewNode(ns, BAD_CAST "Status");
-  const struct tm *tm;
-  size_t len;
-  time_t now;
-  char *tmp1;
-  map *tmpStatus;
-  
-  now = time ( NULL );
-  tm = localtime ( &now );
-
-  tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
-
-  len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
-
-  xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
-
-  char sMsg[2048];
-  switch(status){
-  case SERVICE_SUCCEEDED:
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessSucceeded");
-    sprintf(sMsg,_("The service \"%s\" ran successfully."),serv->name);
-    nc3=xmlNewText(BAD_CAST sMsg);
-    xmlAddChild(nc1,nc3);
-    break;
-  case SERVICE_STARTED:
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
-    tmpStatus=getMapFromMaps(m,"lenv","status");
-    xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST tmpStatus->value);
-    sprintf(sMsg,_("The ZOO service \"%s\" is currently running. Please reload this document to get the up-to-date status of the service."),serv->name);
-    nc3=xmlNewText(BAD_CAST sMsg);
-    xmlAddChild(nc1,nc3);
-    break;
-  case SERVICE_ACCEPTED:
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
-    sprintf(sMsg,_("The service \"%s\" was accepted by the ZOO kernel and is running as a background task. Please access the URL in the statusLocation attribute provided in this document to get the up-to-date status and results."),serv->name);
-    nc3=xmlNewText(BAD_CAST sMsg);
-    xmlAddChild(nc1,nc3);
-    break;
-  case SERVICE_FAILED:
-    nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
-    map *errorMap;
-    map *te;
-    te=getMapFromMaps(m,"lenv","code");
-    if(te!=NULL)
-      errorMap=createMap("code",te->value);
-    else
-      errorMap=createMap("code","NoApplicableCode");
-    te=getMapFromMaps(m,"lenv","message");
-    if(te!=NULL)
-      addToMap(errorMap,"text",_ss(te->value));
-    else
-      addToMap(errorMap,"text",_("No more information available"));
-    nc3=createExceptionReportNode(m,errorMap,0);
-    freeMap(&errorMap);
-    free(errorMap);
-    xmlAddChild(nc1,nc3);
-    break;
-  default :
-    printf(_("error code not know : %i\n"),status);
-    //exit(1);
-    break;
-  }
-  xmlAddChild(nc,nc1);
-  xmlAddChild(n,nc);
-  free(tmp1);
-
-#ifdef DEBUG
-  fprintf(stderr,"printProcessResponse 1 161\n");
-#endif
-
-  map* lineage=getMap(request,"lineage");
-  if(lineage!=NULL && strcasecmp(lineage->value,"true")==0){
-    nc = xmlNewNode(ns, BAD_CAST "DataInputs");
-    maps* mcursor=inputs;
-    elements* scursor=NULL;
-    while(mcursor!=NULL /*&& scursor!=NULL*/){
-      scursor=getElements(serv->inputs,mcursor->name);
-      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Input");
-      mcursor=mcursor->next;
-    }
-    xmlAddChild(n,nc);
-    
-#ifdef DEBUG
-    fprintf(stderr,"printProcessResponse 1 177\n");
-#endif
-
-    nc = xmlNewNode(ns, BAD_CAST "OutputDefinitions");
-    mcursor=outputs;
-    scursor=NULL;
-    while(mcursor!=NULL){
-      scursor=getElements(serv->outputs,mcursor->name);
-      printOutputDefinitions(doc,nc,ns,ns_ows,scursor,mcursor,"Output");
-      mcursor=mcursor->next;
-    }
-    xmlAddChild(n,nc);
-  }
-#ifdef DEBUG
-  fprintf(stderr,"printProcessResponse 1 190\n");
-#endif
 
   /**
    * Display the process output only when requested !
    */
   if(status==SERVICE_SUCCEEDED){
-    nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
+    if(vid==0){
+      nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
+    }
     maps* mcursor=outputs;
     elements* scursor=serv->outputs;
     map* testResponse=getMap(request,"RawDataOutput");
@@ -1664,23 +1661,36 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       map* tmp0=getMap(mcursor->content,"inRequest");
       scursor=getElements(serv->outputs,mcursor->name);
       if(scursor!=NULL){
-	if(testResponse==NULL || tmp0==NULL)
-	  printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+	if(testResponse==NULL || tmp0==NULL){
+	  if(vid==0)
+	    printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	  else
+	    printIOType(doc,n,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	}
 	else
-	  if(tmp0!=NULL && strncmp(tmp0->value,"true",4)==0)
-	    printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+
+	  if(tmp0!=NULL && strncmp(tmp0->value,"true",4)==0){
+	    if(vid==0)
+	      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	    else
+	      printIOType(doc,n,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	  }
       }else
 	/**
 	 * In case there was no definition found in the ZCFG file but 
 	 * present in the service code
 	 */
-	printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output");
+	if(vid==0)
+	  printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	else
+	  printIOType(doc,n,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
       mcursor=mcursor->next;
     }
-    xmlAddChild(n,nc);
+    if(vid==0)
+      xmlAddChild(n,nc);
   }
-
-  if(hasStoredExecuteResponse==true && status!=SERVICE_STARTED && status!=SERVICE_ACCEPTED){
+  
+  if(vid==0 && hasStoredExecuteResponse==true && status!=SERVICE_STARTED && status!=SERVICE_ACCEPTED){
 #ifndef RELY_ON_DB
     semid lid=acquireLock(m);//,1);
     if(lid<0){
@@ -1821,7 +1831,7 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
  * @param m the conf maps containing the main.cfg settings
  * @param type the type
  */
-void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,const char* type){
+void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,const char* type,int vid){
 
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
@@ -1831,38 +1841,44 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
   else
     tmp=m->content;
 
-  nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
-  if(e!=NULL)
-    nc3=xmlNewText(BAD_CAST e->name);
-  else
-    nc3=xmlNewText(BAD_CAST m->name);
-
-  xmlAddChild(nc2,nc3);
-  xmlAddChild(nc1,nc2);
-  xmlAddChild(nc,nc1);
-  if(e!=NULL)
-    tmp=getMap(e->content,"Title");
-  else
-    tmp=getMap(m->content,"Title");
+  if(vid==0){
+    nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
+    if(e!=NULL)
+      nc3=xmlNewText(BAD_CAST e->name);
+    else
+      nc3=xmlNewText(BAD_CAST m->name);
+    
+    xmlAddChild(nc2,nc3);
+    xmlAddChild(nc1,nc2);
   
-  if(tmp!=NULL){
-    nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-    nc3=xmlNewText(BAD_CAST _ss(tmp->value));
-    xmlAddChild(nc2,nc3);  
-    xmlAddChild(nc1,nc2);
-  }
-
-  if(e!=NULL)
-    tmp=getMap(e->content,"Abstract");
-  else
-    tmp=getMap(m->content,"Abstract");
-
-  if(tmp!=NULL){
-    nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
-    nc3=xmlNewText(BAD_CAST _ss(tmp->value));
-    xmlAddChild(nc2,nc3);  
-    xmlAddChild(nc1,nc2);
     xmlAddChild(nc,nc1);
+
+    if(e!=NULL)
+      tmp=getMap(e->content,"Title");
+    else
+      tmp=getMap(m->content,"Title");
+    
+    if(tmp!=NULL){
+      nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
+      nc3=xmlNewText(BAD_CAST _ss(tmp->value));
+      xmlAddChild(nc2,nc3);  
+      xmlAddChild(nc1,nc2);
+    }
+
+    if(e!=NULL)
+      tmp=getMap(e->content,"Abstract");
+    else
+      tmp=getMap(m->content,"Abstract");
+
+    if(tmp!=NULL){
+      nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
+      nc3=xmlNewText(BAD_CAST _ss(tmp->value));
+      xmlAddChild(nc2,nc3);  
+      xmlAddChild(nc1,nc2);
+      xmlAddChild(nc,nc1);
+    }
+  }else{
+    xmlNewProp(nc1,BAD_CAST "id",BAD_CAST (e!=NULL?e->name:m->name));
   }
 
   /**
@@ -2154,16 +2170,20 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
     ns=NULL;
   }
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
+  map* version=getMapFromMaps(m,"main","rversion");
+  int vid=getVersionId(version->value);
   if(use_ns==1){
-    xmlNewNs(n,BAD_CAST "http://www.opengis.net/ows/1.1",BAD_CAST"ows");
+    xmlNewNs(n,BAD_CAST schemas[vid][1],BAD_CAST"ows");
     int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");
     ns_xsi=usedNs[xsiId];
-    xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST "http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd");
+    char tmp[1024];
+    sprintf(tmp,"%s %s",schemas[vid][1],schemas[vid][5]);
+    xmlNewNsProp(n,ns_xsi,BAD_CAST "schemaLocation",BAD_CAST tmp);
   }
 
 
   addLangAttr(n,m);
-  xmlNewProp(n,BAD_CAST "version",BAD_CAST "1.1.0");
+  xmlNewProp(n,BAD_CAST "version",BAD_CAST schemas[vid][6]);
   
   int length=1;
   int cnt=0;
@@ -2246,6 +2266,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   int asRaw=0;
   if(toto!=NULL)
     asRaw=1;
+  map* version=getMapFromMaps(m,"main","rversion");
+  int vid=getVersionId(version->value);
   
   maps* tmpSess=getMaps(m,"senv");
   if(tmpSess!=NULL){
@@ -2308,6 +2330,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     return;
   }
 
+  if(res==SERVICE_ACCEPTED && vid==1){
+    map* statusInfo=createMap("Status","Accepted");
+    map *usid=getMapFromMaps(m,"lenv","usid");
+    addToMap(statusInfo,"JobID",usid->value);
+    printStatusInfo(m,statusInfo,"Execute");
+    freeMap(&statusInfo);
+    free(statusInfo);
+    return;
+  }
 
   map *tmp1=getMapFromMaps(m,"main","tmpPath");
   if(asRaw==0){
@@ -2427,13 +2458,11 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #endif
       tmpI=tmpI->next;
     }
-    map *r_inputs=getMap(s->content,"serviceProvider");
 #ifdef DEBUG
-    fprintf(stderr,"SERVICE : %s\n",r_inputs->value);
+    fprintf(stderr,"SERVICE : %s\n",s->name);
     dumpMaps(m);
 #endif
     printProcessResponse(m,request_inputs1,cpid,
-		//	 s,r_inputs->value,res,
 			 s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
 			 request_inputs,
 			 request_outputs);
@@ -2664,6 +2693,76 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
     freeMap(&tmp);
     free(tmp);
   }
+  xmlFree(xmlbuff);
+  xmlFreeDoc(doc);
+  xmlCleanupParser();
+  zooXmlCleanupNs();
+  
+}
+
+/**
+ * Print a StatusInfo XML document.
+ * a statusInfo map should contain the following keys:
+ *  * JobID corresponding to usid key from the lenv section
+ *  * Status the current state (Succeeded,Failed,Accepted,Running)
+ *  * PercentCompleted (optional) the percent completed
+ *  * Message (optional) any messages the service may wish to share
+ *
+ * @param conf the maps containing the settings of the main.cfg file
+ * @param statusInfo the map containing the statusInfo definition
+ * @param req the WPS requests (GetResult, GetStatus or Dismiss)
+ */
+void printStatusInfo(maps* conf,map* statusInfo,char* req){
+  rewind(stdout);
+  xmlNodePtr n,n1;
+  xmlDocPtr doc;
+  xmlNsPtr ns;
+  xmlChar *xmlbuff;
+  int buffersize;
+  char *encoding=getEncoding(conf);
+  map *tmp;
+  int pid=0;
+  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+
+  map* version=getMapFromMaps(conf,"main","rversion");
+  int vid=getVersionId(version->value);
+
+  doc = xmlNewDoc(BAD_CAST "1.0");
+  n1=printWPSHeader(doc,conf,req,"StatusInfo",version->value,1);
+
+  map* val=getMap(statusInfo,"JobID");
+  int wpsId=zooXmlAddNs(NULL,schemas[vid][2],"wps");
+  ns=usedNs[wpsId];
+  n = xmlNewNode(ns, BAD_CAST "JobID");
+  xmlAddChild(n,xmlNewText(BAD_CAST val->value));
+
+  xmlAddChild(n1,n);
+
+  val=getMap(statusInfo,"Status");
+  n = xmlNewNode(ns, BAD_CAST "Status");
+  xmlAddChild(n,xmlNewText(BAD_CAST val->value));
+
+  xmlAddChild(n1,n);
+
+  if(strncasecmp(val->value,"Failed",6)!=0 &&
+     strncasecmp(val->value,"Succeeded",9)!=0){
+    val=getMap(statusInfo,"PercentCompleted");
+    if(val!=NULL){
+      n = xmlNewNode(ns, BAD_CAST "PercentCompleted");
+      xmlAddChild(n,xmlNewText(BAD_CAST val->value));
+      xmlAddChild(n1,n);
+    }
+
+    val=getMap(statusInfo,"Message");
+    if(val!=NULL){    
+      xmlAddChild(n1,xmlNewComment(BAD_CAST val->value));
+    }
+  }
+  xmlDocSetRootElement(doc, n1);
+
+  xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
+  printf("%s",xmlbuff);
+
   xmlFree(xmlbuff);
   xmlFreeDoc(doc);
   xmlCleanupParser();

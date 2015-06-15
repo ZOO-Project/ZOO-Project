@@ -275,7 +275,7 @@ int _updateStatus(maps *conf){
     }
     FILE* fstatus=fopen(fbkpid,"w");
     if(fstatus!=NULL){
-      fprintf(fstatus,"%s|%s\n",status->value,msg->value);
+      fprintf(fstatus,"%s|%s",status->value,msg->value);
       fflush(fstatus);
       fclose(fstatus);
     }
