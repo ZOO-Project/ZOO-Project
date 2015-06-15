@@ -237,7 +237,6 @@ int cgiMain(){
 	  if(req!=NULL && req->nodeNr==1){
 	    addToMap(tmpMap,"soap","true");
 	    for(int k=0;k < req->nodeNr;k++){
-	      //xmlNsPtr ns=xmlNewNs(req->nodeTab[k],BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
 	      xmlDocSetRootElement(doc, req->nodeTab[k]);
 	      xmlChar *xmlbuff;
 	      int buffersize;

@@ -1194,12 +1194,15 @@ runRequest (map ** inputs)
     }
   }else{
     checkValidValue(request_inputs,&err,"AcceptVersions",(const char**)vvv,-1);
-    map* version=getMap(request_inputs,"AcceptVersions");
-    if(version!=NULL){
-      if(strstr(version->value,schemas[1][0])!=NULL)
+    map* version1=getMap(request_inputs,"AcceptVersions");
+    if(version1!=NULL){
+      if(strstr(version1->value,schemas[1][0])!=NULL)
 	addToMap(request_inputs,"version",schemas[1][0]);
       else
-	addToMap(request_inputs,"version",version->value);
+	addToMap(request_inputs,"version",version1->value);
+      version=getMap(request_inputs,"version");
+      setMapInMaps(m,"main","rversion",version->value);
+      vid=getVersionId(version->value);
     }
   }
   if(err!=NULL){
