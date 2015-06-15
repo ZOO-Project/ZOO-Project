@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation on MacOSX ™ &mdash; ZOO-Project 1.4a0 documentation</title>
+  
+  <link href="http://fonts.googleapis.com/css?family=Days+One" rel="stylesheet" type="text/css">
+  
+  
+
+  
+
+  
+  
+    
+      <link rel="search" type="application/opensearchdescription+xml" title="Search within ZOO-Project 1.4a0 documentation" href="../_static/opensearch.xml"/>
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="ZOO-Project 1.4a0 documentation" href="../index.html"/>
+        <link rel="up" title="ZOO-Project installation" href="index.html"/>
+        <link rel="next" title="ZOO-Kernel" href="../kernel/index.html"/>
+        <link rel="prev" title="Installation on Windows ™" href="install-onwindows.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+	  <a class="shrink" href="http://zoo-project.org"><img src="http://zoo-project.org/img/zoo-sun-logo.png" class="img-responsive sun" style="display: inline;"> ZOO</a>
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#what-is-zoo-project">What is ZOO-Project ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#zoo-project-components">ZOO-Project components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#open-source">Open Source</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">ZOO-Project installation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="install-prerequisites.html">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-download.html">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-confoptions.html">Configure options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-installation.html">Installation on Unix/Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-onwindows.html">Installation on Windows ™</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">Installation on MacOSX ™</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../kernel/index.html">ZOO-Kernel</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/what.html">What is ZOO-Kernel ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/configuration.html">ZOO-Kernel configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/mapserver.html">Optional MapServer support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/orfeotoolbox.html">Optional Orfeo Toolbox support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/sagagis.html">Optional SAGA GIS support</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../services/index.html">ZOO-Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../services/what.html">What are ZOO-Services ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/zcfg-reference.html">ZOO-Service configuration file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/process-profiles.html">Process profiles registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/howtos.html">Create your own ZOO-Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/status.html">ZOO Status Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/debug.html">Debugging ZOO Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/zoo-services.html">Available ZOO-Services</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">ZOO-API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/what.html">What is ZOO-API ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/howto.html">Using ZOO-API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/classes.html">ZOO-API Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../client/index.html">ZOO-Client</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../client/what.html">What is ZOO-Client ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../client/howto.html">Using ZOO-Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../client/example.html">Example application</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contribute/index.html">Contributor Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../contribute/howto.html">How to contribute ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../contribute/code.html">Contribute code</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../contents.html">ZOO-Project</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+
+    <li><a href="../contents.html"> Docs</a> &#8725; &#160;</li>
+      
+          <li><a href="index.html">ZOO-Project installation</a> &#8725; &#160;</li>
+      
+    <li>Installation on MacOSX ™</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/install/install-onmacos.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="install-onmacos"></span><div class="section" id="installation-on-macosx-trade">
+<h1>Installation on MacOSX ™<a class="headerlink" href="#installation-on-macosx-trade" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="compile-zoo-from-source">
+<h2>Compile ZOO from source<a class="headerlink" href="#compile-zoo-from-source" title="Permalink to this headline">¶</a></h2>
+<p>Follow the steps indicated bellow to install ZOO-Kernel on Mac OS ™ operating systems.</p>
+<ol class="arabic">
+<li><p class="first">Install <a class="reference external" href="http://developer.apple.com/technologies/tools/">Xcode</a>.</p>
+</li>
+<li><p class="first">Before you start downloading the ZOO-Project source code, some more tools are required in order to compile ZOO-Kernel properly. First of all install PROJ, GEOS and GDAL frameworks from <a class="reference external" href="http://www.kyngchaos.com/software/frameworks">here</a>. At this step, you should get the following directories on your local hard drive :</p>
+<div class="highlight-python"><div class="highlight"><pre>/Library/Frameworks/PROJ.framework
+/Library/Frameworks/GEOS.framework
+/Library/Frameworks/GDAL.framework
+</pre></div>
+</div>
+</li>
+<li><p class="first">Then, create a <code class="docutils literal"><span class="pre">src</span></code> directory and inside that directory download the <a class="reference external" href="http://www.gnu.org/software/gettext/#TOCdownloading">gettext source code</a> and
+uncompress it. Now, compile gettext with the following commands to produce a universal binary :</p>
+<div class="highlight-python"><div class="highlight"><pre>cd gettext-0.18.1.1
+CFLAGS=&quot;-O -g -arch i386 -arch ppc -arch x86_64&quot;  \
+  LDFLAGS=&quot;-arch i386 -arch ppc -arch x86_64&quot;   ./configure
+make
+sudo make install
+</pre></div>
+</div>
+</li>
+<li><p class="first">Compile and install ZOO-Kernel</p>
+<ul>
+<li><p class="first">Download source from SVN, and use the following command to compile libcgic :</p>
+<div class="highlight-python"><div class="highlight"><pre>svn co http://svn.zoo-project.org/svn/trunk zoo
+cd zoo/thirds/cgic206
+make
+</pre></div>
+</div>
+</li>
+<li><p class="first">If you produced the <code class="docutils literal"><span class="pre">libcgic.a</span></code> file, you can run <code class="docutils literal"><span class="pre">autoconf</span></code> and then <code class="docutils literal"><span class="pre">configure</span></code> from zoo-kernel directory.</p>
+<div class="highlight-python"><div class="highlight"><pre>cd zoo/zoo-kernel
+autoconf
+./configure --with-python --with-java=macos \
+   --with-gdal-config=/Library/Frameworks/GDAL.framework/Versions/1.8/Programs/gdal-config
+</pre></div>
+</div>
+<p>Obviously, if you don&#8217;t need Python or Java support then you should remove the corresponding configure option.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that we used the &#8211;with-java=macos configure option. Due to the generic location of the JDK on all
+Mac OS X platforms, you don&#8217;t have to provide its full path.</p>
+</div>
+</li>
+<li><p class="first">Now, run the following commands to compile and deploy your ZOO-Kernel on your Apache server :</p>
+<div class="highlight-python"><div class="highlight"><pre>make
+cp zoo_loader.cgi main.cfg /Library/WebServer/CGI-Executables
+</pre></div>
+</div>
+<p>You should be ready to request your ZOO-Kernel installation using the following link :  <a class="reference external" href="http://localhost/cgi-bin/zoo_loader.cgi?request=GetCapabilities&amp;service=WPS">http://localhost/cgi-bin/zoo_loader.cgi?request=GetCapabilities&amp;service=WPS</a> .</p>
+<p>If everything is ok, you can follow the next steps to deploy new Services Providers.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are using your own libs (not the default libs on your system) then you must take care to create
+universal versions of those libs, as the ZOO-Kernel will try to create a universal binary.  If you are
+not following this advice, you might receive compile errors of <code class="docutils literal"><span class="pre">symbol(s)</span> <span class="pre">not</span> <span class="pre">found</span> <span class="pre">for</span> <span class="pre">architecture</span> <span class="pre">ppc</span></code> or <code class="docutils literal"><span class="pre">file</span> <span class="pre">was</span> <span class="pre">built</span> <span class="pre">for</span>
+<span class="pre">unsupported</span> <span class="pre">file</span> <span class="pre">format</span> <span class="pre">which</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">the</span> <span class="pre">architecture</span> <span class="pre">being</span> <span class="pre">linked</span> <span class="pre">(ppc)</span></code>.</p>
+</div>
+</li>
+</ul>
+</li>
+</ol>
+</div>
+<div class="section" id="deploy-the-ogr-services-provider">
+<h2>Deploy the OGR Services Provider<a class="headerlink" href="#deploy-the-ogr-services-provider" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>Before your try to use any service, please set the correct path in the <code class="docutils literal"><span class="pre">main.cfg</span></code> for tmpPath and tmpUrl.</p>
+<p>You can use the following setup :</p>
+<div class="highlight-python"><div class="highlight"><pre>tmpPath = /Library/WebServer/Documents/tmp
+tmpUrl = ../../tmp
+</pre></div>
+</div>
+<p>Obviously you&#8217;ll then need to create this directory, using the following command :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">mkdir</span> <span class="o">/</span><span class="n">Library</span><span class="o">/</span><span class="n">WebServer</span><span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">tmp</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="c-version">
+<h3>C Version<a class="headerlink" href="#c-version" title="Permalink to this headline">¶</a></h3>
+<p>To compile the base-vect-ops ServicesProvider you&#8217;ll need to edit the Makefile in <em>zoo/zoo-services/ogr/base-vect-ops/</em>
+directory. Add &#8220;-I/Library//Frameworks/GEOS.framework/Versions/3/Headers/&#8221; to the CFLAGS value on the first line.
+To compile, add GDAL framework to the PATH environmenet variable, to ensure that gdal-config tool will be found,
+run make and then copy cgi-env files in the /Library/WebServer/CGI-Executables directory.</p>
+<div class="highlight-python"><div class="highlight"><pre>cd zoo/zoo-services/ogr/base-vect-ops/
+export PATH=$PATH:/Library/Frameworks/GDAL.framework/Versions/1.7/Programs/
+make
+cp cgi-env/* /Library/WebServer/CGI-Executables
+</pre></div>
+</div>
+<p>You can test using this <a class="reference external" href="http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;Identifier=Buffer&amp;DataInputs=BufferDistance=1&#64;datatype=interger;InputPolygon=Reference&#64;xlink:href=http%3A%2F%2Fwww.zoo-project.org%3A8082%2Fgeoserver%2Fows%3FSERVICE%3DWFS%26REQUEST%3DGetFeature%26VERSION%3D1.0.0%26typename%3Dtopp%3Astates%26SRS%3DEPSG%3A4326%26FeatureID%3Dstates.15">url</a>
+if everything is ok with your setup.</p>
+</div>
+<div class="section" id="python-version">
+<h3>Python Version<a class="headerlink" href="#python-version" title="Permalink to this headline">¶</a></h3>
+<p><strong>Requirements</strong></p>
+<p>First of all run python from a Terminal.app and try the following import from the python interpreter :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">osgeo.ogr</span>
+<span class="kn">import</span> <span class="nn">libxml2</span>
+</pre></div>
+</div>
+<p>If you get an issue when importing the libxml2 module from your python interpreter then that means you
+need to install the Python support for the libxml2 library which is already installed on your Mac OS X environment.
+To accomplish this, you have first to determine what version of libxml2 is installed on your platform, using the following command:</p>
+<p>xml2-config &#8211;version</p>
+<p>Download the source corresponding to your version (i.e. on 10.6.6 you get 2.7.3) from the libxml2
+<a class="reference external" href="ftp://xmlsoft.org/libxml2/">download page</a> into your <code class="docutils literal"><span class="pre">src</span></code> directory then uncompress it.</p>
+<p>Use the following command to install the python support :</p>
+<div class="highlight-python"><div class="highlight"><pre>cd src/libxml2-2.7.3/python/
+python setup.py install
+</pre></div>
+</div>
+<p><strong>Deploy OGR Python Services Provider</strong></p>
+<ul class="simple">
+<li>Now copy the <code class="docutils literal"><span class="pre">zoo-services/ogt/base-vect-ops/cgi-env</span></code> files into <code class="docutils literal"><span class="pre">/Library/WebServer/CGI-Executables</span></code>.</li>
+</ul>
+<p>You can test using this <a class="reference external" href="http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;Identifier=BufferPy&amp;DataInputs=BufferDistance=1&#64;datatype=interger;InputPolygon=Reference&#64;xlink:href=http%3A%2F%2Fwww.zoo-project.org%3A8082%2Fgeoserver%2Fows%3FSERVICE%3DWFS%26REQUEST%3DGetFeature%26VERSION%3D1.0.0%26typename%3Dtopp%3Astates%26SRS%3DEPSG%3A4326%26FeatureID%3Dstates.15">url</a>
+if everything is ok with your setup.</p>
+</div>
+</div>
+<div class="section" id="test-using-local-demo-page">
+<h2>Test using Local Demo Page<a class="headerlink" href="#test-using-local-demo-page" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Download the <a class="reference external" href="http://openlayers.org">OpenLayers</a> library and uncompress it in your personal Sites directory
+(located in your home directory).</p>
+</li>
+<li><p class="first">Rename the OpenLayers directory as openlayers.</p>
+</li>
+<li><p class="first">Download this <a class="reference external" href="http://www.zoo-project.org/trac/raw-attachment/wiki/ZooDocumentation/ZOOKernel/MacOSX_installation/zoo-demo.zip">zip archive</a>
+and then uncompress it in your personal Sites directory.</p>
+</li>
+<li><p class="first">Load your local demo pages using urls similar to the following (replacing MyUserName by your MacOS user name) :</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://localhost/~MyUserName/zoo-demo/spatialtools.html">http://localhost/~MyUserName/zoo-demo/spatialtools.html</a></li>
+<li><a class="reference external" href="http://localhost/~MyUserName/zoo-demo/spatialtools-py.html">http://localhost/~MyUserName/zoo-demo/spatialtools-py.html</a></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../kernel/index.html" class="btn btn-neutral float-right" title="ZOO-Kernel">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install-onwindows.html" class="btn btn-neutral" title="Installation on Windows ™"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+  <div class="pfoot">
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2009-2015, ZOO-Project team.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> inspired by <a href="https://readthedocs.org">Read the Docs</a>.
+</div>
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.4a0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ZOO-Client &mdash; ZOO-Project 1.4a0 documentation</title>
+  
+  <link href="http://fonts.googleapis.com/css?family=Days+One" rel="stylesheet" type="text/css">
+  
+  
+
+  
+
+  
+  
+    
+      <link rel="search" type="application/opensearchdescription+xml" title="Search within ZOO-Project 1.4a0 documentation" href="../_static/opensearch.xml"/>
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="ZOO-Project 1.4a0 documentation" href="../index.html"/>
+        <link rel="next" title="What is ZOO-Client ?" href="what.html"/>
+        <link rel="prev" title="Examples" href="../api/examples.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+	  <a class="shrink" href="http://zoo-project.org"><img src="http://zoo-project.org/img/zoo-sun-logo.png" class="img-responsive sun" style="display: inline;"> ZOO</a>
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#what-is-zoo-project">What is ZOO-Project ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#zoo-project-components">ZOO-Project components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#open-source">Open Source</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">ZOO-Project installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../install/install-prerequisites.html">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/install-download.html">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/install-confoptions.html">Configure options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/install-installation.html">Installation on Unix/Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/install-onwindows.html">Installation on Windows ™</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/install-onmacos.html">Installation on MacOSX ™</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../kernel/index.html">ZOO-Kernel</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/what.html">What is ZOO-Kernel ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/configuration.html">ZOO-Kernel configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/mapserver.html">Optional MapServer support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/orfeotoolbox.html">Optional Orfeo Toolbox support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel/sagagis.html">Optional SAGA GIS support</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../services/index.html">ZOO-Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../services/what.html">What are ZOO-Services ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/zcfg-reference.html">ZOO-Service configuration file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/process-profiles.html">Process profiles registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/howtos.html">Create your own ZOO-Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/status.html">ZOO Status Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/debug.html">Debugging ZOO Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/zoo-services.html">Available ZOO-Services</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">ZOO-API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/what.html">What is ZOO-API ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/howto.html">Using ZOO-API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/classes.html">ZOO-API Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">ZOO-Client</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="what.html">What is ZOO-Client ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html">Using ZOO-Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html">Example application</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contribute/index.html">Contributor Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../contribute/howto.html">How to contribute ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../contribute/code.html">Contribute code</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../contents.html">ZOO-Project</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+
+    <li><a href="../contents.html"> Docs</a> &#8725; &#160;</li>
+      
+    <li>ZOO-Client</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/client/index.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="zoo-client">
+<span id="client-index"></span><h1>ZOO-Client<a class="headerlink" href="#zoo-client" title="Permalink to this headline">¶</a></h1>
+<p>This section provides information on <strong>ZOO-Client</strong>, the <a class="reference external" href="http://zoo-project.org">ZOO-Project</a> WPS JavaScript client.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="what.html">What is ZOO-Client ?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="what.html#javascript">JavaScript</a></li>
+<li class="toctree-l2"><a class="reference internal" href="what.html#templates">Templates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">Using ZOO-Client</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#download">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#compiling-zoo-client-templates">Compiling ZOO-Client templates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#building-zoo-client-documentation">Building ZOO-Client documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Example application</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="example.html#loading-the-modules-from-your-web-application">Loading the modules from your web application</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="what.html" class="btn btn-neutral float-right" title="What is ZOO-Client ?">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../api/examples.html" class="btn btn-neutral" title="Examples"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+  <div class="pfoot">
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2009-2015, ZOO-Project team.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> inspired by <a href="https://readthedocs.org">Read the Docs</a>.
+</div>
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.4a0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

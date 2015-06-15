@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ZOO-Project workshop &mdash; ZOO-Project 1.4a0 documentation</title>
+  
+  <link href="http://fonts.googleapis.com/css?family=Days+One" rel="stylesheet" type="text/css">
+  
+  
+
+  
+
+  
+  
+    
+      <link rel="search" type="application/opensearchdescription+xml" title="Search within ZOO-Project 1.4a0 documentation" href="../../_static/opensearch.xml"/>
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="ZOO-Project 1.4a0 documentation" href="../../index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+	  <a class="shrink" href="../../contents.html"><img src="http://zoo-project.org/img/zoo-sun-logo.png" class="img-responsive sun" style="display: inline;"> ZOO</a>
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../intro.html#what-is-zoo-project">What is ZOO-Project ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../intro.html#zoo-project-components">ZOO-Project components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../intro.html#open-source">Open Source</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/index.html">ZOO-Project installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../install/install-prerequisites.html">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/install-download.html">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/install-confoptions.html">Configuration options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/install-installation.html">Installation on Unix/Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/install-installation.html#installation-on-mac-osx">Installation on Mac OSX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/install-installation.html#installation-on-windows">Installation on Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernel/index.html">ZOO-Kernel</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../kernel/what.html">What is ZOO-Kernel ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kernel/configuration.html">ZOO-Kernel configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kernel/mapserver.html">Optional MapServer support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kernel/orfeotoolbox.html">Optional Orfeo Toolbox support</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../services/index.html">ZOO-Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../services/introduction.html">What are ZOO-Services ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../services/zcfg-reference.html">ZOO-Service configuration file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../services/process-profiles.html">Process profiles registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../services/howtos.html">Create your own ZOO-Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../services/status.html">ZOO Status Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../services/debug.html">How To Debug ZOO Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../services/zoo-services.html">Available ZOO-Services</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">ZOO-API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/what.html">What is ZOO-API ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/howto.html">Using ZOO-API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/classes.html">ZOO-API Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../client/index.html">ZOO-Client</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../client/what.html">What is ZOO-Client ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../client/howto.html">Using ZOO-Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../client/example.html">Example application</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../contents.html">ZOO-Project</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+
+    <li><a href="../../contents.html"> Docs</a> &#8725; &#160;</li>
+      
+    <li>ZOO-Project workshop</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/workshop/2014/index.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="zoo-project-workshop">
+<span id="workshop-foss4g-2014"></span><h1>ZOO-Project workshop<a class="headerlink" href="#zoo-project-workshop" title="Permalink to this headline">¶</a></h1>
+<p>Deploying Web Processing Services using ZOO-Project – Examples of
+Python based WPS using PgRouting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Gérald Fenoy, Nicolas Bozon, Venkatesh Raghavan</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Contact:</th><td class="field-body">gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com, venka at osgeo.org</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Last Updated:</th><td class="field-body">$Date: 2015-02-09 19:21:38 +0100 (Lun, 09 fév 2015) $</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="foss4g-2014-portland">
+<h2>FOSS4G 2014 Portland<a class="headerlink" href="#foss4g-2014-portland" title="Permalink to this headline">¶</a></h2>
+<a class="reference external image-reference" href="http://2014.foss4g.org/"><img alt="../../_images/FOSS4G_Ad_200x100_2x.jpg" class="align-center" src="../../_images/FOSS4G_Ad_200x100_2x.jpg" /></a>
+</div>
+<div class="section" id="sponsored-by">
+<h2>Sponsored By<a class="headerlink" href="#sponsored-by" title="Permalink to this headline">¶</a></h2>
+<a class="reference external image-reference" href="http://www.geolabs.fr/"><img alt="workshop/2014/../../_static/images/geolabs-logo.png" src="workshop/2014/../../_static/images/geolabs-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.apptec.co.jp/"><img alt="workshop/2014/../../_static/images/apptech-logo.png" src="workshop/2014/../../_static/images/apptech-logo.png" /></a>
+<a class="reference external image-reference" href="http://www-neogeo-online.net/"><img alt="workshop/2014/../../_static/images/neogeo-logo.png" src="workshop/2014/../../_static/images/neogeo-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.3liz.com/"><img alt="workshop/2014/../../_static/images/3liz-logo.png" src="workshop/2014/../../_static/images/3liz-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.gatewaygeomatics.com/"><img alt="workshop/2014/../../_static/images/gateway-logo.png" src="workshop/2014/../../_static/images/gateway-logo.png" /></a>
+</div>
+<div class="section" id="special-thanks-to-our-knowledge-partners">
+<h2>Special thanks to our Knowledge Partners<a class="headerlink" href="#special-thanks-to-our-knowledge-partners" title="Permalink to this headline">¶</a></h2>
+<a class="reference external image-reference" href="http://www.osaka-cu.ac.jp/english/"><img alt="workshop/2014/../../_static/images/ocu-logo.png" src="workshop/2014/../../_static/images/ocu-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.fondazioneedmundmach.it/"><img alt="workshop/2014/../../_static/images/logo-fem.png" src="workshop/2014/../../_static/images/logo-fem.png" /></a>
+<a class="reference external image-reference" href="http://geomatica.como.polimi.it/"><img alt="workshop/2014/../../_static/images/polimi-logo.png" src="workshop/2014/../../_static/images/polimi-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.gucas.ac.cn/gscasenglish/index.aspx"><img alt="workshop/2014/../../_static/images/gucas-logo.png" src="workshop/2014/../../_static/images/gucas-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.cumtb.edu.cn/"><img alt="workshop/2014/../../_static/images/cumtb-logo.png" src="workshop/2014/../../_static/images/cumtb-logo.png" /></a>
+<a class="reference external image-reference" href="http://www.supsi.ch/home.html"><img alt="workshop/2014/../../_static/images/logo-supsi.png" src="workshop/2014/../../_static/images/logo-supsi.png" /></a>
+</div>
+<div class="section" id="workshop-table-of-content">
+<h2>WorkShop table of content<a class="headerlink" href="#workshop-table-of-content" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#what-is-zoo">What is ZOO ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#how-does-zoo-works">How does ZOO works ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#what-are-we-going-to-do-in-this-workshop">What are we going to do in this workshop?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#usefull-tips-for-reading">Usefull tips for reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using_zoo_from_osgeolivevm.html">Configuration and ZOO-Kernel use</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="using_zoo_from_osgeolivevm.html#zoo-kernel-configuration">ZOO-Kernel Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_zoo_from_osgeolivevm.html#testing-the-zoo-installation-with-getcapabilities">Testing the ZOO installation with GetCapabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first_service.html">Creating your first ZOO Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#service-and-publication-process-overview">Service and publication process overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#creating-your-first-zcfg-file">Creating your first ZCFG file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#test-requests">Test requests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="first_service.html#test-the-getcapabilities-request">Test the GetCapabilities request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="first_service.html#test-the-describeprocess-request">Test the DescribeProcess request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="first_service.html#test-the-execute-request">Test the Execute request</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#implementing-the-python-service">Implementing the Python Service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="first_service.html#general-principles">General Principles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="first_service.html#the-hello-service">The Hello Service</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#interracting-with-your-service-using-execute-requests">Interracting with your service using Execute requests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="building_blocks_presentation.html">Building blocks presentation - Using OGR and PgRouting based Web Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#services-provider-and-configuration-files">Services Provider and configuration files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#the-buffer-service">The Buffer Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#the-intersection-service">The Intersection Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#the-differencepy-service">The DifferencePy Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#the-routing-and-profile-services">The Routing and Profile Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_blocks_presentation.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="js_services_chaining.html">Playing with buildign blocks - Creating JavaScript Web Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#zoo-api-overview">ZOO-API Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#the-mask-service">The Mask Service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#the-zcfg">The ZCFG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#the-javascript-service">The JavaScript service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#publish-and-use-your-service">Publish and use your Service</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#buffermask-service">BufferMask Service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#id6">The ZCFG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#id7">The JavaScript service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#id8">Publish and use your Service</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#bufferrequest-service">BufferRequest service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#id10">The ZCFG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#the-javascript-code">The JavaScript code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="js_services_chaining.html#id11">Publish and use your Service</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#add-union-into-the-chain">Add Union into the chain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+  <div class="pfoot">
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2009-2015, ZOO-Project team.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> inspired by <a href="https://readthedocs.org">Read the Docs</a>.
+</div>
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.4a0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
