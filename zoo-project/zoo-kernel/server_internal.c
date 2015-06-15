@@ -30,6 +30,7 @@
 #include <dlfcn.h>
 #endif
 #include <uuid/uuid.h>
+#include <signal.h>
 
 /**
  * Detect WPS version used (1.0.0 or 2.0.0).
