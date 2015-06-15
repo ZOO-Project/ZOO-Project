@@ -293,7 +293,6 @@ int cgiMain(){
 	}
 	if(cur->ns){
 	  addToMap(tmpMap,"wps_schemas",(char*)cur->ns->href);
-	  xmlFree(tval);
 	  int j=0;
 	  for(j=0;j<2;j++)
 	    if(strncasecmp(schemas[j][2],(char*)cur->ns->href,strlen(schemas[j][2]))==0){

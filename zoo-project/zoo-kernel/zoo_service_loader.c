@@ -1264,10 +1264,7 @@ runRequest (map ** inputs)
       dumpMap (r_inputs);
 #endif
       xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
-      r_inputs = NULL;
-      //r_inputs = getMap (request_inputs, "ServiceProvider");
-      r_inputs = getMap (request_inputs, "version");
-      xmlNodePtr n=printGetCapabilitiesHeader(doc,m,(r_inputs!=NULL?r_inputs->value:"1.0.0"));
+      xmlNodePtr n=printGetCapabilitiesHeader(doc,m,(version!=NULL?version->value:"1.0.0"));
       /**
        * Here we need to close stdout to ensure that unsupported chars 
        * has been found in the zcfg and then printed on stdout
@@ -1289,6 +1286,7 @@ runRequest (map ** inputs)
           fflush (stdout);
           return res;
         }
+      fflush (stdout);
       dup2 (saved_stdout, fileno (stdout));
       printDocument (m, doc, getpid ());
       freeMaps (&m);
@@ -1362,10 +1360,8 @@ runRequest (map ** inputs)
 	    xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
 	    r_inputs = NULL;
 	    r_inputs = getMap (request_inputs, "version");
-	    map* version=getMapFromMaps(m,"main","rversion");
-	    int vid=getVersionId(version->value);
 	    xmlNodePtr n = printWPSHeader(doc,m,"DescribeProcess",
-					  root_nodes[vid][1],(r_inputs!=NULL?r_inputs->value:"1.0.0"),1);
+					  root_nodes[vid][1],(version!=NULL?version->value:"1.0.0"),1);
 
 	    r_inputs = getMap (request_inputs, "Identifier");
 
