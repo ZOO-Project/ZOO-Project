@@ -4,8 +4,7 @@ Optional Orfeo Toolbox support
 ======================
 
 `Orfeo Toolbox <http://orfeo-toolbox.org/otb/>`_ provides simple to advanced algorithms for processing imagery available from remote sensors.
-The optional Orfeo Toolbox support is available since `ZOO-Project 1.5
-<http://zoo-project.org>`__. It allows to execute the `OTB Applications <http://orfeo-toolbox.org/otb/otb-applications.html>`_ directly as ZOO WPS Services thanks to a :ref:`kernel_index` specific internal mechanism which is detailed in this section.
+The optional Orfeo Toolbox support is available since `ZOO-Project 1.5 <http://zoo-project.org>`__. It allows to execute the `OTB Applications <http://orfeo-toolbox.org/otb/otb-applications.html>`_ directly as ZOO WPS Services thanks to a :ref:`kernel_index` specific internal mechanism which is detailed in this section.
 
 .. note:: 
 
@@ -22,15 +21,14 @@ The optional Orfeo Toolbox support is available since `ZOO-Project 1.5
 Installation and configuration
 ------------------------------
 
-Follow the step described bellow in order to activate the ZOO-Project
-optional Orfeo Toolbox support.
+Follow the step described bellow in order to activate the ZOO-Project optional Orfeo Toolbox support.
 
 Prerequisites
-.............
+.....................
 
    * latest `ZOO-Kernel <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel>`_ trunk version
-   * Orfeo Toolbox (`OTB 4.2.1 <http://orfeo-toolbox.org/otb/>`_ )
-   * Insight Segmentation and Registration Toolkit  (`ITK-4.7 <http://itk.org/ITK/resources/software.html/>`_ )
+   * Orfeo Toolbox (`OTB 4.2.1 <http://orfeo-toolbox.org/otb/>`_)
+   * Insight Segmentation and Registration Toolkit  (`ITK-4.7 <http://itk.org/ITK/resources/software.html/>`_)
 
 Installation steps
 ...........................
@@ -56,10 +54,10 @@ Then compile ZOO-Kernel using the needed configuration options as shown bellow:
      cp zoo_loader.cgi /usr/lib/cgi-bin
 
 Configuration steps
-*************************
+....................................
 
 Main configuration file
-^^^^^^^^^^^^^^^^^^^^^^^
+*************************
 
 Add the following content to your ``/usr/lib/cgi-bin/main.cfg`` file 
 in the ``[env]`` section:
@@ -69,7 +67,7 @@ in the ``[env]`` section:
        ITK_AUTOLOAD_PATH=/usr/local/lib/otb/applications
 
 Services configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+****************************
 
 The build of the `otb2zcfg  <http://zoo-project.org/trac/browser/trunk/thirds/otb2zcfg>`_ utility is required to activate the available OTB Applications as WPS services. This can be done using the following command: 
 
@@ -95,8 +93,8 @@ Run the following command to generate all the needed zcfg files for the availabl
 
      The ITK_AUTOLOAD_PATH environment variable is required in the [env] section of your main.cfg.
 
-Test the ZOO OTB support
-^^^^^^^^^^^^^^^^^^^^^^^
+Test requests
+****************************
 
 Once done, OTB Applications should be listed as available WPS Services when runing a GetCapabilities request
 
@@ -110,7 +108,7 @@ Each OTB Service can then be described individually using the DescribeProcess re
 
    http://localhost/cgi-bin/zoo_loader.cgi?request=DescribeProcess&service=WPS&version=1.0.0&Identifier=OTB.BandMath
 
-As an example, here is a test request executing the OTB.BandMath Application with the OTB Cookbook sample data as input
+Here is an example request executing the *OTB.BandMath* Application with the `OTB Cookbook <https://www.orfeo-toolbox.org/CookBook/CookBook.html>`_ sample data as input
 
 .. code-block:: guess
 
@@ -118,7 +116,8 @@ As an example, here is a test request executing the OTB.BandMath Application wit
 
 
 .. note::
-   When executing OTB applications as WPS Services, it is also possible to check the OTB process status, using the usual ZOO GetStatus request.
+
+   The usual ZOO GetStatus requests also work when using the OTB Applications as WPS Services.
 
 
 

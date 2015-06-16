@@ -17,18 +17,13 @@ Optional SAGA GIS support
        :alt: SAGA GIS logo
 
 
-How does it work ?
--------------------------
-
-
-
 Installation and configuration
 ------------------------------
 
 Follow the step described bellow in order to activate the ZOO-Project optional SAGA GIS support.
 
 Prerequisites
-.............
+.....................
 
    * latest `ZOO-Kernel <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel>`_ trunk version
    * SAGA GIS (`SAGA-GIS 2.1.4  <http://saga-gis.org>`_ )
@@ -61,73 +56,49 @@ And copy the newly created zoo_loader.cgi to ``/usr/lib/cgi-bin`` :
      cp zoo_loader.cgi /usr/lib/cgi-bin
 
 Configuration steps
-*************************
-
-Main configuration file
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Add the following content to your ``/usr/lib/cgi-bin/main.cfg`` file 
-in the ``[env]`` section:
-
-.. code-block:: guess
-
-       ITK_AUTOLOAD_PATH=/usr/local/lib/otb/applications
+...............................
 
 Services configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+****************************
 
-The build of the `otb2zcfg  <http://zoo-project.org/trac/browser/trunk/thirds/otb2zcfg>`_ utility is required to activate the available OTB Applications as WPS services. This can be done using the following command: 
-
-.. code-block:: guess
-	
-	 mkdir build
-	 cd build
-	 ccmake ..
-	 make
-	
-Run the following command to generate all the needed zcfg files for the available OTB Application:
-
-.. code-block:: guess
-	
-	 mkdir zcfgs
-	 cd zcfgs
-	 export ITK_AUTOLOAD_PATH=/your/path/to/otb/applications
-	 ../build/otb2zcfg
-         mkdir /location/to/your/cgi-bin/OTB
-	 cp *zcfg /location/to/your/cgi-bin/OTB
-	
-.. warning 
-
-     The ITK_AUTOLOAD_PATH environment variable is required in the [env] section of your main.cfg.
-
-Test the ZOO SAGA support
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Once done, OTB Applications should be listed as available WPS Services when runing a GetCapabilities request
-
-.. code-block:: guess 
-
-        http://localhost/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS 
-
-Each OTB Service can then be described individually using the DescribeProcess request, as for example:
+Building the `saga2zcfg
+<http://zoo-project.org/trac/browser/trunk/thirds/otb2zcfg >`_ utility is required to activate the available SAGA-GIS Modules as WPS Services. This can be done using the following command:
 
 .. code-block:: guess
 
-   http://localhost/cgi-bin/zoo_loader.cgi?request=DescribeProcess&service=WPS&version=1.0.0&Identifier=OTB.BandMath
+    cd thirds/saga2zcfg
+    make
 
-And executed according to your needs, as for the following example executing OTB.BandMath with the OTB sample data as input
+The following commands will then generate all the needed zcfg files for the available SAGA-GIS Modules:
 
 .. code-block:: guess
-
-   http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=OTB.BandMath&DataInputs=il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW.tif;il=Reference@xlink:href=http://hg.orfeo-toolbox.org/OTB-Data/raw-file/ca154074b282/Examples/verySmallFSATSW_nir.tif;out=float;exp=im1b3*cos%28im1b1%29,im1b2*cos%28im1b1%29,im1b1*cos%28im1b1%29&RawDataOutput=out@mimeType=image/png
-
-When executing OTB applications as WPS Services, it is also possible to check the OTB process status, using the usual ZOO GetStatus request.
-
-
-
-    
+		
+    mkdir zcfgs
+    cd zcfgs
+    ../saga2zcfg
+    mkdir /location/to/your/cgi-bin/SAGA
+    cp *zcfg /location/to/your/cgi-bin/SAGA
 
 
+Test requests
+*****************
+
+The SAGA-GIS Modules should be listed as available WPS Services when
+runing a GetCapabilities request, as follow:
+
+http://localhost/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS
+
+Each SAGA-GIS Service can then be described individually using the DescribeProcess request, as for example:
+
+http://localhost/cgi-bin/zoo_loader.cgi?request=DescribeProcess&service=WPS&version=1.0.0&Identifier=SAGA.garden_fractals.1
+
+And executed according to your needs. The following example executes *SAGA.garden_fractals.1* with no optional parameter:
+
+http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=SAGA.garden_fractals.1&DataInputs=&ResponseDocument=RESULT@mimeType=application/json@asReference=true
+
+.. note::
+   
+  The common ZOO GetStatus requests also work when using the SAGA-GIS Modules as WPS Services.
 
 
 

@@ -18,12 +18,12 @@ ZOO-Kernel implements and complies with the `WPS 1.0.0 <http://www.opengeospatia
 First class WPS server
 -----------------------
 
-ZOO-Kernel is an extensible WPS server that makes your system more powerful. It provides a full-featured processing engine which runs on Linux, Mac OSX |trade| and Windows |trade| operating systems. ZOO-Kernel works on common web servers (namely `Apache <http://httpd.apache.org/>`_ or `IIS <http://www.iis.net/>`_ |trade|) and can be seamlessly integrated to new or existing web platforms. 
+ZOO-Kernel is an extensible WPS server that makes your system more powerful. It provides a full-featured processing engine which runs on Linux, Mac OSX |trade| and Windows |trade| operating systems. ZOO-Kernel is a CGI program which works on common web servers (namely `Apache <http://httpd.apache.org/>`_ or `IIS <http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to new or existing web platforms. 
 
 ZOO-Kernel lets you process geospatial or non geospatial data using well formed WPS requests. The WPS server is able to manage and chain WPS Services (see ZOO-Services for examples) by loading dynamic libraries and source code written in different programming languages.  
 
 Supported programming languages
-...............................
+........................................................
 
 ZOO-Kernel is a **polyglot**. The software is written in a valid form of multiple programming languages, which performs the same operations independent of the programming language used to compile or interpret it.
 
