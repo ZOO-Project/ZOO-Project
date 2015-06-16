@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 #
-# Sphinx documentation build configuration file
+# ZOO Project documentation build configuration file
 
 import re
 import sphinx
 
-
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
-              'sphinx.ext.autosummary', 'sphinx.ext.extlinks',
-              'sphinx.ext.viewcode']
-
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo','sphinx.ext.autosummary', 'sphinx.ext.extlinks','sphinx.ext.viewcode']
 master_doc = 'contents'
 templates_path = ['_templates']
 exclude_patterns = ['_build']
 
+# General information
+
 project = 'ZOO-Project'
 copyright = '2009-2015, ZOO-Project team'
-version = sphinx.__released__
-release = version
+version = '1.0'
+release = '1.5'
 show_authors = True
+
+# Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = ['_themes']
@@ -27,70 +27,33 @@ html_static_path = ['_static']
 html_sidebars = {'index': ['indexsidebar.html', 'searchbox.html']}
 html_additional_pages = {'index': 'index.html'}
 html_use_opensearch = 'http://sphinx-doc.org'
-
 htmlhelp_basename = 'Sphinxdoc'
 
+# Options for epub output
+
 epub_theme = 'epub'
-epub_basename = 'sphinx'
-epub_author = 'Georg Brandl'
-epub_publisher = 'http://sphinx-doc.org/'
+epub_basename = 'ZOO-Project'
+epub_author = 'ZOO-Project team'
+epub_publisher = 'http://zoo-project.org/'
 epub_scheme = 'url'
-epub_identifier = epub_publisher
-epub_pre_files = [('index.html', 'Welcome')]
-epub_post_files = [('install.html', 'Installing Sphinx'),
-                   ('develop.html', 'Sphinx development')]
-epub_exclude_files = ['_static/opensearch.xml', '_static/doctools.js',
-                      '_static/jquery.js', '_static/searchtools.js',
-                      '_static/underscore.js', '_static/basic.css',
-                      'search.html', '_static/websupport.js']
+epub_identifier = 'http://zoo-project.org'
+epub_pre_files = [('index.html', 'ZOO-Project documentation')]
+epub_post_files = [('install.html', 'Installing Sphinx'),('develop.html', 'Sphinx development')]
+epub_exclude_files = ['_static/opensearch.xml', '_static/doctools.js','_static/jquery.js', '_static/searchtools.js','_static/underscore.js', '_static/basic.css','search.html', '_static/websupport.js']
 epub_fix_images = False
 epub_max_image_width = 0
 epub_show_urls = 'inline'
 epub_use_index = False
 epub_guide = (('toc', 'contents.html', u'Table of Contents'),)
 
-latex_documents = [('contents', 'sphinx.tex', 'Sphinx Documentation',
-                    'Georg Brandl', 'manual', 1)]
-latex_logo = '_static/sphinx.png'
-latex_elements = {
-    'fontpkg': '\\usepackage{palatino}',
-}
+# Options for LaTeX output
+
+latex_documents = [('contents', 'ZOO-Project.tex', 'ZOO-Project Documentation','ZOO-Project team', 'manual', 1)]
+latex_logo = '_static/zoo_simple.png'
+latex_elements = {'fontpkg': '\\usepackage{palatino}'}
 latex_show_urls = 'footnote'
-
-autodoc_member_order = 'groupwise'
 todo_include_todos = True
-extlinks = {'duref': ('http://docutils.sourceforge.net/docs/ref/rst/'
-                      'restructuredtext.html#%s', ''),
-            'durole': ('http://docutils.sourceforge.net/docs/ref/rst/'
-                       'roles.html#%s', ''),
-            'dudir': ('http://docutils.sourceforge.net/docs/ref/rst/'
-                      'directives.html#%s', '')}
-
-man_pages = [
-    ('contents', 'sphinx-all', 'Sphinx documentation generator system manual',
-     'Georg Brandl', 1),
-    ('man/sphinx-build', 'sphinx-build', 'Sphinx documentation generator tool',
-     '', 1),
-    ('man/sphinx-quickstart', 'sphinx-quickstart', 'Sphinx documentation '
-     'template generator', '', 1),
-    ('man/sphinx-apidoc', 'sphinx-apidoc', 'Sphinx API doc generator tool',
-     '', 1),
-]
-
-texinfo_documents = [
-    ('contents', 'sphinx', 'Sphinx Documentation', 'Georg Brandl',
-     'Sphinx', 'The Sphinx documentation builder.', 'Documentation tools',
-     1),
-]
-
-# We're not using intersphinx right now, but if we did, this would be part of
-# the mapping:
-intersphinx_mapping = {'python': ('https://docs.python.org/2/', None)}
-
-# Sphinx document translation with sphinx gettext feature uses these settings:
-locale_dirs = ['locale/']
-gettext_compact = False
-
+man_pages = [('index', 'zooproject', 'ZOO-Project Documentation','ZOO-Project team', 1)]
 
 # -- Extension interface -------------------------------------------------------
 

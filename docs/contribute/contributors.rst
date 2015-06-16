@@ -19,7 +19,8 @@ The following individuals will be considered authorized ZOO-Project committers a
 
    * Nicolas BOZON (aka nbozon)
    * Trevor CLARKE (aka tclarke)
-   * Luca DELUCCHI (aka lucadelu)   
+   * Luca DELUCCHI (aka lucadelu)
+   * René-Luc D'HONT  (aka reluc)
    * Gérald FENOY (aka djay)
    * Knut LANDMARK (aka knut)
    * Jeff MCKENNA (aka jmckenna)
@@ -31,10 +32,10 @@ The following individuals will be considered authorized ZOO-Project committers a
 Other contributors
 ----------------
 
-The following individuals have also contributed to the ZOO-Project source code and documentation.
+The following individuals have also contributed to the ZOO-Project
+source code or documentation.
 
-   * Thomas GRATTIER 
-   * René-Luc D'HONT 
+   * Thomas GRATIER 
    * Hirofumi HAYASHI
    * Guillaume SUEUR
    * Daisuke YOSHIDA
