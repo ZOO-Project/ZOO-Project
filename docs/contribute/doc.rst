@@ -1,22 +1,31 @@
 .. _contribute_doc:
 
+.. include:: <xhtml1-lat1.txt>
+.. include:: <xhtml1-symbol.txt>
+
 Contribute documentation
 ==================
 
-ZOO Documentation is a collaborative process managed by the ZOO develoeprs. Anybody is welcome to contribute to the ZOO-Project documentation. Please consider the following instructions before doing so.
+ZOO Documentation is a collaborative process managed by the ZOO developers. Anybody is welcome to contribute to the ZOO-Project documentation. Please consider the following instructions before doing so.
+
+General information
+------------------------
 
 For new comers
-*************************
+..........................
 
 New users are encouraged to contribute documentation using the following ways:
 
-* Download the ZOO-Project svn, edit the documentation files located /docs directory and share the modifications through a new ticket set to 'Documentation' tracker
+* Download the ZOO-Project svn, edit the documentation files
+  located /docs directory and share the modifications through a new
+  ticket set to 'Documentation' tracker
+  
 * Create a wiki page containg new or corrected documentation text, and create a new ticket to report its creation. 
 
 The ZOO developers responsible for the documentation will then review the contributions to add them into the official docs.
 
 For registered developers
-****************************
+........................................
 
 The current structure of the ZOO Project documentation process is for developers with :ref:`SVN <svn>` commit access to maintain their documents in reStructuredText format, and therefore all documents live in the /docs directory in SVN.  The `Sphinx <http://sphinx.pocoo.org/>`__ documentation generator is used to convert the reStructuredText files to html, and the live
 website is then updated on an hourly basis.
@@ -26,10 +35,9 @@ Installing and using Sphinx
 ------------------------
 
 On Linux
-***********
+.................
 
-* Make sure you have the Python dev and setuptools packages installed.
-   On Ubuntu:
+* Make sure you have the Python dev and setuptools packages installed. For example on Ubuntu:
 
    ::
 
@@ -72,8 +80,8 @@ On Linux
     build all translations.
 
 
-On Mac OS X
-****************
+On Mac OS X |trade|
+..................................
 
 * Install sphinx using easy_install:
 
@@ -108,8 +116,8 @@ On Mac OS X
    The HTML output will be written to the build/html sub-directory.
 
 
-On Windows
-**************
+On Windows |trade|
+................................
 
 * Install `Python 2.X <http://www.python.org/>`__
 * Download `setuptools <http://pypi.python.org/pypi/setuptools#windows>`__

@@ -24,6 +24,8 @@ ZOO-Project registered developers have direct svn access and can:
   
 * Create and commit to a new branch of the svn
 
+ZOO-Project registered developers must accept and respect the developer guidelines when contributing code.
+
 Bug tracking
 --------------------------
 
