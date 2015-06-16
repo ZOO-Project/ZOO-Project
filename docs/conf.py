@@ -6,7 +6,7 @@ import re
 import sphinx
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo','sphinx.ext.autosummary', 'sphinx.ext.extlinks','sphinx.ext.viewcode']
-master_doc = 'contents'
+master_doc = 'index'
 templates_path = ['_templates']
 exclude_patterns = ['_build']
 
@@ -44,7 +44,7 @@ epub_fix_images = False
 epub_max_image_width = 0
 epub_show_urls = 'inline'
 epub_use_index = False
-epub_guide = (('toc', 'contents.html', u'Table of Contents'),)
+epub_guide = (('toc', 'index.html', u'Table of Contents'),)
 
 # Options for LaTeX output
 
