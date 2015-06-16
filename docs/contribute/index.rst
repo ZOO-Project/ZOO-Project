@@ -14,3 +14,4 @@ open source software project and help making it better.
 
    howto
    code
+   doc

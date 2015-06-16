@@ -16,6 +16,7 @@ The following libraries are required to install :ref:`kernel_index`. Please make
 - libxml2 (  http://xmlsoft.org )
 - OpenSSL (  http://www.openssl.org )
 - Python (  http://www.python.org )
+- GDAL (for using the available GDAL based ZOO-Services) (http://gdal.org/) 
 
  .. warning::
     It is mandatory to install every library listed above before compiling and installing ZOO-Kernel
@@ -31,5 +32,6 @@ You may also consider the following optional libraries:
 - SpiderMonkey (for ZOO-Kernel optional Javascript support) (http://www.mozilla.org/js/spidermonkey/)
 - SAGA GIS (for ZOO-Kernel optional SAGA support)(http://www.saga-gis.org/en/index.html/)
 - OrfeoToolbox (for ZOO-Kernel optional OTB support) (https://www.orfeo-toolbox.org/)
+- Insight Segmentation and Registration Toolkit  (http://itk.org/ITK/resources/software.html/>)
 - GRASS GIS (for using it through WPSGrassBridge) (http://grass.osgeo.org)
-- GDAL (for using the available GDAL based ZOO-Services) (http://gdal.org/) 
+
