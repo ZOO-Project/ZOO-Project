@@ -2172,6 +2172,8 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
+  if(vid<0)
+    vid=0;
   if(use_ns==1){
     xmlNewNs(n,BAD_CAST schemas[vid][1],BAD_CAST"ows");
     int xsiId=zooXmlAddNs(n,"http://www.w3.org/2001/XMLSchema-instance","xsi");

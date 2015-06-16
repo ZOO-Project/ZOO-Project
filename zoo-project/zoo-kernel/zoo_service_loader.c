@@ -1173,7 +1173,12 @@ runRequest (map ** inputs)
   REQUEST = zStrdup (r_inputs->value);
   int reqId=-1;
   if (strncasecmp (REQUEST, "GetCapabilities", 15) != 0){
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
     checkValidValue(request_inputs,&err,"version",(const char**)vvv,1);
+    dumpMap(err);
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
     int j=0;
     for(j=0;j<nbSupportedRequests;j++){
       if(requests[vid][j]!=NULL && requests[vid][j+1]!=NULL){
@@ -1192,6 +1197,9 @@ runRequest (map ** inputs)
       }else
 	break;
     }
+    dumpMap(err);
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
   }else{
     checkValidValue(request_inputs,&err,"AcceptVersions",(const char**)vvv,-1);
     map* version1=getMap(request_inputs,"AcceptVersions");
