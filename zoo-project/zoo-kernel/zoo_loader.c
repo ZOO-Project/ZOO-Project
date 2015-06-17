@@ -114,12 +114,8 @@ int cgiMain(){
 	 cgiContentLength+=r;
        }
        delete[] buffer;
-       if(res==NULL && (strQuery==NULL || strlen(strQuery)==0)){
-	 return errorException(NULL,"ZOO-Kernel failed to process your request because the request was empty.","InternalError",NULL);
-       }else{
-	 if(strQuery==NULL || strlen(strQuery)==0)
-	   tmpMap=createMap("request",res);
-       }
+       if(res!=NULL && (strQuery==NULL || strlen(strQuery)==0))
+	 tmpMap=createMap("request",res);
        if(res!=NULL)
 	 free(res);
     }else{
