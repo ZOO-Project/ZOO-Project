@@ -8,12 +8,10 @@ AC_PROG_CXX
 AC_PROG_SED
 
 # Checks for libraries.
-AC_CHECK_LIB([cgic], [cgiMain])
 AC_CHECK_LIB([curl], [curl_easy_init,curl_easy_setopt,curl_easy_cleanup,curl_easy_perform])
 AC_CHECK_LIB([dl], [dlopen,dlsym,dlerror,dlclose])
-AC_CHECK_LIB([fl], [main])
-AC_CHECK_LIB([pthread], [main])
-AC_CHECK_LIB([ssl], [main])
+AC_CHECK_LIB([crypto], [EVP_DigestInit,EVP_md5,EVP_DigestUpdate,BIO_f_base64,BIO_new])
+AC_CHECK_LIB([uuid], [uuid_generate_time])
 
 DEFAULT_LIBS="$LIBS"
 AC_SUBST([DEFAULT_LIBS])
