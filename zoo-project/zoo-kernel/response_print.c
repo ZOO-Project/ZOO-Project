@@ -450,7 +450,6 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
 	    xmlAddChild(nc2,xmlNewText(BAD_CAST "WPS"));
 	    xmlAddChild(nc,nc2);
 	    nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceTypeVersion");
-	    dumpMaps(m);
 	    map* tmpv=getMapFromMaps(m,"main","rversion");
 	    xmlAddChild(nc2,xmlNewText(BAD_CAST tmpv->value));
 	    xmlAddChild(nc,nc2);
@@ -1913,11 +1912,20 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	 strcasecmp(tmp->name,"schema")==0 ||
 	 strcasecmp(tmp->name,"datatype")==0 ||
 	 strcasecmp(tmp->name,"uom")==0) {
-
-	xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	
+	if(vid==0)
+	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	else{
+	  if(strcasecmp(tmp->name,"datatype")==0)
+	    xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	  else
+	    if(strcasecmp(tmp->name,"uom")!=0)
+	      xmlNewProp(nc2,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	}
       }
+      if(vid==0)
+	xmlAddChild(nc2,nc3);
       tmp=tmp->next;
-      xmlAddChild(nc2,nc3);
     }
     if(e!=NULL && e->format!=NULL && strcasecmp(e->format,"BoundingBoxData")==0) {
       map* bb=getMap(m->content,"value");
@@ -1969,14 +1977,14 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  isSized=false;
 	}
 	 
-	xmlAddChild(nc3,xmlNewText(BAD_CAST base64(tmp3->value, atoi(rs->value))));  // base 64 encode in XML
+	xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST base64(tmp3->value, atoi(rs->value))));  // base 64 encode in XML
 		
 	if(tmp1==NULL || (tmp1!=NULL && strncmp(tmp1->value,"base64",6)!=0)) {
-	  xmlAttrPtr ap = xmlHasProp(nc3, BAD_CAST "encoding");
+	  xmlAttrPtr ap = xmlHasProp((vid==0?nc3:nc2), BAD_CAST "encoding");
 	  if (ap != NULL) {
 	    xmlRemoveProp(ap);
 	  }			
-	  xmlNewProp(nc3,BAD_CAST "encoding",BAD_CAST "base64");
+	  xmlNewProp((vid==0?nc3:nc2),BAD_CAST "encoding",BAD_CAST "base64");
 	}
 		
 	if(!isSized){
@@ -1989,7 +1997,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	   strstr(tmp2->value, "json") != NULL ||            //    (will not be parsed by XML reader) 
 	   strstr(tmp2->value, "ecmascript") != NULL
 	   ) {
-	  xmlAddChild(nc3,xmlNewCDataBlock(doc,BAD_CAST tmp3->value,strlen(tmp3->value)));
+	  xmlAddChild((vid==0?nc3:nc2),xmlNewCDataBlock(doc,BAD_CAST tmp3->value,strlen(tmp3->value)));
 	}   
 	else {                                                     // else
 	  if (strstr(tmp2->value, "xml") != NULL ||                 // if XML-based format
@@ -2001,15 +2009,15 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	    int li=zooXmlAddDoc(tmp3->value);
 	    xmlDocPtr doc = iDocs[li];
 	    xmlNodePtr ir = xmlDocGetRootElement(doc);
-	    xmlAddChild(nc3,ir);
+	    xmlAddChild((vid==0?nc3:nc2),ir);
 	  }
 	  else                                                     // else	
-	    xmlAddChild(nc3,xmlNewText(BAD_CAST tmp3->value));    //   add text node
+	    xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));    //   add text node
 	}
 	xmlAddChild(nc2,nc3);
       }
       else {
-	xmlAddChild(nc3,xmlNewText(BAD_CAST tmp3->value));
+	xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));
       }
 	  
       if(hasValue<0) {

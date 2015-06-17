@@ -205,80 +205,73 @@ translateChar (char *str, char toReplace, char toReplaceBy)
 int
 createRegistry (maps* m,registry ** r, char *reg_dir, int saved_stdout)
 {
-  struct dirent *dp;
-  int scount = 0;
-
+  char registryKeys[3][15]={
+    "concept",
+    "generic",
+    "implementation"
+  };
+  int scount = 0,i=0;
   if (reg_dir == NULL)
     return 0;
-  DIR *dirp = opendir (reg_dir);
-  if (dirp == NULL)
-    {
-      return -1;
-    }
-  while ((dp = readdir (dirp)) != NULL){
-    if ((dp->d_type == DT_DIR || dp->d_type == DT_LNK) && dp->d_name[0] != '.')
-      {
-
-        char * tmpName =
-          (char *) malloc ((strlen (reg_dir) + strlen (dp->d_name) + 2) *
-                           sizeof (char));
-        sprintf (tmpName, "%s/%s", reg_dir, dp->d_name);
-	
-	DIR *dirp1 = opendir (tmpName);
-	struct dirent *dp1;
-	while ((dp1 = readdir (dirp1)) != NULL){
-	  char* extn = strstr(dp1->d_name, ".zcfg");
-	  if(dp1->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
+  for(i=0;i<3;i++){
+    char * tmpName =
+      (char *) malloc ((strlen (reg_dir) + strlen (registryKeys[i]) + 2) *
+		       sizeof (char));
+    sprintf (tmpName, "%s/%s", reg_dir, registryKeys[i]);
+    
+    DIR *dirp1 = opendir (tmpName);
+    struct dirent *dp1;
+    while ((dp1 = readdir (dirp1)) != NULL){
+      char* extn = strstr(dp1->d_name, ".zcfg");
+      if(dp1->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
+	{
+	  int t;
+	  char *tmps1=
+	    (char *) malloc ((strlen (tmpName) + strlen (dp1->d_name) + 2) *
+			     sizeof (char));
+	  sprintf (tmps1, "%s/%s", tmpName, dp1->d_name);
+	  char *tmpsn = zStrdup (dp1->d_name);
+	  tmpsn[strlen (tmpsn) - 5] = 0;
+	  service* s1 = (service *) malloc (SERVICE_SIZE);
+	  if (s1 == NULL)
 	    {
-	      int t;
-	      char *tmps1=
-		(char *) malloc ((strlen (tmpName) + strlen (dp1->d_name) + 2) *
-				 sizeof (char));
-	      sprintf (tmps1, "%s/%s", tmpName, dp1->d_name);
-	      char *tmpsn = zStrdup (dp1->d_name);
-	      tmpsn[strlen (tmpsn) - 5] = 0;
-	      service* s1 = (service *) malloc (SERVICE_SIZE);
-	      if (s1 == NULL)
-		{
-		  dup2 (saved_stdout, fileno (stdout));
-		  errorException (m, _("Unable to allocate memory."),
-				  "InternalError", NULL);
-		  return -1;
-		}
-	      t = readServiceFile (m, tmps1, &s1, tmpsn);
-	      free (tmpsn);
-	      if (t < 0)
-		{
-		  map *tmp00 = getMapFromMaps (m, "lenv", "message");
-		  char tmp01[1024];
-		  if (tmp00 != NULL)
-		    sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-			     dp1->d_name, tmp00->value);
-		  else
-		    sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
-			     dp1->d_name);
-		  dup2 (saved_stdout, fileno (stdout));
-		  errorException (m, tmp01, "InternalError", NULL);
-		  return -1;
-		}
-#ifdef DEBUG
-	      dumpService (s1);
-	      fflush (stdout);
-	      fflush (stderr);
-#endif
-	      if(strncasecmp(dp->d_name,"implementation",14)==0){
-		inheritance(*r,&s1);
-	      }
-	      addServiceToRegistry(r,dp->d_name,s1);
-	      freeService (&s1);
-	      free (s1);
-	      scount++;
+	      dup2 (saved_stdout, fileno (stdout));
+	      errorException (m, _("Unable to allocate memory."),
+			      "InternalError", NULL);
+	      return -1;
 	    }
+	  t = readServiceFile (m, tmps1, &s1, tmpsn);
+	  free (tmpsn);
+	  if (t < 0)
+	    {
+	      map *tmp00 = getMapFromMaps (m, "lenv", "message");
+	      char tmp01[1024];
+	      if (tmp00 != NULL)
+		sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+			 dp1->d_name, tmp00->value);
+	      else
+		sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+			 dp1->d_name);
+	      dup2 (saved_stdout, fileno (stdout));
+	      errorException (m, tmp01, "InternalError", NULL);
+	      return -1;
+	    }
+#ifdef DEBUG
+	  dumpService (s1);
+	  fflush (stdout);
+	  fflush (stderr);
+#endif
+	  if(strncasecmp(registryKeys[i],"implementation",14)==0){
+	    inheritance(*r,&s1);
+	  }
+	  addServiceToRegistry(r,registryKeys[i],s1);
+	  freeService (&s1);
+	  free (s1);
+	  scount++;
 	}
-	(void) closedir (dirp1);
-      }
+    }
+    (void) closedir (dirp1);
   }
-  (void) closedir (dirp);
   return 0;
 }
 

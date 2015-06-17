@@ -9,11 +9,15 @@ AC_PROG_SED
 
 # Checks for libraries.
 AC_CHECK_LIB([cgic], [cgiMain])
-AC_CHECK_LIB([curl], [curl_easy_init curl_easy_setopt curl_easy_cleanup curl_easy_perform])
-AC_CHECK_LIB([dl], [dlopen dlsym dlerror dlclose])
+AC_CHECK_LIB([curl], [curl_easy_init,curl_easy_setopt,curl_easy_cleanup,curl_easy_perform])
+AC_CHECK_LIB([dl], [dlopen,dlsym,dlerror,dlclose])
 AC_CHECK_LIB([fl], [main])
 AC_CHECK_LIB([pthread], [main])
 AC_CHECK_LIB([ssl], [main])
+
+DEFAULT_LIBS="$LIBS"
+AC_SUBST([DEFAULT_LIBS])
+
 
 # Checks for header files.
 AC_FUNC_ALLOCA
