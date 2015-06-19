@@ -57,7 +57,9 @@ extern "C" {
   int isValidLang(maps*,const char*);
   
   char* getLastErrorMessage();
-  
+  int readServiceFile (maps *, char *, service **, char *);
+  int createRegistry (maps*,registry **,char *);
+
 #ifdef __cplusplus
 }
 #endif

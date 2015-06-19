@@ -813,6 +813,9 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   dumpElements(current_element);
 #endif
   if(wait_outputs && current_element!=NULL && current_element->name!=NULL){
+    if(current_content!=NULL){
+      addMapToMap(&current_element->content,current_content);
+    }
     if(my_service->outputs==NULL){  
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAOUTPUTS - %d) DUP current_element\n",__LINE__);

@@ -140,31 +140,6 @@ extern "C"
   #endif
 #endif
 
-extern int getServiceFromFile (maps *, const char *, service **);
-
-/**
- * Parse the service file using getServiceFromFile or use getServiceFromYAML
- * if YAML support was activated.
- *
- * @param conf the conf maps containing the main.cfg settings
- * @param file the file name to parse
- * @param service the service to update witht the file content
- * @param name the service name
- * @return true if the file can be parsed or false
- * @see getServiceFromFile, getServiceFromYAML
- */
-int
-readServiceFile (maps * conf, char *file, service ** service, char *name)
-{
-  int t = getServiceFromFile (conf, file, service);
-#ifdef YAML
-  if (t < 0)
-    {
-      t = getServiceFromYAML (conf, file, service, name);
-    }
-#endif
-  return t;
-}
 
 /**
  * Replace a char by another one in a string
@@ -184,97 +159,6 @@ translateChar (char *str, char toReplace, char toReplaceBy)
     }
 }
 
-
-/**
- * Create the profile registry.
- *
- * The profile registry is optional (created only if the registry key is
- * available in the [main] section of the main.cfg file) and can be used to
- * store the profiles hierarchy. The registry is a directory which should
- * contain the following sub-directories: 
- *  * concept: direcotry containing .html files describing concept
- *  * generic: directory containing .zcfg files for wps:GenericProcess
- *  * implementation: directory containing .zcfg files for wps:Process
- *
- * @param m the conf maps containing the main.cfg settings
- * @param r the registry to update
- * @param reg_dir the resgitry 
- * @param saved_stdout the saved stdout identifier
- * @return 0 if the resgitry is null or was correctly updated, -1 on failure
- */
-int
-createRegistry (maps* m,registry ** r, char *reg_dir, int saved_stdout)
-{
-  char registryKeys[3][15]={
-    "concept",
-    "generic",
-    "implementation"
-  };
-  int scount = 0,i=0;
-  if (reg_dir == NULL)
-    return 0;
-  for(i=0;i<3;i++){
-    char * tmpName =
-      (char *) malloc ((strlen (reg_dir) + strlen (registryKeys[i]) + 2) *
-		       sizeof (char));
-    sprintf (tmpName, "%s/%s", reg_dir, registryKeys[i]);
-    
-    DIR *dirp1 = opendir (tmpName);
-    struct dirent *dp1;
-    while ((dp1 = readdir (dirp1)) != NULL){
-      char* extn = strstr(dp1->d_name, ".zcfg");
-      if(dp1->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
-	{
-	  int t;
-	  char *tmps1=
-	    (char *) malloc ((strlen (tmpName) + strlen (dp1->d_name) + 2) *
-			     sizeof (char));
-	  sprintf (tmps1, "%s/%s", tmpName, dp1->d_name);
-	  char *tmpsn = zStrdup (dp1->d_name);
-	  tmpsn[strlen (tmpsn) - 5] = 0;
-	  service* s1 = (service *) malloc (SERVICE_SIZE);
-	  if (s1 == NULL)
-	    {
-	      dup2 (saved_stdout, fileno (stdout));
-	      errorException (m, _("Unable to allocate memory."),
-			      "InternalError", NULL);
-	      return -1;
-	    }
-	  t = readServiceFile (m, tmps1, &s1, tmpsn);
-	  free (tmpsn);
-	  if (t < 0)
-	    {
-	      map *tmp00 = getMapFromMaps (m, "lenv", "message");
-	      char tmp01[1024];
-	      if (tmp00 != NULL)
-		sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-			 dp1->d_name, tmp00->value);
-	      else
-		sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
-			 dp1->d_name);
-	      dup2 (saved_stdout, fileno (stdout));
-	      errorException (m, tmp01, "InternalError", NULL);
-	      return -1;
-	    }
-#ifdef DEBUG
-	  dumpService (s1);
-	  fflush (stdout);
-	  fflush (stderr);
-#endif
-	  if(strncasecmp(registryKeys[i],"implementation",14)==0){
-	    inheritance(*r,&s1);
-	  }
-	  addServiceToRegistry(r,registryKeys[i],s1);
-	  freeService (&s1);
-	  free (s1);
-	  scount++;
-	}
-    }
-    (void) closedir (dirp1);
-  }
-  return 0;
-}
-
 /**
  * Recursivelly parse zcfg starting from the ZOO-Kernel cwd.
  * Call the func function given in arguments after parsing the ZCFG file.
@@ -287,12 +171,14 @@ createRegistry (maps* m,registry ** r, char *reg_dir, int saved_stdout)
  * @param saved_stdout the saved stdout identifier
  * @param level the current level (number of sub-directories to reach the
  * current path)
+ * @param func a pointer to a function having 4 parameters 
+ *  (registry*, maps*, xmlNodePtr and service*).
  * @see inheritance, readServiceFile
  */
 int
-recursReaddirF (maps * m, registry *r, xmlNodePtr n, char *conf_dir, char *prefix,
-                int saved_stdout, int level, void (func) (maps *, xmlNodePtr,
-                                                          service *))
+recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir, 
+		 char *prefix, int saved_stdout, int level, 
+		 void (func) (registry *, maps *, xmlNodePtr, service *) )
 {
   struct dirent *dp;
   int scount = 0;
@@ -399,7 +285,7 @@ recursReaddirF (maps * m, registry *r, xmlNodePtr n, char *conf_dir, char *prefi
             fflush (stderr);
 #endif
 	    inheritance(r,&s1);
-            func (m, n, s1);
+            func (r, m, n, s1);
             freeService (&s1);
             free (s1);
             scount++;
@@ -1250,8 +1136,16 @@ runRequest (map ** inputs)
   if(reg!=NULL){
     int saved_stdout = dup (fileno (stdout));
     dup2 (fileno (stderr), fileno (stdout));
-    createRegistry (m,&zooRegistry,reg->value,saved_stdout);
+    if(createRegistry (m,&zooRegistry,reg->value)<0){
+      map *message=getMapFromMaps(m,"lenv","message");
+      map *type=getMapFromMaps(m,"lenv","type");
+      dup2 (saved_stdout, fileno (stdout));
+      errorException (m, message->value,
+		      type->value, NULL);
+      return 0;
+    }
     dup2 (saved_stdout, fileno (stdout));
+    close(saved_stdout);
   }
 
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
@@ -1432,7 +1326,7 @@ runRequest (map ** inputs)
 			dumpService (s1);
 #endif
 			inheritance(zooRegistry,&s1);
-			printDescribeProcessForProcess (m, n, s1);
+			printDescribeProcessForProcess (zooRegistry,m, n, s1);
 			freeService (&s1);
 			free (s1);
 			s1 = NULL;
@@ -1510,7 +1404,7 @@ runRequest (map ** inputs)
 				dumpService (s1);
 #endif
 				inheritance(zooRegistry,&s1);
-				printDescribeProcessForProcess (m, n, s1);
+				printDescribeProcessForProcess (zooRegistry,m, n, s1);
 				freeService (&s1);
 				free (s1);
 				s1 = NULL;
@@ -2176,7 +2070,7 @@ runRequest (map ** inputs)
 #ifndef WIN32
 	  fclose (stdin);
 #endif
-
+	  fprintf(stderr,"DEBUG START %s %d \n",__FILE__,__LINE__);
 #ifdef RELY_ON_DB
 	  init_sql(m);
 	  recordServiceStatus(m);

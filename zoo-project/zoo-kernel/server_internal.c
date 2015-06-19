@@ -965,7 +965,8 @@ void runDismiss(maps* conf,char* pid){
 	if(strstr(dp->d_name,pid)!=0){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
 	  if(unlink(fileName)!=0){
-	    errorException (conf, _("The job cannot be removed, a file cannot be removed"),
+	    errorException (conf, 
+			    _("The job cannot be removed, a file cannot be removed"),
 			    "NoApplicableCode", NULL);
 	    return;
 	  }
@@ -981,4 +982,109 @@ void runDismiss(maps* conf,char* pid){
     free(statusInfo);
   }
   return;
+}
+
+extern int getServiceFromFile (maps *, const char *, service **);
+
+/**
+ * Parse the service file using getServiceFromFile or use getServiceFromYAML
+ * if YAML support was activated.
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param file the file name to parse
+ * @param service the service to update witht the file content
+ * @param name the service name
+ * @return true if the file can be parsed or false
+ * @see getServiceFromFile, getServiceFromYAML
+ */
+int readServiceFile (maps * conf, char *file, service ** service, char *name){
+  int t = getServiceFromFile (conf, file, service);
+#ifdef YAML
+  if (t < 0){
+    t = getServiceFromYAML (conf, file, service, name);
+  }
+#endif
+  return t;
+}
+
+/**
+ * Create the profile registry.
+ *
+ * The profile registry is optional (created only if the registry key is
+ * available in the [main] section of the main.cfg file) and can be used to
+ * store the profiles hierarchy. The registry is a directory which should
+ * contain the following sub-directories: 
+ *  * concept: direcotry containing .html files describing concept
+ *  * generic: directory containing .zcfg files for wps:GenericProcess
+ *  * implementation: directory containing .zcfg files for wps:Process
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @param r the registry to update
+ * @param reg_dir the resgitry 
+ * @return 0 if the resgitry is null or was correctly updated, -1 on failure
+ */
+int createRegistry (maps* m,registry ** r, char *reg_dir)
+{
+  char registryKeys[3][15]={
+    "concept",
+    "generic",
+    "implementation"
+  };
+  int scount = 0,i=0;
+  if (reg_dir == NULL)
+    return 0;
+  for(i=0;i<3;i++){
+    char * tmpName =
+      (char *) malloc ((strlen (reg_dir) + strlen (registryKeys[i]) + 2) *
+		       sizeof (char));
+    sprintf (tmpName, "%s/%s", reg_dir, registryKeys[i]);
+    
+    DIR *dirp1 = opendir (tmpName);
+    struct dirent *dp1;
+    while ((dp1 = readdir (dirp1)) != NULL){
+      char* extn = strstr(dp1->d_name, ".zcfg");
+      if(dp1->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
+	{
+	  int t;
+	  char *tmps1=
+	    (char *) malloc ((strlen (tmpName) + strlen (dp1->d_name) + 2) *
+			     sizeof (char));
+	  sprintf (tmps1, "%s/%s", tmpName, dp1->d_name);
+	  char *tmpsn = zStrdup (dp1->d_name);
+	  tmpsn[strlen (tmpsn) - 5] = 0;
+	  service* s1 = (service *) malloc (SERVICE_SIZE);
+	  if (s1 == NULL)
+	    {
+	      setMapInMaps(m,"lenv","message",_("Unable to allocate memory."));
+	      setMapInMaps(m,"lenv","type","InternalError");
+	      return -2;
+	    }
+	  t = readServiceFile (m, tmps1, &s1, tmpsn);
+	  free (tmpsn);
+	  if (t < 0)
+	    {
+	      map *tmp00 = getMapFromMaps (m, "lenv", "message");
+	      char tmp01[1024];
+	      if (tmp00 != NULL)
+		sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+			 dp1->d_name, tmp00->value);
+	      else
+		sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+			 dp1->d_name);
+	      setMapInMaps(m,"lenv","message",tmp01);
+	      setMapInMaps(m,"lenv","type","InternalError");
+	      return -1;
+	    }
+	  if(strncasecmp(registryKeys[i],"implementation",14)==0){
+	    inheritance(*r,&s1);
+	  }
+	  addServiceToRegistry(r,registryKeys[i],s1);
+	  freeService (&s1);
+	  free (s1);
+	  scount++;
+	}
+    }
+    (void) closedir (dirp1);
+  }
+  return 0;
 }

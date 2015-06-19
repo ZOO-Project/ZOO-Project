@@ -1261,7 +1261,11 @@ service* getServiceFromRegistry(registry* r,char  *level,char* sname){
  */
 void inheritMap(map** out,map* in){
   map* content=in;
-  while(content!=NULL && *out!=NULL){
+  if((*out)==NULL){
+    addMapToMap(out,in);
+    return;
+  }
+  while(content!=NULL){
     map* cmap=getMap(*out,content->name);
     if(cmap==NULL)
       addToMap(*out,content->name,content->value);

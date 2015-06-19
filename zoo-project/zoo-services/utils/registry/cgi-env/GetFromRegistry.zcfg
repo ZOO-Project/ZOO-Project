@@ -1,0 +1,36 @@
+[GetFromRegistry]
+ Title = Provide access to the Profile Registry
+ Abstract = Return a GenericProcess, Process or simple Concept based on the profiles registry
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = wps_registry.zo
+ serviceType = C
+ <DataInputs>
+  [id]
+   Title = The registry path
+   Abstract = The profiles registry path
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = integer
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = the GenericProcess, Process or Concept
+   Abstract = The resulting GenericProcess, Process or Concept
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://schemas.opengis.net/wps/2.0/wps.xsd
+    </Default>
+    <Supported>
+     mimeType = text/plain
+     encoding = UTF-8
+    </Supported>
+   </ComplexData>
+ </DataOutputs>  
