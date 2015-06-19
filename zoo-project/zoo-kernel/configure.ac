@@ -8,12 +8,14 @@ AC_PROG_CXX
 AC_PROG_SED
 
 # Checks for libraries.
-AC_CHECK_LIB([cgic], [cgiMain])
-AC_CHECK_LIB([curl], [curl_easy_init curl_easy_setopt curl_easy_cleanup curl_easy_perform])
-AC_CHECK_LIB([dl], [dlopen dlsym dlerror dlclose])
-AC_CHECK_LIB([fl], [main])
-AC_CHECK_LIB([pthread], [main])
-AC_CHECK_LIB([ssl], [main])
+AC_CHECK_LIB([curl], [curl_easy_init,curl_easy_setopt,curl_easy_cleanup,curl_easy_perform])
+AC_CHECK_LIB([dl], [dlopen,dlsym,dlerror,dlclose])
+AC_CHECK_LIB([crypto], [EVP_DigestInit,EVP_md5,EVP_DigestUpdate,BIO_f_base64,BIO_new])
+AC_CHECK_LIB([uuid], [uuid_generate_time])
+
+DEFAULT_LIBS="$LIBS"
+AC_SUBST([DEFAULT_LIBS])
+
 
 # Checks for header files.
 AC_FUNC_ALLOCA
@@ -164,6 +166,15 @@ AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([could not find libxml2]
 AC_SUBST([XML2_CPPFLAGS])
 AC_SUBST([XML2_LDFLAGS])
 LIBS="$LIBS_SAVE"
+
+
+GLIB_LDFLAGS=`pkg-config --libs glib-2.0`
+GLIB_CPPFLAGS=`pkg-config --cflags glib-2.0`
+
+AC_SUBST([GLIB_CPPFLAGS])
+AC_SUBST([GLIB_LDFLAGS])
+
+
 
 
 # ===========================================================================

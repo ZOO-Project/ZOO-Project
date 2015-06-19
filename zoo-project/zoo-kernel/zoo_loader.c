@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include "service_internal.h"
 #include "response_print.h"
-
+#include "zoo_zcfg.h"
 
 #ifdef WIN32
 #include "windows.h"
@@ -88,7 +88,11 @@ int cgiMain(){
   fprintf (stderr, "ContentLength: %d\n", cgiContentLength);
   fflush(stderr);
 #endif
-  
+
+
+  init_services_conf ("/var/www/zoo-wps/cgi-bin","/var/www/zoo-wps/registry/");
+
+
   char *strQuery=NULL;
   if(cgiQueryString!=NULL)
     strQuery=zStrdup(cgiQueryString);
@@ -114,12 +118,8 @@ int cgiMain(){
 	 cgiContentLength+=r;
        }
        delete[] buffer;
-       if(res==NULL && (strQuery==NULL || strlen(strQuery)==0)){
-	 return errorException(NULL,"ZOO-Kernel failed to process your request because the request was empty.","InternalError",NULL);
-       }else{
-	 if(strQuery==NULL || strlen(strQuery)==0)
-	   tmpMap=createMap("request",res);
-       }
+       if(res!=NULL && (strQuery==NULL || strlen(strQuery)==0))
+	 tmpMap=createMap("request",res);
        if(res!=NULL)
 	 free(res);
     }else{
