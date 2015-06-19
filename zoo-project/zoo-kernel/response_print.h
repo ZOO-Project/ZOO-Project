@@ -59,10 +59,8 @@
  * ZOO-Kernel was unable to release a lock
  */
 #define ZOO_LOCK_RELEASE_FAILED -6
-
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>

@@ -159,7 +159,7 @@ extern "C" {
 /**
  * The memory size to create a service
  */
-#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
+#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)+sizeof(char*)+sizeof(char*)
 /**
  * The memory size to create a services
  */
@@ -237,6 +237,8 @@ extern "C" {
    */
   typedef struct service{
     char* name; //!< the name
+    char* identifier; //!< service identifier Ex:  zcfg = /var/www/zoo/cgi-bin/gdal/ndvi/ExtractNDVI.zcfg  ===>  identifier = gdal.ndvi.ExtractNDVI
+    char * zcfg; // path to zcfg file
     struct map* content; //!< the content map
     struct map* metadata; //!< the metadata map
     struct elements* inputs; //!< the inputs elements

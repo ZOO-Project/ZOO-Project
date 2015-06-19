@@ -29,7 +29,7 @@
 
 #include "service.h"
 #include "ulinet.h"
-
+#include "cgic.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
