@@ -1,4 +1,5 @@
 Version 1.5.0-dev
+  * Add utils/registry service
   * Initial support for WPS 2.0.0 including the Dismiss extension
   * Fix concurrency access to status informations
   * Use simple file rather than shared memory for storing status informations

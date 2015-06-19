@@ -142,9 +142,9 @@ extern "C" {
   /**
    * Definitions of schemas depending on the WPS version
    */
-  static const char* schemas[2][7]={
+  static const char* schemas[2][8]={
     {"1.0.0","http://www.opengis.net/ows/1.1","http://www.opengis.net/wps/1.0.0","http://schemas.opengis.net/wps/1.0.0","%s %s/wps%s_response.xsd","http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd","1.1.0"},
-    {"2.0.0","http://www.opengis.net/ows/2.0","http://www.opengis.net/wps/2.0","http://schemas.opengis.net/wps/2.0","%s %s/wps%s.xsd","http://schemas.opengis.net/ows/2.0/owsExceptionReport.xsd","2.0.2"},
+    {"2.0.0","http://www.opengis.net/ows/2.0","http://www.opengis.net/wps/2.0","http://schemas.opengis.net/wps/2.0","http://www.opengis.net/wps/2.0 http://schemas.opengis.net/wps/2.0/wps.xsd","http://schemas.opengis.net/ows/2.0/owsExceptionReport.xsd","2.0.2","http://www.opengis.net/spec/wps/2.0/def/process-profile/"},
   };
   /**
    * Definitions of support requests (depending on the WPS version)
@@ -207,8 +207,8 @@ extern "C" {
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*,const char*);
-  void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
-  void printDescribeProcessForProcess(maps*,xmlNodePtr,service*);
+  void printGetCapabilitiesForProcess(registry*,maps*,xmlNodePtr,service*);
+  void printDescribeProcessForProcess(registry*,maps*,xmlNodePtr,service*);
   void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);

@@ -638,13 +638,14 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
 /**
  * Generate a wps:Process node for a servie and add it to a given node.
  * 
+ * @param reg the profiles registry
  * @param m the conf maps containing the main.cfg settings
  * @param registry the profile registry if any
  * @param nc the XML node to add the Process node
  * @param serv the service structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
+void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xml,ns_xlink;
   xmlNodePtr n=NULL,nc1,nc2;
   map* version=getMapFromMaps(m,"main","rversion");
@@ -701,8 +702,15 @@ void printGetCapabilitiesForProcess(maps* m,xmlNodePtr nc,service* serv){
   }
 }
 
+/**
+ * Attach attributes to a ProcessDescription or a ProcessOffering node.
+ * 
+ * @param n the XML node to attach the attributes to
+ * @param ns the XML namespace to create the attributes
+ * @param content the servive main content created from the zcfg file
+ * @param vid the version identifier (0 for 1.0.0 and 1 for 2.0.0)
+ */
 void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
-  xmlNodePtr nc1;
   int limit=(vid==1?7:3);
   for(int i=1;i<limit;i+=2){
     map* tmp1=getMap(content,capabilities[vid][i]);
@@ -710,26 +718,74 @@ void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
       if(vid==1 && i==1 && strlen(tmp1->value)<5){
 	char *val=(char*)malloc((strlen(tmp1->value)+5)*sizeof(char));
 	sprintf(val,"%s.0.0",tmp1->value);
-	xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST val);
+	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST val);
 	free(val);
       }
       else
-	xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST tmp1->value);
+	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST tmp1->value);
     }
     else
-      xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+      xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+  }
+}
+
+/**
+ * Add the ows:Metadata nodes relative to the profile registry
+ *
+ * @param n the XML node to add the ows:Metadata
+ * @param ns_ows the ows XML namespace
+ * @param ns_xlink the ows xlink namespace
+ * @param reg the profile registry
+ * @param main_conf the map containing the main configuration content
+ * @param serv the service 
+ */
+void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registry* reg,maps* main_conf,service* serv){
+  int vid=1;
+  map* tmp1=getMap(serv->content,"extend");
+  if(tmp1==NULL)
+    tmp1=getMap(serv->content,"concept");
+  if(tmp1!=NULL){
+    map* level=getMap(serv->content,"level");
+    if(level!=NULL){
+      xmlNodePtr nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
+      char* ckey=level->value;
+      if(strncasecmp(level->value,"profile",7)==0)
+	ckey="generic";
+      if(strncasecmp(level->value,"generic",7)==0)
+	ckey="concept";
+      service* inherited=getServiceFromRegistry(reg,ckey,tmp1->value);
+      if(inherited!=NULL){
+	addInheritedMetadata(n,ns_ows,ns_xlink,reg,main_conf,inherited);
+      }
+      char cschema[71];
+      sprintf(cschema,"%s%s",schemas[vid][7],ckey);
+      map* regUrl=getMapFromMaps(main_conf,"main","registryUrl");
+      map* regExt=getMapFromMaps(main_conf,"main","registryExt");
+      char* registryUrl=(char*)malloc((strlen(regUrl->value)+strlen(ckey)+
+				       (regExt!=NULL?strlen(regExt->value)+1:0)+
+				       strlen(tmp1->value)+2)*sizeof(char));
+      if(regExt!=NULL)
+	sprintf(registryUrl,"%s%s/%s.%s",regUrl->value,ckey,tmp1->value,regExt->value);
+      else
+	sprintf(registryUrl,"%s%s/%s",regUrl->value,ckey,tmp1->value);
+      xmlNewNsProp(nc1,ns_xlink,BAD_CAST "role",BAD_CAST cschema);
+      xmlNewNsProp(nc1,ns_xlink,BAD_CAST "href",BAD_CAST registryUrl);
+      free(registryUrl);
+      xmlAddChild(n,nc1);
+    }
   }
 }
 
 /**
  * Generate a ProcessDescription node for a servie and add it to a given node.
  * 
+ * @param reg the profile registry
  * @param m the conf maps containing the main.cfg settings
  * @param nc the XML node to add the Process node
  * @param serv the servive structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
+void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc1,nc2;
   map* version=getMapFromMaps(m,"main","rversion");
@@ -751,49 +807,47 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
   }
   else{
     nc2 = xmlNewNode(ns, BAD_CAST "ProcessOffering");
+    // In case mode was defined in the ZCFG file then restrict the 
+    // jobControlOptions value to this value. The dismiss is always 
+    // supported whatever you can set in the ZCFG file.
+    // cf. http://docs.opengeospatial.org/is/14-065/14-065.html#47 (Table 30)
+    map* mode=getMap(serv->content,"mode");
+    if(mode!=NULL){
+      if( strncasecmp(mode->value,"sync",strlen(mode->value))==0 ||
+	  strncasecmp(mode->value,"async",strlen(mode->value))==0 ){
+	char toReplace[22];
+	sprintf(toReplace,"%s-execute dismiss",mode->value);
+	addToMap(serv->content,capabilities[vid][3],toReplace);
+      }
+    }
     attachAttributes(nc2,NULL,serv->content,vid);
-    nc = xmlNewNode(ns, BAD_CAST "Process");
+    map* level=getMap(serv->content,"level");
+    if(level!=NULL && strcasecmp(level->value,"generic")==0)
+      nc = xmlNewNode(ns, BAD_CAST "GenericProcess");
+    else
+      nc = xmlNewNode(ns, BAD_CAST "Process");
   }
-  /*
-  const char *tmp4[3];
-  tmp4[0]="processVersion";
-  tmp4[1]="storeSupported";
-  tmp4[2]="statusSupported";
-  int j=0;
-  for(j=0;j<3;j++){
-    tmp1=getMap(serv->content,tmp4[j]);
-    if(tmp1!=NULL){
-      if(j==0)
-	xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp1->value);      
-      else
-	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST tmp1->value);      
-    }
-    else{
-      if(j>0)
-	xmlNewProp(nc,BAD_CAST tmp4[j],BAD_CAST "true");
-      else
-	xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST "1");
-    }
-  }
-  */
   
   tmp1=getMapFromMaps(m,"lenv","level");
   addPrefix(m,tmp1,serv);
   printDescription(nc,ns_ows,serv->name,serv->content,vid);
 
-  tmp1=serv->metadata;
-  while(tmp1!=NULL){
-    nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-    xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-    xmlAddChild(nc,nc1);
-    tmp1=tmp1->next;
-  }
-
-  tmp1=getMap(serv->content,"Profile");
-  if(tmp1!=NULL && vid==0){
-    nc1 = xmlNewNode(ns, BAD_CAST "Profile");
-    xmlAddChild(nc1,xmlNewText(BAD_CAST tmp1->value));
-    xmlAddChild(nc,nc1);
+  if(vid==0){
+    tmp1=serv->metadata;
+    while(tmp1!=NULL){
+      nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
+      xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
+      xmlAddChild(nc,nc1);
+      tmp1=tmp1->next;
+    }
+    tmp1=getMap(serv->content,"Profile");
+    if(tmp1!=NULL && vid==0){
+      nc1 = xmlNewNode(ns, BAD_CAST "Profile");
+      xmlAddChild(nc1,xmlNewText(BAD_CAST tmp1->value));
+      xmlAddChild(nc,nc1);
+    }
+  }else{
+    addInheritedMetadata(nc,ns_ows,ns_xlink,reg,m,serv);
   }
 
   if(serv->inputs!=NULL){
@@ -834,26 +888,14 @@ void printDescribeProcessForProcess(maps* m,xmlNodePtr nc,service* serv){
  * @param elem the elements structure containing the metadata informations
  * @param type the name ("Input" or "Output") of the XML node to create
  * @param ns_ows the ows XML namespace
+ * @param ns_ows the ows XML namespace
  * @param nc1 the XML node to use to add the created tree
+ * @param vid the WPS version id (0 for 1.0.0, 1 for 2.0.0)
  */
 void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xmlNsPtr ns_ows,xmlNodePtr nc1,int vid){
   xmlNsPtr ns1=NULL;
   if(vid==1)
     ns1=ns;
-  const char *orderedFields[13];
-  orderedFields[0]="mimeType";
-  orderedFields[1]="encoding";
-  orderedFields[2]="schema";
-  orderedFields[3]="dataType";
-  orderedFields[4]="uom";
-  orderedFields[5]="CRS";
-  orderedFields[6]="value";
-  orderedFields[7]="AllowedValues";
-  orderedFields[8]="range";
-  orderedFields[9]="rangeMin";
-  orderedFields[10]="rangeMax";
-  orderedFields[11]="rangeClosure";
-  orderedFields[12]="rangeSpace";
 
   xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9;
   elements* e=elem;
@@ -863,7 +905,7 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
     int default1=0;
     int isAnyValue=1;
     nc2 = xmlNewNode(NULL, BAD_CAST type);
-    if(strncmp(type,"Input",5)==0){
+    if(strstr(type,"Input")!=NULL){
       tmp1=getMap(e->content,"minOccurs");
       if(tmp1!=NULL){
 	xmlNewProp(nc2,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
@@ -884,547 +926,562 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
 
     printDescription(nc2,ns_ows,e->name,e->content,vid);
 
-    /**
-     * Build the (Literal/Complex/BoundingBox)Data node
-     */
-    if(strncmp(type,"Output",6)==0){
-      if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
-	nc3 = xmlNewNode(ns1, BAD_CAST "LiteralOutput");
-      else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
-	nc3 = xmlNewNode(ns1, BAD_CAST "ComplexOutput");
-      else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
-	nc3 = xmlNewNode(ns1, BAD_CAST "BoundingBoxOutput");
-      else
-	nc3 = xmlNewNode(ns1, BAD_CAST e->format);
-    }else{
-      if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0 ||
-	 strncasecmp(e->format,"LITERALOUTPUT",strlen(e->format))==0){
-	nc3 = xmlNewNode(ns1, BAD_CAST "LiteralData");
-      }
-      else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
-	nc3 = xmlNewNode(ns1, BAD_CAST "ComplexData");
-      else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
-	nc3 = xmlNewNode(ns1, BAD_CAST "BoundingBoxData");
-      else
-	nc3 = xmlNewNode(ns1, BAD_CAST e->format);
-    }
+    if(e->format!=NULL){
+      const char orderedFields[13][14]={
+	"mimeType",
+	"encoding",
+	"schema",
+	"dataType",
+	"uom",
+	"CRS",
+	"AllowedValues",
+	"range",
+	"rangeMin",
+	"rangeMax",
+	"rangeClosure",
+	"rangeSpace"
+      };
 
-    iotype* _tmp0=NULL;
-    iotype* _tmp=e->defaults;
-    int datatype=0;
-    bool hasUOM=false;
-    bool hasUOM1=false;
-    if(_tmp!=NULL){
-      if(strcmp(e->format,"LiteralOutput")==0 ||
-	 strcmp(e->format,"LiteralData")==0){
-     	datatype=1;
-	if(vid==1){
-	  nc4 = xmlNewNode(ns1, BAD_CAST "Format");
-	  xmlNewProp(nc4,BAD_CAST "mimeType",BAD_CAST "text/plain");
-	  xmlNewProp(nc4,BAD_CAST "default",BAD_CAST "true");
-	  xmlAddChild(nc3,nc4);
-	  nc5 = xmlNewNode(NULL, BAD_CAST "LiteralDataDomain");
-	  xmlNewProp(nc5,BAD_CAST "default",BAD_CAST "true");
+      //Build the (Literal/Complex/BoundingBox)Data node
+      if(strncmp(type,"Output",6)==0){
+	if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
+	  nc3 = xmlNewNode(ns1, BAD_CAST "LiteralOutput");
+	else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
+	  nc3 = xmlNewNode(ns1, BAD_CAST "ComplexOutput");
+	else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
+	  nc3 = xmlNewNode(ns1, BAD_CAST "BoundingBoxOutput");
+	else
+	  nc3 = xmlNewNode(ns1, BAD_CAST e->format);
+      }else{
+	if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0 ||
+	   strncasecmp(e->format,"LITERALOUTPUT",strlen(e->format))==0){
+	  nc3 = xmlNewNode(ns1, BAD_CAST "LiteralData");
 	}
-	else{
-	  nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
+	else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
+	  nc3 = xmlNewNode(ns1, BAD_CAST "ComplexData");
+	else if(strncasecmp(e->format,"BOUNDINGBOXDATA",strlen(e->format))==0)
+	  nc3 = xmlNewNode(ns1, BAD_CAST "BoundingBoxData");
+	else
+	  nc3 = xmlNewNode(ns1, BAD_CAST e->format);
+      }
+
+      iotype* _tmp0=NULL;
+      iotype* _tmp=e->defaults;
+      int datatype=0;
+      bool hasUOM=false;
+      bool hasUOM1=false;
+      if(_tmp!=NULL){
+	if(strcmp(e->format,"LiteralOutput")==0 ||
+	   strcmp(e->format,"LiteralData")==0){
+	  datatype=1;
+	  if(vid==1){
+	    nc4 = xmlNewNode(ns1, BAD_CAST "Format");
+	    xmlNewProp(nc4,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    xmlNewProp(nc4,BAD_CAST "default",BAD_CAST "true");
+	    xmlAddChild(nc3,nc4);
+	    nc5 = xmlNewNode(NULL, BAD_CAST "LiteralDataDomain");
+	    xmlNewProp(nc5,BAD_CAST "default",BAD_CAST "true");
+	  }
+	  else{
+	    nc4 = xmlNewNode(NULL, BAD_CAST "UOMs");
+	    nc5 = xmlNewNode(NULL, BAD_CAST "Default");
+	  }
+	}
+	else if(strcmp(e->format,"BoundingBoxOutput")==0 ||
+		strcmp(e->format,"BoundingBoxData")==0){
+	  datatype=2;
 	  nc5 = xmlNewNode(NULL, BAD_CAST "Default");
 	}
-      }
-      else if(strcmp(e->format,"BoundingBoxOutput")==0 ||
-	      strcmp(e->format,"BoundingBoxData")==0){
-	datatype=2;
-	nc5 = xmlNewNode(NULL, BAD_CAST "Default");
-      }
-      else{
-	if(vid==0)
-	  nc4 = xmlNewNode(NULL, BAD_CAST "Default");
-	nc5 = xmlNewNode(ns1, BAD_CAST "Format");
-	if(vid==1){
-	  xmlNewProp(nc5,BAD_CAST "default",BAD_CAST "true");
-	  int oI=0;
-	  for(oI=0;oI<3;oI++)
-	    if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-	      xmlNewProp(nc5,BAD_CAST orderedFields[oI],BAD_CAST tmp1->value);
-	    }
-	}
-      }
-      
-      tmp1=_tmp->content;
-
-      if(vid==0)
-	if((tmp1=getMap(_tmp->content,"DataType"))!=NULL){
-	  nc8 = xmlNewNode(ns_ows, BAD_CAST "DataType");
-	  xmlAddChild(nc8,xmlNewText(BAD_CAST tmp1->value));
-	  char tmp[1024];
-	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewNsProp(nc8,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
+	else{
 	  if(vid==0)
-	    xmlAddChild(nc3,nc8);
-	  else
-	    xmlAddChild(nc5,nc8);
-	  datatype=1;
-	}
-
-      bool isInput=false;
-      if(strncmp(type,"Input",5)==0 || strncmp(type,"wps:Input",9)==0){
-	isInput=true;
-	if((tmp1=getMap(_tmp->content,"AllowedValues"))!=NULL){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	  char *token,*saveptr1;
-	  token=strtok_r(tmp1->value,",",&saveptr1);
-	  while(token!=NULL){
-	    nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	    char *tmps=strdup(token);
-	    tmps[strlen(tmps)]=0;
-	    xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
-	    free(tmps);
-	    xmlAddChild(nc6,nc7);
-	    token=strtok_r(NULL,",",&saveptr1);
-	  }
-	  if(getMap(_tmp->content,"range")!=NULL ||
-	     getMap(_tmp->content,"rangeMin")!=NULL ||
-	     getMap(_tmp->content,"rangeMax")!=NULL ||
-	     getMap(_tmp->content,"rangeClosure")!=NULL )
-	    goto doRange;
-	  if(vid==0)
-	    xmlAddChild(nc3,nc6);
-	  else
-	    xmlAddChild(nc5,nc6);
-	  isAnyValue=-1;
-	}
-
-        tmp1=getMap(_tmp->content,"range");
-	if(tmp1==NULL)
-	  tmp1=getMap(_tmp->content,"rangeMin");
-	if(tmp1==NULL)
-	  tmp1=getMap(_tmp->content,"rangeMax");
-	
-	if(tmp1!=NULL && isAnyValue==1){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	doRange:
-	  
-	  /**
-	   * Range: Table 46 OGC Web Services Common Standard
-	   */
-	  nc8 = xmlNewNode(ns_ows, BAD_CAST "Range");
-	  
-	  map* tmp0=getMap(tmp1,"range");
-	  if(tmp0!=NULL){
-	    char* pToken;
-	    char* orig=zStrdup(tmp0->value);
-	    /**
-	     * RangeClosure: Table 47 OGC Web Services Common Standard
-	     */
-	    const char *tmp="closed";
-	    if(orig[0]=='[' && orig[strlen(orig)-1]=='[')
-	      tmp="closed-open";
-	    else
-	      if(orig[0]==']' && orig[strlen(orig)-1]==']')
-		tmp="open-closed";
-	      else
-		if(orig[0]==']' && orig[strlen(orig)-1]=='[')
-		  tmp="open";
-	    xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST tmp);
-	    pToken=strtok(orig,",");
-	    int nci0=0;
-	    while(pToken!=NULL){
-	      char *tmpStr=(char*) malloc((strlen(pToken))*sizeof(char));
-	      if(nci0==0){
-		nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
-		strncpy( tmpStr, pToken+1, strlen(pToken)-1 );
-		tmpStr[strlen(pToken)-1] = '\0';
-	      }else{
-		nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
-		const char* bkt;
-		if ( ( bkt = strchr(pToken, '[') ) != NULL || ( bkt = strchr(pToken, ']') ) != NULL ){
-		  strncpy( tmpStr, pToken, bkt - pToken );
-		  tmpStr[bkt - pToken] = '\0';
-		}
+	    nc4 = xmlNewNode(NULL, BAD_CAST "Default");
+	  nc5 = xmlNewNode(ns1, BAD_CAST "Format");
+	  if(vid==1){
+	    xmlNewProp(nc5,BAD_CAST "default",BAD_CAST "true");
+	    int oI=0;
+	    for(oI=0;oI<3;oI++)
+	      if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+		xmlNewProp(nc5,BAD_CAST orderedFields[oI],BAD_CAST tmp1->value);
 	      }
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmpStr));
-	      free(tmpStr);
-	      xmlAddChild(nc8,nc7);
-	      nci0++;
-	      pToken = strtok(NULL,",");
-	    }		    
-	    if(getMap(tmp1,"rangeSpacing")==NULL){
-	      nc7 = xmlNewNode(ns_ows, BAD_CAST "Spacing");
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST "1"));
-	      xmlAddChild(nc8,nc7);
+	  }
+	}
+      
+	tmp1=_tmp->content;
+
+	if(vid==0)
+	  if((tmp1=getMap(_tmp->content,"DataType"))!=NULL){
+	    nc8 = xmlNewNode(ns_ows, BAD_CAST "DataType");
+	    xmlAddChild(nc8,xmlNewText(BAD_CAST tmp1->value));
+	    char tmp[1024];
+	    sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
+	    xmlNewNsProp(nc8,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
+	    if(vid==0)
+	      xmlAddChild(nc3,nc8);
+	    else
+	      xmlAddChild(nc5,nc8);
+	    datatype=1;
+	  }
+
+	bool isInput=false;
+	if(strncmp(type,"Input",5)==0 || strncmp(type,"wps:Input",9)==0){
+	  isInput=true;
+	  if((tmp1=getMap(_tmp->content,"AllowedValues"))!=NULL){
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	    char *token,*saveptr1;
+	    token=strtok_r(tmp1->value,",",&saveptr1);
+	    while(token!=NULL){
+	      nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	      char *tmps=strdup(token);
+	      tmps[strlen(tmps)]=0;
+	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
+	      free(tmps);
+	      xmlAddChild(nc6,nc7);
+	      token=strtok_r(NULL,",",&saveptr1);
 	    }
-	    free(orig);
-	  }else{
-	    
-	    tmp0=getMap(tmp1,"rangeMin");
+	    if(getMap(_tmp->content,"range")!=NULL ||
+	       getMap(_tmp->content,"rangeMin")!=NULL ||
+	       getMap(_tmp->content,"rangeMax")!=NULL ||
+	       getMap(_tmp->content,"rangeClosure")!=NULL )
+	      goto doRange;
+	    if(vid==0)
+	      xmlAddChild(nc3,nc6);
+	    else
+	      xmlAddChild(nc5,nc6);
+	    isAnyValue=-1;
+	  }
+
+	  tmp1=getMap(_tmp->content,"range");
+	  if(tmp1==NULL)
+	    tmp1=getMap(_tmp->content,"rangeMin");
+	  if(tmp1==NULL)
+	    tmp1=getMap(_tmp->content,"rangeMax");
+	
+	  if(tmp1!=NULL && isAnyValue==1){
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	  doRange:
+	  
+	    /**
+	     * Range: Table 46 OGC Web Services Common Standard
+	     */
+	    nc8 = xmlNewNode(ns_ows, BAD_CAST "Range");
+	  
+	    map* tmp0=getMap(tmp1,"range");
 	    if(tmp0!=NULL){
-	      nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
-	      xmlAddChild(nc8,nc7);
-	    }else{
-	      nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
-	      xmlAddChild(nc8,nc7);
-	    }
-	    tmp0=getMap(tmp1,"rangeMax");
-	    if(tmp0!=NULL){
-	      nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
-	      xmlAddChild(nc8,nc7);
-	    }else{
-	      nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
-	      xmlAddChild(nc8,nc7);
-	    }
-	    tmp0=getMap(tmp1,"rangeSpacing");
-	    if(tmp0!=NULL){
-	      nc7 = xmlNewNode(ns_ows, BAD_CAST "Spacing");
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
-	      xmlAddChild(nc8,nc7);
-	    }
-	    tmp0=getMap(tmp1,"rangeClosure");
-	    if(tmp0!=NULL){
+	      char* pToken;
+	      char* orig=zStrdup(tmp0->value);
+	      /**
+	       * RangeClosure: Table 47 OGC Web Services Common Standard
+	       */
 	      const char *tmp="closed";
-	      if(strcasecmp(tmp0->value,"co")==0)
+	      if(orig[0]=='[' && orig[strlen(orig)-1]=='[')
 		tmp="closed-open";
 	      else
-		if(strcasecmp(tmp0->value,"oc")==0)
+		if(orig[0]==']' && orig[strlen(orig)-1]==']')
 		  tmp="open-closed";
 		else
-		  if(strcasecmp(tmp0->value,"o")==0)
+		  if(orig[0]==']' && orig[strlen(orig)-1]=='[')
 		    tmp="open";
 	      xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST tmp);
-	    }else
-	      xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST "closed");
-	  }
-	  if(_tmp0==NULL){
-	    xmlAddChild(nc6,nc8);
-	    _tmp0=e->supported;
-	    if(_tmp0!=NULL &&
-	       (getMap(_tmp0->content,"range")!=NULL ||
-		getMap(_tmp0->content,"rangeMin")!=NULL ||
-		getMap(_tmp0->content,"rangeMax")!=NULL ||
-		getMap(_tmp0->content,"rangeClosure")!=NULL )){
-	      tmp1=_tmp0->content;
-	      goto doRange;
+	      pToken=strtok(orig,",");
+	      int nci0=0;
+	      while(pToken!=NULL){
+		char *tmpStr=(char*) malloc((strlen(pToken))*sizeof(char));
+		if(nci0==0){
+		  nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
+		  strncpy( tmpStr, pToken+1, strlen(pToken)-1 );
+		  tmpStr[strlen(pToken)-1] = '\0';
+		}else{
+		  nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
+		  const char* bkt;
+		  if ( ( bkt = strchr(pToken, '[') ) != NULL || ( bkt = strchr(pToken, ']') ) != NULL ){
+		    strncpy( tmpStr, pToken, bkt - pToken );
+		    tmpStr[bkt - pToken] = '\0';
+		  }
+		}
+		xmlAddChild(nc7,xmlNewText(BAD_CAST tmpStr));
+		free(tmpStr);
+		xmlAddChild(nc8,nc7);
+		nci0++;
+		pToken = strtok(NULL,",");
+	      }		    
+	      if(getMap(tmp1,"rangeSpacing")==NULL){
+		nc7 = xmlNewNode(ns_ows, BAD_CAST "Spacing");
+		xmlAddChild(nc7,xmlNewText(BAD_CAST "1"));
+		xmlAddChild(nc8,nc7);
+	      }
+	      free(orig);
+	    }else{
+	    
+	      tmp0=getMap(tmp1,"rangeMin");
+	      if(tmp0!=NULL){
+		nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
+		xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
+		xmlAddChild(nc8,nc7);
+	      }else{
+		nc7 = xmlNewNode(ns_ows, BAD_CAST "MinimumValue");
+		xmlAddChild(nc8,nc7);
+	      }
+	      tmp0=getMap(tmp1,"rangeMax");
+	      if(tmp0!=NULL){
+		nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
+		xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
+		xmlAddChild(nc8,nc7);
+	      }else{
+		nc7 = xmlNewNode(ns_ows, BAD_CAST "MaximumValue");
+		xmlAddChild(nc8,nc7);
+	      }
+	      tmp0=getMap(tmp1,"rangeSpacing");
+	      if(tmp0!=NULL){
+		nc7 = xmlNewNode(ns_ows, BAD_CAST "Spacing");
+		xmlAddChild(nc7,xmlNewText(BAD_CAST tmp0->value));
+		xmlAddChild(nc8,nc7);
+	      }
+	      tmp0=getMap(tmp1,"rangeClosure");
+	      if(tmp0!=NULL){
+		const char *tmp="closed";
+		if(strcasecmp(tmp0->value,"co")==0)
+		  tmp="closed-open";
+		else
+		  if(strcasecmp(tmp0->value,"oc")==0)
+		    tmp="open-closed";
+		  else
+		    if(strcasecmp(tmp0->value,"o")==0)
+		      tmp="open";
+		xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST tmp);
+	      }else
+		xmlNewNsProp(nc8,ns_ows,BAD_CAST "rangeClosure",BAD_CAST "closed");
 	    }
-	  }else{
-	    _tmp0=_tmp0->next;
-	    if(_tmp0!=NULL){
+	    if(_tmp0==NULL){
 	      xmlAddChild(nc6,nc8);
-	      if(getMap(_tmp0->content,"range")!=NULL ||
-		 getMap(_tmp0->content,"rangeMin")!=NULL ||
-		 getMap(_tmp0->content,"rangeMax")!=NULL ||
-		 getMap(_tmp0->content,"rangeClosure")!=NULL ){
+	      _tmp0=e->supported;
+	      if(_tmp0!=NULL &&
+		 (getMap(_tmp0->content,"range")!=NULL ||
+		  getMap(_tmp0->content,"rangeMin")!=NULL ||
+		  getMap(_tmp0->content,"rangeMax")!=NULL ||
+		  getMap(_tmp0->content,"rangeClosure")!=NULL )){
 		tmp1=_tmp0->content;
 		goto doRange;
 	      }
-	    }
-	  }
-	  xmlAddChild(nc6,nc8);
-	  if(vid==0)
-	    xmlAddChild(nc3,nc6);
-	  else
-	    xmlAddChild(nc5,nc6);
-	  isAnyValue=-1;
-	}
-	
-      }
-      
-      int oI=0;
-      /*if(vid==0)*/ {
-	for(oI=0;oI<13;oI++)
-	  if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-#ifdef DEBUG
-	    printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
-#endif
-	    if(strcmp(tmp1->name,"asReference")!=0 &&
-	       strncasecmp(tmp1->name,"DataType",8)!=0 &&
-	       strcasecmp(tmp1->name,"extension")!=0 &&
-	       strcasecmp(tmp1->name,"value")!=0 &&
-	       strcasecmp(tmp1->name,"AllowedValues")!=0 &&
-	       strncasecmp(tmp1->name,"range",5)!=0){
-	      if(datatype!=1){
-		char *tmp2=zCapitalize1(tmp1->name);
-		nc9 = xmlNewNode(NULL, BAD_CAST tmp2);
-		free(tmp2);
-	      }
-	      else{
-		char *tmp2=zCapitalize(tmp1->name);
-		nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-		free(tmp2);
-	      }
-	      xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
-	      if(vid==0 || oI>=3){
-		if(vid==0 || oI!=4)
-		  xmlAddChild(nc5,nc9);
-		if(oI==4 && vid==1){
-		  xmlNewProp(nc9,BAD_CAST "default",BAD_CAST "true");
+	    }else{
+	      _tmp0=_tmp0->next;
+	      if(_tmp0!=NULL){
+		xmlAddChild(nc6,nc8);
+		if(getMap(_tmp0->content,"range")!=NULL ||
+		   getMap(_tmp0->content,"rangeMin")!=NULL ||
+		   getMap(_tmp0->content,"rangeMax")!=NULL ||
+		   getMap(_tmp0->content,"rangeClosure")!=NULL ){
+		  tmp1=_tmp0->content;
+		  goto doRange;
 		}
 	      }
-	      else
-		xmlFree(nc9);
-	      if(strcasecmp(tmp1->name,"uom")==0)
-		hasUOM1=true;
-	      hasUOM=true;
-	    }else 	  
-	      tmp1=tmp1->next;
+	    }
+	    xmlAddChild(nc6,nc8);
+	    if(vid==0)
+	      xmlAddChild(nc3,nc6);
+	    else
+	      xmlAddChild(nc5,nc6);
+	    isAnyValue=-1;
 	  }
-      }
+	
+	}
+      
+	int oI=0;
+	/*if(vid==0)*/ {
+	  for(oI=0;oI<13;oI++)
+	    if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+#ifdef DEBUG
+	      printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
+#endif
+	      if(strcmp(tmp1->name,"asReference")!=0 &&
+		 strncasecmp(tmp1->name,"DataType",8)!=0 &&
+		 strcasecmp(tmp1->name,"extension")!=0 &&
+		 strcasecmp(tmp1->name,"value")!=0 &&
+		 strcasecmp(tmp1->name,"AllowedValues")!=0 &&
+		 strncasecmp(tmp1->name,"range",5)!=0){
+		if(datatype!=1){
+		  char *tmp2=zCapitalize1(tmp1->name);
+		  nc9 = xmlNewNode(NULL, BAD_CAST tmp2);
+		  free(tmp2);
+		}
+		else{
+		  char *tmp2=zCapitalize(tmp1->name);
+		  nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+		  free(tmp2);
+		}
+		xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
+		if(vid==0 || oI>=3){
+		  if(vid==0 || oI!=4)
+		    xmlAddChild(nc5,nc9);
+		  if(oI==4 && vid==1){
+		    xmlNewProp(nc9,BAD_CAST "default",BAD_CAST "true");
+		  }
+		}
+		else
+		  xmlFree(nc9);
+		if(strcasecmp(tmp1->name,"uom")==0)
+		  hasUOM1=true;
+		hasUOM=true;
+	      }else 	  
+		tmp1=tmp1->next;
+	    }
+	}
     
-      if(datatype!=2){
-	if(hasUOM==true){
-	  if(vid==0){
-	    xmlAddChild(nc4,nc5);
-	    xmlAddChild(nc3,nc4);
-	  }
-	  else{
-	    xmlAddChild(nc3,nc5);
+	if(datatype!=2){
+	  if(hasUOM==true){
+	    if(vid==0){
+	      xmlAddChild(nc4,nc5);
+	      xmlAddChild(nc3,nc4);
+	    }
+	    else{
+	      xmlAddChild(nc3,nc5);
+	    }
+	  }else{
+	    if(hasUOM1==false && vid==0){
+	      xmlFreeNode(nc5);
+	      if(datatype==1)
+		xmlFreeNode(nc4);
+	    }
+	    else
+	      xmlAddChild(nc3,nc5);
 	  }
 	}else{
-	  if(hasUOM1==false && vid==0){
-	    xmlFreeNode(nc5);
-	    if(datatype==1)
-	      xmlFreeNode(nc4);
+	  xmlAddChild(nc3,nc5);
+	}
+      
+	if(datatype!=1 && default1<0){
+	  xmlFreeNode(nc5);
+	  if(datatype!=2)
+	    xmlFreeNode(nc4);
+	}
+
+
+	if((isInput || vid==1) && datatype==1 &&
+	   getMap(_tmp->content,"AllowedValues")==NULL &&
+	   getMap(_tmp->content,"range")==NULL &&
+	   getMap(_tmp->content,"rangeMin")==NULL &&
+	   getMap(_tmp->content,"rangeMax")==NULL &&
+	   getMap(_tmp->content,"rangeClosure")==NULL ){
+	  tmp1=getMap(_tmp->content,"dataType");
+	  // We were tempted to define default value for boolean as {true,false}
+	  if(tmp1!=NULL && strcasecmp(tmp1->value,"boolean")==0){
+	    nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
+	    nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	    xmlAddChild(nc7,xmlNewText(BAD_CAST "true"));
+	    xmlAddChild(nc6,nc7);
+	    nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	    xmlAddChild(nc7,xmlNewText(BAD_CAST "false"));
+	    xmlAddChild(nc6,nc7);
+	    if(vid==0)
+	      xmlAddChild(nc3,nc6);
+	    else
+	      xmlAddChild(nc5,nc6);
 	  }
 	  else
-	    xmlAddChild(nc3,nc5);
+	    if(vid==0)
+	      xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	    else
+	      xmlAddChild(nc5,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
 	}
-      }else{
-	xmlAddChild(nc3,nc5);
-      }
-      
-      if(datatype!=1 && default1<0){
-	xmlFreeNode(nc5);
-	if(datatype!=2)
-	  xmlFreeNode(nc4);
-      }
 
-
-      if((isInput || vid==1) && datatype==1 &&
-	 getMap(_tmp->content,"AllowedValues")==NULL &&
-	 getMap(_tmp->content,"range")==NULL &&
-	 getMap(_tmp->content,"rangeMin")==NULL &&
-	 getMap(_tmp->content,"rangeMax")==NULL &&
-	 getMap(_tmp->content,"rangeClosure")==NULL ){
-	tmp1=getMap(_tmp->content,"dataType");
-	// We were tempted to define default value for boolean as {true,false}
-	if(tmp1!=NULL && strcasecmp(tmp1->value,"boolean")==0){
-	  nc6 = xmlNewNode(ns_ows, BAD_CAST "AllowedValues");
-	  nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	  xmlAddChild(nc7,xmlNewText(BAD_CAST "true"));
-	  xmlAddChild(nc6,nc7);
-	  nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	  xmlAddChild(nc7,xmlNewText(BAD_CAST "false"));
-	  xmlAddChild(nc6,nc7);
-	  if(vid==0)
-	    xmlAddChild(nc3,nc6);
-	  else
-	    xmlAddChild(nc5,nc6);
-	}
-	else
-	if(vid==0)
-	  xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-	else
-	  xmlAddChild(nc5,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-      }
-
-      if(vid==1){
-	if((tmp1=getMap(_tmp->content,"DataType"))!=NULL){
-	  nc8 = xmlNewNode(ns_ows, BAD_CAST "DataType");
-	  xmlAddChild(nc8,xmlNewText(BAD_CAST tmp1->value));
-	  char tmp[1024];
-	  sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
-	  xmlNewNsProp(nc8,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
-	  if(vid==0)
-	    xmlAddChild(nc3,nc8);
-	  else
-	    xmlAddChild(nc5,nc8);
-	  datatype=1;
-	}
-	if(hasUOM==true){
-	  tmp1=getMap(_tmp->content,"uom");
-	  if(tmp1!=NULL){
-	    char *tmp2=zCapitalize(tmp1->name);
-	    nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	    free(tmp2);
-	    //xmlNewProp(nc9, BAD_CAST "default", BAD_CAST "true");
-	    xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
-	    xmlAddChild(nc5,nc9);
-	    /*struct iotype * _ltmp=e->supported;
-	    while(_ltmp!=NULL){
-	      tmp1=getMap(_ltmp->content,"uom");
-	      if(tmp1!=NULL){
+	if(vid==1){
+	  if((tmp1=getMap(_tmp->content,"DataType"))!=NULL){
+	    nc8 = xmlNewNode(ns_ows, BAD_CAST "DataType");
+	    xmlAddChild(nc8,xmlNewText(BAD_CAST tmp1->value));
+	    char tmp[1024];
+	    sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmp1->value);
+	    xmlNewNsProp(nc8,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
+	    if(vid==0)
+	      xmlAddChild(nc3,nc8);
+	    else
+	      xmlAddChild(nc5,nc8);
+	    datatype=1;
+	  }
+	  if(hasUOM==true){
+	    tmp1=getMap(_tmp->content,"uom");
+	    if(tmp1!=NULL){
+	      char *tmp2=zCapitalize(tmp1->name);
+	      nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+	      free(tmp2);
+	      //xmlNewProp(nc9, BAD_CAST "default", BAD_CAST "true");
+	      xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
+	      xmlAddChild(nc5,nc9);
+	      /*struct iotype * _ltmp=e->supported;
+		while(_ltmp!=NULL){
+		tmp1=getMap(_ltmp->content,"uom");
+		if(tmp1!=NULL){
 		char *tmp2=zCapitalize(tmp1->name);
 		nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
 		free(tmp2);
 		xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
 		xmlAddChild(nc5,nc9);
-	      }
-	      _ltmp=_ltmp->next;
-	      }*/
+		}
+		_ltmp=_ltmp->next;
+		}*/
 	    
+	    }
+	  }
+	  if(e->defaults!=NULL && (tmp1=getMap(e->defaults->content,"value"))!=NULL){
+	    nc7 = xmlNewNode(ns_ows, BAD_CAST "DefaultValue");
+	    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
+	    xmlAddChild(nc5,nc7);
 	  }
 	}
-	if(e->defaults!=NULL && (tmp1=getMap(e->defaults->content,"value"))!=NULL){
-	  nc7 = xmlNewNode(ns_ows, BAD_CAST "DefaultValue");
-	  xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
-	  xmlAddChild(nc5,nc7);
+
+	map* metadata=e->metadata;
+	xmlNodePtr n=NULL;
+	int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
+	xmlNsPtr ns_xlink=usedNs[xlinkId];
+
+	while(metadata!=NULL){
+	  nc6=xmlNewNode(ns_ows, BAD_CAST "Metadata");
+	  xmlNewNsProp(nc6,ns_xlink,BAD_CAST metadata->name,BAD_CAST metadata->value);
+	  xmlAddChild(nc2,nc6);
+	  metadata=metadata->next;
 	}
+
       }
 
-      map* metadata=e->metadata;
-      xmlNodePtr n=NULL;
-      int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
-      xmlNsPtr ns_xlink=usedNs[xlinkId];
+      _tmp=e->supported;
+      if(_tmp==NULL && datatype!=1)
+	_tmp=e->defaults;
 
-      while(metadata!=NULL){
-	nc6=xmlNewNode(ns_ows, BAD_CAST "Metadata");
-	xmlNewNsProp(nc6,ns_xlink,BAD_CAST metadata->name,BAD_CAST metadata->value);
-	xmlAddChild(nc2,nc6);
-	metadata=metadata->next;
-      }
+      int hasSupported=-1;
 
-    }
-
-    _tmp=e->supported;
-    if(_tmp==NULL && datatype!=1)
-      _tmp=e->defaults;
-
-    int hasSupported=-1;
-
-    while(_tmp!=NULL){
-      if(hasSupported<0){
-	if(datatype==0){
-	  if(vid==0)
-	    nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
-	  nc5 = xmlNewNode(ns1, BAD_CAST "Format");
-	  if(vid==1){
-	    int oI=0;
-	    for(oI=0;oI<3;oI++)
-	      if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-		xmlNewProp(nc5,BAD_CAST orderedFields[oI],BAD_CAST tmp1->value);
-	      }
+      while(_tmp!=NULL){
+	if(hasSupported<0){
+	  if(datatype==0){
+	    if(vid==0)
+	      nc4 = xmlNewNode(NULL, BAD_CAST "Supported");
+	    nc5 = xmlNewNode(ns1, BAD_CAST "Format");
+	    if(vid==1){
+	      int oI=0;
+	      for(oI=0;oI<3;oI++)
+		if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+		  xmlNewProp(nc5,BAD_CAST orderedFields[oI],BAD_CAST tmp1->value);
+		}
+	    }
 	  }
-	}
-	else
-	  if(vid==0)
-	    nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
-	hasSupported=0;
-      }else
-	if(datatype==0){
-	  nc5 = xmlNewNode(ns1, BAD_CAST "Format");
-	  if(vid==1){
-	    int oI=0;
-	    for(oI=0;oI<3;oI++)
-	      if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
-		xmlNewProp(nc5,BAD_CAST orderedFields[oI],BAD_CAST tmp1->value);
-	      }
+	  else
+	    if(vid==0)
+	      nc5 = xmlNewNode(NULL, BAD_CAST "Supported");
+	  hasSupported=0;
+	}else
+	  if(datatype==0){
+	    nc5 = xmlNewNode(ns1, BAD_CAST "Format");
+	    if(vid==1){
+	      int oI=0;
+	      for(oI=0;oI<3;oI++)
+		if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+		  xmlNewProp(nc5,BAD_CAST orderedFields[oI],BAD_CAST tmp1->value);
+		}
+	    }
 	  }
-	}
-      tmp1=_tmp->content;
-      int oI=0;
-      for(oI=0;oI<6;oI++)
-	if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
+	tmp1=_tmp->content;
+	int oI=0;
+	for(oI=0;oI<6;oI++)
+	  if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 #ifdef DEBUG
-	  printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
+	    printf("DATATYPE SUPPORTED ? %s\n",tmp1->name);
 #endif
-	  if(strcmp(tmp1->name,"asReference")!=0 && 
-	     strcmp(tmp1->name,"value")!=0 && 
-	     strcmp(tmp1->name,"DataType")!=0 &&
-	     strcasecmp(tmp1->name,"extension")!=0){
-	    if(datatype!=1){
-	      char *tmp2=zCapitalize1(tmp1->name);
-	      nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-	      free(tmp2);
-	    }
-	    else{
-	      char *tmp2=zCapitalize(tmp1->name);
-	      nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	      free(tmp2);
-	    }
-	    if(datatype==2){
-	      char *tmpv,*tmps;
-	      tmps=strtok_r(tmp1->value,",",&tmpv);
-	      while(tmps){
-		xmlAddChild(nc6,xmlNewText(BAD_CAST tmps));
-		tmps=strtok_r(NULL,",",&tmpv);
-		if(tmps){
-		  char *tmp2=zCapitalize1(tmp1->name);
-		  nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-		  free(tmp2);
+	    if(strcmp(tmp1->name,"asReference")!=0 && 
+	       strcmp(tmp1->name,"value")!=0 && 
+	       strcmp(tmp1->name,"DataType")!=0 &&
+	       strcasecmp(tmp1->name,"extension")!=0){
+	      if(datatype!=1){
+		char *tmp2=zCapitalize1(tmp1->name);
+		nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+		free(tmp2);
+	      }
+	      else{
+		char *tmp2=zCapitalize(tmp1->name);
+		nc6 = xmlNewNode(ns_ows, BAD_CAST tmp2);
+		free(tmp2);
+	      }
+	      if(datatype==2){
+		char *tmpv,*tmps;
+		tmps=strtok_r(tmp1->value,",",&tmpv);
+		while(tmps){
+		  xmlAddChild(nc6,xmlNewText(BAD_CAST tmps));
+		  tmps=strtok_r(NULL,",",&tmpv);
+		  if(tmps){
+		    char *tmp2=zCapitalize1(tmp1->name);
+		    nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+		    free(tmp2);
+		  }
 		}
 	      }
-	    }
-	    else{
-	      xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
-	    }
-	    if(vid==0 || oI>=3){
-	      if(vid==0 || oI!=4)
-		xmlAddChild(nc5,nc6);
+	      else{
+		xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
+	      }
+	      if(vid==0 || oI>=3){
+		if(vid==0 || oI!=4)
+		  xmlAddChild(nc5,nc6);
+		else
+		  xmlFree(nc6);
+	      }
 	      else
 		xmlFree(nc6);
 	    }
-	    else
-	      xmlFree(nc6);
+	    tmp1=tmp1->next;
 	  }
-	  tmp1=tmp1->next;
-	}
-      if(hasSupported<=0){
-	if(datatype==0){
-	  if(vid==0){
-	    xmlAddChild(nc4,nc5);
-	    xmlAddChild(nc3,nc4);
-	  }
-	  else{
-	    xmlAddChild(nc3,nc5);
-	  }
+	if(hasSupported<=0){
+	  if(datatype==0){
+	    if(vid==0){
+	      xmlAddChild(nc4,nc5);
+	      xmlAddChild(nc3,nc4);
+	    }
+	    else{
+	      xmlAddChild(nc3,nc5);
+	    }
 
-	}else{
-	  if(datatype!=1)
-	    xmlAddChild(nc3,nc5);
-	}
-	hasSupported=1;
-      }
-      else
-	if(datatype==0){
-	  if(vid==0){
-	    xmlAddChild(nc4,nc5);
-	    xmlAddChild(nc3,nc4);
+	  }else{
+	    if(datatype!=1)
+	      xmlAddChild(nc3,nc5);
 	  }
-	  else{
-	    xmlAddChild(nc3,nc5);
-	  }
+	  hasSupported=1;
 	}
 	else
-	  if(datatype!=1)
-	    xmlAddChild(nc3,nc5);
+	  if(datatype==0){
+	    if(vid==0){
+	      xmlAddChild(nc4,nc5);
+	      xmlAddChild(nc3,nc4);
+	    }
+	    else{
+	      xmlAddChild(nc3,nc5);
+	    }
+	  }
+	  else
+	    if(datatype!=1)
+	      xmlAddChild(nc3,nc5);
 
-      _tmp=_tmp->next;
-    }
-
-    if(hasSupported==0){
-      if(datatype==0 && vid!=0)
-	xmlFreeNode(nc4);
-      xmlFreeNode(nc5);
-    }
-
-    _tmp=e->defaults;
-    if(datatype==1 && hasUOM1==true){
-      if(vid==0){
-	xmlAddChild(nc4,nc5);
-	xmlAddChild(nc3,nc4);
+	_tmp=_tmp->next;
       }
-      else{
-	xmlAddChild(nc3,nc5);
-      }
-    }
 
-    if(vid==0 && _tmp!=NULL && (tmp1=getMap(_tmp->content,"value"))!=NULL){
-      nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
-      xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
-      xmlAddChild(nc3,nc7);
-    }
+      if(hasSupported==0){
+	if(datatype==0 && vid!=0)
+	  xmlFreeNode(nc4);
+	xmlFreeNode(nc5);
+      }
+
+      _tmp=e->defaults;
+      if(datatype==1 && hasUOM1==true){
+	if(vid==0){
+	  xmlAddChild(nc4,nc5);
+	  xmlAddChild(nc3,nc4);
+	}
+	else{
+	  xmlAddChild(nc3,nc5);
+	}
+      }
+
+      if(vid==0 && _tmp!=NULL && (tmp1=getMap(_tmp->content,"value"))!=NULL){
+	nc7 = xmlNewNode(NULL, BAD_CAST "DefaultValue");
+	xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
+	xmlAddChild(nc3,nc7);
+      }
     
-    xmlAddChild(nc2,nc3);
+      xmlAddChild(nc2,nc3);
+    }
     
     xmlAddChild(nc1,nc2);
     
