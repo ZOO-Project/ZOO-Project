@@ -23,6 +23,8 @@ Here is the list of available options as returned by *./configure --help* comman
   --with-java=PATH        Enables java support or specifies a JDK_HOME, disabled by default
   --with-js=PATH          Enables javascript support, disabled by default
   --with-mapserver=PATH   Specifies the path for MapServer compiled source tree
+  --with-itk=PATH          Specifies an alternative location for the ITK library
+  --with-itk-version=VERSION          Specifies an alternative version for the ITK library     
   --with-otb=PATH         Enables optional OrfeoToolbox support
   --with-saga=PATH        Enables optional SAGA GIS support 
 
@@ -113,14 +115,15 @@ then the following command can be used (this assumes that /usr/local/bin/perl ex
 Java Support (Optional) 
 ..............................................
 
-In irder to activate the Java support for ZOO Kernel, you have to use the *--with-java* configure option and to set the installation path of your Java SDK. For instance, 
+In order to activate the Java support for ZOO-Kernel, the
+*--with-java* configure option must be specified and sets the installation path of your Java SDK. For instance, 
 if Java SDK is installed in the ``/usr/lib/jvm/java-6-sun-1.6.0.22/`` directory,  then the following command can be used:
 
 ::
 
   $ ./configure --with-java=/usr/lib/jvm/java-6-sun-1.6.0.22/
 
-This assumes that the `` include/linux `` and `` jre/lib/i386/client/`` subdirectories exist in ``/usr/lib/jvm/java-6-sun-1.6.0.22/``, that the `` include/linux `` directory contains the jni.h headers file and that the `` jre/lib/i386/client/`` directory contains the libjvm.so file.
+This assumes that the ``include/linux`` and ``jre/lib/i386/client/`` subdirectories exist in ``/usr/lib/jvm/java-6-sun-1.6.0.22/``, that the ``include/linux`` directory contains the jni.h headers file and that the ``jre/lib/i386/client/`` directory contains the libjvm.so file.
 
 .. note:: 
    With Mac OS X you only have to set *macos* as the value for the *--with-java* option 
@@ -130,22 +133,19 @@ This assumes that the `` include/linux `` and `` jre/lib/i386/client/`` subdirec
 
      $ ./configure --with-java=macos
 
-
 .. _js-support:
 
 JavaScript Support (Optional) 
 ..............................................
 
-In order to activate the JavaScript support for ZOO Kernel then you will have to use 
-the *--with-js* configure option. If you are using a "Debian-like" GNU/Linux distribution then 
+In order to activate the JavaScript support for ZOO-Kernel,
+the *--with-js* configure option must be specified. If you are using a "Debian-like" GNU/Linux distribution then 
 dpkg will be used to detect if the required packages are installed and you don't have to 
 specify anything here. The following command is only needed (assuming that js_api.h and libmozjs.so are found in default directories):
 
 ::
 
   $ ./configure --with-js 
-
-.
 
 If youwant to use a custom installation of `SpiderMonkey <https://developer.mozilla.org/en/SpiderMonkey>`__ ,or if you are not using a Debian packaging 
 system, then you'll have to specify the directory where it is installed. For  instance, if SpiderMonkey is in /usr, then the following command must be used:
@@ -159,19 +159,21 @@ MapServer Support (Optional)
 ..............................................
 
 
-In order to activate the WMS, WFS and WCS output support using MapServer, the *--with-mapserver* option must be used. You must also set the path to ``mapserver-config`` which is located in the source code of MapServer as following command:
+In order to activate the WMS, WFS and WCS output support using
+MapServer, the *--with-mapserver* option must be used. The path to
+``mapserver-config`` which is located in the source code of MapServer
+must also be set, using the following command:
 
 ::
 
   $ ./configure --with-mapserver=/path/to/your/mapserver_config/
 
 
-Read more abour the :ref:`kernel-mapserver`.
+Read more about the :ref:`kernel-mapserver`.
 
 
 Orfeo Toolbox Support (Optional) 
 .....................................................
-
 
 In order to activate the optional Orfeo Toolbox support, the *--with-otb* option must be used, using the following command:
 
