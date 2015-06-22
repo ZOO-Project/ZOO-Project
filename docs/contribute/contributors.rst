@@ -1,4 +1,4 @@
-.. _contribute_contributors:
+   .. _contribute_contributors:
 
 List of contributors
 ================================
@@ -6,22 +6,24 @@ List of contributors
 ZOO-Project founders
 ------------------
 
-The ZOO-Project concept and open source software implementation was initiated in 2008 by the following individuals:
+The ZOO-Project concept, architecture and source code implementation was initiated in 2008 by the following individuals:
 
-   * Gérald FENOY (aka djay)
+   * GÃ©rald FENOY (aka djay)
    * Nicolas BOZON (aka nbozon)
    * Venkatesh RAGHAVAN (aka venka)
 
 ZOO-Project Commiters
 ---------------------
 
-The following individuals will be considered authorized ZOO-Project committers as long as they each review the commiter guidelines, and agree to adhere to them. They are listed here by alphabetical order.
+The following individuals will be considered authorized ZOO-Project
+committers as long as they each review the commiter guidelines, and
+agree to adhere to them. The ZOO-Project commiters are listed here by alphabetical order.
 
    * Nicolas BOZON (aka nbozon)
    * Trevor CLARKE (aka tclarke)
    * Luca DELUCCHI (aka lucadelu)
-   * René-Luc D'HONT  (aka reluc)
-   * Gérald FENOY (aka djay)
+   * RenÃ©-Luc D'HONT  (aka reluc)
+   * GÃ©rald FENOY (aka djay)
    * Knut LANDMARK (aka knut)
    * Jeff MCKENNA (aka jmckenna)
    * Markus NETELER (aka neteler)

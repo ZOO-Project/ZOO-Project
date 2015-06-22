@@ -3,7 +3,13 @@
 Contribute code
 ===============
 
-Anybody is welcome to share source code and to report bugs or feature requests using the following instructions.
+Anybody can take part to the `ZOO-Project <http://zoo-project.org>`__ developement and is welcome to:
+
+ * Share new source code or correction
+   
+ * Create tickets to report bugs
+   
+ * Write a new feature request.
 
 Submit new code
 --------------------------
@@ -11,9 +17,13 @@ Submit new code
 For new comers
 *************************
 
-New source code or existing source code corrections (patches) should be submitted using the ZOO-Project bug tracking system (ZOO-Trac).
+New source code or existing source code corrections (patches) should
+be submitted using the ZOO-Project bug tracking system (`ZOO-Trac <http://zoo-project.org/trac>`__ ).
 
-Create a new ticket in order to describe your code or patch and attach it to the ticket (attach all the needed files needed to use your code or patch). It will then be checked and discussed with the developers, and can potentially be merged with the trunk.
+Create a new ticket in order to describe your code or patch and attach
+it to the ticket (attach all the needed files needed to use your code
+or patch). It will then be checked and discussed with the developers,
+and can potentially be integrated and merged with the trunk.
 
 For registered developers
 ***************************
@@ -32,7 +42,7 @@ Bug tracking
 General information
 *********************
 
-Bug reports and wishes can be submitted using the ZOO-Trac. This requires you to setup a user account (userid) using this section.
+Bug reports and wishes can be submitted using the `ZOO-Trac <http://zoo-project.org/trac>`__ . This requires you to setup a user account (userid) using this section.
 
 The following trackers are available:
 

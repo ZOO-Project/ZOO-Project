@@ -11,5 +11,6 @@ This is the `ZOO-Project <http://zoo-project.org>`__ **Contributor Guide**. This
    howto
    code
    doc
+   translate
    dev
    contributors

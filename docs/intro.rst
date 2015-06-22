@@ -8,21 +8,21 @@ This is an introduction to  the `ZOO-Project
 What is ZOO-Project ?
 -------------------
 
-`ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and  `WPS 2.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `OGC <http://www.opengeospatial.org/>`__ (Open Geospatial Consortium).
+`ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and  `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `OGC <http://www.opengeospatial.org/>`__ (Open Geospatial Consortium).
 
-`ZOO-Project <http://zoo-project.org>`__ provides a developer-friendly framework for creating and chaining WPS compliant Web Services. Its main objective is to provide generic and standard-compliant methods for using existing open source librairies and algorithms as WPS. It also offers effecient tools for creating new innovative web services and applications.
+`ZOO-Project <http://zoo-project.org>`__ provides a developer-friendly framework for creating and chaining WPS compliant Web Services. Its main goal is to provide generic and standard-compliant methods for using existing open source librairies and algorithms as WPS. It also offers efficient tools for creating new innovative web services and applications.
 
 `ZOO-Project <http://zoo-project.org>`_ is able to process geospatial or non geospatial data online. Its core processing engine (aka :ref:`kernel_index`) lets you execute a number of existing :ref:`ZOO-Services <services-available>` based on reliable software and libraries. It also gives you the ability to create your own WPS Services from new or existing source code, which can be written in seven different programming languages. That lets you compose or turn code as WPS Services simply, with straightforward configuration and standard coding methods.
 
-`ZOO-Project <http://zoo-project.org>`_ is very flexible with data input and output so you can process almost any kind of data stored locally or accessed from remote servers and databases. ZOO-Project excels in data processing and integrates new or existing spatial data infrastructures, as it is able to communicate with map servers and to integrate webmapping clients.
+`ZOO-Project <http://zoo-project.org>`_ is very flexible with data input and output so you can process almost any kind of data stored locally or accessed from remote servers and databases. ZOO-Project excels in data processing and integrates new or existing spatial data infrastructures, as it is able to communicate with map servers and can integrate webmapping clients.
 
 
 ZOO-Project components
 ----------------------
 
-The `ZOO-Project <http://zoo-project.org>`_ platform is made up of the following components:
+The `ZOO-Project <http://zoo-project.org>`__ platform is made up of the following components:
 
-* :ref:`kernel_index`: A  WPS 1.0 compliant implementation written in C offering a powerful WPS server able to manage and chain WPS services. by loading dynamic libraries and code written in different languages.
+* :ref:`kernel_index`: A  WPS compliant implementation written in C offering a powerful WPS server able to manage and chain WPS services. by loading dynamic libraries and code written in different languages.
 
 * :ref:`services_index`: A growing collection of ready to use Web Processing Services built on top of reliable open source libraries such as GDAL, GRASS GIS, OrfeoToolbox, CGAL and SAGA GIS. 
 * :ref:`api-index`: A server-side JavaScript API for creating, chaining and orchestrating the available WPS Services.

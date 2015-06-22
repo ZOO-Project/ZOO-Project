@@ -8,25 +8,32 @@ What is ZOO-Kernel ?
 
 ZOO-Kernel is the heart of the `ZOO-Project <http://zoo-project.org>`_ WPS platform. It is a WPS compliant implementation written in C language which provides a powerful and extensible WPS server. 
 
-ZOO-Kernel implements and complies with the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standard edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`_. It is able to perform the WPS operations as indicated in the OpenGIS |reg| specification, as listed bellow:
+ZOO-Kernel is an extensible WPS server that makes your system more powerful. It provides a full-featured processing engine which runs on Linux, Mac OSX |trade| and Windows |trade| operating
+systems. ZOO-Kernel is a CGI program which works on common web servers (namely `Apache <http://httpd.apache.org/>`_ or `IIS <http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to new or existing web platforms.
+
+ZOO-Kernel lets you process geospatial or non geospatial data using well formed WPS requests. The WPS server is able to manage and chain WPS Services (see ZOO-Services for examples) by loading dynamic libraries and source code written in different programming languages.  
+
+First class WPS server
+-----------------------
+
+Compliant
+........................................................
+
+ZOO-Kernel implements and complies with the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and the `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`_. It is able to perform the WPS operations as indicated in the OpenGIS |reg| specification, as listed bellow:
 
 * **GetCapablities**: Returns service-level metadata information.It provides the list of available processing services.
 * **DescribeProcess**: Returns a description of a process, including its supported input and output.
 * **Execute**:  Launches computation and returns the output produced by a particular process.
 
+ZOO-Kernel compliancy can be tested using tools such as the WPS Test Suite provided by the `OGC compliancy program <http://cite.opengeospatial.org/>`_ or `XMLint <http://xmlsoft.org/xmllint.html/>`_.
 
-First class WPS server
------------------------
-
-ZOO-Kernel is an extensible WPS server that makes your system more powerful. It provides a full-featured processing engine which runs on Linux, Mac OSX |trade| and Windows |trade| operating systems. ZOO-Kernel is a CGI program which works on common web servers (namely `Apache <http://httpd.apache.org/>`_ or `IIS <http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to new or existing web platforms. 
-
-ZOO-Kernel lets you process geospatial or non geospatial data using well formed WPS requests. The WPS server is able to manage and chain WPS Services (see ZOO-Services for examples) by loading dynamic libraries and source code written in different programming languages.  
-
-Supported programming languages
+Polyglot
 ........................................................
 
-ZOO-Kernel is a **polyglot**. The software is written in a valid form of multiple programming languages, which performs the same operations independent of the programming language used to compile or interpret it.
-
+ZOO-Kernel is a **polyglot**. The software is written in a valid form
+of multiple programming languages, which performs the same operations
+independent of the programming language used to compile or interpret
+it. The supported programming languages are listed bellow:
 
 ============ =================== ========================= ============
 **Language** **ServiceProvider** **DataStructure**         **Return**
@@ -48,6 +55,13 @@ JavaScript   Script file 	 `Object`_ or Array	   Object/Array
 .. _`Hash`: http://ruby-doc.org/core-2.2.0/Hash.html
 
 
+Scalable
+........................................................
 
+ZOO-Kernel can **scale** to large infrastructures involving high
+numbers of (concurrent) WPS requests and/or huge amounts of
+input/output.
 
+...
+.
 
