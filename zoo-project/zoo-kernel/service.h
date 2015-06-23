@@ -28,11 +28,16 @@
 #pragma once
 
 #ifdef WIN32
+#define ZOO_DLL_EXPORT __declspec( dllexport )
+#else
+#define ZOO_DLL_EXPORT 
+#endif
+
+#ifdef WIN32
 #ifndef USE_MS
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
-#endif
-#ifndef snprintf
+#else
 #define snprintf sprintf_s
 #endif
 #define zStrdup _strdup
@@ -100,7 +105,9 @@ extern "C" {
 #endif
 #include <stdlib.h>
 #include <ctype.h>
+#ifndef WIN32
 #include <stdio.h>
+#endif
 #include <string.h>
 #ifndef WIN32
 #include <ctype.h>
@@ -260,66 +267,61 @@ extern "C" {
     struct registry* next; //!< the next registry pointer
   } registry;
 
-
-  void _dumpMap(map*);
-  void dumpMap(map*);
-  void dumpMapToFile(map*,FILE*);
-  void dumpMaps(maps* m);
-  void dumpMapsToFile(maps*,char*);
-  map* createMap(const char*,const char*);
-  int count(map*);
-  bool hasKey(map*,const char*);
-  maps* getMaps(maps*,const char*);
-  map* getMap(map*,const char*);
-  map* getLastMap(map*);
-  map* getMapFromMaps(maps*,const char*,const char*);
-  void freeMap(map**);
-  void freeMaps(maps** mo);
+  ZOO_DLL_EXPORT void _dumpMap(map*);
+  ZOO_DLL_EXPORT void dumpMap(map*);
+  ZOO_DLL_EXPORT void dumpMaps(maps* m);
+  ZOO_DLL_EXPORT void dumpMapToFile(map*,FILE*); // Not required
+  ZOO_DLL_EXPORT void dumpMapsToFile(maps*,char*);
+  ZOO_DLL_EXPORT map* createMap(const char*,const char*);
+  ZOO_DLL_EXPORT int count(map*);
+  ZOO_DLL_EXPORT bool hasKey(map*,const char*);
+  ZOO_DLL_EXPORT maps* getMaps(maps*,const char*);
+  ZOO_DLL_EXPORT map* getMap(map*,const char*);
+  ZOO_DLL_EXPORT map* getLastMap(map*);
+  ZOO_DLL_EXPORT map* getMapFromMaps(maps*,const char*,const char*);
+  ZOO_DLL_EXPORT void freeMap(map**);
+  ZOO_DLL_EXPORT void freeMaps(maps** mo);
   
 
-  bool hasElement(elements*,const char*);
-  elements* getElements(elements*,char*);
-  void freeIOType(iotype**);
-  void freeElements(elements**);
-  void freeService(service**);
-  void addToMap(map*,const char*,const char*);
-  void addIntToMap(map*,const char*,const int);
-  void addToMapWithSize(map*,const char*,const char*,int);
-  void addMapToMap(map**,map*);
-  void addMapToIoType(iotype**,map*);
-  map* getMapOrFill(map**,const char*,const char*);
-  bool contains(map*,map*);
-  iotype* getIoTypeFromElement(elements*,char*, map*);
-  void loadMapBinary(map**,map*,int);
-  void loadMapBinaries(map**,map*);
-  maps* dupMaps(maps**);
-  void addMapsToMaps(maps**,maps*);
-  map* getMapArray(map*,const char*,int);
-  void setMapArray(map*,const char*,int,const char*);
-  map* getMapType(map*);
-  int addMapsArrayToMaps(maps**,maps*,char*);
-  void setMapInMaps(maps*,const char*,const char*,const char*);
-  void dumpElements(elements*);
-  void dumpElementsAsYAML(elements*);
-  elements* dupElements(elements*);
-  void addToElements(elements**,elements*);
-  void dumpService(service*);
-  void dumpServiceAsYAML(service*);
-  service* dupService(service*);
-  void dumpRegistry(registry*);
-  bool addServiceToRegistry(registry**,char*,service*);
-  void freeRegistry(registry**);
-  service* getServiceFromRegistry(registry*,char*,char*);
-  void inheritMap(map**,map*);
-  void inheritIOType(iotype**,iotype*);
-  void inheritElements(elements**,elements*);
-  void inheritance(registry*,service**);
-  void mapsToCharXXX(maps*,char***);
-  void charxxxToMaps(char***,maps**);
-#ifdef WIN32
-  extern char *url_encode(char *);
-  char* getMapsAsKVP(maps*,int,int);
-#endif
+  ZOO_DLL_EXPORT bool hasElement(elements*,const char*);
+  ZOO_DLL_EXPORT elements* getElements(elements*,char*);
+  ZOO_DLL_EXPORT void freeIOType(iotype**);
+  ZOO_DLL_EXPORT void freeElements(elements**);
+  ZOO_DLL_EXPORT void freeService(service**);
+  ZOO_DLL_EXPORT void addToMap(map*,const char*,const char*);
+  ZOO_DLL_EXPORT void addIntToMap(map*,const char*,const int);
+  ZOO_DLL_EXPORT void addToMapWithSize(map*,const char*,const char*,int);
+  ZOO_DLL_EXPORT void addMapToMap(map**,map*);
+  ZOO_DLL_EXPORT void addMapToIoType(iotype**,map*);
+  ZOO_DLL_EXPORT map* getMapOrFill(map**,const char*,const char*);
+  ZOO_DLL_EXPORT bool contains(map*,map*);
+  ZOO_DLL_EXPORT iotype* getIoTypeFromElement(elements*,char*, map*);
+  ZOO_DLL_EXPORT void loadMapBinary(map**,map*,int);
+  ZOO_DLL_EXPORT void loadMapBinaries(map**,map*);
+  ZOO_DLL_EXPORT maps* dupMaps(maps**);
+  ZOO_DLL_EXPORT void addMapsToMaps(maps**,maps*);
+  ZOO_DLL_EXPORT map* getMapArray(map*,const char*,int);
+  ZOO_DLL_EXPORT void setMapArray(map*,const char*,int,const char*);
+  ZOO_DLL_EXPORT map* getMapType(map*);
+  ZOO_DLL_EXPORT int addMapsArrayToMaps(maps**,maps*,char*);
+  ZOO_DLL_EXPORT void setMapInMaps(maps*,const char*,const char*,const char*);
+  ZOO_DLL_EXPORT void dumpElements(elements*);
+  ZOO_DLL_EXPORT void dumpElementsAsYAML(elements*);
+  ZOO_DLL_EXPORT elements* dupElements(elements*);
+  ZOO_DLL_EXPORT void addToElements(elements**,elements*);
+  ZOO_DLL_EXPORT void dumpService(service*);
+  ZOO_DLL_EXPORT void dumpServiceAsYAML(service*);
+  ZOO_DLL_EXPORT service* dupService(service*);
+  ZOO_DLL_EXPORT void dumpRegistry(registry*);
+  ZOO_DLL_EXPORT bool addServiceToRegistry(registry**,char*,service*);
+  ZOO_DLL_EXPORT void freeRegistry(registry**);
+  ZOO_DLL_EXPORT service* getServiceFromRegistry(registry*,char*,char*);
+  ZOO_DLL_EXPORT void inheritMap(map**,map*);
+  ZOO_DLL_EXPORT void inheritIOType(iotype**,iotype*);
+  ZOO_DLL_EXPORT void inheritElements(elements**,elements*);
+  ZOO_DLL_EXPORT void inheritance(registry*,service**);
+  ZOO_DLL_EXPORT void mapsToCharXXX(maps*,char***);
+  ZOO_DLL_EXPORT void charxxxToMaps(char***,maps**);
 
 #ifdef __cplusplus
 }

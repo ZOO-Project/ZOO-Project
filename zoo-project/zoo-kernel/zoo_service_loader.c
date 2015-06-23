@@ -55,6 +55,9 @@ extern "C"
 #include "response_print.h"
 #include "request_parser.h"
 #include "sqlapi.h"
+#ifdef WIN32
+#include "caching.h"
+#endif
 
 #ifdef USE_PYTHON
 #include "service_internal_python.h"
@@ -706,7 +709,8 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   fprintf (stderr, "DATAINPUTSKVP %s\n", dataInputsKVP);
   fprintf (stderr, "DATAOUTPUTSKVP %s\n", dataOutputsKVP);
 #endif
-  map *sid = getMapFromMaps (m, "lenv", "sid");
+  map *sid = getMapFromMaps (m, "lenv", "osid");
+  map *usid = getMapFromMaps (m, "lenv", "usid");
   map *r_inputs = getMapFromMaps (m, "main", "tmpPath");
   map *r_inputs1 = getMap (request_inputs, "metapath");
   
@@ -724,28 +728,28 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   map *tmpReq = getMap (request_inputs, "xrequest");
   
   if(r_inputs2 != NULL && tmpReq != NULL) {
-	const char key[] = "rfile=";
-	char* kvp = (char*) malloc((FILENAME_MAX + strlen(key))*sizeof(char));
-	char* filepath = kvp + strlen(key);
-	strncpy(kvp, key, strlen(key));
-	addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value), 
-	           filepath, FILENAME_MAX);				   
+    const char key[] = "rfile=";
+    char* kvp = (char*) malloc((FILENAME_MAX + strlen(key))*sizeof(char));
+    char* filepath = kvp + strlen(key);
+    strncpy(kvp, key, strlen(key));
+    addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value), 
+	       filepath, FILENAME_MAX);				   
     if (filepath == NULL) {
-        errorException( m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);  
-		return;
+      errorException( m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);  
+      return;
     }	
-	sprintf(tmp,"\"metapath=%s&%s&cgiSid=%s",
-	        r_inputs1->value,kvp,sid->value);
+    sprintf(tmp,"\"metapath=%s&%s&cgiSid=%s&usid=%s\"",
+	    r_inputs1->value,kvp,sid->value,usid->value);
     sprintf(tmpq,"metapath=%s&%s",
-	        r_inputs1->value,kvp);
-	free(kvp);		
+	    r_inputs1->value,kvp);
+    free(kvp);	
   }
   else if (r_inputs2 != NULL)
     {
       sprintf (tmp,
-               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s",
+               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s&cgiSid=%s&usid=%s\"",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
-               r_inputs2->name, dataOutputsKVP, sid->value);
+               r_inputs2->name, dataOutputsKVP, sid->value, usid->value);
       sprintf (tmpq,
                "metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
@@ -754,9 +758,9 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   else
     {
       sprintf (tmp,
-               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s",
+               "\"metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&cgiSid=%s&usid=%s\"",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
-               sid->value);
+               sid->value, usid->value);
       sprintf (tmpq,
                "metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
@@ -776,11 +780,10 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   fprintf (stderr, "REQUEST IS : %s \n", tmp);
 #endif
 
-  map* usid = getMapFromMaps (m, "lenv", "usid");
+  usid = getMapFromMaps (m, "lenv", "usid");
   if (usid != NULL && usid->value != NULL) {
     SetEnvironmentVariable("USID", TEXT (usid->value));
   }
-
   SetEnvironmentVariable ("CGISID", TEXT (sid->value));
   SetEnvironmentVariable ("QUERY_STRING", TEXT (tmpq));
   // knut: Prevent REQUEST_METHOD=POST in background process call to cgic:main (process hangs when reading cgiIn):
@@ -910,7 +913,6 @@ runRequest (map ** inputs)
       bindtextdomain ("zoo-services", "/usr/share/locale/");
     }
 
-
   /**
    * Manage our own error log file (usefull to separate standard apache debug
    * messages from the ZOO-Kernel ones but also for IIS users to avoid wrong 
@@ -990,7 +992,8 @@ runRequest (map ** inputs)
     {
       char tmpUrl[1024];
 	
-      if ( getenv("HTTPS") != NULL && strncmp(getenv("HTTPS"), "on", 2) == 0 ) { // Knut: check if non-empty instead of "on"?		
+      if ( getenv("HTTPS") != NULL && strncmp(getenv("HTTPS"), "on", 2) == 0 ) {
+	// Knut: check if non-empty instead of "on"?		
 	if ( strncmp(cgiServerPort, "443", 3) == 0 ) { 
 	  sprintf(tmpUrl, "https://%s%s", cgiServerName, cgiScriptName);
 	}
@@ -1926,14 +1929,18 @@ runRequest (map ** inputs)
   }
 
   map *test1 = getMap (request_inputs, "cgiSid");
-  if (test1 != NULL)
-    {
+  if (test1 != NULL){
       cgiSid = test1->value;
       addToMap (request_inputs, "storeExecuteResponse", "true");
       addToMap (request_inputs, "status", "true");
       setMapInMaps (m, "lenv", "sid", test1->value);
       status = getMap (request_inputs, "status");
     }
+  test1 = getMap (request_inputs, "usid");
+  if (test1 != NULL){
+    setMapInMaps (m, "lenv", "usid", test1->value);
+    setMapInMaps (m, "lenv", "uusid", test1->value);
+  }
 #endif
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
@@ -1982,6 +1989,7 @@ runRequest (map ** inputs)
         {
           pid = 0;
           cpid = atoi (cgiSid);
+	  updateStatus(m,0,_("Initializing"));
         }
 #endif
       if (pid > 0)
@@ -2028,8 +2036,8 @@ runRequest (map ** inputs)
                      strlen (usid->value) + 7) * sizeof (char));
           sprintf (fbkpid, "%s/%s.pid", r_inputs->value, usid->value);
 
-          f0 = freopen (fbkpid, "w+", stdout);
-	  fprintf(stdout,"%d",getpid());
+          f0 = freopen (fbkpid, "w+",stdout);
+	  printf("%d",getpid());
 	  fflush(stdout);
 
 	  // Create SID file referencing the semaphore name
@@ -2038,11 +2046,9 @@ runRequest (map ** inputs)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
                      strlen (usid->value) + 7) * sizeof (char));
           sprintf (fbkp, "%s/%s.sid", r_inputs->value, usid->value);
-
-          FILE* f2 = fopen (fbkp, "w+");
-	  fprintf(f2,"%s",tmpm->value);
+          FILE* f2 = freopen (fbkp, "w+",stdout);
+	  printf("%s",tmpm->value);
 	  fflush(f2);
-	  fclose(f2);
 	  free(fbkp);
 
           fbkp =
@@ -2070,7 +2076,6 @@ runRequest (map ** inputs)
 #ifndef WIN32
 	  fclose (stdin);
 #endif
-	  fprintf(stderr,"DEBUG START %s %d \n",__FILE__,__LINE__);
 #ifdef RELY_ON_DB
 	  init_sql(m);
 	  recordServiceStatus(m);
@@ -2162,7 +2167,7 @@ runRequest (map ** inputs)
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
       fclose (stdout);
-      //fclose (stderr);
+      fclose (stderr);
       /**
        * Dump back the final file fbkp1 to fbkp
        */

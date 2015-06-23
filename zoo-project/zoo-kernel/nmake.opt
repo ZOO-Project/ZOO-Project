@@ -1,4 +1,5 @@
 PROGRAMNAME=zoo_loader.cgi
+LIBZOO_SERVICE=libzoo_service.dll
 
 CC=cl $(CFLAGS)
 CPP=cl /TP $(CFLAGS)
@@ -63,7 +64,11 @@ TPATH=$(ZOOK_DIR)\..\..\..\tools
 LIBINTL_CPATH=$(ZOOK_DIR)\..\..\..\
 PYTHON_CPATH=$(PY_DIR)
 
-CFLAGS= $(MS_DEFS) $(INCLUDES) $(CFLAGS1) /nologo /MD /W3 /EHsc /Ox /D_CRT_SECURE_NO_WARNINGS /DWIN32 /DPROGRAMNAME=\"$(PROGRAMNAME)\" $(CJFLAGS) -I$(ZOOK_DIR) $(RUBY_CFLAGS) -I./ $(JAVA_CFLAGS) $(MS_CFLAGS) -I$(TROOT)\..\..\thirds\dirent-win32 -I$(INTL_DIR) -I$(CURL_DIR)\include -I$(XML2_DIR)\include -I$(GDAL_DIR)\port $(JS_CFLAGS) -I$(GDAL_DIR)\ogr -I$(GDAL_DIR)\gcore -I$(GD_DIR) -I$(ICONV_DIR) -I$(TROOT)\..\..\thirds\include -I$(TROOT)\..\..\thirds\cgic206 -I$(PYTHON_CPATH)\include -I$(SSL_DIR)/inc32 -I$(FCGI_DIR)\include $(PY_CFLAGS) -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
+!IFDEF DB
+DB_FLAGS=-DRELY_ON_DB
+!ENDIF
+
+CFLAGS= $(DB_FLAGS) $(MS_DEFS) $(INCLUDES) $(CFLAGS1) /nologo /MD /W3 /EHsc /Ox /D_CRT_SECURE_NO_WARNINGS /DWIN32 /DPROGRAMNAME=\"$(PROGRAMNAME)\" $(CJFLAGS) -I$(ZOOK_DIR) $(RUBY_CFLAGS) -I./ $(JAVA_CFLAGS) $(MS_CFLAGS) -I$(TROOT)\..\..\thirds\dirent-win32 -I$(INTL_DIR) -I$(CURL_DIR)\include -I$(XML2_DIR)\include -I$(GDAL_DIR)\port $(JS_CFLAGS) -I$(GDAL_DIR)\ogr -I$(GDAL_DIR)\gcore -I$(GD_DIR) -I$(ICONV_DIR) -I$(TROOT)\..\..\thirds\include -I$(TROOT)\..\..\thirds\cgic206 -I$(PYTHON_CPATH)\include -I$(SSL_DIR)/inc32 -I$(FCGI_DIR)\include $(PY_CFLAGS) -DLINUX_FREE_ISSUE #-DDEBUG #-DDEBUG_SERVICE_CONF
 
 LDFLAGSCGI=$(TROOT)/../../thirds/cgic206/libcgic.lib 
 LDFLAGS=$(FCGI_DIR)/libfcgi/Release/libfcgi.lib $(CURL_LIBRARY) $(PY_LDFLAGS) $(XML2_LIBRARY) $(SSL_DIR)/out32dll/libeay32.lib $(JAVA_LDFLAGS) $(SSL_DIR)/out32dll/ssleay32.lib $(MS_LDFLAGS) $(INTL_DIR)/intl.lib $(XML2_DIR)/win32/bin.msvc/libxml2.lib $(GDAL_DIR)/gdal_i.lib $(CURL_DIR)/lib/libcurl.lib $(JS_LDFLAGS) $(RUBY_LDFLAGS) /machine:i386

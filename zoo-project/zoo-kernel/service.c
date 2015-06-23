@@ -61,9 +61,6 @@ void dumpMap(map* t){
 void dumpMapToFile(map* t,FILE* file){
   map* tmp=t;
   while(tmp!=NULL){
-#ifdef DEBUG
-    fprintf(stderr,"%s = %s\n",tmp->name,tmp->value);
-#endif
     fprintf(file,"%s = %s\n",tmp->name,tmp->value);
     tmp=tmp->next;
   }
@@ -90,7 +87,7 @@ void dumpMaps(maps* m){
  * @param file_path the full path to the file name to store the map
  */
 void dumpMapsToFile(maps* m,char* file_path){
-  FILE* file=fopen(file_path,"w");
+  FILE* file=fopen(file_path,"w+");
   maps* tmp=m;
   while(tmp!=NULL){
     fprintf(file,"[%s]\n",tmp->name);
@@ -98,9 +95,10 @@ void dumpMapsToFile(maps* m,char* file_path){
     fflush(file);
     tmp=tmp->next;
   }
+  fflush(file);
   fclose(file);
 }
-  
+
 /**
  * Create a new map
  *
@@ -1428,84 +1426,3 @@ void charxxxToMaps(char*** c,maps**m){
   }
   m=&trorf;
 }
-
-#ifdef WIN32
-char* getMapsAsKVP(maps* m,int length,int type){
-  char *dataInputsKVP=(char*) malloc(length*sizeof(char));
-  char *dataInputsKVPi=NULL;
-  maps* curs=m;
-  int i=0;
-  while(curs!=NULL){
-    map *inRequest=getMap(curs->content,"inRequest");
-    map *hasLength=getMap(curs->content,"length");
-    if((inRequest!=NULL && strncasecmp(inRequest->value,"true",4)==0) ||
-       inRequest==NULL){
-      if(i==0)
-	if(type==0){
-	  sprintf(dataInputsKVP,"%s=",curs->name);
-	  if(hasLength!=NULL){
-	    dataInputsKVPi=(char*)malloc((strlen(curs->name)+2)*sizeof(char));
-	    sprintf(dataInputsKVPi,"%s=",curs->name);
-	  }
-	}
-	else
-	  sprintf(dataInputsKVP,"%s",curs->name);
-      else{
-	char *temp=zStrdup(dataInputsKVP);
-	if(type==0)
-	  sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
-	else
-	  sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
-      }
-      map* icurs=curs->content;
-      if(type==0){
-	char *temp=zStrdup(dataInputsKVP);
-	if(getMap(curs->content,"xlink:href")!=NULL)
-	  sprintf(dataInputsKVP,"%sReference",temp);
-	else{
-	  if(hasLength!=NULL){
-	    int j;
-	    for(j=0;j<atoi(hasLength->value);j++){
-	      map* tmp0=getMapArray(curs->content,"value",j);
-	      if(j==0)
-		free(temp);
-	      temp=zStrdup(dataInputsKVP);
-	      if(j==0)
-		sprintf(dataInputsKVP,"%s%s",temp,tmp0->value);
-	      else
-		sprintf(dataInputsKVP,"%s;%s%s",temp,dataInputsKVPi,tmp0->value);
-	    }
-	  }
-	  else
-	    sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
-	}
-	free(temp);
-      }
-      while(icurs!=NULL){
-	if(strncasecmp(icurs->name,"value",5)!=0 &&
-	   strncasecmp(icurs->name,"mimeType_",9)!=0 &&
-	   strncasecmp(icurs->name,"dataType_",9)!=0 &&
-	   strncasecmp(icurs->name,"size",4)!=0 &&
-	   strncasecmp(icurs->name,"length",4)!=0 &&
-	   strncasecmp(icurs->name,"isArray",7)!=0 &&
-	   strcasecmp(icurs->name,"Reference")!=0 &&
-	   strcasecmp(icurs->name,"minOccurs")!=0 &&
-	   strcasecmp(icurs->name,"maxOccurs")!=0 &&
-	   strncasecmp(icurs->name,"fmimeType",9)!=0 &&
-	   strcasecmp(icurs->name,"inRequest")!=0){
-	  char *itemp=zStrdup(dataInputsKVP);
-	  if(strcasecmp(icurs->name,"xlink:href")!=0)
-	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
-	  else
-	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,url_encode(icurs->value));
-	  free(itemp);
-	}
-	icurs=icurs->next;
-      }
-    }
-    curs=curs->next;
-    i++;
-  }
-  return dataInputsKVP;
-}
-#endif

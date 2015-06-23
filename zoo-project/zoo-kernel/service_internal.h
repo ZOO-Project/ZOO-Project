@@ -97,31 +97,32 @@
 extern "C" {
 #endif
 
-  char *readVSIFile(maps*,const char*);
-  int  setOutputValue( maps*, const char*, char*, size_t);
-  char* getInputValue( maps*,const char*,size_t*);
+  ZOO_DLL_EXPORT char *readVSIFile(maps*,const char*);
+  ZOO_DLL_EXPORT int  setOutputValue( maps*, const char*, char*, size_t);
+  ZOO_DLL_EXPORT char* getInputValue( maps*,const char*,size_t*);
 
-  void unhandleStatus(maps*);
-  int _updateStatus(maps*);
-  char* _getStatus(maps*,char*);
-  char* _getStatusFile(maps*,char*);
-  char* getStatus(int);
-  char* getStatusId(maps*,char*);
+  ZOO_DLL_EXPORT void unhandleStatus(maps*);
+  ZOO_DLL_EXPORT int _updateStatus(maps*);
+  ZOO_DLL_EXPORT char* _getStatus(maps*,char*);
+  ZOO_DLL_EXPORT char* _getStatusFile(maps*,char*);
+  ZOO_DLL_EXPORT char* getStatus(int);
+  ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
 
-  int updateStatus( maps*,const int,const char*);
-  int removeShmLock(maps*, int);
+  ZOO_DLL_EXPORT int updateStatus( maps*,const int,const char*);
+  ZOO_DLL_EXPORT int removeShmLock(maps*, int);
   /**
    * Cross platform type used for Lock identifier
    */
 #ifndef WIN32
 #define semid int
 #else
+#include <windows.h>
 #define semid HANDLE
 #endif
-  semid acquireLock(maps*);
-  semid getShmLockId(maps*,int);
-  int lockShm(semid);
-  int unlockShm(semid);
+  ZOO_DLL_EXPORT semid acquireLock(maps*);
+  ZOO_DLL_EXPORT semid getShmLockId(maps*,int);
+  ZOO_DLL_EXPORT int lockShm(semid);
+  ZOO_DLL_EXPORT int unlockShm(semid);
 
 #ifdef __cplusplus
 }

@@ -40,8 +40,26 @@ lex.sr.obj: lex.sr.c service.h
 zcfg2yaml.obj: zcfg2yaml.c
 	$(CPP) $(CFLAGS) /c zcfg2yaml.c
 
-service_internal.obj: service_internal.c mimetypes.h
+service_internal.obj: service_internal.c service_internal.h
 	$(CPP) $(CFLAGS) /c service_internal.c
+
+server_internal.obj: server_internal.c server_internal.h
+	$(CPP) $(CFLAGS) /c server_internal.c
+
+caching.obj: caching.c caching.h
+	$(CPP) $(CFLAGS) /c caching.c
+
+request_parser.obj: request_parser.c request_parser.h
+	$(CPP) $(CFLAGS) /c request_parser.c
+
+response_print.obj: response_print.c response_print.h
+	$(CPP) $(CFLAGS) /c response_print.c
+
+service.obj: service.c service.h
+	$(CPP) $(CFLAGS) /c service.c
+
+sqlapi.obj: sqlapi.c sqlapi.h
+	$(CPP) $(CFLAGS) /c sqlapi.c
 
 service_internal_js.obj: service_internal_js.c service.h
 	$(CPP) /c $(CFLAGS) service_internal_js.c
@@ -67,11 +85,15 @@ zoo_service_loader.obj: zoo_service_loader.c service.h
 zoo_loader.obj: zoo_loader.c service.h
 	$(CPP) /EHsc /c $(CFLAGS) zoo_loader.c
 
-$(PROGRAMNAME): version.h zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
-	link zoo_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj /out:$(PROGRAMNAME) $(LDFLAGS) $(LDFLAGSCGI)
+
+$(LIBZOO_SERVICE): service_internal.obj service.obj sqlapi.obj
+	link /dll /out:$(LIBZOO_SERVICE) ./service.obj ./service_internal.obj ./sqlapi.obj $(LDFLAGS) /FORCE:MULTIPLE
+
+$(PROGRAMNAME): version.h $(LIBZOO_SERVICE) zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj request_parser.obj response_print.obj server_internal.obj caching.obj
+	link zoo_loader.obj request_parser.obj response_print.obj server_internal.obj caching.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj ./libzoo_service.lib /out:$(PROGRAMNAME) $(LDFLAGS) $(LDFLAGSCGI) 
 
 zcfg2yaml: version.h zcfg2yaml.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
-	link zcfg2yaml.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj /out:zcfg2yaml.exe $(LDFLAGS) $(LDFLAGSCGI)
+	link zcfg2yaml.obj server_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj response_print.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj ./libzoo_service.lib /out:zcfg2yaml.exe $(LDFLAGS) $(LDFLAGSCGI)
 
 clean:
-	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling
+	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling *.lib *.dll

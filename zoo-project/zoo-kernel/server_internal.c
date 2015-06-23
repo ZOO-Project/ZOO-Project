@@ -28,8 +28,11 @@
 #include "mimetypes.h"
 #ifndef WIN32
 #include <dlfcn.h>
-#endif
 #include <uuid/uuid.h>
+#else
+#include <rpc.h>
+#define ERROR_MSG_MAX_LENGTH 1024
+#endif
 #include <signal.h>
 
 /**
@@ -56,11 +59,18 @@ int getVersionId(const char* version){
  */
 char *get_uuid(){
   char *res=(char*)malloc(37*sizeof(char));
+#ifdef WIN32
+  UUID uuid;
+  UuidCreate(&uuid);
+  RPC_CSTR rest = NULL;
+  UuidToString(&uuid,&rest);
+#else
   uuid_t uuid;
   uuid_generate_time(uuid);
   char rest[128];
   uuid_unparse(uuid,rest);
-  sprintf(res,"%s", rest);
+#endif
+  sprintf(res,"%s",rest);
   return res;
 }
 
@@ -779,7 +789,7 @@ char* getLastErrorMessage() {
 	    (char *) lpMsgBuf );		
 #endif	
   LocalFree(lpMsgBuf);
-  
+
   return msg;
 #else
   return dlerror();
@@ -949,7 +959,13 @@ void runDismiss(maps* conf,char* pid){
       fread(fcontent,flen,1,f0);
       fcontent[flen]=0;
       fclose(f0);
+#ifndef WIN32
       kill(atoi(fcontent),SIGKILL);
+#else
+      HANDLE myZooProcess=OpenProcess(PROCESS_ALL_ACCESS,false,atoi(fcontent));
+      TerminateProcess(myZooProcess,1);
+      CloseHandle(myZooProcess);
+#endif
       free(fcontent);
     }
     free(fbkpid);
@@ -1088,3 +1104,92 @@ int createRegistry (maps* m,registry ** r, char *reg_dir)
   }
   return 0;
 }
+
+#ifdef WIN32
+/**
+ * Create a KVP request for executing background task.
+ * TODO: use the XML request in case of input POST request.
+ *
+ * @param m the maps containing the parameters from the main.cfg file
+ * @param length the total length of the KVP parameters
+ * @param type
+ */
+char* getMapsAsKVP(maps* m,int length,int type){
+  char *dataInputsKVP=(char*) malloc(length*sizeof(char));
+  char *dataInputsKVPi=NULL;
+  maps* curs=m;
+  int i=0;
+  while(curs!=NULL){
+    map *inRequest=getMap(curs->content,"inRequest");
+    map *hasLength=getMap(curs->content,"length");
+    if((inRequest!=NULL && strncasecmp(inRequest->value,"true",4)==0) ||
+       inRequest==NULL){
+      if(i==0)
+	if(type==0){
+	  sprintf(dataInputsKVP,"%s=",curs->name);
+	  if(hasLength!=NULL){
+	    dataInputsKVPi=(char*)malloc((strlen(curs->name)+2)*sizeof(char));
+	    sprintf(dataInputsKVPi,"%s=",curs->name);
+	  }
+	}
+	else
+	  sprintf(dataInputsKVP,"%s",curs->name);
+      else{
+	char *temp=zStrdup(dataInputsKVP);
+	if(type==0)
+	  sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
+	else
+	  sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
+      }
+      map* icurs=curs->content;
+      if(type==0){
+	char *temp=zStrdup(dataInputsKVP);
+	if(getMap(curs->content,"xlink:href")!=NULL)
+	  sprintf(dataInputsKVP,"%sReference",temp);
+	else{
+	  if(hasLength!=NULL){
+	    int j;
+	    for(j=0;j<atoi(hasLength->value);j++){
+	      map* tmp0=getMapArray(curs->content,"value",j);
+	      if(j==0)
+		free(temp);
+	      temp=zStrdup(dataInputsKVP);
+	      if(j==0)
+		sprintf(dataInputsKVP,"%s%s",temp,tmp0->value);
+	      else
+		sprintf(dataInputsKVP,"%s;%s%s",temp,dataInputsKVPi,tmp0->value);
+	    }
+	  }
+	  else
+	    sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
+	}
+	free(temp);
+      }
+      while(icurs!=NULL){
+	if(strncasecmp(icurs->name,"value",5)!=0 &&
+	   strncasecmp(icurs->name,"mimeType_",9)!=0 &&
+	   strncasecmp(icurs->name,"dataType_",9)!=0 &&
+	   strncasecmp(icurs->name,"size",4)!=0 &&
+	   strncasecmp(icurs->name,"length",4)!=0 &&
+	   strncasecmp(icurs->name,"isArray",7)!=0 &&
+	   strcasecmp(icurs->name,"Reference")!=0 &&
+	   strcasecmp(icurs->name,"minOccurs")!=0 &&
+	   strcasecmp(icurs->name,"maxOccurs")!=0 &&
+	   strncasecmp(icurs->name,"fmimeType",9)!=0 &&
+	   strcasecmp(icurs->name,"inRequest")!=0){
+	  char *itemp=zStrdup(dataInputsKVP);
+	  if(strcasecmp(icurs->name,"xlink:href")!=0)
+	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
+	  else
+	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,url_encode(icurs->value));
+	  free(itemp);
+	}
+	icurs=icurs->next;
+      }
+    }
+    curs=curs->next;
+    i++;
+  }
+  return dataInputsKVP;
+}
+#endif

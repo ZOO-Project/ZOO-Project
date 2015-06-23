@@ -56,6 +56,10 @@ extern "C" {
 #include "service_internal.h"
 #include "request_parser.h"
 
+#ifdef WIN32
+#include "server_internal.h"
+#endif
+
 int runRequest(map**);
 
 using namespace std;

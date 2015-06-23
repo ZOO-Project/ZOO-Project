@@ -22,6 +22,10 @@
  * THE SOFTWARE.
  */
 
+#ifdef WIN32
+#pragma comment(lib, "rpcrt4.lib")
+#endif
+
 #include "ulinet.h"
 #include "service.h"
 #include <openssl/sha.h>
@@ -59,6 +63,10 @@ extern "C" {
   char* getLastErrorMessage();
   int readServiceFile (maps *, char *, service **, char *);
   int createRegistry (maps*,registry **,char *);
+
+#ifdef WIN32
+  char* getMapsAsKVP(maps*,int,int);
+#endif
 
 #ifdef __cplusplus
 }
