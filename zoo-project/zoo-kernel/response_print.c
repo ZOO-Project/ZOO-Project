@@ -43,8 +43,6 @@
 #include <dlfcn.h>
 #endif
 
-#define ERROR_MSG_MAX_LENGTH 1024
-
 #include "mimetypes.h"
 
 

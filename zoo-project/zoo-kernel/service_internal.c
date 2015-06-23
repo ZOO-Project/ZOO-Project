@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include "fcgi_stdio.h"
 #include "service_internal.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
@@ -89,20 +88,20 @@ semid acquireLock(maps* conf){
 #endif
      ){
 #ifdef WIN32
-    return NULL
+    return NULL;
 #else
     return -1;
 #endif
   }
   if(lockShm(lockid)<0){
+#ifdef WIN32
+      return NULL;
+#else
     if(itn<ZOO_LOCK_MAX_RETRY){
       itn++;
       goto toRetry1;
     }else
-#ifdef WIN32
-    return NULL
-#else
-    return -1;
+      return -1;
 #endif
   }else
     return lockid;
@@ -210,7 +209,11 @@ char* _getStatus(maps* conf,char* lid){
       fclose(f0);
       free(fbkpid);
       if(stat!=NULL){
+#ifndef WIN32
 	removeShmLock(conf,1);
+#else
+	unlockShm(lockid);
+#endif
 	free(stat);
       }
       return fcontent;
@@ -270,8 +273,10 @@ int _updateStatus(maps *conf){
     char* stat=getStatusId(conf,sid->value);
     if(stat!=NULL){
       lockid=acquireLock(conf);
-      if(lockid<0)
+      if(lockid<0){
+	dumpMap(status);
 	return ZOO_LOCK_ACQUIRE_FAILED;
+      }
     }
     FILE* fstatus=fopen(fbkpid,"w");
     if(fstatus!=NULL){
@@ -291,12 +296,6 @@ int _updateStatus(maps *conf){
 
 #ifdef WIN32
 
-#include <windows.h>
-#include <fcgi_stdio.h>
-#include <stdio.h>
-#include <conio.h>
-#include <tchar.h>
-
 #define SHMEMSIZE 4096
 
 size_t getKeyValue(maps* conf, char* key, size_t length){
@@ -307,35 +306,34 @@ size_t getKeyValue(maps* conf, char* key, size_t length){
   
   map *tmpMap=getMapFromMaps(conf,"lenv","lid");
   if(tmpMap==NULL)
-	tmpMap=getMapFromMaps(conf,"lenv","osid");
+    tmpMap=getMapFromMaps(conf,"lenv","osid");
 
   if(tmpMap!=NULL){
-	snprintf(key, length, "zoo_sem_%s", tmpMap->value);      
+    snprintf(key, length, "zoo_sem_%s", tmpMap->value);      
   }
   else {
-	strncpy(key, "-1", length);  
+    strncpy(key, "-1", length);
   }
   return strlen(key);
 }
 
 
 semid getShmLockId(maps* conf, int nsems){
-    semid sem_id;
-    char key[MAX_PATH];
-    getKeyValue(conf, key, MAX_PATH);
-    
-    sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
-    if(sem_id==NULL){
+  semid sem_id;
+  char key[MAX_PATH];
+  getKeyValue(conf, key, MAX_PATH);
+  
+  sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
+  if(sem_id==NULL){
 #ifdef DEBUG
-      fprintf(stderr,"Semaphore failed to create: %s\n", getLastErrorMessage());
+    fprintf(stderr,"Semaphore failed to create: %s\n", getLastErrorMessage());
 #endif
-      return NULL;
-    }
+    return NULL;
+  }
 #ifdef DEBUG
-    fprintf(stderr,"%s Accessed !\n",key);
+  fprintf(stderr,"%s Accessed !\n",key);
 #endif
-
-    return sem_id;
+  return sem_id;
 }
 
 int removeShmLock(maps* conf, int nsems){

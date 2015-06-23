@@ -1087,6 +1087,7 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	addMapsToMaps(request_output,tmpmaps);
     }
   }
+  return 0;
 }
 
 /**

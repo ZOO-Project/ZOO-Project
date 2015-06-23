@@ -32,16 +32,16 @@ extern "C" {
 #ifdef RELY_ON_DB
 #include "service.h"
 #include "service_internal.h"
-  void init_sql(maps*);
-  void close_sql(maps*);
-  int execSql(maps*,const char*);
-  void recordStoredFile(maps*,const char*,const char*,const char*);
-  void recordServiceStatus(maps*);
-  void recordResponse(maps*,char*);
-  void readFinalRes(maps*,char*,map*);
-  int isRunning(maps*,char*);
-  char* getStatusId(maps*,char*);
-  void removeService(maps*,char*);
+  ZOO_DLL_EXPORT void init_sql(maps*);
+  ZOO_DLL_EXPORT void close_sql(maps*);
+  ZOO_DLL_EXPORT int execSql(maps*,const char*);
+  ZOO_DLL_EXPORT void recordStoredFile(maps*,const char*,const char*,const char*);
+  ZOO_DLL_EXPORT void recordServiceStatus(maps*);
+  ZOO_DLL_EXPORT void recordResponse(maps*,char*);
+  ZOO_DLL_EXPORT void readFinalRes(maps*,char*,map*);
+  ZOO_DLL_EXPORT int isRunning(maps*,char*);
+  ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
+  ZOO_DLL_EXPORT void removeService(maps*,char*);
 #endif
 
 #ifdef __cplusplus
