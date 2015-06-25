@@ -686,7 +686,7 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
     VSIStatBuf file_status;
-    VSIStat(dataSource, &file_status);
+    VSIStatL(dataSource, &file_status);
     if(fichier==NULL){
       char tmp[1024];
       sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %lld.",
