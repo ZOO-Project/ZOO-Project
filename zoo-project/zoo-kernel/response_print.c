@@ -1744,7 +1744,13 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       xmlAddChild(n,nc);
   }
   
-  if(vid==0 && hasStoredExecuteResponse==true && status!=SERVICE_STARTED && status!=SERVICE_ACCEPTED){
+  if(vid==0 && 
+     hasStoredExecuteResponse==true 
+     && status!=SERVICE_STARTED 
+#ifndef WIN32
+     && status!=SERVICE_ACCEPTED
+#endif
+     ){
 #ifndef RELY_ON_DB
     semid lid=acquireLock(m);//,1);
     if(lid<0){
@@ -2333,7 +2339,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     asRaw=1;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
-  
+
   maps* tmpSess=getMaps(m,"senv");
   if(tmpSess!=NULL){
     map *_tmp=getMapFromMaps(m,"lenv","cookie");
@@ -2374,7 +2380,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }
     else{
       fclose(teste);
-      dumpMapsToFile(tmpSess,session_file_path);
+      dumpMapsToFile(tmpSess,session_file_path,1);
     }
   }
   
@@ -2440,10 +2446,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	{
 	  elements* in=getElements(s->outputs,tmpI->name);
 	  char *format=NULL;
-	  if(in!=NULL){
-	    format=strdup(in->format);
+	  if(in!=NULL && in->format!=NULL){
+	    format=zStrdup(in->format);
 	  }else
-	    format=strdup("LiteralData");
+	    format=zStrdup("LiteralData");
 	  if(strcasecmp(format,"BoundingBoxData")==0){
 	    addToMap(tmpI->content,"extension","xml");
 	    addToMap(tmpI->content,"mimeType","text/xml");
@@ -2465,13 +2471,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      map* mtype=getMap(tmpI->content,"mimeType");
 	      getFileExtension(mtype != NULL ? mtype->value : NULL, file_ext, 32);
 	    }
-		
+
 	    file_name=(char*)malloc((strlen(s->name)+strlen(usid->value)+strlen(file_ext)+strlen(tmpI->name)+45)*sizeof(char));
 	    sprintf(file_name,"%s_%s_%s_%d.%s",s->name,tmpI->name,usid->value,itn,file_ext);
 	    itn++;
 	    file_path=(char*)malloc((strlen(tmp1->value)+strlen(file_name)+2)*sizeof(char));
 	    sprintf(file_path,"%s/%s",tmp1->value,file_name);
-    
+
 	    FILE *ofile=fopen(file_path,"wb");
 	    if(ofile==NULL){
 	      char tmpMsg[1024];
@@ -2497,6 +2503,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    fclose(ofile);
 
 	  }
+
 	  map *tmp2=getMapFromMaps(m,"main","tmpUrl");
 	  map *tmp3=getMapFromMaps(m,"main","serverAddress");
 	  char *file_url;
@@ -2508,10 +2515,11 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(file_name)+3)*sizeof(char));
 	    sprintf(file_url,"%s/%s/%s",tmp3->value,tmp2->value,file_name);
 	  }
+
 	  addToMap(tmpI->content,"Reference",file_url);
 	  free(format);
 	  free(file_name);
-	  free(file_url);	
+	  free(file_url);
 	  
 	}
 #ifdef USE_MS
