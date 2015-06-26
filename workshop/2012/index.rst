@@ -18,64 +18,65 @@ FOSS4G 2012 Prague
 Sponsored By
 **************
 
-.. image:: ../../_static/images/geolabs-logo.png
+.. image:: ../_static/geolabs-logo.png
    :width: 156px
-   :height: 56px
-   :target: http://www.geolabs.fr/
+   :height: 56px 
+   :target: http://www.geolabs.fr/  
 
-.. image:: ../../_static/images/apptech-logo.png
+.. image:: ../_static/apptech-logo.png
    :width: 156px
    :height: 56px
-   :target: http://www.apptec.co.jp/
+   :target: http://www.apptec.co.jp/   
 
-.. image:: ../../_static/images/neogeo-logo.png
+.. image:: ../_static/neogeo-logo.png
    :width: 156px
-   :height: 56px
-   :target: http://www-neogeo-online.net/
-  	    
-.. image:: ../../_static/images/3liz-logo.png
-   :width: 156px
-   :height: 56px
-   :target: http://www.3liz.com/
+   :height: 56px 
+   :target: http://www-neogeo-online.net/  
 
-.. image:: ../../_static/images/gateway-logo.png
+.. image:: ../_static/3liz-logo.png
+   :width: 156px
+   :height: 56px
+   :target: http://www.3liz.com/   
+
+.. image:: ../_static/gateway-logo.png
    :width: 156px
    :height: 56px
    :target: http://www.gatewaygeomatics.com/
+	    
 
 *******************************************
 Special thanks to our Knowledge Partners
 *******************************************
-
-.. image:: ../_static/images/ocu-logo.png
+.. image:: ../_static/ocu-logo.png
    :width: 156px
    :height: 94px
    :target: http://www.osaka-cu.ac.jp/english/
 
-.. image:: ../_static/images/logo-fem.png
+.. image:: ../_static/fem-logo.png
    :width: 156px
    :height: 94px
-    :target: http://www.fondazioneedmundmach.it/
+   :target: http://www.fondazioneedmundmach.it/
 
-.. image:: ../_static/images/polimi-logo.png
+.. image:: ../_static/polimi-logo.png
    :width: 156px
    :height: 94px
-    :target: http://geomatica.como.polimi.it/
+   :target: http://geomatica.como.polimi.it/
 
-.. image:: ../_static/images/gucas-logo.png
+.. image:: ../_static/gucas-logo.png
    :width: 156px
    :height: 94px
-    :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
+   :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
 
 .. image:: ../_static/images/cumtb-logo.png
    :width: 156px
    :height: 94px
-    :target: http://www.cumtb.edu.cn/
+   :target: http://www.cumtb.edu.cn/
 
-.. image:: ../_static/images/logo-supsi.png
+.. image:: ../_static/supsi-logo.png
    :width: 156px
    :height: 94px
-    :target: http://www.supsi.ch/home.html
+   :target: http://www.supsi.ch/home.html
+	    
 
 ****************************
 WorkShop table of content
