@@ -10,7 +10,7 @@ Python based WPS using PgRouting
 
 :Author:  Gérald Fenoy, Nicolas Bozon, Venkatesh Raghavan
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com, venka at osgeo.org
-:Last Updated: $Date: 2015-02-09 19:21:38 +0100 (Lun, 09 fév 2015) $
+:Last Updated: $Date$
 
 FOSS4G 2014 Portland
 --------------------------------------------
@@ -20,45 +20,70 @@ FOSS4G 2014 Portland
    :align: center
 
 
+**************
 Sponsored By
-.........................................................................................
+**************
 
-.. image:: ../../_static/images/geolabs-logo.png
+.. image:: ../_static/images/geolabs-logo.png
+   :width: 156px
+   :height: 56px
    :target: http://www.geolabs.fr/
 
-.. image:: ../../_static/images/apptech-logo.png
+.. image:: ../_static/images/apptech-logo.png
+   :width: 156px
+   :height: 56px
    :target: http://www.apptec.co.jp/
 
-.. image:: ../../_static/images/neogeo-logo.png
+.. image:: ../_static/images/neogeo-logo.png
+   :width: 156px
+   :height: 56px
    :target: http://www-neogeo-online.net/
 
-.. image:: ../../_static/images/3liz-logo.png
+.. image:: ../_static/images/3liz-logo.png
+   :width: 156px
+   :height: 56px
    :target: http://www.3liz.com/
 
-.. image:: ../../_static/images/gateway-logo.png
+.. image:: ../_static/images/gateway-logo.png
+   :width: 156px
+   :height: 56px
    :target: http://www.gatewaygeomatics.com/
 
-
+	    
+*******************************************
 Special thanks to our Knowledge Partners
-.........................................................................................
+*******************************************
 
-.. image:: ../../_static/images/ocu-logo.png
+.. image:: ../_static/images/ocu-logo.png
+   :width: 156px
+   :height: 94px
    :target: http://www.osaka-cu.ac.jp/english/
 
-.. image:: ../../_static/images/fem-logo.png
+.. image:: ../_static/images/logo-fem.png
+   :width: 156px
+   :height: 94px
     :target: http://www.fondazioneedmundmach.it/
 
-.. image:: ../../_static/images/polimi-logo.png
+.. image:: ../_static/images/polimi-logo.png
+   :width: 156px
+   :height: 94px
     :target: http://geomatica.como.polimi.it/
 
-.. image:: ../../_static/images/gucas-logo.png
+.. image:: ../_static/images/gucas-logo.png
+   :width: 156px
+   :height: 94px
     :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
 
-.. image:: ../../_static/images/cumtb-logo.png
+.. image:: ../_static/images/cumtb-logo.png
+   :width: 156px
+   :height: 94px
     :target: http://www.cumtb.edu.cn/
 
-.. image:: ../../_static/images/supsi-logo.png
+.. image:: ../_static/images/logo-supsi.png
+   :width: 156px
+   :height: 94px
     :target: http://www.supsi.ch/home.html
+	     
 
 WorkShop table of content
 --------------------------------------------
