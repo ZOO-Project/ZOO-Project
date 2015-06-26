@@ -173,7 +173,20 @@ For instance, adding the following in the Service source code  :
 means that ZOO-Kernel will create a file named ``sess_XXX1000000.cfg``
 in the ``cacheDir`` directory, and will return the specified cookie to the client. Each time the client will 
 request ZOO-Kernel using this cookie, it will automatically load the
-value stored before the Service execution. 
+value stored before the Service execution.
+
+
+database section
+...............................
+
+[database]
+dbname=zoo_project
+port=5432
+user=username
+host=127.0.0.1
+type=PG
+schema=public
+
 
 
 .. rubric:: Footnotes
