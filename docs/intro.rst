@@ -35,7 +35,7 @@ Open Source
 
 `ZOO-Project <http://zoo-project.org>`__  is open source and released under the terms of the `MIT/X-11 <http://opensource.org/licenses/MITlicense>`__  `license <http://zoo-project.org/trac/browser/trunk/zoo-project/LICENSE>`__ . ZOO-Project activities are directed by the Project Steering Committee (PSC) and the software itself is being developed, maintained and documented by an international community of users and developers (aka `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe>`_).
 
-Please refer to the ZOO-Project :ref:`contribute_index` if you want to participate and contribute. It is easy to `get involved <http://zoo-project.org/new/Get involved/>`__ on code, documentation or translation, and everybody is welcome in the `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe/>`__.
+Please refer to the ZOO-Project :ref:`contribute_index` if you want to participate and contribute. It is easy to :ref:`get involved <contribute_index>`  on source code, documentation or translation. Everybody is welcome to join the `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe/>`__.
 
 `ZOO-Project <http://zoo-project.org>`__  is an incubating software at the Open Source Geospatial Foundation (`OSGeo <http://osgeo.org>`__).
 
