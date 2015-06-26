@@ -522,22 +522,24 @@ PyDictObject* PyDict_FromMap(map* t){
  */
 maps* mapsFromPyDict(PyDictObject* t){
   maps* res=NULL;
-  maps* cursor=res;
+  maps* cursor=NULL;
   PyObject* list=PyDict_Keys((PyObject*)t);
   int nb=PyList_Size(list);
   int i;
+  PyObject* key;
+  PyObject* value;
   for(i=0;i<nb;i++){
 #ifdef DEBUG
     fprintf(stderr,">> parsing maps %d\n",i);
 #endif
-    PyObject* key=PyList_GetItem(list,i);
-    PyObject* value=PyDict_GetItem((PyObject*)t,key);
+    key=PyList_GetItem(list,i);
+    value=PyDict_GetItem((PyObject*)t,key);
 #ifdef DEBUG
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
     cursor=(maps*)malloc(MAPS_SIZE);
-    cursor->name=PyString_AsString(key);
+    cursor->name=zStrdup(PyString_AsString(key));
     cursor->content=mapFromPyDict((PyDictObject*)value);
 #ifdef DEBUG
     dumpMap(cursor->content);
@@ -571,9 +573,11 @@ map* mapFromPyDict(PyDictObject* t){
   PyObject* list=PyDict_Keys((PyObject*)t);
   int nb=PyList_Size(list);
   int i;
+  PyObject* key;
+  PyObject* value;
   for(i=0;i<nb;i++){
-    PyObject* key=PyList_GetItem(list,i);
-    PyObject* value=PyDict_GetItem((PyObject*)t,key);
+    key=PyList_GetItem(list,i);
+    value=PyDict_GetItem((PyObject*)t,key);
 #ifdef DEBUG
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
@@ -583,7 +587,18 @@ map* mapFromPyDict(PyDictObject* t){
       char *buffer=NULL;
       Py_ssize_t size;
 #if PY_MAJOR_VERSION >= 3
-      buffer=_PyUnicode_AsStringAndSize(value,&size);
+      if(PyBytes_Check(value)){
+	size=PyBytes_Size(value);
+	buffer=PyBytes_AsString(value);
+      }
+      else
+	if(PyUnicode_Check(value) && PyUnicode_READY(value) == 0){
+	  buffer=PyUnicode_AsUTF8AndSize(value,&size);
+	}
+	else{
+	  fprintf(stderr,"Unsupported return value.");
+	  return NULL;
+	}
 #else
       PyString_AsStringAndSize(value,&buffer,&size);
 #endif

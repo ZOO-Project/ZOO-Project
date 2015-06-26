@@ -733,7 +733,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
     char* filepath = kvp + strlen(key);
     strncpy(kvp, key, strlen(key));
     addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value), 
-	       filepath, FILENAME_MAX);				   
+	       filepath, FILENAME_MAX);
     if (filepath == NULL) {
       errorException( m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);  
       return;
@@ -786,13 +786,16 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   }
   SetEnvironmentVariable ("CGISID", TEXT (sid->value));
   SetEnvironmentVariable ("QUERY_STRING", TEXT (tmpq));
-  // knut: Prevent REQUEST_METHOD=POST in background process call to cgic:main (process hangs when reading cgiIn):
+  // knut: Prevent REQUEST_METHOD=POST in background process call to cgic:main 
+  // (process hangs when reading cgiIn):
   SetEnvironmentVariable("REQUEST_METHOD", "GET");
+  SetEnvironmentVariable("CONTENT_TYPE", "text/plain");
   
   char clen[1000];
   sprintf (clen, "%d", strlen (tmpq));
   SetEnvironmentVariable ("CONTENT_LENGTH", TEXT (clen));
 
+  // ref. https://msdn.microsoft.com/en-us/library/windows/desktop/ms684863%28v=vs.85%29.aspx
   if (!CreateProcess (NULL,     // No module name (use command line)
                       TEXT (tmp),       // Command line
                       NULL,     // Process handle not inheritable
@@ -1797,9 +1800,10 @@ runRequest (map ** inputs)
   /**
    * Initialize the specific [lenv] section which contains runtime variables:
    * 
-   *  - usid : it is an unique identification number 
+   *  - usid : it is an universally unique identifier  
+   *  - osid : it is an idenfitication number 
    *  - sid : it is the process idenfitication number (OS)
-   *  - uusid : it is an universally unique identification number 
+   *  - uusid : it is an universally unique identifier 
    *  - status : value between 0 and 100 to express the  completude of 
    * the operations of the running service 
    *  - message : is a string where you can store error messages, in case 
@@ -1930,12 +1934,12 @@ runRequest (map ** inputs)
 
   map *test1 = getMap (request_inputs, "cgiSid");
   if (test1 != NULL){
-      cgiSid = test1->value;
-      addToMap (request_inputs, "storeExecuteResponse", "true");
-      addToMap (request_inputs, "status", "true");
-      setMapInMaps (m, "lenv", "sid", test1->value);
-      status = getMap (request_inputs, "status");
-    }
+    cgiSid = zStrdup(test1->value);
+    addToMap (request_inputs, "storeExecuteResponse", "true");
+    addToMap (request_inputs, "status", "true");
+    setMapInMaps (m, "lenv", "osid", test1->value);
+    status = getMap (request_inputs, "status");
+  }
   test1 = getMap (request_inputs, "usid");
   if (test1 != NULL){
     setMapInMaps (m, "lenv", "usid", test1->value);
@@ -2128,7 +2132,6 @@ runRequest (map ** inputs)
           loadServiceAndRun (&m, s1, request_inputs,
                              &request_input_real_format,
                              &request_output_real_format, &eres);
-
         }
       else
         {
@@ -2181,7 +2184,6 @@ runRequest (map ** inputs)
         return -1;
       lockShm (lid);
 #endif
-      fclose(f0);
       FILE *f3 = fopen (fbkp, "wb+");
       free (fbkp);
       fseek (f2, 0, SEEK_END);
@@ -2205,7 +2207,7 @@ runRequest (map ** inputs)
 	break;
       }
 #ifndef RELY_ON_DB
-      dumpMapsToFile(bmap,fbkpres);
+      dumpMapsToFile(bmap,fbkpres,1);
       removeShmLock (m, 1);
 #else
       recordResponse(m,fbkp1);
@@ -2220,6 +2222,8 @@ runRequest (map ** inputs)
       free (flog);
       free (fbkp1);
       free (tmps1);
+      if(cgiSid!=NULL)
+	free(cgiSid);
     }
 
   freeService (&s1);

@@ -270,8 +270,8 @@ extern "C" {
   ZOO_DLL_EXPORT void _dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMaps(maps* m);
-  ZOO_DLL_EXPORT void dumpMapToFile(map*,FILE*); // Not required
-  ZOO_DLL_EXPORT void dumpMapsToFile(maps*,char*);
+  ZOO_DLL_EXPORT void dumpMapToFile(map*,FILE*); // (used only internally)
+  ZOO_DLL_EXPORT void dumpMapsToFile(maps*,char*,int);
   ZOO_DLL_EXPORT map* createMap(const char*,const char*);
   ZOO_DLL_EXPORT int count(map*);
   ZOO_DLL_EXPORT bool hasKey(map*,const char*);

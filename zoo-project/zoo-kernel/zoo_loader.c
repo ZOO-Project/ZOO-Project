@@ -28,21 +28,13 @@
 /**
  * Specific includes
  */
-#ifndef WIN32
 #include "fcgio.h"
 #include "fcgi_config.h" 
 #include "fcgi_stdio.h"
-#endif
 #include <sys/types.h>
 #include <unistd.h>
 #include "service_internal.h"
 #include "response_print.h"
-
-
-#ifdef WIN32
-#include "windows.h"
-#define strtok_r strtok_s
-#endif
 
 extern "C" {
 #include "cgic.h"
@@ -53,12 +45,13 @@ extern "C" {
 #include <libxml/xpathInternals.h>
 }
 
+#ifdef WIN32
+#include "windows.h"
+#define strtok_r strtok_s
+#endif
+
 #include "service_internal.h"
 #include "request_parser.h"
-
-#ifdef WIN32
-#include "server_internal.h"
-#endif
 
 int runRequest(map**);
 
@@ -177,19 +170,10 @@ int cgiMain(){
 #ifdef DEBUG
       fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,value);
 #endif
-#ifdef WIN32
-      char* tmp = url_decode(value); 
-      if(tmpMap!=NULL)		
-        addToMap(tmpMap,*arrayStep,tmp);
-      else		
-        tmpMap=createMap(*arrayStep,tmp);
-      free(tmp);
-#else
       if(tmpMap!=NULL)
         addToMap(tmpMap,*arrayStep,value);
       else
         tmpMap=createMap(*arrayStep,value);
-#endif	
       arrayStep++;
       delete[]value;
     }
@@ -205,10 +189,12 @@ int cgiMain(){
     fseek(lf,0,SEEK_SET);
     char *buffer=(char*)malloc((flen+1)*sizeof(char));
     fread(buffer,flen,1,lf);
+    char *pchr=strrchr(buffer,'>');
+    cgiContentLength=strlen(buffer)-strlen(pchr)+1;
+    buffer[cgiContentLength]=0;
     fclose(lf);
     addToMap(tmpMap,"request",buffer);
     free(buffer);
-    cgiContentLength=flen+9;
   }
 #endif
   /**
@@ -386,12 +372,11 @@ int cgiMain(){
         token1=strtok_r(NULL,"=",&saveptr1);
       }	  
       //addToMap(tmpMap,name,value);
-	  /* knut: strtok(_r) ignores delimiter bytes at start and end of string; 
-	   * it will return non-empty string or NULL, e.g. "metapath=" yields value=NULL.
-	   * This modification sets value="" instead of NULL.
-	   */
-	  addToMap(tmpMap,name, value != NULL ? value : "");
-
+      /* knut: strtok(_r) ignores delimiter bytes at start and end of string; 
+       * it will return non-empty string or NULL, e.g. "metapath=" yields value=NULL.
+       * This modification sets value="" instead of NULL.
+       */
+      addToMap(tmpMap,name, value != NULL ? value : "");
       free(name);
       free(value);
       name=NULL;
@@ -411,7 +396,6 @@ int cgiMain(){
   if(strQuery!=NULL)
     free(strQuery);
 
-  
   runRequest(&tmpMap);
 
   if(tmpMap!=NULL){

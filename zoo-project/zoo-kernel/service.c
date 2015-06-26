@@ -86,14 +86,18 @@ void dumpMaps(maps* m){
  * @param m the map to dump
  * @param file_path the full path to the file name to store the map
  */
-void dumpMapsToFile(maps* m,char* file_path){
+void dumpMapsToFile(maps* m,char* file_path,int limit){
   FILE* file=fopen(file_path,"w+");
   maps* tmp=m;
+  int cnt=0;
   while(tmp!=NULL){
     fprintf(file,"[%s]\n",tmp->name);
     dumpMapToFile(tmp->content,file);
     fflush(file);
     tmp=tmp->next;
+    cnt++;
+    if(limit>=0 && cnt==limit)
+      tmp=NULL;
   }
   fflush(file);
   fclose(file);

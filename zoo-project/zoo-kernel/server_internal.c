@@ -71,6 +71,9 @@ char *get_uuid(){
   uuid_unparse(uuid,rest);
 #endif
   sprintf(res,"%s",rest);
+#ifdef WIN32
+  RpcStringFree(&rest);
+#endif
   return res;
 }
 
@@ -894,8 +897,8 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	char* result=_getStatusFile(conf,pid);
 	if(result!=NULL){
 	  char *encoding=getEncoding(conf);
-	  fprintf(stdout,"Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
-	  fprintf(stdout,"%s",result);
+	  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+	  printf("%s",result);
 	  fflush(stdout);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
