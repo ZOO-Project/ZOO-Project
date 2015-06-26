@@ -18,7 +18,6 @@ Attribution-ShareAlike 4.0 International Public License (`CC-BY-SA
 <https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__).
 
 .. image:: _static/by-sa.png
-   :height: 141px
-   :width: 403px
-   :scale: 50 %
+   :height: 50px
+   :width: 100px
    :alt: CC-BY-SA license
