@@ -67,10 +67,6 @@ Special thanks to our Knowledge Partners
    :height: 94px
    :target: http://www.fondazioneedmundmach.it/
    
-.. raw:: latex
-
-   \\
-
 .. image:: ../_static/polimi-logo.png
    :width: 156px
    :height: 94px
@@ -80,12 +76,8 @@ Special thanks to our Knowledge Partners
    :width: 156px
    :height: 94px
    :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
-   
-.. raw:: latex
 
-   \\
-
-.. image:: ../_static/images/cumtb-logo.png
+.. image:: ../_static/cumtb-logo.png
    :width: 156px
    :height: 94px
    :target: http://www.cumtb.edu.cn/

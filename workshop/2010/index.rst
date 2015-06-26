@@ -72,7 +72,7 @@ Special Thanks To Our Knowledge Partners
    :height: 94px
    :target: http://www.gucas.ac.cn/gscasenglish/index.aspx
 
-.. image:: ../_static/images/cumtb-logo.png
+.. image:: ../_static/cumtb-logo.png
    :width: 156px
    :height: 94px
    :target: http://www.cumtb.edu.cn/
