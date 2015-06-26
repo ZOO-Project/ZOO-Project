@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Building blocks presentation - Using OGR and PgRouting based Web Services &mdash; ZOO-Project 1.5 documentation</title>
+  
+  <link href="http://fonts.googleapis.com/css?family=Days+One" rel="stylesheet" type="text/css">
+  
+  
+
+  
+
+  
+  
+    
+      <link rel="search" type="application/opensearchdescription+xml" title="Search within ZOO-Project 1.5 documentation" href="_static/opensearch.xml"/>
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="ZOO-Project 1.5 documentation" href="index.html"/>
+        <link rel="next" title="Playing with buildign blocks - Creating JavaScript Web Services" href="js_services_chaining.html"/>
+        <link rel="prev" title="Creating your first ZOO Service" href="first_service.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+	  <a class="shrink" href="http://zoo-project.org"><img src="http://zoo-project.org/img/zoo-sun-logo.png" class="img-responsive sun" style="display: inline;"> ZOO</a>
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#what-is-zoo">What is ZOO ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#how-does-zoo-works">How does ZOO works ?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#what-are-we-going-to-do-in-this-workshop">What are we going to do in this workshop?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#usefull-tips-for-reading">Usefull tips for reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using_zoo_from_osgeolivevm.html">Configuration and ZOO-Kernel use</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="using_zoo_from_osgeolivevm.html#zoo-project-installation">ZOO-Project Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_zoo_from_osgeolivevm.html#zoo-kernel-configuration">ZOO-Kernel Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_zoo_from_osgeolivevm.html#testing-the-zoo-installation-with-getcapabilities">Testing the ZOO installation with GetCapabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first_service.html">Creating your first ZOO Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#service-and-publication-process-overview">Service and publication process overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#creating-your-first-zcfg-file">Creating your first ZCFG file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#test-requests">Test requests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#implementing-the-python-service">Implementing the Python Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#interracting-with-your-service-using-execute-requests">Interracting with your service using Execute requests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_service.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Building blocks presentation - Using OGR and PgRouting based Web Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#services-provider-and-configuration-files">Services Provider and configuration files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-buffer-service">The Buffer Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-intersection-service">The Intersection Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-differencepy-service">The DifferencePy Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-routing-and-profile-services">The Routing and Profile Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="js_services_chaining.html">Playing with buildign blocks - Creating JavaScript Web Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#zoo-api-overview">ZOO-API Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#the-mask-service">The Mask Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#buffermask-service">BufferMask Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#bufferrequest-service">BufferRequest service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#add-union-into-the-chain">Add Union into the chain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="js_services_chaining.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">ZOO-Project</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+
+    <li><a href="index.html"> Docs</a> &#8725; &#160;</li>
+      
+    <li>Building blocks presentation - Using OGR and PgRouting based Web Services</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/building_blocks_presentation.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="building-blocks-presentation-using-ogr-and-pgrouting-based-web-services">
+<span id="ogr-base-vect-ops"></span><h1><a class="toc-backref" href="#table-of-contents">Building blocks presentation - Using OGR and PgRouting based Web Services</a><a class="headerlink" href="#building-blocks-presentation-using-ogr-and-pgrouting-based-web-services" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#building-blocks-presentation-using-ogr-and-pgrouting-based-web-services" id="id1">Building blocks presentation - Using OGR and PgRouting based Web Services</a><ul>
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#services-provider-and-configuration-files" id="id3">Services Provider and configuration files</a></li>
+<li><a class="reference internal" href="#the-buffer-service" id="id4">The Buffer Service</a></li>
+<li><a class="reference internal" href="#the-intersection-service" id="id5">The Intersection Service</a></li>
+<li><a class="reference internal" href="#the-differencepy-service" id="id6">The DifferencePy Service</a></li>
+<li><a class="reference internal" href="#the-routing-and-profile-services" id="id7">The Routing and Profile Services</a></li>
+<li><a class="reference internal" href="#conclusion" id="id8">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#table-of-contents">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>In this section, you will use basic ZOO-Services : <code class="docutils literal"><span class="pre">Buffer</span></code>,
+<code class="docutils literal"><span class="pre">Intersection</span></code> and <code class="docutils literal"><span class="pre">DifferencePy</span></code> which use OGR and psycopg Python modules.
+The intended goal of this section is to present and interact with your new building blocks before chaining them in the next section.</p>
+<p>First of all, you should use the following links to access the user
+interfaces and interact with your services, the first one is used to
+access basic spatial-tools demo client interface and  the second to
+access the routing application :</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://localhost/zoows2013-demo/spatialtools-py.html">http://localhost/zoows2013-demo/spatialtools-py.html</a></li>
+<li><a class="reference external" href="http://localhost/zoo-ws2013/">http://localhost/zoo-ws2013/</a></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="services-provider-and-configuration-files">
+<h2><a class="toc-backref" href="#table-of-contents">Services Provider and configuration files</a><a class="headerlink" href="#services-provider-and-configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>First you may verify if the ZOO-Services are available from your current setup.
+You can take a look at the <code class="docutils literal"><span class="pre">Buffer.zcfg</span></code>, <code class="docutils literal"><span class="pre">Intersection.zcfg</span></code> and
+<code class="docutils literal"><span class="pre">DifferencePy.zcfg</span></code> to get details about parameters.
+As you can see from the ZCFG files, you will use ZOO-Services provided by the
+<code class="docutils literal"><span class="pre">service</span></code> Python service provider. So if you want to modify the Python code
+you will have to edit the corresponding file (so <code class="docutils literal"><span class="pre">service.py</span></code>).
+You are invited to use similar requests as the one used in previous
+sections to learn about each services individually.</p>
+</div>
+<div class="section" id="the-buffer-service">
+<h2><a class="toc-backref" href="#table-of-contents">The Buffer Service</a><a class="headerlink" href="#the-buffer-service" title="Permalink to this headline">¶</a></h2>
+<p>First click on a street then once the street is displayed in blue, click the
+&#8216;Buffer&#8217; button on top, you should get similar result as displayed in the following.</p>
+<a class="reference internal image-reference" href="_images/Buffer_Level_15.png"><img alt="_images/Buffer_Level_15.png" class="align-center" src="_images/Buffer_Level_15.png" style="width: 650px;" /></a>
+<p>Since version ZOO-Project 1.2.0, you can run automatically some basic tests to
+make sure that you wrote a correct ZCFG file and your service is validating.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">the current testing is really simple and should be adapted to each Services
+Provider, mainly to define input names.</p>
+</div>
+<p>You can use the following command:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> /home/user/zoo/testing
+./run.sh http://localhost/cgi-bin/zoo_loader.cgi Buffer
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">During or after the test run, you can take a look inside the <code class="docutils literal"><span class="pre">tmp</span></code> directory
+which contains both the XML requests send to the ZOO Kernel (<code class="docutils literal"><span class="pre">*1.xml</span></code>) and the
+responses it gave (<code class="docutils literal"><span class="pre">output*.xml</span></code>).</p>
+</div>
+</div>
+<div class="section" id="the-intersection-service">
+<h2><a class="toc-backref" href="#table-of-contents">The Intersection Service</a><a class="headerlink" href="#the-intersection-service" title="Permalink to this headline">¶</a></h2>
+<p>Using the same client interface as before, once you get a Buffer, you can then
+select a street intersecting the Buffer geometry to compute intersection by clicking on the Intersection button.</p>
+<a class="reference internal image-reference" href="_images/Intersection_Level_15.png"><img alt="_images/Intersection_Level_15.png" class="align-center" src="_images/Intersection_Level_15.png" style="width: 650px;" /></a>
+</div>
+<div class="section" id="the-differencepy-service">
+<h2><a class="toc-backref" href="#table-of-contents">The DifferencePy Service</a><a class="headerlink" href="#the-differencepy-service" title="Permalink to this headline">¶</a></h2>
+<p>Using the same instructions as for Intersetion, you can get the following result.</p>
+<a class="reference internal image-reference" href="_images/Difference_Level_15.png"><img alt="_images/Difference_Level_15.png" class="align-center" src="_images/Difference_Level_15.png" style="width: 650px;" /></a>
+</div>
+<div class="section" id="the-routing-and-profile-services">
+<h2><a class="toc-backref" href="#table-of-contents">The Routing and Profile Services</a><a class="headerlink" href="#the-routing-and-profile-services" title="Permalink to this headline">¶</a></h2>
+<p>First click on the blue flag then place your starting point on the
+map, do the same with the red flag to get the shortest path computed
+by the dedicated service and then display its profile. Note that when
+you pass the mouse over the profile display then you will see its
+corresponding position displayed on the map. You can also click on a
+specific step in your path to get the corresponding line displayed.</p>
+<a class="reference internal image-reference" href="_images/Routing_Basic.png"><img alt="_images/Routing_Basic.png" class="align-center" src="_images/Routing_Basic.png" style="width: 650px;" /></a>
+<p>If you take a look in the file: <code class="docutils literal"><span class="pre">/usr/lib/cgi-bin/routing/do.zcfg</span></code>
+you may notice something new in the supported format which is
+reproduced here after.</p>
+<div class="highlight-guess"><div class="highlight"><pre><span class="nt">&lt;Supported&gt;</span>
+ mimeType = image/png
+ asReference = true
+ msStyle = STYLE COLOR 125 0 105 OUTLINECOLOR 0 0 0 WIDTH 3 END
+ useMapServer = true
+ extension = json
+<span class="nt">&lt;/Supported&gt;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">mimeType</span></code> is defined as <code class="docutils literal"><span class="pre">image/png</span></code> and there is two new
+parameter which are both optional:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">useMapServer</span></code>: which make you able to inform the ZOO-Kernel
+that it have to use MapServer to publish your result as WMS / WFS or WCS (this last
+won&#8217;t be used in this workshop) rather than simply storing the
+result as a file.</li>
+<li><code class="docutils literal"><span class="pre">msStyle</span></code>: which let you define your own MapServer <code class="docutils literal"><span class="pre">STYLE</span></code> block definition.</li>
+</ul>
+</div></blockquote>
+<p>When you need to access a result many time or for different purpose
+accross other services then it is really useful to ask ZOO-Kernel to
+publish your result as WMS, WFS or WCS.</p>
+<p>Note that no modification of the code of the do service was required
+to handle automatic pubilcation of the result as it is a vector format
+supported by OGR, only modification of the zcfg was required.</p>
+<p>This routing example is here to illustrate how easy it is to publish
+your result as WMS, WFS or WCS ressource. Indeed, when your routing
+service was called, ZOO-Kernel published the result as WMS and WFS
+ressources which was both used first for the UI purpose, the WMS to
+display the resulting path on the map, the WFS for displaying details
+about each steps. The WFS protocol is also used as the input value
+for the profile computation. So, the computation was run once
+and accessed three times for different purposes and from different
+clients.</p>
+<p>For more informations about the MapServer support, please refer to <a class="reference external" href="http://zoo-project.org/docs/kernel/mapserver.html">the
+official  ZOO-Project Documentation</a>.</p>
+</div>
+<div class="section" id="conclusion">
+<h2><a class="toc-backref" href="#table-of-contents">Conclusion</a><a class="headerlink" href="#conclusion" title="Permalink to this headline">¶</a></h2>
+<p>Now you know this three services, and you get a simple interface to interact
+with your MapServer WFS and your ZOO-Project WPS Servers, you are ready to use
+the Services in a different way, by chaining them using the JavaScript ZOO-API to build
+more complexe and powerfull services.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="js_services_chaining.html" class="btn btn-neutral float-right" title="Playing with buildign blocks - Creating JavaScript Web Services">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="first_service.html" class="btn btn-neutral" title="Creating your first ZOO Service"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+  <div class="pfoot">
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2009-2015, ZOO-Project team.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> inspired by <a href="https://readthedocs.org">Read the Docs</a>.
+</div>
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
