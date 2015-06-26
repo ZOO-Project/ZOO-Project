@@ -14,7 +14,6 @@ operating systems.
    install-confoptions
    install-installation
    install-onwindows
-   install-onmacos
 
 
 
