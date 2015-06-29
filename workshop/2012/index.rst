@@ -1,22 +1,20 @@
 .. _workshop-foss4g-cee-2012:
 
 ##########################################
-Practical Introduction to ZOO-Project by playing with building blocks
+ZOO-Project Workshop 2012
 ##########################################
 
-:Author:  Gérald Fenoy, Nicolas Bozon
+:Original Title: Practical Introduction to ZOO-Project by playing with building blocks
+:Author:  Nicolas Bozon, Gérald Fenoy, Venkatesh Raghavan
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com
 :Last Updated: $Date$
-
-****************************************
-FOSS4G 2012 Prague
-****************************************
+:Events: FOSS4G 2012 Prague
 
 .. image:: ./images/foss4gcee2012.png
 
-**************
-Sponsored By
-**************
+
+**Sponsored By**
+
 
 .. image:: ../_static/geolabs-logo.png
    :width: 156px
@@ -42,11 +40,11 @@ Sponsored By
    :width: 156px
    :height: 56px
    :target: http://www.gatewaygeomatics.com/
-	    
 
-*******************************************
-Special thanks to our Knowledge Partners
-*******************************************
+
+**Special thanks to our Knowledge Partners**
+
+
 .. image:: ../_static/ocu-logo.png
    :width: 156px
    :height: 94px
@@ -76,11 +74,10 @@ Special thanks to our Knowledge Partners
    :width: 156px
    :height: 94px
    :target: http://www.supsi.ch/home.html
-	    
 
-****************************
-WorkShop table of content
-****************************
+
+**WorkShop table of content**
+
 .. toctree::
    :maxdepth: 5
    

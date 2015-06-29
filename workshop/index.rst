@@ -3,10 +3,13 @@
 ZOO-Project workshop 
 =============================
 
-This is the `ZOO-Project <http://zoo-project.org>`__ workshop section.
+Welcome on the `ZOO-Project <http://zoo-project.org>`__ workshop
+section, here you can find hands on materials presenting how to use
+the ZOO-Project for the first time in an `OSGeoLive
+<http://live.osgeo.org/>`__ environment.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    2014/index
    2013/index
