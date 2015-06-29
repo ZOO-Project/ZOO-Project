@@ -276,7 +276,6 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
  */
 void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
   hInternet->waitingRequests[hInternet->nb]=strdup(url);
-  hInternet->ihandle[hInternet->nb].header=NULL;
   if(req)
     InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
   maps *oreq=getMaps(*m,"orequests");

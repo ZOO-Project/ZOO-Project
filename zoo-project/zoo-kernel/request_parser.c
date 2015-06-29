@@ -637,7 +637,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  ha[0] = "key";
 			  ha[1] = "value";
 			  int hai;
-			  char *has;
+			  char *has=NULL;
 			  char *key;
 			  for (hai = 0; hai < 2; hai++)
 			    {
@@ -674,13 +674,14 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				}
 			      xmlFree (val);
 			    }
-			  hInternet->ihandle[hInternet->nb].header = NULL;
-			  hInternet->ihandle[hInternet->nb].header =
-			    curl_slist_append (hInternet->ihandle
-					       [hInternet->nb].header,
-					       has);
-			  if (has != NULL)
+			  if (has != NULL){
+			    hInternet->ihandle[hInternet->nb].header = NULL;
+			    hInternet->ihandle[hInternet->nb].header =
+			      curl_slist_append (hInternet->ihandle
+						 [hInternet->nb].header,
+						 has);
 			    free (has);
+			  }
 			}
 		      else
 			{
