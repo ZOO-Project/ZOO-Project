@@ -1,32 +1,24 @@
-.. _workshop-foss4g-cee-2012:
+.. _workshop-foss4g-2013:
 
 ##########################################
-ZOO-Project: playing with building blocks to build pgRouting web application
+ZOO-Project Workshop 2013
 ##########################################
 
 :Author:  Gérald Fenoy, Nicolas Bozon, Venkatesh Raghavan
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com, venka at osgeo.org
 :Last Updated: $Date$
-
-****************************************
-FOSS4G 2013 Nottingham
-****************************************
+:Events: FOSS4G 2013 Nottingham, FOSS4G-CEE 2013 Bucharest
+:Original Title: ZOO-Project: playing with building blocks to build pgRouting web application
 
 .. image:: ./images/foss4g2013-white-300.png
    :target: http://2013.foss4g.org/
    :align: center
 
-****************************************
-FOSS4G-CEE 2013 Bucharest
-****************************************
-
 .. image:: ./images/logo-foss4g-cee-2013.png
    :target: http://2013.foss4g-cee.org/
    :align: center
 
-**************
 Sponsored By
-**************
 
 .. image:: ../_static/geolabs-logo.png
    :width: 156px
@@ -53,9 +45,7 @@ Sponsored By
    :height: 56px
    :target: http://www.gatewaygeomatics.com/
 
-*******************************************
 Special thanks to our Knowledge Partners
-*******************************************
 
 .. image:: ../_static/ocu-logo.png
    :width: 156px
@@ -87,9 +77,8 @@ Special thanks to our Knowledge Partners
    :height: 94px
    :target: http://www.supsi.ch/home.html
 
-****************************
 WorkShop table of content
-****************************
+
 .. toctree::
    :maxdepth: 5
    

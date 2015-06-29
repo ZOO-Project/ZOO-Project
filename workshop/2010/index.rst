@@ -1,15 +1,13 @@
 .. _workshop-foss4g-japan-2010:
 
 ##############################################################
-Workshop: Practical Introduction to ZOO: The Open WPS Platform
+ZOO-Project Workshop 2010
 ##############################################################
 
-:Author:  Nicolas Bozon, Gérald Fenoy
+:Original Title: Practical Introduction to ZOO: The Open WPS Platform
+:Author:  Nicolas Bozon, Gérald Fenoy, Venkatesh Raghavan
 :Last Updated: $Date$
-
-****************************************
-FOSS4G 2010 Osaka / Tokyo / Beijing
-****************************************
+:Events: FOSS4G 2010 Osaka / Tokyo / Beijing
 
 .. image:: ./images/foss4g2010tokyo.png
    :width: 193px
@@ -19,9 +17,8 @@ FOSS4G 2010 Osaka / Tokyo / Beijing
    :width: 100px
    :height: 100px
 
-**************
-Sponsored By
-**************
+
+**Sponsored By**
 
 .. image:: ../_static/geolabs-logo.png
    :width: 156px
@@ -48,9 +45,7 @@ Sponsored By
    :height: 56px
    :target: http://www.gatewaygeomatics.com/   
 
-*******************************************
-Special Thanks To Our Knowledge Partners
-*******************************************
+**Special Thanks To Our Knowledge Partners**
 
 .. image:: ../_static/ocu-logo.png
    :width: 156px
@@ -82,9 +77,8 @@ Special Thanks To Our Knowledge Partners
    :height: 94px
    :target: http://www.supsi.ch/home.html
 
-****************************
-Workshop Table of Contents
-****************************
+**Workshop Table of Contents**
+
 .. toctree::
    :maxdepth: 5
    

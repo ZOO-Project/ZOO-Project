@@ -1,28 +1,24 @@
 .. _workshop-foss4g-2014:
 
-ZOO-Project workshop
-===================================
+##########################################
+ZOO-Project workshop 2014
+##########################################
 
-
-Deploying Web Processing Services using ZOO-Project – Examples of
-Python based WPS using PgRouting 
-
-
+:Original Title: Deploying Web Processing Services using ZOO-Project –
+		 Examples of Python based WPS using PgRouting 
 :Author:  Gérald Fenoy, Nicolas Bozon, Venkatesh Raghavan
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com, venka at osgeo.org
 :Last Updated: $Date$
-
-FOSS4G 2014 Portland
---------------------------------------------
+:Events: FOSS4G 2014 Portland
 
 .. image:: ./images/FOSS4G_Ad_200x100_2x.jpg
    :target: http://2014.foss4g.org/
    :align: center
 
 
-**************
-Sponsored By
-**************
+
+**Sponsored By**
+
 
 .. image:: ../_static/geolabs-logo.png
    :width: 156px
@@ -50,9 +46,9 @@ Sponsored By
    :target: http://www.gatewaygeomatics.com/
 	    
 
-*******************************************
-Special thanks to our Knowledge Partners
-*******************************************
+
+**Special thanks to our Knowledge Partners**
+
 
 .. image:: ../_static/ocu-logo.png
    :width: 156px
@@ -85,8 +81,8 @@ Special thanks to our Knowledge Partners
    :target: http://www.supsi.ch/home.html
 	     
 
-WorkShop table of content
---------------------------------------------
+** WorkShop table of content **
+
 .. toctree::
    :maxdepth: 5
    
