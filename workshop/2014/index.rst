@@ -4,8 +4,8 @@
 ZOO-Project workshop 2014
 ##########################################
 
-:Original Title: Deploying Web Processing Services using ZOO-Project –
-		 Examples of Python based WPS using PgRouting 
+:Original Title: **Deploying Web Processing Services using ZOO-Project –
+		 Examples of Python based WPS using PgRouting**
 :Author:  Gérald Fenoy, Nicolas Bozon, Venkatesh Raghavan
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com, venka at osgeo.org
 :Last Updated: $Date$
