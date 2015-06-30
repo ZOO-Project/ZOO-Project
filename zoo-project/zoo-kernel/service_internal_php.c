@@ -29,11 +29,12 @@
 #ifndef ZEND_DEBUG
   #define ZEND_DEBUG 0
 #endif  
- 
-#include "service_internal_php.h"
 
 #include <sapi/embed/php_embed.h>
 #include <zend_stream.h>
+
+#include "service_internal_php.h"
+#include "response_print.h"
 
 zval *php_Array_from_maps(maps* t);
 zval*  php_Array_from_map(map*);
@@ -186,7 +187,7 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   char ntmp[1024];
   getcwd(ntmp,1024);
     
-  map* libp = getMapFromMaps(m, "main", "libPath"); // KLa  
+  map* libp = getMapFromMaps(m, "main", "libPath");  
   int res=SERVICE_FAILED;
 
   map* tmp=getMap(s->content,"serviceProvider");

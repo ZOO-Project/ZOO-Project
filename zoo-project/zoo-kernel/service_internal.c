@@ -685,7 +685,8 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
  */
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
-    VSIStatBuf file_status;
+    //VSIStatBuf file_status;
+	VSIStatBufL file_status;
     VSIStatL(dataSource, &file_status);
     if(fichier==NULL){
       char tmp[1024];
