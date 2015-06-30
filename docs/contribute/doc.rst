@@ -27,8 +27,13 @@ The ZOO developers responsible for the documentation will then review the contri
 For registered developers
 ........................................
 
-The current structure of the ZOO Project documentation process is for developers with :ref:`SVN <svn>` commit access to maintain their documents in reStructuredText format, and therefore all documents live in the /docs directory in SVN.  The `Sphinx <http://sphinx.pocoo.org/>`__ documentation generator is used to convert the reStructuredText files to html, and the live
-website is then updated on an hourly basis.
+The current structure of the ZOO Project documentation process is for
+developers with :ref:`SVN <svn>` commit access to maintain their
+documents in reStructuredText format, and therefore all documents live
+in the /docs directory in SVN.  The `Sphinx
+<http://sphinx.pocoo.org/>`__ documentation generator is used to
+convert the reStructuredText files to html, and the live website is
+then updated on an hourly basis.
 
 
 Installing and using Sphinx
@@ -48,11 +53,11 @@ On Linux
 
    ::
 
-       sudo easy_install Sphinx
+       sudo easy_install Sphinx==1.3.1
        
    .. note::
     
-      Make sure you install Sphinx 1.0 or more recent.  See note above.  
+      Make sure you install Sphinx 1.3.1 or more recent. 
       
 * Checkout the /docs directory from SVN, such as:
 
@@ -87,11 +92,11 @@ On Mac OS X |trade|
 
    ::
 
-       sudo easy_install Sphinx
+       sudo easy_install-2.7 Sphinx==1.3.1
        
    .. note::
    
-      Make sure you install Sphinx 1.0 or more recent.  See note above.        
+      Make sure you install Sphinx 1.3.1 or more recent. 
 
 * Install `MacTex <http://www.tug.org/mactex/2009/>`__ if you want to build pdfs
 
@@ -126,13 +131,13 @@ On Windows |trade|
 
    ::
 
-       easy_install Sphinx
+       easy_install Sphinx==1.3.1
 
    ...you should see message: "Finished processing dependencies for Sphinx"
 
    .. note::
    
-      Make sure you install Sphinx 1.0 or more recent.  See note above.
+      Make sure you install Sphinx 1.3.1 or more recent.  See note above.
       
 * Install `MiKTeX <http://miktex.org>`__ if you want to build pdfs
       

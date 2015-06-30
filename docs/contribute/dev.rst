@@ -8,7 +8,7 @@ This section gathers information to the registered ZOO-Project developers.
 Election to SVN Commit Access
 -----------------------------
 
-Permission for SVN commit access shall be provided to new developers only if accepted by the ZOO-Project Project Steering Committee. A proposal should be written to the PSC for new committers and voted. 
+Permission for SVN commit access shall be provided to new developers only if accepted by the ZOO-Project Project Steering Committee. A proposal should be written to the PSC for new committers and voted.
 
 Removal of SVN commit access should be handled by the same process.
 
@@ -23,11 +23,12 @@ New commiters are responsible for having read, and understood this document.
 Committer Tracking
 ------------------
 
-A list of all project committers will be kept in the main zoo-project directory (called COMMITTERS) listing for each SVN committer:
+A list of all project committers will be kept in the main zoo-project directory (called `COMMITTERS <http://zoo-project.org/trac/browser/trunk/zoo-project/COMMITTERS>`__) listing for each SVN committer:
 
     * Userid: the id that will appear in the SVN logs for this person.
     * Full name: the users actual name.
     * Email address: A current email address at which the committer can be reached. It may be altered in normal ways to make it harder to auto-harvest.
+
 
 SVN Administrator
 -----------------

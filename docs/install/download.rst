@@ -18,14 +18,14 @@ Download the `latest <http://zoo-project.org/trac/browser/trunk>`_ `ZOO-Project 
 
 ::
 
-  svn checkout http://svn.zoo-project.org/svn/trunk zoo-project
+  svn checkout http://svn.zoo-project.org/svn/trunk zoo-src
 
 Registered ZOO-Project developers would prefer the following:
 
 ::
 
   sed "s:\[tunnels\]:\[tunnels\]\nzoosvn = /usr/bin/ssh -p 1046:g" -i ~/.subversion/config
-  svn co svn+zoosvn://svn.zoo-project.org/var/svn/repos/trunk zoo-project
+  svn co svn+zoosvn://svn.zoo-project.org/var/svn/repos/trunk zoo-src
   
 .. note::
     The ZOO-Project svn server listens on the 1046 (1024+22) portvb(instead of 22 by default), so please use a specific tunnel to access the svn server, as shown in the command above.

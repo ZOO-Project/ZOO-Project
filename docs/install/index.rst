@@ -9,11 +9,13 @@ operating systems.
 .. toctree::
    :maxdepth: 2
    
-   install-prerequisites
-   install-download
-   install-confoptions
-   install-installation
-   install-onwindows
+   prerequisites
+   download
+   installation
+   debian
+   opensuse
+   centos
+   windows
 
 
 

@@ -1,14 +1,20 @@
 .. _process-profiles:
     
 Process profiles registry
-================
+=========================
 
 WPS Services belonging to the same Services provider often share the
 same inputs and outputs. In such a case, every :ref:`ZCFG
 <services-zcfg>` file would contain the same metadata information and
 this may be a waste of time to write them all.
 
-:ref:`ZOO-Kernel <kernel_index>` is able to handle metadata inheritance from `rev. 607 <http://www.zoo-project.org/trac/changeset/607>`__, and this solves the issue of writing many ZCFG with same input and output. A registry can be loaded (before any other ZCFG files) and contain a set of Process Profiles organized in hierarchic levels according to the following rules:
+:ref:`ZOO-Kernel <kernel_index>` is able to handle metadata
+inheritance from `rev. 607
+<http://www.zoo-project.org/trac/changeset/607>`__, and this solves
+the issue of writing many ZCFG with same input and output. A registry
+can be loaded (before any other ZCFG files) and contain a set of
+Process Profiles organized in hierarchic levels according to the
+following rules:
 
   * *Concept*: The higher level in the hierarchy. *Concepts* are basic text files containing an abstract description of a WPS Service.
   * *Generic*: A *Generic* profile can make reference to *Concepts*. It defines inputs and outputs without data format or maximum size limitation.
@@ -170,3 +176,4 @@ format, then you may write the following:
          encoding = utf-8
         </Supported>
     </DataOutputs>
+

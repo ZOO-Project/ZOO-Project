@@ -38,10 +38,13 @@ following command:
 
 
 Compiling ZOO-Client templates
----------------------------
+---------------------------===
 
-In order to work with ZOO-Client, you will first need to compile the provided `Mustache <http://mustache.github.io/>`_
-templates using `Node.js <http://nodejs.org/>`__. The ZOO-Client templates are located in the ``/zoo-project/zoo-client/lib/tpl`` directory downloaded from svn.
+In order to work with ZOO-Client, you will first need to compile the
+provided `Mustache <http://mustache.github.io/>`_ templates using
+`Node.js <http://nodejs.org/>`__. The ZOO-Client templates are located
+in the ``/zoo-project/zoo-client/lib/tpl`` directory downloaded from
+svn.
 
 * Install Node.js (see related `documentation <https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager>`__.)
 * Install Hogan, the JavaScript templating engine, using the following command:
@@ -63,7 +66,7 @@ templates using `Node.js <http://nodejs.org/>`__. The ZOO-Client templates are l
 Everything is now ready to work with :ref:`ZOO-Client <client-what>`. Read the :ref:`next section <client-example>` for an example JavaScript application.
 
 Building ZOO-Client documentation
---------------------------
+---------------------------------
 
 You may also build the ZOO-Client API documentation using `jsDoc
 <http://usejsdoc.org/jsDoc>`__, with the following command:

@@ -1,5 +1,5 @@
 How to contribute ?
-==================
+===================
 
 Please consider the following simple rules if you would like to contribute to  the `ZOO-Project <http://zoo-project.org>`__  open source software.
 
@@ -36,9 +36,9 @@ Feel free to post any question, feedback, comment or idea to the general public 
 
 ..   csv-table::
      
-  Name,Description,Address
-    zoo-discuss,General mailing list for ZOO-Project users and developers,zoo-discuss@lists.osgeo.org
-    zoo-psc,Project Steering Committe mailing list,zoo-psc@lists.osgeo.org
+  Name,Description
+    `zoo-discuss <http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss>`__,General mailing list for ZOO-Project users and developers
+    `zoo-psc <http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-psc>`__,Project Steering Committe mailing list
     
 
 IRC
