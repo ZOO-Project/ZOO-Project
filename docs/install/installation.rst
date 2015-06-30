@@ -31,8 +31,8 @@ The cgic library originaly come from `http://www.boutell.com/cgic
    You may need to edit the ``Makefile`` in case you are using a 64 bits
    platform for building and your fcgi library is not located in ``/usr/lib64``.
 
-Install the ZOO-Kernel
-----------------------
+Install ZOO-Kernel
+------------------
 
 
 For the impatient
@@ -61,142 +61,16 @@ This should produce executables for the *zoo_loader.cgi* CGI program
 Configure options
 .................
 
+This section provides information on :ref:`kernel_index` configure options. It is recommanded to also read the :ref:`kernel_config` section for configuration technical details.
+
+
+Here is the list of available options in the same order as returned by
+``./configure --help`` command:
+
 .. contents:: 
     :local:
     :depth: 2
     :backlinks: top
-
-This section provides information on :ref:`kernel_index` configure options. It is recommanded to also read the :ref:`kernel_config` section for configuration technical details.
-
-
-Here is the list of available options as returned by ``./configure --help`` command:
-
-
-.. list-table:: Configure Options
-   :header-rows: 1
-
-   * - Option
-     - Description
-   * - ``--with-cgi-dir=PATH``
-     - Specifies an alternative cgi directory path (default:
-       /usr/lib/cgi-bin)
-   * - ``--with-db-backend``
-     - Relies on a database for storing status messages and response
-       files
-   * - ``--with-yaml=PATH``
-     - Specifies an alternative location for the yaml library
-   * - ``--with-fastcgi=PATH``
-     - Specifies an alternative location for the fastcgi library
-   * - ``--with-gdal-config=FILE``
-     - Specifies an alternative gdal-config file
-   * - ``--with-xml2config=FILE``
-     - Specifies an alternative xml2-config file
-   * - ``--with-python=PATH``
-     - Enables python support or specifies an alternative directory
-       for python installation (disabled by default)
-   * - ``--with-pyvers=NUM``
-     - Uses a specific python version
-   * - ``--with-js=PATH`` 
-     - Enables javascript support, disabled by default
-   * - ``--with-php=PATH`` 
-     - Enables php support or specify an alternative directory for php
-       installation, disabled by default
-   * - ``--with-java=PATH``
-     - Enables java support or specifies a JDK_HOME, disabled by
-       default
-   * - ``--with-ruby=PATH``
-     - To enable ruby support or specify an alternative directory for
-       ruby installation, disabled by default
-   * - ``--with-rvers=NUM``
-     - To use a specific ruby version
-   * - ``--with-perl=PATH``
-     - Enables perl support or specifies an alternative directory for
-       perl installation, disabled by default
-   * - ``--with-mapserver=PATH``
-     - Specifies the path for MapServer compiled source tree
-   * - ``--with-itk=PATH`` 
-     - Specifies an alternative location for the ITK library
-   * - ``--with-itk-version=VERSION``
-     - Specifies an alternative version for the ITK library 
-   * - ``--with-otb=PATH``
-     - Enables optional OrfeoToolbox support
-   * - ``--with-wx-config=PATH``
-     - Specifies an alternative path for the wx-config tool
-   * - ``--with-saga=PATH``
-     - Enables optional SAGA GIS support 
-
-
-.. code ::
-
-  --with-cgi-dir=PATH     Specifies an alternative cgi directory path (
-                          default: /usr/lib/cgi-bin)
-  --with-db-backend       Relies on a database for storing status messages and
-                          response files
-  --with-yaml=PATH        Specifies an alternative location for the yaml
-                          library
-  --with-fastcgi=PATH     Specifies an alternative location for the fastcgi
-                          library
-  --with-xml2config=FILE  Specifies an alternative xml2-config file
-  --with-xsltconfig=FILE  Specifies an alternative xslt-config file
-  --with-gdal-config=FILE Specifies an alternative gdal-config file
-  --with-proj=PATH        Specifies an alternative location for PROJ4 setup
-  --with-geosconfig=FILE  Specifies an alternative geos-config file
-  --with-cgal=PATH        Specifies an alternative location for CGAL setup
-  --with-mapserver=PATH   Specifies the path for MapServer compiled source
-                          tree
-  --with-python=PATH      To enable python support or Specifies an alternative
-                          directory for python installation, disabled by
-                          default
-  --with-pyvers=NUM       To use a specific python version
-  --with-js=PATH          Specifies --with-js=path-to-js to enable js support,
-                          specify --with-js on linux debian like, js support
-                          is disabled by default
-  --with-php=PATH         To enable php support or specify an alternative
-                          directory for php installation, disabled by default
-  --with-java=PATH        To enable java support, specify a JDK_HOME, disabled
-                          by default
-  --with-ruby=PATH        To enable ruby support or specify an alternative
-                          directory for ruby installation, disabled by default
-  --with-rvers=NUM        To use a specific ruby version
-  --with-perl=PATH        To enable perl support or specify an alternative
-                          directory for perl installation, disabled by default
-  --with-itk=PATH         Specifies an alternative location for the itk
-                          library
-  --with-itk-version=VERSION
-                          Specifies an alternative version for the itk library
-  --with-otb=PATH         Specifies an alternative location for the otb
-                          library
-  --with-wx-config=PATH   Specifies an alternative path for the wx-config tool
-  --with-saga=PATH        Specifies an alternative location for the SAGA-GIS
-                          library
-
-
-
-
-::
-
-  --with-cgi-dir=PATH     Specifies an alternative cgi directory path (default: /usr/lib/cgi-bin)
-  --with-db-backend       Relies on a database for storing status messages and response files
-  --with-yaml=PATH        Specifies an alternative location for the yaml library
-  --with-fastcgi=PATH     Specifies an alternative location for the fastcgi library
-  --with-gdal-config=FILE Specifies an alternative gdal-config file
-  --with-xml2config=FILE  Specifies an alternative xml2-config file
-  --with-python=PATH      Enables python support or specifies an alternative directory for python installation (disabled by default)
-  --with-pyvers=NUM       Uses a specific python version
-  --with-js=PATH          Enables javascript support, disabled by default
-  --with-php=PATH         Enables php support or specify an alternative directory for php installation, disabled by default
-  --with-java=PATH        Enables java support or specifies a JDK_HOME, disabled by default
-  --with-ruby=PATH        To enable ruby support or specify an alternative directory for ruby installation, disabled by default
-  --with-rvers=NUM        To use a specific ruby version
-  --with-perl=PATH        Enables perl support or specifies an alternative directory for perl installation, disabled by default
-  --with-mapserver=PATH   Specifies the path for MapServer compiled source tree
-  --with-itk=PATH          Specifies an alternative location for the ITK library
-  --with-itk-version=VERSION          Specifies an alternative version for the ITK library     
-  --with-otb=PATH         Enables optional OrfeoToolbox support
-  --with-wx-config=PATH   Specifies an alternative path for the wx-config tool
-  --with-saga=PATH        Enables optional SAGA GIS support 
-
-All the options are described in more details in the following sections.
 
 Specific CGI Directory
 **********************
@@ -235,6 +109,31 @@ respectively.
     handling the service will be able to stop it and remove all the
     linked files.
 
+YAML Support (Optional) 
+************************
+
+If ``yaml.h`` file is not found in your ``/usr/include`` directory and
+``libyaml.so`` is not found in ``/usr/lib``, a ``--with-yaml`` option
+can be used to specify its location. For instance, if the headeer file
+lies in ``/usr/local/include`` and the shared library is located in
+``/usr/local/lib``, you may use the following command:
+
+::
+
+  $ ./configure --with-yaml=/usr/local
+
+
+FastCGI Support (Required) 
+***************************
+
+If your FastCGI library is not available in the default search path, a
+``--with-fastcgi`` option can be used to specify its location. For
+instance, if ``libfcgi.so`` lies in ``/usr/local/lib`` which is not in
+your ``LD_SEARCH_PATH``, you may use the following command:
+
+::
+
+  $ ./configure --with-fastcgi=/usr/local
 
 
 
@@ -244,11 +143,56 @@ GDAL Support (Required)
 If gdal-config program is not found in your ``PATH``, a
 ``--with-gdal-config`` option can be used to specify its location. For
 instance, if ``gdal-config`` lies in ``/usr/local/bin`` which is not in
-your PATH, you may use the following command:
+your ``PATH``, you may use the following command:
 
 ::
 
   $ ./configure --with-gdal-config=/usr/local/bin/gdal-config
+
+
+GEOS Support (Optional) 
+************************
+
+If ``geos-config`` program is not found in your ``PATH``, a
+``--with-geosconfig`` option can be used to specify its location. For
+instance, if ``geos-config`` lies in ``/usr/local/bin`` which is not in
+your ``PATH``, you may use the following command:
+
+::
+
+  $ ./configure --with-geosconfig=/usr/local/bin/geos-config
+
+
+CGAL Support (Optional) 
+************************
+
+If ``CGAL/Delaunay_triangulation_2.h`` program is not found in your
+``/usr/include`` directory, a ``--with-cgal`` option can be used to
+specify its location. For instance, if the file lies in
+``/usr/local/include`` which is not in your PATH, you may use the
+following command:
+
+::
+
+  $ ./configure --with-cgal=/usr/local
+
+
+
+MapServer Support (Optional) 
+*****************************
+
+
+In order to activate the WMS, WFS and WCS output support using
+MapServer, the ``--with-mapserver`` option must be used. The path to
+``mapserver-config`` which is located in the source code of MapServer
+must also be set, using the following command:
+
+::
+
+  $ ./configure --with-mapserver=/path/to/your/mapserver_config/
+
+
+Read more about the :ref:`kernel-mapserver`.
 
 XML2 Support (Required) 
 ************************
@@ -290,6 +234,34 @@ bellow:
   $ ./configure --with-pyvers=2.7
 
 
+.. _js-support:
+
+JavaScript Support (Optional) 
+******************************
+
+In order to activate the JavaScript support for ZOO-Kernel,
+the ``--with-js=yes`` configure option must be specified. If you are using
+a "Debian-like" GNU/Linux distribution then  dpkg will be used to
+detect if the required packages are installed and you don't have to
+specify anything here. The following command is only needed (assuming
+that js_api.h and libmozjs.so are found in default directories):
+
+
+::
+
+  $ ./configure --with-js=yes
+
+If you want to use a custom installation of `SpiderMonkey
+<https://developer.mozilla.org/en/SpiderMonkey>`__ , or if you are not
+using a Debian packaging  system, then you'll have to specify the
+directory where it is installed. For  instance, if SpiderMonkey is in
+``/usr/local/``, then the following command must be used:
+
+::
+
+  $ ./configure --with-js=/usr/local
+
+
 PHP Support (Optional) 
 ***********************
 
@@ -310,26 +282,6 @@ directory . So, supposing the your ``php-config`` can be found in
 
 .. warning::
     ZOO-Kernel optional PHP support requires a local PHP Embedded installation. Read more `here <http://zoo-project.org/trac/wiki/ZooKernel/Embed/PHP>`__.
-
-
-Perl Support (Optional) 
-************************
-
-The ``--with-perl=yes`` option can be used for activating the
-ZOO-Kernel Perl support, as follow:
-
-::
-
-  $ ./configure --with-perl=yes
-
-This assumes that perl is found in your PATH. For instance, if Perl is
-installed in ``/usr/local`` and ``/usr/local/bin`` is not found in
-your ``PATH``, then the following command can be used (this assumes
-that ``/usr/local/bin/perl`` exists):
-
-::
-
-  $ ./configure --with-perl=/usr/local
 
 
 Java Support (Optional) 
@@ -360,49 +312,25 @@ file.
 
      $ ./configure --with-java=macos
 
-.. _js-support:
 
-JavaScript Support (Optional) 
-******************************
+Perl Support (Optional) 
+************************
 
-In order to activate the JavaScript support for ZOO-Kernel,
-the ``--with-js=yes`` configure option must be specified. If you are using
-a "Debian-like" GNU/Linux distribution then  dpkg will be used to
-detect if the required packages are installed and you don't have to
-specify anything here. The following command is only needed (assuming
-that js_api.h and libmozjs.so are found in default directories):
-
+The ``--with-perl=yes`` option can be used for activating the
+ZOO-Kernel Perl support, as follow:
 
 ::
 
-  $ ./configure --with-js=yes
+  $ ./configure --with-perl=yes
 
-If you want to use a custom installation of `SpiderMonkey
-<https://developer.mozilla.org/en/SpiderMonkey>`__ , or if you are not
-using a Debian packaging  system, then you'll have to specify the
-directory where it is installed. For  instance, if SpiderMonkey is in
-``/usr/local/``, then the following command must be used:
-
-::
-
-  $ ./configure --with-js=/usr/local
-
-
-MapServer Support (Optional) 
-*****************************
-
-
-In order to activate the WMS, WFS and WCS output support using
-MapServer, the ``--with-mapserver`` option must be used. The path to
-``mapserver-config`` which is located in the source code of MapServer
-must also be set, using the following command:
+This assumes that perl is found in your PATH. For instance, if Perl is
+installed in ``/usr/local`` and ``/usr/local/bin`` is not found in
+your ``PATH``, then the following command can be used (this assumes
+that ``/usr/local/bin/perl`` exists):
 
 ::
 
-  $ ./configure --with-mapserver=/path/to/your/mapserver_config/
-
-
-Read more about the :ref:`kernel-mapserver`.
+  $ ./configure --with-perl=/usr/local
 
 
 Orfeo Toolbox Support (Optional) 
