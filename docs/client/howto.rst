@@ -38,7 +38,7 @@ following command:
 
 
 Compiling ZOO-Client templates
----------------------------===
+------------------------------
 
 In order to work with ZOO-Client, you will first need to compile the
 provided `Mustache <http://mustache.github.io/>`_ templates using
