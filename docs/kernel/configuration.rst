@@ -179,22 +179,24 @@ value stored before the Service execution.
 database section
 ...............................
 
-[database]
-dbname=zoo_project
-port=5432
-user=username
-host=127.0.0.1
-type=PG
-schema=public
+The database section allows to configure the ZOO-Kernel optional
+databse support.
 
+.. code-block:: guess
+
+	[database]
+	dbname=zoo_project
+	port=5432
+	user=username
+	host=127.0.0.1
+	type=PG
+	schema=public
 
 
 .. rubric:: Footnotes
 
-.. [#f1] If GET requests are passed through ``xlink:href`` to
-	 the ZOO-Kernel , the latter will execute the request the first time and store the result  on disk. The next time the same request is executed, the cached file will be used and this will make your process run much faster. If ``cachedir`` was not specified in the ``main.cfg`` then the ``tmpPath`` value will be used.
+.. [#f1] If GET requests are passed through ``xlink:href`` to the ZOO-Kernel , the latter will execute the request the first time and store the result  on disk. The next time the same request is executed, the cached file will be used and this will make your process run much faster. If ``cachedir`` was not specified in the ``main.cfg`` then the ``tmpPath`` value will be used.
 .. [#f2] Usefull when the :ref:`kernel-mapserver` is activated (available since ZOO-Project version 1.3.0).
-.. [#f3] ZOO-Kernel and MapServer are sharing the same metadata for
-	 OGC Web Services if the :ref:`kernel-mapserver` is activated.
+.. [#f3] ZOO-Kernel and MapServer are sharing the same metadata for OGC Web Services if the :ref:`kernel-mapserver` is activated.
 
    

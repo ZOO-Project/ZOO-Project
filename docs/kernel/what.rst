@@ -25,7 +25,11 @@ ZOO-Kernel implements and complies with the `WPS 1.0.0 <http://www.opengeospatia
 * **DescribeProcess**: Returns a description of a process, including its supported input and output.
 * **Execute**:  Launches computation and returns the output produced by a particular process.
 
-ZOO-Kernel compliancy can be tested using tools such as the WPS Test Suite provided by the `OGC compliancy program <http://cite.opengeospatial.org/>`_ or `XMLint <http://xmlsoft.org/xmllint.html/>`_.
+ZOO-Kernel compliancy and performances can be tested using the
+following tools:
+ * `cptesting <https://github.com/WPS-Benchmarking/cptesting>`_ 
+ * WPS Test Suite provided by the `OGC compliancy program <http://cite.opengeospatial.org/>`_
+ * XML responses validity can also be simply tested using `XMLint <http://xmlsoft.org/xmllint.html/>`_.
 
 Polyglot
 ........................................................
@@ -62,6 +66,5 @@ ZOO-Kernel can **scale** to large infrastructures involving high
 numbers of (concurrent) WPS requests and/or huge amounts of
 input/output.
 
-...
-.
+
 
