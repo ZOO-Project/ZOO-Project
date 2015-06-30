@@ -8,7 +8,7 @@ This is an introduction to  the `ZOO-Project
 What is ZOO-Project ?
 -------------------
 
-`ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and  `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `OGC <http://www.opengeospatial.org/>`__ (Open Geospatial Consortium).
+`ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and  `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`__ (OGC).
 
 `ZOO-Project <http://zoo-project.org>`__ provides a developer-friendly framework for creating and chaining WPS compliant Web Services. Its main goal is to provide generic and standard-compliant methods for using existing open source librairies and algorithms as WPS. It also offers efficient tools for creating new innovative web services and applications.
 
