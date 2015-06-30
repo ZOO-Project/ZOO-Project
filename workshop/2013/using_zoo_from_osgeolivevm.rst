@@ -194,6 +194,8 @@ Invoking ZOO Kernel from command line can be helpful during development process 
     return a WMS, WFS or WCS request to expose your data. Your can set here the specific
     version number you want to use to request your local MapServer setup. It depends 
     mostly on the client capability to deal with specific OGC Web Services version.
-.. [#f3] since version 1.3dev, when MapServer is activated, the same metadata will be used
-    for setting metadata for OGC Web Services.
-.. [#f4] If you're not familiar with ZOO-Project, you can `pass <using_zoo_from_osgeolivevm#testing-the-zoo-installation-with-getcapabilities>`__  this part and come to it after the next section.
+.. [#f3] since version 1.3dev, when MapServer is activated, the same
+    metadata will be used for setting metadata for OGC Web Services.
+.. [#f4] If you're not familiar with ZOO-Project, you can pass
+    this part and come to it after the `next section
+    <using_zoo_from_osgeolivevm#testing-the-zoo-installation-with-getcapabilities>`__.
