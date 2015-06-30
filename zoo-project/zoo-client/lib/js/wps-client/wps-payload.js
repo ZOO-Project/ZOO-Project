@@ -84,6 +84,8 @@ define([
                 return this.getPayload_GetCapabilities(params);
             } else if (params.request == 'Execute') {
                 return this.getPayload_Execute(params);
+            } else if (params.request == 'Dismiss') {
+                return this.getPayload_Dismiss(params);
             } else {
                 console.log("#### UNKNOWN REQUEST ####");
             }
@@ -106,7 +108,10 @@ define([
 	 * console.log(wpsPayload.getPayload_GetCapabilities(request_params));
 	 */
         getPayload_GetCapabilities: function(params) {
-            return templates["payload_GetCapabilities"].render(params);
+	    var id="payload_GetCapabilities";
+	    if(params.version=="2.0.0")
+		id+="2";
+	    return templates[id].render(params);
         },
         
         /**
@@ -127,16 +132,50 @@ define([
 	 * console.log(wpsPayload.getPayload_DescribeProcess(request_params));
 	 */
         getPayload_DescribeProcess: function(params) {
+	    var id="payload_DescribeProcess";
+	    if(params.version=="2.0.0")
+		id+="2";
             if (params.Identifier) {
                 if ($.isArray(params.Identifier)) {
-                    return templates["payload_DescribeProcess"].render({identifiers: params.Identifier,language: params.language});
+                    return templates[id].render({identifiers: params.Identifier,language: params.language});
                 }
                 else {
-                    return templates["payload_DescribeProcess"].render({identifiers: [params.Identifier],language: params.language});
+                    return templates[id].render({identifiers: [params.Identifier],language: params.language});
                 }
             }
             // TODO: no Identifier
         },
+
+        /**
+	 * The getPayload_Dismiss function is used to generate a valid 
+	 * WPS XML Dimiss request using the 
+	 * [payload_Dismiss.mustache]{@link http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-client/lib/tpl/payload_Dismiss.mustache} 
+	 * template.
+	 * 
+	 * @static
+	 * @param {Object} params - The object representing the request.
+	 * @returns {string} - The corresponding XML request
+	 * @example
+	 * // log the XML request in console
+	 * var request_params = {
+	 *     jobId: ["XXXX","XXX"]
+         * };
+	 * console.log(wpsPayload.getPayload_DescribeProcess(request_params));
+	 */
+        getPayload_Dismiss: function(params) {
+	    var id="payload_Dismiss";
+	    params.version="2.0.0";
+            if (params.jobid) {
+                if ($.isArray(params.jobid)) {
+                    return templates[id].render({jobid: params.jobid});
+                }
+                else {
+                    return templates[id].render({jobid: [params.jobid]});
+                }
+            }
+            // TODO: no Identifier
+        },
+
 
         /**
 	 * The getPayload_Execute function is used to generate a valid WPS XML 
@@ -158,6 +197,9 @@ define([
 	 * console.log(wpsPayload.getPayload_Execute(request_params));
 	 */
         getPayload_Execute: function(params) {
+	    var id="payload_Execute";
+	    if(params.version=="2.0.0")
+		id+="2";
             if (params.DataInputs) {
                 for (var i = 0; i < params.DataInputs.length; i++) {
 		    /**
@@ -209,11 +251,8 @@ define([
             	    }
                     
                     // Complex data from payload callback.
-		    console.log("CALLBACK");
-		    console.log(params.DataInputs[i]);
                     if (params.DataInputs[i].complexPayload_callback) {
                         params.DataInputs[i].value = window[params.DataInputs[i].complexPayload_callback];
-			console.log(params.DataInputs[i].value);
                     }
                     
                     // Complex data from reference.
@@ -244,7 +283,7 @@ define([
                 }
             }
             
-            return templates["payload_Execute"].render(params);
+            return templates[id].render(params);
         },
         
 
