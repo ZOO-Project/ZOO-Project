@@ -83,7 +83,15 @@ Compile ZOO-Kernel as follow:
 
   make
 
-Copy the necessary files to the `cgi-bin` directory (as administrator user)
+Install the ``libzoo_service.so.1.5`` by using the following command:
+
+.. code-block:: guess
+
+      sudo make install
+
+
+Copy the necessary files to the `cgi-bin` directory (as administrator
+user):
 
 .. code-block:: guess
 
