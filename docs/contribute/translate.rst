@@ -22,7 +22,7 @@ First of all, use the following commands from your Services Provider directory i
         do 
           for i in Title Abstract; 
            do
-            grep $i $j | sed "s:$i = :_(\":g;s:$:\"):g" ;
+            grep $i $j | sed "s:$i = :_ss(\":g;s:$:\"):g" ;
            done;
        done > locale/.cache/my_service_string_to_translate.c
    
@@ -32,7 +32,7 @@ Then generate the 'messages.po' file based on the Services Provider source code 
   ::
   
       #!/bin/bash
-      xgettext service.c locale/.cache/my_service_string_to_translate.c -o message.po -p locale/po/ -k_
+      xgettext service.c locale/.cache/my_service_string_to_translate.c -o message.po -p locale/po/ -k_ss
 
 Once 'messages.po' is created, use the following command to create the po file for the targeted language for translation. We will use the French language here as an example :
 
@@ -44,9 +44,9 @@ Once 'messages.po' is created, use the following command to create the po file f
 
 Edit the zoo_fr_FR.po file with your favorite text editor or using one of the following tools :
 
- * [http://www.poedit.net/ poedit]
- * [http://translate.sourceforge.net/wiki/virtaal/index virtaal]
- * [https://www.transifex.net/projects/p/grass6/c/grass64/ transifex]
+ * `poedit <http://www.poedit.net/>`__
+ * `virtaal <http://translate.sourceforge.net/wiki/virtaal/index>`__
+ * `transifex <https://www.transifex.net/>`__
  
 Once the zoo_fr_FR.po file is completed, you can generate and install the corresponding *mo* file using the following command : 
 
@@ -60,11 +60,11 @@ In order to test the Services Provider ZCFG and internal messages
 translation, please add the language argument to you request. As an
 example, such a request:
 
-[http://youserver/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS]
+http://youserver/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS
 
 would become the following:
 
-[http://youserver/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS&language=fr-FR]
+http://youserver/cgi-bin/zoo_loader.cgi?request=GetCapabilities&service=WPS&language=fr-FR
 
 The following command may also be useful in order to pull all the translations already available for a specific language.
 

@@ -12,18 +12,20 @@ Anybody can take part to the `ZOO-Project <http://zoo-project.org>`__ developeme
  * Write a new feature request.
 
 Submit new code
---------------------------
+---------------
 
 For new comers
-*************************
+**************
 
 New source code or existing source code corrections (patches) should
-be submitted using the ZOO-Project bug tracking system (`ZOO-Trac <http://zoo-project.org/trac>`__ ).
+be submitted using the ZOO-Project bug tracking system (`ZOO-Trac
+<http://zoo-project.org/trac>`__ ).
 
-Create a new ticket in order to describe your code or patch and attach
-it to the ticket (attach all the needed files needed to use your code
-or patch). It will then be checked and discussed with the developers,
-and can potentially be integrated and merged with the trunk.
+Create a `new ticket <http://zoo-project.org/trac/newticket>`__ in
+order to describe your code or patch and attach it to the ticket
+(attach all the files required to use your code or patch). It will
+then be checked and discussed with the developers, and can potentially
+be integrated and merged with the trunk.
 
 For registered developers
 ***************************
