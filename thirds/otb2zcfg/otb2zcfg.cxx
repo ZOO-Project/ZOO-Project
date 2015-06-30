@@ -177,7 +177,8 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	  std::cout << "   minOccurs = " << m_Application->IsMandatory(paramKey) << std::endl;
 	  /* Bounded and unbounded parameters */
 	  if(type == ParameterType_StringList || type == ParameterType_InputImageList
-	     || type == ParameterType_InputVectorDataList || type == ParameterType_InputFilenameList)
+	     || type == ParameterType_InputVectorDataList || type == ParameterType_InputFilenameList
+	     || type == ParameterType_ListView)
 	    std::cout << "   maxOccurs = 1024" << std::endl;
 	  else
 	    std::cout << "   maxOccurs = 1" << std::endl;

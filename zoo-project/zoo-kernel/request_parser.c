@@ -951,11 +951,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  xmlDocSetRootElement (doc1, cur5);
 				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							     &buffersize,
-							     "utf-8", 1);
-				  char size[1024];
-				  sprintf (size, "%d", buffersize);
-				  addToMap (tmpmaps->content, "size",
-					    size);
+							     "utf-8", 0);
+				  addIntToMap (tmpmaps->content, "size",
+					       buffersize);
 				  xmlFreeDoc (doc1);
 				}
 			      else
@@ -966,11 +964,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    xmlDocSetRootElement (doc1,xmlDocGetRootElement(doc2));
 				    xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							       &buffersize,
-							       "utf-8", 1);
-				    char size[1024];
-				    sprintf (size, "%d", buffersize);
-				    addToMap (tmpmaps->content, "size",
-					      size);
+							       "utf-8", 0);
+				    addIntToMap(tmpmaps->content, "size",buffersize);
 				    xmlFreeDoc (doc2);
 				    xmlFreeDoc (doc1);
 				  }
@@ -989,12 +984,14 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  if (mv != NULL)
 			    {
 			      addToMap (tmpmaps->content, "value",
-					(char *) mv);
+					(char*) mv);
 			      xmlFree (mv);
+			      dumpMap(tmpmaps->content);
 			    }
 			}
 		      else
 			{
+			  fprintf(stderr,"DEBUG %s %d \n",__FILE__,__LINE__);
 			  xmlChar *tmp = xmlNodeListGetRawString (doc,
 								  cur4->xmlChildrenNode,
 								  0);
@@ -1002,6 +999,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    (char *) tmp);
 			  xmlFree (tmp);
 			}
+
 		      cur4 = cur4->next;
 		    }
 		}

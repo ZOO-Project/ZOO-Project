@@ -22,12 +22,12 @@
  * THE SOFTWARE.
  */
 
-#include "service_internal.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
 #else
 #include "cpl_vsi.h"
 #endif
+#include "service_internal.h"
 
 #ifndef TRUE
 #define TRUE 1
