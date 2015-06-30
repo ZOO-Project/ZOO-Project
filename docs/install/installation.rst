@@ -211,6 +211,22 @@ If xml2-config program is not found in PATH, a *--with-xml2config* option can be
 
   $ ./configure --with-xml2config=/usr/local/bin/xml2-config
 
+Use a Database Backend (Optional) 
+..................................
+
+If you want to share the ongoing informations of running services
+between various ZOO-Kernel instances then you should activate this
+option. This way, both the *GetStatus*, *GetResult* and *Dismiss*
+requests can be run from any host accessing the same database.
+
+.. note::
+    By now, the ZOO-Kernel is not able to handle correctly the
+    *Dismiss* request from any host. Nevertheless, it will provide
+    valid response from any host, but only the host which is really
+    handling the service will be able to stop it and remove all the
+    linked files.
+
+
 
 Python Support (Optional) 
 ..............................................
