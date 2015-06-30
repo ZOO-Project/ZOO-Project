@@ -8,10 +8,19 @@ What is ZOO-Kernel ?
 
 ZOO-Kernel is the heart of the `ZOO-Project <http://zoo-project.org>`_ WPS platform. It is a WPS compliant implementation written in C language which provides a powerful and extensible WPS server. 
 
-ZOO-Kernel is an extensible WPS server that makes your system more powerful. It provides a full-featured processing engine which runs on Linux, Mac OSX |trade| and Windows |trade| operating
-systems. ZOO-Kernel is a CGI program which works on common web servers (namely `Apache <http://httpd.apache.org/>`_ or `IIS <http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to new or existing web platforms.
+ZOO-Kernel is an extensible WPS server that makes your system more
+powerful. It provides a full-featured processing engine which runs on
+Linux, Mac OSX |trade| and Windows |trade| operating
+systems. ZOO-Kernel is a CGI program which works on common web servers
+(namely `Apache <http://httpd.apache.org/>`_ or `IIS
+<http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to
+new or existing web platforms.
 
-ZOO-Kernel lets you process geospatial or non geospatial data using well formed WPS requests. The WPS server is able to manage and chain WPS Services (see ZOO-Services for examples) by loading dynamic libraries and source code written in different programming languages.  
+
+ZOO-Kernel lets you process geospatial or non geospatial data using
+well formed WPS requests. The WPS server is able to manage and chain
+WPS Services (see ZOO-Services for examples) by loading dynamic
+libraries and source code written in different programming languages.  
 
 First class WPS server
 -----------------------
@@ -19,11 +28,25 @@ First class WPS server
 Compliant
 ........................................................
 
-ZOO-Kernel implements and complies with the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and the `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`_. It is able to perform the WPS operations as indicated in the OpenGIS |reg| specification, as listed bellow:
+ZOO-Kernel implements and complies with the `WPS 1.0.0
+<http://www.opengeospatial.org/standards/wps/>`_ and the `WPS 2.0.0
+<http://www.opengeospatial.org/standards/wps/>`_ standards edited by
+the `Open Geospatial Consortium <http://www.opengeospatial.org/>`_. It
+is able to perform the WPS operations defined in the OpenGIS |reg|
+specification, such as:
 
-* **GetCapablities**: Returns service-level metadata information.It provides the list of available processing services.
-* **DescribeProcess**: Returns a description of a process, including its supported input and output.
-* **Execute**:  Launches computation and returns the output produced by a particular process.
+* **GetCapablities**: Returns service-level metadata information.It
+  provides the list of available processing services.
+* **DescribeProcess**: Returns a description of a process, including
+  its supported input and output.
+* **Execute**:  Launches computation and returns the output produced
+  by a particular process.
+* **GetStatus**:  only available in WPS 2.0.0, it lets the client fetch
+  the ongoing status of a running service.
+* **GetResult**: only available in WPS 2.0.0, it lets the client fetch
+  the final result of a running service.
+* **Dismiss**: only available in WPS 2.0.0, it lets the client ask
+  the server to stop a running service and remove any file it created.
 
 ZOO-Kernel compliancy and performances can be tested using the
 following tools:
