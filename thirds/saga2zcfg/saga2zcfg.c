@@ -187,7 +187,17 @@ int main(int argc, char *argv[]) {
 	  fprintf(stdout1," <DataInputs>\n");
 	  for(int k=0;k<pc;k++){
 	    CSG_Parameter * param=params->Get_Parameter(k);
-	  
+	    
+	    if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("parameters"),true)){
+	      int pc0=param->asParameters()->Get_Count();
+	      int l;
+	      fprintf(stderr,"%s\n",CSG_String(param->Get_Name()).b_str());
+	      for(l=0;l<pc0;l++){
+		CSG_Parameter * param0=param->asParameters()->Get_Parameter(l);
+		fprintf(stderr,"%s\n",CSG_String(param0->Get_Type_Identifier()).b_str());
+	      }
+	    }
+	    
 	    // Node should be used for defining Complex ComplexData
 	    if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("color"))){
 	      
