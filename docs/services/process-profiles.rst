@@ -12,23 +12,43 @@ this may be a waste of time to write them all.
 inheritance from `rev. 607
 <http://www.zoo-project.org/trac/changeset/607>`__, and this solves
 the issue of writing many ZCFG with same input and output. A registry
-can be loaded (before any other ZCFG files) and contain a set of
-Process Profiles organized in hierarchic levels according to the
-following rules:
+can be loaded by the ZOO-Kernel (before any other ZCFG files) and
+contain a set of Process Profiles organized in hierarchic levels
+according to the following rules:
 
-  * *Concept*: The higher level in the hierarchy. *Concepts* are basic text files containing an abstract description of a WPS Service.
-  * *Generic*: A *Generic* profile can make reference to *Concepts*. It defines inputs and outputs without data format or maximum size limitation.
+  * *Concept*: The higher level in the hierarchy. *Concepts* are basic
+    text files containing an abstract description of a WPS Service
+    (see `the OGC definition
+    <http://docs.opengeospatial.org/is/14-065/14-065.html#33>`_ for
+    more details).
+  * *Generic*: A *Generic* profile can make reference to
+    *Concepts*. It defines inputs and outputs without data format or
+    maximum size limitation (see `the OGC definition
+    <http://docs.opengeospatial.org/is/14-065/14-065.html#34>`_ for
+    more details).
   * *Implementation*: An *Implementation* profile can inherit from a
-    generic profile and make reference to concepts. It contains all
-    the metadata information about a particular WPS Service (see
-    :ref:`ZCFG reference <services-zcfg>` for more information).
+    generic profile and make reference to concepts (see `the OGC definition
+    <http://docs.opengeospatial.org/is/14-065/14-065.html#35>`_ for
+    more details). It contains all the metadata information about a
+    particular WPS Service (see :ref:`ZCFG reference <services-zcfg>`
+    for more information).
 
-Both *Generic* and *Implementation* process profiles are created  from :ref:`ZCFG <services-zcfg>` files and stored in the registry sub-directories
-according to their level (*Concept*, *Generic* or *Implementation*).
+Both *Generic* and *Implementation* process profiles are created  from
+:ref:`ZCFG <services-zcfg>` files and stored in the registry
+sub-directories according to their level (*Concept*, *Generic* or
+*Implementation*).
 
 To activate the registry, you have to add a ``registry`` key to the
 ``[main]`` section of your ``main.cfg`` file, and set its value to the
-directory path used to store the profile ZCFG files.
+directory path used to store the profile ZCFG files. Please see
+:ref:`install_gfr` for more details about the other services and
+parameters required.
+
+.. note::
+    Even if the profile registry was first introduced in WPS 2.0.0, it
+    can be also used in the same way for WPS 1.0.0 Services.
+
+
 
 
 Generic Process Profile
@@ -176,4 +196,65 @@ format, then you may write the following:
          encoding = utf-8
         </Supported>
     </DataOutputs>
+
+.. _install_gfr:
+
+Setup registry browser
+----------------------
+
+In the ``zoo-project/zoo-services/utils/registry``  you can find the
+source code and the ``Makefile`` required to build the Registry Browser
+Services Provider. To build and install this service, use the
+following comands:
+
+.. code::
+
+     cd zoo-project/zoo-services/utils/registry
+     make
+     cp cgi-env/* /usr/lib/cgi-bin
+
+
+To have valid
+``href`` in the metadata children of a ``wps:Process``, you have to
+define the ``registryUrl`` to point to the path to browse the
+registry. For this you have two different options, the first one is to
+install the ``GetFromRegistry`` ZOO-Service and to use a WPS 1.0.0
+Execute request as ``registryUrl`` to dynamically generate `Process
+Concept <http://docs.opengeospatial.org/is/14-065/14-065.html#33>`__,
+`Generic Process Profile
+<http://docs.opengeospatial.org/is/14-065/14-065.html#34>`__ and
+`Process Implementation Profile
+<http://docs.opengeospatial.org/is/14-065/14-065.html#35>`__.
+You also have to add a ``registryUrl`` to the ``[main]`` section to
+inform the ZOO-Kernel that it should use the Registry Browser to
+create the href attribute of Metadata nodes. So by adding the
+following line:
+
+.. code::
+
+    registryUrl = http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=GetFromRegistry&RawDataOutput=Result&DataInputs=id=
+
+The second option is to pre-generate each level of the hierarchy by
+running shell commands then set ``registryUrl`` to the URL to browse
+the generated files. In such a case, you will also have to define the
+``registryExt`` and set it to the file extension you used to generate
+your registry cache.
+
+To generate the cache in ``/opt/zoo/registry/``, use the following command:
+
+.. code::
+
+    cd /usr/lib/cgi-bin
+    mkdir /opt/zoo/regcache/{concept,generic,implementation}
+    for i in $(find /opt/zoo/registry/ -name "*.*") ; 
+    do  
+        j=$(echo $i | sed "s:../registry//::g;s:.zcfg::g;s:.txt::g") ; 
+       if [ -z "$(echo $j | grep concept)" ]; 
+       then 
+           ext="xml" ; 
+       else 
+           ext="txt"; 
+       fi
+        ./zoo_loader.cgi "request=Execute&service=wps&version=1.0.0&Identifier=GetFromRegistry&RawDataOutput=Result&DataInputs=id=$j" | grep "<" > /opt/zoo/regcache/$j.$ext; 
+    done
 
