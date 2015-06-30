@@ -1,14 +1,14 @@
 .. _introduction:
 
 Introduction
-############
+======================================================
 
 .. contents:: Table of Contents
     :depth: 5
     :backlinks: top
 
 What is ZOO ?
-*************
+--------------------------------------------------------------------
 
 ZOO is a WPS (Web Processing Service) open source project recently released under a `MIT/X-11 <http://zoo-project.org/trac/wiki/Licence>`__ style license. It provides an OGC WPS compliant developer-friendly framework to create and chain WPS Web services. ZOO is made of three parts:
 
@@ -23,7 +23,7 @@ already existing code. Further information on the project is available on the
 `ZOO Project official website <http://www.zoo-project.org/>`__ .
 
 How does ZOO works ?
-********************
+--------------------------------------------------------------------
 
 ZOO is based on a 'WPS Service Kernel' which constitutes the ZOO's core system 
 (aka ZOO Kernel). The latter is able to load dynamic libraries and to handle them 
@@ -43,7 +43,7 @@ data and create suitable vector or raster output for your cartographic engine an
 your web-mapping client application.
 
 What are we going to do in this workshop?
-*****************************************
+--------------------------------------------------------------------
 
 This workshop aims to present the ZOO Project and its features, and to explain its 
 capabilities regarding the  `OGC WPS 1.0.0 specification <http://www.opengeospatial.org/standards/wps>`__. 
@@ -76,7 +76,7 @@ the ZOO Kernel functioning on each machine and will assist you while coding. Tec
 questions are of course welcome during the workshop.
 
 Usefull tips for reading :
-**************************
+--------------------------------------------------------------------
 
 .. code-block:: guess
 
@@ -85,8 +85,6 @@ Usefull tips for reading :
 .. warning:: This is a warning message.
 
 .. note:: This is an important note.
-
-
 
 
 **Let's go !**

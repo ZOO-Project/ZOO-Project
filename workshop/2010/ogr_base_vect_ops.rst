@@ -1,14 +1,14 @@
 .. _ogr_base_vect_ops:
 
 Creating OGR based Web Services
-===============================
+======================================================
 
 .. contents:: Table of Contents
     :depth: 5
     :backlinks: top
 
 Introduction
-------------
+--------------------------------------------------------------------
 
 In this part, we are going to create a ZOO ServicesProvider containing several Services 
 based on the OGR C API or on the OGR Python module, which have also been placed in the 
@@ -28,7 +28,7 @@ habits and preferences and tell your choice to the instructors. The results will
 same in both case. 
 
 Preparing ZOO metadata file
----------------------------
+--------------------------------------------------------------------
 
 A ZOO Service is a combination of a ZOO metadata file (``.zcfg``) and the runtime module 
 for the corresponding implementation, which is commonly called ZOO Service Provider. We 
@@ -195,7 +195,7 @@ A similar error message will be returned if you try to run your Python Service :
 
 
 Implementing single geometry services
--------------------------------------
+------------------------------------------------------------------------------
 
 In order to learn the Services Provider creation and deployement step-by-step, 
 we will first focus on creating a very simple one dedicated to the Boundary function. 
@@ -212,10 +212,10 @@ and returns an integer value representing the status of execution (SERVICE_FAILE
   - ``outputs`` : The requested / default outputs 
 
 Boundary
-********
+..........................................................................................................................................................
 
 C Version
-^^^^^^^^^
+*******************************************************************************************************
 
 As explained before, ZOO Kernel will pass the parameters to your Service function 
 in a specific datatype called maps. In order to code your Service in C language, 
@@ -576,7 +576,7 @@ Please note that you can add the following lines to your ``Makefile`` to be able
 Your ZOO Services Provider is now ready to use from an Execute request passed to ZOO Kernel. 
 
 Python Version
-^^^^^^^^^^^^^^
+*******************************************************************************************************
 
 For those using Python to implement their ZOO Services Provider, the full code to copy in 
 ``ogr_ws_service_provider.py`` in ``cgi-env`` directory is shown bellow. Indeed, as 
@@ -633,7 +633,7 @@ Finally, simply run make install from the ZOO Services Provider main directory, 
 
 
 Testing the Service using Execute Request
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...............................................................................................................................................
 
 **The simple and unreadable way**
 
@@ -876,7 +876,8 @@ This won't be used during this workshop but can be useful for really time consum
 
 
 Creating Services for other functions (ConvexHull and Centroid)
-***************************************************************
+.........................................................................................................................................................
+
 
 As the Boundary sample service code is available, you can now easily add ConvexHull and 
 Centroid functions as they take exactly the same number of arguments : Only one geometry. 
@@ -884,8 +885,7 @@ The details for implementing and deploying the ConvexHull Service are provided b
 and we will let you do the same thing for the Centroid one. 
 
 C Version
-^^^^^^^^^
-
+*******************************************************************************************************
 Please add first the following code to the service.c source code : 
 
 .. code-block:: guess
@@ -1018,7 +1018,7 @@ correct values. By the way it can be used for testing purpose, as the input and 
 get the same name and default/supported formats. 
 
 Python Version
-^^^^^^^^^^^^^^
+*******************************************************************************************************
 
 .. code-block:: guess
 
@@ -1103,7 +1103,7 @@ Note, that in Python you also need to use ConvexHull to deal with MultiPolygons.
 You must now copy the ``Boundary.zcfg`` file as we explained for the C version in ``ConvexHull.zcfg`` and ``Centroid.zcfg`` respectively and then, use make install command to re-deploy and test your Services Provider. 
 
 Create the Buffer Service
-*************************
+
 
 We can now work on the Buffer Service, which takes more arguments than the other ones. 
 Indeed, the code is a bit different from the one used to implement the Boundary, ConvexHull and Centroid Services.
@@ -1114,7 +1114,7 @@ simple integer value. The read access to such kind of input value is made using 
 same function as used before. 
 
 C Version
-^^^^^^^^^
+*******************************************************************************************************
 
 If you go back to the first Boundary Service source code, you should not find the 
 following very complicated. Indeed, you simply have to add the access of the 
@@ -1222,7 +1222,7 @@ Here you can find the same query in XML format to use from the  http://localhost
     </wps:Execute>
 
 Python Version
-^^^^^^^^^^^^^^
+*******************************************************************************************************
 
 As we already defined the utility functions createGeometryFromWFS and outputResult, 
 the code is as simple as this:
@@ -1247,7 +1247,7 @@ file, simply copy it in the ZOO Kernel directory (or type make install from your
 Provider root directory). Note that you also need the ``Buffer.zcfg`` file detailled in the next section. 
 
 The Buffer MetadataFile file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+*******************************************************************************************************
 
 You must add BufferDistance to the Service Metadata File to let clients know that 
 this Service supports this parameter. To do this, please copy your orginal ``Boundary.zcfg`` 
