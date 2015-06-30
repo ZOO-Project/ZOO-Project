@@ -2191,9 +2191,11 @@ runRequest (map ** inputs)
       fseek (f2, 0, SEEK_SET);
       char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
       fread (tmps1, flen, 1, f2);
+#ifdef WIN32
       char *pchr=strrchr(tmps1,'>');
       flen=strlen(tmps1)-strlen(pchr)+1;
       tmps1[flen]=0;
+#endif
       fwrite (tmps1, 1, flen, f3);
       fclose (f2);
       fclose (f3);
