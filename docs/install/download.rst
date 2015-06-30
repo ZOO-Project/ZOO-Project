@@ -6,7 +6,24 @@ Download
 Several ways to download the `ZOO-Project <http://zoo-project.org>`_ source code are available and explained in this section.
 
 .. warning::
-    The ZOO-Project svn is the place where developement happens. Checking out svn is the best way to be always up to date.
+    The ZOO-Project svn is the place where developement
+    happens. Checking out svn is the best way to be always up-to-date.
+
+
+ZOO-Project releases archives
+-------------------------------
+
+Each new `ZOO-Project <http://zoo-project.org>`_ major release are
+available on the project official website as .zip and .tar.bz2
+archives. Head to the `Downloads
+<http://zoo-project.org/site/Downloads>`_ section to get the latest or
+older ZOO-Project releases. 
+
+.. warning::
+    Don't use older versions of ZOO-Project if you want to use new
+    features and avoid older code issues. Prefer svn or github
+    instead.
+
 
 
 ZOO-Project SVN
@@ -28,16 +45,9 @@ Registered ZOO-Project developers would prefer the following:
   svn co svn+zoosvn://svn.zoo-project.org/var/svn/repos/trunk zoo-src
   
 .. note::
-    The ZOO-Project svn server listens on the 1046 (1024+22) portvb(instead of 22 by default), so please use a specific tunnel to access the svn server, as shown in the command above.
-
-
-ZOO-Project releases archives
--------------------------------
-
-Each new `ZOO-Project <http://zoo-project.org>`_ major release is also made available on the project official website as .zip and .tar.bz2 archives. Head to the `Download <http://zoo-project.org/Code/Download>`_ section to get the latest or older ZOO-Project releases. 
-
-.. warning::
-    Don't use older versions of ZOO-Project if you want to use new features and avoid older code issues. Prefer svn or github instead.
+    The ZOO-Project svn server listens on the 1046 (1024+22) port
+    (instead of 22 by default), so please use a specific tunnel to
+    access the svn server, as shown in the command above.
 
 ZOO-Project Github
 -------------------------------

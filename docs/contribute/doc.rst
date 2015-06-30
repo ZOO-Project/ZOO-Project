@@ -4,12 +4,26 @@
 .. include:: <xhtml1-symbol.txt>
 
 Contribute documentation
-==================
+========================
 
 ZOO Documentation is a collaborative process managed by the ZOO developers. Anybody is welcome to contribute to the ZOO-Project documentation. Please consider the following instructions before doing so.
 
 General information
 ------------------------
+
+Heading syntaxe
+...............
+
+Tere are various title heading used in the documentation, when you
+create a new document, you're invited to follow the following heading
+underline syntaxe:
+
+ * for Heading 1, use ``=``,
+ *  for Heading 2, use ``-``,
+ *  for Heading 3, use ``.``,
+ *  for Heading 4, use ``*``,
+ *  for Heading 5, use ``#``.
+ 
 
 For new comers
 ..........................
@@ -37,7 +51,7 @@ then updated on an hourly basis.
 
 
 Installing and using Sphinx
-------------------------
+---------------------------
 
 On Linux
 .................

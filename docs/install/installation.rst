@@ -369,6 +369,28 @@ Read more about the :ref:`kernel-sagagis`.
     In case wx-config is not in your ``PATH`` please, make sure to use
     the ``--with-wx-config``  to specify its location.
 
+Translation support (Optional)
+******************************
+
+The ZOO-Kernel is able to translate the messages it produce in different
+natural languages. For this translation support to work, you have to
+generate and install manually the quested files on your system, by
+using the following command:
+
+.. code::
+
+    msgfmt zoo-project/zoo-kernel/locale/po/fr_FR.utf8.po -o /usr/share/locale/fr/LC_MESSAGES/zoo-kernel.mo
+
+The ZOO-Kernel is also able to handle translation of
+ZOO-Services. Please, refer to :ref:`this document
+<service_translation>` for more details on the procedure to add new
+ZOO-Service translation files.
+
+.. warning::
+    The location of the final ``.mo`` file may vary depending on your
+    system setup.
+
+
 Install ZOO-Services
 --------------------
 

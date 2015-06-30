@@ -15,6 +15,7 @@ platform. It also gives usefull information for taking advantage of the ready-to
    zcfg-reference
    process-profiles
    howtos
+   translation
    status
    debug
    zoo-services

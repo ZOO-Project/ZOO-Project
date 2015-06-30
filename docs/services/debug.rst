@@ -85,7 +85,12 @@ to debug ``zoo_loader.cgi``, you have to run:
   # now run your request
   run "service=wps&version=1.0.0&request=execute&identifier=HelloPy&datainputs=a=your name&responsedocument=Result"
 
-At this point you can ask help at the `ZOO mailing list <http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss>`_
+.. note::
+    You can use the same parameter used before to simulate POST
+    requests when running from gdb.
+
+If nothing helped, you can ask help at the `ZOO mailing list
+<http://lists.osgeo.org/cgi-bin/mailman/listinfo/zoo-discuss>`_
 copying the result of the command.
 
 Python
