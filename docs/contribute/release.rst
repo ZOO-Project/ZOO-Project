@@ -6,8 +6,8 @@ Release Procedure
 The ZOO-Project release procedure is commonly defined by the following
 rules:
 
-* Any ZOO-Project commiter can ask for a release by asking the
-  ZOO-Project PSC and pointing a release manager. This last will then
+* Any of the :ref:`zoo_developers` can ask for a release by asking the
+  :ref:`zoo_psc` and pointing a release manager. This last will then
   vote for accepting both the manager and the release procedure to
   happen.
 * If not already created, create  a wiki page (like this `this one

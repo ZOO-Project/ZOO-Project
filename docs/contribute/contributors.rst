@@ -1,8 +1,10 @@
-   .. _contribute_contributors:
+.. _contribute_contributors:
 
 List of contributors
 ================================
 
+.. _zoo_founder:
+ 
 ZOO-Project founders
 ------------------
 
@@ -11,6 +13,8 @@ The ZOO-Project concept, architecture and source code implementation was initiat
    * Gérald FENOY (aka djay)
    * Nicolas BOZON (aka nbozon)
    * Venkatesh RAGHAVAN (aka venka)
+
+.. _zoo_psc:
 
 ZOO Project Steering Comitee
 ----------------------------
@@ -37,6 +41,7 @@ alphabetical order):
       <http://users.ntua.gr/tzotsos/>`_), GR
 
 
+.. _zoo_developers:
 
 ZOO-Project Commiters
 ---------------------
