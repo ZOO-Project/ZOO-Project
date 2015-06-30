@@ -180,7 +180,7 @@ database section
 ...............................
 
 The database section allows to configure the ZOO-Kernel optional
-databse support.
+database support. 
 
 .. code-block:: guess
 
@@ -192,7 +192,17 @@ databse support.
 	type=PG
 	schema=public
 
+This will generate strings to be passed to GDAL:
 
+.. code-block::
+   
+     <type>:host=<host> port=<port>  user=<user> dbname=<dbname>
+
+ .. code-block::
+
+      PG:"dbname='zoo_project' host='127.0.0.' port='5432' user='x' password='y'"
+
+      
 .. rubric:: Footnotes
 
 .. [#f1] If GET requests are passed through ``xlink:href`` to the ZOO-Kernel , the latter will execute the request the first time and store the result  on disk. The next time the same request is executed, the cached file will be used and this will make your process run much faster. If ``cachedir`` was not specified in the ``main.cfg`` then the ``tmpPath`` value will be used.
