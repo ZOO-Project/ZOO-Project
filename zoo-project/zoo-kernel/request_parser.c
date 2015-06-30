@@ -986,12 +986,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      addToMap (tmpmaps->content, "value",
 					(char*) mv);
 			      xmlFree (mv);
-			      dumpMap(tmpmaps->content);
 			    }
 			}
 		      else
 			{
-			  fprintf(stderr,"DEBUG %s %d \n",__FILE__,__LINE__);
 			  xmlChar *tmp = xmlNodeListGetRawString (doc,
 								  cur4->xmlChildrenNode,
 								  0);
