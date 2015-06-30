@@ -4,7 +4,7 @@
 ZOO-Project Workshop 2010
 ##############################################################
 
-:Original Title: *Practical Introduction to ZOO: The Open WPS Platform*
+:Original Title: **Practical Introduction to ZOO: The Open WPS Platform**
 :Author:  Nicolas Bozon, Gérald Fenoy, Venkatesh Raghavan
 :Last Updated: $Date$
 :Events: FOSS4G 2010 Osaka / Tokyo / Beijing

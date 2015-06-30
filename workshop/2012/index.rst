@@ -4,7 +4,7 @@
 ZOO-Project Workshop 2012
 ##########################################
 
-:Original Title: Practical Introduction to ZOO-Project by playing with building blocks
+:Original Title: **Practical Introduction to ZOO-Project by playing with building blocks**
 :Author:  Nicolas Bozon, Gérald Fenoy, Venkatesh Raghavan
 :Contact: gerald.fenoy at geolabs.fr, nicolas.bozon at gmail.com
 :Last Updated: $Date$
