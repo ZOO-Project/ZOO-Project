@@ -57,8 +57,21 @@ Command line
   # the example services
   ./zoo_loader.cgi "service=wps&version=1.0.0&request=execute&identifier=HelloPy&datainputs=a=your name&responsedocument=Result"
 
-Working this way you can use the standard debug system of the actual programming language used
-to develop your service.
+Working this way you can use the standard debug system of the actual
+programming language used to develop your service.
+
+In case you should simulate POST requests, you can use the following
+command to tell the ZOO-Kernel to use the file ``/tmp/req.xml`` as the
+input XML request:
+
+.. code-block:: guess
+
+    # Define required environment settings
+    export REQUEST_METHOD=POST
+    export CONTENT_TYPE=text/xml
+    # Run the request stored in a file
+    ./zoo_loader.cgi < /tmp/req.xml
+
 
 GDB
 *****
