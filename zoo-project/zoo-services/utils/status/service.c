@@ -50,7 +50,7 @@ extern "C" {
    * document if any (so if the Service is currently running) else it will 
    * return the final ExecuteResponse stored on the Server file system.
    */
-  ZOO_DLL_EXPORT int GetStatus(maps*& conf,maps*& inputs,maps*& outputs){
+  ZOO_DLL_EXPORT int GetStatus(maps*& conf,maps*& inputs,maps*& outputs){	  
     const char *params[4 + 1];
     int xmlLoadExtDtdDefaultValue;
     map* tmpMap=NULL,*tmpMmap=NULL, *tmpTmap=NULL;

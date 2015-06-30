@@ -37,8 +37,8 @@
 #ifndef USE_MS
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
-#else
-#define snprintf sprintf_s
+//#else
+//#define snprintf sprintf_s
 #endif
 #define zStrdup _strdup
 #define zMkdir _mkdir
@@ -63,6 +63,7 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
   
   return 0; // The gettimeofday() function shall return 0 on success
 }
+
 #else
 /**
  * The crossplatform strdup alias
@@ -105,9 +106,9 @@ extern "C" {
 #endif
 #include <stdlib.h>
 #include <ctype.h>
-#ifndef WIN32
+
 #include <stdio.h>
-#endif
+
 #include <string.h>
 #ifndef WIN32
 #include <ctype.h>
@@ -322,7 +323,11 @@ extern "C" {
   ZOO_DLL_EXPORT void inheritance(registry*,service**);
   ZOO_DLL_EXPORT void mapsToCharXXX(maps*,char***);
   ZOO_DLL_EXPORT void charxxxToMaps(char***,maps**);
-
+#ifdef _MSC_VER
+  // snprintf for Visual Studio compiler;
+  // it is also used by services (e.g., GetStatus), therefore exported to shared library
+  ZOO_DLL_EXPORT int snprintf(char *buffer, size_t n, const char *format, ...);
+#endif  
 #ifdef __cplusplus
 }
 #endif

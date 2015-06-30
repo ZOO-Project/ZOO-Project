@@ -24,6 +24,25 @@
 
 #include "service.h"
 
+#ifdef _MSC_VER
+#include <stdarg.h>
+/**
+ * snprintf for Visual Studio compiler.
+ *
+ * See https://dxr.mozilla.org/mozilla-central/source/media/mtransport/third_party/nrappkit/src/util/util.c
+ */
+int snprintf(char *buffer, size_t n, const char *format, ...)
+{
+  va_list argp;
+  int ret;
+  va_start(argp, format);
+  ret = _vscprintf(format, argp);
+  vsnprintf_s(buffer, n, _TRUNCATE, format, argp);
+  va_end(argp);
+  return ret;
+}
+#endif
+
 /**
  * Dump a map on stderr
  *

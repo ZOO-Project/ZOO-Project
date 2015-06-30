@@ -393,7 +393,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 
   map* libp = getMapFromMaps(m, "main", "libPath");
-  
+
   if (strlen (r_inputs->value) == 1
       && strncasecmp (r_inputs->value, "C", 1) == 0)
   {
@@ -603,10 +603,9 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     }
   else
 #endif
-
 #ifdef USE_PYTHON
   if (strncasecmp (r_inputs->value, "PYTHON", 6) == 0)
-    {
+    {	  
       *eres =
         zoo_python_support (&m, request_inputs, s1,
                             &request_input_real_format,
