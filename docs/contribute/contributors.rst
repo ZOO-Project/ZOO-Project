@@ -16,8 +16,8 @@ The ZOO-Project concept, architecture and source code implementation was initiat
 
 .. _zoo_psc:
 
-ZOO Project Steering Comitee
-----------------------------
+ZOO-Project Project Steering Commitee
+-------------------------------------
 
 The ZOO Project Steering Comitee is responsible to manage the project
 which is maintained, improved, and supported by a small but growing

@@ -8,7 +8,7 @@ This section gathers information to the registered ZOO-Project developers.
 Election to SVN Commit Access
 -----------------------------
 
-Permission for SVN commit access shall be provided to new developers only if accepted by the ZOO-Project Project Steering Committee. A proposal should be written to the PSC for new committers and voted.
+Permission for SVN commit access shall be provided to new developers only if accepted by the :ref:`zoo_psc`. A proposal should be written to the PSC for new committers and voted.
 
 Removal of SVN commit access should be handled by the same process.
 
