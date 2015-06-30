@@ -3,16 +3,40 @@
 Release Procedure
 =================
 
- * Any ZOO-Project commiter can ask for a release by asking the ZOO-Project PSC and pointing a release manager. This last will then vote for accepting both the manager and the release procedure to happen.
- * If not already created, create  a wiki page (like this `this one <http://zoo-project.org/trac/wiki/Release/1.3.0/Notes>`_ using this scheme: Release/M.m.r/Notes), summarizing changes from the previous release (extracted from the `revision log <http://zoo-project.org/trac/browser/trunk/zoo-project/HISTORY.txt>`_).
- * That file should include new features, changed features, and deprecated features if any. Changes to the official documentation should be specifically noted along with other items that will cause breaking changes during upgrades. 
- * Read the documentation and remove outdated parts.
- * Create release candidate as .zip and .tar.bz2  then add them on this `page <http://zoo-project.org/site/Downloads>`_ (by editing this `wiki page <http://zoo-project.org/trac/wiki/Download>`_)
- * Cut a release candidate once you think that everything is in order. Announce the release candidate for review for at least 1 week. In this period of time, it is also appropriate for you to deploy in production since you are asserting that it is stable and (significant) bug free. Publish a specific revision with this.
- * If significant bugs are reported, fix and cut a new release candidate. If no major bugs, then announce that the release candidate has officially been promoted to the official release (if you want, you can do this with a motion and support of the PSC).
- * Ensure that release exactly matches something in SVN. Tag and branch appropriately.
- * Update documentation as needed.
- * Announce on various email list and other locations (news_item@osgeo.org, SlashGeo, etc)
+The ZOO-Project release procedure is commonly defined by the following
+rules:
+
+* Any ZOO-Project commiter can ask for a release by asking the
+  ZOO-Project PSC and pointing a release manager. This last will then
+  vote for accepting both the manager and the release procedure to
+  happen.
+* If not already created, create  a wiki page (like this `this one
+  <http://zoo-project.org/trac/wiki/Release/1.3.0/Notes>`_ using this
+  scheme: Release/M.m.r/Notes), summarizing changes from the previous
+  release (extracted from the `revision log
+  <http://zoo-project.org/trac/browser/trunk/zoo-project/HISTORY.txt>`_).
+* That file should include new features, changed features, and
+  deprecated features if any. Changes to the official documentation
+  should be specifically noted along with other items that will cause
+  breaking changes during upgrades. 
+* Read the documentation and remove outdated parts.
+* Create release candidate as .zip and .tar.bz2  then add them on this
+  `page <http://zoo-project.org/site/Downloads>`_ (by editing this
+  `wiki page <http://zoo-project.org/trac/wiki/Download>`_)
+* Cut a release candidate once you think that everything is in
+  order. Announce the release candidate for review for at least 1
+  week. In this period of time, it is also appropriate for you to
+  deploy in production since you are asserting that it is stable and
+  (significant) bug free. Publish a specific revision with this.
+* If significant bugs are reported, fix and cut a new release
+  candidate. If no major bugs, then announce that the release
+  candidate has officially been promoted to the official release (if
+  you want, you can do this with a motion and support of the PSC).
+* Ensure that release exactly matches something in SVN. Tag and branch
+  appropriately.
+* Update documentation as needed.
+* Announce on various email list and other locations
+  (news_item@osgeo.org, SlashGeo, etc)
 
 Creating an Official Release
 ----------------------------
