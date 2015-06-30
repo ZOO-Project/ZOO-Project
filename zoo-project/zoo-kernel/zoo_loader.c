@@ -249,8 +249,8 @@ int cgiMain(){
 	addToMap(tmpMap,"language",tval);
 	xmlFree(tval);
       }
-      const char* requests[3]={"GetCapabilities","DescribeProcess","Execute"};
-      for(int j=0;j<3;j++){
+      const char* requests[6]={"GetCapabilities","DescribeProcess","Execute","GetStatus","GetResult","Dismiss"};
+      for(int j=0;j<6;j++){
 	char tt[128];
 	sprintf(tt,"/*[local-name()='%s']",requests[j]);
 	xmlXPathObjectPtr reqptr=extractFromDoc(doc,tt);
@@ -263,7 +263,7 @@ int cgiMain(){
 	    if(t1->value!=NULL)
 	      free(t1->value);
 	    t1->value=zStrdup(requests[j]);
-	    j=2;
+	    j=5;
 	  }
 	  xmlXPathFreeObject(reqptr);
 	}
@@ -319,10 +319,12 @@ int cgiMain(){
 	      xmlFree(content);
 	    }
 	    xmlXPathFreeObject(idptr);
-	    addToMap(tmpMap,"Identifier",identifiers);
+	    if(identifiers[0]!=0)
+	      addToMap(tmpMap,"Identifier",identifiers);
 	    free(identifiers);
 	  }
-	}else{
+	}
+	if(getMap(tmpMap,"Identifier")==NULL){
 	  idptr=extractFromDoc(doc,"/*/*[local-name()='JobID']");
 	  if(idptr!=NULL){
 	    xmlNodeSet* id=idptr->nodesetval;
@@ -331,22 +333,23 @@ int cgiMain(){
 	      identifiers=(char*)calloc(cgiContentLength,sizeof(char));
 	      identifiers[0]=0;
 	      for(int k=0;k<id->nodeNr;k++){
-		xmlChar* content=xmlNodeListGetString(doc, id->nodeTab[k]->xmlChildrenNode,1);
-		if(strlen(identifiers)>0){
-		  char *tmp=zStrdup(identifiers);
-		  snprintf(identifiers,strlen(tmp)+xmlStrlen(content)+2,"%s,%s",tmp,content);
-		  free(tmp);
-		}
-		else{
-		  snprintf(identifiers,xmlStrlen(content)+1,"%s",content);
-		}
-		xmlFree(content);
+		  xmlChar* content=xmlNodeListGetString(doc, id->nodeTab[k]->xmlChildrenNode,1);
+		  if(strlen(identifiers)>0){
+		    char *tmp=zStrdup(identifiers);
+		    snprintf(identifiers,strlen(tmp)+xmlStrlen(content)+2,"%s,%s",tmp,content);
+		    free(tmp);
+		  }
+		  else{
+		    snprintf(identifiers,xmlStrlen(content)+1,"%s",content);
+		  }
+		  xmlFree(content);
 	      }
 	      xmlXPathFreeObject(idptr);
-	      addToMap(tmpMap,"JobID",identifiers);
+	      if(identifiers[0]!=0)
+		addToMap(tmpMap,"JobID",identifiers);
 	      free(identifiers);
 	    }
-	}
+	  }
 	}
       }
       xmlFreeDoc(doc);
