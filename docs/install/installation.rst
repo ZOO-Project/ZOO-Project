@@ -211,6 +211,8 @@ If xml2-config program is not found in PATH, a *--with-xml2config* option can be
 
   $ ./configure --with-xml2config=/usr/local/bin/xml2-config
 
+.. _zoo_install_db_backend:
+
 Use a Database Backend (Optional) 
 ..................................
 
