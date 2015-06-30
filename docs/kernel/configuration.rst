@@ -1,7 +1,7 @@
 .. _kernel_config:
 
 ZOO-Kernel configuration
-=================
+========================
 
 Main configuration file
 -----------------------
@@ -165,7 +165,7 @@ following parameter at least:
 
 For instance, adding the following in the Service source code  :
 
-.. code-block:: python
+.. code:: python
     
     conf["lenv"]["cookie"]="XXX=XXX1000000; path=/" 
     conf["senv"]={"XXX": "XXX1000000","login": "demoUser"}
@@ -175,12 +175,13 @@ in the ``cacheDir`` directory, and will return the specified cookie to the clien
 request ZOO-Kernel using this cookie, it will automatically load the
 value stored before the Service execution.
 
+.. _zoo_activate_db_backend:
 
-database section
+Database section
 ...............................
 
-The database section allows to configure the ZOO-Kernel optional
-database support. 
+The database section allows to configure the
+:ref:`ZOO-Kernel optional database support <zoo_install_db_backend>`. 
 
 .. code-block:: guess
 
@@ -192,15 +193,41 @@ database support.
 	type=PG
 	schema=public
 
-This will generate strings to be passed to GDAL:
+This will generate strings to be passed to GDAL to connect the
+database server:
 
-.. code-block::
+.. code-block:: guess
    
-     <type>:host=<host> port=<port>  user=<user> dbname=<dbname>
+    <type>:host=<host> port=<port>  user=<user> dbname=<dbname>
 
- .. code-block::
 
-      PG:"dbname='zoo_project' host='127.0.0.' port='5432' user='x' password='y'"
+With the previous database section, it will give the following:
+
+.. code-block:: guess
+
+    PG:"dbname=zoo_project host=127.0.0.1 port=5432 user=username"
+
+.. _zoo_create_db_backend:
+
+To create a new database to be used by the ZOO-Kernel, you have
+to load the `schema.sql
+<http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql>`_ 
+file. For instance, you may run the following:
+
+.. code::
+
+    createdb zoo_project
+    psql zoo_project -f zoo-project/zoo-kernel/sql/schema.sql
+
+.. note::
+    You can choose another schema to store ZOO-Kernel specific
+    informations. In such a case, you would need to edit the
+    schema.sql file to uncomment line `33
+    <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql#L33>`_
+    and `34
+    <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql#L34>`_.
+
+
 
       
 .. rubric:: Footnotes

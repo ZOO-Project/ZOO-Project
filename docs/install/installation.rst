@@ -6,10 +6,11 @@ Installation on Unix/Linux
 To build and install ZOO-Project on your Web Server you will need 4
 steps :
 
- * build the cgic library,
- * install the ZOO-Kernel,
- * install the ZOO-Services,
- * testing your installation.
+.. contents:: 
+    :local:
+    :depth: 1
+    :backlinks: top
+
 
 Build cgic
 ----------
@@ -60,9 +61,16 @@ This should produce executables for the *zoo_loader.cgi* CGI program
 Configure options
 .................
 
+.. contents:: 
+    :local:
+    :depth: 2
+    :backlinks: top
+
 This section provides information on :ref:`kernel_index` configure options. It is recommanded to also read the :ref:`kernel_config` section for configuration technical details.
 
+
 Here is the list of available options as returned by ``./configure --help`` command:
+
 
 .. list-table:: Configure Options
    :header-rows: 1
@@ -190,8 +198,48 @@ Here is the list of available options as returned by ``./configure --help`` comm
 
 All the options are described in more details in the following sections.
 
+Specific CGI Directory
+**********************
+
+In the case your ``cgi-bin`` is not located in ``/usr/lib/`` as it is
+assumed per default, then you can specify a specific target location
+by using the following option:
+
+.. code::
+
+    ./configure --with-cgi-dir=/Lbrary/WebServer/CGI-Executables
+
+This way, when you will run the ``make install`` command, the
+ZOO-Kernel will be deployed in the specified directory (so,
+`/Lbrary/WebServer/CGI-Executables`` in this example).
+
+.. _zoo_install_db_backend:
+
+Use a Database Backend (Optional) 
+**********************************
+
+If you want to share the ongoing informations of running services
+between various ZOO-Kernel instances then you should use this
+option: ``--with-db-backend``. This way, both the *GetStatus*,
+*GetResult* and *Dismiss* requests can be run from any host accessing
+the same database. Obviously, this will require that the ZOO-Kernel is
+able to access the Database server. To learn how to configure this
+connection and how to create this database please refer to :ref:`[1]
+<zoo_activate_db_backend>` and :ref:`[2] <zoo_create_db_backend>`
+respectively.
+
+.. note::
+    By now, the ZOO-Kernel is not able to handle correctly the
+    *Dismiss* request from any host. Nevertheless, it will provide
+    valid response from any host, but only the host which is really
+    handling the service will be able to stop it and remove all the
+    linked files.
+
+
+
+
 GDAL Support (Required) 
-........................
+************************
 
 If gdal-config program is not found in your ``PATH``, a
 ``--with-gdal-config`` option can be used to specify its location. For
@@ -203,7 +251,7 @@ your PATH, you may use the following command:
   $ ./configure --with-gdal-config=/usr/local/bin/gdal-config
 
 XML2 Support (Required) 
-........................
+************************
 
 If xml2-config program is not found in PATH, a *--with-xml2config* option can be used  to specify its location. For instance, if xml2-config is installed in ``/usr/local/bin`` which is not in PATH, you may use the following command:
 
@@ -211,27 +259,8 @@ If xml2-config program is not found in PATH, a *--with-xml2config* option can be
 
   $ ./configure --with-xml2config=/usr/local/bin/xml2-config
 
-.. _zoo_install_db_backend:
-
-Use a Database Backend (Optional) 
-..................................
-
-If you want to share the ongoing informations of running services
-between various ZOO-Kernel instances then you should activate this
-option. This way, both the *GetStatus*, *GetResult* and *Dismiss*
-requests can be run from any host accessing the same database.
-
-.. note::
-    By now, the ZOO-Kernel is not able to handle correctly the
-    *Dismiss* request from any host. Nevertheless, it will provide
-    valid response from any host, but only the host which is really
-    handling the service will be able to stop it and remove all the
-    linked files.
-
-
-
 Python Support (Optional) 
-..............................................
+**************************
 
 The ``--with-python=yes`` option is required to activate the :ref:`kernel_index` Python support, using the following command:
 
@@ -250,7 +279,7 @@ directory):
 
 
 Python Version
-**************
+##############
 
 If multiple Python versions are available and you want to use a
 specific one, then you can use the ``--with-pyvers`` option as shown
@@ -262,7 +291,7 @@ bellow:
 
 
 PHP Support (Optional) 
-..............................................
+***********************
 
 The ``--with-php=yes`` option is required to activate the
 :ref:`kernel_index` PHP support`, using the following command:
@@ -284,7 +313,7 @@ directory . So, supposing the your ``php-config`` can be found in
 
 
 Perl Support (Optional) 
-..............................................
+************************
 
 The ``--with-perl=yes`` option can be used for activating the
 ZOO-Kernel Perl support, as follow:
@@ -304,7 +333,7 @@ that ``/usr/local/bin/perl`` exists):
 
 
 Java Support (Optional) 
-..............................................
+************************
 
 In order to activate the Java support for ZOO-Kernel, the
 `--with-java` configure option must be specified and sets the
@@ -334,7 +363,7 @@ file.
 .. _js-support:
 
 JavaScript Support (Optional) 
-..............................................
+******************************
 
 In order to activate the JavaScript support for ZOO-Kernel,
 the ``--with-js=yes`` configure option must be specified. If you are using
@@ -360,7 +389,7 @@ directory where it is installed. For  instance, if SpiderMonkey is in
 
 
 MapServer Support (Optional) 
-..............................................
+*****************************
 
 
 In order to activate the WMS, WFS and WCS output support using
@@ -377,7 +406,7 @@ Read more about the :ref:`kernel-mapserver`.
 
 
 Orfeo Toolbox Support (Optional) 
-.....................................................
+*********************************
 
 In order to activate the optional Orfeo Toolbox support, the
 ``--with-otb`` option must be used, using the following command:
@@ -396,7 +425,7 @@ Read more about the :ref:`kernel-orfeotoolbox`.
     what is the version available on your system.
 
 SAGA GIS Support (Optional) 
-.....................................................
+****************************
 
 
 In order to activate the optional SAGA GIS support, the *--with-saga* option must be used, using the following command:
