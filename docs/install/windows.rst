@@ -7,39 +7,25 @@
 Installation on Windows |trade|
 ====================
 
-Using OSGeo4W
---------------
-
-Install OSGeo4W
-..........................................
-
-First download the OSGeo4W installer from  http://trac.osgeo.org/osgeo4w/, and install it with all the dependencies needed by your 
-WPS services such as GDAL for example.
+Compile ZOO-Project from source
+-------------------------------
 
 .. warning::
-    FastCGI, libxml, Python and cURL are mandatory
+   Ensure to first perform the :ref:`prerequisite steps
+   <install-prereq>` before compiling the ZOO Kernel.
 
-Install ZOO4W
-..........................................
+The following steps are for use with the Microsoft Visual Studio
+compiler (and tested with MSVC 2010).
 
-Once OSGeo4W installed on your platform, you will need more GNU tools and libraries. `This package <http://www.zoo-project.org/dl/tool-win32.zip>`__  contains full dependencies required to compile on a WIN32 platform and this one contains `full runtime dependencies <http://www.zoo-project.org/dl/zoo-runtime.zip>`__ . Place it to your ``C:\OSGeo4W\bin``.
+1. Make sure the gnuwin32 tools ``bison.exe``  and ``flex.exe`` are found
+   in your path.  You can download the GNUwin32 tools `here
+   <http://www.zoo-project.org/dl/tool-win32.zip>`__.
 
-Download the `binary version <http://www.zoo-project.org/dl/zoo_loader.cgi>`__  of ZOO Kernel for WIN32, then place it in the ``C:\OSGeo4W\bin`` directory. Don't forget to place the *main.cfg* file in the same directory, you can use a modified copy of  `this file <http://www.zoo-project.org/trac/browser/trunk/zoo-kernel/main.cfg>`__.
+2. Modify the ``nmake.opt`` file to point to your local libraries. Note
+   that you can also use definition directly in the command line if
+   you prefer. See :ref:`win_configure_options` for details about this
+   options.
 
-Additionaly, the binary version of the OGR Services Provider available from `here <http://www.zoo-project.org/dl/zoo-services-win32.zip>`__ can be used directly. Place the two libraries with their respective .zcfg files in your local ``C:\OSGeo4W\bin`` directory to do so.
-
-Compile ZOO from source
----------------------
-
-.. warning::
-   Ensure to first perform the :ref:`prerequisite steps <kernel-installation-prereq>` before compiling the ZOO Kernel.
-
-The following steps are for use with the Microsoft Visual Studio compiler (and tested with MSVC 2008).
-
-1. Make sure the gnuwin32 tools *bison.exe*  and *flex.exe* are found in your path.  You can download the GNUwin32 tools `here <http://www.zoo-project.org/dl/tool-win32.zip>`__.
-
-2. Modify the *nmake.opt* file to point to your local libraries.  You can find a modified nmake.opt that points to local libs `here <http://www.zoo-project.org/trac/attachment/ticket/27/nmake.opt>`__. 
-   You can also find a modified ``zoo-project\zoo-kernel\makefile.vc`` file `here <http://www.zoo-project.org/trac/attachment/ticket/27/makefile.vc>`__.
    
 3. Execute:
 
@@ -47,16 +33,20 @@ The following steps are for use with the Microsoft Visual Studio compiler (and t
    
      nmake /f makefile.vc
      
-4. A file *zoo_loader.cgi* should be created.  Note that if another file named *zoo_loader.cgi.manifest* is also created, you
-   will have to run another command:
-   
+4. A file ``zoo_loader.cgi`` and ``libzoo_service.dll`` should be
+   created.  Note that if another file named
+   ``zoo_loader.cgi.manifest`` is also created, you will have to run
+   another command:
+
    ::
    
      nmake /f makefile.vc embed-manifest
      
-5. Copy the files *zoo_loader.cgi*  and *main.cfg* into your cgi-bin directory.
+5. Copy the files ``zoo_loader.cgi``, ``libzoo_service.dll``  and
+   ``main.cfg`` into your cgi-bin directory.
 
-6. Using the command prompt, test the zoo-kernel by executing the following command:
+6. Using the command prompt, test the ZOO-Kernel by executing the
+   following command:
 
    ::
    
@@ -76,8 +66,8 @@ The following steps are for use with the Microsoft Visual Studio compiler (and t
        </ows:Exception>
      </ows:ExceptionReport>
      
-7. Edit the *main.cfg* file so that it contains values describing your WPS service.  An example of such 
-   a file running on Windows is:
+7. Edit the ``main.cfg`` file so that it contains values describing
+   your WPS service.  An example of such a file running on Windows is:
    
    ::
    
@@ -132,6 +122,208 @@ The following steps are for use with the Microsoft Visual Studio compiler (and t
        <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>
        ...
        
+
+.. _win_configure_options:
+
+Build options
+.............
+
+Various build options can be set in the ``nmake.opt`` file to define
+the location of the built libraries you want to use to build your
+ZOO-Kernel. Some are optional and some are required, they are listed
+below exhaustively:
+
+.. contents:: 
+    :local:
+    :depth: 1
+    :backlinks: top
+
+
+gettext (Required)
+******************
+
+The location of the libintl (built when building gettext) should be
+specified by defining the ``INTL_DIR`` environment variable. It
+supposes that the header and the ``intl.lib`` file are available.
+
+So for instance, in case you build the gettext in
+``\buildkit\srcs\gettext-0.14.6``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set INTL_DIR=\buildkit\srcs\gettext-0.14.6\gettext-runtime\intl
+
+
+libCURL (Required)
+******************
+
+The location of the libCURL should be specified by defining
+the ``CURL_DIR`` environment variable. It supposes that there are 2
+sub-directory ``include`` containing the libCURL header and ``lib``
+which contains the ``libcurl.lib`` file.
+
+So for instance, in case you build the libCURL in
+``\buildkit\srcs\curl-7.38.0``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set CURL_DIR=\buildkit\srcs\curl-7.38.0\builds\libcurl-vc10-x86-release-dll-ssl-dll-zlib-dll-ipvs6-sspi
+
+
+libFCGI (Required)
+******************
+
+The location of the libFCGI should be specified by defining the
+``FCGI_DIR`` environment variable. It supposes that there are 2
+sub-directory ``include`` containing the FastCGI header and
+``libfcgi/Release`` which contains the ``libfcgi.lib`` file.
+
+So for instance, in case you build the libXML2 library in
+``\buildkit\srcs\fcgi-2.4.1``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set FCGI_DIR=\buildkit\srcs\fcgi-2.41.1
+
+libXML2 (Required)
+******************
+
+The location of the libXML2 should be specified by defining the
+``XML2_DIR`` environment variable. It supposes that there are 2
+sub-directory ``include`` containing the libXML2 header and
+``win32\bin.msvc`` which contains the ``libxml2.lib`` file.
+
+So for instance, in case you build the libXML2 library in
+``\buildkit\srcs\libxml2-2.9.0``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set XML2_DIR=\buildkit\srcs\libxml2-2.9.0
+
+OpenSSL (Required)
+******************
+
+The location of the OpenSSL library should be specified by defining
+the ``SSL_DIR`` environment variable. It supposes that there are 2
+sub-directory ``inc32`` containing the header files and
+``out32dll`` which contains the ``ssleay32.lib`` file.
+
+So for instance, in case you build the libXML2 library in
+``\buildkit\srcs\openssl-1.0.2c``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set SSL_DIR=\buildkit\srcs\openssl-1.0.2c
+
+GDAL (Required)
+******************
+
+The location of the GDAL library should be specified by defining
+the ``GDAL_DIR`` environment variable. It corresponds to the path
+where you uncompress and built GDAL, it supposes that you have the
+``gdal_i.lib`` file available in this directory.
+
+So for instance, in case you build the libXML2 library in
+``\buildkit\srcs\gdal-1.10.1``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set GDAL_DIR=\buildkit\srcs\gdal-1.10.1
+
+MapServer (Optional)
+********************
+
+The location of the MapServer library path should be specified by
+defining the ``MS_DIR`` environment variable. It corresponds to the
+path where you build MapServer on your system, this directory should
+contain the ``nmake.opt`` file used. 
+
+So for instance, in case you build Python in
+``\buildkit\srcs\mapserver-6.2.0``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set MS_DIR=\buildkit\srcs\mapserver-6.2.0
+
+
+Python (Optional)
+*****************
+
+The location of the Python binaries path should be specified by
+defining the ``PY_DIR`` environment variable. It corresponds to the
+path where you build Python on your system. The location of the
+``pythonXX.lib`` files should be specified by setting the
+``PY_LIBRARY`` environment variable.
+
+So for instance, in case you build Python in
+``\buildkit\srcs\Python-2.7``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set PY_DIR=\buildkit\srcs\Python-2.7
+    set PY_LIBRARY=\buildkit\srcs\Python-2.7\PCBuild\python27.lib
+
+JavaScript (Optional)
+*********************
+
+The location of libmozjs should be specified by defining the
+``JS_DIR`` environment variable. It corresponds to the path where you
+build libmozjs on your system, it supposes that the header and
+the ``mozjs185-1.0.lib`` file are available in this directory.
+
+So for instance, in case you build libmozjs in
+``\buildkit\srcs\js-1.8.5``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set JS_DIR=\buildkit\srcs\js-1.8.5
+
+PHP (Optional)
+*****************
+
+The location of PHP should be specified by defining the ``PHP_DIR``
+environment variable. It corresponds to the path where you build PHP
+on your system. The location of the ``php5embed.lib`` files should be
+specified by setting the ``PHP_LIB`` environment variable.
+
+So for instance, in case you build PHP in
+``\buildkit\srcs\php-5.5.10``, you may define the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set PHP_DIR=\buildkit\srcs\php-5.5.10
+    set PHP_LIB=\buildkit\srcs\php-5.5.10\Release_TS\php5embed.lib
+
+Database backend (Optional)
+***************************
+
+ZOO-Kernel can use a database backend to store ongoing status
+informations of running services, for activating this operation mode,
+you should define the evironment variable ``DB`` and set it to any
+value. So, to activate this option, you may use the following before
+running ``nmake /f makefile.vc``:
+
+.. code::
+
+    set DB=activated
+
+.. note:: 
+    To learn how to setup the corresponding database, please refer to
+    :ref:`this section <zoo_create_db_backend>`.
+
+
+
+
 Optionally Compile Individual Services
 .............................................................
 

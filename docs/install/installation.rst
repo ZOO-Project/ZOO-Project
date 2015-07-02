@@ -109,6 +109,28 @@ respectively.
     handling the service will be able to stop it and remove all the
     linked files.
 
+.. _zoo_create_db_backend:
+
+To create a new database to be used by the ZOO-Kernel, you have
+to load the `schema.sql
+<http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql>`_ 
+file. For instance, you may run the following:
+
+.. code::
+
+    createdb zoo_project
+    psql zoo_project -f zoo-project/zoo-kernel/sql/schema.sql
+
+.. note::
+    You can choose another schema to store ZOO-Kernel specific
+    informations. In such a case, you would need to edit the
+    schema.sql file to uncomment line `33
+    <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql#L33>`_
+    and `34
+    <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql#L34>`_.
+
+
+
 YAML Support (Optional) 
 ************************
 
@@ -372,14 +394,17 @@ Read more about the :ref:`kernel-sagagis`.
 Translation support (Optional)
 ******************************
 
-The ZOO-Kernel is able to translate the messages it produce in different
-natural languages. For this translation support to work, you have to
-generate and install manually the quested files on your system, by
-using the following command:
+The ZOO-Kernel is able to translate the messages it produces in different
+natural languages. This requires that you download `the messages file
+<https://www.transifex.com/projects/p/zoo-kernel-internationalization/>`_
+translated in your language, if any. Then, for this translation
+support to work, you have to generate manually the requested file on
+your system. For instance for the French translation, you may use the
+following command:
 
 .. code::
 
-    msgfmt zoo-project/zoo-kernel/locale/po/fr_FR.utf8.po -o /usr/share/locale/fr/LC_MESSAGES/zoo-kernel.mo
+    msgfmt messagespo_fr_FR.utf8.po -o /usr/share/locale/fr/LC_MESSAGES/zoo-kernel.mo
 
 The ZOO-Kernel is also able to handle translation of
 ZOO-Services. Please, refer to :ref:`this document

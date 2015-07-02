@@ -16,4 +16,5 @@ open source software project and help making it better.
    doc
    dev
    release
+   translate
    contributors

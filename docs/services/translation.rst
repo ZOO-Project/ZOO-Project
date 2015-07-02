@@ -30,7 +30,7 @@ ZCFG files :
        done > locale/.cache/my_service_string_to_translate.c
    
 
-Then generate the 'messages.po' file based on the Services Provider
+Then generate the ``messages.po`` file based on the Services Provider
 source code (located in ``service.c`` in this example) using the
 following command:
 
@@ -39,9 +39,9 @@ following command:
       #!/bin/bash
       xgettext service.c locale/.cache/my_service_string_to_translate.c -o message.po -p locale/po/ -k_ss
 
-Once 'messages.po' is created, use the following command to create the
-``.po`` file for the targeted language to translate into. We will use the
-French language here as an example:
+Once ``messages.po`` is created, use the following command to create
+the ``.po`` file for the targeted language to translate into. We will
+use the French language here as an example:
 
   ::
   
