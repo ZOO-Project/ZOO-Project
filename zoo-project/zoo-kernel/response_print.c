@@ -1599,6 +1599,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     map* tmp2=getMap(serv->content,"processVersion");
     if(tmp2!=NULL)
       xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST tmp2->value);
+    else
+      xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST "1");
   
     map* tmpI=getMapFromMaps(m,"lenv","oIdentifier");
     printDescription(nc,ns_ows,tmpI->value,serv->content,0);
