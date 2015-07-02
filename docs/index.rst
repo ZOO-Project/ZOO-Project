@@ -7,7 +7,7 @@ This is the `ZOO-Project <http://zoo-project.org>`__ Open WPS Platform official 
 
 .. note::
     The entire documentation is also available as a single `PDF
-    document <./ZOO-Project.pdf>`__ |image|  and `ePub document
+    document <./ZOO-Project.pdf>`__ and `ePub document
     <./ZOO-Project.epub>`__
 
 .. toctree::
