@@ -211,7 +211,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
     if (inputs_as_text == NULL)
       {
 	free(cursor_input);
-	return errorException (*main_conf, _("Unable to allocate memory."),
+	return errorException (*main_conf, _("Unable to allocate memory"),
 			       "InternalError", NULL);
       }
     int i = 0;
@@ -222,7 +222,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 	if (inputs_as_text[i] == NULL)
 	  {
 	    free(cursor_input);
-	    return errorException (*main_conf, _("Unable to allocate memory."),
+	    return errorException (*main_conf, _("Unable to allocate memory"),
 				   "InternalError", NULL);
 	  }
 	snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
@@ -259,7 +259,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		  {
 		    free(cursor_input);
 		    return errorException (*main_conf,
-					   _("Unable to allocate memory."),
+					   _("Unable to allocate memory"),
 					   "InternalError", NULL);
 		  }
 		tmpmaps->name = zStrdup (tmpn);
@@ -438,7 +438,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 			  free(cursor_output);
 			  return errorException (*main_conf,
 						 _
-						 ("Unable to allocate memory."),
+						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
 			}
 		      tmp_output->name = zStrdup (tmpc);
@@ -534,7 +534,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			{
 			  return errorException (*main_conf,
 						 _
-						 ("Unable to allocate memory."),
+						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
 			}
 		      tmpmaps->name = zStrdup ((char *) val);
@@ -559,7 +559,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			{
 			  return errorException (*main_conf,
 						 _
-						 ("Unable to allocate memory."),
+						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
 			}
 		      tmpmaps->name = zStrdup ("missingIndetifier");
@@ -662,7 +662,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    {
 				      return errorException (*main_conf,
 							     _
-							     ("Unable to allocate memory."),
+							     ("Unable to allocate memory"),
 							     "InternalError",
 							     NULL);
 				    }
@@ -779,7 +779,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  {
 				    return errorException (*main_conf,
 							   _
-							   ("Unable to allocate memory."),
+							   ("Unable to allocate memory"),
 							   "InternalError",
 							   NULL);
 				  }
@@ -1109,7 +1109,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	  maps *tmpmaps = (maps *) malloc (MAPS_SIZE);
 	  if (tmpmaps == NULL)
 	    {
-	      return errorException (*main_conf, _("Unable to allocate memory."),
+	      return errorException (*main_conf, _("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
 	  tmpmaps->name = zStrdup ("unknownIdentifier");
@@ -1201,7 +1201,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	    if (tmpmaps == NULL) {
 	      return errorException (*main_conf,
 				     _
-				     ("Unable to allocate memory."),
+				     ("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
 	    tmpmaps->name = zStrdup ("unknownIdentifier");

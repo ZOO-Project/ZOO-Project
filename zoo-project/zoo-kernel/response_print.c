@@ -1641,7 +1641,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       break;
     case SERVICE_ACCEPTED:
       nc1 = xmlNewNode(ns, BAD_CAST "ProcessAccepted");
-      sprintf(sMsg,_("The service \"%s\" was accepted by the ZOO kernel and is running as a background task. Please access the URL in the statusLocation attribute provided in this document to get the up-to-date status and results."),serv->name);
+      sprintf(sMsg,_("The service \"%s\" was accepted by the ZOO-Kernel and is running as a background task. Please access the URL in the statusLocation attribute provided in this document to get the up-to-date status and results."),serv->name);
       nc3=xmlNewText(BAD_CAST sMsg);
       xmlAddChild(nc1,nc3);
       break;

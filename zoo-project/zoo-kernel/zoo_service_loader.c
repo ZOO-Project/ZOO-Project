@@ -256,7 +256,7 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
             if (s1 == NULL)
               {
                 dup2 (saved_stdout, fileno (stdout));
-                errorException (m, _("Unable to allocate memory."),
+                errorException (m, _("Unable to allocate memory"),
                                 "InternalError", NULL);
                 return -1;
               }
@@ -877,7 +877,7 @@ runRequest (map ** inputs)
   m = (maps *) malloc (MAPS_SIZE);
   if (m == NULL)
     {
-      return errorException (m, _("Unable to allocate memory."),
+      return errorException (m, _("Unable to allocate memory"),
                              "InternalError", NULL);
     }
   char ntmp[1024];
@@ -1235,7 +1235,7 @@ runRequest (map ** inputs)
 	DIR *dirp = opendir (conf_dir);
 	if (dirp == NULL)
 	  {
-	    errorException (m, _("The specified path path does not exist."),
+	    errorException (m, _("The specified path does not exist."),
 			    "InvalidParameterValue", conf_dir);
 	    freeMaps (&m);
 	    free (m);
@@ -1360,7 +1360,7 @@ runRequest (map ** inputs)
 				    dup2 (saved_stdout, fileno (stdout));
 				    return errorException (m,
 							   _
-							   ("Unable to allocate memory."),
+							   ("Unable to allocate memory"),
 							   "InternalError",
 							   NULL);
 				  }
@@ -1556,7 +1556,7 @@ runRequest (map ** inputs)
       }
       free (REQUEST);
       free (SERVICE_URL);
-      return errorException (m, _("Unable to allocate memory."),
+      return errorException (m, _("Unable to allocate memory"),
                              "InternalError", NULL);
     }
 

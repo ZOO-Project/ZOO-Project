@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the PACKAGE package.
 # Gerald Fenoy <gerald.fenoy@geolabs.fr>, 2015.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Project-Id-Version: ZOO-Kernel 1.5.0\n"
 "Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
-"POT-Creation-Date: 2015-07-01 22:23+0200\n"
+"POT-Creation-Date: 2015-07-02 18:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,14 +17,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: caching.c:217 caching.c:235 caching.c:356 request_parser.c:214
-#: request_parser.c:225 request_parser.c:262 request_parser.c:441
-#: request_parser.c:537 request_parser.c:562 request_parser.c:665
-#: request_parser.c:782 request_parser.c:1112 request_parser.c:1204
-#: server_internal.c:1077 zcfg2yaml.c:38 zoo_service_loader.c:259
-#: zoo_service_loader.c:880 zoo_service_loader.c:1363
-#: zoo_service_loader.c:1559 server_internal.c:1082
-msgid "Unable to allocate memory."
-msgstr "Unable to allocate memory."
+#: request_parser.c:225 request_parser.c:262 request_parser.c:403
+#: request_parser.c:414 request_parser.c:441 request_parser.c:537
+#: request_parser.c:562 request_parser.c:665 request_parser.c:782
+#: request_parser.c:1112 request_parser.c:1204 zcfg2yaml.c:38
+#: zoo_service_loader.c:259 zoo_service_loader.c:880 zoo_service_loader.c:1363
+#: zoo_service_loader.c:1559
+msgid "Unable to allocate memory"
+msgstr "Unable to allocate memory"
 
 #: caching.c:344
 msgid "Unable to download the file."
@@ -50,10 +49,6 @@ msgstr "The maximum allowed occurrences for <%s> is one."
 #, c-format
 msgid "Unable to find a valid protocol to download the remote file %s"
 msgstr "Unable to find a valid protocol to download the remote file %s"
-
-#: request_parser.c:403 request_parser.c:414
-msgid "Unable to allocate memory"
-msgstr "Unable to allocate memory"
 
 #: request_parser.c:613
 msgid "Unable to add a request in the queue."
@@ -114,12 +109,12 @@ msgstr "is"
 msgid "are"
 msgstr "are"
 
-#: response_print.c:1628
+#: response_print.c:1630
 #, c-format
 msgid "The service \"%s\" ran successfully."
 msgstr "The service \"%s\" ran successfully."
 
-#: response_print.c:1636
+#: response_print.c:1638
 #, c-format
 msgid ""
 "The ZOO service \"%s\" is currently running. Please reload this document to "
@@ -128,10 +123,10 @@ msgstr ""
 "The ZOO service \"%s\" is currently running. Please reload this document to "
 "get the up-to-date status of the service."
 
-#: response_print.c:1642
-#, c-format
+#: response_print.c:1644
+#, fuzzy, c-format
 msgid ""
-"The service \"%s\" was accepted by the ZOO kernel and is running as a "
+"The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
 "background task. Please access the URL in the statusLocation attribute "
 "provided in this document to get the up-to-date status and results."
 msgstr ""
@@ -139,34 +134,34 @@ msgstr ""
 "background task. Please access the URL in the statusLocation attribute "
 "provided in this document to get the up-to-date status and results."
 
-#: response_print.c:1659
+#: response_print.c:1661
 msgid "No more information available"
 msgstr "No more information available"
 
-#: response_print.c:1666
+#: response_print.c:1668
 #, c-format
 msgid "error code not know : %i\n"
 msgstr "error code not know : %i\n"
 
-#: response_print.c:1758
+#: response_print.c:1760
 msgid "Lock failed."
 msgstr "Lock failed."
 
-#: response_print.c:1771
+#: response_print.c:1773
 #, c-format
 msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
 msgstr "Unable to create the file \"%s\" for storing the ExecuteResponse."
 
-#: response_print.c:2288
+#: response_print.c:2290
 msgid "No debug message available"
 msgstr "No debug message available"
 
-#: response_print.c:2376
+#: response_print.c:2378
 #, c-format
 msgid "Unable to create the file \"%s\" for storing the session maps."
 msgstr "Unable to create the file \"%s\" for storing the session maps."
 
-#: response_print.c:2392
+#: response_print.c:2394
 msgid ""
 "Unable to run the Service. The message returned back by the Service was the "
 "following: "
@@ -174,7 +169,7 @@ msgstr ""
 "Unable to run the Service. The message returned back by the Service was the "
 "following: "
 
-#: response_print.c:2393
+#: response_print.c:2395
 #, c-format
 msgid ""
 "Unable to run the Service. The message returned back by the Service was the "
@@ -183,7 +178,7 @@ msgstr ""
 "Unable to run the Service. The message returned back by the Service was the "
 "following: %s"
 
-#: response_print.c:2396 response_print.c:2397
+#: response_print.c:2398 response_print.c:2399
 msgid ""
 "Unable to run the Service. No more information was returned back by the "
 "Service."
@@ -191,12 +186,12 @@ msgstr ""
 "Unable to run the Service. No more information was returned back by the "
 "Service."
 
-#: response_print.c:2484
+#: response_print.c:2486
 #, c-format
 msgid "Unable to create the file \"%s\" for storing the %s final result."
 msgstr "Unable to create the file \"%s\" for storing the %s final result."
 
-#: response_print.c:2570
+#: response_print.c:2572
 #, c-format
 msgid ""
 "Wrong RawDataOutput parameter: unable to fetch any result for the given "
@@ -221,14 +216,22 @@ msgstr "The result for the requested JobID has not yet been generated. "
 msgid "The job cannot be removed, a file cannot be removed"
 msgstr "The job cannot be removed, a file cannot be removed"
 
-#: server_internal.c:1088 zoo_service_loader.c:276 zoo_service_loader.c:1384
-#: zoo_service_loader.c:1427 server_internal.c:1093
+#: server_internal.c:1063
+msgid "Unable to open the registry directory."
+msgstr ""
+
+#: server_internal.c:1082
+msgid "Unable to allocate memory."
+msgstr "Unable to allocate memory."
+
+#: server_internal.c:1093 zoo_service_loader.c:276 zoo_service_loader.c:1384
+#: zoo_service_loader.c:1427
 #, c-format
 msgid "Unable to parse the ZCFG file: %s (%s)"
 msgstr "Unable to parse the ZCFG file: %s (%s)"
 
-#: server_internal.c:1091 zoo_service_loader.c:279 zoo_service_loader.c:1389
-#: zoo_service_loader.c:1431 server_internal.c:1096
+#: server_internal.c:1096 zoo_service_loader.c:279 zoo_service_loader.c:1389
+#: zoo_service_loader.c:1431
 #, c-format
 msgid "Unable to parse the ZCFG file: %s."
 msgstr "Unable to parse the ZCFG file: %s."
@@ -307,7 +310,8 @@ msgid "The value %s is not supported for the <language> parameter"
 msgstr "The value %s is not supported for the <language> parameter"
 
 #: zoo_service_loader.c:1238
-msgid "The specified path path does not exist."
+#, fuzzy
+msgid "The specified path does not exist."
 msgstr "The specified path path does not exist."
 
 #: zoo_service_loader.c:1303
@@ -358,7 +362,3 @@ msgstr "Initializing"
 #: zoo_service_loader.c:2142
 msgid "Unable to run the child process properly"
 msgstr "Unable to run the child process properly"
-
-#: server_internal.c:1063
-msgid "Unable to open the registry directory."
-msgstr ""
