@@ -16,7 +16,6 @@ systems. ZOO-Kernel is a CGI program which works on common web servers
 <http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to
 new or existing web platforms.
 
-
 ZOO-Kernel lets you process geospatial or non geospatial data using
 well formed WPS requests. The WPS server is able to manage and chain
 WPS Services (see ZOO-Services for examples) by loading dynamic
@@ -24,6 +23,27 @@ libraries and source code written in different programming languages.
 
 First class WPS server
 -----------------------
+
+Simple
+......
+
+The ZOO-Kernel rely on simple principles and tends to ease the
+implementation of new services by sharing similar data structures for
+every supported programming languages. The ZOO-Kernel is responsible
+to parse the requests it receives and return the corresponding WPS
+response. 
+
+In case of an *Execute* request, the ZOO-Kernel stores informations in
+a basic KVP data structure for the programming language used to
+implement the service, dynamically load the Service Provider defined
+in the zcfg file and run a specific function corresponding to the
+service, passing three arguments. Once the function return, ZOO-Kernel
+knows if the service run succeessfuly or failed by checking the
+returned value. In the case it succeeded, the ZOO-Kernel then parse
+the third arguments containing the result and produce the output in
+the desired format.
+
+
 
 Compliant
 ........................................................
@@ -80,14 +100,4 @@ JavaScript   Script file 	 `Object`_ or Array	   Object/Array
 .. _`Array`: http://php.net/manual/language.types.array.php
 .. _`Object`: http://www.json.org/
 .. _`Hash`: http://ruby-doc.org/core-2.2.0/Hash.html
-
-
-Scalable
-........................................................
-
-ZOO-Kernel can **scale** to large infrastructures involving high
-numbers of (concurrent) WPS requests and/or huge amounts of
-input/output.
-
-
 
