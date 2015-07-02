@@ -35,7 +35,7 @@ int main(int argc, char** argv){
   snprintf(conf_file,1024,"%s",argv[1]);
   s1=(service*)malloc(SERVICE_SIZE);
   if(s1 == NULL){ 
-    return errorException(m, _("Unable to allocate memory."),"InternalError",NULL);
+    return errorException(m, _("Unable to allocate memory"),"InternalError",NULL);
   }
   int t=getServiceFromFile(m,conf_file,&s1);
   if(t>=0)

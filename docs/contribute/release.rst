@@ -10,7 +10,7 @@ rules:
   :ref:`zoo_psc` and pointing a release manager. This last will then
   vote for accepting both the manager and the release procedure to
   happen.
-* If not already created, create  a wiki page (like this `this one
+* If not already created, create  a wiki page (like this `one
   <http://zoo-project.org/trac/wiki/Release/1.3.0/Notes>`_ using this
   scheme: Release/M.m.r/Notes), summarizing changes from the previous
   release (extracted from the `revision log
