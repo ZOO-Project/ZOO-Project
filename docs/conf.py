@@ -38,7 +38,7 @@ epub_publisher = 'http://zoo-project.org/'
 epub_scheme = 'url'
 epub_identifier = 'http://zoo-project.org'
 epub_pre_files = [('index.html', 'ZOO-Project documentation')]
-epub_post_files = [('install.html', 'Installing Sphinx'),('develop.html', 'Sphinx development')]
+#epub_post_files = [('install.html', 'Installing Sphinx'),('develop.html', 'Sphinx development')]
 epub_exclude_files = ['_static/opensearch.xml', '_static/doctools.js','_static/jquery.js', '_static/searchtools.js','_static/underscore.js', '_static/basic.css','search.html', '_static/websupport.js']
 epub_fix_images = False
 epub_max_image_width = 0
@@ -49,7 +49,7 @@ epub_guide = (('toc', 'index.html', u'Table of Contents'),)
 # Options for LaTeX output
 
 latex_documents = [('contents', 'ZOO-Project.tex', 'ZOO-Project Documentation','ZOO-Project team', 'manual', 1)]
-latex_logo = '_static/zoo_simple.png'
+latex_logo = '_static/zoo-simple.png'
 latex_elements = {'fontpkg': '\\usepackage{palatino}'}
 latex_show_urls = 'footnote'
 todo_include_todos = True
