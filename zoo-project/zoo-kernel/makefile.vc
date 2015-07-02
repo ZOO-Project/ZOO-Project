@@ -99,3 +99,6 @@ zcfg2yaml: version.h zcfg2yaml.obj zoo_service_loader.obj service_internal.obj $
 
 clean:
 	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling *.lib *.dll
+
+embed-manifest: zoo_loader.cgi
+	mt.exe -manifest zoo_loader.cgi.manifest -outputresource:zoo_loader.cgi;1
