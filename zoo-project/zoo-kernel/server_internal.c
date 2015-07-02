@@ -1059,6 +1059,11 @@ int createRegistry (maps* m,registry ** r, char *reg_dir)
     sprintf (tmpName, "%s/%s", reg_dir, registryKeys[i]);
     
     DIR *dirp1 = opendir (tmpName);
+    if(dirp1==NULL){
+      setMapInMaps(m,"lenv","message",_("Unable to open the registry directory."));
+      setMapInMaps(m,"lenv","type","InternalError");
+      return -1;
+    }
     struct dirent *dp1;
     while ((dp1 = readdir (dirp1)) != NULL){
       char* extn = strstr(dp1->d_name, ".zcfg");

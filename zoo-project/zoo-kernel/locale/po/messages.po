@@ -3,1723 +3,358 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#: service_internal.c:1672 zoo_service_loader.c:158 zoo_service_loader.c:160
-#: zoo_service_loader.c:220 zoo_service_loader.c:267 zoo_service_loader.c:341
-#: zoo_service_loader.c:1135 zoo_service_loader.c:1277
-#: zoo_service_loader.c:1364
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-09-28 00:38+0200\n"
+"POT-Creation-Date: 2015-07-01 22:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: service_internal.c:34
-msgid "0123456789abcdef"
-msgstr ""
+#: caching.c:217 caching.c:235 caching.c:356 request_parser.c:214
+#: request_parser.c:225 request_parser.c:262 request_parser.c:441
+#: request_parser.c:537 request_parser.c:562 request_parser.c:665
+#: request_parser.c:782 request_parser.c:1112 request_parser.c:1204
+#: server_internal.c:1077 zcfg2yaml.c:38 zoo_service_loader.c:259
+#: zoo_service_loader.c:880 zoo_service_loader.c:1363
+#: zoo_service_loader.c:1559 server_internal.c:1082
+msgid "Unable to allocate memory."
+msgstr "Unable to allocate memory."
 
-#: service_internal.c:44 service_internal.c:88 service_internal.c:90
-#: service_internal.c:92 service_internal.c:108 service_internal.c:122
-#: service_internal.c:986 service_internal.c:1054 service_internal.c:1070
-#: service_internal.c:1075 service_internal.c:1398 service_internal.c:1585
-#: zoo_service_loader.c:1443
-msgid "lenv"
-msgstr ""
+#: caching.c:344
+msgid "Unable to download the file."
+msgstr "Unable to download the file."
 
-#: service_internal.c:44 service_internal.c:108 service_internal.c:986
-#: service_internal.c:1398 zoo_service_loader.c:1446
-msgid "sid"
-msgstr ""
-
-#: service_internal.c:49 service_internal.c:113
+#: request_parser.c:92
 #, c-format
-msgid "shmget failed to update value\n"
-msgstr ""
+msgid "The maximum allowed occurrences for <%s> (%i) was exceeded."
+msgstr "The maximum allowed occurrences for <%s> (%i) was exceeded."
 
-#: service_internal.c:54 service_internal.c:118
+#: request_parser.c:113
 #, c-format
-msgid "shmat failed to update value\n"
-msgstr ""
+msgid "ZOO-Kernel was unable to load your data for %s position %s."
+msgstr "ZOO-Kernel was unable to load your data for %s position %s."
 
-#: service_internal.c:77
+#: request_parser.c:124
 #, c-format
-msgid "Number of arguments used to call the function : %i"
-msgstr ""
+msgid "The maximum allowed occurrences for <%s> is one."
+msgstr "The maximum allowed occurrences for <%s> is one."
 
-#: service_internal.c:84 service_internal.c:988 zoo_service_loader.c:1445
+#: request_parser.c:315
 #, c-format
-msgid "%i"
-msgstr ""
+msgid "Unable to find a valid protocol to download the remote file %s"
+msgstr "Unable to find a valid protocol to download the remote file %s"
 
-#: service_internal.c:88 service_internal.c:90 service_internal.c:92
-#: service_internal.c:122 service_internal.c:1054 service_internal.c:1285
-#: service_internal.c:1327 zoo_service_loader.c:1158 zoo_service_loader.c:1448
-msgid "status"
-msgstr ""
+#: request_parser.c:403 request_parser.c:414
+msgid "Unable to allocate memory"
+msgstr "Unable to allocate memory"
 
-#: service_internal.c:92
-msgid "15"
-msgstr ""
+#: request_parser.c:613
+msgid "Unable to add a request in the queue."
+msgstr "Unable to add a request in the queue."
 
-#: service_internal.c:140
-#, c-format
-msgid "shmget failed in getStatus\n"
-msgstr ""
+#: request_parser.c:1021
+msgid "Unable to append maps to maps."
+msgstr "Unable to append maps to maps."
 
-#: service_internal.c:145
-#, c-format
-msgid "shmat failed in getStatus\n"
-msgstr ""
+#: request_parser.c:1291
+msgid "Duplicate <Output> elements in WPS Execute request"
+msgstr "Duplicate <Output> elements in WPS Execute request"
 
-#: service_internal.c:151
-msgid "-1"
-msgstr ""
-
-#: service_internal.c:223
-#, c-format
-msgid "zooXmlAddNs %d \n"
-msgstr ""
-
-#: service_internal.c:246 service_internal.c:250
-#, c-format
-msgid "zooXmlCleanup %d\n"
-msgstr ""
-
-#: service_internal.c:269 service_internal.c:276 service_internal.c:546
-#: service_internal.c:584 service_internal.c:940 service_internal.c:950
-msgid "http://www.opengis.net/wps/1.0.0"
-msgstr ""
-
-#: service_internal.c:269 service_internal.c:276 service_internal.c:546
-#: service_internal.c:579 service_internal.c:584 service_internal.c:606
-#: service_internal.c:940 service_internal.c:950
-msgid "wps"
-msgstr ""
-
-#: service_internal.c:271 service_internal.c:494 service_internal.c:961
-#: service_internal.c:1395 service_internal.c:1454 service_internal.c:1513
-#: service_internal.c:1517 service_internal.c:1518 zoo_service_loader.c:225
-#: zoo_service_loader.c:1683
-msgid "main"
-msgstr ""
-
-#: service_internal.c:273
-msgid "Capabilities"
-msgstr ""
-
-#: service_internal.c:274 service_internal.c:548 service_internal.c:582
-#: service_internal.c:608 service_internal.c:944 service_internal.c:1408
-#: service_internal.c:1410 service_internal.c:1456 service_internal.c:1460
-msgid "http://www.opengis.net/ows/1.1"
-msgstr ""
-
-#: service_internal.c:274 service_internal.c:548 service_internal.c:582
-#: service_internal.c:608 service_internal.c:944 service_internal.c:1408
-#: service_internal.c:1410 service_internal.c:1456 service_internal.c:1460
-msgid "ows"
-msgstr ""
-
-#: service_internal.c:277 service_internal.c:586 service_internal.c:948
-#: service_internal.c:1412 service_internal.c:1461
-msgid "http://www.w3.org/2001/XMLSchema-instance"
-msgstr ""
-
-#: service_internal.c:277 service_internal.c:586 service_internal.c:948
-#: service_internal.c:1412 service_internal.c:1461
-msgid "xsi"
-msgstr ""
-
-#: service_internal.c:279 service_internal.c:550 service_internal.c:585
-#: service_internal.c:610 service_internal.c:946 service_internal.c:1411
-#: service_internal.c:1463
-msgid "http://www.w3.org/1999/xlink"
-msgstr ""
-
-#: service_internal.c:279 service_internal.c:550 service_internal.c:585
-#: service_internal.c:610 service_internal.c:946 service_internal.c:1411
-#: service_internal.c:1463
-msgid "xlink"
-msgstr ""
-
-#: service_internal.c:281 service_internal.c:589 service_internal.c:952
-#: service_internal.c:1465
-msgid "schemaLocation"
-msgstr ""
-
-#: service_internal.c:281
-msgid ""
-"http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/"
-"wpsGetCapabilities_response.xsd"
-msgstr ""
-
-#: service_internal.c:282 service_internal.c:590 service_internal.c:954
-msgid "service"
-msgstr ""
-
-#: service_internal.c:282 service_internal.c:340 service_internal.c:590
-#: service_internal.c:954
-msgid "WPS"
-msgstr ""
-
-#: service_internal.c:285 service_internal.c:287 service_internal.c:290
-#: service_internal.c:293 service_internal.c:306 service_internal.c:591
-#: service_internal.c:955 service_internal.c:1375 service_internal.c:1415
-#: service_internal.c:1468
-msgid "version"
-msgstr ""
-
-#: service_internal.c:290 service_internal.c:293 service_internal.c:343
-#: service_internal.c:591 service_internal.c:955 service_internal.c:1380
-#: service_internal.c:1383
-msgid "1.0.0"
-msgstr ""
-
-#: service_internal.c:297
-msgid "ServiceIdentification"
-msgstr ""
-
-#: service_internal.c:298
-msgid "identification"
-msgstr ""
-
-#: service_internal.c:302 service_internal.c:313 service_internal.c:364
-#: service_internal.c:407
-msgid "keywords"
-msgstr ""
-
-#: service_internal.c:303 service_internal.c:365 service_internal.c:455
-#: service_internal.c:963 service_internal.c:1518 zoo_service_loader.c:225
-msgid "serverAddress"
-msgstr ""
-
-#: service_internal.c:304 service_internal.c:366 service_internal.c:496
-msgid "lang"
-msgstr ""
-
-#: service_internal.c:305 service_internal.c:1293 service_internal.c:1362
-#: service_internal.c:1559 zoo_service_loader.c:840 zoo_service_loader.c:1073
-#: zoo_service_loader.c:1186 zoo_service_loader.c:1286
-msgid "encoding"
-msgstr ""
-
-#: service_internal.c:314 service_internal.c:408
-msgid "Keywords"
-msgstr ""
-
-#: service_internal.c:326 service_internal.c:334 service_internal.c:420
-#: service_internal.c:428
-msgid "Keyword"
-msgstr ""
-
-#: service_internal.c:339
-msgid "ServiceType"
-msgstr ""
-
-#: service_internal.c:342
-msgid "ServiceTypeVersion"
-msgstr ""
-
-#: service_internal.c:350 service_internal.c:438
-#, c-format
-msgid "TMP4 NOT FOUND !!"
-msgstr ""
-
-#: service_internal.c:355 zoo_service_loader.c:261 zoo_service_loader.c:335
-#: zoo_service_loader.c:1477 zoo_service_loader.c:1684
-#: zoo_service_loader.c:1728
-msgid "ServiceProvider"
-msgstr ""
-
-#: service_internal.c:356
-msgid "ServiceContact"
-msgstr ""
-
-#: service_internal.c:357
-msgid "ContactInfo"
-msgstr ""
-
-#: service_internal.c:358 service_internal.c:387 service_internal.c:390
-msgid "Phone"
-msgstr ""
-
-#: service_internal.c:359 service_internal.c:396 service_internal.c:399
-msgid "Address"
-msgstr ""
-
-#: service_internal.c:360
-msgid "provider"
-msgstr ""
-
-#: service_internal.c:368
-msgid "ProviderName"
-msgstr ""
-
-#: service_internal.c:374
-msgid "ProviderSite"
-msgstr ""
-
-#: service_internal.c:376 service_internal.c:472 service_internal.c:476
-#: service_internal.c:1320 zoo_service_loader.c:843 zoo_service_loader.c:942
-#: zoo_service_loader.c:968 zoo_service_loader.c:994
-msgid "href"
-msgstr ""
-
-#: service_internal.c:380
-msgid "IndividualName"
-msgstr ""
-
-#: service_internal.c:381
-msgid "PositionName"
-msgstr ""
-
-#: service_internal.c:447
-msgid "OperationsMetadata"
-msgstr ""
-
-#: service_internal.c:449 zoo_service_loader.c:188 zoo_service_loader.c:207
-#: zoo_service_loader.c:249
-msgid "GetCapabilities"
-msgstr ""
-
-#: service_internal.c:450 zoo_service_loader.c:189 zoo_service_loader.c:329
-msgid "DescribeProcess"
-msgstr ""
-
-#: service_internal.c:451 zoo_service_loader.c:190 zoo_service_loader.c:401
-msgid "Execute"
-msgstr ""
-
-#: service_internal.c:460 service_internal.c:463
-msgid "not_found"
-msgstr ""
-
-#: service_internal.c:466
-msgid "Operation"
-msgstr ""
-
-#: service_internal.c:467
-msgid "name"
-msgstr ""
-
-#: service_internal.c:468
-msgid "DCP"
-msgstr ""
-
-#: service_internal.c:469
-msgid "HTTP"
-msgstr ""
-
-#: service_internal.c:470
-msgid "Get"
-msgstr ""
-
-#: service_internal.c:471 zoo_service_loader.c:245 zoo_service_loader.c:277
-#: zoo_service_loader.c:363 zoo_service_loader.c:424 zoo_service_loader.c:1473
-#: zoo_service_loader.c:1478 zoo_service_loader.c:1727
-#: zoo_service_loader.c:1730
-#, c-format
-msgid "%s/%s"
-msgstr ""
-
-#: service_internal.c:475
-msgid "Post"
-msgstr ""
-
-#: service_internal.c:487
-msgid "ProcessOfferings"
-msgstr ""
-
-#: service_internal.c:490
-msgid "Languages"
-msgstr ""
-
-#: service_internal.c:491 service_internal.c:674 service_internal.c:679
-#: service_internal.c:830 service_internal.c:833
-msgid "Default"
-msgstr ""
-
-#: service_internal.c:492 service_internal.c:757 service_internal.c:761
-#: service_internal.c:876 service_internal.c:880
-msgid "Supported"
-msgstr ""
-
-#: service_internal.c:509 service_internal.c:517 service_internal.c:526
-msgid "Language"
-msgstr ""
-
-#: service_internal.c:514 service_internal.c:592 service_internal.c:956
-#: service_internal.c:1414 service_internal.c:1467
-msgid "xml:lang"
-msgstr ""
-
-#: service_internal.c:556 service_internal.c:1017
-msgid "Process"
-msgstr ""
-
-#: service_internal.c:557 service_internal.c:559 service_internal.c:615
-#: service_internal.c:624 service_internal.c:1018 service_internal.c:1021
-msgid "processVersion"
-msgstr ""
-
-#: service_internal.c:563 service_internal.c:638
-msgid "Metadata"
-msgstr ""
-
-#: service_internal.c:579 service_internal.c:606
-msgid "http://schemas.opengis.net/wps/1.0.0"
-msgstr ""
-
-#: service_internal.c:581
-msgid "ProcessDescriptions"
-msgstr ""
-
-#: service_internal.c:589
-msgid ""
-"http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/"
-"wpsDescribeProcess_response.xsd"
-msgstr ""
-
-#: service_internal.c:592 service_internal.c:956 service_internal.c:1414
-#: service_internal.c:1467
-msgid "en"
-msgstr ""
-
-#: service_internal.c:613
-msgid "ProcessDescription"
-msgstr ""
-
-#: service_internal.c:616
-msgid "storeSupported"
-msgstr ""
-
-#: service_internal.c:617
-msgid "statusSupported"
-msgstr ""
-
-#: service_internal.c:630 service_internal.c:991 service_internal.c:1199
-#: service_internal.c:1227 zoo_service_loader.c:1458
-msgid "false"
-msgstr ""
-
-#: service_internal.c:644 service_internal.c:646
-msgid "Profile"
-msgstr ""
-
-#: service_internal.c:651 service_internal.c:1098 zoo_service_loader.c:597
-msgid "DataInputs"
-msgstr ""
-
-#: service_internal.c:655 service_internal.c:1103
-msgid "Input"
-msgstr ""
-
-#: service_internal.c:656 service_internal.c:805 service_internal.c:1626
-msgid "minOccurs"
-msgstr ""
-
-#: service_internal.c:660 service_internal.c:809
-msgid "maxOccurs"
-msgstr ""
-
-#: service_internal.c:673 service_internal.c:789 service_internal.c:827
-#: service_internal.c:1274 zoo_service_loader.c:1041
-msgid "LiteralData"
-msgstr ""
-
-#: service_internal.c:675 service_internal.c:758 service_internal.c:834
-#: service_internal.c:877
-msgid "Format"
-msgstr ""
-
-#: service_internal.c:678 service_internal.c:829
-msgid "UOMs"
-msgstr ""
-
-#: service_internal.c:687 service_internal.c:839
-#, c-format
-msgid "DATATYPE DEFAULT ? %s\n"
-msgstr ""
-
-#: service_internal.c:689 service_internal.c:690 service_internal.c:700
-#: service_internal.c:841 service_internal.c:842 service_internal.c:853
-#: service_internal.c:887
-msgid "DataType"
-msgstr ""
-
-#: service_internal.c:693 service_internal.c:845
-#, c-format
-msgid "http://www.w3.org/TR/xmlschema-2/#%s"
-msgstr ""
-
-#: service_internal.c:694 service_internal.c:846 service_internal.c:1324
-msgid "reference"
-msgstr ""
-
-#: service_internal.c:699 service_internal.c:852 service_internal.c:886
-#: service_internal.c:1197 service_internal.c:1199 service_internal.c:1225
-#: service_internal.c:1227 service_internal.c:1284 service_internal.c:1329
-#: service_internal.c:1510 zoo_service_loader.c:1189
-msgid "asReference"
-msgstr ""
-
-#: service_internal.c:701 service_internal.c:723 service_internal.c:724
-msgid "AllowedValues"
-msgstr ""
-
-#: service_internal.c:702 service_internal.c:718 service_internal.c:1282
-#: service_internal.c:1295 service_internal.c:1323 service_internal.c:1522
-#: service_internal.c:1544 service_internal.c:1640 service_internal.c:1642
-#: zoo_service_loader.c:667 zoo_service_loader.c:709 zoo_service_loader.c:870
-#: zoo_service_loader.c:890 zoo_service_loader.c:960 zoo_service_loader.c:1013
-#: zoo_service_loader.c:1093
-msgid "value"
-msgstr ""
-
-#: service_internal.c:703 service_internal.c:854 service_internal.c:888
-#: service_internal.c:1283 service_internal.c:1287 service_internal.c:1325
-#: service_internal.c:1512
-msgid "extension"
-msgstr ""
-
-#: service_internal.c:719
-msgid "DefaultValue"
-msgstr ""
-
-#: service_internal.c:726 service_internal.c:734 zoo_service_loader.c:344
-#: zoo_service_loader.c:382
-msgid ","
-msgstr ""
-
-#: service_internal.c:728
-msgid "Value"
-msgstr ""
-
-#: service_internal.c:732
-#, c-format
-msgid "strgin : %s\n"
-msgstr ""
-
-#: service_internal.c:745
-msgid "AnyValue"
-msgstr ""
-
-#: service_internal.c:800 service_internal.c:1131
-msgid "ProcessOutputs"
-msgstr ""
-
-#: service_internal.c:804 service_internal.c:1117 service_internal.c:1135
-#: zoo_service_loader.c:1179
-msgid "Output"
-msgstr ""
-
-#: service_internal.c:816
-msgid "LITERALDATA"
-msgstr ""
-
-#: service_internal.c:817 service_internal.c:826
-msgid "LiteralOutput"
-msgstr ""
-
-#: service_internal.c:819
-msgid "COMPLEXDATA"
-msgstr ""
-
-#: service_internal.c:820
-msgid "ComplexOutput"
-msgstr ""
-
-#: service_internal.c:884
-#, c-format
-msgid "DATATYPE SUPPORTED ? %s\n"
-msgstr ""
-
-#: service_internal.c:939 service_internal.c:1394 zoo_service_loader.c:259
-#: zoo_service_loader.c:333 zoo_service_loader.c:928
-msgid "1.0"
-msgstr ""
-
-#: service_internal.c:943
-msgid "ExecuteResponse"
-msgstr ""
-
-#: service_internal.c:952
-msgid ""
-"http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/"
-"wpsExecute_response.xsd"
-msgstr ""
-
-#: service_internal.c:980
-#, c-format
-msgid "%s/GetStatus.zcfg"
-msgstr ""
-
-#: service_internal.c:984
-msgid "rewriteUrl"
-msgstr ""
-
-#: service_internal.c:990 service_internal.c:1439 service_internal.c:1571
-#: service_internal.c:1577 zoo_service_loader.c:247 zoo_service_loader.c:503
-#: zoo_service_loader.c:532 zoo_service_loader.c:604 zoo_service_loader.c:635
-#: zoo_service_loader.c:901 zoo_service_loader.c:938
-#, c-format
-msgid "%s"
-msgstr ""
-
-#: service_internal.c:992 service_internal.c:1000
+#: request_parser.c:1487
 #, c-format
 msgid ""
-"%s/?request=Execute&amp;service=WPS&amp;version=1.0.0&amp;"
-"Identifier=GetStatus&amp;DataInputs=sid=%s&amp;RawDataOutput=Result"
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
 msgstr ""
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
 
-#: service_internal.c:995 service_internal.c:1511
-msgid "true"
-msgstr ""
-
-#: service_internal.c:996
-#, c-format
-msgid "%s/%s/GetStatus/%s"
-msgstr ""
-
-#: service_internal.c:998
-#, c-format
-msgid "%s/GetStatus/%s"
-msgstr ""
-
-#: service_internal.c:1003 service_internal.c:1517
-msgid "tmpUrl"
-msgstr ""
-
-#: service_internal.c:1005
-#, c-format
-msgid "%s/%s/%s_%i.xml"
-msgstr ""
-
-#: service_internal.c:1009 zoo_service_loader.c:426 zoo_service_loader.c:1475
-#: zoo_service_loader.c:1732
-#, c-format
-msgid "%s/"
-msgstr ""
-
-#: service_internal.c:1012
-msgid "serviceInstance"
-msgstr ""
-
-#: service_internal.c:1014
-msgid "statusLocation"
-msgstr ""
-
-#: service_internal.c:1028
-msgid "Status"
-msgstr ""
-
-#: service_internal.c:1040
-msgid "%Y-%m-%dT%I:%M:%SZ"
-msgstr ""
-
-#: service_internal.c:1042
-msgid "creationTime"
-msgstr ""
-
-#: service_internal.c:1047
-msgid "ProcessSucceeded"
-msgstr ""
-
-#: service_internal.c:1048
-#, c-format
-msgid "Service \"%s\" run successfully."
-msgstr ""
-
-#: service_internal.c:1053
-msgid "ProcessStarted"
-msgstr ""
-
-#: service_internal.c:1055
-msgid "percentCompleted"
-msgstr ""
-
-#: service_internal.c:1056
+#: request_parser.c:1519
 #, c-format
 msgid ""
-"ZOO Service \"%s\" is currently running. Please, reload this document to get "
-"the up-to-date status of the Service."
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
 msgstr ""
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
 
-#: service_internal.c:1061
-msgid "ProcessAccepted"
-msgstr ""
-
-#: service_internal.c:1062
+#: request_parser.c:1545
 #, c-format
 msgid ""
-"Service \"%s\" was accepted by the ZOO Kernel and it run as a background "
-"task. Please consult the statusLocation attribtue providen in this document "
-"to get the up-to-date document."
+"The <%s> argument specified as %s identifier was not recognized (not defined "
+"in the ZOO Configuration File)."
 msgstr ""
+"The <%s> argument specified as %s identifier was not recognized (not defined "
+"in the ZOO Configuration File)."
 
-#: service_internal.c:1067
-msgid "ProcessFailed"
+#: request_parser.c:1663
+#, c-format
+msgid "Mandatory parameter <%s> was not specified"
+msgstr "Mandatory parameter <%s> was not specified"
+
+#: request_parser.c:1712
+#, c-format
+msgid "The value <%s> was not recognized, %s %s the only acceptable value."
+msgstr "The value <%s> was not recognized, %s %s the only acceptable value."
+
+#: request_parser.c:1715
+msgid "is"
+msgstr "is"
+
+#: request_parser.c:1727
+msgid "are"
+msgstr "are"
+
+#: response_print.c:1628
+#, c-format
+msgid "The service \"%s\" ran successfully."
+msgstr "The service \"%s\" ran successfully."
+
+#: response_print.c:1636
+#, c-format
+msgid ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
 msgstr ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
 
-#: service_internal.c:1070 service_internal.c:1072 service_internal.c:1074
-#: service_internal.c:1419 service_internal.c:1472 service_internal.c:1547
-#: service_internal.c:1591 zoo_service_loader.c:1368
-msgid "code"
+#: response_print.c:1642
+#, c-format
+msgid ""
+"The service \"%s\" was accepted by the ZOO kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
 msgstr ""
+"The service \"%s\" was accepted by the ZOO kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
 
-#: service_internal.c:1074 service_internal.c:1423 service_internal.c:1476
-msgid "NoApplicableCode"
-msgstr ""
-
-#: service_internal.c:1075 service_internal.c:1585
-msgid "message"
-msgstr ""
-
-#: service_internal.c:1077 service_internal.c:1079 service_internal.c:1425
-#: service_internal.c:1478 service_internal.c:1546 service_internal.c:1590
-#: zoo_service_loader.c:1367 zoo_service_loader.c:1608
-#: zoo_service_loader.c:1652 zoo_service_loader.c:1830
-#: zoo_service_loader.c:1872
-msgid "text"
-msgstr ""
-
-#: service_internal.c:1079
+#: response_print.c:1659
 msgid "No more information available"
-msgstr ""
+msgstr "No more information available"
 
-#: service_internal.c:1084
+#: response_print.c:1666
 #, c-format
 msgid "error code not know : %i\n"
-msgstr ""
+msgstr "error code not know : %i\n"
 
-#: service_internal.c:1093
+#: response_print.c:1758
+msgid "Lock failed."
+msgstr "Lock failed."
+
+#: response_print.c:1771
 #, c-format
-msgid "printProcessResponse 1 161\n"
-msgstr ""
+msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
+msgstr "Unable to create the file \"%s\" for storing the ExecuteResponse."
 
-#: service_internal.c:1096 zoo_service_loader.c:1157
-msgid "lineage"
-msgstr ""
-
-#: service_internal.c:1110
-#, c-format
-msgid "printProcessResponse 1 177\n"
-msgstr ""
-
-#: service_internal.c:1113
-msgid "OutputDefinitions"
-msgstr ""
-
-#: service_internal.c:1124
-#, c-format
-msgid "printProcessResponse 1 190\n"
-msgstr ""
-
-#: service_internal.c:1142
-#, c-format
-msgid "printProcessResponse 1 202\n"
-msgstr ""
-
-#: service_internal.c:1156 service_internal.c:1401 service_internal.c:1404
-#: service_internal.c:1406
-#, c-format
-msgid ""
-"Content-Type: text/xml; charset=%s\r\n"
-"Status: 200 OK\r\n"
-"\r\n"
-msgstr ""
-
-#: service_internal.c:1190
-msgid "MIMETYPE"
-msgstr ""
-
-#: service_internal.c:1191
-msgid "ENCODING"
-msgstr ""
-
-#: service_internal.c:1192
-msgid "SCHEMA"
-msgstr ""
-
-#: service_internal.c:1193
-msgid "UOM"
-msgstr ""
-
-#: service_internal.c:1245 service_internal.c:1342 zoo_service_loader.c:308
-#: zoo_service_loader.c:343 zoo_service_loader.c:427 zoo_service_loader.c:783
-#: zoo_service_loader.c:1212 zoo_service_loader.c:1318
-#: zoo_service_loader.c:1515 zoo_service_loader.c:1562
-#: zoo_service_loader.c:1757 zoo_service_loader.c:1801
-msgid "Identifier"
-msgstr ""
-
-#: service_internal.c:1268
-#, c-format
-msgid "FORMAT %s %s\n"
-msgstr ""
-
-#: service_internal.c:1270 service_internal.c:1319 service_internal.c:1521
-#: zoo_service_loader.c:828
-msgid "Reference"
-msgstr ""
-
-#: service_internal.c:1272 zoo_service_loader.c:1031
-msgid "Data"
-msgstr ""
-
-#: service_internal.c:1273
-msgid "LITERALOUTPUT"
-msgstr ""
-
-#: service_internal.c:1276
-msgid "COMPLEXOUTPUT"
-msgstr ""
-
-#: service_internal.c:1277 zoo_service_loader.c:1066
-msgid "ComplexData"
-msgstr ""
-
-#: service_internal.c:1286 service_internal.c:1328 zoo_service_loader.c:1156
-#: zoo_service_loader.c:1438
-msgid "storeExecuteResponse"
-msgstr ""
-
-#: service_internal.c:1292 service_internal.c:1294 service_internal.c:1553
-#: zoo_service_loader.c:839 zoo_service_loader.c:1072
-#: zoo_service_loader.c:1185 zoo_service_loader.c:1285
-msgid "mimeType"
-msgstr ""
-
-#: service_internal.c:1296
-msgid "base64"
-msgstr ""
-
-#: service_internal.c:1297
-msgid "image/"
-msgstr ""
-
-#: service_internal.c:1298
-msgid "application/"
-msgstr ""
-
-#: service_internal.c:1299 service_internal.c:1573
-msgid "size"
-msgstr ""
-
-#: service_internal.c:1302
-#, c-format
-msgid "%d"
-msgstr ""
-
-#: service_internal.c:1303
-msgid "z"
-msgstr ""
-
-#: service_internal.c:1308
-msgid "text/js"
-msgstr ""
-
-#: service_internal.c:1309
-msgid "application/js"
-msgstr ""
-
-#: service_internal.c:1326
-msgid "abstract"
-msgstr ""
-
-#: service_internal.c:1347 zoo_service_loader.c:799 zoo_service_loader.c:1231
-msgid "Title"
-msgstr ""
-
-#: service_internal.c:1348 zoo_service_loader.c:800 zoo_service_loader.c:1232
-msgid "Abstract"
-msgstr ""
-
-#: service_internal.c:1367 service_internal.c:1370 zoo_service_loader.c:929
-msgid "UTF-8"
-msgstr ""
-
-#: service_internal.c:1409 service_internal.c:1457
-msgid "ExceptionReport"
-msgstr ""
-
-#: service_internal.c:1413
-msgid "xsi:schemaLocation"
-msgstr ""
-
-#: service_internal.c:1413 service_internal.c:1465
-msgid ""
-"http://www.opengis.net/ows/1.1 http://schemas.opengis.net/ows/1.1.0/"
-"owsExceptionReport.xsd"
-msgstr ""
-
-#: service_internal.c:1415 service_internal.c:1468
-msgid "1.1.0"
-msgstr ""
-
-#: service_internal.c:1417 service_internal.c:1470
-msgid "Exception"
-msgstr ""
-
-#: service_internal.c:1421 service_internal.c:1423 service_internal.c:1474
-#: service_internal.c:1476
-msgid "exceptionCode"
-msgstr ""
-
-#: service_internal.c:1426 service_internal.c:1479
-msgid "ExceptionText"
-msgstr ""
-
-#: service_internal.c:1432 service_internal.c:1485
+#: response_print.c:2288
 msgid "No debug message available"
-msgstr ""
+msgstr "No debug message available"
 
-#: service_internal.c:1498
+#: response_print.c:2376
 #, c-format
-msgid "printProcessResponse\n"
-msgstr ""
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "Unable to create the file \"%s\" for storing the session maps."
 
-#: service_internal.c:1500 zoo_service_loader.c:491 zoo_service_loader.c:1277
-msgid "RawDataOutput"
-msgstr ""
-
-#: service_internal.c:1507
-#, c-format
-msgid "REQUEST_OUTPUTS FINAL\n"
-msgstr ""
-
-#: service_internal.c:1513 zoo_service_loader.c:1683
-msgid "tmpPath"
-msgstr ""
-
-#: service_internal.c:1515
-#, c-format
-msgid "%s/%s_%i.%s"
-msgstr ""
-
-#: service_internal.c:1516
-msgid "w"
-msgstr ""
-
-#: service_internal.c:1520
-#, c-format
-msgid "%s/%s/%s_%i.%s"
-msgstr ""
-
-#: service_internal.c:1529
-msgid "serviceProvider"
-msgstr ""
-
-#: service_internal.c:1531
-#, c-format
-msgid "SERVICE : %s\n"
-msgstr ""
-
-#: service_internal.c:1546
-msgid "Unable to fetch any result"
-msgstr ""
-
-#: service_internal.c:1547 service_internal.c:1591 zoo_service_loader.c:120
-#: zoo_service_loader.c:147 zoo_service_loader.c:280 zoo_service_loader.c:367
-#: zoo_service_loader.c:420 zoo_service_loader.c:519 zoo_service_loader.c:530
-#: zoo_service_loader.c:547 zoo_service_loader.c:623 zoo_service_loader.c:637
-#: zoo_service_loader.c:664 zoo_service_loader.c:705 zoo_service_loader.c:788
-#: zoo_service_loader.c:806 zoo_service_loader.c:864 zoo_service_loader.c:905
-#: zoo_service_loader.c:952 zoo_service_loader.c:987 zoo_service_loader.c:1005
-#: zoo_service_loader.c:1146 zoo_service_loader.c:1218
-#: zoo_service_loader.c:1238 zoo_service_loader.c:1298
-#: zoo_service_loader.c:1324 zoo_service_loader.c:1700
-msgid "InternalError"
-msgstr ""
-
-#: service_internal.c:1555 service_internal.c:1557
-#, c-format
-msgid "SERVICE OUTPUTS\n"
-msgstr ""
-
-#: service_internal.c:1562
-#, c-format
+#: response_print.c:2392
 msgid ""
-"Content-Type: %s; charset=%s\r\n"
-"Status: 200 OK\r\n"
-"\r\n"
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
 msgstr ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
 
-#: service_internal.c:1567
-#, c-format
-msgid ""
-"Content-Type: %s; charset=UTF-8\r\n"
-"Status: 200 OK\r\n"
-"\r\n"
-msgstr ""
-
-#: service_internal.c:1570
-#, c-format
-msgid ""
-"Content-Type: text/plain; charset=utf-8\r\n"
-"Status: 200 OK\r\n"
-"\r\n"
-msgstr ""
-
-#: service_internal.c:1572
-msgid "image"
-msgstr ""
-
-#: service_internal.c:1587
+#: response_print.c:2393
 #, c-format
 msgid ""
 "Unable to run the Service. The message returned back by the Service was the "
-"following : %s"
+"following: %s"
 msgstr ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
 
-#: service_internal.c:1589
-#, c-format
+#: response_print.c:2396 response_print.c:2397
 msgid ""
 "Unable to run the Service. No more information was returned back by the "
 "Service."
 msgstr ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
 
-#: service_internal.c:1616
+#: response_print.c:2484
 #, c-format
-msgid "BASE64 [%s] \n"
-msgstr ""
+msgid "Unable to create the file \"%s\" for storing the %s final result."
+msgstr "Unable to create the file \"%s\" for storing the %s final result."
 
-#: service_internal.c:1627 zoo_service_loader.c:1363
-msgid "inputs"
-msgstr ""
-
-#: service_internal.c:1642
-msgid "NULL"
-msgstr ""
-
-#: service_internal.c:1660
-#, c-format
-msgid "addDefaultValues %s => %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:27 zoo_service_loader.c:28 zoo_service_loader.c:31
-#: zoo_service_loader.c:1470 zoo_service_loader.c:1723
-msgid "C"
-msgstr ""
-
-#: zoo_service_loader.c:98
-msgid "SIGSEGV"
-msgstr ""
-
-#: zoo_service_loader.c:101
-msgid "SIGTERM"
-msgstr ""
-
-#: zoo_service_loader.c:104
-msgid "SIGINT"
-msgstr ""
-
-#: zoo_service_loader.c:107
-msgid "SIGILL"
-msgstr ""
-
-#: zoo_service_loader.c:110
-msgid "SIGFPE"
-msgstr ""
-
-#: zoo_service_loader.c:113
-msgid "SIGABRT"
-msgstr ""
-
-#: zoo_service_loader.c:116
-msgid "UNKNOWN"
-msgstr ""
-
-#: zoo_service_loader.c:119
-#, c-format
-msgid "ZOO Kernel failed to process your request receiving signal %d = %s"
-msgstr ""
-
-#: zoo_service_loader.c:122
-#, c-format
-msgid "Not this time!\n"
-msgstr ""
-
-#: zoo_service_loader.c:147 zoo_service_loader.c:280 zoo_service_loader.c:367
-#: zoo_service_loader.c:420 zoo_service_loader.c:547 zoo_service_loader.c:623
-#: zoo_service_loader.c:637 zoo_service_loader.c:664 zoo_service_loader.c:705
-#: zoo_service_loader.c:788 zoo_service_loader.c:806 zoo_service_loader.c:864
-#: zoo_service_loader.c:905 zoo_service_loader.c:952 zoo_service_loader.c:987
-#: zoo_service_loader.c:1005 zoo_service_loader.c:1146
-#: zoo_service_loader.c:1218 zoo_service_loader.c:1238
-#: zoo_service_loader.c:1298 zoo_service_loader.c:1324
-msgid "Unable to allocate memory."
-msgstr ""
-
-#: zoo_service_loader.c:155 zoo_service_loader.c:158 zoo_service_loader.c:160
-#: zoo_service_loader.c:165 zoo_service_loader.c:243 zoo_service_loader.c:1471
-#: zoo_service_loader.c:1725
-msgid "metapath"
-msgstr ""
-
-#: zoo_service_loader.c:162
-#, c-format
-msgid "ADD METAPATH\n"
-msgstr ""
-
-#: zoo_service_loader.c:168
-#, c-format
-msgid "%s/%s/main.cfg"
-msgstr ""
-
-#: zoo_service_loader.c:171
-#, c-format
-msgid "***** BEGIN MAPS\n"
-msgstr ""
-
-#: zoo_service_loader.c:173
-#, c-format
-msgid "***** END MAPS\n"
-msgstr ""
-
-#: zoo_service_loader.c:179
-msgid "Request"
-msgstr ""
-
-#: zoo_service_loader.c:181
-msgid "Parameter <request> was not specified"
-msgstr ""
-
-#: zoo_service_loader.c:181 zoo_service_loader.c:201 zoo_service_loader.c:210
-#: zoo_service_loader.c:311 zoo_service_loader.c:606 zoo_service_loader.c:1368
-msgid "MissingParameterValue"
-msgstr ""
-
-#: zoo_service_loader.c:191 zoo_service_loader.c:402
-msgid ""
-"Unenderstood <request> value. Please check that it was set to "
-"GetCapabilities, DescribeProcess or Execute."
-msgstr ""
-
-#: zoo_service_loader.c:191 zoo_service_loader.c:257 zoo_service_loader.c:322
-#: zoo_service_loader.c:402 zoo_service_loader.c:442
-msgid "InvalidParameterValue"
-msgstr ""
-
-#: zoo_service_loader.c:199
-msgid "Service"
-msgstr ""
-
-#: zoo_service_loader.c:201
-msgid "Parameter <service> was not specified"
-msgstr ""
-
-#: zoo_service_loader.c:208
-msgid "Version"
-msgstr ""
-
-#: zoo_service_loader.c:210
-msgid "Parameter <version> was not specified"
-msgstr ""
-
-#: zoo_service_loader.c:218 zoo_service_loader.c:220
-msgid "serviceprovider"
-msgstr ""
-
-#: zoo_service_loader.c:257
-msgid "The specified path doesn't exist."
-msgstr ""
-
-#: zoo_service_loader.c:275
-msgid ".zcfg"
-msgstr ""
-
-#: zoo_service_loader.c:283 zoo_service_loader.c:370
+#: response_print.c:2570
 #, c-format
 msgid ""
-"#################\n"
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+msgstr ""
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+
+#: server_internal.c:869 server_internal.c:946
+msgid ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+msgstr ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+
+#: server_internal.c:875 server_internal.c:907
+msgid "The result for the requested JobID has not yet been generated. "
+msgstr "The result for the requested JobID has not yet been generated. "
+
+#: server_internal.c:988
+msgid "The job cannot be removed, a file cannot be removed"
+msgstr "The job cannot be removed, a file cannot be removed"
+
+#: server_internal.c:1088 zoo_service_loader.c:276 zoo_service_loader.c:1384
+#: zoo_service_loader.c:1427 server_internal.c:1093
+#, c-format
+msgid "Unable to parse the ZCFG file: %s (%s)"
+msgstr "Unable to parse the ZCFG file: %s (%s)"
+
+#: server_internal.c:1091 zoo_service_loader.c:279 zoo_service_loader.c:1389
+#: zoo_service_loader.c:1431 server_internal.c:1096
+#, c-format
+msgid "Unable to parse the ZCFG file: %s."
+msgstr "Unable to parse the ZCFG file: %s."
+
+#: service_internal_ms.c:136
+msgid "Unable to find any mapserverAddress defined in the main.cfg file"
+msgstr "Unable to find any mapserverAddress defined in the main.cfg file"
+
+#: service_internal_php.c:227
+#, c-format
+msgid "Unable to load the PHP file %s"
+msgstr "Unable to load the PHP file %s"
+
+#: service_internal_python.c:316
+#, c-format
+msgid "Python module %s cannot be loaded. Message: %s\n"
+msgstr "Python module %s cannot be loaded. Message: %s\n"
+
+#: service_internal_python.c:355
+#, c-format
+msgid ""
 "%s\n"
-"#################\n"
+"Unable to run your python process properly. Please check the following "
+"messages : %s"
 msgstr ""
+"%s\n"
+"Unable to run your python process properly. Please check the following "
+"messages : %s"
 
-#: zoo_service_loader.c:311
-msgid "Mandatory <identifier> was not specified"
-msgstr ""
-
-#: zoo_service_loader.c:322
-msgid "The specified path path doesn't exist."
-msgstr ""
-
-#: zoo_service_loader.c:355
-#, c-format
-msgid "%s.zcfg"
-msgstr ""
-
-#: zoo_service_loader.c:358
+#: service_internal_python.c:361
 #, c-format
 msgid ""
-"\n"
-"#######%s\n"
-"########\n"
+"%s \n"
+" Unable to run your python process properly. Unable to provide any futher "
+"informations."
 msgstr ""
+"%s \n"
+" Unable to run your python process properly. Unable to provide any futher "
+"informations."
 
-#: zoo_service_loader.c:404
+#: zoo_service_loader.c:352
 #, c-format
-msgid "No request found %s"
-msgstr ""
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s"
+msgstr "ZOO Kernel failed to process your request, receiving signal %d = %s"
 
-#: zoo_service_loader.c:422
-msgid "MetaPath"
-msgstr ""
-
-#: zoo_service_loader.c:429
+#: zoo_service_loader.c:527
 #, c-format
-msgid "%s/%s.zcfg"
-msgstr ""
+msgid "Error occured while running the %s function: %s"
+msgstr "Error occured while running the %s function: %s"
 
-#: zoo_service_loader.c:432 zoo_service_loader.c:1481
-#: zoo_service_loader.c:1737
+#: zoo_service_loader.c:578
 #, c-format
-msgid "Trying to load %s\n"
-msgstr ""
+msgid "Unable to load C Library %s"
+msgstr "Unable to load C Library %s"
 
-#: zoo_service_loader.c:441
-#, c-format
-msgid ""
-"The value for <indetifier> seems to be wrong (%s). Please, ensure that the "
-"process exist using the GetCapabilities request."
-msgstr ""
-
-#: zoo_service_loader.c:470 zoo_service_loader.c:974
-msgid "ZooWPSClient"
-msgstr ""
-
-#: zoo_service_loader.c:476 zoo_service_loader.c:978
-#, c-format
-msgid "WARNING : hInternet handle failed to initialize"
-msgstr ""
-
-#: zoo_service_loader.c:481
-msgid "xrequest"
-msgstr ""
-
-#: zoo_service_loader.c:488 zoo_service_loader.c:494
-#, c-format
-msgid "OUTPUT Parsing ... \n"
-msgstr ""
-
-#: zoo_service_loader.c:490 zoo_service_loader.c:1135
-msgid "ResponseDocument"
-msgstr ""
-
-#: zoo_service_loader.c:498
-#, c-format
-msgid "OUTPUT Parsing start now ... \n"
-msgstr ""
-
-#: zoo_service_loader.c:514
-#, c-format
-msgid "OUTPUT [%s]\n"
-msgstr ""
-
-#: zoo_service_loader.c:516 zoo_service_loader.c:533 zoo_service_loader.c:620
-#: zoo_service_loader.c:639
-msgid ";"
-msgstr ""
-
-#: zoo_service_loader.c:519 zoo_service_loader.c:530
-msgid "Unable to allocate memory"
-msgstr ""
-
-#: zoo_service_loader.c:524 zoo_service_loader.c:526 zoo_service_loader.c:572
-#: zoo_service_loader.c:628 zoo_service_loader.c:632
-#, c-format
-msgid "***%s***\n"
-msgstr ""
-
-#: zoo_service_loader.c:540 zoo_service_loader.c:574 zoo_service_loader.c:647
-#: zoo_service_loader.c:670 zoo_service_loader.c:716
-msgid "@"
-msgstr ""
-
-#: zoo_service_loader.c:555 zoo_service_loader.c:652 zoo_service_loader.c:675
-msgid "="
-msgstr ""
-
-#: zoo_service_loader.c:561
-#, c-format
-msgid "OUTPUT DEF [%s]=[%s]\n"
-msgstr ""
-
-#: zoo_service_loader.c:599
-#, c-format
-msgid "DATA INPUTS [%s]\n"
-msgstr ""
-
-#: zoo_service_loader.c:606
-msgid "Parameter <DataInputs> was not specified"
-msgstr ""
-
-#: zoo_service_loader.c:650
-#, c-format
-msgid ""
-"***\n"
-"***%s***\n"
-msgstr ""
-
-#: zoo_service_loader.c:659
-#, c-format
-msgid ""
-"***\n"
-"*** %s = %s ***\n"
-msgstr ""
-
-#: zoo_service_loader.c:673
-#, c-format
-msgid ""
-"*** KVP NON URL-ENCODED \n"
-"***%s***\n"
-msgstr ""
-
-#: zoo_service_loader.c:677 zoo_service_loader.c:685
-#, c-format
-msgid ""
-"*** VALUE NON URL-ENCODED \n"
-"***%s***\n"
-msgstr ""
-
-#: zoo_service_loader.c:684
-#, c-format
-msgid ""
-"*** NAME NON URL-ENCODED \n"
-"***%s***\n"
-msgstr ""
-
-#: zoo_service_loader.c:687
-msgid "xlink:href"
-msgstr ""
-
-#: zoo_service_loader.c:691
-#, c-format
-msgid "REQUIRE TO DOWNLOAD A FILE FROM A SERVER : url(%s)\n"
-msgstr ""
-
-#: zoo_service_loader.c:700
-#, c-format
-msgid "(%s) content-length : %d,,res.nDataAlloc %d \n"
-msgstr ""
-
-#: zoo_service_loader.c:745
-#, c-format
-msgid "BEFORE %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:751
-#, c-format
-msgid "AFTER\n"
-msgstr ""
-
-#: zoo_service_loader.c:759
-msgid "/*/*/*[local-name()='Input']"
-msgstr ""
-
-#: zoo_service_loader.c:762 zoo_service_loader.c:1132
-#: zoo_service_loader.c:1274
-#, c-format
-msgid "*****%d*****\n"
-msgstr ""
-
-#: zoo_service_loader.c:772
-#, c-format
-msgid "= element 0 node \"%s\"\n"
-msgstr ""
-
-#: zoo_service_loader.c:808 zoo_service_loader.c:1240
-msgid "missingIndetifier"
-msgstr ""
-
-#: zoo_service_loader.c:835
-#, c-format
-msgid "REFERENCE\n"
-msgstr ""
-
-#: zoo_service_loader.c:841 zoo_service_loader.c:1074
-#: zoo_service_loader.c:1187 zoo_service_loader.c:1287
-msgid "schema"
-msgstr ""
-
-#: zoo_service_loader.c:842 zoo_service_loader.c:855
-msgid "method"
-msgstr ""
-
-#: zoo_service_loader.c:847
-#, c-format
-msgid "*** %s ***"
-msgstr ""
-
-#: zoo_service_loader.c:857
-msgid "POST"
-msgstr ""
-
-#: zoo_service_loader.c:875 zoo_service_loader.c:909 zoo_service_loader.c:1061
-#: zoo_service_loader.c:1087 zoo_service_loader.c:1173
-#: zoo_service_loader.c:1202 zoo_service_loader.c:1308
-#: zoo_service_loader.c:1507
-#, c-format
-msgid "%s\n"
-msgstr ""
-
-#: zoo_service_loader.c:880
-#, c-format
-msgid "Parse Header and Body from Reference \n"
-msgstr ""
-
-#: zoo_service_loader.c:885
-msgid "Header"
-msgstr ""
-
-#: zoo_service_loader.c:889
-msgid "key"
-msgstr ""
-
-#: zoo_service_loader.c:897
-#, c-format
-msgid "%s = %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:907
-#, c-format
-msgid "%s: %s"
-msgstr ""
-
-#: zoo_service_loader.c:918
-#, c-format
-msgid "Try to fetch the body part of the request ...\n"
-msgstr ""
-
-#: zoo_service_loader.c:920
-msgid "Body"
-msgstr ""
-
-#: zoo_service_loader.c:922
-#, c-format
-msgid "Body part found !!!\n"
-msgstr ""
-
-#: zoo_service_loader.c:935
-#, c-format
-msgid "Body part found !!! %s %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:945 zoo_service_loader.c:997
-#, c-format
-msgid "%s %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:962 zoo_service_loader.c:1015
-#, c-format
-msgid "DL CONTENT : (%s)\n"
-msgstr ""
-
-#: zoo_service_loader.c:967
-msgid "BodyReference"
-msgstr ""
-
-#: zoo_service_loader.c:1023
-#, c-format
-msgid "Header and Body was parsed from Reference \n"
-msgstr ""
-
-#: zoo_service_loader.c:1027
-#, c-format
-msgid "= element 2 node \"%s\" = (%s)\n"
-msgstr ""
-
-#: zoo_service_loader.c:1033
-#, c-format
-msgid "DATA\n"
-msgstr ""
-
-#: zoo_service_loader.c:1047
-msgid "dataType"
-msgstr ""
-
-#: zoo_service_loader.c:1048 zoo_service_loader.c:1188
-#: zoo_service_loader.c:1288
-msgid "uom"
-msgstr ""
-
-#: zoo_service_loader.c:1051
-#, c-format
-msgid "*** LiteralData %s ***"
-msgstr ""
-
-#: zoo_service_loader.c:1077
-#, c-format
-msgid "*** ComplexData %s ***"
-msgstr ""
-
-#: zoo_service_loader.c:1099
-#, c-format
-msgid "cur2 next \n"
-msgstr ""
-
-#: zoo_service_loader.c:1105
-#, c-format
-msgid "ADD MAPS TO REQUEST MAPS !\n"
-msgstr ""
-
-#: zoo_service_loader.c:1111
-#, c-format
-msgid "******TMPMAPS*****\n"
-msgstr ""
-
-#: zoo_service_loader.c:1113
-#, c-format
-msgid "******REQUESTMAPS*****\n"
-msgstr ""
-
-#: zoo_service_loader.c:1125
-#, c-format
-msgid "Search for response document node\n"
-msgstr ""
-
-#: zoo_service_loader.c:1129
-msgid "/*/*/*[local-name()='ResponseDocument']"
-msgstr ""
-
-#: zoo_service_loader.c:1148 zoo_service_loader.c:1300
-msgid "unknownIdentifier"
-msgstr ""
-
-#: zoo_service_loader.c:1162 zoo_service_loader.c:1192
-#: zoo_service_loader.c:1291
-#, c-format
-msgid "*** %s ***\t"
-msgstr ""
-
-#: zoo_service_loader.c:1271
-msgid "/*/*/*[local-name()='RawDataOutput']"
-msgstr ""
-
-#: zoo_service_loader.c:1353
-#, c-format
-msgid ""
-"\n"
-"%i\n"
-msgstr ""
-
-#: zoo_service_loader.c:1366
-#, c-format
-msgid ""
-"The <%s> argument was not specified in DataInputs but defined as requested "
-"in ZOO ServicesProvider configuration file, please correct your query or the "
-"ZOO Configuration file."
-msgstr ""
-
-#: zoo_service_loader.c:1383
-msgid "outputs"
-msgstr ""
-
-#: zoo_service_loader.c:1386
-#, c-format
-msgid "REQUEST_INPUTS\n"
-msgstr ""
-
-#: zoo_service_loader.c:1388
-#, c-format
-msgid "REQUEST_OUTPUTS\n"
-msgstr ""
-
-#: zoo_service_loader.c:1392
-msgid "env"
-msgstr ""
-
-#: zoo_service_loader.c:1400 zoo_service_loader.c:1423
-#, c-format
-msgid "[ZOO: setenv (%s=%s)]\n"
-msgstr ""
-
-#: zoo_service_loader.c:1404
-#, c-format
-msgid "[ZOO: Env var finish with \r]\n"
-msgstr ""
-
-#: zoo_service_loader.c:1410
-#, c-format
-msgid "setting variable... %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:1414
-msgid "OK"
-msgstr ""
-
-#: zoo_service_loader.c:1414
-msgid "FAILED"
-msgstr ""
-
-#: zoo_service_loader.c:1448
-msgid "0"
-msgstr ""
-
-#: zoo_service_loader.c:1465 zoo_service_loader.c:1504
-#: zoo_service_loader.c:1718 zoo_service_loader.c:1752
-msgid "serviceType"
-msgstr ""
-
-#: zoo_service_loader.c:1467
-#, c-format
-msgid "LOAD A %s SERVICE PROVIDER IN NORMAL MODE \n"
-msgstr ""
-
-#: zoo_service_loader.c:1492
-#, c-format
-msgid "%s loaded (%d) \n"
-msgstr ""
-
-#: zoo_service_loader.c:1501 zoo_service_loader.c:1799
-#, c-format
-msgid "Library loaded %s \n"
-msgstr ""
-
-#: zoo_service_loader.c:1502
-#, c-format
-msgid "Service Shared Object = %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:1510 zoo_service_loader.c:1756
-msgid "C-FORTRAN"
-msgstr ""
-
-#: zoo_service_loader.c:1517 zoo_service_loader.c:1763
-#, c-format
-msgid "%s_"
-msgstr ""
-
-#: zoo_service_loader.c:1519 zoo_service_loader.c:1564
-#: zoo_service_loader.c:1759 zoo_service_loader.c:1765
-#: zoo_service_loader.c:1803
-#, c-format
-msgid "Try to load function %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:1534 zoo_service_loader.c:1583
-#: zoo_service_loader.c:1816
-#, c-format
-msgid "Function loaded %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:1552
-#, c-format
-msgid "Function run successfully \n"
-msgstr ""
-
-#: zoo_service_loader.c:1559 zoo_service_loader.c:1571
-#, c-format
-msgid "Function %s failed to load because of %d\n"
-msgstr ""
-
-#: zoo_service_loader.c:1587
-#, c-format
-msgid "Now run the function \n"
-msgstr ""
-
-#: zoo_service_loader.c:1592 zoo_service_loader.c:1889
-#, c-format
-msgid "Function loaded and returned %d\n"
-msgstr ""
-
-#: zoo_service_loader.c:1607 zoo_service_loader.c:1829
-#, c-format
-msgid "C Library can't be loaded %s \n"
-msgstr ""
-
-#: zoo_service_loader.c:1615 zoo_service_loader.c:1839
-msgid "PYTHON"
-msgstr ""
-
-#: zoo_service_loader.c:1622 zoo_service_loader.c:1844
-msgid "JAVA"
-msgstr ""
-
-#: zoo_service_loader.c:1629 zoo_service_loader.c:1851
-msgid "PHP"
-msgstr ""
-
-#: zoo_service_loader.c:1637 zoo_service_loader.c:1858
-msgid "PERL"
-msgstr ""
-
-#: zoo_service_loader.c:1644 zoo_service_loader.c:1864
-msgid "JS"
-msgstr ""
-
-#: zoo_service_loader.c:1651 zoo_service_loader.c:1871
+#: zoo_service_loader.c:672
 #, c-format
 msgid ""
 "Programming Language (%s) set in ZCFG file is not currently supported by ZOO "
 "Kernel.\n"
 msgstr ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO "
+"Kernel.\n"
 
-#: zoo_service_loader.c:1661
+#: zoo_service_loader.c:737
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "Unable to cache HTTP POST Execute request."
+
+#: zoo_service_loader.c:895
+msgid "Unable to load the main.cfg file."
+msgstr "Unable to load the main.cfg file."
+
+#: zoo_service_loader.c:940
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "The value %s is not supported for the <language> parameter"
+
+#: zoo_service_loader.c:1238
+msgid "The specified path path does not exist."
+msgstr "The specified path path does not exist."
+
+#: zoo_service_loader.c:1303
 #, c-format
 msgid ""
-"\n"
-"PID : %d\n"
+"Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"
 msgstr ""
+"Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"
 
-#: zoo_service_loader.c:1675
+#: zoo_service_loader.c:1308
 #, c-format
-msgid "father pid continue (origin %d) %d ...\n"
-msgstr ""
+msgid "Unable to parse the ZCFG file for the following ZOO-Service: %s."
+msgstr "Unable to parse the ZCFG file for the following ZOO-Service: %s."
 
-#: zoo_service_loader.c:1686
-#, c-format
-msgid "%s/%s_%d.xml"
-msgstr ""
+#: zoo_service_loader.c:1534
+msgid "Unable to run Execute request using the GET HTTP method"
+msgstr "Unable to run Execute request using the GET HTTP method"
 
-#: zoo_service_loader.c:1688
-#, c-format
-msgid "%s/%s_%d_error.log"
-msgstr ""
-
-#: zoo_service_loader.c:1690
-#, c-format
-msgid "RUN IN BACKGROUND MODE \n"
-msgstr ""
-
-#: zoo_service_loader.c:1691
-#, c-format
-msgid "son pid continue (origin %d) %d ...\n"
-msgstr ""
-
-#: zoo_service_loader.c:1692
+#: zoo_service_loader.c:1606
 #, c-format
 msgid ""
-"\n"
-"FILE TO STORE DATA %s\n"
+"The value for <identifier> seems to be wrong (%s). Please specify one of the "
+"processes in the list returned by a GetCapabilities request."
 msgstr ""
+"The value for <identifier> seems to be wrong (%s). Please specify one of the "
+"processes in the list returned by a GetCapabilities request."
 
-#: zoo_service_loader.c:1694 zoo_service_loader.c:1696
-msgid "w+"
+#: zoo_service_loader.c:1733
+msgid ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to "
+"false. Please modify your request parameters."
 msgstr ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to "
+"false. Please modify your request parameters."
 
-#: zoo_service_loader.c:1700
+#: zoo_service_loader.c:1761
+msgid "The process does not permit the desired execution mode."
+msgstr "The process does not permit the desired execution mode."
+
+#: zoo_service_loader.c:1837
+msgid "No message provided"
+msgstr "No message provided"
+
+#: zoo_service_loader.c:1995
+msgid "Initializing"
+msgstr "Initializing"
+
+#: zoo_service_loader.c:2142
 msgid "Unable to run the child process properly"
-msgstr ""
-
-#: zoo_service_loader.c:1720
-#, c-format
-msgid "LOAD A %s SERVICE PROVIDER IN BACKGROUND MODE \n"
-msgstr ""
-
-#: zoo_service_loader.c:1754
-#, c-format
-msgid "r_inputs->value = %s\n"
-msgstr ""
-
-#: zoo_service_loader.c:1918
-#, c-format
-msgid "Processed response \n"
-msgstr ""
+msgstr "Unable to run the child process properly"
