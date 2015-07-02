@@ -1,13 +1,13 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# ZOO-Kernel Internationalization.
+# Copyright (C) 2015 GeoLabs SARL
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Gerald Fenoy <gerald.fenoy@geolabs.fr>, 2015.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
+"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
 "POT-Creation-Date: 2015-07-01 22:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
@@ -358,3 +358,7 @@ msgstr "Initializing"
 #: zoo_service_loader.c:2142
 msgid "Unable to run the child process properly"
 msgstr "Unable to run the child process properly"
+
+#: server_internal.c:1063
+msgid "Unable to open the registry directory."
+msgstr ""
