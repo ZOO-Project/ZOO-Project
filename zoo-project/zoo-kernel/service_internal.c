@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#define _LARGEFILE64_SOURCE 1
 #ifdef USE_MS
 #include "service_internal_ms.h"
 #else
@@ -685,8 +686,7 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
  */
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
-    //VSIStatBuf file_status;
-	VSIStatBufL file_status;
+    VSIStatBufL file_status;
     VSIStatL(dataSource, &file_status);
     if(fichier==NULL){
       char tmp[1024];
