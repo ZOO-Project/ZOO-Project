@@ -76,9 +76,16 @@ Release versions lead to an update in documentation and standard tarballs. This 
     rm -rf $(find ./ -name ".svn") 
     cd zoo-project/zoo-kernel
     autoconf
+    # In case you did not build ZOO-Kernel
     cd ../../..
+    # In case you built ZOO-Kernel, then remove the generated file from the archive
+    make clean
+    rm -f  {Makefile,ZOOMakefile.opts}
+    cd ../../..
+    # In case you built one or more ZOO-Services, then remove the generated file from the archive
+    rm $(find ./zoo-project-$VERSION/zoo-project/zoo-services -name "*zo")
     # Remove documentation from the archive
-    rm -rf ./zoo-project-$VERSION/docs
+    rm -rf ./zoo-project-$VERSION/{docs,workshop}
     tar -cvjf ./zoo-project-$VERSION.tar.bz2 ./zoo-project-$VERSION
     zip -r ./zoo-project-$VERSION.zip ./zoo-project-$VERSION
     scp -P 1046 ./zoo-project-$VERSION.{zip,tar.bz2} zoo-project.org:/var/www/localhost/htdocs/dl/
