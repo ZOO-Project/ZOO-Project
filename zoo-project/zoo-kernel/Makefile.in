@@ -111,7 +111,7 @@ install:
 	 if [ -e "libzoo_service.${EXT}" ]; then rm  libzoo_service.${EXT}; fi ; \
 	 ln -s ${LIBZOO_SERVICE} libzoo_service.${EXT})
 	install -d ${DESTDIR}${INST_INCLUDE}/zoo
-	install service.h service_internal.h ${DESTDIR}${INST_INCLUDE}/zoo
+	install sqlapi.h service.h service_internal.h ${DESTDIR}${INST_INCLUDE}/zoo
 
 clean:
 	rm -f version.h *.o *.zo *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM *${EXT}
