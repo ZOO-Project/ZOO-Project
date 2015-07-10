@@ -182,6 +182,7 @@ void recordStoredFile(maps* conf,const char* filename,const char* type,const cha
   else
     sprintf(sqlQuery,"INSERT INTO %s.files (uuid,filename,nature,name) VALUES ('%s','%s','%s',NULL);",schema->value,uusid->value,filename,type);
   execSql(conf,sqlQuery);
+  free(sqlQuery);
   cleanUpResultSet(conf);
 }
 
@@ -205,6 +206,7 @@ void recordServiceStatus(maps* conf){
 	  schema->value,
 	  uusid->value,sid->value,osid->value);
   execSql(conf,sqlQuery);
+  free(sqlQuery);
   cleanUpResultSet(conf);
 }
 
@@ -228,6 +230,8 @@ void recordResponse(maps* conf,char* filename){
   char *sqlQuery=(char*)malloc((strlen(schema->value)+flen+strlen(sid->value)+51+1)*sizeof(char));
   sprintf(sqlQuery,"INSERT INTO %s.responses (content,uuid) VALUES ($$%s$$,$$%s$$);",schema->value,tmps,sid->value);
   execSql(conf,sqlQuery);
+  free(sqlQuery);
+  free(tmps);
   cleanUpResultSet(conf);
 }
 
@@ -249,6 +253,7 @@ int _updateStatus(maps* conf){
     init_sql(conf);
   execSql(conf,sqlQuery);
   cleanUpResultSet(conf);
+  free(sqlQuery);
   return 0;
 }
 
@@ -279,6 +284,7 @@ char* _getStatus(maps* conf,char* pid){
     OGRFeature::DestroyFeature( poFeature );
   }
   cleanUpResultSet(conf);
+  free(sqlQuery);
   return (char*)tmp1;
 }
 
@@ -315,6 +321,7 @@ char* _getStatusFile(maps* conf,char* pid){
   if(hasRes<0)
     tmp1=NULL;
   cleanUpResultSet(conf);
+  free(sqlQuery);
   return (char*)tmp1;
 }
 
@@ -337,6 +344,7 @@ void removeService(maps* conf,char* pid){
   execSql(conf,sqlQuery);
   cleanUpResultSet(conf);
   close_sql(conf);
+  free(sqlQuery);
   end_sql();
 }
 
@@ -362,6 +370,7 @@ void unhandleStatus(maps* conf){
   execSql(conf,sqlQuery);
   cleanUpResultSet(conf);
   close_sql(conf);
+  free(sqlQuery);
   end_sql();
 }
 
@@ -396,6 +405,7 @@ char* getStatusId(maps* conf,char* pid){
   }
   if(hasRes<0)
     tmp1=NULL;
+  free(sqlQuery);
   return (char*)tmp1;
 }
 
@@ -428,6 +438,7 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
   }
   if(hasRes<0)
     addToMap(statusInfo,"Status","Failed");
+  free(sqlQuery);
   return;
 }
 
@@ -459,6 +470,7 @@ int isRunning(maps* conf,char* pid){
     OGRFeature::DestroyFeature( poFeature );
   }
   cleanUpResultSet(conf);
+  free(sqlQuery);
   return res;
 }
 
