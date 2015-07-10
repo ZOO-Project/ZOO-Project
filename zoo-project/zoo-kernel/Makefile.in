@@ -39,7 +39,7 @@ request_parser.o: request_parser.c request_parser.h
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c
 
 sqlapi.o: sqlapi.c sqlapi.h
-	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c sqlapi.c
+	g++ -fPIC ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c sqlapi.c
 
 caching.o: caching.c
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c caching.c
