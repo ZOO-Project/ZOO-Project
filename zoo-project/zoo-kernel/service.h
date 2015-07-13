@@ -291,7 +291,7 @@ extern "C" {
   ZOO_DLL_EXPORT void freeService(service**);
   ZOO_DLL_EXPORT void addToMap(map*,const char*,const char*);
   ZOO_DLL_EXPORT void addIntToMap(map*,const char*,const int);
-  ZOO_DLL_EXPORT void addToMapWithSize(map*,const char*,const char*,int);
+  ZOO_DLL_EXPORT map* addToMapWithSize(map*,const char*,const char*,int);
   ZOO_DLL_EXPORT void addMapToMap(map**,map*);
   ZOO_DLL_EXPORT void addMapToIoType(iotype**,map*);
   ZOO_DLL_EXPORT map* getMapOrFill(map**,const char*,const char*);

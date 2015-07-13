@@ -302,7 +302,7 @@ void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
  * @return 0
  */
 int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
-  char* fcontent;
+  char* fcontent = NULL;
   char* cached=isInCache(*m,url);
   char *mimeType=NULL;
   int fsize=0;
@@ -352,7 +352,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   free(tmpMap->value);
 
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
-  if(tmpMap->value==NULL)
+  if(tmpMap->value==NULL || fcontent == NULL)
     return errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
   memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
 

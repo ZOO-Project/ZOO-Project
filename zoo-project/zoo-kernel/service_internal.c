@@ -188,8 +188,8 @@ char* _getStatus(maps* conf,char* lid){
     malloc ((strlen (r_inputs->value) + strlen (lid) + 9) * sizeof (char));
   sprintf (fbkpid, "%s/%s.status", r_inputs->value, lid);
   FILE* f0 = fopen (fbkpid, "r");
-  if(f0!=NULL){
-    semid lockid;
+  if(f0!=NULL){    
+    semid lockid = NULL;
     char* stat;
     long flen;
     stat=getStatusId(conf,lid);
@@ -269,8 +269,8 @@ int _updateStatus(maps *conf){
   map* msg=getMapFromMaps(conf,"lenv","message");
   if(status!=NULL && msg!=NULL &&
      status->value!=NULL && msg->value!=NULL && 
-     strlen(status->value)>0 && strlen(msg->value)>1){
-    semid lockid;
+     strlen(status->value)>0 && strlen(msg->value)>1){    
+    semid lockid = NULL;
     char* stat=getStatusId(conf,sid->value);
     if(stat!=NULL){
       lockid=acquireLock(conf);
