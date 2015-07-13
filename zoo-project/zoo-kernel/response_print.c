@@ -785,7 +785,8 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
  */
 void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
-  xmlNodePtr n,nc1,nc2;
+  xmlNodePtr n,nc1;
+  xmlNodePtr nc2 = NULL;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
 
@@ -871,7 +872,7 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service
   }
   if(vid==0)
     xmlAddChild(n,nc);
-  else{
+  else if (nc2 != NULL) {	  
     xmlAddChild(nc2,nc);
     xmlAddChild(n,nc2);
   }

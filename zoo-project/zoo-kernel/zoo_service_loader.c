@@ -960,7 +960,7 @@ runRequest (map ** inputs)
 #ifndef WIN32
       setenv ("LC_ALL", tmp, 1);
 #else
-      char tmp1[12];
+	  char tmp1[13];
       sprintf (tmp1, "LC_ALL=%s", tmp);
       putenv (tmp1);
 #endif
@@ -972,7 +972,7 @@ runRequest (map ** inputs)
 #ifndef WIN32
       setenv ("LC_ALL", "en_US", 1);
 #else
-      char tmp1[12];
+	  char tmp1[13];
       sprintf (tmp1, "LC_ALL=en_US");
       putenv (tmp1);
 #endif
@@ -1472,8 +1472,9 @@ runRequest (map ** inputs)
 	else if (strncasecmp (REQUEST, "Execute", strlen (REQUEST)) != 0)
 	  {
 	    map* version=getMapFromMaps(m,"main","rversion");
-	    int vid=getVersionId(version->value);
-	    int len,j=0;
+	    int vid=getVersionId(version->value);	    
+		int len = 0;
+		int j = 0;
 	    for(j=0;j<nbSupportedRequests;j++){
 	      if(requests[vid][j]!=NULL)
 		len+=strlen(requests[vid][j])+2;

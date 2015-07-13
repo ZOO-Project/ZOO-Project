@@ -431,8 +431,8 @@ map* php_map_from_HasTable(HashTable* t){
     INIT_PZVAL(&tmpcopy); 
     convert_to_string(&tmpcopy);
     if(strncmp(key,"value",5)==0){
-      len=Z_STRLEN_P(&tmpcopy);
-      addToMapWithSize(final_res,key,Z_STRVAL_P(&tmpcopy),len);
+      len=Z_STRLEN_P(&tmpcopy);      
+	  final_res = addToMapWithSize(final_res,key,Z_STRVAL_P(&tmpcopy),len);
     }
     else{
       if(final_res==NULL){

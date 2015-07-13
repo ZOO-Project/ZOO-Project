@@ -454,8 +454,9 @@ void addIntToMap(map* m,const char* n,const int v){
  * @param n the key to add
  * @param v the corresponding value to add
  * @param size the size of the given value
+ * @return a pointer to the updated map m
  */
-void addToMapWithSize(map* m,const char* n,const char* v,int size){
+map* addToMapWithSize(map* m,const char* n,const char* v,int size){
   if(hasKey(m,n)==false){
     map* _cursor=m;
     if(_cursor!=NULL){
@@ -476,6 +477,7 @@ void addToMapWithSize(map* m,const char* n,const char* v,int size){
   char sin[128];
   sprintf(sin,"%d",size);
   addToMap(m,sname,sin);
+  return m;
 }
 
 /**
