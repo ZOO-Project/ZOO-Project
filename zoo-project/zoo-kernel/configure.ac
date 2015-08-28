@@ -104,7 +104,7 @@ AC_ARG_WITH([fastcgi],
         [FCGIPATH="$withval"], [FCGIPATH="/usr"])
 
 # Extract the linker and include flags
-FCGI_LDFLAGS="-L$FCGIPATH/lib"
+FCGI_LDFLAGS="-L$FCGIPATH/lib -lfcgi"
 FCGI_CPPFLAGS="-I$FCGIPATH/include"
 
 # Check headers file
@@ -408,13 +408,14 @@ else
 	# Ensure we can link against libphp
 	LIBS_SAVE="$LIBS"
 	LIBS="$PYTHON_LDFLAGS"
-	PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
+	PY_LIB=`$PYTHONCONFIG --libs | sed \
+			      -e 's/.*\(python[[0-9]]\.[[0-9]]\).*/\1/'`
 	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
-	AC_SUBST([PYTHON_CPPFLAGS])
-	AC_SUBST([PYTHON_LDFLAGS])
 	LIBS="$LIBS_SAVE"
 fi
 
+AC_SUBST([PYTHON_CPPFLAGS])
+AC_SUBST([PYTHON_LDFLAGS])
 AC_SUBST([PYTHON_ENABLED])
 AC_SUBST([PYTHON_FILE])
 
