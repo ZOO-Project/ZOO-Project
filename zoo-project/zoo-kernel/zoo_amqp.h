@@ -1,7 +1,7 @@
-/*
- * Author : Gérald FENOY
+/**
+ * Author : David Saggiorato
  *
- * Copyright (c) 2015 GeoLabs SARL
+ *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,19 @@
  * THE SOFTWARE.
  */
 
-#ifndef ZOO_REQUEST_PARSER_H
-#define ZOO_REQUEST_PARSER_H 1
 
-#pragma once 
+#ifndef ZOO_AMQP_H
+#define ZOO_AMQP 1
 
-#include "service.h"
-#include "ulinet.h"
-#include "cgic.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
+#include <stdint.h>
+void init_amqp(const char * hostname, int port,const char *user, const char *passwd, const char *exchange, const char * routingkey, const char * queue);
 
-  xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
-  int appendMapsToMaps (maps*, maps*, maps*, elements*);
-  void ensureDecodedBase64(maps**);
-  int kvpParseInputs(maps**,service*,map*,maps**,HINTERNET*);
-  int kvpParseOutputs(maps**,map *,maps**);
-  int xmlParseInputs(maps**,service*,maps**,xmlDocPtr,xmlNodeSet*,HINTERNET*);
-  int xmlParseOutputs(maps**,map**,maps**,xmlDocPtr,xmlNodePtr,bool);
-  int xmlParseRequest(maps**,const char*,map**,service*,maps**,maps**,HINTERNET*,struct cgi_env *);
-  int parseRequest(maps**,map**,service*,maps**,maps**,HINTERNET*,struct cgi_env *);
-  void checkValidValue(map*,map**,const char*,const char**,int);
-  int validateRequest(maps**,service*,map*,maps**,maps**,HINTERNET*,struct cgi_env *);
 
-#ifdef __cplusplus
-}
-#endif
+int bind_amqp();
+void init_consumer();
+uint64_t consumer_amqp(char ** m);
+int send_msg(const char * msg, const char * content_type);
+int close_amqp();
+int consumer_ack_amqp(uint64_t delivery_tag);
 
 #endif

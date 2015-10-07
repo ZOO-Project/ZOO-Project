@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include "fcgi_stdio.h"
 #include "service_internal.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
@@ -292,7 +291,7 @@ int _updateStatus(maps *conf){
 #ifdef WIN32
 
 #include <windows.h>
-#include <fcgi_stdio.h>
+//#include <fcgi_stdio.h>
 #include <stdio.h>
 #include <conio.h>
 #include <tchar.h>
@@ -688,7 +687,8 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
     VSIStatBuf file_status;
-    VSIStat(dataSource, &file_status);
+    VSIStatL(dataSource,&file_status);
+    //file_status.st_size = 2500;
     if(fichier==NULL){
       char tmp[1024];
       sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %lld.",

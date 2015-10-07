@@ -214,7 +214,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	    
 	    fcontent=(char*)malloc((hInternet->ihandle[index].nDataLen+1)*sizeof(char));
 	    if(fcontent == NULL){
-	      return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
+	      return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL,NULL);
 	    }
 	    size_t dwRead;
 	    InternetReadFile(hInternet->ihandle[index], 
@@ -232,7 +232,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
 	    free(tmpMap->value);
 	    tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
 	    if(tmpMap->value==NULL){
-	      return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
+	      return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL,NULL);
 	    }
 	    memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
 	    
@@ -276,7 +276,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
  */
 void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
   hInternet->waitingRequests[hInternet->nb]=strdup(url);
-  hInternet->ihandle[hInternet->nb].header=NULL;
+  //hInternet->ihandle[hInternet->nb].header=NULL;
   if(req)
     InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0);
   maps *oreq=getMaps(*m,"orequests");
@@ -303,7 +303,7 @@ void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
  * @return 0
  */
 int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
-  char* fcontent;
+  char* fcontent = NULL;
   char* cached=isInCache(*m,url);
   char *mimeType=NULL;
   int fsize=0;
@@ -337,12 +337,12 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       fclose(f);
     }
 
-  }else{    
+  }else{
     addRequestToQueue(m,hInternet,url,true);
     return 0;
   }
   if(fsize==0){
-    return errorException(*m, _("Unable to download the file."), "InternalError",NULL);
+    return errorException(*m, _("Unable to download the file."), "InternalError",NULL,NULL);
   }
   if(mimeType!=NULL){
     addToMap(*content,"fmimeType",mimeType);
@@ -353,9 +353,17 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   free(tmpMap->value);
 
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
-  if(tmpMap->value==NULL)
-    return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL);
+ 
+ if(tmpMap->value==NULL || fcontent == NULL)
+    return errorException(*m, _("Unable to allocate memory"), "InternalError",NULL,NULL);
   memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
+
+ 
+ 
+ 
+  //if(tmpMap->value==NULL)
+    //return errorException(*m, _("Unable to allocate memory."), "InternalError",NULL,NULL);
+  //memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
 
   char ltmp1[256];
   sprintf(ltmp1,"%d",fsize);

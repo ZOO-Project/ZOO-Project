@@ -268,7 +268,6 @@ createRegistry (maps* m,registry ** r, char *reg_dir)
         }
 #ifdef DEBUG
       dumpService (s1);
-      fflush (stdout);
       fflush (stderr);
 #endif
       if(strncasecmp(registryKeys[i],"implementation",14)==0){

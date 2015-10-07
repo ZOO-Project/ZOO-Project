@@ -849,18 +849,18 @@ int isRunning(maps* conf,char* pid){
  * @param pid the service identifier (usid key from the [lenv] section)
  * @param req the request (GetStatus / GetResult)
  */
-void runGetStatus(maps* conf,char* pid,char* req){
+void runGetStatus(maps* conf,char* pid,char* req,FCGX_Stream* out){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
-		    "NoSuchJob", pid);
+		    "NoSuchJob", pid,out);
   }else{
     map* statusInfo=createMap("JobID",pid);
     if(isRunning(conf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
 	errorException (conf, _("The result for the requested JobID has not yet been generated. "),
-			"ResultNotReady", pid);
+			"ResultNotReady", pid,out);
 	return;
       }
       else
@@ -884,15 +884,15 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	char* result=_getStatusFile(conf,pid);
 	if(result!=NULL){
 	  char *encoding=getEncoding(conf);
-	  fprintf(stdout,"Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
-	  fprintf(stdout,"%s",result);
-	  fflush(stdout);
+      FCGX_FPrintF(out,"Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+      FCGX_FPrintF(out,"%s",result);
+      FCGX_FFlush(out);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
 	  return;
 	}else{
 	  errorException (conf, _("The result for the requested JobID has not yet been generated. "),
-			  "ResultNotReady", pid);
+			  "ResultNotReady", pid,out);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
 	  return;
@@ -913,7 +913,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  }
 	}
     }
-    printStatusInfo(conf,statusInfo,req);
+    printStatusInfo(conf,statusInfo,req,out);
     freeMap(&statusInfo);
     free(statusInfo);
   }
@@ -926,12 +926,12 @@ void runGetStatus(maps* conf,char* pid,char* req){
  * @param conf the maps containing the setting of the main.cfg file
  * @param pid the service identifier (usid key from the [lenv] section)
  */
-void runDismiss(maps* conf,char* pid){
+void runDismiss(maps* conf,char* pid,FCGX_Stream* out){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
-		    "NoSuchJob", pid);
+		    "NoSuchJob", pid,out);
   }else{
     // We should send the Dismiss request to the target host if it differs
     char* fbkpid =
@@ -966,7 +966,7 @@ void runDismiss(maps* conf,char* pid){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
 	  if(unlink(fileName)!=0){
 	    errorException (conf, _("The job cannot be removed, a file cannot be removed"),
-			    "NoApplicableCode", NULL);
+			    "NoApplicableCode", NULL,out);
 	    return;
 	  }
 	}
@@ -977,7 +977,7 @@ void runDismiss(maps* conf,char* pid){
 #endif
     map* statusInfo=createMap("JobID",pid);
     addToMap(statusInfo,"Status","Dismissed");
-    printStatusInfo(conf,statusInfo,"Dismiss");
+    printStatusInfo(conf,statusInfo,"Dismiss",out);
     free(statusInfo);
   }
   return;

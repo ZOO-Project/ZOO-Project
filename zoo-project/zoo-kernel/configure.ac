@@ -58,6 +58,27 @@ AC_ARG_WITH([db-backend],
 AC_SUBST([RELY_ON_DB])
 
 
+AC_ARG_WITH([rabbitmq],
+    [AS_HELP_STRING([--with-rabbittmq], [asynchronous requests management with rabbitmq  ])],
+    [AMQP="-DAMQP"], [AMQP=""])
+
+if test -z "$AMQP"
+then
+    RABBITMQ_LDFLAGS=""
+    RABBITMQ_CPPFLAGS=""
+    RABBITMQ_FILE=""
+else
+    AC_CHECK_LIB([rabbitmq], [main])
+    RABBITMQ_LDFLAGS=`pkg-config --libs librabbitmq`
+    RABBITMQ_CPPFLAGS="-DAMQP" `pkg-config --cflags librabbitmq`
+    RABBITMQ_FILE="zoo_amqp.o"
+    RELY_ON_DB="-DRELY_ON_DB"
+    AC_SUBST([RELY_ON_DB])
+fi
+AC_SUBST([RABBITMQ_LDFLAGS])
+AC_SUBST([RABBITMQ_CPPFLAGS])
+AC_SUBST([RABBITMQ_FILE])
+
 # ===========================================================================
 # Detect if libyaml is available
 # ===========================================================================
@@ -417,8 +438,9 @@ else
 	# Ensure we can link against libphp
 	LIBS_SAVE="$LIBS"
 	LIBS="$PYTHON_LDFLAGS"
-	PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
-	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	#PY_LIB=`$PYTHONCONFIG --libs | sed -e 's/^.*\(python2\..\)$/\1/'`
+	#PY_LIB=`$PYTHONCONFIG --libs`
+	#AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
 	AC_SUBST([PYTHON_CPPFLAGS])
 	AC_SUBST([PYTHON_LDFLAGS])
 	LIBS="$LIBS_SAVE"
@@ -596,6 +618,19 @@ fi
 
 AC_SUBST([JAVA_ENABLED])
 AC_SUBST([JAVA_FILE])
+
+
+# ===========================================================================
+# Detect if json-c is available
+# ===========================================================================
+
+AC_CHECK_LIB([json-c], [main])
+JSON_LDFLAGS=`pkg-config --libs json-c`
+JSON_CPPFLAGS=`pkg-config --cflags json-c`
+
+AC_SUBST([JSON_LDFLAGS])
+AC_SUBST([JSON_CPPFLAGS])
+
 
 # ===========================================================================
 # Detect if ruby is installed

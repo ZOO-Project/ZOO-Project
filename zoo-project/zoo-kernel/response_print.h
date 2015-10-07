@@ -25,6 +25,8 @@
 #ifndef ZOO_RESPONSE_PRINT_H
 #define ZOO_RESPONSE_PRINT_H 1
 
+#include <fcgiapp.h>
+
 #pragma once 
 
 /**
@@ -68,7 +70,7 @@
 #else
 #include <direct.h>
 #endif
-#include <stdio.h>
+
 #include <time.h>
 #include <ctype.h>
 #ifdef WIN32
@@ -200,26 +202,26 @@ extern "C" {
   int zooXmlAddDoc(xmlNodePtr,const char*,const char*);
   void zooXmlCleanupDocs();
   
-  void printExceptionReportResponse(maps*,map*);
+  void printExceptionReportResponse(maps*,map*,FCGX_Stream *);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
-  void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
+  void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*,FCGX_Stream *);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*,const char*);
   void printGetCapabilitiesForProcess(maps*,xmlNodePtr,service*);
   void printDescribeProcessForProcess(maps*,xmlNodePtr,service*);
   void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int);
-  void printDocument(maps*,xmlDocPtr,int);
+  void printDocument(maps*,xmlDocPtr,int,FCGX_Stream *);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
   map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
-  void printBoundingBoxDocument(maps*,maps*,FILE*);
+  void printBoundingBoxDocument(maps*,maps*,FILE*,FCGX_Stream *);
   void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
-  void printStatusInfo(maps*,map*,char*);
+  void printStatusInfo(maps*,map*,char*,FCGX_Stream *);
 
-  void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
+  void outputResponse(service*,maps*,maps*,map*,int,maps*,int,FCGX_Stream *);
 
-  int errorException(maps *, const char *, const char *, const char*);
+  int errorException(maps *, const char *, const char *, const char*,FCGX_Stream *);
 
   xmlNodePtr soapEnvelope(maps*,xmlNodePtr);
   int checkForSoapEnvelope(xmlDocPtr);

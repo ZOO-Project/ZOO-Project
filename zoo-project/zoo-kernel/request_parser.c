@@ -91,7 +91,7 @@ int appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem){
 	      sprintf (emsg,
 		       _("The maximum allowed occurrences for <%s> (%i) was exceeded."),
 		       mi->name, atoi (testMap->value));
-	      errorException (m, emsg, "InternalError", NULL);
+	      errorException (m, emsg, "InternalError", NULL,NULL);
 	      return -1;
 	    }
 	}
@@ -112,7 +112,7 @@ int appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem){
 			   _
 			   ("ZOO-Kernel was unable to load your data for %s position %s."),
 			   mi->name, tmpMap->value);
-		  errorException (m, emsg, "InternalError", NULL);
+		  errorException (m, emsg, "InternalError", NULL,NULL);
 		  return -1;
 		}
 	    }
@@ -123,7 +123,7 @@ int appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem){
 		       _
 		       ("The maximum allowed occurrences for <%s> is one."),
 		       mi->name);
-	      errorException (m, emsg, "InternalError", NULL);
+	      errorException (m, emsg, "InternalError", NULL,NULL);
 	      return -1;
 	    }
 	}
@@ -212,7 +212,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
       {
 	free(cursor_input);
 	return errorException (*main_conf, _("Unable to allocate memory."),
-			       "InternalError", NULL);
+			       "InternalError", NULL,NULL);
       }
     int i = 0;
     while (pToken != NULL)
@@ -223,7 +223,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 	  {
 	    free(cursor_input);
 	    return errorException (*main_conf, _("Unable to allocate memory."),
-				   "InternalError", NULL);
+				   "InternalError", NULL,NULL);
 	  }
 	snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
 	pToken = strtok (NULL, ";");
@@ -260,7 +260,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		    free(cursor_input);
 		    return errorException (*main_conf,
 					   _("Unable to allocate memory."),
-					   "InternalError", NULL);
+					   "InternalError", NULL,NULL);
 		  }
 		tmpmaps->name = zStrdup (tmpn);
 		if (tmpv != NULL)
@@ -315,17 +315,16 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 				 ("Unable to find a valid protocol to download the remote file %s"),
 				 tmpv1 + 1);
 			free(cursor_input);
-			return errorException (*main_conf, emsg, "InternalError", NULL);
+			return errorException (*main_conf, emsg, "InternalError", NULL,NULL);
 		      }
 		    addToMap (tmpmaps->content, tmpn1, tmpx2);
-		    {
 		      if (loadRemoteFile
 			  (&*main_conf, &tmpmaps->content, hInternet, tmpx2) < 0)
 			{
 			  free(cursor_input);
-			  return errorException (*main_conf, "Unable to fetch any ressource", "InternalError", NULL);
+			  return errorException (*main_conf, "Unable to fetch any ressource", "InternalError", NULL,NULL);
 			}
-		      }
+		      
 		    free (tmpx2);
 		    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 		    addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
@@ -349,7 +348,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 			     elem) < 0)
 			  {
 			    free(cursor_input);
-			    return errorException (*main_conf, "Unable to append maps", "InternalError", NULL);
+			    return errorException (*main_conf, "Unable to append maps", "InternalError", NULL,NULL);
 			  }
 		      }
 		  }
@@ -401,7 +400,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	{
 	  free(cursor_output);
 	  return errorException (*main_conf, _("Unable to allocate memory"),
-				 "InternalError", NULL);
+				 "InternalError", NULL,NULL);
 	}
       int i = 0;
       while (pToken != NULL)
@@ -412,7 +411,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	    {
 	      free(cursor_output);
 	      return errorException (*main_conf, _("Unable to allocate memory"),
-				     "InternalError", NULL);
+				     "InternalError", NULL,NULL);
 	    }
 	  snprintf (outputs_as_text[i], strlen (pToken) + 1, "%s",
 		    pToken);
@@ -439,7 +438,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 			  return errorException (*main_conf,
 						 _
 						 ("Unable to allocate memory."),
-						 "InternalError", NULL);
+						 "InternalError", NULL,NULL);
 			}
 		      tmp_output->name = zStrdup (tmpc);
 		      tmp_output->content = NULL;
@@ -535,7 +534,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  return errorException (*main_conf,
 						 _
 						 ("Unable to allocate memory."),
-						 "InternalError", NULL);
+						 "InternalError", NULL,NULL);
 			}
 		      tmpmaps->name = zStrdup ((char *) val);
 		      tmpmaps->content = NULL;
@@ -560,7 +559,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  return errorException (*main_conf,
 						 _
 						 ("Unable to allocate memory."),
-						 "InternalError", NULL);
+						 "InternalError", NULL,NULL);
 			}
 		      tmpmaps->name = zStrdup ("missingIndetifier");
 		      tmpmaps->content =
@@ -612,7 +611,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				      return errorException (*main_conf,
 							     _("Unable to add a request in the queue."),
 							     "InternalError",
-							     NULL);
+							     NULL,NULL);
 				    }
 				  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				}
@@ -664,7 +663,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							     _
 							     ("Unable to allocate memory."),
 							     "InternalError",
-							     NULL);
+							     NULL,NULL);
 				    }
 				  snprintf (has,
 					    (3 + xmlStrlen (val) +
@@ -674,13 +673,14 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				}
 			      xmlFree (val);
 			    }
-			  hInternet->ihandle[hInternet->nb].header = NULL;
-			  hInternet->ihandle[hInternet->nb].header =
-			    curl_slist_append (hInternet->ihandle
-					       [hInternet->nb].header,
-					       has);
-			  if (has != NULL)
-			    free (has);
+                if (has != NULL){
+                            hInternet->ihandle[hInternet->nb].header = NULL;
+                            hInternet->ihandle[hInternet->nb].header =
+                              curl_slist_append (hInternet->ihandle
+                                                 [hInternet->nb].header,
+                                                 has);
+                            free (has);
+                }
 			}
 		      else
 			{
@@ -780,7 +780,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							   _
 							   ("Unable to allocate memory."),
 							   "InternalError",
-							   NULL);
+							   NULL,NULL);
 				  }
 				size_t bRead;
 				InternetReadFile (bInternet.ihandle[0],
@@ -950,7 +950,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  xmlDocSetRootElement (doc1, cur5);
 				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							     &buffersize,
-							     "utf-8", 1);
+							     "utf-8", 0);
 				  char size[1024];
 				  sprintf (size, "%d", buffersize);
 				  addToMap (tmpmaps->content, "size",
@@ -965,12 +965,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    xmlDocSetRootElement (doc1,xmlDocGetRootElement(doc2));
 				    xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							       &buffersize,
-							       "utf-8", 1);
-				    char size[1024];
-				    sprintf (size, "%d", buffersize);
-				    addToMap (tmpmaps->content, "size",
-					      size);
-				    xmlFreeDoc (doc2);
+							       "utf-8", 0);
+				    addIntToMap(tmpmaps->content, "size",buffersize);
+                    xmlFreeDoc (doc2);
 				    xmlFreeDoc (doc1);
 				  }
 				}
@@ -1023,7 +1020,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			return errorException (*main_conf,
 					       _("Unable to append maps to maps."),
 					       "InternalError",
-					       NULL);
+					       NULL,NULL);
 		      }
 		  }
 	      }
@@ -1112,7 +1109,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	  if (tmpmaps == NULL)
 	    {
 	      return errorException (*main_conf, _("Unable to allocate memory."),
-				     "InternalError", NULL);
+				     "InternalError", NULL,NULL);
 	    }
 	  tmpmaps->name = zStrdup ("unknownIdentifier");
 	  tmpmaps->content = NULL;
@@ -1204,7 +1201,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	      return errorException (*main_conf,
 				     _
 				     ("Unable to allocate memory."),
-				     "InternalError", NULL);
+				     "InternalError", NULL,NULL);
 	    }
 	    tmpmaps->name = zStrdup ("unknownIdentifier");
 	    tmpmaps->content = NULL;
@@ -1291,7 +1288,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	      return errorException (*main_conf,
 				     _
 				     ("Duplicate <Output> elements in WPS Execute request"),
-				     "InternalError", NULL);
+				     "InternalError", NULL,NULL);
 	    }
 	    else {
 	      maps* mptr = *request_output;
@@ -1319,13 +1316,13 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
  * @param hInternet the HINTERNET queue to add potential requests
  * @return 0 on success, -1 on failure
  */
-int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
+int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet,struct cgi_env *cgi){
 
   map* version=getMapFromMaps(*main_conf,"main","rversion");
   int vid=getVersionId(version->value);
 
   xmlInitParser ();
-  xmlDocPtr doc = xmlParseMemory (post, cgiContentLength);
+  xmlDocPtr doc = xmlParseMemory (post, cgi->cgiContentLength);
 
   /**
    * Extract Input nodes from the XML Request.
@@ -1427,7 +1424,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
  * @return 0 on success, -1 on failure
  * @see kvpParseOutputs,kvpParseInputs,xmlParseRequest
  */
-int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
+int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet,struct cgi_env *cgi){
   map *postRequest = NULL;
   postRequest = getMap (*request_inputs, "xrequest");
   if (postRequest == NULLMAP)
@@ -1442,7 +1439,7 @@ int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,
   else
     {
       //Parse XML request
-      if(xmlParseRequest(main_conf,postRequest->value,request_inputs,s,inputs,outputs,hInternet)<0){
+      if(xmlParseRequest(main_conf,postRequest->value,request_inputs,s,inputs,outputs,hInternet,cgi)<0){
 	return -1;
       }
     }
@@ -1464,11 +1461,15 @@ int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,
  * 
  * @see runHttpRequests
  */
-int validateRequest(maps** main_conf,service* s,map* original_request, maps** request_inputs,maps** request_outputs,HINTERNET* hInternet){
-
+int validateRequest(maps** main_conf,service* s,map* original_request, maps** request_inputs,maps** request_outputs,HINTERNET* hInternet,struct cgi_env * cgi){
+  fprintf(stderr,"STEP 1 VALIDATE \n");
+  
   runHttpRequests (main_conf, request_inputs, hInternet);
+fprintf(stderr,"STEP 2 VALIDATE \n");
+  
   InternetCloseHandle (hInternet);
-
+  fprintf(stderr,"STEP 3 VALIDATE \n");
+                
   map* errI=NULL;
   char *dfv = addDefaultValues (request_inputs, s->inputs, *main_conf, 0,&errI);
 
@@ -1490,7 +1491,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                         ptr->name, tmp1->value, i);
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
-              printExceptionReportResponse (*main_conf, tmpe);
+              printExceptionReportResponse (*main_conf, tmpe,NULL);
               freeMap (&tmpe);
               free (tmpe);
 	      return -1;
@@ -1498,10 +1499,13 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
         }
       ptr = ptr->next;
     }
-
+fprintf(stderr,"STEP 4 VALIDATE \n");
+  dumpMaps(*request_outputs);
   map* errO=NULL;
   char *dfv1 =
     addDefaultValues (request_outputs, s->outputs, *main_conf, 1,&errO);
+    fprintf(stderr,"STEP 4 - 1 VALIDATE \n");
+  
   if (strcmp (dfv1, "") != 0 || strcmp (dfv, "") != 0)
     {
       char tmps[1024];
@@ -1525,6 +1529,8 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
 	    setMapArray (tmpe, "code", nb , "MissingParameterValue");
 	  }
 	}
+    fprintf(stderr,"STEP 4 - 2 VALIDATE \n");
+  
       if (strcmp (dfv1, "") != 0)
         {
 	  int ilength=0;
@@ -1552,7 +1558,9 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
 	    setMapArray (tmpe, "code", nb+ilength , "InvalidParameterValue");
 	  }
 	}
-      printExceptionReportResponse (*main_conf, tmpe);
+    fprintf(stderr,"STEP 4 - 3 VALIDATE \n");
+  
+      printExceptionReportResponse (*main_conf, tmpe,NULL);
       if(errI!=NULL){
 	freeMap(&errI);
 	free(errI);
@@ -1566,12 +1574,14 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
       return -1;
     }
   maps *tmpReqI = *request_inputs;
+  fprintf(stderr,"STEP 5 VALIDATE \n");
+  
   while (tmpReqI != NULL)
     {
       char name[1024];
       if (getMap (tmpReqI->content, "isFile") != NULL)
         {
-          if (cgiFormFileName (tmpReqI->name, name, sizeof (name)) ==
+          if (cgiFormFileName (tmpReqI->name, name, sizeof (name),&cgi) ==
               cgiFormSuccess)
             {
               int BufferLen = 1024;
@@ -1585,10 +1595,10 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
               int size;
               int got, t;
               map *path = getMapFromMaps (*main_conf, "main", "tmpPath");
-              cgiFormFileSize (tmpReqI->name, &size);
+              cgiFormFileSize (tmpReqI->name, &size,&cgi);
               cgiFormFileContentType (tmpReqI->name, contentType,
-                                      sizeof (contentType));
-              if (cgiFormFileOpen (tmpReqI->name, &file) == cgiFormSuccess)
+                                      sizeof (contentType),&cgi);
+              if (cgiFormFileOpen (tmpReqI->name, &file,&cgi) == cgiFormSuccess)
                 {
                   t = -1;
                   while (1)
@@ -1642,7 +1652,8 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
         }
       tmpReqI = tmpReqI->next;
     }
-
+fprintf(stderr,"STEP FINAL VALIDATE \n");
+  
   ensureDecodedBase64 (request_inputs);
   return 1;
 }

@@ -1,7 +1,7 @@
-/*
- * Author : Gérald Fenoy
+/**
+ * Author : David Saggiorato
  *
- *  Copyright 2008-2015 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,42 +22,19 @@
  * THE SOFTWARE.
  */
 
-#include "ulinet.h"
+
+#ifndef ZOO_JSON_H
+#define ZOO_JSON_H 1
+
+
 #include "service.h"
-#include <openssl/sha.h>
-#include <openssl/md5.h>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/buffer.h>
-#include <fcgiapp.h>
-extern   int conf_read(const char*,maps*);
+#include "service_internal.h"
+#include <json/json.h>
+void maptojson(json_object ** obj,map * m);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
+void mapstojson(json_object ** obj,maps * m);
 
-  char *get_uuid();  
-  char *base64(const char*,int);
-  char *base64d(const char*,int,int*);
-  void readBase64(map **);
-  char *url_decode(char *);
-  int getVersionId(const char*);
-  void readGeneratedFile(maps*,map*,char*);
-  int getServiceFromYAML(maps*,char*,service**,char *name);
-  char* addDefaultValues(maps**,elements*,maps*,int,map**);
-  char* getEncoding(maps*);
-  void parseIdentifier(maps*,char*,char*,char*);
-  void dumpMapsValuesToFiles(maps**,maps**);
-  void runDismiss(maps*,char*,FCGX_Stream*);
-  void runGetStatus(maps*,char*,char*,FCGX_Stream*);
+map* jsontomap(json_object * jobj);
+maps*  jsontomaps(json_object * jobj);
 
-  int isValidLang(maps*,const char*);
-  
-  char* getLastErrorMessage();
-  
-#ifdef __cplusplus
-}
 #endif
