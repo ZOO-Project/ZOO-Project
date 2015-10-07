@@ -31,7 +31,7 @@ extern "C" int crlex ();
 #define length(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
-#include "cgic.h"
+//#include "cgic.h"
 
 extern "C"
 {
@@ -44,7 +44,7 @@ extern "C"
 #include "zoo_zcfg.h"
 #include "ulinet.h"
 
-#include <libintl.h>
+//#include <libintl.h>
 #include <locale.h>
 #include <string.h>
 
@@ -55,6 +55,8 @@ extern "C"
 #include "response_print.h"
 #include "request_parser.h"
 #include "sqlapi.h"
+#include "zoo_amqp.h"
+#include "zoo_json.h"
 
 #ifdef USE_PYTHON
 #include "service_internal_python.h"
@@ -236,7 +238,7 @@ sig_handler (int sig)
            _
            ("ZOO Kernel failed to process your request, receiving signal %d = %s"),
            sig, ssig);
-  errorException (NULL, tmp, "InternalError", NULL);
+  errorException (NULL, tmp, "InternalError", NULL,NULL);
 #ifdef DEBUG
   fprintf (stderr, "Not this time!\n");
 #endif
@@ -255,7 +257,7 @@ sig_handler (int sig)
  */
 void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
-                   maps ** inputs, maps ** ioutputs, int *eres)
+                   maps ** inputs, maps ** ioutputs, int *eres,FCGX_Stream *out, FCGX_Stream *err)
 {
   char tmps1[1024];
   char ntmp[1024];
@@ -385,7 +387,6 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
               typedef int (*execute_t) (maps **, maps **, maps **);
 
-              fprintf(stderr,"%s \n",s1->name);
 #ifdef WIN32
               execute_t execute =
                 (execute_t) GetProcAddress (so, s1->name);
@@ -406,7 +407,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                            _
                            ("Error occured while running the %s function: %s"),
                            s1->name, errstr);
-                  errorException (m, tmpMsg, "InternalError", NULL);
+                  errorException (m, tmpMsg, "InternalError", NULL,out);
                   free (tmpMsg);
 #ifdef DEBUG
                   fprintf (stderr, "Function %s error %s\n", s1->name,
@@ -456,7 +457,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 	      errstr = dlerror ();
 #endif
           sprintf (tmps, _("Unable to load C Library %s"), errstr);
-	  errorException(m,tmps,"InternalError",NULL);
+	  errorException(m,tmps,"InternalError",NULL,out);
           *eres = -1;
         }
     }
@@ -552,9 +553,10 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                _
                ("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),
                r_inputs->value);
-      errorException (m, tmpv, "InternalError", NULL);
+      errorException (m, tmpv, "InternalError", NULL,out);
       *eres = -1;
     }
+   fflush(stderr);
   *myMap = m;
   *ioutputs = request_output_real_format;
 }
@@ -727,9 +729,10 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
  * @see conf_read,recursReaddirF
  */
 int
-runRequest (map ** inputs)
+runRequest (map ** inputs,struct cgi_env ** c,FCGX_Request *request)
 {
-
+struct cgi_env *cgi = *c;
+char *cgiSid = cgi->cgiSid; 
 #ifndef USE_GDB
 #ifndef WIN32
   signal (SIGCHLD, SIG_IGN);
@@ -756,7 +759,7 @@ runRequest (map ** inputs)
   if (m == NULL)
     {
       return errorException (m, _("Unable to allocate memory."),
-                             "InternalError", NULL);
+                             "InternalError", NULL,request->out);
     }
   char ntmp[1024];
 #ifndef WIN32
@@ -771,7 +774,7 @@ runRequest (map ** inputs)
   if (conf_read (conf_file, m) == 2)
     {
       errorException (NULL, _("Unable to load the main.cfg file."),
-                      "InternalError", NULL);
+                      "InternalError", NULL,request->out);
       free (m);
       return 1;
     }
@@ -818,7 +821,7 @@ runRequest (map ** inputs)
                    _
                    ("The value %s is not supported for the <language> parameter"),
                    r_inputs->value);
-          errorException (m, tmp, "InvalidParameterValue", "language");
+          errorException (m, tmp, "InvalidParameterValue", "language",request->out);
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -869,24 +872,24 @@ runRequest (map ** inputs)
   else
     setMapInMaps (m, "main", "isSoap", "false");
 
-  if(strlen(cgiServerName)>0)
+  if(strlen(cgi->cgiServerName)>0)
     {
       char tmpUrl[1024];
 	
       if ( getenv("HTTPS") != NULL && strncmp(getenv("HTTPS"), "on", 2) == 0 ) { // Knut: check if non-empty instead of "on"?		
-	if ( strncmp(cgiServerPort, "443", 3) == 0 ) { 
-	  sprintf(tmpUrl, "https://%s%s", cgiServerName, cgiScriptName);
+	if ( strncmp(cgi->cgiServerPort, "443", 3) == 0 ) { 
+	  sprintf(tmpUrl, "https://%s%s", cgi->cgiServerName, cgi->cgiScriptName);
 	}
 	else {
-	  sprintf(tmpUrl, "https://%s:%s%s", cgiServerName, cgiServerPort, cgiScriptName);
+	  sprintf(tmpUrl, "https://%s:%s%s", cgi->cgiServerName, cgi->cgiServerPort, cgi->cgiScriptName);
 	}
       }
       else {
-	if ( strncmp(cgiServerPort, "80", 2) == 0 ) { 
-	  sprintf(tmpUrl, "http://%s%s", cgiServerName, cgiScriptName);
+	if ( strncmp(cgi->cgiServerPort, "80", 2) == 0 ) { 
+	  sprintf(tmpUrl, "http://%s%s", cgi->cgiServerName, cgi->cgiScriptName);
 	}
 	else {
-	  sprintf(tmpUrl, "http://%s:%s%s", cgiServerName, cgiServerPort, cgiScriptName);
+	  sprintf(tmpUrl, "http://%s:%s%s", cgi->cgiServerName, cgi->cgiServerPort, cgi->cgiScriptName);
 	}
       }
 #ifdef DEBUG
@@ -912,7 +915,7 @@ runRequest (map ** inputs)
   };
   if(err!=NULL){
     checkValidValue(request_inputs,&err,"service",(const char**)vvs,1);
-    printExceptionReportResponse (m, err);
+    printExceptionReportResponse (m, err,request->out);
     freeMap(&err);
     free(err);
     if (count (request_inputs) == 1)
@@ -968,7 +971,7 @@ runRequest (map ** inputs)
     }
   }
   if(err!=NULL){
-    printExceptionReportResponse (m, err);
+    printExceptionReportResponse (m, err,request->out);
     freeMap(&err);
     free(err);
     if (count (request_inputs) == 1)
@@ -1023,43 +1026,16 @@ runRequest (map ** inputs)
       xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
       xmlNodePtr n=printGetCapabilitiesHeader(doc,m,(version!=NULL?version->value:"1.0.0"));
       CapabilitiesAllProcess(m,n);
+      
       /**
        * Here we need to close stdout to ensure that unsupported chars 
        * has been found in the zcfg and then printed on stdout
        */
-      /*
-      int saved_stdout = dup (fileno (stdout));
-      dup2 (fileno (stderr), fileno (stdout));
-      if (int res =		  
-          recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
-                          printGetCapabilitiesForProcess) < 0)
-        {
-          freeMaps (&m);
-          free (m);
-	  if(zooRegistry!=NULL){
-	    freeRegistry(&zooRegistry);
-	    free(zooRegistry);
-	  }
-          free (REQUEST);
-          free (SERVICE_URL);
-          fflush (stdout);
-          return res;
-        }
-      fflush (stdout);
-      dup2 (saved_stdout, fileno (stdout));
-      */
-      printDocument (m, doc, getpid ());
+      printDocument (m, doc, getpid (),request->out);
       freeMaps (&m);
       free (m);
-      /*
-      if(zooRegistry!=NULL){
-	freeRegistry(&zooRegistry);
-	free(zooRegistry);
-      }
-*/
       free (REQUEST);
       free (SERVICE_URL);
-      fflush (stdout);
       return 0;
     }
   else
@@ -1068,7 +1044,7 @@ runRequest (map ** inputs)
       if(reqId>nbReqIdentifier){
 	if (strncasecmp (REQUEST, "GetStatus", strlen(REQUEST)) == 0 ||
 	    strncasecmp (REQUEST, "GetResult", strlen(REQUEST)) == 0){
-	  runGetStatus(m,r_inputs->value,REQUEST);
+	  runGetStatus(m,r_inputs->value,REQUEST,request->out);
 	  freeMaps (&m);
 	  free (m);
 	  free (REQUEST);
@@ -1077,7 +1053,7 @@ runRequest (map ** inputs)
 	}
 	else
 	  if (strncasecmp (REQUEST, "Dismiss", strlen(REQUEST)) == 0){
-	    runDismiss(m,r_inputs->value);
+	    runDismiss(m,r_inputs->value,request->out);
 	    freeMaps (&m);
 	    free (m);
 	    free (REQUEST);
@@ -1090,18 +1066,6 @@ runRequest (map ** inputs)
       if(reqId<=nbReqIdentifier){
 	r_inputs = getMap (request_inputs, "Identifier");
 
-	struct dirent *dp;
-	DIR *dirp = opendir (conf_dir);
-	if (dirp == NULL)
-	  {
-	    errorException (m, _("The specified path path does not exist."),
-			    "InvalidParameterValue", conf_dir);
-	    freeMaps (&m);
-	    free (m);
-	    free (REQUEST);
-	    free (SERVICE_URL);
-	    return 0;
-	  }
 	if (strncasecmp (REQUEST, "DescribeProcess", 15) == 0)
 	  {
 	    /**
@@ -1118,21 +1082,18 @@ runRequest (map ** inputs)
 	    char *orig = zStrdup (r_inputs->value);
 
         DescribeProcess(m,n,orig);
-	    fflush (stdout);
         int saved_stdout;
-	    dup2 (saved_stdout, fileno (stdout));
 	    free (orig);
-	    printDocument (m, doc, getpid ());
+	    printDocument (m, doc, getpid (),request->out);
 	    freeMaps (&m);
 	    free (m);
 	    free (REQUEST);
 	    free (SERVICE_URL);
-	    fflush (stdout);
 	    return 0;
 	  }
 	else if (strncasecmp (REQUEST, "Execute", strlen (REQUEST)) != 0)
 	  {
-	    map* version=getMapFromMaps(m,"main","rversion");
+        map* version=getMapFromMaps(m,"main","rversion");
 	    int vid=getVersionId(version->value);
 	    int len,j=0;
 	    for(j=0;j<nbSupportedRequests;j++){
@@ -1168,39 +1129,35 @@ runRequest (map ** inputs)
 	    }
 	    char* message=(char*)malloc((61+len)*sizeof(char));
 	    sprintf(message,"The <request> value was not recognized. Allowed values are %s.",tmpStr);
-	    errorException (m,_(message),"InvalidParameterValue", "request");
+	    errorException (m,_(message),"InvalidParameterValue", "request",request->out);
 #ifdef DEBUG
 	    fprintf (stderr, "No request found %s", REQUEST);
 #endif
-	    closedir (dirp);
 	    freeMaps (&m);
 	    free (m);
 	    free (REQUEST);
 	    free (SERVICE_URL);
-	    fflush (stdout);
 	    return 0;
 	  }
-	closedir (dirp);
       }
     }
 
   map *postRequest = NULL;
   postRequest = getMap (request_inputs, "xrequest");
-
+/*
   if(vid==1 && postRequest==NULL){
-    errorException (m,_("Unable to run Execute request using the GET HTTP method"),"InvalidParameterValue", "request");  
+    errorException (m,_("Unable to run Execute request using the GET HTTP method"),"InvalidParameterValue", "request",request->out);  
     freeMaps (&m);
     free (m);
     free (REQUEST);
     free (SERVICE_URL);
-    fflush (stdout);
     return 0;
   }
-  
+  */
   s1 = NULL;
   r_inputs = getMap (request_inputs, "Identifier");
   s1 = search_service (r_inputs->value);
- int saved_stdout = dup (fileno (stdout));
+ int saved_stdout;// = dup (fileno (stdout));
   
   
   if (s1 == NULL)
@@ -1210,7 +1167,7 @@ runRequest (map ** inputs)
                _
                ("The value for <identifier> seems to be wrong (%s). Please specify one of the processes in the list returned by a GetCapabilities request."),
                r_inputs->value);
-      errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
+      errorException (m, tmpMsg, "InvalidParameterValue", "identifier",request->out);
       free (tmpMsg);
       freeMaps (&m);
       free (m);
@@ -1218,7 +1175,9 @@ runRequest (map ** inputs)
       free (SERVICE_URL);
       return 0;
     }
-  close (saved_stdout);
+  setMapInMaps (m, "lenv", "Identifier", r_inputs->value);
+  setMapInMaps (m, "lenv", "oIdentifier", r_inputs->value);
+
 
 #ifdef DEBUG
   dumpService (s1);
@@ -1247,7 +1206,7 @@ runRequest (map ** inputs)
   maps *tmpmaps = request_input_real_format;
 
 
-  if(parseRequest(&m,&request_inputs,s1,&request_input_real_format,&request_output_real_format,&hInternet)<0){
+  if(parseRequest(&m,&request_inputs,s1,&request_input_real_format,&request_output_real_format,&hInternet,cgi)<0){
     freeMaps (&m);
     free (m);
     free (REQUEST);
@@ -1333,9 +1292,7 @@ runRequest (map ** inputs)
 	errorException (m,
 			_
 			("The status parameter cannot be set to true if storeExecuteResponse is set to false. Please modify your request parameters."),
-			"InvalidParameterValue", "storeExecuteResponse");
-	//freeService (&s1);
-	free (s1);
+			"InvalidParameterValue", "storeExecuteResponse",request->out);
 	freeMaps (&m);
 	free (m);
 	
@@ -1360,8 +1317,7 @@ runRequest (map ** inputs)
       else{
 	if(mode!=NULL){
 	  // see ref. http://docs.opengeospatial.org/is/14-065/14-065.html#61
-	  errorException (m,_("The process does not permit the desired execution mode."),"NoSuchMode", mode->value);  
-	  fflush (stdout);
+	  errorException (m,_("The process does not permit the desired execution mode."),"NoSuchMode", mode->value,request->out);  
 	  freeMaps (&m);
 	  free (m);
 	  freeMaps (&request_input_real_format);
@@ -1439,10 +1395,10 @@ runRequest (map ** inputs)
     addToMap (_tmpMaps->content, "soap", "false");
 
   // Parse the session file and add it to the main maps 
-  if (cgiCookie != NULL && strlen (cgiCookie) > 0)
+  if (cgi->cgiCookie != NULL && strlen (cgi->cgiCookie) > 0)
     {
       int hasValidCookie = -1;
-      char *tcook = zStrdup (cgiCookie);
+      char *tcook = zStrdup (cgi->cgiCookie);
       char *tmp = NULL;
       map *testing = getMapFromMaps (m, "main", "cookiePrefix");
       if (testing == NULL)
@@ -1455,10 +1411,10 @@ runRequest (map ** inputs)
             (char *) malloc ((strlen (testing->value) + 2) * sizeof (char));
           sprintf (tmp, "%s=", testing->value);
         }
-      if (strstr (cgiCookie, ";") != NULL)
+      if (strstr (cgi->cgiCookie, ";") != NULL)
         {
           char *token, *saveptr;
-          token = strtok_r (cgiCookie, ";", &saveptr);
+          token = strtok_r (cgi->cgiCookie, ";", &saveptr);
           while (token != NULL)
             {
               if (strcasestr (token, tmp) != NULL)
@@ -1473,10 +1429,10 @@ runRequest (map ** inputs)
         }
       else
         {
-          if (strstr (cgiCookie, "=") != NULL
-              && strcasestr (cgiCookie, tmp) != NULL)
+          if (strstr (cgi->cgiCookie, "=") != NULL
+              && strcasestr (cgi->cgiCookie, tmp) != NULL)
             {
-              tcook = zStrdup (cgiCookie);
+              tcook = zStrdup (cgi->cgiCookie);
               hasValidCookie = 1;
             }
           if (tmp != NULL)
@@ -1497,7 +1453,7 @@ runRequest (map ** inputs)
                      strstr (tmp1, "=") + 1);
           else
             sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     strstr (cgiCookie, "=") + 1);
+                     strstr (cgi->cgiCookie, "=") + 1);
           free (tcook);
           maps *tmpSess = (maps *) malloc (MAPS_SIZE);
           struct stat file_status;
@@ -1538,6 +1494,7 @@ runRequest (map ** inputs)
       status = getMap (request_inputs, "status");
     }
 #endif
+
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
   if (status != NULL)
@@ -1545,8 +1502,7 @@ runRequest (map ** inputs)
       status = NULLMAP;
   if (status == NULLMAP)
     {
-      if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
-	free (s1);
+      if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet,cgi)<0){
 	freeMaps (&m);
 	free (m);
 	free (REQUEST);
@@ -1559,12 +1515,55 @@ runRequest (map ** inputs)
 	free (tmpmaps);
 	return -1;
       }
-
+       fflush(stderr);
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
-                         &request_output_real_format, &eres);
+                         &request_output_real_format, &eres,request->out,request->err);
     }
   else
     {
+        
+        eres = SERVICE_ACCEPTED;
+        vid = 1;
+        
+#ifdef AMQP
+
+
+    eres = SERVICE_ACCEPTED;
+    json_object *msg_jobj = json_object_new_object();
+    json_object *maps_obj;
+    mapstojson(&maps_obj,m);
+    json_object_object_add(msg_jobj,"maps",maps_obj);
+
+
+    json_object *req_format_jobj;
+    mapstojson(&req_format_jobj,request_input_real_format);
+    json_object_object_add(msg_jobj,"request_input_real_format",req_format_jobj);
+
+    json_object *req_jobj;
+    maptojson(&req_jobj,request_inputs);
+    json_object_object_add(msg_jobj,"request_inputs",req_jobj);
+
+ 
+    dumpMaps(request_output_real_format);
+    json_object *outputs_jobj;
+    mapstojson(&outputs_jobj,request_output_real_format);
+    json_object_object_add(msg_jobj,"request_output_real_format",outputs_jobj);
+  
+    bind_amqp();
+
+    if ( (send_msg(json_object_to_json_string(msg_jobj),"application/json") != 0) ){     
+        eres = SERVICE_FAILED;
+    }
+    close_amqp();
+    json_object_put(msg_jobj);
+    
+    init_sql(m);
+    recordServiceStatus(m);
+
+
+
+        
+#else
       int pid;
 #ifdef DEBUG
       fprintf (stderr, "\nPID : %d\n", cpid);
@@ -1686,8 +1685,8 @@ runRequest (map ** inputs)
 	     */
 	    printProcessResponse (m, request_inputs, cpid, s1, r_inputs1->value,
 				  SERVICE_STARTED, request_input_real_format,
-				  request_output_real_format);
-	    fflush (stdout);
+				  request_output_real_format,request->out);
+
 #ifdef RELY_ON_DB
 	    recordResponse(m,fbkp);
 #endif
@@ -1704,9 +1703,7 @@ runRequest (map ** inputs)
 
           f1 = freopen (fbkp1, "w+", stdout);
 
-	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
-	    //freeService (&s1);
-	    free (s1);
+	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet,cgi)<0){
 	    freeMaps (&m);
 	    free (m);
 	    free (REQUEST);
@@ -1717,14 +1714,14 @@ runRequest (map ** inputs)
 	    free (request_output_real_format);
 	    freeMaps (&tmpmaps);
 	    free (tmpmaps);
-	    fflush (stdout);
 	    fflush (stderr);
 	    unhandleStatus (m);
 	    return -1;
 	  }
+      
           loadServiceAndRun (&m, s1, request_inputs,
                              &request_input_real_format,
-                             &request_output_real_format, &eres);
+                             &request_output_real_format, &eres,request->out,request->err);
 
         }
       else
@@ -1735,9 +1732,15 @@ runRequest (map ** inputs)
 	   */
           eres = -1;
           errorException (m, _("Unable to run the child process properly"),
-                          "InternalError", NULL);
+                          "InternalError", NULL,request->out);
         }
+
+#endif
+
     }
+
+
+
 
 #ifdef DEBUG
   dumpMaps (request_output_real_format);
@@ -1745,9 +1748,10 @@ runRequest (map ** inputs)
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,
-                    cpid, m, eres);
-  fflush (stdout);
+                    cpid, m, eres,request->out);
+  //fflush (stdout);
   
+
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 
@@ -1818,9 +1822,6 @@ runRequest (map ** inputs)
       free (fbkp1);
       free (tmps1);
     }
-
-  //freeService (&s1);
-  free (s1);
   freeMaps (&m);
   free (m);
 

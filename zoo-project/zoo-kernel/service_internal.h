@@ -25,6 +25,9 @@
 #ifndef ZOO_SERVICE_INTERNAL_H
 #define ZOO_SERVICE_INTERNAL_H 1
 
+
+#include <fcgiapp.h>
+
 #pragma once 
 
 /**
@@ -36,7 +39,7 @@
  */
 #define TIME_SIZE 40
 
-#include <libintl.h>
+//#include <libintl.h>
 #include <locale.h>
 /**
  * ZOO-Kernel internal messages translation function
@@ -64,8 +67,9 @@
  */
 #define ZOO_LOCK_MAX_RETRY 10
 
-#include <sys/stat.h>
-#include <sys/types.h>
+//#include <sys/stat.h>
+//#include <sys/types.h>
+
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
