@@ -15,7 +15,7 @@ The following command should install all the required dependancies on Debian. Se
 
 .. code-block:: guess
 
-   apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion python-dev libgdal1-dev build-essential libmozjs185-dev
+   apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion python-dev libgdal1-dev build-essential libmozjs185-dev libxslt1-dev
 
 Using Ubuntu
 ......................
@@ -24,7 +24,7 @@ On Ubuntu, use the following command first to install the required dependancies 
 
 .. code-block:: guess
 
-   sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion libmozjs185-dev python-dev build-essential
+   sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion libmozjs185-dev python-dev build-essential libxslt1-dev
 
 Then add the *UbuntuGIS* repository in order to get the latest versions of libraries
 
