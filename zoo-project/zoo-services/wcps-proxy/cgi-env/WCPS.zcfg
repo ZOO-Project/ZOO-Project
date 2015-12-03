@@ -1,0 +1,54 @@
+[WCPS]
+ Title = Execute WCPS queries
+ Abstract = Execute a Web Coverage Processing Service request, through a WPS process.
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = WCPS
+ serviceType = Python
+ <MetaData>
+   title = WCPS
+ </MetaData>
+ <DataInputs>
+  [endPoint]
+   Title = WCPS End Point
+   Abstract = The WCPS End Point against which the WCPS query is executed.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default />
+   </LiteralData>
+  [query]
+   Title = WCPS Query
+   Abstract = The query to be executed at the provided end point.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Response]
+   Title = WCPS Response
+   Abstract = The response to the WCPS query.
+   <ComplexData>
+    <Default>
+    mimeType = text/csv
+    encoding = utf-8
+    </Default>
+    <Supported>
+    mimeType = image/png
+    encoding = base64
+    </Supported>
+    <Supported>
+    mimeType = image/tiff
+    encoding = base64
+    </Supported>
+    <Supported>
+    mimeType = image/jpeg
+    encoding = base64
+    </Supported>
+   </ComplexData>
+ </DataOutputs>

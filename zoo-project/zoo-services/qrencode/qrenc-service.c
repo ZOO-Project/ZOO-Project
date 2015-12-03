@@ -24,10 +24,12 @@
 #if HAVE_CONFIG_H
 # include "config.h"
 #endif
+#include "string.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <png.h>
 #include <getopt.h>
+#include "qrencode.h"
 
 #ifdef ZOO_SERVICE_PROVIDER
 #define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
@@ -40,7 +42,6 @@
 #include <unistd.h>
 #endif
 
-#include "qrencode.h"
 
 #define INCHES_PER_METER (100.0/2.54)
 
