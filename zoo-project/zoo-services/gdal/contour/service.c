@@ -35,6 +35,7 @@
 #include "ogr_srs_api.h"
 #ifdef ZOO_SERVICE
 #include "service.h"
+#include "service_internal.h"
 #endif
 CPL_CVSID("$Id: gdal_contour.cpp 25643 2013-02-12 13:50:42Z bishop $");
 
@@ -73,6 +74,24 @@ static void Usage(const char* pszErrorMsg = NULL)
     exit( 1 );
 }
 
+#ifdef ZOO_SERVICE
+  int pfnProgress1( double dfComplete, const char *pszMessage, void *pData)
+  {
+    maps* conf=(maps*)pData;
+    map* tmpMap=getMapFromMaps(conf,"lenv","status");
+    char tmpStr[4];
+    sprintf(tmpStr,"%d",(int) (dfComplete*100));
+    if(tmpMap!=NULL && strcmp(tmpMap->value,tmpStr)!=0){
+      if( pszMessage != NULL && strlen(pszMessage)>1){
+	updateStatus(conf,(int) (dfComplete*100), pszMessage);
+      }      
+      else
+	updateStatus(conf,(int) (dfComplete*100), "Processing...");
+    }
+    return TRUE;
+  }
+#endif
+
 /************************************************************************/
 /*                                main()                                */
 /************************************************************************/
@@ -105,9 +124,6 @@ __declspec(dllexport)
     int    nFixedLevelCount = 0;
     const char *pszNewLayerName = "contour";
     int bQuiet = FALSE;
-    GDALProgressFunc pfnProgress = NULL;
-    fprintf(stderr,"DEBUG HELLO %f %d\n",__FILE__,__LINE__);
-    fflush(stderr);
 #ifndef ZOO_SERVICE
     /* Check that we are running against at least GDAL 1.4 */
     /* Note to developers : if we use newer API, please change the requirement */
@@ -261,9 +277,9 @@ __declspec(dllexport)
         Usage("Missing destination filename.");
     }
     
-    if (!bQuiet)
-        pfnProgress = GDALTermProgress;
-
+    /*if (!bQuiet)
+      pfnProgress = GDALTermProgress;*/
+    //pfnProgress = GDALTermProgress;
 /* -------------------------------------------------------------------- */
 /*      Open source raster file.                                        */
 /* -------------------------------------------------------------------- */
@@ -371,7 +387,7 @@ __declspec(dllexport)
                          (pszElevAttrib == NULL) ? -1 :
                                  OGR_FD_GetFieldIndex( OGR_L_GetLayerDefn( hLayer ), 
                                                        pszElevAttrib ), 
-                         pfnProgress, NULL );
+                         pfnProgress1, conf );
 
     OGR_DS_Destroy( hDS );
     GDALClose( hSrcDS );

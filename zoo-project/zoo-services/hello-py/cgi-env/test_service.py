@@ -29,3 +29,10 @@ def HelloPy(conf,inputs,outputs):
 	outputs["Result"]["value"]="Hello "+inputs["a"]["value"]+" from Python World !"
 	return zoo.SERVICE_SUCCEEDED
 
+def geopaposm(conf,inputs,outputs):
+	outputs["result"]["value"]=inputs["inputvector"]["value"]
+	return zoo.SERVICE_SUCCEEDED
+    
+def publish(conf,inputs,outputs):
+    outputs["Result"]["value"]=inputs["in"]["value"]
+    return zoo.SERVICE_SUCCEEDED
