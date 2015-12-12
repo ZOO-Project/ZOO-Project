@@ -482,6 +482,28 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 }
 
 /**
+ * Create a "missingIdentifier" maps in case it is NULL.
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param mymaps the maps to update
+ * @return 0 on success, 4 on failure
+ */
+int defineMissingIdentifier(maps** main_conf,maps** mymaps){
+  if (*mymaps == NULL){
+    *mymaps = (maps *) malloc (MAPS_SIZE);
+    if (*mymaps == NULL){
+      return errorException (*main_conf,
+			     _("Unable to allocate memory"),
+			     "InternalError", NULL);
+    }
+    (*mymaps)->name = zStrdup ("missingIndetifier");
+    (*mymaps)->content = NULL;
+    (*mymaps)->next = NULL;
+  }
+  return 0;
+}
+
+/**
  * Parse inputs from XML nodes and store them in a maps.
  *
  * @param main_conf the conf maps containing the main.cfg settings
@@ -527,7 +549,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		{
 		  xmlChar *val =
 		    xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
-		  if (tmpmaps == NULL)
+		  if (tmpmaps == NULL && val!=NULL)
 		    {
 		      tmpmaps = (maps *) malloc (MAPS_SIZE);
 		      if (tmpmaps == NULL)
@@ -540,8 +562,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		      tmpmaps->name = zStrdup ((char *) val);
 		      tmpmaps->content = NULL;
 		      tmpmaps->next = NULL;
+		      xmlFree (val);
 		    }
-		  xmlFree (val);
 		}
 	      // Title, Asbtract
 	      if (xmlStrncasecmp
@@ -552,35 +574,21 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		{
 		  xmlChar *val =
 		    xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
-		  if (tmpmaps == NULL)
-		    {
-		      tmpmaps = (maps *) malloc (MAPS_SIZE);
-		      if (tmpmaps == NULL)
-			{
-			  return errorException (*main_conf,
-						 _
-						 ("Unable to allocate memory"),
-						 "InternalError", NULL);
-			}
-		      tmpmaps->name = zStrdup ("missingIndetifier");
+		  defineMissingIdentifier(main_conf,&tmpmaps);
+		  if(val!=NULL){
+		    if (tmpmaps->content != NULL)
+		      addToMap (tmpmaps->content,
+				(char *) cur2->name, (char *) val);
+		    else
 		      tmpmaps->content =
 			createMap ((char *) cur2->name, (char *) val);
-		      tmpmaps->next = NULL;
-		    }
-		  else
-		    {
-		      if (tmpmaps->content != NULL)
-			addToMap (tmpmaps->content,
-				  (char *) cur2->name, (char *) val);
-		      else
-			tmpmaps->content =
-			  createMap ((char *) cur2->name, (char *) val);
-		    }
-		  xmlFree (val);
+		    xmlFree (val);
+		  }
 		}
 	      // InputDataFormChoice (Reference or Data ?) 
 	      if (xmlStrcasecmp (cur2->name, BAD_CAST "Reference") == 0)
 		{
+		  defineMissingIdentifier(main_conf,&tmpmaps);
 		  // Get every attribute from a Reference node
 		  // mimeType, encoding, schema, href, method
 		  // Header and Body gesture should be added here
@@ -720,8 +728,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				      tmp = (char *) malloc ((bsize + 1) * sizeof (char));
 
 				      sprintf (tmp, "%s", (char*) btmps);
-					  
-				      xmlFreeDoc (bdoc);
+
+				      //xmlFreeDoc (bdoc);
 					  
 				      map *btmp =
 					getMap (tmpmaps->content, "Reference");
@@ -814,6 +822,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		}
 	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Data") == 0)
 		{
+		  defineMissingIdentifier(main_conf,&tmpmaps);
 		  xmlNodePtr cur4 = cur2->children;
 		  if(vid==1){
 		    // Get every dataEncodingAttributes from a Data node:
@@ -945,6 +954,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				     && cur5->type != XML_ELEMENT_NODE
 				     && cur5->type != XML_CDATA_SECTION_NODE)
 				cur5 = cur5->next;
+			      fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+			      fflush(stderr);
 			      if (cur5 != NULL
 				  && cur5->type != XML_CDATA_SECTION_NODE)
 				{
@@ -952,24 +963,22 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							     &buffersize,
 							     "utf-8", 0);
-				  addIntToMap (tmpmaps->content, "size",
-					       buffersize);
-				  xmlFreeDoc (doc1);
 				}
 			      else
 				{
 				  if (cur5 != NULL
 				      && cur5->type == XML_CDATA_SECTION_NODE){
-				    xmlDocPtr doc2 = xmlParseMemory((const char*)cur5->content,xmlStrlen(cur5->content));
-				    xmlDocSetRootElement (doc1,xmlDocGetRootElement(doc2));
-				    xmlDocDumpFormatMemoryEnc (doc1, &mv,
+				    xmlDocPtr doc2 = xmlReadMemory((const char*)cur5->content,xmlStrlen(cur5->content),
+								   "input_content.xml", NULL, XML_PARSE_RECOVER);
+				    xmlDocDumpFormatMemoryEnc (doc2, &mv,
 							       &buffersize,
 							       "utf-8", 0);
-				    addIntToMap(tmpmaps->content, "size",buffersize);
 				    xmlFreeDoc (doc2);
-				    xmlFreeDoc (doc1);
 				  }
 				}
+			      addIntToMap (tmpmaps->content, "size",
+					   buffersize);
+			      xmlFreeDoc (doc1);
 			    }else{
 			    xmlNodePtr cur5 = cur4->children;
 			    while (cur5 != NULL
@@ -1007,6 +1016,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	      }
 	    }
 	  {
+	    map* test=getMap(tmpmaps->content,"value");
+	    if(test==NULL)
+	      addToMap(tmpmaps->content,"value","");
 	    maps *testPresence =
 	      getMaps (*request_output, tmpmaps->name);
 	    if (testPresence != NULL)
@@ -1323,7 +1335,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
   int vid=getVersionId(version->value);
 
   xmlInitParser ();
-  xmlDocPtr doc = xmlParseMemory (post, cgiContentLength);
+  xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER);
 
   /**
    * Extract Input nodes from the XML Request.

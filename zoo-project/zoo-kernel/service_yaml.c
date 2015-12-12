@@ -45,7 +45,7 @@ extern "C" {
  * @return 1 on success, -1 if error occured
  */
 int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
-  FILE *fh = fopen("test.yml", "r");
+  FILE *fh;
   if(current_content!=NULL){
     freeMap(&current_content);
     free(current_content);
