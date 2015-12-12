@@ -960,7 +960,7 @@ runRequest (map ** inputs)
 #ifndef WIN32
       setenv ("LC_ALL", tmp, 1);
 #else
-	  char tmp1[13];
+      char tmp1[13];
       sprintf (tmp1, "LC_ALL=%s", tmp);
       putenv (tmp1);
 #endif
@@ -972,13 +972,20 @@ runRequest (map ** inputs)
 #ifndef WIN32
       setenv ("LC_ALL", "en_US", 1);
 #else
-	  char tmp1[13];
+      char tmp1[13];
       sprintf (tmp1, "LC_ALL=en_US");
       putenv (tmp1);
 #endif
       setMapInMaps (m, "main", "language", "en-US");
     }
-  setlocale (LC_NUMERIC, "en_US");
+  setlocale (LC_NUMERIC, "C");
+#ifndef WIN32
+  setenv ("LC_NUMERIC", "C", 1);
+#else
+  char tmp1[17];
+  sprintf (tmp1, "LC_NUMERIC=C");
+  putenv (tmp1);
+#endif
   bind_textdomain_codeset ("zoo-kernel", "UTF-8");
   textdomain ("zoo-kernel");
   bind_textdomain_codeset ("zoo-services", "UTF-8");
