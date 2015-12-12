@@ -1,0 +1,329 @@
+# ZOO-Kernel Internationalization.
+# Copyright (C) 2015 GeoLabs SARL
+# This file is distributed under the same license as the PACKAGE package.
+# 
+# Translators:
+# Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015
+# Nicolas Bozon <nicolas.bozon@gmail.com>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
+"POT-Creation-Date: 2015-07-02 18:06+0200\n"
+"PO-Revision-Date: 2015-07-03 10:01+0000\n"
+"Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>\n"
+"Language-Team: French (France) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/fr_FR/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr_FR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: caching.c:217 caching.c:235 caching.c:356 request_parser.c:214
+#: request_parser.c:225 request_parser.c:262 request_parser.c:403
+#: request_parser.c:414 request_parser.c:441 request_parser.c:537
+#: request_parser.c:562 request_parser.c:665 request_parser.c:782
+#: request_parser.c:1112 request_parser.c:1204 zcfg2yaml.c:38
+#: zoo_service_loader.c:259 zoo_service_loader.c:880 zoo_service_loader.c:1363
+#: zoo_service_loader.c:1559
+msgid "Unable to allocate memory"
+msgstr "Impossible d'allouer la mémoire"
+
+#: caching.c:344
+msgid "Unable to download the file."
+msgstr "Impossible de télécharger le fichier."
+
+#: request_parser.c:92
+#, c-format
+msgid "The maximum allowed occurrences for <%s> (%i) was exceeded."
+msgstr "Le maximum d'occurrences autorisées pour <%s> (%i) a été atteint"
+
+#: request_parser.c:113
+#, c-format
+msgid "ZOO-Kernel was unable to load your data for %s position %s."
+msgstr "ZOO-Kernel n'a pas pu charger vos données pour %s position %s."
+
+#: request_parser.c:124
+#, c-format
+msgid "The maximum allowed occurrences for <%s> is one."
+msgstr "Le nombre maximum d'occurence pour <%s> est un."
+
+#: request_parser.c:315
+#, c-format
+msgid "Unable to find a valid protocol to download the remote file %s"
+msgstr "Impossible de trouver un protocole valable pour télécharger le fichier %s"
+
+#: request_parser.c:613
+msgid "Unable to add a request in the queue."
+msgstr "Impossible d'ajouter la requête dans la file d'attente."
+
+#: request_parser.c:1021
+msgid "Unable to append maps to maps."
+msgstr "Impossible d'ajouter la maps à la maps."
+
+#: request_parser.c:1291
+msgid "Duplicate <Output> elements in WPS Execute request"
+msgstr "Eléments <Output> dupliqués dans la requête WPS Execute"
+
+#: request_parser.c:1487
+#, c-format
+msgid ""
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
+msgstr "Le paramètre <%s> possède une limite de taille (%s MB) définie dans le fichier de configuration du ServicesProvider ZOO, mais la référence fournie excède cette limite (%f MB)."
+
+#: request_parser.c:1519
+#, c-format
+msgid ""
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
+msgstr "L'argument <%s> n'a pas été spécifié en entrée, ce qui est requis selon le fichier de configuration du ServicesProvider ZOO."
+
+#: request_parser.c:1545
+#, c-format
+msgid ""
+"The <%s> argument specified as %s identifier was not recognized (not defined"
+" in the ZOO Configuration File)."
+msgstr "L'argument <%s> spécifié pour l'identifiant %s n'a pas été reconnu (non défini dans le fichier de configuration du ZOO)."
+
+#: request_parser.c:1663
+#, c-format
+msgid "Mandatory parameter <%s> was not specified"
+msgstr "Le paramètre obligatoire <%s> n'as pas été spécifié"
+
+#: request_parser.c:1712
+#, c-format
+msgid "The value <%s> was not recognized, %s %s the only acceptable value."
+msgstr "La valeur <%s> n'a pas été reconnue, %s %s est la seule valeur acceptée. "
+
+#: request_parser.c:1715
+msgid "is"
+msgstr "est"
+
+#: request_parser.c:1727
+msgid "are"
+msgstr "sont"
+
+#: response_print.c:1630
+#, c-format
+msgid "The service \"%s\" ran successfully."
+msgstr "Le service \"%s\" s'est exécuté avec succès."
+
+#: response_print.c:1638
+#, c-format
+msgid ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
+msgstr "Le ZOO-Service \"%s\" est actuellement en cours d'exécution. Merci de recharger ce document afin d'obtenir le status mis à jour du service."
+
+#: response_print.c:1644
+#, c-format
+msgid ""
+"The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
+msgstr "Le service \"%s\" a été accepté par le ZOO-Kernel et est en cours d'exécution en tâche de fond. Merci d'utiliser le lien URL fournis dans l'attribut statusLocation de la racine de ce document pour obtenir des informations sur l'état d'éxcution du service."
+
+#: response_print.c:1661
+msgid "No more information available"
+msgstr "Pas plus d'infomation disponible"
+
+#: response_print.c:1668
+#, c-format
+msgid "error code not know : %i\n"
+msgstr "Code d'erreur inconnu : %i\n"
+
+#: response_print.c:1760
+msgid "Lock failed."
+msgstr "Impossible de vérouiller."
+
+#: response_print.c:1773
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
+msgstr "Impossible de créer le fichier \"%s\" pour stocker le fichier ExecuteResponse."
+
+#: response_print.c:2290
+msgid "No debug message available"
+msgstr "Pas de message de débugage disponible"
+
+#: response_print.c:2378
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "Impossible de créer le fichier \"%s\" pour stocker la maps de session."
+
+#: response_print.c:2394
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
+msgstr "Impossible d'exécuter le service. Le message retourné par le service est : "
+
+#: response_print.c:2395
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
+msgstr "Impossible d'exécuter le service. Le message retourné par le service est : %s"
+
+#: response_print.c:2398 response_print.c:2399
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr "Impossible d'exécuter le service. Aucune information n'a été retournée par le service."
+
+#: response_print.c:2486
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the %s final result."
+msgstr "Impossible de créer le fichier \"%s\" pour stocker le résultat final : %s."
+
+#: response_print.c:2572
+#, c-format
+msgid ""
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+msgstr "Paramètre RawDataOutput erroné: Impossible de récupérer un résultat pour le nom de paramètre fourni: \"%s\"."
+
+#: server_internal.c:869 server_internal.c:946
+msgid ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+msgstr "Le paramètre JobID de la requête ne correspond à aucun process en cours sur le serveur"
+
+#: server_internal.c:875 server_internal.c:907
+msgid "The result for the requested JobID has not yet been generated. "
+msgstr "Le résultat pour le JobID demandé n'as pas encore été généré."
+
+#: server_internal.c:988
+msgid "The job cannot be removed, a file cannot be removed"
+msgstr "Le processus ne peut pas être supprimé, un fichier ne peut être supprimé."
+
+#: server_internal.c:1063
+msgid "Unable to open the registry directory."
+msgstr "Impossible d'accéder au répertoire du registre."
+
+#: server_internal.c:1082
+msgid "Unable to allocate memory."
+msgstr "Impossible d'allouer la mémoire."
+
+#: server_internal.c:1093 zoo_service_loader.c:276 zoo_service_loader.c:1384
+#: zoo_service_loader.c:1427
+#, c-format
+msgid "Unable to parse the ZCFG file: %s (%s)"
+msgstr "Impossible d'analyser le fichier ZCFG: %s (%s)"
+
+#: server_internal.c:1096 zoo_service_loader.c:279 zoo_service_loader.c:1389
+#: zoo_service_loader.c:1431
+#, c-format
+msgid "Unable to parse the ZCFG file: %s."
+msgstr "Impossible d'analyser le fichier ZCFG: %s."
+
+#: service_internal_ms.c:136
+msgid "Unable to find any mapserverAddress defined in the main.cfg file"
+msgstr "Aucun paramètre mapserverAddress trouvé dans le fichier main.cfg"
+
+#: service_internal_php.c:227
+#, c-format
+msgid "Unable to load the PHP file %s"
+msgstr "Impossible de charger le fichier PHP %s"
+
+#: service_internal_python.c:316
+#, c-format
+msgid "Python module %s cannot be loaded. Message: %s\n"
+msgstr "Le module python %s ne peut être chargé. Message: %s\n"
+
+#: service_internal_python.c:355
+#, c-format
+msgid ""
+"%s\n"
+"Unable to run your python process properly. Please check the following messages : %s"
+msgstr "%s\nImpossible de charger votre service python correctement. Veuillez vous réferer aux messages suivants : %s"
+
+#: service_internal_python.c:361
+#, c-format
+msgid ""
+"%s \n"
+" Unable to run your python process properly. Unable to provide any futher informations."
+msgstr "%s\nImpossible de charger votre service python correctement. Aucune information supplémentaire."
+
+#: zoo_service_loader.c:352
+#, c-format
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s"
+msgstr "ZOO-Kernel n'as pas pu traité votre requête, recevant un signal %d = %s"
+
+#: zoo_service_loader.c:527
+#, c-format
+msgid "Error occured while running the %s function: %s"
+msgstr "Une erreur est survenue pendant l'execution de la %s fonction: %s"
+
+#: zoo_service_loader.c:578
+#, c-format
+msgid "Unable to load C Library %s"
+msgstr "Impossible de charger la librairie C %s"
+
+#: zoo_service_loader.c:672
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
+" Kernel.\n"
+msgstr "Le langage de programmation (%s) spécifié dans le fichier ZCFG n'est actuellement pas supporté par ZOO-Kernel.\n"
+
+#: zoo_service_loader.c:737
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "Impossible de mettre la requête Execute HTTP POST en cache."
+
+#: zoo_service_loader.c:895
+msgid "Unable to load the main.cfg file."
+msgstr "Impossible de charger le fichier main.cfg."
+
+#: zoo_service_loader.c:940
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "La valeur %s n'est pas supportée pour le paramètre <language>"
+
+#: zoo_service_loader.c:1238
+msgid "The specified path does not exist."
+msgstr "Le chemin spécifié n'existe pas."
+
+#: zoo_service_loader.c:1303
+#, c-format
+msgid ""
+"Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"
+msgstr "Impossible de lire correctement le fichier ZCFG pour le ZOO-Service : %s. Message : %s"
+
+#: zoo_service_loader.c:1308
+#, c-format
+msgid "Unable to parse the ZCFG file for the following ZOO-Service: %s."
+msgstr "Impossible de lire correctement le fichier ZCFG pour le ZOO-Service : %s."
+
+#: zoo_service_loader.c:1534
+msgid "Unable to run Execute request using the GET HTTP method"
+msgstr "Impossible de lancer la requête Execute en utilisant la méthode GET"
+
+#: zoo_service_loader.c:1606
+#, c-format
+msgid ""
+"The value for <identifier> seems to be wrong (%s). Please specify one of the"
+" processes in the list returned by a GetCapabilities request."
+msgstr "La valeur d' <identifier> à l'air erronée (%s). Spécifiez s'il vous plait un des services retournés par la requête GetCapabilities."
+
+#: zoo_service_loader.c:1733
+msgid ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to"
+" false. Please modify your request parameters."
+msgstr "Le paramètre de status ne peut être définit à vrai si storeExecuteResponse est défini à faux. Veuillez s'il vous plaît modifier les paramètres de la requête."
+
+#: zoo_service_loader.c:1761
+msgid "The process does not permit the desired execution mode."
+msgstr "Le service ne supporte pas ce mode d'exécution."
+
+#: zoo_service_loader.c:1837
+msgid "No message provided"
+msgstr "Pas de message fourni"
+
+#: zoo_service_loader.c:1995
+msgid "Initializing"
+msgstr "Initialisation"
+
+#: zoo_service_loader.c:2142
+msgid "Unable to run the child process properly"
+msgstr "Impossible de lancer le processus fils"

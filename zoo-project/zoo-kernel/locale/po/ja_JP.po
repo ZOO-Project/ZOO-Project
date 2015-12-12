@@ -1,0 +1,329 @@
+# ZOO-Kernel Internationalization.
+# Copyright (C) 2015 GeoLabs SARL
+# This file is distributed under the same license as the PACKAGE package.
+# 
+# Translators:
+# Nicolas Bozon <nicolas.bozon@gmail.com>, 2015
+# pica.hayashi <pica.hayashi@gmail.com>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
+"POT-Creation-Date: 2015-07-02 18:06+0200\n"
+"PO-Revision-Date: 2015-08-30 11:30+0000\n"
+"Last-Translator: pica.hayashi <pica.hayashi@gmail.com>\n"
+"Language-Team: Japanese (Japan) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/ja_JP/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ja_JP\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: caching.c:217 caching.c:235 caching.c:356 request_parser.c:214
+#: request_parser.c:225 request_parser.c:262 request_parser.c:403
+#: request_parser.c:414 request_parser.c:441 request_parser.c:537
+#: request_parser.c:562 request_parser.c:665 request_parser.c:782
+#: request_parser.c:1112 request_parser.c:1204 zcfg2yaml.c:38
+#: zoo_service_loader.c:259 zoo_service_loader.c:880 zoo_service_loader.c:1363
+#: zoo_service_loader.c:1559
+msgid "Unable to allocate memory"
+msgstr "メモリを割り当てられません."
+
+#: caching.c:344
+msgid "Unable to download the file."
+msgstr "ファイルをダウンロードできません。"
+
+#: request_parser.c:92
+#, c-format
+msgid "The maximum allowed occurrences for <%s> (%i) was exceeded."
+msgstr "<%s> (%i) の発生最大数を超えました。"
+
+#: request_parser.c:113
+#, c-format
+msgid "ZOO-Kernel was unable to load your data for %s position %s."
+msgstr "ZOO-Kernel は %s の %sの位置のデータをロードできませんでした。"
+
+#: request_parser.c:124
+#, c-format
+msgid "The maximum allowed occurrences for <%s> is one."
+msgstr "<%s> の最大発生数は 1 です。"
+
+#: request_parser.c:315
+#, c-format
+msgid "Unable to find a valid protocol to download the remote file %s"
+msgstr "リモートファイル %s をダウントードするための適切なプロトコルが見つかりません。"
+
+#: request_parser.c:613
+msgid "Unable to add a request in the queue."
+msgstr "キューにリクエストを追加できません。"
+
+#: request_parser.c:1021
+msgid "Unable to append maps to maps."
+msgstr "マップにマップを追加できません。"
+
+#: request_parser.c:1291
+msgid "Duplicate <Output> elements in WPS Execute request"
+msgstr "WPS実行リクエストの <Output> 重複 "
+
+#: request_parser.c:1487
+#, c-format
+msgid ""
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
+msgstr "<%s> 変数の上限サイズはZOOサービスプロバイダ設定ファイルで (%s MB) に定義されています。与えられた参照はこの上限を超えています (%f MB) 。"
+
+#: request_parser.c:1519
+#, c-format
+msgid ""
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
+msgstr "ZOOサービスプロバイダ設定ファイルに対して必要とされる <%s> 引数が Datainputs に記述されていませんでした。"
+
+#: request_parser.c:1545
+#, c-format
+msgid ""
+"The <%s> argument specified as %s identifier was not recognized (not defined"
+" in the ZOO Configuration File)."
+msgstr "記述された <%s> は識別子 %s としては受け入れられません(ZOO設定ファイルに定義されていません)。"
+
+#: request_parser.c:1663
+#, c-format
+msgid "Mandatory parameter <%s> was not specified"
+msgstr "必須変数 <%s> が記述されていません。"
+
+#: request_parser.c:1712
+#, c-format
+msgid "The value <%s> was not recognized, %s %s the only acceptable value."
+msgstr "値 <%s> は受け入れられません。%s %s のみが受け入れ可能な値です。"
+
+#: request_parser.c:1715
+msgid "is"
+msgstr "あります"
+
+#: request_parser.c:1727
+msgid "are"
+msgstr "あります"
+
+#: response_print.c:1630
+#, c-format
+msgid "The service \"%s\" ran successfully."
+msgstr "%s サービスが動作しました."
+
+#: response_print.c:1638
+#, c-format
+msgid ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
+msgstr "現在，ZOOサービス \"%s\" が動作しています. このサービスのステータスを最新のものにするためにこのドキュメントを再読込してください."
+
+#: response_print.c:1644
+#, c-format
+msgid ""
+"The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
+msgstr "サービス %s はZOO-Kernelに受け入れられ、バックグラウンドタスクとして実行中です。最新の状態および結果を得るためにはこのドキュメントで提供されるstatusLocationの属性のURLにアクセスしてください。"
+
+#: response_print.c:1661
+msgid "No more information available"
+msgstr "情報はありません．"
+
+#: response_print.c:1668
+#, c-format
+msgid "error code not know : %i\n"
+msgstr "エラーコードが見つかりません : %i\n"
+
+#: response_print.c:1760
+msgid "Lock failed."
+msgstr "ロックに失敗しました。"
+
+#: response_print.c:1773
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
+msgstr "実行レスポンスとして格納される \"%s\" ファイルのが生成できませんでした。"
+
+#: response_print.c:2290
+msgid "No debug message available"
+msgstr "デバッグメッセージはありません．"
+
+#: response_print.c:2378
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "セッションマップとして格納される \"%s\" ファイルのが生成できませんでした。"
+
+#: response_print.c:2394
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
+msgstr "サービスを実行できません。サービスから返されたメッセージは次の通り :"
+
+#: response_print.c:2395
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
+msgstr "サービスを開始することができませんでした．このサービスによって返されたメッセージは  %s　です。"
+
+#: response_print.c:2398 response_print.c:2399
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr "サービスを開始できませんでした．このサービスによって返された情報はありません ."
+
+#: response_print.c:2486
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the %s final result."
+msgstr "最終結果 %s として格納される \"%s\" ファイルのが生成できませんでした。"
+
+#: response_print.c:2572
+#, c-format
+msgid ""
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+msgstr "誤った RawDataOutput 変数  : 与えられた引数名のどの結果からも取り出せません: \"%s\""
+
+#: server_internal.c:869 server_internal.c:946
+msgid ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+msgstr "リクエストされた JobID はサーバで実行中のどのJobとも一致しません。"
+
+#: server_internal.c:875 server_internal.c:907
+msgid "The result for the requested JobID has not yet been generated. "
+msgstr "リクエストされた JobID の結果はまだ生成されていませんでした。"
+
+#: server_internal.c:988
+msgid "The job cannot be removed, a file cannot be removed"
+msgstr "ジョブが削除されません、ファイルが削除されません。"
+
+#: server_internal.c:1063
+msgid "Unable to open the registry directory."
+msgstr "レジストリディレクトリをオープンできません。"
+
+#: server_internal.c:1082
+msgid "Unable to allocate memory."
+msgstr "メモリを割り当てられません."
+
+#: server_internal.c:1093 zoo_service_loader.c:276 zoo_service_loader.c:1384
+#: zoo_service_loader.c:1427
+#, c-format
+msgid "Unable to parse the ZCFG file: %s (%s)"
+msgstr "ZCFG ファイルをパースできません : %s (%s)"
+
+#: server_internal.c:1096 zoo_service_loader.c:279 zoo_service_loader.c:1389
+#: zoo_service_loader.c:1431
+#, c-format
+msgid "Unable to parse the ZCFG file: %s."
+msgstr "ZCFG ファイルをパースできません : %s 。"
+
+#: service_internal_ms.c:136
+msgid "Unable to find any mapserverAddress defined in the main.cfg file"
+msgstr "main.cfg ファイルに定義されたどの mapserverAddress も見つかりません。"
+
+#: service_internal_php.c:227
+#, c-format
+msgid "Unable to load the PHP file %s"
+msgstr "PHPファイル %s をロードできません"
+
+#: service_internal_python.c:316
+#, c-format
+msgid "Python module %s cannot be loaded. Message: %s\n"
+msgstr "Python モジュール %s がロードされません。メッセージ : %s\n"
+
+#: service_internal_python.c:355
+#, c-format
+msgid ""
+"%s\n"
+"Unable to run your python process properly. Please check the following messages : %s"
+msgstr "%s\nユーザーPythonプロセスを正しく実行できません。次のメッセージをチェックしてください : %s"
+
+#: service_internal_python.c:361
+#, c-format
+msgid ""
+"%s \n"
+" Unable to run your python process properly. Unable to provide any futher informations."
+msgstr "%s\nユーザーPythonプロセスを正しく実行できません。より詳しい情報は提供されていません。"
+
+#: zoo_service_loader.c:352
+#, c-format
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s"
+msgstr "ZOOカーネルはリクエストを処理することができませんでした．受け取ったシグナルは %d : %s です．"
+
+#: zoo_service_loader.c:527
+#, c-format
+msgid "Error occured while running the %s function: %s"
+msgstr "%s ファンクションを実行中にエラーが発生しました : %s"
+
+#: zoo_service_loader.c:578
+#, c-format
+msgid "Unable to load C Library %s"
+msgstr "C Library %s をロードできません"
+
+#: zoo_service_loader.c:672
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
+" Kernel.\n"
+msgstr "ZCFG ファイルで設定されたプログラミング言語 (%s) は現在 ZOOカーネルでサポートされていません。\n"
+
+#: zoo_service_loader.c:737
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "HTTP POST 実行リクエストをキャッシュできません。"
+
+#: zoo_service_loader.c:895
+msgid "Unable to load the main.cfg file."
+msgstr "main.cfg ファイルをロードできません。"
+
+#: zoo_service_loader.c:940
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "値 %s は <language>変数としてサポートされていません"
+
+#: zoo_service_loader.c:1238
+msgid "The specified path does not exist."
+msgstr "記述されたパスが存在しません。"
+
+#: zoo_service_loader.c:1303
+#, c-format
+msgid ""
+"Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"
+msgstr "次のZOO-Service :%s のZCFG ファイルをパースできません。メッセージ: %s"
+
+#: zoo_service_loader.c:1308
+#, c-format
+msgid "Unable to parse the ZCFG file for the following ZOO-Service: %s."
+msgstr "次のZOO-Service :%s のZCFG ファイルをパースできません。"
+
+#: zoo_service_loader.c:1534
+msgid "Unable to run Execute request using the GET HTTP method"
+msgstr "GET HTTP メソッドを使用した実行リクエストを実行できません"
+
+#: zoo_service_loader.c:1606
+#, c-format
+msgid ""
+"The value for <identifier> seems to be wrong (%s). Please specify one of the"
+" processes in the list returned by a GetCapabilities request."
+msgstr "<identifier> についての値が不正です(%s). GetCapabilitiesによりそのプロセスが存在しているか確認してください."
+
+#: zoo_service_loader.c:1733
+msgid ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to"
+" false. Please modify your request parameters."
+msgstr "storeExecuteResponse が false に設定されている場合 status 変数を true に設定できません。リクエスト変数を変更してください。"
+
+#: zoo_service_loader.c:1761
+msgid "The process does not permit the desired execution mode."
+msgstr "プロセスは要求された実行モードは許可されません。"
+
+#: zoo_service_loader.c:1837
+msgid "No message provided"
+msgstr "メッセージは提供されません"
+
+#: zoo_service_loader.c:1995
+msgid "Initializing"
+msgstr "初期化中"
+
+#: zoo_service_loader.c:2142
+msgid "Unable to run the child process properly"
+msgstr "子プロセスを開始することができません．"
