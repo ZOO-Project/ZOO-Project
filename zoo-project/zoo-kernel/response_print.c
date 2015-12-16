@@ -709,7 +709,7 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlNodePtr nc,service
  * @param vid the version identifier (0 for 1.0.0 and 1 for 2.0.0)
  */
 void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
-  int limit=(vid==1?7:3);
+  int limit=7;
   for(int i=1;i<limit;i+=2){
     map* tmp1=getMap(content,capabilities[vid][i]);
     if(tmp1!=NULL){
