@@ -100,7 +100,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   nb=2+nbc0+nbc1;
   JavaVMOption options[nb];
 #else
-  JavaVMOption options[nb+nbc0+nbc1];
+  JavaVMOption options[nb+nbc0+nbc1+1];
 #endif
   JavaVMInitArgs vm_args;
   JavaVM *jvm;
@@ -120,7 +120,8 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   map *cursorx=NULL;
   if(javaXMap!=NULL)
     cursorx=javaXMap->content;
-  options[0].optionString = oclasspath;
+  options[0].optionString = zStrdup(oclasspath);
+  options[0].extraInfo=NULL;
 #ifdef WIN32
   start=2;
   options[1].optionString = "-Xmx512m";
@@ -130,12 +131,14 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   for(i=0;i<nbc0;i++){
     char *tmp=parseJVMXXOption(cursorxx);
     options[start+i].optionString = tmp;
+    options[start+i].extraInfo=NULL;
     free(tmp);
     cursorxx=cursorxx->next;
   }
   for(;i<nbc1+nbc0;i++){
     char *tmp=parseJVMXOption(cursorx);
     options[start+i].optionString = tmp;
+    options[start+i].extraInfo=NULL;
     free(tmp);
     cursorx=cursorx->next;
   }
@@ -309,7 +312,7 @@ void displayStack(JNIEnv *env,maps* main_conf){
  * @return a char* containing the valide JVM option (-XX:*)
  */
 char *parseJVMXXOption(map* m){
-  char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+5)*sizeof(char));
+  char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+6)*sizeof(char));
   if(strncasecmp(m->value,"minus",5)==0)
     sprintf(res,"-XX:-%s",m->name);
   else if(strncasecmp(m->value,"plus",5)==0)
