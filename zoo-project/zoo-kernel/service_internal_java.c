@@ -120,7 +120,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   map *cursorx=NULL;
   if(javaXMap!=NULL)
     cursorx=javaXMap->content;
-  options[0].optionString = zStrdup(oclasspath);
+  options[0].optionString = oclasspath;
   options[0].extraInfo=NULL;
 #ifdef WIN32
   start=2;
@@ -130,14 +130,14 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #endif
   for(i=0;i<nbc0;i++){
     char *tmp=parseJVMXXOption(cursorxx);
-    options[start+i].optionString = tmp;
+    options[start+i].optionString = zStrdup(tmp);
     options[start+i].extraInfo=NULL;
     free(tmp);
     cursorxx=cursorxx->next;
   }
   for(;i<nbc1+nbc0;i++){
     char *tmp=parseJVMXOption(cursorx);
-    options[start+i].optionString = tmp;
+    options[start+i].optionString = zStrdup(tmp);
     options[start+i].extraInfo=NULL;
     free(tmp);
     cursorx=cursorx->next;
@@ -255,6 +255,9 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #else
   (*jvm)->DestroyJavaVM(jvm);
 #endif
+  for(i=0;i<nbc1+nbc0;i++){
+    free(options[start+i].optionString);
+  }
   return res;
 }
 
