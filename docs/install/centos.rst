@@ -41,4 +41,12 @@ setup your ZOO-Kernel and the ZOO-Services of your choice.
    
      update-alternatives --config java
      update-alternatives --config javac
+   
+   Also, make sure to add the following to your `main.cfg` file before
+   trying to execute any Java service:
+
+   .. code-block:: guess
+   
+     [javax]
+     ss=2m
 
