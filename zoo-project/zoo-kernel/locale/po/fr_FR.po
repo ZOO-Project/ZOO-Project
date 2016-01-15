@@ -3,14 +3,14 @@
 # This file is distributed under the same license as the PACKAGE package.
 # 
 # Translators:
-# Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015
+# Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015-2016
 # Nicolas Bozon <nicolas.bozon@gmail.com>, 2015
 msgid ""
 msgstr ""
 "Project-Id-Version: ZOO-Kernel Internationalization\n"
 "Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
 "POT-Creation-Date: 2015-07-02 18:06+0200\n"
-"PO-Revision-Date: 2015-07-03 10:01+0000\n"
+"PO-Revision-Date: 2016-01-15 15:13+0000\n"
 "Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>\n"
 "Language-Team: French (France) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/fr_FR/)\n"
 "MIME-Version: 1.0\n"
@@ -248,7 +248,7 @@ msgstr "%s\nImpossible de charger votre service python correctement. Aucune info
 #: zoo_service_loader.c:352
 #, c-format
 msgid "ZOO Kernel failed to process your request, receiving signal %d = %s"
-msgstr "ZOO-Kernel n'as pas pu traité votre requête, recevant un signal %d = %s"
+msgstr "ZOO-Kernel n'as pas pu traiter votre requête, recevant un signal %d = %s"
 
 #: zoo_service_loader.c:527
 #, c-format
