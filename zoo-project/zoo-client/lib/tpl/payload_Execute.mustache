@@ -34,7 +34,7 @@
 {{#is_post}}
 		<wps:Input>
 			<ows:Identifier>{{identifier}}</ows:Identifier>
-			<wps:Reference xlink:href="{{href}}" method="{{method}}">
+			<wps:Reference xlink:href="{{href}}" method="{{method}}" {{#schema}} schema="{{shema}}"{{/schema}}{{#mimeType}} mimeType="{{mimeType}}"{{/mimeType}}{{#encoding}} encoding="{{encoding}}"{{/encoding}}>
 {{#headers}}
 			  <wps:Header key="{{key}}" value="{{value}}" />
 {{/headers}}
@@ -59,7 +59,7 @@
 	<wps:ResponseForm>
 {{#RawDataOutput}}
 {{#DataOutputs}}
-    <wps:RawDataOutput mimeType="{{mimeType}}">
+    <wps:RawDataOutput {{#mimeType}}mimeType="{{mimeType}}"{{/mimeType}}>
       <ows:Identifier>{{identifier}}</ows:Identifier>
     </wps:RawDataOutput>
 {{/DataOutputs}}

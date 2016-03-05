@@ -12,8 +12,8 @@ Geospatial Foundation</a>.
 
 Home: http://www.zoo-project.org<br>
 Download: 
- <a href="http://zoo-project.org/site/Downloads#Downloads">http at zoo-project.org</a>,
- <a href="http://zoo-project.org/site/Downloads#Fordevelopers">svn at zoo-project.org</a>
+ <a href="http://zoo-project.org/Code/Download">http at zoo-project.org</a>,
+ <a href="http://svn.zoo-project.org/svn/">svn at zoo-project.org</a>
 
 This documentation describes the ZOO-Project C-API. You can start your visit by the Data Structures link above which details all available structures in ZOO-Project. The Files link presents all source files used to generate this documentation.
 

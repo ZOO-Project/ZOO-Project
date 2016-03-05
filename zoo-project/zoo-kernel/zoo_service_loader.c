@@ -1024,6 +1024,21 @@ runRequest (map ** inputs)
       setMapInMaps(m,"main","serverAddress",tmpUrl);
     }
 
+  // CORS Support
+  if(strncasecmp(cgiRequestMethod,"OPTIONS",7)==0){
+    map* cors=getMapFromMaps(m,"main","cors");
+    if(cors!=NULL && strncasecmp(cors->value,"true",4)==0){
+      char *encoding=getEncoding(m);
+      printHeaders(m);
+      printf("Content-Type: text/plain; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+      printf(_("CORS is enabled.\r\n"));
+      freeMaps (&m);
+      free (m);
+      fflush (stdout);
+      return 3;
+    }
+  }
+
   //Check for minimum inputs
   map* version=getMap(request_inputs,"version");
   if(version==NULL)

@@ -457,7 +457,7 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
 #endif
   while(isArray==NULL && tmpm!=NULL){
     jsval jsstr;
-    if((isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0))
+    if(isBinary!=NULL && strncasecmp(tmpm->name,"value",5)==0)
       jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,atoi(isBinary->value)));
     else
       jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
@@ -472,13 +472,18 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
     int cnt=atoi(len->value);
     JSObject* values=JS_NewArrayObject( cx, cnt, NULL );
     JSObject* mvalues=JS_NewArrayObject( cx, cnt, NULL );
-    map *tmpm1,*tmpm2;
+    map *tmpm1,*tmpm2,*tmpm3;
     int i=0;
     for(i=0;i<cnt;i++){
       tmpm1=getMapArray(t,"value",i);
       tmpm2=getMapArray(t,tmap->name,i);
+      tmpm3=getMapArray(t,"size",i);
       if(tmpm1!=NULL){
-	jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm1->value,strlen(tmpm1->value)));
+	jsval jsstr;
+	if(tmpm3!=NULL)
+	  jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm1->value,atoi(tmpm3->value)));
+	else
+	  jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm1->value,strlen(tmpm1->value)));
 	JS_SetElement( cx, values, i, &jsstr );
       }
       if(tmpm2!=NULL){
@@ -490,6 +495,16 @@ JSObject* JSObject_FromMap(JSContext *cx,map* t){
     jsval jmvalues=OBJECT_TO_JSVAL(mvalues);
     JS_SetProperty(cx, res,"value",&jvalues);
     JS_SetProperty(cx, res,tmap->name,&jmvalues);
+    while(tmpm!=NULL){
+      if(strncasecmp(tmpm->name,"value",5)!=0 && strncasecmp(tmpm->name,"size",4)!=0 && strncasecmp(tmpm->name,tmap->name,strlen(tmap->name))!=0){
+	jsval jsstr = STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpm->value,strlen(tmpm->value)));
+	JS_SetProperty(cx, res, tmpm->name,&jsstr);
+      }
+#ifdef JS_DEBUG
+      fprintf(stderr,"[JS] %s => %s\n",tmpm->name,tmpm->value);
+#endif
+      tmpm=tmpm->next;
+    }
   }
   return res;
 }

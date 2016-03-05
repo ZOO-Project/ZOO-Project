@@ -56,6 +56,8 @@ Then compile ZOO-Kernel using the needed configuration options as shown bellow:
 Configuration steps
 ....................................
 
+.. _kernel-orfeotoolbox-main.cfg:
+    
 Main configuration file
 *************************
 

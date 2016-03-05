@@ -107,6 +107,8 @@ You can then copy the new ZOO-Kernel to ``/usr/lib/cgi-bin`` directory, as follo
      cp zoo_loader.cgi /usr/lib/cgi-bin
 
 
+.. _kernel-mapserver-main.cfg:
+
 Main configuration file
 ........................
 
