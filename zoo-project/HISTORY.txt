@@ -1,4 +1,14 @@
-Version 1.5.0-dev
+Version 1.6.0-dev
+  * Add CORS support
+  * Fix issue when dealing with Array in JavaScript support
+  * Update the Centos installation procedure.
+  * Small fixes in java support.
+  * Fix issue when XML request contains empty nodes for inputs
+  * Add status update for contour lines computation
+  * Fix FASTCGI location using the --with-fastcgi option.
+  * Redefined the API function addToMapWithSize to fix problem with Python/PHP support.
+
+Version 1.5.0
   * Complete rewrite of the documentation to use modern style
   * Fix asynchronous POST request on WIN32 platforms
   * Add utils/registry service

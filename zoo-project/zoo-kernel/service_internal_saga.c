@@ -558,7 +558,11 @@ int sagaExportOGR(maps** conf, maps** in){
     addToMap(arg,"FORMAT","GeoJSON");
   }
   else{
+#ifdef HAVE_LIBKML
     addToMap(arg,"FORMAT","LIBKML");
+#else
+    addToMap(arg,"FORMAT","KML");
+#endif
   }
   free(fext);
   free(gfile->value);

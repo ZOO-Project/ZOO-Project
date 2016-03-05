@@ -957,6 +957,14 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	  
 	}
       }
+      else{
+	if(nBandsI==1){
+	  myLayer->offsite.red=0;
+	  myLayer->offsite.green=0;
+	  myLayer->offsite.blue=0;
+	}
+	msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
+      }
     }
     if( strlen(GDALGetRasterUnitType(hBand)) > 0 ){
       char tmpU[21];

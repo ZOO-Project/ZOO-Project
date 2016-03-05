@@ -42,6 +42,7 @@ An example *main.cfg* file is given here as reference.
     mapserverAddress=http://localhost/cgi-bin/mapserv.cgi
     msOgcVersion=1.0.0
     tmpUrl=http:/localhost/temp/
+    cors=false
     
     [identification]
     keywords=t,ZOO-Project, ZOO-Kernel,WPS,GIS
@@ -75,13 +76,19 @@ The main.cfg ``[main]`` section parameters are explained bellow.
  * ``encoding``: Default encoding of WPS Responses.
  * ``dataPath``: Path to the directory where data files are stored (used to store mapfiles and data when MapServer support is activated).
  * ``tmpPath``: Path to the directory where temporary files are stored (such as *ExecuteResponse* when *storeExecuteResponse* is set to true).
+ * ``tmpUrl``: URL to access the temporary files directory (cf. ``tmpPath``).
  * ``cacheDir``: Path to  the directory where cached request files [#f1]_ are stored (optional).
  * ``serverAddress``: URL to the ZOO-Kernel instance.
- * ``tmpUrl``: URL of the temporary files directory.
  * ``mapservAddress``: URL to the MapServer instance (optional).
  * ``msOgcVersion``: Version of all supported OGC Web Services output [#f2]_
    (optional).
  * ``lang``: Supported natural languages separated by a coma (the first is the default one),
+ * ``cors``: Define if the ZOO-Kernel should support `Cross-Origin
+   Resource Sharing <https://www.w3.org/TR/cors/>`__. If this
+   paramater is not defined, then the ZOO-Kernel won't support CORS.
+
+In case you have activated the MapServer support, please refer to
+:ref:`this specific section <kernel-mapserver-main.cfg>`. 
 
 
 Identification and Provider 
@@ -116,6 +123,18 @@ Response header, which will be used for every response. As an example,
 you can check http://zoo-project.org using *curl* command line tool
 and notice the specific header *X-Powered-By: Zoo-Project@Trac*.
 
+In case you want to allow CORS support for POST requests coming from
+``myhost.net``, then you should define the following minimal
+parameters in this section:
+
+.. code-block:: guess
+    :linenos:
+    
+    Access-Control-Allow-Origin=myhost.net
+    Access-Control-Allow-Methods=POST
+    Access-Control-Allow-Headers=content-type
+
+
 env section
 ...............................
 
@@ -131,6 +150,9 @@ variable, as follow:
     
     [env]
     DISPLAY=:1
+
+In case you have activated the OTB support, please refer to :ref:`this
+specific section <kernel-orfeotoolbox-main.cfg>`. 
 
 lenv section
 ...............................
