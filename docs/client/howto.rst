@@ -63,10 +63,12 @@ svn.
 
 .. warning:: Using different versions of Hogan to compile and to use in a web application may lead to compatibility issue.
 
-Everything is now ready to work with :ref:`ZOO-Client <client-what>`. Read the :ref:`next section <client-example>` for an example JavaScript application.
+Everything is now ready to work with :ref:`ZOO-Client
+<client-what>`. Read the :ref:`next section <client-example>` for an
+example JavaScript application. 
 
-Building ZOO-Client documentation
----------------------------------
+Building ZOO-Client API documentation
+-------------------------------------
 
 You may also build the ZOO-Client API documentation using `jsDoc
 <http://usejsdoc.org/jsDoc>`__, with the following command:
@@ -77,5 +79,11 @@ You may also build the ZOO-Client API documentation using `jsDoc
     ~/node_modules/.bin/jsdoc zoo-client/lib/js/wps-client/* -p
 
 This will build HTML documentation in a new directory named ``/out`` in
-your working directory.
+your working directory. 
+
+.. note:: 
+    Building the ZOO-Client API documentation is optional, please
+    refer to `the up-to-date ZOO-Client API Documentation
+    <http://www.zoo-project.org/jsDoc/index.html>`__ for the current
+    API version. 
 
