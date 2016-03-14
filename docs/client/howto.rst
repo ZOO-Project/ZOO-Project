@@ -71,7 +71,7 @@ Building ZOO-Client API documentation
 -------------------------------------
 
 You may also build the ZOO-Client API documentation using `jsDoc
-<http://usejsdoc.org/jsDoc>`__, with the following command:
+<http://usejsdoc.org/>`__, with the following command:
 
 ::
 
