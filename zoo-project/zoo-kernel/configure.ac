@@ -39,6 +39,26 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([dup2 getcwd memset setenv strdup strstr])
 
 #============================================================================
+# Detect if openssl is available
+#============================================================================
+
+AC_ARG_WITH([openssl],
+    [AS_HELP_STRING([--with-openssl=PATH], [Specifies an alternative location for the openssl library])],
+    [OPENSSL_DIR="$withval"], [OPENSSL_DIR="/usr/"])
+OPENSSL_CFLAGS="-I$OPENSSL_DIR/include"
+OPENSSL_LDFLAGS="-lcrypto -L$OPENSSL_DIR/lib -lssl"
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$OPENSSL_CFLAGS"
+LIBS_SAVE="$LIBS"
+LIBS="$OPENSSL_LDFLAGS"
+AC_CHECK_HEADERS([openssl/md5.h openssl/hmac.h openssl/evp.h openssl/bio.h openssl/buffer.h],
+			[], [AC_MSG_ERROR([could not find header file $i related to openssl])])
+AC_CHECK_LIB(crypto, BIO_f_base64,
+			[], [AC_MSG_ERROR([could not find $i function in openssl library])])
+AC_SUBST([OPENSSL_CFLAGS])
+AC_SUBST([OPENSSL_LDFLAGS])
+
+#============================================================================
 # Detect if run on debian / ubuntu
 #============================================================================
 if test -f "/usr/bin/dpkg"
@@ -332,6 +352,10 @@ AC_ARG_WITH([mapserver],
        [AS_HELP_STRING([--with-mapserver=PATH], [Specifies the path for MapServer compiled source tree])], 
        [MS_SRC_PATH="$withval"], [MS_SRC_PATH=""])
 
+AC_ARG_WITH([ms-version], 
+       [AS_HELP_STRING([--with-ms-version=VERSION], [Specifies the MapServer version to build against])], 
+       [MS_VERSION="$withval"], [MS_VERSION=""])
+
 if test -z $MS_SRC_PATH;
 then
 	MS_CPPFLAGS=""
@@ -344,6 +368,12 @@ else
                AC_MSG_WARN([Please make sure that ../mapserver exists and contains MapServer source tree])
                AC_MSG_RESULT([Using MacOS X Framework for MapServer])
        else
+	if test "x$MS_VERSION" = "x7";
+	then
+		MS_LDFLAGS="-L$MS_SRC_PATH/lib -lmapserver"
+		MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include/mapserver "
+               	AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
+        else
                if test -d $MS_SRC_PATH; then
                        MS_LDFLAGS="-L$MS_SRC_PATH -lmapserver `$MS_SRC_PATH/mapserver-config --libs`"
                        MS_CPPFLAGS="-DUSE_MS `$MS_SRC_PATH/mapserver-config --includes` `$MS_SRC_PATH/mapserver-config --cflags` -I$MS_SRC_PATH "
@@ -352,6 +382,7 @@ else
                else
                        AC_MSG_ERROR([the user-specified mapserver-config file $MS_SRC_PATH does not exist])
                fi
+        fi
        fi
        MS_FILE="service_internal_ms.o"
 fi

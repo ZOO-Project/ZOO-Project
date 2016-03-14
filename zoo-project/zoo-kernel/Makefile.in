@@ -57,7 +57,7 @@ service_yaml.o: service_yaml.c service.h
 	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
 
 service_internal_ms.o: service_internal_ms.c
-	gcc ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
+	gcc ${JS_ENABLED} ${GDAL_CFLAGS}  ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
 
 service_internal_python.o: service_internal_python.c service.h
 	g++ ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c service_internal_python.c
