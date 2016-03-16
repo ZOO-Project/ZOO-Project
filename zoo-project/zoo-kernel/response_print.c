@@ -719,11 +719,19 @@ void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
 	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST val);
 	free(val);
       }
-      else
-	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST tmp1->value);
+      else{
+	if(vid==0 && i>=2)
+	  xmlNewProp(n,BAD_CAST capabilities[vid][i],BAD_CAST tmp1->value);
+	else
+	  xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST tmp1->value);
+      }
     }
-    else
-      xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+    else{
+      if(vid==0 && i>=2)
+	xmlNewProp(n,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+      else
+	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+    }
   }
 }
 
