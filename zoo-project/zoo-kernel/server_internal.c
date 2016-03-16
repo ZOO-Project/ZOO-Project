@@ -236,24 +236,41 @@ char *url_decode(char *str) {
  * @return 1 if the specific language is listed, -1 in other case.
  */
 int isValidLang(maps* conf,const char *str){
-  map *tmpMap=getMapFromMaps(conf,"main","lang");
-  char *tmp=zStrdup(tmpMap->value);
-  char *pToken,*saveptr;
-  pToken=strtok_r(tmp,",",&saveptr);
-  int res=-1;
-  char *pToken1,*saveptr1;
-  pToken1=strtok_r(tmp,",",&saveptr1);
-  while(pToken1!=NULL){
-    while(pToken!=NULL){
-      if(strcasecmp(pToken1,pToken)==0){
-	res=1;
-	break;
+  map *tmpMap=getMapFromMaps(conf,"main","language");
+  char *tmp0=NULL,*tmp=NULL,*tmp1=NULL;
+  if(tmpMap!=NULL)
+    tmp0=zStrdup(tmpMap->value);
+  tmpMap=getMapFromMaps(conf,"main","lang");
+  if(tmpMap!=NULL)
+    tmp=zStrdup(tmpMap->value);
+  if(tmp0!=NULL && tmp!=NULL){
+    tmp1=(char*)malloc((strlen(tmp0)+strlen(tmp)+2)*sizeof(char));
+    sprintf(tmp1,"%s,%s",tmp0,tmp);
+    free(tmp0);
+    free(tmp);
+  }else{
+    if(tmp!=NULL){
+      tmp1==zStrdup(tmp);
+      free(tmp);
+    }else{
+      if(tmp0!=NULL){
+	tmp1==zStrdup(tmp0);
+	free(tmp0);
       }
-      pToken=strtok_r(NULL,",",&saveptr);
     }
-    pToken1=strtok_r(NULL,",",&saveptr1);
   }
-  free(tmp);
+  char *pToken,*saveptr;
+  pToken=strtok_r(tmp1,",",&saveptr);
+  int res=-1;
+  while(pToken!=NULL){
+    if(strcasecmp(str,pToken)==0){
+      res=1;
+      break;
+    }
+    pToken=strtok_r(NULL,",",&saveptr);
+  }
+  if(tmp1!=NULL)
+    free(tmp1);
   return res;
 }
 

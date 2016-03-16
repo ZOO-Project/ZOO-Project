@@ -1687,7 +1687,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
 	}
 	setMapArray(lres,"text",length,message);
 	setMapArray(lres,"locator",length,toCheck);
-	setMapArray(lres,"code",length,"MissingParameter");
+	setMapArray(lres,"code",length,"MissingParameterValue");
       }
       free(message);
     }
@@ -1753,7 +1753,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
 	locator=r_inputs->value;
       }
       if(lres==NULL){
-	lres=createMap("code","InvalidParameterValue");
+	lres=createMap("code",code);
 	addToMap(lres,"text",message);
 	addToMap(lres,"locator",locator);       
       }else{
@@ -1764,7 +1764,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
 	}
 	setMapArray(lres,"text",length,message);
 	setMapArray(lres,"locator",length,locator);
-	setMapArray(lres,"code",length,"InvalidParameterValue");
+	setMapArray(lres,"code",length,code);
       }
     }
   }
