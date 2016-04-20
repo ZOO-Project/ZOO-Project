@@ -24,7 +24,8 @@
 
 #include "service.h"
 
-#ifdef _MSC_VER
+
+#if defined(_MSC_VER) && _MSC_VER < 1800
 #include <stdarg.h>
 /**
  * snprintf for Visual Studio compiler.

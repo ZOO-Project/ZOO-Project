@@ -1,11 +1,14 @@
-GEODIR=c:/OSGeo4W/
-TOOLS=c:/Users/djay/GeoLabs/tools/
+TROOT= $(ZOOK_DIR)
+!INCLUDE $(ZOOK_DIR)/nmake.opt
+
+FILES=$(ZOOK_DIR)/libzoo_service.lib
+
 CFLAGS=-I$(GEODIR)/include -I$(TOOLS)/include -I../../../zoo-kernel/ -I./ -DGDAL_1_5_0 -DZOO_SERVICE -DLINUX_FREE_ISSUE -DDEBUG
 CPP=cl /TP 
 
 cgi-env/ogr2ogr_service.zo: service.c
 	$(CPP) $(CFLAGS) /c service.c
-	link /dll /out:cgi-env/ogr2ogr_service.zo ../../../zoo-kernel/service_internal.obj ./service.obj -L$(TOOLS)/lib/libssl32.dll.a $(GEODIR)/lib/libxml2.lib $(GEODIR)/lib/gdal_i.lib $(TOOLS)/lib/libeay32.dll.a $(TOOLS)/lib/libcrypto.a $(TOOLS)/lib/libssl32.dll.a 
+	link /dll /out:cgi-env/ogr2ogr_service.zo ./service.obj  $(FILES) $(LDFLAGS)
 
 clean:
-	rm -f cgi-env/ogr_service.zso
+	rm -f cgi-env/ogr2ogr_service.zso
