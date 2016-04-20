@@ -1,0 +1,11 @@
+TROOT= $(ZOOK_DIR)
+!INCLUDE $(ZOOK_DIR)/nmake.opt
+
+FILES=$(ZOOK_DIR)/libzoo_service.lib
+
+cgi-env/gdal_grid_service.zo: service.c
+	$(CPP)  /DOGR_ENABLED /D_CRT_NONSTDC_NO_DEPRECATE -DWIN32 -DZOO_SERVICE -I$(GDAL_DIR)/frmts/ -I$(GDAL_DIR)/alg/ $(CFLAGS) /c service.c
+	link /dll /out:cgi-env/gdal_grid_service.zo  $(FILES) ./service.obj $(LDFLAGS) /FORCE:MULTIPLE
+
+clean:
+	erase cgi-env\gdal_grid_service.*
