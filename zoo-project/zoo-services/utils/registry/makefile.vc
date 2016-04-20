@@ -1,7 +1,8 @@
 TROOT= $(ZOOK_DIR)
 !INCLUDE $(ZOOK_DIR)/nmake.opt
 
-FILES=$(ZOOK_DIR)/service_internal.obj $(ZOOK_DIR)/ulinet.obj
+FILES=$(ZOOK_DIR)/libzoo_service.lib $(ZOOK_DIR)/server_internal.obj $(ZOOK_DIR)/response_print.obj $(ZOOK_DIR)/lex.cr.obj $(ZOOK_DIR)/lex.sr.obj $(ZOOK_DIR)/service_conf.tab.obj $(ZOOK_DIR)/service_conf.tab.obj $(ZOOK_DIR)/main_conf_read.tab.obj
+
 !IFDEF JS_DIR
 FILES=$(FILES) $(ZOOK_DIR)$(JS_FILE)
 !ENDIF

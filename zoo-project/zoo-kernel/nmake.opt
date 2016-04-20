@@ -10,20 +10,29 @@ CPP=cl /TP $(CFLAGS)
 #PHP_DIR=C:\php-sdk\phpdev\vc12\x86\php-5.5.10-src
 #PHP_LIB=$(PHP_DIR)\Release_TS\php5embed.lib
 
-!IF DEFINED(MS_DIR)
-MS_BASE=$(MS_DIR)
-!INCLUDE $(MS_DIR)\nmake.opt
-!ENDIF
+#!IF DEFINED(MS_DIR)
+#MS_BASE=$(MS_DIR)
+#!INCLUDE $(MS_DIR)\nmake.opt
+#!ENDIF
 
 !IFDEF JS_DIR
-JS_CFLAGS=-DXP_WIN -DUSE_JS -I$(JS_DIR)
+JS_CFLAGS=-DXP_WIN -DUSE_JS -I$(JS_DIR) -I$(JS_DIR)/dist/include
 JS_LDFLAGS=$(JS_DIR)/mozjs185-1.0.lib
 JS_FILE=service_internal_js.obj
 !ENDIF
 
+!IFDEF JS_CFG
+#!INCLUDE $(JS_CFG)
+#JS_CFLAGS=-DXP_WIN -DUSE_JS $(JS_CONFIG_CFLAGS)
+#JS_LDFLAGS=$(JS_CONFIG_LDFLAGS)
+JS_CFLAGS=-DXP_WIN -DUSE_JS -include c:/mozilla-build/msys/local/include/mozjs-24/js/RequiredDefines.h -Ic:/mozilla-build/msys/local/include/mozjs-24 -IC:/mozilla-build/msys/local/include
+JS_LDFLAGS=c:/mozilla-build/msys/local/lib/mozjs-24.lib  kernel32.lib user32.lib gdi32.lib winmm.lib wsock32.lib advapi32.lib psapi.lib 
+JS_FILE=service_internal_js.obj
+!ENDIF
+
 !IFDEF MS_DIR
-MS_CFLAGS=-DUSE_MS -I$(MS_DIR)
-MS_LDFLAGS=$(MS_DIR)/mapserver_i.lib
+MS_CFLAGS=-DUSE_MS -DHAVE_STRCASECMP -DHAVE_STRNCASECMP -I$(MS_DIR)/include
+MS_LDFLAGS=$(MS_DIR)/lib/mapserver_i.lib
 MS_FILE=service_internal_ms.obj
 !ENDIF
 

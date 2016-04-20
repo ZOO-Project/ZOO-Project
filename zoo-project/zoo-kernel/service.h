@@ -34,11 +34,10 @@
 #endif
 
 #ifdef WIN32
-#ifndef USE_MS
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
-//#else
-//#define snprintf sprintf_s
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#define snprintf _snprintf
 #endif
 #define zStrdup _strdup
 #define zMkdir _mkdir
@@ -323,11 +322,11 @@ extern "C" {
   ZOO_DLL_EXPORT void inheritance(registry*,service**);
   ZOO_DLL_EXPORT void mapsToCharXXX(maps*,char***);
   ZOO_DLL_EXPORT void charxxxToMaps(char***,maps**);
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1800
   // snprintf for Visual Studio compiler;
   // it is also used by services (e.g., GetStatus), therefore exported to shared library
   ZOO_DLL_EXPORT int snprintf(char *buffer, size_t n, const char *format, ...);
-#endif  
+#endif
 #ifdef __cplusplus
 }
 #endif
