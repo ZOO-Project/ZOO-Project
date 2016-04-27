@@ -442,7 +442,6 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 		  int nFileNames = param->asList()->Get_Count() <= fileNames.Get_Count() ? fileNames.Get_Count() : fileNames.Get_Count() - 1;
 		  for(int i=0; i<param->asList()->Get_Count(); i++)
 		    {
-		      fileNames[i].Trim();
 		      if( i < nFileNames )
 			{
 			  param->asList()->asDataObject(i)->Save(fileNames[i]);
