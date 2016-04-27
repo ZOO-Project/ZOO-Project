@@ -668,9 +668,6 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       return -1;
     if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
       return -1;
-#if MS_VERSION_MAJOR<7
-    myLayer->CLASS[myLayer->numclasses]->type = myLayer->type;
-#endif
     if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
       return -1;
     if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
@@ -919,9 +916,6 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	      return -1;
 	    if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
 	      return -1;
-#if MS_VERSION_MAJOR<7
-	    myLayer->CLASS[myLayer->numclasses]->type = myLayer->type;
-#endif
 	    if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
 	      return -1;
 	    if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
