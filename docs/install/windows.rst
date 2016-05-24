@@ -10,10 +10,10 @@ Installation on Windows |trade|
 Install ZOO-Project binaries
 -------------------------------
 
-.. warning::
+.. note::
    The content of the ZOO-Project Windows-Binaries is based on
    `GISInternals SDK <http://www.gisinternals.com/release.php>`__,
-   make sure to refere to the bottom of the previous page for license
+   make sure to refer to the bottom of the previous page for license
    informations. 
 
 .. note::
