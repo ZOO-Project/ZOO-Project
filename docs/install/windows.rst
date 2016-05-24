@@ -7,6 +7,45 @@
 Installation on Windows |trade|
 ====================
 
+Install ZOO-Project binaries
+-------------------------------
+
+Using the installer
+...................
+
+Prior to run the ZOO-Project-Installer, please make sure you have IIS
+and `Python <https://www.python.org/downloads/windows/>`__ setup on
+your machine. Then download the `ZOO-Project-Installer
+<https://bintray.com/gfenoy/ZOO-Project/Windows-Binaries/view>`__
+corresponding to your platform. The first time you will run the
+installer binary, you may be prompted to authorize it to run. Once the
+installer has been run, simply access the following link:
+http://localhost/zoo-demo/ to access your local demo application.
+
+Install by hand
+...................
+
+Prior to run the ZOO-Project-Installer, please make sure you have IIS
+and `Python <https://www.python.org/downloads/windows/>`__ setup on
+your machine. Then download the `ZOO-Project
+<https://bintray.com/gfenoy/ZOO-Project/Windows-Binaries/view>`__
+archive corresponding to your platform. Uncompress it, then move
+`cgi-bin`, `data` and `tmp` from uncompressed folder to `c:\\inetpub`,
+also move `wwwroot\\zoo-demo` and `wwwroot\\tmp` to
+`c:\\inetpub\\wwwroot`. To finish the installation, run the folllowing
+command as administrator to allow the `zoo_loader.cgi` to run from
+http://localhost/cgi-bin/zoo_loader.cgi:
+
+   ::
+   
+     cd C:\Windows\System32\inetsrv
+     appcmd.exe add vdirs /app.name:"Default Web Site/" /path:/cgi-bin /physicalPath:c:\inetpub\cgi-bin
+     appcmd set config /section:handlers /+[name='CGI-exe1',path='*.cgi',verb='*',modules='CgiModule']
+
+
+
+
+
 Compile ZOO-Project from source
 -------------------------------
 
