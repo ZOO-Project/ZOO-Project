@@ -163,6 +163,40 @@ translateChar (char *str, char toReplace, char toReplaceBy)
 }
 
 /**
+ * Dump back the final file fbkp1 to fbkp
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @param fbkp the string corresponding to the name of the file
+ * @param fbkp1 the string corresponding to the name of the file
+ */
+int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
+{
+  FILE *f2 = fopen (fbkp1, "rb");
+#ifndef RELY_ON_DB
+  semid lid = getShmLockId (m, 1);
+  if (lid < 0)
+    return -1;
+  lockShm (lid);
+#endif
+  FILE *f3 = fopen (fbkp, "wb+");
+  free (fbkp);
+  fseek (f2, 0, SEEK_END);
+  long flen = ftell (f2);
+  fseek (f2, 0, SEEK_SET);
+  char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
+  fread (tmps1, flen, 1, f2);
+#ifdef WIN32
+  char *pchr=strrchr(tmps1,'>');
+  flen=strlen(tmps1)-strlen(pchr)+1;
+  tmps1[flen]=0;
+#endif
+  fwrite (tmps1, 1, flen, f3);
+  fclose (f2);
+  fclose (f3);
+  return 1;
+}
+
+/**
  * Recursivelly parse zcfg starting from the ZOO-Kernel cwd.
  * Call the func function given in arguments after parsing the ZCFG file.
  *
@@ -2136,6 +2170,12 @@ runRequest (map ** inputs)
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
 	    free (s1);
+	    fclose (f0);
+	    fclose (f1);
+	    if(dumpBackFinalFile(m,fbkp,fbkp1)<0)
+	      return -1;
+	    unlink (fbkpid);
+	    unhandleStatus (m);
 	    freeMaps (&m);
 	    free (m);
 	    free (REQUEST);
@@ -2148,7 +2188,6 @@ runRequest (map ** inputs)
 	    free (tmpmaps);
 	    fflush (stdout);
 	    fflush (stderr);
-	    unhandleStatus (m);
 	    return -1;
 	  }
           loadServiceAndRun (&m, s1, request_inputs,
@@ -2189,38 +2228,18 @@ runRequest (map ** inputs)
   signal (SIGFPE, donothing);
   signal (SIGABRT, donothing);
 #endif
+  
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
       fclose (stdout);
       fclose (stderr);
-      /**
-       * Dump back the final file fbkp1 to fbkp
-       */
+
       fclose (f0);
       fclose (f1);
 
-      FILE *f2 = fopen (fbkp1, "rb");
-#ifndef RELY_ON_DB
-      semid lid = getShmLockId (m, 1);
-      if (lid < 0)
-        return -1;
-      lockShm (lid);
-#endif
-      FILE *f3 = fopen (fbkp, "wb+");
-      free (fbkp);
-      fseek (f2, 0, SEEK_END);
-      long flen = ftell (f2);
-      fseek (f2, 0, SEEK_SET);
-      char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
-      fread (tmps1, flen, 1, f2);
-#ifdef WIN32
-      char *pchr=strrchr(tmps1,'>');
-      flen=strlen(tmps1)-strlen(pchr)+1;
-      tmps1[flen]=0;
-#endif
-      fwrite (tmps1, 1, flen, f3);
-      fclose (f2);
-      fclose (f3);
+      if(dumpBackFinalFile(m,fbkp,fbkp1)<0)
+	return -1;
+
       unlink (fbkpid);
       switch(eres){
       default:
