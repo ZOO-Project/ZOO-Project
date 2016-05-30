@@ -84,8 +84,9 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   fprintf(stderr,"CLASSPATH=%s\n",classpath);
   fprintf(stderr,"(%s)\n",oclasspath);
 #endif
-
+#ifndef WIN32
   int nb=1;
+#endif
   int nbc0=0;
   maps* javaXXMap=getMaps(*main_conf,"javaxx");
   if(javaXXMap!=NULL){
@@ -97,8 +98,9 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     nbc1+=count(javaXMap->content);
   }
 #ifdef WIN32
-  nb=2+nbc0+nbc1;
-  JavaVMOption options[nb];
+  //#define nb (2+nbc0+nbc1)
+  const int nb=2+nbc0+nbc1;
+  JavaVMOption *options=(JavaVMOption*)malloc(nb*sizeof(JavaVMOption));
 #else
   JavaVMOption options[nb+nbc0+nbc1+1];
 #endif
@@ -258,6 +260,9 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   for(i=0;i<nbc1+nbc0;i++){
     free(options[start+i].optionString);
   }
+#ifdef WIN32
+  free(options);
+#endif
   return res;
 }
 
