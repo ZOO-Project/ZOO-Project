@@ -387,7 +387,7 @@ __declspec(dllexport)
                          (pszElevAttrib == NULL) ? -1 :
                                  OGR_FD_GetFieldIndex( OGR_L_GetLayerDefn( hLayer ), 
                                                        pszElevAttrib ), 
-                         pfnProgress1, conf );
+				(GDALProgressFunc)pfnProgress1, conf );
 
     OGR_DS_Destroy( hDS );
     GDALClose( hSrcDS );

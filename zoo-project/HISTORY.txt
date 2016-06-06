@@ -1,4 +1,5 @@
 Version 1.6.0-dev
+  * Support GDAL version 2.1.0.
   * Add the MapServer 7.0.1 internal support.
   * Support for exotic location of openssl.
   * Add ZOO-Client API documentation reference in the official documentation.

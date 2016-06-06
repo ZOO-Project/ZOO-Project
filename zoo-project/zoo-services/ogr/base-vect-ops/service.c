@@ -25,6 +25,9 @@
 #include "cpl_conv.h"
 #include "ogr_api.h"
 #include "ogr_geometry.h"
+#if GDAL_VERSION_MAJOR >= 2
+#include <gdal_priv.h>
+#endif
 
 #include "cpl_minixml.h"
 #include "ogr_api.h"
@@ -40,11 +43,12 @@ extern "C" {
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
-#include <openssl/sha.h>
+/*#include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
+*/
 
   void printExceptionReportResponse(maps*,map*);
   char *base64(const char *input, int length);
@@ -118,7 +122,11 @@ extern "C" {
     OGRGeometry *res;
     OGRLayer *poDstLayer;
     const char *oDriver1;
-    OGRDataSource       *poODS;
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+#else
+    OGRDataSource *poODS;
+#endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
@@ -137,19 +145,34 @@ extern "C" {
     }
     VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
     VSIFCloseL(ifile);
-    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDataset *ipoDS =
+	(GDALDataset*) GDALOpenEx( filename,
+				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				   NULL, NULL, NULL );
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRDataSource* ipoDS = 
+	OGRSFDriverRegistrar::Open(filename,FALSE);
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
-	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-	
 	fprintf( stderr, "FAILURE:\n"
 		 "Unable to open datasource `%s' with the following drivers.\n",
 		 filename );
 	
 	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
 	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 	char tmp[1024];
 	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
@@ -172,9 +195,7 @@ extern "C" {
 	  }
 	
 	OGRFeature  *poFeature;
-	
-	OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
-	OGRSFDriver          *poDriver = NULL;
+
 	int                  iDriver;
 	
 	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
@@ -191,7 +212,11 @@ extern "C" {
 	     iDriver < poR->GetDriverCount() && poDriver == NULL;
 	     iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >=2
+	    if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver1) )
+#else
 	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+#endif
 	      {
 		poDriver = poR->GetDriver(iDriver);
 	      }
@@ -205,7 +230,11 @@ extern "C" {
 	    
 	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	      {
+#if GDAL_VERSION_MAJOR >=2
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+#else
 		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+#endif
 	      }
 	    
 	    setMapInMaps(conf,"lenv","message",emessage);
@@ -213,16 +242,25 @@ extern "C" {
 	    
 	  }
 	
-	if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
-	  char emessage[1024];
-	  sprintf( emessage,  "%s driver does not support data source creation.\n",
-		   "json" );
-	  setMapInMaps(conf,"lenv","message",emessage);
-	  return SERVICE_FAILED;
-	}
+#if GDAL_VERSION_MAJOR >=2
+	if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+	  {
+	    char emessage[1024];
+	    sprintf( emessage,  "%s driver does not support data source creation.\n",
+	      "json" );
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	  }
 	
 	char **papszDSCO=NULL;
+#if GDAL_VERSION_MAJOR >=2
+        poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
 	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
 	if( poODS == NULL ){
 	  char emessage[1024];      
 	  sprintf( emessage,  "%s driver failed to create %s\n", 
@@ -325,18 +363,23 @@ extern "C" {
     free(res1);
 
     OGRCleanupAll();
+    dumpMaps(outputs);
     return SERVICE_SUCCEEDED;
 
 }
 
-  int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry::*myFunc)() const,const char* schema){
+int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry::*myFunc)() const,const char* schema){
     OGRRegisterAll();
 
     maps* cursor=inputs;
     OGRGeometryH geometry,res;
     OGRLayer *poDstLayer;
     const char *oDriver1;
-    OGRDataSource       *poODS;
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+#else
+    OGRDataSource *poODS;
+#endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
@@ -355,25 +398,42 @@ extern "C" {
     }
     VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
     VSIFCloseL(ifile);
-    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *ipoDS =
+      (GDALDataset*) GDALOpenEx( filename,
+				 GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				 NULL, NULL, NULL );
+    GDALDriverManager* poR=GetGDALDriverManager();
+    GDALDriver          *poDriver = NULL;
+#else
+    OGRDataSource* ipoDS = 
+      OGRSFDriverRegistrar::Open(filename,FALSE);
+    OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+    OGRSFDriver          *poDriver = NULL;
+#endif
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
-	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-	
 	fprintf( stderr, "FAILURE:\n"
 		 "Unable to open datasource `%s' with the following drivers.\n",
 		 filename );
-	
+	char emessage[1024];	
 	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
-	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#if GDAL_VERSION_MAJOR >=2
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+		fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+		fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 	char tmp[1024];
-	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.\n%s",filename,emessage);
 	setMapInMaps(conf,"lenv","message",tmp);
 	return SERVICE_FAILED;
       }
+
     for( int iLayer = 0; iLayer < ipoDS->GetLayerCount();
 	 iLayer++ )
       {
@@ -395,8 +455,6 @@ extern "C" {
 	/*      Try opening the output datasource as an existing, writable      */
 	/* -------------------------------------------------------------------- */
 	
-	OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
-	OGRSFDriver          *poDriver = NULL;
 	int                  iDriver;
 	
 	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
@@ -413,7 +471,14 @@ extern "C" {
 	     iDriver < poR->GetDriverCount() && poDriver == NULL;
 	     iDriver++ )
 	  {
-	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+
+	    if( EQUAL(
+#if GDAL_VERSION_MAJOR >=2
+		      poR->GetDriver(iDriver)->GetDescription()
+#else
+		      poR->GetDriver(iDriver)->GetName()
+#endif
+		      ,oDriver1) )
 	      {
 		poDriver = poR->GetDriver(iDriver);
 	      }
@@ -424,10 +489,13 @@ extern "C" {
 	    char emessage[8192];
 	    sprintf( emessage, "Unable to find driver `%s'.\n", oDriver );
 	    sprintf( emessage,  "%sThe following drivers are available:\n",emessage );
-	    
-	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	    for( iDriver = 0;iDriver < poR->GetDriverCount();iDriver++ )	    
 	      {
+#if GDAL_VERSION_MAJOR >=2
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+#else
 		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+#endif
 	      }
 	    
 	    setMapInMaps(conf,"lenv","message",emessage);
@@ -435,7 +503,12 @@ extern "C" {
 	    
 	  }
 	
-	if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
+#if GDAL_VERSION_MAJOR >=2
+	if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+	{
 	  char emessage[1024];
 	  sprintf( emessage,  "%s driver does not support data source creation.\n",
 		   "json" );
@@ -448,7 +521,11 @@ extern "C" {
 	/* -------------------------------------------------------------------- */
 	//map* tpath=getMapFromMaps(conf,"main","tmpPath");
 	char **papszDSCO=NULL;
+#if GDAL_VERSION_MAJOR >=2
+        poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
 	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
 	if( poODS == NULL ){
 	  char emessage[1024];      
 	  sprintf( emessage,  "%s driver failed to create %s\n", 
@@ -470,7 +547,6 @@ extern "C" {
 	    return SERVICE_FAILED;
 	  }
 	
-	//CPLErrorReset();
 	
 	poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
 	if( poDstLayer == NULL ){
@@ -565,7 +641,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     OGRGeometryH geometry,res;
     OGRLayer *poDstLayer;
     const char *oDriver1;
-    OGRDataSource       *poODS;
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+#else
+    OGRDataSource *poODS;
+#endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
@@ -584,11 +664,22 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     }
     VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
     VSIFCloseL(ifile);
-    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDataset *ipoDS =
+	(GDALDataset*) GDALOpenEx( filename,
+				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				   NULL, NULL, NULL );
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRDataSource* ipoDS = 
+	OGRSFDriverRegistrar::Open(filename,FALSE);
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
-	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
 	
 	fprintf( stderr, "FAILURE:\n"
 		 "Unable to open datasource `%s' with the following drivers.\n",
@@ -596,7 +687,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	
 	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
 	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 	char tmp[1024];
 	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
@@ -624,8 +719,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	/*      Try opening the output datasource as an existing, writable      */
 	/* -------------------------------------------------------------------- */
 	
-	OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
-	OGRSFDriver          *poDriver = NULL;
 	int                  iDriver;
 	
 	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
@@ -642,7 +735,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	     iDriver < poR->GetDriverCount() && poDriver == NULL;
 	     iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >=2
+	    if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver1) )
+#else
 	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+#endif
 	      {
 		poDriver = poR->GetDriver(iDriver);
 	      }
@@ -656,7 +753,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	    
 	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	      {
+#if GDAL_VERSION_MAJOR >=2
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+#else
 		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+#endif
 	      }
 	    
 	    setMapInMaps(conf,"lenv","message",emessage);
@@ -664,7 +765,12 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	    
 	  }
 	
-	if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
+#if GDAL_VERSION_MAJOR >=2
+	if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+	{
 	  char emessage[1024];
 	  sprintf( emessage,  "%s driver does not support data source creation.\n",
 		   "json" );
@@ -677,7 +783,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	/* -------------------------------------------------------------------- */
 	//map* tpath=getMapFromMaps(conf,"main","tmpPath");
 	char **papszDSCO=NULL;
+#if GDAL_VERSION_MAJOR >=2
+        poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
 	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
 	if( poODS == NULL ){
 	  char emessage[1024];      
 	  sprintf( emessage,  "%s driver failed to create %s\n", 
@@ -778,6 +888,261 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 #ifdef WIN32
   __declspec(dllexport)
 #endif
+int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
+    OGRRegisterAll();
+
+    maps* cursor=inputs;
+    OGRGeometryH geometry,res;
+    OGRLayer *poDstLayer;
+    const char *oDriver1;
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+#else
+    OGRDataSource *poODS;
+#endif
+    map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp){
+      setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
+      return SERVICE_FAILED;
+    }
+    char filename[1024];
+    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    const char *oDriver;
+    oDriver="GeoJSON";
+    sprintf(filename,"/vsimem/input_%d.json",getpid());
+    if(tmp1!=NULL){
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(filename,"/vsimem/input_%d.xml",getpid());
+	oDriver="GML";
+      }
+    }
+    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDataset *ipoDS =
+	(GDALDataset*) GDALOpenEx( filename,
+				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				   NULL, NULL, NULL );
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRDataSource* ipoDS = 
+	OGRSFDriverRegistrar::Open(filename,FALSE);
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
+    char pszDestDataSource[100];
+    if( ipoDS == NULL )
+      {
+	
+	fprintf( stderr, "FAILURE:\n"
+		 "Unable to open datasource `%s' with the following drivers.\n",
+		 filename );
+	
+	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
+	  }
+	char tmp[1024];
+	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
+	setMapInMaps(conf,"lenv","message",tmp);
+	return SERVICE_FAILED;
+      }
+    for( int iLayer = 0; iLayer < ipoDS->GetLayerCount();
+	 iLayer++ )
+      {
+	OGRLayer        *poLayer = ipoDS->GetLayer(iLayer);
+	
+	if( poLayer == NULL )
+	  {
+	    fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+		     iLayer );
+	    char tmp[1024];
+	    sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+	    setMapInMaps(conf,"lenv","message",tmp);
+	    return SERVICE_FAILED;
+	  }
+	
+	OGRFeature  *poFeature;
+
+	/* -------------------------------------------------------------------- */
+	/*      Try opening the output datasource as an existing, writable      */
+	/* -------------------------------------------------------------------- */
+	
+	int                  iDriver;
+	
+	map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
+	oDriver1="GeoJSON";
+	sprintf(pszDestDataSource,"/vsimem/result_%d.json",getpid());
+	if(tmpMap!=NULL){
+	  if(strcmp(tmpMap->value,"text/xml")==0){
+	    sprintf(pszDestDataSource,"/vsimem/result_%d.xml",getpid());
+	    oDriver1="GML";
+	  }
+	}
+	
+	for( iDriver = 0;
+	     iDriver < poR->GetDriverCount() && poDriver == NULL;
+	     iDriver++ )
+	  {
+#if GDAL_VERSION_MAJOR >=2
+	    if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver1) )
+#else
+	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+#endif
+	      {
+		poDriver = poR->GetDriver(iDriver);
+	      }
+	  }
+	
+	if( poDriver == NULL )
+	  {
+	    char emessage[8192];
+	    sprintf( emessage, "Unable to find driver `%s'.\n", oDriver );
+	    sprintf( emessage,  "%sThe following drivers are available:\n",emessage );
+	    
+	    for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
+	      {
+#if GDAL_VERSION_MAJOR >=2
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+#else
+		sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+#endif
+	      }
+	    
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	    
+	  }
+	
+#if GDAL_VERSION_MAJOR >=2
+	if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+	{
+	  char emessage[1024];
+	  sprintf( emessage,  "%s driver does not support data source creation.\n",
+		   "json" );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/*      Create the output data source.                                  */
+	/* -------------------------------------------------------------------- */
+	//map* tpath=getMapFromMaps(conf,"main","tmpPath");
+	char **papszDSCO=NULL;
+#if GDAL_VERSION_MAJOR >=2
+        poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
+	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
+	if( poODS == NULL ){
+	  char emessage[1024];      
+	  sprintf( emessage,  "%s driver failed to create %s\n", 
+		   "json", pszDestDataSource );
+	  setMapInMaps(conf,"lenv","message",emessage);
+	  return SERVICE_FAILED;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/*      Create the layer.                                               */
+	/* -------------------------------------------------------------------- */
+	if( !poODS->TestCapability( ODsCCreateLayer ) )
+	  {
+	    char emessage[1024];
+	    sprintf( emessage, 
+		     "Layer %s not found, and CreateLayer not supported by driver.", 
+		     "Result" );
+	    setMapInMaps(conf,"lenv","message",emessage);
+	    return SERVICE_FAILED;
+	  }
+
+	poDstLayer = poODS->CreateLayer( "Result", NULL,wkbUnknown,NULL);
+	if( poDstLayer == NULL ){
+	  setMapInMaps(conf,"lenv","message","Layer creation failed.\n");
+	  return SERVICE_FAILED;
+	}
+	
+	OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+	int iField;
+	int hasMmField=0;
+	
+	for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
+	  {
+	    OGRFieldDefn *tmp=poFDefn->GetFieldDefn(iField);
+            if (iField >= 0)
+                poDstLayer->CreateField( poFDefn->GetFieldDefn(iField) );
+            else
+            {
+                fprintf( stderr, "Field '%s' not found in source layer.\n", 
+                        iField );
+		return SERVICE_FAILED;
+            }
+	  }
+
+	while(TRUE){
+	  OGRFeature      *poDstFeature = NULL;
+	  poFeature = poLayer->GetNextFeature();
+	  if( poFeature == NULL )
+	    break;
+	  if(poFeature->GetGeometryRef() != NULL){
+	    poDstFeature = OGRFeature::CreateFeature( poDstLayer->GetLayerDefn() );
+	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE )
+	      {
+		char tmpMsg[1024];
+		sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+			 poFeature->GetFID(), poFDefn->GetName() );
+		
+		OGRFeature::DestroyFeature( poFeature );
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRPoint* poPoint=new OGRPoint();
+	    poDstFeature->GetGeometryRef()->Centroid(poPoint);
+	    if(poDstFeature->SetGeometryDirectly(poPoint)!= OGRERR_NONE ){
+	      char tmpMsg[1024];
+	      sprintf( tmpMsg,"Unable to translate feature %ld from layer %s.\n",
+		       poFeature->GetFID(), poFDefn->GetName() );
+	      
+	      OGRFeature::DestroyFeature( poFeature );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	      return SERVICE_FAILED;
+	    }
+	    OGRFeature::DestroyFeature( poFeature );
+	    if( poDstLayer->CreateFeature( poDstFeature ) != OGRERR_NONE )
+	      {		
+		OGRFeature::DestroyFeature( poDstFeature );
+		return SERVICE_FAILED;
+	      }
+	    OGRFeature::DestroyFeature( poDstFeature );
+	  }
+	}
+
+      }
+
+    delete poODS;
+    delete ipoDS;
+
+    char *res1=readVSIFile(conf,pszDestDataSource);
+    if(res1==NULL)
+      return SERVICE_FAILED;
+    setMapInMaps(outputs,"Result","value",res1);
+    free(res1);
+
+    OGRCleanupAll();
+    return SERVICE_SUCCEEDED;
+
+}
+
+#ifdef WIN32
+  __declspec(dllexport)
+#endif
   int Boundary(maps*& conf,maps*& inputs,maps*& outputs){
     return applyOne(conf,inputs,outputs,&OGRGeometry::Boundary,"http://fooa/gml/3.1.0/polygon.xsd");
   }
@@ -789,8 +1154,12 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     return applyOne(conf,inputs,outputs,&OGRGeometry::ConvexHull,"http://fooa/gml/3.1.0/polygon.xsd");
   }
 
-
-  OGRDataSource* loadEntity(maps* conf,maps* inputs,char **filename,const char **oDriver,const char *entity,int iter){
+#if GDAL_VERSION_MAJOR >= 2
+GDALDataset*
+#else
+OGRDataSource* 
+#endif
+  loadEntity(maps* conf,maps* inputs,char **filename,const char **oDriver,const char *entity,int iter){
     map* tmp=getMapFromMaps(inputs,entity,"value");
     map* tmp1=getMapFromMaps(inputs,entity,"mimeType");
     *oDriver="GeoJSON";
@@ -803,7 +1172,13 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     }
     VSILFILE *ifile=VSIFileFromMemBuffer(*filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
     VSIFCloseL(ifile);
+#if GDAL_VERSION_MAJOR >= 2
+    return (GDALDataset*) GDALOpenEx( *filename,
+				      GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				      NULL, NULL, NULL );
+#else
     return OGRSFDriverRegistrar::Open(*filename,FALSE);    
+#endif
   }
 
   int applyOneBool(maps*& conf,maps*& inputs,maps*& outputs,OGRBoolean (OGRGeometry::*myFunc)() const){
@@ -838,19 +1213,34 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     }
     VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
     VSIFCloseL(ifile);
-    OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDataset *ipoDS =
+	(GDALDataset*) GDALOpenEx( filename,
+				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				   NULL, NULL, NULL );
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRDataSource* ipoDS = 
+	OGRSFDriverRegistrar::Open(filename,FALSE);
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
     char pszDestDataSource[100];
     if( ipoDS == NULL )
-      {
-	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-	
+      {	
 	fprintf( stderr, "FAILURE:\n"
 		 "Unable to open datasource `%s' with the following drivers.\n",
 		 filename );
 	
 	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
 	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 	char tmp[1024];
 	sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
@@ -932,23 +1322,39 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     OGRGeometryH geometry,res;
     OGRLayer *poDstLayer;
     //const char *oDriver1;
-    OGRDataSource       *poODS;
 #ifdef DEBUG
     dumpMaps(cursor);
 #endif
 
     char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver1;
-    OGRDataSource* ipoDS1 = loadEntity(conf,inputs,&filename,&oDriver1,"InputEntity1",1);
-
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset*
+#else
+    OGRDataSource* 
+#endif
+      ipoDS1 = loadEntity(conf,inputs,&filename,&oDriver1,"InputEntity1",1);
     char *filename1=(char*)malloc(1024*sizeof(char));
     const char *oDriver2;
-    OGRDataSource* ipoDS2 = loadEntity(conf,inputs,&filename1,&oDriver2,"InputEntity2",2);
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset*
+#else
+    OGRDataSource* 
+#endif
+      ipoDS2 = loadEntity(conf,inputs,&filename1,&oDriver2,"InputEntity2",2);
     const char *oDriver3;
     char pszDestDataSource[100];
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+      GDALDataset *poODS;
+#else
+      OGRDataSource       *poODS;
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
     if( ipoDS1 == NULL || ipoDS2 == NULL )
       {
-	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
 	
 	fprintf( stderr, "FAILURE:\n"
 		 "Unable to open datasource `%s' with the following drivers.\n",
@@ -956,7 +1362,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	
 	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
 	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 	char tmp[1024];
 	if( ipoDS1 == NULL )
@@ -1002,8 +1412,6 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 	    /*      Try opening the output datasource as an existing, writable      */
 	    /* -------------------------------------------------------------------- */
 	    
-	    OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
-	    OGRSFDriver          *poDriver = NULL;
 	    int                  iDriver;
 	    
 	    map* tmpMap=getMapFromMaps(outputs,"Result","mimeType");
@@ -1020,10 +1428,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		 iDriver < poR->GetDriverCount() && poDriver == NULL;
 		 iDriver++ )
 	      {
-#ifdef DEBUG
-		fprintf(stderr,"D:%s\n",poR->GetDriver(iDriver)->GetName());
+#if GDAL_VERSION_MAJOR >=2
+		if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver1) )
+#else
+		if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
 #endif
-		if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver3) )
 		  {
 		    poDriver = poR->GetDriver(iDriver);
 		  }
@@ -1037,7 +1446,11 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		
 		for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 		  {
+#if GDAL_VERSION_MAJOR >= 2
+		    sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+#else
 		    sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+#endif
 		  }
 		
 		setMapInMaps(conf,"lenv","message",emessage);
@@ -1045,20 +1458,29 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 		
 	      }
 	    
-	    if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
-	      char emessage[1024];
-	      sprintf( emessage,  "%s driver does not support data source creation.\n",
-		       "json" );
-	      setMapInMaps(conf,"lenv","message",emessage);
-	      return SERVICE_FAILED;
-	    }
+#if GDAL_VERSION_MAJOR >= 2
+	    if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	    if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+	      {
+		char emessage[1024];
+		sprintf( emessage,  "%s driver does not support data source creation.\n",
+			 "json" );
+		setMapInMaps(conf,"lenv","message",emessage);
+		return SERVICE_FAILED;
+	      }
 	    
 	    /* -------------------------------------------------------------------- */
 	    /*      Create the output data source.                                  */
 	    /* -------------------------------------------------------------------- */
 	    //map* tpath=getMapFromMaps(conf,"main","tmpPath");
 	    char **papszDSCO=NULL;
+#if GDAL_VERSION_MAJOR >= 2
+	    poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
 	    poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
 	    if( poODS == NULL ){
 	      char emessage[1024];      
 	      sprintf( emessage,  "%s driver failed to create %s\n", 
@@ -1203,28 +1625,52 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     maps* cursor=inputs;
     OGRGeometryH geometry,res;
     OGRLayer *poDstLayer;
-    OGRDataSource       *poODS;
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+#else
+    OGRDataSource *poODS;
+#endif
 
     char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver1;
-    OGRDataSource* ipoDS1 = loadEntity(conf,inputs,&filename,&oDriver1,"InputEntity1",1);
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset*
+#else
+    OGRDataSource*
+#endif
+      ipoDS1 = loadEntity(conf,inputs,&filename,&oDriver1,"InputEntity1",1);
 
     char *filename1=(char*)malloc(1024*sizeof(char));
     const char *oDriver2;
-    OGRDataSource* ipoDS2 = loadEntity(conf,inputs,&filename1,&oDriver2,"InputEntity2",2);
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset*
+#else
+    OGRDataSource*
+#endif
+      ipoDS2 = loadEntity(conf,inputs,&filename1,&oDriver2,"InputEntity2",2);
     const char *oDriver3;
     char pszDestDataSource[100];
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
+
     if( ipoDS1 == NULL || ipoDS2 == NULL )
       {
-	OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-	
 	fprintf( stderr, "FAILURE:\n"
 		 "Unable to open datasource `%s' with the following drivers.\n",
 		 filename );
 	
 	for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
 	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 	char tmp[1024];
 	if( ipoDS1 == NULL )
