@@ -32,6 +32,9 @@
 #include "cpl_conv.h"
 #include "cpl_string.h"
 #include "ogr_api.h"
+#if GDAL_VERSION_MAJOR >= 2
+#include <gdal_priv.h>
+#endif
 #ifdef ZOO_SERVICE
 #include "service.h"
 #endif
@@ -49,19 +52,31 @@ extern "C" {
 
 static void Usage();
 
-static int TranslateLayer( OGRDataSource *poSrcDS, 
-                           OGRLayer * poSrcLayer,
-                           OGRDataSource *poDstDS,
-                           char ** papszLSCO,
-                           const char *pszNewLayerName,
-                           int bTransform, 
-                           OGRSpatialReference *poOutputSRS,
-                           OGRSpatialReference *poSourceSRS,
-                           char **papszSelFields,
-                           int bAppend, int eGType,
-                           int bOverwrite,
-                           double dfMaxSegmentLength);
-
+static int TranslateLayer(
+#if GDAL_VERSION_MAJOR >= 2
+			  GDALDataset
+#else 
+			  OGRDataSource 
+#endif
+			  *poSrcDS, 
+			  OGRLayer * poSrcLayer,
+#if GDAL_VERSION_MAJOR >= 2
+			  GDALDataset
+#else 
+			  OGRDataSource 
+#endif
+			  *poDstDS,
+			  char ** papszLSCO,
+			  const char *pszNewLayerName,
+			  int bTransform, 
+			  OGRSpatialReference *poOutputSRS,
+			  OGRSpatialReference *poSourceSRS,
+			  char **papszSelFields,
+			  int bAppend, int eGType,
+			  int bOverwrite,
+			  double dfMaxSegmentLength
+			   );
+  
 static int bSkipFailures = FALSE;
 static int nGroupTransactions = 200;
 static int bPreserveFID = TRUE;
@@ -574,24 +589,34 @@ int main( int nArgc, char ** papszArgv )
 /* -------------------------------------------------------------------- */
 /*      Open data source.                                               */
 /* -------------------------------------------------------------------- */
-    OGRDataSource       *poDS;
-        
-    poDS = OGRSFDriverRegistrar::Open( pszDataSource, FALSE );
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDataset *poDS;
+      GDALDataset *poODS;
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRDataSource* poDS;
+      OGRDataSource *poODS;
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
 
 /* -------------------------------------------------------------------- */
 /*      Report failure                                                  */
 /* -------------------------------------------------------------------- */
     if( poDS == NULL )
     {
-        OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-        
         fprintf( stderr, "FAILURE:\n"
                 "Unable to open datasource `%s' with the following drivers.\n",
                 pszDataSource );
 
         for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
         {
-            fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
         }
 #ifdef ZOO_SERVICE
 	char tmp[1024];
@@ -606,11 +631,17 @@ int main( int nArgc, char ** papszArgv )
 /* -------------------------------------------------------------------- */
 /*      Try opening the output datasource as an existing, writable      */
 /* -------------------------------------------------------------------- */
-    OGRDataSource       *poODS;
-    
     if( bUpdate )
     {
-        poODS = OGRSFDriverRegistrar::Open( pszDestDataSource, TRUE );
+        poODS = 
+#if GDAL_VERSION_MAJOR >= 2
+	  (GDALDataset*) GDALOpenEx( pszDestDataSource,
+				     GDAL_OF_UPDATE | GDAL_OF_VECTOR,
+				     NULL, NULL, NULL )
+#else
+	  OGRSFDriverRegistrar::Open( pszDestDataSource, TRUE )
+#endif
+	  ;
         if( poODS == NULL )
         {
             fprintf( stderr, "FAILURE:\n"
@@ -638,15 +669,17 @@ int main( int nArgc, char ** papszArgv )
 /* -------------------------------------------------------------------- */
     else
     {
-        OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
-        OGRSFDriver          *poDriver = NULL;
         int                  iDriver;
 
         for( iDriver = 0;
              iDriver < poR->GetDriverCount() && poDriver == NULL;
              iDriver++ )
         {
-            if( EQUAL(poR->GetDriver(iDriver)->GetName(),pszFormat) )
+#if GDAL_VERSION_MAJOR >=2
+	    if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),pszFormat) )
+#else
+	    if( EQUAL(poR->GetDriver(iDriver)->GetName(),pszFormat) )
+#endif
             {
                 poDriver = poR->GetDriver(iDriver);
             }
@@ -659,7 +692,11 @@ int main( int nArgc, char ** papszArgv )
         
             for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
             {
-                fprintf( stderr,  "  -> `%s'\n", poR->GetDriver(iDriver)->GetName() );
+#if GDAL_VERSION_MAJOR >= 2
+	      fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
+	      fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
             }
 #ifdef ZOO_SERVICE
 	    char tmp[1024];
@@ -671,7 +708,11 @@ int main( int nArgc, char ** papszArgv )
 #endif
         }
 
-        if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#if GDAL_VERSION_MAJOR >=2
+	if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
         {
             fprintf( stderr,  "%s driver does not support data source creation.\n",
                     pszFormat );
@@ -688,7 +729,11 @@ int main( int nArgc, char ** papszArgv )
 /* -------------------------------------------------------------------- */
 /*      Create the output data source.                                  */
 /* -------------------------------------------------------------------- */
-        poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#if GDAL_VERSION_MAJOR >=2
+        poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
+	poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
         if( poODS == NULL )
         {
             fprintf( stderr,  "%s driver failed to create %s\n", 
@@ -886,7 +931,17 @@ int main( int nArgc, char ** papszArgv )
 static void Usage()
 
 {
-    OGRSFDriverRegistrar        *poR = OGRSFDriverRegistrar::GetRegistrar();
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDataset *poDS;
+      GDALDataset *poODS;
+      GDALDriverManager* poR=GetGDALDriverManager();
+      GDALDriver          *poDriver = NULL;
+#else
+      OGRDataSource* poDS;
+      OGRDataSource *poODS;
+      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+      OGRSFDriver          *poDriver = NULL;
+#endif
 
 #ifdef ZOO_SERVICE
 	fprintf(stderr,
@@ -907,10 +962,18 @@ static void Usage()
     
     for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
     {
-        OGRSFDriver *poDriver = poR->GetDriver(iDriver);
+        poDriver = poR->GetDriver(iDriver);
 
-        if( poDriver->TestCapability( ODrCCreateDataSource ) )
-            printf( "     -f \"%s\"\n", poDriver->GetName() );
+#if GDAL_VERSION_MAJOR >=2
+	if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+	if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poDriver->GetDescription() );
+#else
+	    fprintf( stderr, "  -> %s\n", poDriver->GetName() );
+#endif
     }
 
 #ifdef ZOO_SERVICE
@@ -961,17 +1024,28 @@ static void Usage()
 /*                           TranslateLayer()                           */
 /************************************************************************/
 
-static int TranslateLayer( OGRDataSource *poSrcDS, 
-                           OGRLayer * poSrcLayer,
-                           OGRDataSource *poDstDS,
-                           char **papszLCO,
-                           const char *pszNewLayerName,
-                           int bTransform, 
-                           OGRSpatialReference *poOutputSRS,
-                           OGRSpatialReference *poSourceSRS,
-                           char **papszSelFields,
-                           int bAppend, int eGType, int bOverwrite,
-                           double dfMaxSegmentLength)
+static int TranslateLayer(
+#if GDAL_VERSION_MAJOR >= 2
+			  GDALDataset
+#else 
+			  OGRDataSource 
+#endif
+			  *poSrcDS, 
+			  OGRLayer * poSrcLayer,
+#if GDAL_VERSION_MAJOR >= 2
+			  GDALDataset
+#else 
+			  OGRDataSource 
+#endif
+			  *poDstDS,
+			  char **papszLCO,
+			  const char *pszNewLayerName,
+			  int bTransform, 
+			  OGRSpatialReference *poOutputSRS,
+			  OGRSpatialReference *poSourceSRS,
+			  char **papszSelFields,
+			  int bAppend, int eGType, int bOverwrite,
+			  double dfMaxSegmentLength)
 		
 {
     OGRLayer    *poDstLayer;
