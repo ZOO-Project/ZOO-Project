@@ -23,7 +23,8 @@ Install ZOO-Project binaries
    correspond respectively to the ZOO-Kernel without and with Java
    support activated. So, in case you want to use the Java support,
    simply rename the `zoo_loader_jave.cgi` file located in
-   `c:\\inetpub\\cgi-bin` to `zoo_loader.cgi`.
+   `c:\\inetpub\\cgi-bin` to `zoo_loader.cgi` and make sure the
+   `jvm.dll` can be found.
 
 
 Using the installer
@@ -57,7 +58,7 @@ http://localhost/cgi-bin/zoo_loader.cgi:
      cd C:\Windows\System32\inetsrv
      appcmd.exe add vdirs /app.name:"Default Web Site/" /path:/cgi-bin /physicalPath:c:\inetpub\cgi-bin
      appcmd set config /section:handlers /+[name='CGI-exe1',path='*.cgi',verb='*',modules='CgiModule']
-
+     appcmd.exe set config /section:isapiCgiRestriction /+[path='c:\inetpub\cgi-bin\zoo_loader.cgi',description='ZOO-Project',allowed='True'] 
 
 
 

@@ -201,6 +201,21 @@ Java
 Specifically for the Java support, you may add the following two
 sections to your ``main.cfg`` file:
 
+:[java]:
+   This section is used to pass -D* parameters to the JVM  created by the
+   ZOO-Kernel to handle your ZOO-Service (see `ref. 1
+   <http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html#BehavioralOptions>`__
+   or `ref. 2
+   <http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html#PerformanceTuning>`__
+   for sample available). 
+   For each map ``a = b`` available in the ``[java]`` section, the
+   option ``-Da=b`` will be passed to the JVM. 
+:[javax]:
+   The section is used to pass -X* options to the JVM (see
+   `ref. <http://docs.oracle.com/cd/E22289_01/html/821-1274/configuring-the-default-jvm-and-java-arguments.html>`__). For
+   each map ``a = b`` available in the ``[javax]`` section, the option
+   ``-Xab`` will be passed to the JVM (ie. set ``mx=2G`` to pass
+   ``-Xmx2G``).
 :[javaxx]:
    This section is used to pass -XX:* parameters to the JVM  created by the
    ZOO-Kernel to handle your ZOO-Service (see `ref. 1
@@ -212,12 +227,6 @@ sections to your ``main.cfg`` file:
    option ``-XX:a=b`` will be passed to the JVM. In case of a map ``a =
    minus`` (respectively ``a=plus``) then the option ``-XX:-a``
    (respectivelly ``-XX:+a``) will be passed.
-:[javax]:
-   The section is used to pass -X* options to the JVM (see
-   `ref. <http://docs.oracle.com/cd/E22289_01/html/821-1274/configuring-the-default-jvm-and-java-arguments.html>`__). For
-   each map ``a = b`` available in the ``[javax]`` section, the option
-   ``-Xab`` will be passed to the JVM (ie. set ``mx=2G`` to pass
-   ``-Xmx2G``).
 
 ZOO-API
 *******
@@ -234,10 +243,30 @@ command:
 
   cd zoo-api/java
   make
-  cp ZOO.class libZOO.so /usr/lib/cgi-bin
 
 .. Note:: running the previous commands will require that both
           ``javac`` and ``javah`` are in your PATH.
+
+You should copy the ``libZOO.so`` in a place Java can find it. In case you
+have defined the ``java.library.path`` key as ``/usr/lib/cgi-bin``
+(in the ``[java]`` section), then you should copy it there. 
+
+.. code-block:: guess
+
+  cp libZOO.so /usr/lib/cgi-bin
+
+The ZOO-API provides the following functions:
+
+:String translate(String s):
+   This function call the internal ZOO-Kernel function responsible for
+   searching a translation of ``s`` in the zoo-services dictionary.
+
+:void updateStatus(Hashmap conf,String pourcent,String message):
+   This function call the updateStatus ZOO-Kernel function responsible
+   for updating the status of the running service (only usefull when
+   the service has been called asynchronously).
+
+
 
 Java ZCFG requirements
 **********************************

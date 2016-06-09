@@ -44,6 +44,8 @@ extern "C" {
 
   char *parseJVMXOption(map*);
 
+  char *parseJVMOption(map*);
+
   int zoo_java_support(maps**,map*,service*,maps**,maps**);
 
 #ifdef __cplusplus
