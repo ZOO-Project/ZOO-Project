@@ -91,24 +91,28 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   int njdb=2;
 #endif
 #ifndef WIN32
-  int nb=3+njdb;
+  int nb=2+njdb;
 #endif
-  int nbc0=0;
-  maps* javaXXMap=getMaps(*main_conf,"javaxx");
-  if(javaXXMap!=NULL){
-    nbc0+=count(javaXXMap->content);
+  int nbs[3]={0,0,0};
+  maps* javaMap=getMaps(*main_conf,"java");
+  if(javaMap!=NULL){
+    nbs[0]+=count(javaMap->content);
   }
   int nbc1=0;
   maps* javaXMap=getMaps(*main_conf,"javax");
   if(javaXMap!=NULL){
-    nbc1+=count(javaXMap->content);
+    nbs[1]+=count(javaXMap->content);
+  }
+  int nbc0=0;
+  maps* javaXXMap=getMaps(*main_conf,"javaxx");
+  if(javaXXMap!=NULL){
+    nbs[2]+=count(javaXXMap->content);
   }
 #ifdef WIN32
-  //#define nb (2+nbc0+nbc1)
-  const int nb=2+nbc0+nbc1;
+  const int nb=2+nbs[1]+nbs[2]+nbs[0];
   JavaVMOption *options=(JavaVMOption*)malloc(nb*sizeof(JavaVMOption));
 #else
-  JavaVMOption options[nb+nbc0+nbc1+1];
+  JavaVMOption options[nb+nbs[1]+nbs[2]+nbs[0]+1];
 #endif
   JavaVMInitArgs vm_args;
   JavaVM *jvm;
@@ -122,52 +126,55 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   jclass cls_gr;
 #endif
   int i,start;
-  map *cursorxx=NULL;
-  if(javaXXMap!=NULL)
-    cursorxx=javaXXMap->content;
-  map *cursorx=NULL;
-  if(javaXMap!=NULL)
-    cursorx=javaXMap->content;
   options[0].optionString = oclasspath;
   options[0].extraInfo=NULL;
   options[1].optionString = "-server";
   options[1].extraInfo=NULL;
-  char tmp1[100];
-  sprintf(tmp1,"-Djava.library.path=%s",cwdMap->value);
-  fprintf(stderr,"%s\n",tmp1);
-  options[2].optionString = tmp1;
-  options[2].extraInfo=NULL;
 #ifdef USE_JDB
-  options[3].optionString = "-Xdebug";
+  options[2].optionString = "-Xdebug";
+  options[2].extraInfo=NULL;
+  options[3].optionString = "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=7896";
   options[3].extraInfo=NULL;
-  options[4].optionString = "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=7896";
-  options[4].extraInfo=NULL;
 #endif
 #ifdef WIN32
   start=2;
   options[1].optionString = "-Xmx512m";
 #else
-  start=3+njdb;
+  start=2+njdb;
 #endif
-  for(i=0;i<nbc0;i++){
-    char *tmp=parseJVMXXOption(cursorxx);
+  map *cursors[3]={NULL,NULL,NULL};
+  if(javaMap!=NULL)
+    cursors[0]=javaMap->content;
+  if(javaXMap!=NULL)
+    cursors[1]=javaXMap->content;
+  if(javaXXMap!=NULL)
+    cursors[2]=javaXXMap->content;
+  for(i=0;i<nbs[0];i++){
+    char *tmp=parseJVMOption(cursors[0]);
     options[start+i].optionString = zStrdup(tmp);
     options[start+i].extraInfo=NULL;
     free(tmp);
-    cursorxx=cursorxx->next;
+    cursors[0]=cursors[0]->next;
   }
-  for(;i<nbc1+nbc0;i++){
-    char *tmp=parseJVMXOption(cursorx);
+  for(;i<nbs[0]+nbs[1];i++){
+    char *tmp=parseJVMXOption(cursors[1]);
     options[start+i].optionString = zStrdup(tmp);
     options[start+i].extraInfo=NULL;
     free(tmp);
-    cursorx=cursorx->next;
+    cursors[1]=cursors[1]->next;
+  }
+  for(;i<nbs[0]+nbs[2]+nbs[1];i++){
+    char *tmp=parseJVMXXOption(cursors[2]);
+    options[start+i].optionString = zStrdup(tmp);
+    options[start+i].extraInfo=NULL;
+    free(tmp);
+    cursors[2]=cursors[2]->next;
   }
 
   JNI_GetDefaultJavaVMInitArgs(&vm_args);
   vm_args.version = JNI_VERSION_1_6;
   vm_args.options = options;
-  vm_args.nOptions = start+nbc0+nbc1;
+  vm_args.nOptions = start+nbs[0]+nbs[1]+nbs[2];
   vm_args.ignoreUnrecognized = JNI_TRUE;
 
   result = JNI_CreateJavaVM(&jvm,(void **)&env, &vm_args);
@@ -208,7 +215,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 
   if (cls != NULL) {
 #ifdef JAVA7
-    (*env).ExceptionClear();
+@    (*env).ExceptionClear();
     pmid=(*env).GetStaticMethodID(cls, s->name, "(Ljava/util/HashMap;Ljava/util/HashMap;Ljava/util/HashMap;)I");
 #else
     (*env)->ExceptionClear(env);
@@ -280,7 +287,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #else
   (*jvm)->DestroyJavaVM(jvm);
 #endif
-  for(i=0;i<nbc1+nbc0;i++){
+  for(i=0;i<nbs[2]+nbs[1]+nbs[0];i++){
     free(options[start+i].optionString);
   }
 #ifdef WIN32
@@ -330,6 +337,19 @@ void displayStack(JNIEnv *env,maps* main_conf){
   printExceptionReportResponse(main_conf,err);
   freeMap(&err);
   free(err);
+}
+
+/**
+ * Create a string containing the JVM -D* options for a given map
+ * The result will be : -Dname=value
+ *
+ * @param m the map containing the option
+ * @return a char* containing the valide JVM option (-D*)
+ */
+char *parseJVMOption(map* m){
+  char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+4)*sizeof(char));
+  sprintf(res,"-D%s=%s",m->name,m->value);
+  return res;
 }
 
 /**
@@ -457,7 +477,7 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 	    int i;
 	    
 	    for(i=0;i<alen1;i++){
-	      map* vMap=getMapArray(tmp->content,"value",i);	    
+	      map* vMap=getMapArray(tmp->content,"value",i);
 	      map* sMap=getMapArray(tmp->content,"size",i);
 	      map* mMap=getMapArray(tmp->content,tmap->value,i);
 	      

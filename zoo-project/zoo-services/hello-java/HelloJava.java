@@ -24,13 +24,14 @@
 
 import java.lang.*;
 import java.util.*;
+import org.zoo_project.*;
 
 public class HelloJava {
     public static int HelloWorldJava(HashMap conf,HashMap inputs, HashMap outputs) {
         HashMap tmp=(HashMap)(inputs.get("S"));
         String v=tmp.get("value").toString();
         HashMap hm1 = (HashMap)(outputs.get("Result"));
-        hm1.put("value",ZOO._("Hello "+v+" from JAVA World !!"));
+        hm1.put("value",ZOO.translate("Hello "+v+" from JAVA World !!"));
         return ZOO.SERVICE_SUCCEEDED;
     }
     public static int JavaLongProcess(HashMap conf,HashMap inputs, HashMap outputs) {
@@ -46,7 +47,7 @@ public class HelloJava {
 	    }
 	}
         HashMap hm1 = (HashMap)(outputs.get("Result"));
-        hm1.put("value",ZOO._("Hello "+v+" from JAVA World !!"));
+        hm1.put("value",ZOO.translate("Hello "+v+" from JAVA World !!"));
         return ZOO.SERVICE_SUCCEEDED;
     }
 }

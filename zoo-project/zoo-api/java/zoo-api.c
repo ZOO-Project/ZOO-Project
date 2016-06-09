@@ -1,9 +1,9 @@
-#include "ZOO.h"
+#include "org_zoo_project_ZOO.h"
 #include "service.h"
 #include "service_internal.h"
 #include "service_internal_java.h"
 
-JNIEXPORT jstring JNICALL Java_ZOO__1
+JNIEXPORT jstring JNICALL Java_org_zoo_1project_ZOO_translate
   (JNIEnv *env, jclass _class, jstring msg){
   const char *message = 
 #ifdef JAVA7
@@ -16,7 +16,7 @@ JNIEXPORT jstring JNICALL Java_ZOO__1
 
 }
 
-JNIEXPORT jobject JNICALL Java_ZOO_updateStatus
+JNIEXPORT jobject JNICALL Java_org_zoo_1project_ZOO_updateStatus
   (JNIEnv *env, jclass _class, jobject conf, jstring pourc, jstring msg){
 
   jclass scHashMapClass,scHashMap_class;
