@@ -4,11 +4,7 @@ ifeq ($(OS),Darwin)
 	MACOS_CFLAGS=-arch x86_64
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.dylib
 else
-ifeq ($(CPU),x86_64)
-	LIBS= -L./ -lcgic /usr/lib64/libfcgi.so
-else
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.a
-endif
 endif
 CFLAGS=-g -Wall ${MACOS_CFLAGS}
 CC=gcc
