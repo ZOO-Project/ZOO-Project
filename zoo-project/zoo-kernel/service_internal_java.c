@@ -39,8 +39,10 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
-  char ntmp[1024];
-  getcwd(ntmp,1024);
+  map* cwdMap=getMapFromMaps(*main_conf,"lenv","cwd");
+  char *ntmp=NULL;
+  if(cwdMap!=NULL)
+    ntmp=zStrdup(cwdMap->value);
   map* tmp=getMap(request,"metapath");
   char *classpath;
   char *oclasspath;
@@ -79,13 +81,17 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 
   }
   sprintf(oclasspath,"-Djava.class.path=%s",classpath);
-
 #ifdef DEBUG
   fprintf(stderr,"CLASSPATH=%s\n",classpath);
   fprintf(stderr,"(%s)\n",oclasspath);
 #endif
+#ifndef USE_JDB
+  int njdb=0;
+#else
+  int njdb=2;
+#endif
 #ifndef WIN32
-  int nb=1;
+  int nb=3+njdb;
 #endif
   int nbc0=0;
   maps* javaXXMap=getMaps(*main_conf,"javaxx");
@@ -124,11 +130,24 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     cursorx=javaXMap->content;
   options[0].optionString = oclasspath;
   options[0].extraInfo=NULL;
+  options[1].optionString = "-server";
+  options[1].extraInfo=NULL;
+  char tmp1[100];
+  sprintf(tmp1,"-Djava.library.path=%s",cwdMap->value);
+  fprintf(stderr,"%s\n",tmp1);
+  options[2].optionString = tmp1;
+  options[2].extraInfo=NULL;
+#ifdef USE_JDB
+  options[3].optionString = "-Xdebug";
+  options[3].extraInfo=NULL;
+  options[4].optionString = "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=7896";
+  options[4].extraInfo=NULL;
+#endif
 #ifdef WIN32
   start=2;
   options[1].optionString = "-Xmx512m";
 #else
-  start=1;
+  start=3+njdb;
 #endif
   for(i=0;i<nbc0;i++){
     char *tmp=parseJVMXXOption(cursorxx);
@@ -163,11 +182,9 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 
   tmp=getMap(s->content,"serviceProvider");
 #ifdef JAVA7
-  cls = env->FindClass(tmp->value);
-  cls_gr = env->NewGlobalRef(cls);
+  cls = (*env).FindClass(tmp->value);
 #else
   cls = (*env)->FindClass(env,tmp->value);
-  cls_gr = (*env)->NewGlobalRef(env, cls);
 #endif
   if( cls == NULL ) {
     displayStack(env,*main_conf);
@@ -182,6 +199,11 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   else{
     fprintf(stderr,"%s loaded\n",tmp->value);
   }
+#endif
+#ifdef JAVA7
+  cls_gr = (*env)NewGlobalRef(cls);
+#else
+  cls_gr = (*env)->NewGlobalRef(env, cls);
 #endif
 
   if (cls != NULL) {
@@ -245,6 +267,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     else{
       displayStack(env,*main_conf);
 #ifdef JAVA7
+      (*env).ExceptionDescribe();
       (*jvm).DestroyJavaVM();
 #else
       (*jvm)->DestroyJavaVM(jvm);
@@ -323,7 +346,7 @@ char *parseJVMXXOption(map* m){
   char *res=(char*)malloc((strlen(m->name)+strlen(m->value)+6)*sizeof(char));
   if(strncasecmp(m->value,"minus",5)==0)
     sprintf(res,"-XX:-%s",m->name);
-  else if(strncasecmp(m->value,"plus",5)==0)
+  else if(strncasecmp(m->value,"plus",4)==0)
     sprintf(res,"-XX:+%s",m->name);
   else
     sprintf(res,"-XX:%s=%s",m->name,m->value);
@@ -392,10 +415,10 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 #ifdef JAVA7
 	      jbyteArray tmpData=(*env).NewByteArray(atoi(sizeV->value));
 	      (*env).SetByteArrayRegion(tmpData,0,atoi(sizeV->value),(const jbyte *)tmp1->value);
-	      (*env).CallObjectMethod(scObject1, put_mid, (*env).NewStringUTF(tmp1->name), tmpData);
+	      (*env).CallObjectMethod(env,scObject1, put_mid, (*env).NewStringUTF(env,tmp1->name), tmpData);
 #else
 	      jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sizeV->value));
-	      (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),tmp1->value);
+	      (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),(jbyte*) tmp1->value);
 	      (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), tmpData);
 #endif
 	    }else

@@ -91,12 +91,12 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
   /**
    * Maximum number of XML namespaces
    */
