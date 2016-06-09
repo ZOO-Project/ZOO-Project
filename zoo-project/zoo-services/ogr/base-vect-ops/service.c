@@ -1423,15 +1423,15 @@ OGRDataSource*
 		oDriver3="GML";
 	      }
 	    }
-	    
+
 	    for( iDriver = 0;
 		 iDriver < poR->GetDriverCount() && poDriver == NULL;
 		 iDriver++ )
 	      {
 #if GDAL_VERSION_MAJOR >=2
-		if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver1) )
+		if( EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver3) )
 #else
-		if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1) )
+		if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver3) )
 #endif
 		  {
 		    poDriver = poR->GetDriver(iDriver);
