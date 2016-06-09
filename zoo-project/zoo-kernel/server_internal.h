@@ -37,11 +37,12 @@
 
 extern   int conf_read(const char*,maps*);
 
+#include <libxml/parser.h>
+#include <libxml/xpath.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
 
   char *get_uuid();  
   char *base64(const char*,int);

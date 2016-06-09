@@ -111,19 +111,7 @@ extern "C" {
 #include <string.h>
 #ifndef WIN32
 #include <ctype.h>
-#ifndef bool
-#define bool int
-#endif
-#ifndef true
-  /**
-   * Local true definition
-   */
-#define true 1
-  /**
-   * Local false definition
-   */
-#define false 0
-#endif
+#include <stdbool.h>
 #endif
 
 /**

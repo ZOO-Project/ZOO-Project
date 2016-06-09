@@ -30,11 +30,12 @@
 #include "service.h"
 #include "ulinet.h"
 
+#include <libxml/parser.h>
+#include <libxml/xpath.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
 
   xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
   int appendMapsToMaps (maps*, maps*, maps*, elements*);

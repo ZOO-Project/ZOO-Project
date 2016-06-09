@@ -33,14 +33,11 @@ extern "C" int crlex ();
 
 #include "cgic.h"
 
-extern "C"
-{
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
-}
 
 #include "ulinet.h"
 
@@ -1721,11 +1718,11 @@ runRequest (map ** inputs)
         {
 #ifndef WIN32
           setenv (mapcs->name, mapcs->value, 1);
-#else
 #ifdef DEBUG
           fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
                    mapcs->value);
 #endif
+#else
           if (mapcs->value[strlen (mapcs->value) - 2] == '\r')
             {
 #ifdef DEBUG
@@ -1745,8 +1742,6 @@ runRequest (map ** inputs)
               fprintf (stderr, "setting variable... %s\n", "OK");
             }
 #else
-
-
           SetEnvironmentVariable (mapcs->name, mapcs->value);
 #endif
           char *toto =

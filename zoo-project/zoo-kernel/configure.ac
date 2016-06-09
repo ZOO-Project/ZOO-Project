@@ -586,24 +586,33 @@ else
 	if test "x$JDKHOME" = "xmacos";
 	then
 		JAVA_LDFLAGS="-framework JavaVM"
-		JAVA_CPPFLAGS="-I/Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
+		for i in `ls /Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/`; do
+		    JAVA_CPPFLAGS="-I/Applications/Xcode.app/Contents/Developer//Platforms/MacOSX.platform/Developer/SDKs/$i/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"
+		done
 	else
 		if test -d "$JDKHOME/jre/lib/i386";
 		then
 			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/server/ -ljvm -lpthread"
 			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
 		else
-			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
-			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+			if test -d "$JDKHOME/jre/lib/amd64"; then
+			   JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
+			   JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+			else
+			   JAVA_LDFLAGS="-L$JDKHOME/jre/lib/server/ -ljvm -lpthread"
+			   JAVA_CPPFLAGS="-I$JDKHOME/include/ -I$JDKHOME/include/darwin"
+			fi
 		fi
 	fi
 
+	AC_LANG([C++])
+	echo $JAVA_CPPFLAGS
 	# Check headers file (second time we check that in fact)
 	CPPFLAGS_SAVE="$CPPFLAGS"
 	CPPFLAGS="$JAVA_CPPFLAGS"
 	AC_CHECK_HEADERS([jni.h],
 			 [], [AC_MSG_ERROR([could not find jni.h file])])
-
+	CPPFLAGS="$CPPFLAGS_SAVE"
 	# Ensure we can link against libjava
 	LIBS_SAVE="$LIBS"
 	LIBS="$JAVA_LDFLAGS"
