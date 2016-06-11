@@ -27,8 +27,6 @@ extern "C" int crlex ();
 
 #ifdef USE_OTB
 #include "service_internal_otb.h"
-#else
-#define length(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
 #include "cgic.h"
