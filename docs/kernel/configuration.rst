@@ -157,9 +157,9 @@ specific section <kernel-orfeotoolbox-main.cfg>`.
 lenv section
 ...............................
 
-The ``lenv`` can be used to store runtime informations automatically
-set by ZOO-Kernel before and during the execution of a WPS service,
-with the following parameters:
+The ``lenv`` section is used by the ZOO-Kernel to store runtime informations
+before the execution of a WPS service, it contains the following
+parameters:
 
  * ``sid`` (r): The WPS Service unique identifier,
  * ``status`` (rw): The current progress value ( a value between 0 and
@@ -168,6 +168,22 @@ with the following parameters:
  * ``message`` (rw): An error message used when ``SERVICE_FAILED`` is returned (optional),
  * ``cookie`` (rw): The cookie to be returned to the client (for
    example for authentication purpose).
+ * ``file.pid`` (r): The file used by the ZOO-Kernel to store process identifier.
+ * ``file.sid`` (r): The file used by the ZOO-Kernel to store service identifier.
+ * ``file.responseInit`` (r): The file used by the ZOO-Kernel to store
+   the initial (then final) WPS response.
+ * ``file.responseFinal`` (r): The file used by the ZOO-Kernel to
+   temporary store the final WPS response.
+
+renv section
+...............................
+
+The ``renv`` section is automatically created by the ZOO-Kernel before
+the execution of a WPS service, it contains all the environment
+variables available at runtime (so including the header fields in case
+it is used through http, refer to [https://tools.ietf.org/html/rfc3875
+rfc3875] for more details).
+
 
 senv section
 ...............................

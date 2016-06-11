@@ -102,6 +102,10 @@ extern "C" int crlex ();
 #include <time.h>
 #include <stdarg.h>
 
+#ifndef WIN32
+extern char **environ;
+#endif
+
 #ifdef WIN32
 extern "C"
 {
@@ -1973,6 +1977,33 @@ runRequest (map ** inputs)
 #ifdef DEBUG
   dumpMap (request_inputs);
 #endif
+
+  int ei = 1;
+  char *s = 
+#ifdef WIN32
+    GetEnvironmentStrings();
+#else
+    *environ;
+#endif
+  _tmpMaps = (maps *) malloc (MAPS_SIZE);
+  _tmpMaps->name = zStrdup ("renv");
+  _tmpMaps->content = NULL;
+  _tmpMaps->next = NULL;
+  for (; s; ei++) {
+    char* tmpName=zStrdup(s);
+    char* tmpValue=strstr(s,"=")+1;
+    tmpName[strlen(tmpName)-strlen(tmpValue)-1]=0;
+    if(_tmpMaps->content == NULL)
+      _tmpMaps->content = createMap (tmpName,tmpValue);
+    else
+      addToMap (_tmpMaps->content,tmpName,tmpValue);
+    free(tmpName);
+    s = *(environ+ei);
+  }
+  addMapsToMaps (&m, _tmpMaps);
+  freeMaps (&_tmpMaps);
+  free (_tmpMaps);
+
 #ifdef WIN32
   char *cgiSidL = NULL;
   if (getenv ("CGISID") != NULL)
@@ -2090,6 +2121,7 @@ runRequest (map ** inputs)
             malloc ((strlen (r_inputs->value) +
                      strlen (usid->value) + 7) * sizeof (char));
           sprintf (fbkpid, "%s/%s.pid", r_inputs->value, usid->value);
+	  setMapInMaps (m, "lenv", "file.pid", fbkpid);
 
           f0 = freopen (fbkpid, "w+",stdout);
 	  printf("%d",getpid());
@@ -2101,6 +2133,7 @@ runRequest (map ** inputs)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
                      strlen (usid->value) + 7) * sizeof (char));
           sprintf (fbkp, "%s/%s.sid", r_inputs->value, usid->value);
+	  setMapInMaps (m, "lenv", "file.sid", fbkp);
           FILE* f2 = freopen (fbkp, "w+",stdout);
 	  printf("%s",tmpm->value);
 	  fflush(f2);
@@ -2112,12 +2145,14 @@ runRequest (map ** inputs)
                      strlen (usid->value) + 7) * sizeof (char));
           sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
                    usid->value);
+	  setMapInMaps (m, "lenv", "file.responseInit", fbkp);
           flog =
             (char *)
             malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
                      strlen (usid->value) + 13) * sizeof (char));
           sprintf (flog, "%s/%s_%s_error.log", r_inputs->value,
                    r_inputs1->value, usid->value);
+	  setMapInMaps (m, "lenv", "file.log", flog);
 #ifdef DEBUG
           fprintf (stderr, "RUN IN BACKGROUND MODE \n");
           fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
@@ -2159,6 +2194,7 @@ runRequest (map ** inputs)
                      strlen (usid->value) + 13) * sizeof (char));
           sprintf (fbkp1, "%s/%s_final_%s.xml", r_inputs->value,
                    r_inputs1->value, usid->value);
+	  setMapInMaps (m, "lenv", "file.responseFinal", fbkp1);
 
           f1 = freopen (fbkp1, "w+", stdout);
 
