@@ -11,4 +11,4 @@ ELSE(OTB_FOUND)
 ENDIF(OTB_FOUND)  
  
 ADD_EXECUTABLE(otb2zcfg otb2zcfg.cxx )  
-TARGET_LINK_LIBRARIES(otb2zcfg OTBCommon OTBApplicationEngine OTBIO ${ITK_LIBRARIES}) 
+TARGET_LINK_LIBRARIES(otb2zcfg OTBCommon OTBApplicationEngine OTBImageIO ${ITK_LIBRARIES}) 
