@@ -25,7 +25,6 @@
 #include "service.h"
 #include "service_internal.h"
 
-extern "C" {
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -37,6 +36,7 @@ extern "C" {
 #include <libxslt/xsltutils.h>
 
 #include <dirent.h>
+extern "C" {
 
   /**
    * GetStatus ZOO Service :
