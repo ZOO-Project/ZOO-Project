@@ -78,7 +78,6 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
       oclasspath=(char*) malloc((strlen(ntmp)+20)*sizeof(char));
       sprintf(classpath,"%s/",ntmp);
     }
-
   }
   sprintf(oclasspath,"-Djava.class.path=%s",classpath);
 #ifdef DEBUG

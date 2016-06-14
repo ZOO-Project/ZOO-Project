@@ -261,7 +261,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	msLoadProjectionStringEPSG(&myLayer->projection,tmpSrs);
 	
 	char tmpSrss[256];
-	sprintf(tmpSrss,"EPSG:4326 EPSG:900913 %s",tmpSrs);
+	sprintf(tmpSrss,"EPSG:4326 EPSG:900913 EPSG:3857 %s",tmpSrs);
 	
 	msInsertHashTable(&(m->web.metadata), "ows_srs", tmpSrss);
 	msInsertHashTable(&(myLayer->metadata), "ows_srs", tmpSrss);
@@ -304,8 +304,8 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	  addToMap(output->content,"crs","EPSG:4326");
 	  addToMap(output->content,"real_extent","true");
 	}
-	msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913");
-	msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
+	msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913 EPSG:3857");
+	msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913 EPSG:3857");
       }
     }
   }
@@ -317,14 +317,14 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       msLoadProjectionStringEPSG(&m->projection,msSrs->value);
       msLoadProjectionStringEPSG(&myLayer->projection,msSrs->value);
       char tmpSrs[128];
-      sprintf(tmpSrs,"%s EPSG:4326 EPSG:900913",msSrs->value);
+      sprintf(tmpSrs,"%s EPSG:4326 EPSG:900913 EPSG:3857",msSrs->value);
       msInsertHashTable(&(m->web.metadata),"ows_srs",tmpSrs);
       msInsertHashTable(&(myLayer->metadata),"ows_srs",tmpSrs);
     }else{
       msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
       msLoadProjectionStringEPSG(&myLayer->projection,"EPSG:4326");
-      msInsertHashTable(&(m->web.metadata),"ows_srs","EPSG:4326 EPSG:900913");
-      msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913");
+      msInsertHashTable(&(m->web.metadata),"ows_srs","EPSG:4326 EPSG:900913 EPSG:3857");
+      msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913 EPSG:3857");
     }
     if(output!=NULL){
       addToMap(output->content,"crs",msSrs->value);
@@ -633,8 +633,8 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       addToMap(output->content,"crs","EPSG:4326");
       addToMap(output->content,"crs_isGeographic","true");
       msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
-      msInsertHashTable(&(m->web.metadata), "ows_srs", "EPSG:4326 EPSG:900913");
-      msInsertHashTable(&(myLayer->metadata), "ows_srs", "EPSG:4326 EPSG:900913");
+      msInsertHashTable(&(m->web.metadata), "ows_srs", "EPSG:4326 EPSG:900913 EPSG:3857");
+      msInsertHashTable(&(myLayer->metadata), "ows_srs", "EPSG:4326 EPSG:900913 EPSG:3857");
     }
 
     OGREnvelope oExt;
