@@ -4,7 +4,7 @@ CFLAGS=-I${INST_INCLUDE} ${ZOO_CFLAGS} ${XML2CFLAGS} ${GDAL_CFLAGS} ${PYTHONCFLA
 CC=gcc
 
 cgi-env/translate_service.zo: service.c
-	g++ ${CFLAGS} -shared -fpic -o cgi-env/translate_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS} -L${INST_LIB} -lzoo_service
+	g++ ${CFLAGS} -shared -fpic -o cgi-env/translate_service.zo ./service.c ${GDAL_LIBS} ${MACOS_LD_FLAGS} -L${ZRPATH}/zoo-kernel/ -lzoo_service
 
 install:
 	install -d ${CGI_DIR}/gdal/translate
