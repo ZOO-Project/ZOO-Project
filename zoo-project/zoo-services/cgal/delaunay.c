@@ -49,12 +49,16 @@ extern "C" {
     /* -------------------------------------------------------------------- */
     /*      Try opening the output datasource as an existing, writable      */
     /* -------------------------------------------------------------------- */
-    OGRDataSource       *poODS;
-    
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+    GDALDriverManager* poR=GetGDALDriverManager();
+    GDALDriver          *poDriver = NULL;
+#else
+    OGRDataSource       *poODS;    
     OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
     OGRSFDriver          *poDriver = NULL;
+#endif
     int                  iDriver;
-
     map *tmpMap=getMapFromMaps(outputs,"Result","mimeType");
     const char *oDriver;
     oDriver="GeoJSON";
@@ -69,9 +73,20 @@ extern "C" {
 	 iDriver++ )
       {
 #ifdef DEBUG
+#if GDAL_VERSION_MAJOR >= 2
+	fprintf(stderr,"D:%s\n",poR->GetDriver(iDriver)->GetDescription());
+#else
 	fprintf(stderr,"D:%s\n",poR->GetDriver(iDriver)->GetName());
 #endif
-	if( EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver) )
+#endif
+	if( EQUAL(
+#if GDAL_VERSION_MAJOR >= 2
+		  poR->GetDriver(iDriver)->GetDescription()
+#else
+		  poR->GetDriver(iDriver)->GetName()
+#endif
+		  ,
+		  oDriver) )
 	  {
 	    poDriver = poR->GetDriver(iDriver);
 	  }
@@ -85,7 +100,11 @@ extern "C" {
         
 	for( iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
 	  {
+#if GDAL_VERSION_MAJOR >= 2
+	    sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetDescription() );
+#else
 	    sprintf( emessage,  "%s  -> `%s'\n", emessage, poR->GetDriver(iDriver)->GetName() );
+#endif
 	  }
 
 	setMapInMaps(conf,"lenv","message",emessage);
@@ -93,13 +112,18 @@ extern "C" {
 
       }
 
-    if( !poDriver->TestCapability( ODrCCreateDataSource ) ){
-      char emessage[1024];
-      sprintf( emessage,  "%s driver does not support data source creation.\n",
-	       "json" );
-      setMapInMaps(conf,"lenv","message",emessage);
-      return SERVICE_FAILED;
-    }
+#if GDAL_VERSION_MAJOR >=2
+    if( !CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+#else
+    if( !poDriver->TestCapability( ODrCCreateDataSource ) )
+#endif
+      {
+	char emessage[1024];
+	sprintf( emessage,  "%s driver does not support data source creation.\n",
+		 "json" );
+	setMapInMaps(conf,"lenv","message",emessage);
+	return SERVICE_FAILED;
+      }
 
     /* -------------------------------------------------------------------- */
     /*      Create the output data source.                                  */
@@ -107,7 +131,11 @@ extern "C" {
     char *pszDestDataSource=(char*)malloc(100);
     char **papszDSCO=NULL;
     sprintf(pszDestDataSource,"/vsimem/result_%d",getpid());
+#if GDAL_VERSION_MAJOR >=2
+    poODS = poDriver->Create( pszDestDataSource, 0, 0, 0, GDT_Unknown, papszDSCO );
+#else
     poODS = poDriver->CreateDataSource( pszDestDataSource, papszDSCO );
+#endif
     if( poODS == NULL ){
       char emessage[1024];      
       sprintf( emessage,  "%s driver failed to create %s\n", 

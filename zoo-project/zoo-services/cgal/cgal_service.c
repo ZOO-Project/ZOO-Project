@@ -28,10 +28,21 @@ int parseInput(maps* conf,maps* inputs, std::vector<Point>* points,char* filenam
   tmpm=getMapFromMaps(inputs,"InputPoints","value");
   VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmpm->value,strlen(tmpm->value),FALSE);
   VSIFCloseL(ifile);
+#if GDAL_VERSION_MAJOR >= 2
+  GDALDataset *ipoDS =
+    (GDALDataset*) GDALOpenEx( filename,
+			       GDAL_OF_READONLY | GDAL_OF_VECTOR,
+			       NULL, NULL, NULL );
+#else
   OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+#endif
   if( ipoDS == NULL )
     {
+#if GDAL_VERSION_MAJOR >= 2
+      GDALDriverManager* poR=GetGDALDriverManager();
+#else
       OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
+#endif
       
       fprintf( stderr, "FAILURE:\n"
 	       "Unable to open datasource `%s' with the following drivers.\n",
@@ -39,7 +50,11 @@ int parseInput(maps* conf,maps* inputs, std::vector<Point>* points,char* filenam
       
       for( int iDriver = 0; iDriver < poR->GetDriverCount(); iDriver++ )
         {
-	  fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#if GDAL_VERSION_MAJOR >= 2
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetDescription() );
+#else
+	    fprintf( stderr, "  -> %s\n", poR->GetDriver(iDriver)->GetName() );
+#endif
         }
       char tmp[1024];
       sprintf(tmp,"Unable to open datasource `%s' with the following drivers.",filename);
