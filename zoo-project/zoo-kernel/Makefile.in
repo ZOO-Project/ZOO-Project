@@ -104,8 +104,8 @@ zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main
 	g++  ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o server_internal.o service_internal.o ${MS_FILE} response_print.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml -L. ${LDFLAGS}
 
 install:
-	install -d ${CGI_DIR}
-	install zoo_loader.cgi ${CGI_DIR}/
+	install -d ${DESTDIR}${CGI_DIR}
+	install zoo_loader.cgi ${DESTDIR}${CGI_DIR}/
 	install libzoo_service.${EXT} ${DESTDIR}${INST_LIB}/${LIBZOO_SERVICE}
 	(cd ${DESTDIR}${INST_LIB} ; \
 	 if [ -e "libzoo_service.${EXT}" ]; then rm  libzoo_service.${EXT}; fi ; \
