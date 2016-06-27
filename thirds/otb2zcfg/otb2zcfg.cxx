@@ -127,13 +127,13 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
   ImageType::Pointer image = ImageType::New(); 
  
   const char * ITK_AUTOLOAD_PATH = itksys::SystemTools::GetEnv("ITK_AUTOLOAD_PATH");
-  std::cerr << "ERROR: Module search path: " << (ITK_AUTOLOAD_PATH ? ITK_AUTOLOAD_PATH : "none (check ITK_AUTOLOAD_PATH)") << std::endl;
+  std::cerr << "INFO: Module search path: " << (ITK_AUTOLOAD_PATH ? ITK_AUTOLOAD_PATH : "none (check ITK_AUTOLOAD_PATH)") << std::endl;
 
   std::vector<std::string> list = ApplicationRegistry::GetAvailableApplications();
   if (list.size() == 0)
-    std::cerr << "ERROR: Available modules : none." << std::endl;
+    std::cerr << "ERROR: no module found." << std::endl;
   else{
-    std::cerr << "ERROR: Available modules :" << std::endl;
+    std::cerr << "INFO: Available modules :" << std::endl;
     for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it){
       std::string filename= *it + ".zcfg";
       std::ofstream out(filename.c_str(),std::ofstream::out);
