@@ -358,7 +358,7 @@ void PythonZooReport(maps* m,const char* module,int load){
       if(pbt!=NULL)
 	free(pbt);
       pbt=(char*)malloc((90+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));      
-      sprintf(pbt,_("%s \n Unable to run your python process properly. Unable to provide any futher informations."),tpbt);
+      sprintf(pbt,_("%s \n Unable to run your python process properly. Unable to provide any further information."),tpbt);
     }
     free(tpbt);
   }
@@ -378,7 +378,7 @@ void PythonZooReport(maps* m,const char* module,int load){
  * @param t the maps to convert
  * @return a new PyDictObject containing the converted maps
  * @see PyDict_FromMap
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 PyDictObject* PyDict_FromMaps(maps* t){
   PyObject* res=PyDict_New( );
@@ -401,7 +401,7 @@ PyDictObject* PyDict_FromMaps(maps* t){
  *
  * @param t the map to convert
  * @return a new PyDictObject containing the converted maps
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 PyDictObject* PyDict_FromMap(map* t){
   PyObject* res=PyDict_New( );
@@ -518,7 +518,7 @@ PyDictObject* PyDict_FromMap(map* t){
  *
  * @param t the PyDictObject to convert
  * @return a new maps containing the converted PyDictObject
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 maps* mapsFromPyDict(PyDictObject* t){
   maps* res=NULL;
@@ -605,7 +605,7 @@ maps* _mapsFromPyDict(PyDictObject* t){
  *
  * @param t the PyDictObject to convert
  * @return a new map containing the converted PyDictObject
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 map* mapFromPyDict(PyDictObject* t){
   map* res=NULL;

@@ -32,7 +32,7 @@ define([
      * generate XML requests to be sent to a WPS Server.
      * In the ZOO-Client API, the Hogan.js templates have to be compiled before
      * you can use them from you application. Please refer to the ZOO-Client 
-     * installation documentation for more informations.
+     * installation documentation for more information.
      * 
      * @module wpsPayload 
      * @requires payloads

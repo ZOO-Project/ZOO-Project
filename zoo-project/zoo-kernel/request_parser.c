@@ -323,7 +323,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 			  (&*main_conf, &tmpmaps->content, hInternet, tmpx2) < 0)
 			{
 			  free(cursor_input);
-			  return errorException (*main_conf, "Unable to fetch any ressource", "InternalError", NULL);
+			  return errorException (*main_conf, "Unable to fetch any resource", "InternalError", NULL);
 			}
 		      }
 		    free (tmpx2);
@@ -1318,7 +1318,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 }
 
 /**
- * Parse XML request and store informations in maps.
+ * Parse XML request and store information in maps.
  *
  * @param main_conf the conf maps containing the main.cfg settings
  * @param post the string containing the XML request
@@ -1425,7 +1425,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 }
 
 /**
- * Parse request and store informations in maps.
+ * Parse request and store information in maps.
  *
  * @param main_conf the conf maps containing the main.cfg settings
  * @param post the string containing the XML request

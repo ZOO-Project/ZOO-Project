@@ -217,7 +217,7 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
 }
 
 /**
- * Close a HINTERNET connection and free allocated ressources
+ * Close a HINTERNET connection and free allocated resources
  *
  * @param handle0 the HINTERNET connection to close
  */
@@ -443,7 +443,7 @@ int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToR
 
 
 /**
- * Use basic authentication for accessing a ressource
+ * Use basic authentication for accessing a resource
  * 
  * @param hInternet the _HINTERNET structure
  * @param login the login to use to authenticate

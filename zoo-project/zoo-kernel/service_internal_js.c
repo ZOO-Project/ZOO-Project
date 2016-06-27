@@ -385,7 +385,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
  * @param cx the JavaScript context
  * @param global the global JavaScript object (not used)
  * @param filename the file name to load
- * @return a JavaScript Object on success, NULL if an errro occured
+ * @return a JavaScript Object on success, NULL if an errro occurred
  */
 JSObject * loadZooApiFile(JSContext *cx,JSObject  *global, char* filename){
   struct stat api_status;
@@ -775,7 +775,7 @@ void reportError(JSContext *cx, const char *message, JSErrorReport *report)
  * @param context the JavaScript context
  * @param arg the JavaScript value
  * @return a new char*
- * @warning be sure to free the ressources returned by this function
+ * @warning be sure to free the resources returned by this function
  */
 char* JSValToChar(JSContext* context, jsval* arg) {
   char *c;

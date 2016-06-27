@@ -55,7 +55,7 @@ int getVersionId(const char* version){
  * ref: https://www.ietf.org/rfc/rfc4122.txt / 4.2 
  *
  * @return a new char* containing the UUID, make sure to free the returned 
- *  ressource once used.
+ *  resource once used.
  */
 char *get_uuid(){
   char *res=(char*)malloc(37*sizeof(char));
@@ -364,7 +364,7 @@ int writeFile(char* fname,char* val,int length){
   }
   size_t ret=fwrite(val,sizeof(char),length,of);
   if(ret<length){
-    fprintf(stderr,"Write error occured!\n");
+    fprintf(stderr,"Write error occurred!\n");
     fclose(of);
     return -1;
   }

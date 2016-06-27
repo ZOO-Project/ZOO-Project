@@ -242,7 +242,7 @@ msgstr "%s\nユーザーPythonプロセスを正しく実行できません。�
 #, c-format
 msgid ""
 "%s \n"
-" Unable to run your python process properly. Unable to provide any futher informations."
+" Unable to run your python process properly. Unable to provide any further information."
 msgstr "%s\nユーザーPythonプロセスを正しく実行できません。より詳しい情報は提供されていません。"
 
 #: zoo_service_loader.c:352
@@ -252,7 +252,7 @@ msgstr "ZOOカーネルはリクエストを処理することができません
 
 #: zoo_service_loader.c:527
 #, c-format
-msgid "Error occured while running the %s function: %s"
+msgid "Error occurred while running the %s function: %s"
 msgstr "%s ファンクションを実行中にエラーが発生しました : %s"
 
 #: zoo_service_loader.c:578

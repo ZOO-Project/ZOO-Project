@@ -88,7 +88,7 @@ void addPrefix(maps* conf,map* level,service* serv){
 /**
  * Print the HTTP headers based on a map.
  * 
- * @param m the map containing the headers informations
+ * @param m the map containing the headers information
  */
 void printHeaders(maps* m){
   maps *_tmp=getMaps(m,"headers");
@@ -888,11 +888,11 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service
 }
 
 /**
- * Generate the required XML tree for the detailled metadata informations of 
+ * Generate the required XML tree for the detailled metadata information of 
  * inputs or outputs
  *
  * @param in 1 in case of inputs, 0 for outputs
- * @param elem the elements structure containing the metadata informations
+ * @param elem the elements structure containing the metadata information
  * @param type the name ("Input" or "Output") of the XML node to create
  * @param ns_ows the ows XML namespace
  * @param ns_ows the ows XML namespace
@@ -2128,12 +2128,12 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 }
 
 /**
- * Create XML node with basic ows metadata informations (Identifier,Title,Abstract)
+ * Create XML node with basic ows metadata information (Identifier,Title,Abstract)
  *
  * @param root the root XML node to add the description
  * @param ns_ows the ows XML namespace
  * @param identifier the identifier to use
- * @param amap the map containing the ows metadata informations 
+ * @param amap the map containing the ows metadata information 
  */
 void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map* amap,int vid=0){
   xmlNodePtr nc2;
@@ -2331,7 +2331,7 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
 /**
  * Generate the output response (RawDataOutput or ResponseDocument)
  *
- * @param s the service structure containing the metadata informations
+ * @param s the service structure containing the metadata information
  * @param request_inputs the inputs provided to the service for execution
  * @param request_outputs the outputs updated by the service execution
  * @param request_inputs1 the map containing the HTTP request
@@ -2670,7 +2670,7 @@ void printBoundingBox(xmlNsPtr ns_ows,xmlNodePtr n,map* boundingbox){
  * Value is provided as : lowerCorner,upperCorner,crs,dimension
  * Exemple : 189000,834000,285000,962000,urn:ogc:def:crs:OGC:1.3:CRS84
  *
- * A map to store boundingbox informations should contain:
+ * A map to store boundingbox information should contain:
  *  - lowerCorner : double,double (minimum within this bounding box)
  *  - upperCorner : double,double (maximum within this bounding box)
  *  - crs : URI (Reference to definition of the CRS)
