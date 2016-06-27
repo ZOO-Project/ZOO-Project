@@ -241,7 +241,7 @@ msgstr "%s\nImpossibile eseguire il processo di Python correttamente. Controllar
 #, c-format
 msgid ""
 "%s \n"
-" Unable to run your python process properly. Unable to provide any futher informations."
+" Unable to run your python process properly. Unable to provide any further information."
 msgstr "%s\nImpossibile eseguire il processo di Python correttamente. Impossibile fornire ulteriori informazioni."
 
 #: zoo_service_loader.c:352
@@ -251,7 +251,7 @@ msgstr "ZOO Kernel è fallito processando la richiesta, ricevendo il segnale %d 
 
 #: zoo_service_loader.c:527
 #, c-format
-msgid "Error occured while running the %s function: %s"
+msgid "Error occurred while running the %s function: %s"
 msgstr "Un errore è avvenuto mentre si stava eseguendo la funzione %s: %s"
 
 #: zoo_service_loader.c:578

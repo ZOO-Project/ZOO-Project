@@ -123,7 +123,7 @@ msgid ""
 "The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
 "background task. Please access the URL in the statusLocation attribute "
 "provided in this document to get the up-to-date status and results."
-msgstr "Le service \"%s\" a été accepté par le ZOO-Kernel et est en cours d'exécution en tâche de fond. Merci d'utiliser le lien URL fournis dans l'attribut statusLocation de la racine de ce document pour obtenir des informations sur l'état d'éxcution du service."
+msgstr "Le service \"%s\" a été accepté par le ZOO-Kernel et est en cours d'exécution en tâche de fond. Merci d'utiliser le lien URL fournis dans l'attribut statusLocation de la racine de ce document pour obtenir des information sur l'état d'éxcution du service."
 
 #: response_print.c:1661
 msgid "No more information available"
@@ -242,7 +242,7 @@ msgstr "%s\nImpossible de charger votre service python correctement. Veuillez vo
 #, c-format
 msgid ""
 "%s \n"
-" Unable to run your python process properly. Unable to provide any futher informations."
+" Unable to run your python process properly. Unable to provide any further information."
 msgstr "%s\nImpossible de charger votre service python correctement. Aucune information supplémentaire."
 
 #: zoo_service_loader.c:352
@@ -252,7 +252,7 @@ msgstr "ZOO-Kernel n'as pas pu traiter votre requête, recevant un signal %d = %
 
 #: zoo_service_loader.c:527
 #, c-format
-msgid "Error occured while running the %s function: %s"
+msgid "Error occurred while running the %s function: %s"
 msgstr "Une erreur est survenue pendant l'execution de la %s fonction: %s"
 
 #: zoo_service_loader.c:578

@@ -34,7 +34,7 @@
 -- SET search_path TO zoo;
 --------------------------------------------------------------------------------
 -- Services table
--- Used to store informations about services running asynchronously
+-- Used to store information about services running asynchronously
 create table services (
        osid TEXT unique,
        sid TEXT unique,

@@ -307,7 +307,7 @@ void displayStack(JNIEnv *env,maps* main_conf){
   sprintf(tmps,"%s/%d.ztmp",tmpm->value,getpid());
   FILE* new_stdout=fopen(tmps,"wb+");
   if(new_stdout==NULL){
-    map* err=createMap("text","Unable to run your service, no debug informations can be provided (please verify privileges on tmpPath)");
+    map* err=createMap("text","Unable to run your service, no debug information can be provided (please verify privileges on tmpPath)");
     addToMap(err,"code","InternalError");
     printExceptionReportResponse(main_conf,err);
     freeMap(&err);
@@ -394,7 +394,7 @@ char *parseJVMXOption(map* m){
  * @param scHashMap_class the HashMap class
  * @param scHashMap_constructor the pointer to the hashMap constructor method
  * @return a created JAVA HashMap containing the converted maps
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHashMap_class,jmethodID scHashMap_constructor){
   jobject scObject,scObject1;
@@ -538,7 +538,7 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
  * @param t the HashMap 
  * @param scHashMapClass the hashMap class
  * @return a created maps containing the converted HashMap
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 #ifdef DEBUG

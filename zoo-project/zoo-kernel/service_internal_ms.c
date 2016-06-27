@@ -833,7 +833,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Extract information about available bands to set the bandcount and the
    * processing directive
    */
-  char nBands[2];
+  char nBands[3];
   int nBandsI=GDALGetRasterCount( hDataset );
   sprintf(nBands,"%d",GDALGetRasterCount( hDataset ));
   msInsertHashTable(&(myLayer->metadata), "ows_bandcount", nBands);
@@ -847,7 +847,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   /**
    * Name available Bands
    */
-  char lBands[6];
+  char lBands[7];
   char *nameBands=NULL;
   for( iBand = 0; iBand < nBandsI; iBand++ ){
     sprintf(lBands,"Band%d",iBand+1);
@@ -866,7 +866,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   msInsertHashTable(&(myLayer->metadata), "ows_bandnames", nameBands);
   
   /**
-   * Loops over metadata informations to setup specific informations
+   * Loops over metadata information to setup specific information
    */
   for( iBand = 0; iBand < nBandsI; iBand++ ){
     //int         bGotNodata;//, bSuccess;

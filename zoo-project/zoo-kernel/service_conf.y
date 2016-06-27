@@ -110,7 +110,7 @@ document
  ;
 
 miscetoile
- : miscetoile PIERROR {  srerror("processing instruction begining with <?xml ?> impossible\n");}
+ : miscetoile PIERROR {  srerror("processing instruction beginning with <?xml ?> impossible\n");}
  | miscetoile PI {}
  | {}
  ;
@@ -752,7 +752,7 @@ processid
 %%
 
 /**
- * Print on stderr the message and the line number of the error which occured.
+ * Print on stderr the message and the line number of the error which occurred.
  * 
  * @param s the error message
  */

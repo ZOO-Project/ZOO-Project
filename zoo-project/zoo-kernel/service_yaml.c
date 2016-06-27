@@ -42,7 +42,7 @@ extern "C" {
  * @param file the file name to read
  * @param service the service structure to fill
  * @param name the service name
- * @return 1 on success, -1 if error occured
+ * @return 1 on success, -1 if error occurred
  */
 int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
   FILE *fh;

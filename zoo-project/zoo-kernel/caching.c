@@ -37,7 +37,7 @@
  * 
  * @param url the char* 
  * @return a char* representing the md5 of the url
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 char* getMd5(char* url){
   EVP_MD_CTX md5ctx;
@@ -123,7 +123,7 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
  * @param conf the maps containing the settings of the main.cfg file
  * @param request the url
  * @return the full name of the cached file if any, NULL in other case
- * @warning make sure to free ressources returned by this function (if not NULL)
+ * @warning make sure to free resources returned by this function (if not NULL)
  */
 char* isInCache(maps* conf,char* request){
   map* tmpM=getMapFromMaps(conf,"main","cacheDir");

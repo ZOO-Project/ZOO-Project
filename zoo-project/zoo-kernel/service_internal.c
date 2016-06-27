@@ -682,7 +682,7 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
  *
  * @param conf the maps containing the settings of the main.cfg file
  * @param dataSource the datasource name to read
- * @warning make sure to free ressources returned by this function
+ * @warning make sure to free resources returned by this function
  */
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");

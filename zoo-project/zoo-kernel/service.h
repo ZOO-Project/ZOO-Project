@@ -204,7 +204,7 @@ extern "C" {
   /**
    * Not named linked list
    *
-   * Used to store informations about formats, such as mimeType, encoding ... 
+   * Used to store information about formats, such as mimeType, encoding ... 
    */
   typedef struct iotype{
     struct map* content; //!< the content map
@@ -214,7 +214,7 @@ extern "C" {
   /**
    * Metadata information about input or output.
    *
-   * The elements are used to store metadata informations defined in the ZCFG.
+   * The elements are used to store metadata information defined in the ZCFG.
    */
   typedef struct elements{
     char* name; //!< the name
@@ -228,7 +228,7 @@ extern "C" {
   } elements;
 
   /**
-   * Metadata informations about a full Service.
+   * Metadata information about a full Service.
    */
   typedef struct service{
     char* name; //!< the name

@@ -17,9 +17,9 @@ Version 1.5.0
   * Fix asynchronous POST request on WIN32 platforms
   * Add utils/registry service
   * Initial support for WPS 2.0.0 including the Dismiss extension
-  * Fix concurrency access to status informations
-  * Use simple file rather than shared memory for storing status informations
-  * Add support for db backend to store status informations
+  * Fix concurrency access to status information
+  * Use simple file rather than shared memory for storing status information
+  * Add support for db backend to store status information
   * Add the lib_zoo_service shared library to be linked against C services
   * Add ZOO-API for the PHP language (with documentation)
   * Add doxygen comments in source code
@@ -137,8 +137,8 @@ Version 1.2.0-rc1
   * enhance POST request support
   * add !BoundingBoxData support
   * Python support is now optional as other languages
-  * add lenv section before running the service to store informations runtime specific 
-  * add COOKIE support and {{{senv}}} section to store informations session specific
+  * add lenv section before running the service to store information runtime specific 
+  * add COOKIE support and {{{senv}}} section to store information session specific
   * add {{{USE_GDB}}} compilation flag to remove signal handling for debuging purpose
   * enhance base64 support when included in and XML POST request
   * return !ExceptionReport when no protocol was specified for xlink:href value

@@ -557,7 +557,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                     (char *) malloc (2048 + strlen (r_inputs->value));
                   sprintf (tmpMsg,
                            _
-                           ("Error occured while running the %s function: %s"),
+                           ("Error occurred while running the %s function: %s"),
                            r_inputs->value, errstr);
                   errorException (m, tmpMsg, "InternalError", NULL);
                   free (tmpMsg);

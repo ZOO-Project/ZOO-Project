@@ -130,7 +130,7 @@ processid
 %%
 
 /**
- * Print on stderr the message and the line number of the error which occured.
+ * Print on stderr the message and the line number of the error which occurred.
  *
  * @param s the error message
  */

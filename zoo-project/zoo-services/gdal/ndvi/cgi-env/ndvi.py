@@ -39,7 +39,7 @@ def ExtractNDVI(conf, inputs, outputs):
     newDataset = driver.Create("/vsimem//output"+conf["lenv"]["sid"], \
                                dataset.RasterXSize, dataset.RasterYSize,1, \
                                gdal.GDT_Float32)
-    # Set spatial informations of the new image.
+    # Set spatial information of the new image.
     if geoTransform:
         newDataset.SetGeoTransform(geoTransform)
     if geoProjection:
