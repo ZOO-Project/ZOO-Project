@@ -289,7 +289,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 
 	}
       }
-      std::cout << " <DataInputs>" << std::endl;
+      std::cout << " </DataInputs>" << std::endl;
       std::cout << " <DataOutputs>" << std::endl;
       int hasOutput=-1;
       for (unsigned int i = 0; i < appKeyList.size(); i++){
