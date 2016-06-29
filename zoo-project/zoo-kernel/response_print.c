@@ -1545,16 +1545,22 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
        * percentCompleted attribute). 
        * Else fallback to the initial method using the xml file to write in ...
        */
-      char ntmp[1024];
-#ifndef WIN32
-      getcwd(ntmp,1024);
-#else
-      _getcwd(ntmp,1024);
-#endif
+      map* cwdMap=getMapFromMaps(m,"main","servicePath");
       struct stat myFileInfo;
       int statRes;
       char file_path[1024];
-      sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
+      if(cwdMap!=NULL){
+	sprintf(file_path,"%s/GetStatus.zcfg",cwdMap->value);
+      }else{
+	char ntmp[1024];
+#ifndef WIN32
+	getcwd(ntmp,1024);
+#else
+	_getcwd(ntmp,1024);
+#endif
+	sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
+      }
+      fprintf(stderr,"%s \n",file_path);
       statRes=stat(file_path,&myFileInfo);
       if(statRes==0){
 	char currentSid[128];

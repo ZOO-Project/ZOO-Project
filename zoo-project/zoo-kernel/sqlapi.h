@@ -24,14 +24,13 @@
 
 #ifndef ZOO_SQLAPI_H
 #define ZOO_SQLAPI_H 1
+#ifdef RELY_ON_DB
+#include "service.h"
+#include "service_internal.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifdef RELY_ON_DB
-#include "service.h"
-#include "service_internal.h"
   ZOO_DLL_EXPORT void init_sql(maps*);
   ZOO_DLL_EXPORT void close_sql(maps*);
   ZOO_DLL_EXPORT int execSql(maps*,const char*);
@@ -42,10 +41,10 @@ extern "C" {
   ZOO_DLL_EXPORT int isRunning(maps*,char*);
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
   ZOO_DLL_EXPORT void removeService(maps*,char*);
-#endif
 
 #ifdef __cplusplus
 }
 #endif
 
+#endif
 #endif

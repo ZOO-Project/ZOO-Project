@@ -414,11 +414,16 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
    * Extract serviceType to know what kind of service should be loaded
    */
   map *r_inputs = NULL;
+  map* cwdMap=getMapFromMaps(m,"main","servicePath");
+  if(cwdMap!=NULL){
+    sprintf(ntmp,"%s",cwdMap->value);
+  }else{
 #ifndef WIN32
-  getcwd (ntmp, 1024);
+    getcwd (ntmp, 1024);
 #else
-  _getcwd (ntmp, 1024);
+    _getcwd (ntmp, 1024);
 #endif
+  }
   r_inputs = getMap (s1->content, "serviceType");
 #ifdef DEBUG
   fprintf (stderr, "LOAD A %s SERVICE PROVIDER \n", r_inputs->value);
@@ -914,15 +919,26 @@ runRequest (map ** inputs)
                              "InternalError", NULL);
     }
   char ntmp[1024];
+#ifndef ETC_DIR
 #ifndef WIN32
   getcwd (ntmp, 1024);
 #else
   _getcwd (ntmp, 1024);
 #endif
+#else
+  sprintf(ntmp,"%s",ETC_DIR);
+#endif
   r_inputs = getMapOrFill (&request_inputs, "metapath", "");
 
   char conf_file[10240];
   snprintf (conf_file, 10240, "%s/%s/main.cfg", ntmp, r_inputs->value);
+#ifdef ETC_DIR
+#ifndef WIN32
+    getcwd (ntmp, 1024);
+#else
+    _getcwd (ntmp, 1024);
+#endif
+#endif
   if (conf_read (conf_file, m) == 2)
     {
       errorException (NULL, _("Unable to load the main.cfg file."),
@@ -944,8 +960,8 @@ runRequest (map ** inputs)
     }
   else
     {
-      bindtextdomain ("zoo-kernel", "/usr/share/locale/");
-      bindtextdomain ("zoo-services", "/usr/share/locale/");
+      bindtextdomain ("zoo-kernel", LOCALEDIR);
+      bindtextdomain ("zoo-services", LOCALEDIR);
     }
 
   /**
@@ -1185,12 +1201,17 @@ runRequest (map ** inputs)
 
   r_inputs = NULL;
   r_inputs = getMap (request_inputs, "metapath");
-  
+  map* cwdMap0=getMapFromMaps(m,"main","servicePath");
   if (r_inputs != NULL)
-    snprintf (conf_dir, 1024, "%s/%s", ntmp, r_inputs->value);
+    if(cwdMap0!=NULL)
+      snprintf (conf_dir, 1024, "%s/%s", cwdMap0->value, r_inputs->value);
+    else
+      snprintf (conf_dir, 1024, "%s/%s", ntmp, r_inputs->value);
   else
-    snprintf (conf_dir, 1024, "%s", ntmp);
-
+    if(cwdMap0!=NULL)
+      snprintf (conf_dir, 1024, "%s", cwdMap0->value);
+    else
+      snprintf (conf_dir, 1024, "%s", ntmp);
   map* reg = getMapFromMaps (m, "main", "registry");
   registry* zooRegistry=NULL;
   if(reg!=NULL){
@@ -1291,7 +1312,7 @@ runRequest (map ** inputs)
 	if (dirp == NULL)
 	  {
 	    errorException (m, _("The specified path does not exist."),
-			    "InvalidParameterValue", conf_dir);
+			    "InternalError", NULL);
 	    freeMaps (&m);
 	    free (m);
 	    if(zooRegistry!=NULL){
@@ -1616,15 +1637,8 @@ runRequest (map ** inputs)
                              "InternalError", NULL);
     }
 
-  r_inputs = getMap (request_inputs, "MetaPath");
-  if (r_inputs != NULL)
-    snprintf (tmps1, 1024, "%s/%s", ntmp, r_inputs->value);
-  else
-    snprintf (tmps1, 1024, "%s/", ntmp);
   r_inputs = getMap (request_inputs, "Identifier");
-  char *ttmp = zStrdup (tmps1);
-  snprintf (tmps1, 1024, "%s/%s.zcfg", ttmp, r_inputs->value);
-  free (ttmp);
+  snprintf (tmps1, 1024, "%s/%s.zcfg", conf_dir, r_inputs->value);
 #ifdef DEBUG
   fprintf (stderr, "Trying to load %s\n", tmps1);
 #endif
@@ -1861,7 +1875,7 @@ runRequest (map ** inputs)
    * the operations of the running service 
    *  - message : is a string where you can store error messages, in case 
    * service is failing, or o provide details on the ongoing operation.
-   *  - cwd : is the current working directory
+   *  - cwd : the current working directory or servicePath if defined
    *  - soap : is a boolean value, true if the request was contained in a SOAP 
    * Envelop 
    *  - sessid : string storing the session identifier (only when cookie is 
@@ -1887,7 +1901,12 @@ runRequest (map ** inputs)
   addToMap (_tmpMaps->content, "usid", tmpUuid);
   free(tmpUuid);
   addToMap (_tmpMaps->content, "status", "0");
-  addToMap (_tmpMaps->content, "cwd", ntmp);
+  if(cwdMap0!=NULL){
+    addToMap (_tmpMaps->content, "cwd", cwdMap0->value);
+    addToMap (_tmpMaps->content, "rcwd", ntmp);
+  }
+  else
+    addToMap (_tmpMaps->content, "cwd", ntmp);
   addToMap (_tmpMaps->content, "message", _("No message provided"));
   map *ltmp = getMap (request_inputs, "soap");
   if (ltmp != NULL)

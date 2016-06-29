@@ -167,7 +167,11 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     hasToClean=1;
   }
   else{
-    python_path=(char*)".";
+    map* cwdMap=getMapFromMaps(*main_conf,"main","servicePath");
+    if(cwdMap!=NULL)
+      python_path=cwdMap->value;
+    else
+      python_path=(char*)".";
   }
   tmp=NULL;
   tmp=getMap(request,"metapath");
