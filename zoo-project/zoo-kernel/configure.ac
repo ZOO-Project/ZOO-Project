@@ -67,6 +67,11 @@ then
 fi
 AC_SUBST([DEB_DEF])
 
+AC_ARG_WITH([etc-dir],
+    [AS_HELP_STRING([--with-etc-dir=PATH], [Specifies an alternative path to store the main.cfg file ( default: ZOO-Kernel location) ])],
+    [ETC_DEF="#define ETC_DIR \\\"${sysconfdir}\\\""], [ETC_DEF=""])
+AC_SUBST([ETC_DEF])
+
 AC_ARG_WITH([cgi-dir],
     [AS_HELP_STRING([--with-cgi-dir=PATH], [Specifies an alternative cgi directory path ( default: /usr/lib/cgi-bin) ])],
     [CGI_DIR="$withval"], [CGI_DIR="/usr/lib/cgi-bin"])

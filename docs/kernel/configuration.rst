@@ -86,6 +86,10 @@ The main.cfg ``[main]`` section parameters are explained bellow.
  * ``cors``: Define if the ZOO-Kernel should support `Cross-Origin
    Resource Sharing <https://www.w3.org/TR/cors/>`__. If this
    paramater is not defined, then the ZOO-Kernel won't support CORS.
+ * ``servicePath``: Define a specific location to search for services
+   rather than using the ZOO-Kernel directory. If this parameter is
+   not defined, then the ZOO-Kernel will search for services using its
+   directory.
 
 In case you have activated the MapServer support, please refer to
 :ref:`this specific section <kernel-mapserver-main.cfg>`. 

@@ -87,6 +87,23 @@ This way, when you will run the ``make install`` command, the
 ZOO-Kernel will be deployed in the specified directory (so,
 `/Lbrary/WebServer/CGI-Executables`` in this example).
 
+Specific main.cfg location  (Optional)
+**************************************
+
+Per default, the ZOO-Kernel search for the ``main.cfg`` file from its
+installation directory but, in case you want to store this file in
+another place, then you can use the ``--with-etc-dir`` option so it
+will search for the ``main.cfg``file in the ``sysconfdir`` directory.
+
+For instance, you can define that the directory to store the
+``main.cfg`` file is the ``/etc/zoo-project`` directory, by using the
+following command:
+
+.. code::
+
+    ./configure --with-etc-dir=yes --sysconfdir=/etc/zoo-project
+
+
 .. _zoo_install_db_backend:
 
 Use a Database Backend (Optional) 

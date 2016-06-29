@@ -184,8 +184,6 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
-  char ntmp[1024];
-  getcwd(ntmp,1024);
     
   map* libp = getMapFromMaps(m, "main", "libPath");  
   int res=SERVICE_FAILED;

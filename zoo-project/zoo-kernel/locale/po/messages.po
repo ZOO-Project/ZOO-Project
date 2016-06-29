@@ -304,6 +304,10 @@ msgstr "Unable to cache HTTP POST Execute request."
 msgid "Unable to load the main.cfg file."
 msgstr "Unable to load the main.cfg file."
 
+#: zoo_service_loader.c:895
+msgid "%s The following file: %s cannot be found."
+msgstr "%s The following file: %s cannot be found."
+
 #: zoo_service_loader.c:940
 #, c-format
 msgid "The value %s is not supported for the <language> parameter"

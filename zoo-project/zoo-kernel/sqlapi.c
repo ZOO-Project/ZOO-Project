@@ -26,6 +26,9 @@
 #include "ogr_api.h"
 #include "ogrsf_frmts.h"
 #include "ogr_p.h"
+#if GDAL_VERSION_MAJOR >= 2
+#include <gdal_priv.h>
+#endif
 
 #include "sqlapi.h"
 #include <fcgi_stdio.h>
@@ -34,7 +37,12 @@
 /**
  * Global GDALDataset pointer
  */
-OGRDataSource *zoo_DS = NULL;
+#if GDAL_VERSION_MAJOR >=2
+GDALDataset
+#else
+OGRDataSource 
+#endif
+ *zoo_DS = NULL;
 
 /**
  * Global OGRLayer pointer pointing to the lastest result set
@@ -97,7 +105,14 @@ void init_sql(maps* conf){
   char* sqlInitString=createInitString(conf);
   OGRSFDriver *poDriver = NULL;
   OGRRegisterAll();
+
+#if GDAL_VERSION_MAJOR >= 2
+  zoo_DS = (GDALDataset*) GDALOpenEx( sqlInitString,
+				      GDAL_OF_UPDATE | GDAL_OF_VECTOR,
+				      NULL, NULL, NULL );
+#else
   zoo_DS = OGRSFDriverRegistrar::Open(sqlInitString,false,&poDriver);
+#endif
   if( zoo_DS == NULL ){
 #ifdef DEBUG
     fprintf(stderr,"sqlInitString: %s FAILED !\n",sqlInitString);
@@ -123,7 +138,11 @@ void close_sql(maps* conf){
   if( zoo_ResultSet != NULL )
     zoo_DS->ReleaseResultSet( zoo_ResultSet );
   if(zoo_DS!=NULL){
+#if GDAL_VERSION_MAJOR >= 2
+    GDALClose(zoo_DS);
+#else
     OGRDataSource::DestroyDataSource( zoo_DS );
+#endif
     zoo_DS=NULL;
   }
 }

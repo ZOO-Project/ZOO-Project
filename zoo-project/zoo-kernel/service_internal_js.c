@@ -69,22 +69,16 @@ JSLoadScripts(JSContext *cx, uintN argc, jsval *argv1)
 {
   JS_MaybeGC(cx);
 
-  char ntmp[1024];
-  getcwd(ntmp,1024);
-
   jsval *argv = JS_ARGV(cx,argv1);
   int i=0;
   JS_MaybeGC(cx);
   for(i=0;i<argc;i++){
     char *filename = JSValToChar(cx,&argv[i]);
-    char *api0=(char*)malloc((strlen(ntmp)+strlen(filename)+2)*sizeof(char));
-    sprintf(api0,"%s/%s",ntmp,filename);
 #ifdef JS_DEBUG
     fprintf(stderr,"Trying to load %s\n",api0);
     fflush(stderr);
 #endif
-    JSObject *api_script1=loadZooApiFile(cx,JS_GetGlobalObject(cx),api0);
-    free(api0);
+    JSObject *api_script1=loadZooApiFile(cx,JS_GetGlobalObject(cx),filename);
   }
   JS_MaybeGC(cx);
   JS_SET_RVAL(cx, argv1, JSVAL_VOID);
@@ -174,7 +168,11 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
 
   map* tmpm1=getMap(request,"metapath");
   char ntmp[1024];
-  getcwd(ntmp,1024);
+  map* cwdMap=getMapFromMaps(*main_conf,"main","servicePath");
+  if(cwdMap!=NULL)
+    sprintf(ntmp,"%s",cwdMap->value);
+  else
+    getcwd(ntmp,1024);
 
   /**
    * Load the first part of the ZOO-API
