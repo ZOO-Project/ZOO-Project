@@ -251,7 +251,7 @@ void recordResponse(maps* conf,char* filename){
   fclose(file);
   map *sid=getMapFromMaps(conf,"lenv","usid");
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+flen+strlen(sid->value)+51+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+flen+strlen(sid->value)+57+1)*sizeof(char));
   sprintf(sqlQuery,"INSERT INTO %s.responses (content,uuid) VALUES ($$%s$$,$$%s$$);",schema->value,tmps,sid->value);
   execSql(conf,sqlQuery);
   free(sqlQuery);
