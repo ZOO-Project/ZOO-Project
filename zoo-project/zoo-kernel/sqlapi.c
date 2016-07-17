@@ -26,6 +26,7 @@
 #include "ogr_api.h"
 #include "ogrsf_frmts.h"
 #include "ogr_p.h"
+#include "response_print.h"
 #if GDAL_VERSION_MAJOR >= 2
 #include <gdal_priv.h>
 #endif
@@ -218,12 +219,16 @@ void recordServiceStatus(maps* conf){
   char *sqlQuery=(char*)malloc((strlen(schema->value)+
 				strlen(uusid->value)+
 				strlen(osid->value)+
-				strlen(sid->value)+56+1)*sizeof(char));
+				strlen(sid->value)+
+				strlen(wpsStatus[2])+66+1)*sizeof(char));
   sprintf(sqlQuery,
-	  "INSERT INTO %s.services (uuid,sid,osid)"
-	  "VALUES ('%s','%s','%s');",
+	  "INSERT INTO %s.services (uuid,sid,osid,fstate)"
+	  "VALUES ('%s','%s','%s','%s');",
 	  schema->value,
-	  uusid->value,sid->value,osid->value);
+	  uusid->value,
+	  sid->value,
+	  osid->value,
+	  wpsStatus[2]);
   execSql(conf,sqlQuery);
   free(sqlQuery);
   cleanUpResultSet(conf);

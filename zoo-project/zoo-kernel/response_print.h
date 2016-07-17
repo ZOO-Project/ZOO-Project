@@ -135,9 +135,10 @@ extern "C" {
   /**
    * Definitions of acceptable final status
    */
-  static char wpsStatus[2][11]={
+  static char wpsStatus[3][11]={
     "Succeeded",
-    "Failed"
+    "Failed",
+    "Running"
   };
   /**
    * Definitions of schemas depending on the WPS version

@@ -756,9 +756,9 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
       xmlNodePtr nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
       char* ckey=level->value;
       if(strncasecmp(level->value,"profile",7)==0)
-	ckey="generic";
+	ckey=(char*)"generic";
       if(strncasecmp(level->value,"generic",7)==0)
-	ckey="concept";
+	ckey=(char*)"concept";
       service* inherited=getServiceFromRegistry(reg,ckey,tmp1->value);
       if(inherited!=NULL){
 	addInheritedMetadata(n,ns_ows,ns_xlink,reg,main_conf,inherited);
@@ -1536,7 +1536,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     memset(tmp,0,256);
     memset(url,0,1024);
     maps* tmp_maps=getMaps(m,"main");
-    if(tmp_maps!=NULL){
+    if(tmp_maps!=NULL && tmp_maps->content!=NULL){
       map* tmpm1=getMap(tmp_maps->content,"serverAddress");
       /**
        * Check if the ZOO Service GetStatus is available in the local directory.
@@ -1560,7 +1560,6 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 #endif
 	sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
       }
-      fprintf(stderr,"%s \n",file_path);
       statRes=stat(file_path,&myFileInfo);
       if(statRes==0){
 	char currentSid[128];
@@ -1760,7 +1759,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     if(vid==0)
       xmlAddChild(n,nc);
   }
-  
+
   if(vid==0 && 
      hasStoredExecuteResponse==true 
      && status!=SERVICE_STARTED 
@@ -1964,7 +1963,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
   map *tmpMap=getMap(m->content,"Reference");
   if(tmpMap==NULL){
     nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-    if(e!=NULL){
+    if(e!=NULL && e->format!=NULL){
       if(strncasecmp(e->format,"LiteralOutput",strlen(e->format))==0)
 	nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
       else
@@ -2424,7 +2423,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     map* statusInfo=createMap("Status","Accepted");
     map *usid=getMapFromMaps(m,"lenv","usid");
     addToMap(statusInfo,"JobID",usid->value);
-    printStatusInfo(m,statusInfo,"Execute");
+    printStatusInfo(m,statusInfo,(char*)"Execute");
     freeMap(&statusInfo);
     free(statusInfo);
     return;
@@ -2450,10 +2449,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	if(gfile==NULL){
 	  gfile=getMap(tmpI->content,"generated_file");
 	}
-	readGeneratedFile(m,tmpI->content,gfile->value);	    
-	file_name=(char*)malloc((strlen(gfile->value)+strlen(tmp1->value)+1)*sizeof(char));
-	for(int i=0;i<strlen(gfile->value);i++)
-	  file_name[i]=gfile->value[i+strlen(tmp1->value)];
+	readGeneratedFile(m,tmpI->content,gfile->value);
+	file_name=zStrdup((gfile->value)+strlen(tmp1->value));
       }
 
       toto=getMap(tmpI->content,"asReference");
@@ -2466,10 +2463,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  elements* in=getElements(s->outputs,tmpI->name);
 	  char *format=NULL;
 	  if(in!=NULL && in->format!=NULL){
-	    format=zStrdup(in->format);
+	    format=in->format;
 	  }else
-	    format=zStrdup("LiteralData");
-	  if(strcasecmp(format,"BoundingBoxData")==0){
+	    format=(char*)"LiteralData";
+	  if(format!=NULL && strcasecmp(format,"BoundingBoxData")==0){
 	    addToMap(tmpI->content,"extension","xml");
 	    addToMap(tmpI->content,"mimeType","text/xml");
 	    addToMap(tmpI->content,"encoding","UTF-8");
@@ -2534,9 +2531,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(file_name)+3)*sizeof(char));
 	    sprintf(file_url,"%s/%s/%s",tmp3->value,tmp2->value,file_name);
 	  }
-
 	  addToMap(tmpI->content,"Reference",file_url);
-	  free(format);
 	  free(file_name);
 	  free(file_url);
 	  
