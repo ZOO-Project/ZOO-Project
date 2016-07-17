@@ -250,11 +250,11 @@ int isValidLang(maps* conf,const char *str){
     free(tmp);
   }else{
     if(tmp!=NULL){
-      tmp1==zStrdup(tmp);
+      tmp1=zStrdup(tmp);
       free(tmp);
     }else{
       if(tmp0!=NULL){
-	tmp1==zStrdup(tmp0);
+	tmp1=zStrdup(tmp0);
 	free(tmp0);
       }
     }
