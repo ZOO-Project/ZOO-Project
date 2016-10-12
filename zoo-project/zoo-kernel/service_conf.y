@@ -552,8 +552,10 @@ processid
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"processid (%s %d) %s\n",__FILE__,__LINE__,$1);
 #endif
-  if(data==-1){
-    data=1;
+//  if(data==-1){
+//    data=1;
+  if(::data==-1){ // knut: add namespace to avoid ambiguous symbol
+    ::data=1;	
     if($1!=NULL){
       char *cen=zStrdup($1);
       my_service->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
@@ -794,7 +796,8 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   wait_supporteds=false;
   wait_outputs=-1;
   wait_data=false;
-  data=-1;
+//data=-1;
+  ::data=-1; // knut: add namespace to avoid ambiguous symbol
   previous_data=1;
   current_data=0;
   

@@ -146,7 +146,9 @@ char* _getStatusFile(maps* conf,char* pid){
 	return NULL;
     }
 
-    FILE* f0 = fopen (fileName, "r");
+    //FILE* f0 = fopen (fileName, "r");
+	// knut: open file in binary mode to avoid conversion of line endings (yielding extra bytes) on Windows platforms
+	FILE* f0 = fopen(fileName, "rb"); 
     if(f0!=NULL){
       fseek (f0, 0, SEEK_END);
       long flen = ftell (f0);
@@ -259,8 +261,10 @@ void unhandleStatus(maps *conf){
  * @return 0 on success, -2 if shmget failed, -1 if shmat failed
  */
 int _updateStatus(maps *conf){
+	
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
   map* sid = getMapFromMaps (conf, "lenv", "usid");
+  
   char* fbkpid =
     (char *)
     malloc ((strlen (r_inputs->value) + strlen (sid->value) + 9) * sizeof (char));
@@ -271,6 +275,7 @@ int _updateStatus(maps *conf){
      status->value!=NULL && msg->value!=NULL && 
      strlen(status->value)>0 && strlen(msg->value)>1){    
     semid lockid = NULL;
+	
     char* stat=getStatusId(conf,sid->value);
     if(stat!=NULL){
       lockid=acquireLock(conf);
@@ -290,6 +295,7 @@ int _updateStatus(maps *conf){
       free(stat);
     }
   }
+
   return 0;
 }
 
