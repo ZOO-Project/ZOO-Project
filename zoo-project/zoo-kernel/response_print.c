@@ -2346,6 +2346,7 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
  */
 void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 		    map* request_inputs1,int cpid,maps* m,int res){
+		
 #ifdef DEBUG
   dumpMaps(request_inputs);
   dumpMaps(request_outputs);
@@ -2357,7 +2358,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     asRaw=1;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
-
   maps* tmpSess=getMaps(m,"senv");
   if(tmpSess!=NULL){
     map *_tmp=getMapFromMaps(m,"lenv","cookie");
@@ -2401,7 +2401,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       dumpMapsToFile(tmpSess,session_file_path,1);
     }
   }
-  
+ 		 
   if(res==SERVICE_FAILED){
     map *lenv;
     lenv=getMapFromMaps(m,"lenv","message");
@@ -2428,7 +2428,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     free(statusInfo);
     return;
   }
-
+	
   map *tmp1=getMapFromMaps(m,"main","tmpPath");
   if(asRaw==0){
 #ifdef DEBUG

@@ -142,27 +142,33 @@ extern "C" {
 /**
  * The memory size to create a map
  */
-#define MAP_SIZE (2*sizeof(char*))+sizeof(NULL)
+//#define MAP_SIZE (2*sizeof(char*))+sizeof(NULL) // knut: size of NULL pointer may be different from regular pointer (platform dependent)
+#define MAP_SIZE (2*sizeof(char*))+sizeof(map*)
 /**
  * The memory size to create an iotype
  */
-#define IOTYPE_SIZE MAP_SIZE+sizeof(NULL)
+//#define IOTYPE_SIZE MAP_SIZE+sizeof(NULL)
+#define IOTYPE_SIZE sizeof(map*) + sizeof(iotype*)
 /**
  * The memory size to create a maps
  */
-#define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
+//#define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
+#define MAPS_SIZE sizeof(char*)+sizeof(map*)+sizeof(maps*)
 /**
  * The memory size to create a service
  */
-#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
+//#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
+#define SERVICE_SIZE sizeof(char*) + 2*sizeof(map*) + 2*sizeof(elements*)
 /**
  * The memory size to create a services
  */
-#define SERVICES_SIZE SERVICE_SIZE+sizeof(services*)
+//#define SERVICES_SIZE SERVICE_SIZE+sizeof(services*)
+#define SERVICES_SIZE sizeof(service*)+sizeof(services*)
 /**
  * The memory size to create a registry
  */
-#define REGISTRY_SIZE SERVICES_SIZE+sizeof(char*)
+//#define REGISTRY_SIZE SERVICES_SIZE+sizeof(char*)
+#define REGISTRY_SIZE sizeof(char*)+sizeof(services*)+sizeof(registry*)
 
 #define SHMSZ     27
 

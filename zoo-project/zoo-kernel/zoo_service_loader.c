@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+ 
 extern "C" int yylex ();
 extern "C" int crlex ();
 
@@ -103,6 +103,7 @@ extern "C" int crlex ();
 #ifndef WIN32
 extern char **environ;
 #endif
+
 
 #ifdef WIN32
 extern "C"
@@ -667,7 +668,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     {
       *eres =
         zoo_php_support (&m, request_inputs, s1, &request_input_real_format,
-                         &request_output_real_format);
+                         &request_output_real_format);		
     }
   else
 #endif
@@ -889,7 +890,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 int
 runRequest (map ** inputs)
 {
-
+ 
 #ifndef USE_GDB
 #ifndef WIN32
   signal (SIGCHLD, SIG_IGN);
@@ -939,6 +940,7 @@ runRequest (map ** inputs)
     _getcwd (ntmp, 1024);
 #endif
 #endif
+
   if (conf_read (conf_file, m) == 2)
     {
       errorException (NULL, _("Unable to load the main.cfg file."),
@@ -1620,7 +1622,6 @@ runRequest (map ** inputs)
     fflush (stdout);
     return 0;
   }
-  
   s1 = NULL;
   s1 = (service *) malloc (SERVICE_SIZE);
   if (s1 == NULL)
@@ -1994,7 +1995,6 @@ runRequest (map ** inputs)
 #ifdef DEBUG
   dumpMap (request_inputs);
 #endif
-
   int ei = 1;
   char *s = 
 #ifdef WIN32
@@ -2045,6 +2045,7 @@ runRequest (map ** inputs)
     setMapInMaps (m, "lenv", "uusid", test1->value);
   }
 #endif
+
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
   if (status != NULL)
@@ -2067,7 +2068,6 @@ runRequest (map ** inputs)
 	free (tmpmaps);
 	return -1;
       }
-
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
                          &request_output_real_format, &eres);
     }
@@ -2123,7 +2123,7 @@ runRequest (map ** inputs)
           fbkpres =
             (char *)
             malloc ((strlen (r_inputs->value) +
-                     strlen (usid->value) + 7) * sizeof (char));
+                     strlen (usid->value) + 7) * sizeof (char));                    
           sprintf (fbkpres, "%s/%s.res", r_inputs->value, usid->value);
 	  bmap = (maps *) malloc (MAPS_SIZE);
 	  bmap->name=zStrdup("status");
@@ -2257,12 +2257,13 @@ runRequest (map ** inputs)
 #ifdef DEBUG
   dumpMaps (request_output_real_format);
 #endif
+
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,
                     cpid, m, eres);
   fflush (stdout);
-  
+
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 
@@ -2276,7 +2277,7 @@ runRequest (map ** inputs)
   signal (SIGFPE, donothing);
   signal (SIGABRT, donothing);
 #endif
-  
+
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
       fclose (stdout);
@@ -2287,7 +2288,6 @@ runRequest (map ** inputs)
 
       if(dumpBackFinalFile(m,fbkp,fbkp1)<0)
 	return -1;
-
       unlink (fbkpid);
       switch(eres){
       default:
@@ -2299,7 +2299,7 @@ runRequest (map ** inputs)
 	setMapInMaps(bmap,"status","status",wpsStatus[0]);
 	setMapInMaps(m,"lenv","fstate",wpsStatus[0]);
 	break;
-      }
+      }      
 #ifndef RELY_ON_DB
       dumpMapsToFile(bmap,fbkpres,1);
       removeShmLock (m, 1);
@@ -2312,10 +2312,10 @@ runRequest (map ** inputs)
       unlink (flog);
       unhandleStatus (m);
       free(fbkpid);
-      free(fbkpres);
-      free (flog);
+      free(fbkpres); 
+      free (flog);           
       free (fbkp1);
-      free (tmps1);
+      // free (tmps1); // tmps1 is stack memory and should not be freed
       if(cgiSid!=NULL)
 	free(cgiSid);
     }
