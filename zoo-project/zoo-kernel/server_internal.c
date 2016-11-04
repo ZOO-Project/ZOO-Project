@@ -35,6 +35,48 @@
 #endif
 #include <signal.h>
 
+// #include <stdlib.h>
+/*
+ * Compare two file path strings to see if they refer to the same file.
+ *
+ * @param path1 the first file path
+ * @param path2 the second file path
+ * 
+ * @return 0 if the files are identical
+ */
+#define PATHBUFSIZE 4096
+int zoo_path_compare(char* path1, char* path2) {
+
+  if (path1 == NULL || path2 == NULL) {
+    return -1;
+  }
+
+  char realpath1[PATHBUFSIZE];
+  char realpath2[PATHBUFSIZE];
+
+#ifdef WIN32 
+  int res1 = GetFullPathName(path1, PATHBUFSIZE, realpath1, NULL);
+  int res2 = GetFullPathName(path2, PATHBUFSIZE, realpath2, NULL);
+
+  if (res1 == 0 || res2 == 0) {
+    return -1;
+  }
+  else {
+    return strncasecmp(realpath1, realpath2, PATHBUFSIZE);
+  }
+#else
+  char* ptr1 = realpath(path1, realpath1);
+  char* ptr2 = realpath(path2, realpath2);
+
+  if (ptr1 == NULL || ptr2 == NULL) {
+    return -1;
+  }
+  else {
+    return strncmp(realpath1, realpath2, PATHBUFSIZE);
+  }
+#endif
+}
+
 /**
  * Detect WPS version used (1.0.0 or 2.0.0).
  *
