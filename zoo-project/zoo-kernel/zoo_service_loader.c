@@ -286,46 +286,51 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
             char tmps1[1024];
             memset (tmps1, 0, 1024);
             snprintf (tmps1, 1024, "%s/%s", conf_dir, dp->d_name);
-            service *s1 = (service *) malloc (SERVICE_SIZE);
-            if (s1 == NULL)
-              {
-                dup2 (saved_stdout, fileno (stdout));
-                errorException (m, _("Unable to allocate memory"),
-                                "InternalError", NULL);
-                return -1;
-              }
-#ifdef DEBUG
-            fprintf (stderr, "#################\n%s\n#################\n",
-                     tmps1);
-#endif
+
             char *tmpsn = zStrdup (dp->d_name);
             tmpsn[strlen (tmpsn) - 5] = 0;
-            t = readServiceFile (m, tmps1, &s1, tmpsn);
-            free (tmpsn);
-            if (t < 0)
-              {
-                map *tmp00 = getMapFromMaps (m, "lenv", "message");
-                char tmp01[1024];
-                if (tmp00 != NULL)
-                  sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-                           dp->d_name, tmp00->value);
-                else
-                  sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
-                           dp->d_name);
-                dup2 (saved_stdout, fileno (stdout));
-                errorException (m, tmp01, "InternalError", NULL);
-                return -1;
-              }
-#ifdef DEBUG
-            dumpService (s1);
-            fflush (stdout);
-            fflush (stderr);
-#endif
-	    inheritance(r,&s1);
-            func (r, m, n, s1);
-            freeService (&s1);
-            free (s1);
-            scount++;
+            
+            map* import = getMapFromMaps (m, IMPORTSERVICE, tmpsn);
+            if (import == NULL || import->value == NULL || zoo_path_compare(tmps1, import->value) != 0 ) { // service is not in [include] block 
+              service *s1 = (service *) malloc (SERVICE_SIZE);
+              if (s1 == NULL)
+                {
+                  dup2 (saved_stdout, fileno (stdout));
+                  errorException (m, _("Unable to allocate memory"),
+                                  "InternalError", NULL);
+                  return -1;
+                }
+  #ifdef DEBUG
+              fprintf (stderr, "#################\n%s\n#################\n",
+                       tmps1);
+  #endif
+              t = readServiceFile (m, tmps1, &s1, tmpsn);
+              free (tmpsn);
+              if (t < 0)
+                {
+                  map *tmp00 = getMapFromMaps (m, "lenv", "message");
+                  char tmp01[1024];
+                  if (tmp00 != NULL)
+                    sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+                             dp->d_name, tmp00->value);
+                  else
+                    sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+                             dp->d_name);
+                  dup2 (saved_stdout, fileno (stdout));
+                  errorException (m, tmp01, "InternalError", NULL);
+                  return -1;
+                }
+  #ifdef DEBUG
+              dumpService (s1);
+              fflush (stdout);
+              fflush (stderr);
+  #endif
+        inheritance(r,&s1);
+              func (r, m, n, s1);
+              freeService (&s1);
+              free (s1);
+              scount++;
+            }
           }
       }
   (void) closedir (dirp);
@@ -1244,6 +1249,28 @@ runRequest (map ** inputs)
        */
       int saved_stdout = dup (fileno (stdout));
       dup2 (fileno (stderr), fileno (stdout));
+
+      maps* imports = getMaps(m, IMPORTSERVICE);
+      if (imports != NULL) {       
+        map* zcfg = imports->content;
+        
+        while (zcfg != NULL) {
+	  if (zcfg->value != NULL) {
+	    service* svc = (service*) malloc(SERVICE_SIZE);
+	    if (svc == NULL || readServiceFile(m, zcfg->value, &svc, zcfg->name) < 0) {
+	      // pass over silently
+	      zcfg = zcfg->next;
+	      continue;
+	    }
+	    inheritance(zooRegistry, &svc);
+	    printGetCapabilitiesForProcess(zooRegistry, m, n, svc);
+	    freeService(&svc);
+	    free(svc);                             
+	  }
+	  zcfg = zcfg->next;
+        }            
+      }
+
       if (int res =		  
           recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
                           printGetCapabilitiesForProcess) < 0)
@@ -1344,6 +1371,27 @@ runRequest (map ** inputs)
 	    dup2 (fileno (stderr), fileno (stdout));
 	    if (strcasecmp ("all", orig) == 0)
 	      {
+		maps* imports = getMaps(m, IMPORTSERVICE); 
+		if (imports != NULL) {       
+		  map* zcfg = imports->content;
+            
+		  while (zcfg != NULL) {
+		    if (zcfg->value != NULL) {
+		      service* svc = (service*) malloc(SERVICE_SIZE);
+		      if (svc == NULL || readServiceFile(m, zcfg->value, &svc, zcfg->name) < 0) {
+                        // pass over silently
+                        zcfg = zcfg->next;
+                        continue;
+		      }
+		      inheritance(zooRegistry, &svc);
+		      printDescribeProcessForProcess(zooRegistry, m, n, svc);
+		      freeService(&svc);
+		      free(svc);                             
+		    }
+		    zcfg = zcfg->next;
+		  }            
+		}
+  
 		if (int res =
 		    recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
 				    printDescribeProcessForProcess) < 0)
@@ -1360,7 +1408,53 @@ runRequest (map ** inputs)
 		  {
 		    int hasVal = -1;
 		    char *corig = zStrdup (tmps);
-		    if (strstr (corig, ".") != NULL)
+		    map* import = getMapFromMaps (m, IMPORTSERVICE, corig);   
+		    if (import != NULL && import->value != NULL) 
+		      {
+			s1 = (service *) malloc (SERVICE_SIZE);
+			t = readServiceFile (m, import->value, &s1, import->name);
+                
+			if (t < 0) // failure reading zcfg
+			  {
+			    map *tmp00 = getMapFromMaps (m, "lenv", "message");
+			    char tmp01[1024];
+			    if (tmp00 != NULL)
+			      sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"), import->value, tmp00->value);
+			    else
+			      sprintf (tmp01, _("Unable to parse the ZCFG file: %s."), import->value);
+
+			    dup2 (saved_stdout, fileno (stdout));
+			    errorException (m, tmp01, "InternalError", NULL);
+            
+			    freeMaps (&m);
+			    free (m);
+
+			    if(zooRegistry!=NULL){
+			      freeRegistry(&zooRegistry);
+			      free(zooRegistry);
+			    }
+			    free (orig);
+			    free (REQUEST);
+			    closedir (dirp);
+			    xmlFreeDoc (doc);
+			    xmlCleanupParser ();
+			    zooXmlCleanupNs ();
+                    
+			    return 1;
+			  }
+#ifdef DEBUG
+			dumpService (s1);
+#endif
+
+			inheritance(zooRegistry,&s1);
+			printDescribeProcessForProcess (zooRegistry,m, n, s1);
+			freeService (&s1);
+			free (s1);
+			s1 = NULL;
+			scount++;
+			hasVal = 1;                
+		    }
+		    else if (strstr (corig, ".") != NULL)
 		      {
 
 			parseIdentifier (m, conf_dir, corig, buff1);
@@ -1639,24 +1733,33 @@ runRequest (map ** inputs)
     }
 
   r_inputs = getMap (request_inputs, "Identifier");
-  snprintf (tmps1, 1024, "%s/%s.zcfg", conf_dir, r_inputs->value);
-#ifdef DEBUG
-  fprintf (stderr, "Trying to load %s\n", tmps1);
-#endif
-  if (strstr (r_inputs->value, ".") != NULL)
-    {
-      char *identifier = zStrdup (r_inputs->value);
-      parseIdentifier (m, conf_dir, identifier, tmps1);
-      map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
-      if (tmpMap != NULL)
-        addToMap (request_inputs, "metapath", tmpMap->value);
-      free (identifier);
-    }
-  else
-    {
+
+  map* import = getMapFromMaps (m, IMPORTSERVICE, r_inputs->value); 
+  if (import != NULL && import->value != NULL) { 
+      strncpy(tmps1, import->value, 1024);
       setMapInMaps (m, "lenv", "Identifier", r_inputs->value);
       setMapInMaps (m, "lenv", "oIdentifier", r_inputs->value);
-    }
+  } 
+  else {
+    snprintf (tmps1, 1024, "%s/%s.zcfg", conf_dir, r_inputs->value);
+#ifdef DEBUG
+    fprintf (stderr, "Trying to load %s\n", tmps1);
+#endif
+    if (strstr (r_inputs->value, ".") != NULL)
+      {
+	char *identifier = zStrdup (r_inputs->value);
+	parseIdentifier (m, conf_dir, identifier, tmps1);
+	map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
+	if (tmpMap != NULL)
+	  addToMap (request_inputs, "metapath", tmpMap->value);
+	free (identifier);
+      }
+    else
+      {
+	setMapInMaps (m, "lenv", "Identifier", r_inputs->value);
+	setMapInMaps (m, "lenv", "oIdentifier", r_inputs->value);
+      }
+  }
 
   r_inputs = getMapFromMaps (m, "lenv", "Identifier");
   int saved_stdout = dup (fileno (stdout));

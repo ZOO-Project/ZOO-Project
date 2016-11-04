@@ -26,6 +26,10 @@
 #pragma comment(lib, "rpcrt4.lib")
 #endif
 
+#ifndef IMPORTSERVICE
+#define IMPORTSERVICE "include" // default name of [include] block in main.cfg
+#endif
+
 #include "ulinet.h"
 #include "service.h"
 #include <openssl/sha.h>
@@ -64,6 +68,8 @@ extern "C" {
   char* getLastErrorMessage();
   int readServiceFile (maps *, char *, service **, char *);
   int createRegistry (maps*,registry **,char *);
+
+  int zoo_path_compare(char* path1, char* path2);
 
 #ifdef WIN32
   char* getMapsAsKVP(maps*,int,int);
