@@ -123,8 +123,10 @@ section.
 	      least one ``<Default>`` node (even empty like ``<Default
 	      />``)
 
- .. warning:: In WPS 2.0.0 version, it is possible to define nested
-	      inputs and outputs. So, from revision `790
+ .. warning:: In WPS 2.0.0 version, it is possible to define `nested
+	      inputs and outputs
+	      <http://docs.opengeospatial.org/is/14-065/14-065.html#13>`__. So,
+	      from revision `790 
 	      <http://www.zoo-project.org/trac/changeset/790>`__, you
 	      are allowed to use a new input/output definition here.
 
