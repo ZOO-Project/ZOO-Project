@@ -28,13 +28,6 @@ function hellojs(conf,inputs,outputs){
 	return Array(3,outputs);
 }
 
-function hellojs2(conf,inputs,outputs){
-    outputs["result"]["value"]="Hello "+inputs["S"]["child"]["nom"]["value"]+" "+inputs["S"]["child"]["prenom"]["value"]+" from the JS World !";
-    outputs["result1"]["child"]["tata"]["value"]="a"
-    //SERVICE_SUCEEDED
-    return {"result": 3,"outputs":outputs};
-}
-
 function hellojs1(conf,inputs,outputs){
 	outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
 	//SERVICE_SUCEEDED
