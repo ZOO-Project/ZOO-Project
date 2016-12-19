@@ -73,10 +73,10 @@ void dumpMap(map* t){
 }
 
 /**
- * Dump a map to a file
+ * Dump a map to a file 
  *
  * @param t the map to dump to file
- * @param file the file to store the map
+ * @param file the file pointer to store the map
  */
 void dumpMapToFile(map* t,FILE* file){
   map* tmp=t;
@@ -95,7 +95,10 @@ void dumpMaps(maps* m){
   maps* tmp=m;
   while(tmp!=NULL){
     fprintf(stderr,"MAP => [%s] \n",tmp->name);
+    fprintf(stderr," * CONTENT [%s] \n",tmp->name);
     dumpMap(tmp->content);
+    fprintf(stderr," * CHILD [%s] \n",tmp->name);
+    dumpMaps(tmp->child);
     tmp=tmp->next;
   }
 }
@@ -104,21 +107,36 @@ void dumpMaps(maps* m){
  * Dump a maps to a file, see dumpMapToFile().
  *
  * @param m the map to dump
- * @param file_path the full path to the file name to store the map
+ * @param file the the file pointer to store the map
  */
-void dumpMapsToFile(maps* m,char* file_path,int limit){
-  FILE* file=fopen(file_path,"w+");
+void _dumpMapsToFile(maps* m,FILE* file,int limit){
   maps* tmp=m;
   int cnt=0;
   while(tmp!=NULL){
     fprintf(file,"[%s]\n",tmp->name);
-    dumpMapToFile(tmp->content,file);
+    if(tmp->child!=NULL){
+      _dumpMapsToFile(tmp->child,file,limit);
+    }else
+      dumpMapToFile(tmp->content,file);
     fflush(file);
     tmp=tmp->next;
     cnt++;
     if(limit>=0 && cnt==limit)
       tmp=NULL;
   }
+  fflush(file);
+}
+
+/**
+ * Dump a maps to a file, see _dumpMapsToFile().
+ *
+ * @param m the map to dump
+ * @param file_path the full path to the file name to store the map
+ * @param limit the number limiting the maps to be dumped
+ */
+void dumpMapsToFile(maps* m,char* file_path,int limit){
+  FILE* file=fopen(file_path,"w+");
+  _dumpMapsToFile(m,file,limit);
   fflush(file);
   fclose(file);
 }
@@ -128,13 +146,28 @@ void dumpMapsToFile(maps* m,char* file_path,int limit){
  *
  * @param name the key to add to the map
  * @param value the corresponding value to add to the map
- * @return the allocated map
+ * @return a pointer to the allocated map 
  */
 map* createMap(const char* name,const char* value){
   map* tmp=(map *)malloc(MAP_SIZE);
   tmp->name=zStrdup(name);
   tmp->value=zStrdup(value);
   tmp->next=NULL;
+  return tmp;
+}
+
+/**
+ * Create a new maps with the given name
+ *
+ * @param name of the maps
+ * @return the allocated map
+ */
+maps* createMaps(const char* name){
+  maps* tmp = (maps *) malloc (MAPS_SIZE);
+  tmp->name = zStrdup (name);
+  tmp->content = NULL;
+  tmp->child = NULL;
+  tmp->next = NULL;
   return tmp;
 }
 
@@ -283,6 +316,10 @@ void freeMaps(maps** mo){
       freeMap(&_cursor->content);
       free(_cursor->content);
     }
+    if(_cursor->child!=NULL){
+      freeMaps(&_cursor->child);
+      free(_cursor->child);
+    }
     if(_cursor->next!=NULL){
       freeMaps(&_cursor->next);
       free(_cursor->next);
@@ -361,6 +398,10 @@ void freeElements(elements** e){
       free(tmp->metadata);
     if(tmp->format!=NULL)
       free(tmp->format);
+    if(tmp->child!=NULL){
+      freeElements(&tmp->child);
+      free(tmp->child);
+    }
     freeIOType(&tmp->defaults);
     if(tmp->defaults!=NULL)
       free(tmp->defaults);
@@ -592,21 +633,22 @@ bool contains(map* m,map* i){
  */
 iotype* getIoTypeFromElement(elements* e,char *name, map* values){
   elements* cursor=e;
-  while(cursor!=NULL){
-    if(strcasecmp(cursor->name,name)==0){
-      if(contains(cursor->defaults->content,values)==true)
-	return cursor->defaults;
-      else{
-	iotype* tmp=cursor->supported;
-	while(tmp!=NULL){
-	  if(contains(tmp->content,values)==true)
-	    return tmp;	    
-	  tmp=tmp->next;
+  if(values!=NULL)
+    while(cursor!=NULL){
+      if(strcasecmp(cursor->name,name)==0 && (cursor->defaults!=NULL || cursor->supported!=NULL)){
+	if(contains(cursor->defaults->content,values)==true)
+	  return cursor->defaults;
+	else{
+	  iotype* tmp=cursor->supported;
+	  while(tmp!=NULL){
+	    if(contains(tmp->content,values)==true)
+	      return tmp;	    
+	    tmp=tmp->next;
+	  }
 	}
       }
+      cursor=cursor->next;
     }
-    cursor=cursor->next;
-  }
   return NULL;
 }
 
@@ -676,14 +718,15 @@ maps* dupMaps(maps** mo){
   maps* _cursor=*mo;
   maps* res=NULL;
   if(_cursor!=NULL){
-    res=(maps*)malloc(MAPS_SIZE);
-    res->name=zStrdup(_cursor->name);
-    res->content=NULL;
-    res->next=NULL;
+    res=createMaps(_cursor->name);
     map* mc=_cursor->content;
     if(mc!=NULL){
       addMapToMap(&res->content,mc);
       loadMapBinaries(&res->content,mc);
+    }
+    maps* mcs=_cursor->child;
+    if(mcs!=NULL){
+      res->child=dupMaps(&mcs);
     }
     res->next=dupMaps(&_cursor->next);
   }
@@ -708,10 +751,20 @@ void addMapsToMaps(maps** mo,maps* mi){
       while(_cursor->next!=NULL)
 	_cursor=_cursor->next;
       maps* tmp1=getMaps(*mo,tmp->name);
-      if(tmp1==NULL)
+      if(tmp1==NULL){
 	_cursor->next=dupMaps(&tmp);
-      else
+	if(tmp->child!=NULL)
+	  _cursor->next->child=dupMaps(&tmp->child);
+	else
+	  _cursor->next->child=NULL;
+      }
+      else{
 	addMapToMap(&tmp1->content,tmp->content);
+	if(tmp->child!=NULL)
+	  tmp1->child=dupMaps(&tmp->child);
+	else
+	  tmp1->child=NULL;
+      }
       _cursor=*mo;
     }
     tmp=tmp->next;
@@ -871,23 +924,74 @@ void setMapInMaps(maps* m,const char* key,const char* subkey,const char *value){
 	free(_ztmpm->value);
       _ztmpm->value=zStrdup(value);
     }else{
-      maps *tmp=(maps*)malloc(MAPS_SIZE);
-      tmp->name=zStrdup(key);
+      maps *tmp=createMaps(key);
       tmp->content=createMap(subkey,value);
-      tmp->next=NULL;
       addMapsToMaps(&_tmpm,tmp);
       freeMaps(&tmp);
       free(tmp);
     }
   }else{
-    maps *tmp=(maps*)malloc(MAPS_SIZE);
-    tmp->name=zStrdup(key);
+    maps *tmp=createMaps(key);
     tmp->content=createMap(subkey,value);
-    tmp->next=NULL;
     addMapsToMaps(&m,tmp);
     freeMaps(&tmp);
     free(tmp);
   }
+}
+
+/**
+ * Create an empty elements
+ *
+ * @return a pointer to the allocated elements
+ */
+elements* createEmptyElements(){
+  elements* res=(elements*)malloc(ELEMENTS_SIZE);
+  res->name=NULL;
+  res->content=NULL;
+  res->metadata=NULL;
+  res->format=NULL;
+  res->defaults=NULL;
+  res->supported=NULL;
+  res->child=NULL;
+  res->next=NULL;
+  return res;
+}
+
+/**
+ * Create a named elements
+ *
+ * @param name the elements name
+ * @return a pointer to the allocated elements
+ */
+elements* createElements(char* name){
+  elements* res=(elements*)malloc(ELEMENTS_SIZE);
+  res->name=zStrdup(name);
+  res->content=NULL;
+  res->metadata=NULL;
+  res->format=NULL;
+  res->defaults=NULL;
+  res->supported=NULL;
+  res->child=NULL;
+  res->next=NULL;
+  return res;
+}
+
+/**
+ * Set the name of an elements
+ *
+ * @param name the elements name
+ * @return a pointer to the allocated elements
+ */
+void setElementsName(elements** elem,char* name){
+  elements* res=*elem;
+  res->name=zStrdup(name);
+  res->content=NULL;
+  res->metadata=NULL;
+  res->format=NULL;
+  res->defaults=NULL;
+  res->supported=NULL;
+  res->child=NULL;
+  res->next=NULL;
 }
 
 /**
@@ -920,6 +1024,10 @@ void dumpElements(elements* e){
       tmpio=tmpio->next;
       ioc++;
     }
+    if(tmp->child!=NULL){
+      fprintf(stderr," > CHILD \n");
+      dumpElements(tmp->child);
+    }
     fprintf(stderr,"------------------\n");
     tmp=tmp->next;
   }
@@ -930,44 +1038,50 @@ void dumpElements(elements* e){
  *
  * @param e the elements to dump
  */
-void dumpElementsAsYAML(elements* e){
+void dumpElementsAsYAML(elements* e,int level){
   elements* tmp=e;
   int i;
   while(tmp!=NULL){
-    for(i=0;i<2;i++)
+    for(i=0;i<2+(4*level);i++)
       fprintf(stderr," ");
     fprintf(stderr,"%s:\n",tmp->name);
     map* mcurs=tmp->content;
     while(mcurs!=NULL){
-      for(i=0;i<4;i++)
+      for(i=0;i<4+(4*level);i++)
 	fprintf(stderr," ");
       _dumpMap(mcurs);
       mcurs=mcurs->next;
     }
     mcurs=tmp->metadata;
     if(mcurs!=NULL){
-      for(i=0;i<4;i++)
+      for(i=0;i<4+(4*level);i++)
 	fprintf(stderr," ");
       fprintf(stderr,"MetaData:\n");
       while(mcurs!=NULL){
-	for(i=0;i<6;i++)
+	for(i=0;i<6+(4*level);i++)
 	  fprintf(stderr," ");
 	_dumpMap(mcurs);
 	mcurs=mcurs->next;
       }
     }
-    for(i=0;i<4;i++)
+    for(i=0;i<4+(4*level);i++)
       fprintf(stderr," ");
-    fprintf(stderr,"%s:\n",tmp->format);
+    if(tmp->format!=NULL)
+      fprintf(stderr,"%s:\n",tmp->format);
+    else{
+      fprintf(stderr,"Child:\n");
+      if(tmp->child!=NULL)
+	dumpElementsAsYAML(tmp->child,level+1);
+    }
     iotype* tmpio=tmp->defaults;
     int ioc=0;
     while(tmpio!=NULL){
-      for(i=0;i<6;i++)
+      for(i=0;i<6+(4*level);i++)
 	fprintf(stderr," ");
       fprintf(stderr,"default:\n");
       mcurs=tmpio->content;
       while(mcurs!=NULL){
-	for(i=0;i<8;i++)
+	for(i=0;i<8+(4*level);i++)
 	  fprintf(stderr," ");
 	if(strcasecmp(mcurs->name,"range")==0){
 	  fprintf(stderr,"range: \"%s\"\n",mcurs->value);
@@ -981,12 +1095,12 @@ void dumpElementsAsYAML(elements* e){
     tmpio=tmp->supported;
     ioc=0;
     while(tmpio!=NULL){
-      for(i=0;i<6;i++)
+      for(i=0;i<6+(4*level);i++)
 	fprintf(stderr," ");
       fprintf(stderr,"supported:\n");
       mcurs=tmpio->content;
       while(mcurs!=NULL){
-	for(i=0;i<8;i++)
+	for(i=0;i<8+(4*level);i++)
 	  fprintf(stderr," ");
 	if(strcasecmp(mcurs->name,"range")==0){
 	  fprintf(stderr,"range: \"%s\"\n",mcurs->value);
@@ -1054,6 +1168,10 @@ elements* dupElements(elements* e){
     }
     else
       tmp->supported=NULL;
+    if(cursor->child!=NULL)
+      tmp->child=dupElements(cursor->child);
+    else
+      tmp->child=NULL;
     tmp->next=dupElements(cursor->next);
   }
   return tmp;
@@ -1074,7 +1192,21 @@ void addToElements(elements** m,elements* e){
     addToElements(&(*m)->next,tmp);
   }
 }
-  
+
+/**
+ * Set the name of a service
+ *
+ * @param name the service name
+ */
+void setServiceName(service** serv,char* name){
+  service* res=*serv;
+  res->name=zStrdup(name);
+  res->content=NULL;
+  res->metadata=NULL;
+  res->inputs=NULL;
+  res->outputs=NULL;
+}
+
 /**
  * Dump a service on stderr
  *
@@ -1125,11 +1257,11 @@ void dumpServiceAsYAML(service* s){
   }
   if(s->inputs!=NULL){
     fprintf(stderr,"\ninputs:\n");
-    dumpElementsAsYAML(s->inputs);
+    dumpElementsAsYAML(s->inputs,0);
   }
   if(s->outputs!=NULL){
     fprintf(stderr,"\noutputs:\n");
-    dumpElementsAsYAML(s->outputs);
+    dumpElementsAsYAML(s->outputs,0);
   }
 }
 

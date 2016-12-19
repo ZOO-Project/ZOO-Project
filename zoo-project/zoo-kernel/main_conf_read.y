@@ -110,10 +110,7 @@ processid
      freeMap(&current_content);
      free(current_content);
      current_maps->next=NULL;
-     current_maps->next=(maps*)malloc(MAPS_SIZE);
-     current_maps->next->name=zStrdup($1);
-     current_maps->next->content=NULL;
-     current_maps->next->next=NULL;
+     current_maps->next=createMaps($1);
      current_maps=current_maps->next;
      current_content=current_maps->content;
    }

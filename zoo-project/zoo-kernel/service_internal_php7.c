@@ -354,10 +354,8 @@ maps* php_array_to_maps(HashTable* arr) {
     ZVAL_DUP(&copy, data);
     HashTable* tab = HASH_OF(&copy);
 		
-    maps* node = (maps*) malloc(MAPS_SIZE);
-    node->name = strdup(ZSTR_VAL(key));					
+    maps* node = createMaps(ZSTR_VAL(key));					
     node->content = php_hashtable_to_map(tab);
-    node->next = NULL;
 		
     if(res == NULL) {
       res = node;

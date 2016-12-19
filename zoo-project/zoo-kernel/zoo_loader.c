@@ -94,6 +94,7 @@ int cgiMain(){
   if(strncmp(cgiContentType,"text/xml",8)==0 || 
      strncasecmp(cgiRequestMethod,"post",4)==0){
     if(cgiContentLength==0){
+
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
@@ -386,13 +387,15 @@ int cgiMain(){
       value=NULL;
       token=strtok_r(NULL,"&",&saveptr);
     }
-    
   }
 
   if(strncasecmp(cgiContentType,"multipart/form-data",19)==0){
     map* tmp=getMap(tmpMap,"dataInputs");
     if(tmp!=NULL){
-      addToMap(tmpMap,"dataInputs",strstr(strQuery,"dataInputs=")+11);
+      if(strcasestr(strQuery,"dataInputs=")!=NULL)
+	addToMap(tmpMap,"dataInputs",strcasestr(strQuery,"dataInputs=")+11);
+      else
+	addToMap(tmpMap,"dataInputs","None");
     }
   }
 

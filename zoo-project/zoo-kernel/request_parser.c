@@ -59,9 +59,16 @@ int appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem){
   maps *tmpMaps = getMaps (mo, mi->name);
   map *tmap = getMapType (tmpMaps->content);
   elements *el = getElements (elem, mi->name);
+  elements *cursor = elem;
+  while(cursor!=NULL && el==NULL){
+    if(cursor->child!=NULL)
+      el = getElements (cursor->child, mi->name);
+    cursor=cursor->next;
+  }
   int hasEl = 1;
   if (el == NULL)
     hasEl = -1;
+
   if (tmap == NULL)
     {
       if (hasEl > 0)
@@ -177,6 +184,8 @@ void ensureDecodedBase64(maps **in){
 	}
       }
     }
+    if(cursor->child!=NULL)
+      ensureDecodedBase64(&cursor->child);
     cursor=cursor->next;
   }
 }
@@ -254,7 +263,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 	      }
 	    if (tmpmaps == NULL)
 	      {
-		tmpmaps = (maps *) malloc (MAPS_SIZE);
+		tmpmaps = createMaps(tmpn);
 		if (tmpmaps == NULL)
 		  {
 		    free(cursor_input);
@@ -262,7 +271,6 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 					   _("Unable to allocate memory"),
 					   "InternalError", NULL);
 		  }
-		tmpmaps->name = zStrdup (tmpn);
 		if (tmpv != NULL)
 		  {
 		    char *tmpvf = url_decode (tmpv + 1);
@@ -432,7 +440,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 		{
 		  if (tmp_output == NULL)
 		    {
-		      tmp_output = (maps *) malloc (MAPS_SIZE);
+		      tmp_output = createMaps(tmpc);
 		      if (tmp_output == NULL)
 			{
 			  free(cursor_output);
@@ -441,9 +449,6 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
 			}
-		      tmp_output->name = zStrdup (tmpc);
-		      tmp_output->content = NULL;
-		      tmp_output->next = NULL;
 		    }
 		}
 	      else
@@ -490,15 +495,12 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
  */
 int defineMissingIdentifier(maps** main_conf,maps** mymaps){
   if (*mymaps == NULL){
-    *mymaps = (maps *) malloc (MAPS_SIZE);
+    *mymaps = createMaps("missingIndetifier");
     if (*mymaps == NULL){
       return errorException (*main_conf,
 			     _("Unable to allocate memory"),
 			     "InternalError", NULL);
     }
-    (*mymaps)->name = zStrdup ("missingIndetifier");
-    (*mymaps)->content = NULL;
-    (*mymaps)->next = NULL;
   }
   return 0;
 }
@@ -528,11 +530,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	{
 	  // A specific Input node.
 	  if(vid==1){
-	    tmpmaps = (maps *) malloc (MAPS_SIZE);
 	    xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
-	    tmpmaps->name = zStrdup ((char *) val);
-	    tmpmaps->content = NULL;
-	    tmpmaps->next = NULL;
+	    tmpmaps = createMaps((char *) val);
 	  }
 
 	  xmlNodePtr cur2 = cur->children;
@@ -551,7 +550,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		    xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
 		  if (tmpmaps == NULL && val!=NULL)
 		    {
-		      tmpmaps = (maps *) malloc (MAPS_SIZE);
+		      tmpmaps = createMaps((char*)val);
 		      if (tmpmaps == NULL)
 			{
 			  return errorException (*main_conf,
@@ -559,9 +558,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
 			}
-		      tmpmaps->name = zStrdup ((char *) val);
-		      tmpmaps->content = NULL;
-		      tmpmaps->next = NULL;
 		      xmlFree (val);
 		    }
 		}
@@ -585,8 +581,28 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		    xmlFree (val);
 		  }
 		}
-	      // InputDataFormChoice (Reference or Data ?) 
-	      if (xmlStrcasecmp (cur2->name, BAD_CAST "Reference") == 0)
+	      // InputDataFormChoice (Reference or Data ?) / 2.0.0 DataInputType / Input 
+	      if (xmlStrcasecmp (cur2->name, BAD_CAST "Input") == 0)
+		{
+		  char *xpathExpr=(char*)malloc(61+strlen(tmpmaps->name));
+		  sprintf(xpathExpr,"/*/*[local-name()='Input' and @id='%s']/*[local-name()='Input']",tmpmaps->name);
+		  xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
+		  xmlNodeSet *tmps = tmpsptr->nodesetval;
+		  if(tmps!=NULL){
+		    maps* request_output1=NULL;
+		    if(xmlParseInputs(main_conf,s,&request_output1,doc,tmps,hInternet)<0)
+		      return -1;
+		    if(tmpmaps->child==NULL)
+		      tmpmaps->child=dupMaps(&request_output1);
+		    else
+		      addMapsToMaps(&tmpmaps->child,request_output1);
+		    freeMaps(&request_output1);
+		    free(request_output1);
+		  }
+		  while(cur2->next!=NULL)
+		    cur2=cur2->next;
+		}
+	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Reference") == 0)
 		{
 		  defineMissingIdentifier(main_conf,&tmpmaps);
 		  // Get every attribute from a Reference node
@@ -847,13 +863,14 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			    cur4->type != XML_TEXT_NODE)
 			cur4=cur4->next;
 		      if(cur4!=NULL){
-			if(cur4->content!=NULL)
+			if(cur4->content!=NULL){
 			  if (tmpmaps->content != NULL)
 			    addToMap (tmpmaps->content, "value",
 				      (char *) cur4->content);
 			  else
 			    tmpmaps->content =
 			      createMap ("value", (char *) cur4->content);
+			}
 			cur4=cur4->next;
 		      }
 		    }
@@ -954,8 +971,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				     && cur5->type != XML_ELEMENT_NODE
 				     && cur5->type != XML_CDATA_SECTION_NODE)
 				cur5 = cur5->next;
-			      fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-			      fflush(stderr);
 			      if (cur5 != NULL
 				  && cur5->type != XML_CDATA_SECTION_NODE)
 				{
@@ -1017,17 +1032,30 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	    }
 	  {
 	    map* test=getMap(tmpmaps->content,"value");
-	    if(test==NULL)
+	    if(test==NULL && tmpmaps->child==NULL)
 	      addToMap(tmpmaps->content,"value","");
-	    maps *testPresence =
-	      getMaps (*request_output, tmpmaps->name);
+	    maps *testPresence = getMaps (*request_output, tmpmaps->name);
+	    maps *cursor=*request_output;
+	    while(testPresence == NULL && cursor!=NULL){
+	      if(cursor->child!=NULL){
+		testPresence = getMaps (cursor->child, tmpmaps->name);
+	      }
+	      cursor=cursor->next;
+	    }
 	    if (testPresence != NULL)
 	      {
 		elements *elem = getElements (s->inputs, tmpmaps->name);
+		elements *cursor=s->inputs;
+		while(elem == NULL && cursor!=NULL){
+		  if(cursor->child!=NULL){
+		    elem = getElements (cursor->child, tmpmaps->name);
+		  }
+		  cursor=cursor->next;
+		}
 		if (elem != NULL)
 		  {
 		    if (appendMapsToMaps
-			(*main_conf, *request_output, tmpmaps, elem) < 0)
+			(*main_conf, testPresence, tmpmaps, elem) < 0)
 		      {
 			return errorException (*main_conf,
 					       _("Unable to append maps to maps."),
@@ -1065,14 +1093,12 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
     maps *tmpmaps = NULL;
     xmlNodePtr cur = nodes->nodeTab[k];
     if (cur->type == XML_ELEMENT_NODE){
-      maps *tmpmaps = (maps *) malloc (MAPS_SIZE);
+      maps *tmpmaps = NULL;
       xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
       if(val!=NULL)
-	tmpmaps->name = zStrdup ((char*)val);
+	tmpmaps = createMaps((char *)val);
       else
-	tmpmaps->name = zStrdup ("unknownIdentifier");
-      tmpmaps->content = NULL;
-      tmpmaps->next = NULL;
+	tmpmaps = createMaps("unknownIdentifier");
       const char ress[4][13] =
 	{ "mimeType", "encoding", "schema", "transmission" };
       for (l = 0; l < 4; l++){
@@ -1090,10 +1116,28 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	  }
 	xmlFree (val);
       }
-      if (*request_output == NULL)
+      if(cur->children!=NULL){
+	xmlNodePtr ccur = cur->children;
+	while (ccur != NULL){
+	  if(ccur->type == XML_ELEMENT_NODE){
+	    char *xpathExpr=(char*)malloc(65+strlen(tmpmaps->name));
+	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);
+	    xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
+	    xmlNodeSet* cnodes = tmpsptr->nodesetval;
+	    xmlParseOutputs2(main_conf,request_inputs,&tmpmaps->child,doc,cnodes);
+	    break;
+	  }
+	  ccur = ccur->next;
+	}
+      }
+      if (*request_output == NULL){
 	*request_output = dupMaps(&tmpmaps);
-      else
+      }
+      else{
 	addMapsToMaps(request_output,tmpmaps);
+      }
+      freeMaps(&tmpmaps);
+      free(tmpmaps);
     }
   }
   return 0;
@@ -1118,15 +1162,12 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
       if (cur->type == XML_ELEMENT_NODE)
 	{
 
-	  maps *tmpmaps = (maps *) malloc (MAPS_SIZE);
+	  maps *tmpmaps = createMaps("unknownIdentifier");
 	  if (tmpmaps == NULL)
 	    {
 	      return errorException (*main_conf, _("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
-	  tmpmaps->name = zStrdup ("unknownIdentifier");
-	  tmpmaps->content = NULL;
-	  tmpmaps->next = NULL;
 
 	  // Get every attribute from a RawDataOutput node
 	  // mimeType, encoding, schema, uom
@@ -1209,16 +1250,13 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	      continue;
 	    }
 				
-	    maps *tmpmaps = (maps *) malloc (MAPS_SIZE); // one per Output node
+	    maps *tmpmaps = createMaps("unknownIdentifier"); // one per Output node
 	    if (tmpmaps == NULL) {
 	      return errorException (*main_conf,
 				     _
 				     ("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
-	    tmpmaps->name = zStrdup ("unknownIdentifier");
-	    tmpmaps->content = NULL;
-	    tmpmaps->next = NULL;
 				
 	    xmlNodePtr elems = cur1->children;
 				
@@ -1512,6 +1550,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
   map* errO=NULL;
   char *dfv1 =
     addDefaultValues (request_outputs, s->outputs, *main_conf, 1,&errO);
+
   if (strcmp (dfv1, "") != 0 || strcmp (dfv, "") != 0)
     {
       char tmps[1024];

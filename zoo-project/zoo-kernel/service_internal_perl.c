@@ -104,18 +104,18 @@ int hash_to_map(HV * hh,map ** m){
 	
 int hash_to_maps(HV * hh,maps** m){
 	hv_iterinit(hh);
-	*m = (maps *)malloc(MAPS_SIZE);
 	maps * tmp = *m;
 	HE * he = hv_iternext(hh);
 	map *mm;
 	while (he != NULL) {
 		//fprintf(stderr,"key ===> %s \n",HeKEY(he));
-		tmp->name = HeKEY(he);
+		tmp=createMaps(HeKEY(he));
 		hash_to_map((HV *) SvRV(HeVAL(he)),&mm);
 		tmp->content = mm;
+		if(*m==NULL)
+		  *m=tmp;
 		he = hv_iternext(hh);
 		if (he != NULL){
-			tmp->next = (maps *)malloc(MAPS_SIZE);
 			tmp= tmp->next;
 		}
 		else {

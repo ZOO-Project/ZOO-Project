@@ -250,11 +250,12 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
 #endif
       if (pValue != (jint)NULL){
 	res=pValue;
-	m=mapsFromHashMap(env,arg1,scHashMapClass);
-	*main_conf=m;
-	outputs=mapsFromHashMap(env,arg3,scHashMapClass);
-	*real_outputs=outputs;
-
+	freeMaps(real_outputs);
+	free(*real_outputs);
+	freeMaps(main_conf);
+	free(*main_conf);
+	*main_conf=mapsFromHashMap(env,arg1,scHashMapClass);
+	*real_outputs=mapsFromHashMap(env,arg3,scHashMapClass);
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", pValue);
 	dumpMaps(inputs);
@@ -756,17 +757,17 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 #else
     jobject jk=(*env)->CallObjectMethod(env,tmp,getKey_mid);
 #endif
-    maps* cmap=(maps*)malloc(sizeof(maps));
+    maps* cmap=createMaps(
 #ifdef JAVA7
-    cmap->name=(char*)(*env).GetStringUTFChars((jstring)jk, NULL);
+      (char*)(*env).GetStringUTFChars((jstring)jk, NULL)
 #else
-    cmap->name=(*env)->GetStringUTFChars(env, jk, NULL);
+      (*env)->GetStringUTFChars(env, jk, NULL)
 #endif
+			  );
 #ifdef DEBUG
     fprintf(stderr," / %s \n",cmap->name);
 #endif
     cmap->content=res;
-    cmap->next=NULL;
     if(final_res==NULL)
       final_res=dupMaps(&cmap);
     else
@@ -779,7 +780,6 @@ maps* mapsFromHashMap(JNIEnv *env,jobject t,jclass scHashMapClass){
 #ifdef DEBUG
   fprintf(stderr,"mapsFromHashMap end\n");
 #endif
-
   return final_res;
 }
 

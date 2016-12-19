@@ -1067,7 +1067,13 @@ int main( int argc, char ** argv )
     {
         Usage();
         GDALDestroyDriverManager();
+#ifndef ZOO_SERVICE
         exit( 2 );
+#else
+	fprintf(stderr,"pszSource %s\n",pszSource);
+	fprintf(stderr,"pszDest %s\n",pszDest);
+	return SERVICE_FAILED;
+#endif
     }
 
 /* -------------------------------------------------------------------- */
