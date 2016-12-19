@@ -353,16 +353,13 @@ maps* mapsFromRubyHash(VALUE t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    StringValueCStr(key),StringValueCStr(value));
 #endif
-    cursor=(maps*)malloc(MAPS_SIZE);
-    cursor->name=StringValueCStr(key);
+    cursor=createMaps(StringValueCStr(key));
     cursor->content=mapFromRubyHash(value);
-    cursor->next=NULL;
     if(res==NULL)
       res=dupMaps(&cursor);
     else
       addMapsToMaps(&res,cursor);
-    freeMap(&cursor->content);
-    free(cursor->content);
+    freeMaps(&cursor);
     free(cursor);
   }
   return res;

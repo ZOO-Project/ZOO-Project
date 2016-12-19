@@ -153,7 +153,7 @@ extern "C" {
  * The memory size to create a maps
  */
 //#define MAPS_SIZE (2*sizeof(char*))+sizeof(map*)+MAP_SIZE
-#define MAPS_SIZE sizeof(char*)+sizeof(map*)+sizeof(maps*)
+#define MAPS_SIZE sizeof(char*)+sizeof(map*)+(2*sizeof(maps*))
 /**
  * The memory size to create a service
  */
@@ -204,6 +204,7 @@ extern "C" {
   typedef struct maps{
     char* name; //!< the maps name
     struct map* content; //!< the content map
+    struct maps* child; //!< the child maps
     struct maps* next; //!< the pointer to the next maps if any or NULL
   } maps;
   
@@ -267,6 +268,7 @@ extern "C" {
   ZOO_DLL_EXPORT void dumpMapToFile(map*,FILE*); // (used only internally)
   ZOO_DLL_EXPORT void dumpMapsToFile(maps*,char*,int);
   ZOO_DLL_EXPORT map* createMap(const char*,const char*);
+  ZOO_DLL_EXPORT maps* createMaps(const char*);
   ZOO_DLL_EXPORT int count(map*);
   ZOO_DLL_EXPORT bool hasKey(map*,const char*);
   ZOO_DLL_EXPORT maps* getMaps(maps*,const char*);
@@ -277,10 +279,14 @@ extern "C" {
   ZOO_DLL_EXPORT void freeMaps(maps** mo);
   
 
+  ZOO_DLL_EXPORT elements* createEmptyElements();
+  ZOO_DLL_EXPORT elements* createElements(char*);
+  ZOO_DLL_EXPORT void setElementsName(elements**,char*);
   ZOO_DLL_EXPORT bool hasElement(elements*,const char*);
   ZOO_DLL_EXPORT elements* getElements(elements*,char*);
   ZOO_DLL_EXPORT void freeIOType(iotype**);
   ZOO_DLL_EXPORT void freeElements(elements**);
+  ZOO_DLL_EXPORT void setServiceName(service**,char*);
   ZOO_DLL_EXPORT void freeService(service**);
   ZOO_DLL_EXPORT void addToMap(map*,const char*,const char*);
   ZOO_DLL_EXPORT void addIntToMap(map*,const char*,const int);
@@ -300,7 +306,7 @@ extern "C" {
   ZOO_DLL_EXPORT int addMapsArrayToMaps(maps**,maps*,char*);
   ZOO_DLL_EXPORT void setMapInMaps(maps*,const char*,const char*,const char*);
   ZOO_DLL_EXPORT void dumpElements(elements*);
-  ZOO_DLL_EXPORT void dumpElementsAsYAML(elements*);
+  ZOO_DLL_EXPORT void dumpElementsAsYAML(elements*,int);
   ZOO_DLL_EXPORT elements* dupElements(elements*);
   ZOO_DLL_EXPORT void addToElements(elements**,elements*);
   ZOO_DLL_EXPORT void dumpService(service*);

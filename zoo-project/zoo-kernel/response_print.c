@@ -1488,9 +1488,28 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
       }
     
       xmlAddChild(nc2,nc3);
+    }else{
+      if(e->child!=NULL && vid!=0){
+	printFullDescription(in,e->child,type,ns,ns_ows,nc2,vid);
+      }
     }
     
-    xmlAddChild(nc1,nc2);
+    if(e->child!=NULL && vid==0){
+      elements* children=dupElements(e->child);
+      elements* cursor=children;
+      while(cursor!=NULL){
+	char* tmp=strdup(cursor->name);
+	free(cursor->name);
+	cursor->name=(char*)malloc((strlen(cursor->name)+strlen(e->name)+2)*sizeof(char));
+	sprintf(cursor->name,"%s.%s",e->name,tmp);
+	cursor=cursor->next;
+      }
+      printFullDescription(in,children,type,ns,ns_ows,nc2,vid);
+      xmlAddChild(nc1,nc2);
+      freeElements(&children);
+      free(children);
+    }else
+      xmlAddChild(nc1,nc2);
     
     e=e->next;
   }
@@ -1957,178 +1976,191 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     xmlNewProp(nc1,BAD_CAST "id",BAD_CAST (e!=NULL?e->name:m->name));
   }
 
-  /**
-   * IO type Reference or full Data ?
-   */
-  map *tmpMap=getMap(m->content,"Reference");
-  if(tmpMap==NULL){
-    nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-    if(e!=NULL && e->format!=NULL){
-      if(strncasecmp(e->format,"LiteralOutput",strlen(e->format))==0)
-	nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
-      else
-        if(strncasecmp(e->format,"ComplexOutput",strlen(e->format))==0)
-	  nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
-	else if(strncasecmp(e->format,"BoundingBoxOutput",strlen(e->format))==0)
-	  nc3=xmlNewNode(ns_wps, BAD_CAST "BoundingBoxData");
+  // IO type nested outputs
+  if(m->child!=NULL){
+    maps* curs=m->child;
+    elements* ecurs=getElements(e,(e!=NULL?e->name:m->name));
+    ecurs=ecurs->child;
+    while(curs!=NULL && ecurs!=NULL){
+      map* inRequest=getMap(curs->content,"inRequest");
+      if(inRequest!=NULL && strncasecmp(inRequest->value,"true",4)==0)
+	printIOType(doc,nc1,ns_wps,ns_ows,ns_xlink,ecurs,curs,type,vid);
+      curs=curs->next;
+      ecurs=ecurs->next;
+    }
+  }
+  else{
+    map *tmpMap=getMap(m->content,"Reference");
+    if(tmpMap==NULL){
+      nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
+      if(e!=NULL && e->format!=NULL){
+	if(strncasecmp(e->format,"LiteralOutput",strlen(e->format))==0)
+	  nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
 	else
-	  nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
-    }
-    else {
-      map* tmpV=getMapFromMaps(m,"format","value");
-      if(tmpV!=NULL)
-	nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
-      else
-	nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
-    } 
-    tmp=m->content;
-
-    while(tmp!=NULL){
-      if(strcasecmp(tmp->name,"mimeType")==0 ||
-	 strcasecmp(tmp->name,"encoding")==0 ||
-	 strcasecmp(tmp->name,"schema")==0 ||
-	 strcasecmp(tmp->name,"datatype")==0 ||
-	 strcasecmp(tmp->name,"uom")==0) {
-	
-	if(vid==0)
-	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
-	else{
-	  if(strcasecmp(tmp->name,"datatype")==0)
-	    xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	  if(strncasecmp(e->format,"ComplexOutput",strlen(e->format))==0)
+	    nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
+	  else if(strncasecmp(e->format,"BoundingBoxOutput",strlen(e->format))==0)
+	    nc3=xmlNewNode(ns_wps, BAD_CAST "BoundingBoxData");
 	  else
-	    if(strcasecmp(tmp->name,"uom")!=0)
-	      xmlNewProp(nc2,BAD_CAST tmp->name,BAD_CAST tmp->value);
-	}
-      }
-      if(vid==0)
-	xmlAddChild(nc2,nc3);
-      tmp=tmp->next;
-    }
-    if(e!=NULL && e->format!=NULL && strcasecmp(e->format,"BoundingBoxData")==0) {
-      map* bb=getMap(m->content,"value");
-      if(bb!=NULL) {
-	map* tmpRes=parseBoundingBox(bb->value);
-	printBoundingBox(ns_ows,nc3,tmpRes);
-	freeMap(&tmpRes);
-	free(tmpRes);
-      }
-    }
-    else {
-      if(e!=NULL)
-	tmp=getMap(e->defaults->content,"mimeType");
-      else
-	tmp=NULL;
-	
-      map* tmp1=getMap(m->content,"encoding");
-      map* tmp2=getMap(m->content,"mimeType");
-      map* tmp3=getMap(m->content,"value");
-      int hasValue=1;
-      if(tmp3==NULL){
-	tmp3=createMap("value","");
-	hasValue=-1;
-      }
-
-      if( ( tmp1 != NULL && strncmp(tmp1->value,"base64",6) == 0 )     // if encoding is base64
-	  || 	                                                       // or if 
-	  ( tmp2 != NULL && ( strstr(tmp2->value,"text") == NULL       //  mime type is not text 
-			      &&                                       //  nor 
-			      strstr(tmp2->value,"xml") == NULL        //  xml
-			      &&                                       // nor
-			      strstr(tmp2->value,"javascript") == NULL // javascript
-			      &&
-			      strstr(tmp2->value,"json") == NULL
-			      &&
-			      strstr(tmp2->value,"ecmascript") == NULL
-			      &&
-			      // include for backwards compatibility,
-			      // although correct mime type is ...kml+xml:
-			      strstr(tmp2->value,"google-earth.kml") == NULL							)
-	    )
-	  ) { 	                                                 // then	
-	map* rs=getMap(m->content,"size");                       // obtain size
-	bool isSized=true;
-	if(rs==NULL){
-	  char tmp1[1024];
-	  sprintf(tmp1,"%ld",strlen(tmp3->value));
-	  rs=createMap("size",tmp1);
-	  isSized=false;
-	}
-	 
-	xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST base64(tmp3->value, atoi(rs->value))));  // base 64 encode in XML
-		
-	if(tmp1==NULL || (tmp1!=NULL && strncmp(tmp1->value,"base64",6)!=0)) {
-	  xmlAttrPtr ap = xmlHasProp((vid==0?nc3:nc2), BAD_CAST "encoding");
-	  if (ap != NULL) {
-	    xmlRemoveProp(ap);
-	  }			
-	  xmlNewProp((vid==0?nc3:nc2),BAD_CAST "encoding",BAD_CAST "base64");
-	}
-		
-	if(!isSized){
-	  freeMap(&rs);
-	  free(rs);
-	}
-      }
-      else if (tmp2!=NULL) {                                 // else (text-based format) 
-	if(strstr(tmp2->value, "javascript") != NULL ||      //    if javascript put code in CDATA block 
-	   strstr(tmp2->value, "json") != NULL ||            //    (will not be parsed by XML reader) 
-	   strstr(tmp2->value, "ecmascript") != NULL
-	   ) {
-	  xmlAddChild((vid==0?nc3:nc2),xmlNewCDataBlock(doc,BAD_CAST tmp3->value,strlen(tmp3->value)));
-	}   
-	else {                                                     // else
-	  if (strstr(tmp2->value, "xml") != NULL ||                 // if XML-based format
-	      // include for backwards compatibility,
-	      // although correct mime type is ...kml+xml:		   
-	      strstr(tmp2->value, "google-earth.kml") != NULL
-	      ) { 
-			  
-	    int li=zooXmlAddDoc(tmp3->value);
-	    xmlDocPtr doc = iDocs[li];
-	    xmlNodePtr ir = xmlDocGetRootElement(doc);
-	    xmlAddChild((vid==0?nc3:nc2),ir);
-	  }
-	  else                                                     // else	
-	    xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));    //   add text node
-	}
-	xmlAddChild(nc2,nc3);
+	    nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
       }
       else {
-	xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));
-      }
-	  
-      if(hasValue<0) {
-	freeMap(&tmp3);
-	free(tmp3);
-      }
-    }
-  }
-  else { // Reference
-    tmpMap=getMap(m->content,"Reference");
-    nc3=nc2=xmlNewNode(ns_wps, BAD_CAST "Reference");
-    if(strcasecmp(type,"Output")==0)
-      xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
-    else
-      xmlNewNsProp(nc3,ns_xlink,BAD_CAST "href",BAD_CAST tmpMap->value);
-    
-    tmp=m->content;
-    while(tmp!=NULL) {
-      if(strcasecmp(tmp->name,"mimeType")==0 ||
-	 strcasecmp(tmp->name,"encoding")==0 ||
-	 strcasecmp(tmp->name,"schema")==0 ||
-	 strcasecmp(tmp->name,"datatype")==0 ||
-	 strcasecmp(tmp->name,"uom")==0){
-
-	if(strcasecmp(tmp->name,"datatype")==0)
-	  xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	map* tmpV=getMapFromMaps(m,"format","value");
+	if(tmpV!=NULL)
+	  nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
 	else
-	  xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	  nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
+      } 
+      tmp=m->content;
+      
+      while(tmp!=NULL){
+	if(strcasecmp(tmp->name,"mimeType")==0 ||
+	   strcasecmp(tmp->name,"encoding")==0 ||
+	   strcasecmp(tmp->name,"schema")==0 ||
+	   strcasecmp(tmp->name,"datatype")==0 ||
+	   strcasecmp(tmp->name,"uom")==0) {
+	  
+	  if(vid==0)
+	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	  else{
+	    if(strcasecmp(tmp->name,"datatype")==0)
+	      xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    else
+	      if(strcasecmp(tmp->name,"uom")!=0)
+		xmlNewProp(nc2,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	  }
+	}
+	if(vid==0)
+	  xmlAddChild(nc2,nc3);
+	tmp=tmp->next;
       }
-      tmp=tmp->next;
-      xmlAddChild(nc2,nc3);
+      if(e!=NULL && e->format!=NULL && strcasecmp(e->format,"BoundingBoxData")==0) {
+	map* bb=getMap(m->content,"value");
+	if(bb!=NULL) {
+	  map* tmpRes=parseBoundingBox(bb->value);
+	  printBoundingBox(ns_ows,nc3,tmpRes);
+	  freeMap(&tmpRes);
+	  free(tmpRes);
+	}
+      }
+      else {
+	if(e!=NULL)
+	  tmp=getMap(e->defaults->content,"mimeType");
+	else
+	  tmp=NULL;
+	
+	map* tmp1=getMap(m->content,"encoding");
+	map* tmp2=getMap(m->content,"mimeType");
+	map* tmp3=getMap(m->content,"value");
+	int hasValue=1;
+	if(tmp3==NULL){
+	  tmp3=createMap("value","");
+	  hasValue=-1;
+	}
+	
+	if( ( tmp1 != NULL && strncmp(tmp1->value,"base64",6) == 0 )     // if encoding is base64
+	    || 	                                                       // or if 
+	    ( tmp2 != NULL && ( strstr(tmp2->value,"text") == NULL       //  mime type is not text 
+				&&                                       //  nor 
+				strstr(tmp2->value,"xml") == NULL        //  xml
+				&&                                       // nor
+				strstr(tmp2->value,"javascript") == NULL // javascript
+				&&
+				strstr(tmp2->value,"json") == NULL
+				&&
+				strstr(tmp2->value,"ecmascript") == NULL
+				&&
+				// include for backwards compatibility,
+				// although correct mime type is ...kml+xml:
+				strstr(tmp2->value,"google-earth.kml") == NULL							)
+	      )
+	    ) { 	                                                 // then	
+	  map* rs=getMap(m->content,"size");                       // obtain size
+	  bool isSized=true;
+	  if(rs==NULL){
+	    char tmp1[1024];
+	    sprintf(tmp1,"%ld",strlen(tmp3->value));
+	    rs=createMap("size",tmp1);
+	    isSized=false;
+	  }
+	  
+	  xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST base64(tmp3->value, atoi(rs->value))));  // base 64 encode in XML
+	  
+	  if(tmp1==NULL || (tmp1!=NULL && strncmp(tmp1->value,"base64",6)!=0)) {
+	    xmlAttrPtr ap = xmlHasProp((vid==0?nc3:nc2), BAD_CAST "encoding");
+	    if (ap != NULL) {
+	      xmlRemoveProp(ap);
+	    }			
+	    xmlNewProp((vid==0?nc3:nc2),BAD_CAST "encoding",BAD_CAST "base64");
+	  }
+	  
+	  if(!isSized){
+	    freeMap(&rs);
+	    free(rs);
+	  }
+	}
+	else if (tmp2!=NULL) {                                 // else (text-based format) 
+	  if(strstr(tmp2->value, "javascript") != NULL ||      //    if javascript put code in CDATA block 
+	     strstr(tmp2->value, "json") != NULL ||            //    (will not be parsed by XML reader) 
+	     strstr(tmp2->value, "ecmascript") != NULL
+	   ) {
+	    xmlAddChild((vid==0?nc3:nc2),xmlNewCDataBlock(doc,BAD_CAST tmp3->value,strlen(tmp3->value)));
+	  }   
+	  else {                                                     // else
+	    if (strstr(tmp2->value, "xml") != NULL ||                 // if XML-based format
+		// include for backwards compatibility,
+	      // although correct mime type is ...kml+xml:		   
+		strstr(tmp2->value, "google-earth.kml") != NULL
+		) { 
+	      
+	      int li=zooXmlAddDoc(tmp3->value);
+	      xmlDocPtr doc = iDocs[li];
+	      xmlNodePtr ir = xmlDocGetRootElement(doc);
+	      xmlAddChild((vid==0?nc3:nc2),ir);
+	    }
+	    else                                                     // else	
+	      xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));    //   add text node
+	  }
+	  xmlAddChild(nc2,nc3);
+	}
+	else {
+	  xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));
+	}
+	
+	if(hasValue<0) {
+	  freeMap(&tmp3);
+	  free(tmp3);
+	}
+      }
     }
+    else { // Reference
+      tmpMap=getMap(m->content,"Reference");
+      nc3=nc2=xmlNewNode(ns_wps, BAD_CAST "Reference");
+      /* Special case to avoid failing to validate against the WPS 2.0 schema */
+      if(strcasecmp(type,"Output")==0 && vid==0)
+	xmlNewProp(nc3,BAD_CAST "href",BAD_CAST tmpMap->value);
+      else
+	xmlNewNsProp(nc3,ns_xlink,BAD_CAST "href",BAD_CAST tmpMap->value);
+      
+      tmp=m->content;
+      while(tmp!=NULL) {
+	if(strcasecmp(tmp->name,"mimeType")==0 ||
+	   strcasecmp(tmp->name,"encoding")==0 ||
+	   strcasecmp(tmp->name,"schema")==0 ||
+	   strcasecmp(tmp->name,"datatype")==0 ||
+	   strcasecmp(tmp->name,"uom")==0){
+	  
+	  if(strcasecmp(tmp->name,"datatype")==0)
+	    xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	  else
+	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
+	}
+	tmp=tmp->next;
+	xmlAddChild(nc2,nc3);
+      }
+    }
+    xmlAddChild(nc1,nc2);
   }
-  xmlAddChild(nc1,nc2);
   xmlAddChild(nc,nc1);
 }
 
@@ -2393,7 +2425,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       char tmpMsg[1024];
       sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
       errorException(m,tmpMsg,"InternalError",NULL);
-
       return;
     }
     else{
@@ -2436,9 +2467,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     dumpMaps(request_outputs);
 #endif
     maps* tmpI=request_outputs;
+    maps* stmpI=NULL;
     map* usid=getMapFromMaps(m,"lenv","usid");
     int itn=0;
+  NESTED0:
     while(tmpI!=NULL){
+      if(tmpI->child!=NULL){
+	stmpI=tmpI;
+	tmpI=tmpI->child;
+      }
 #ifdef USE_MS
       map* testMap=getMap(tmpI->content,"useMapserver");	
 #endif
@@ -2461,6 +2498,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #endif
 	{
 	  elements* in=getElements(s->outputs,tmpI->name);
+	  if(in==NULL && s->outputs->child!=NULL){
+	    in=getElements(s->outputs->child,tmpI->name);
+	  }
 	  char *format=NULL;
 	  if(in!=NULL && in->format!=NULL){
 	    format=in->format;
@@ -2544,6 +2584,12 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       }
 #endif
       tmpI=tmpI->next;
+    }
+    if(stmpI!=NULL){
+      tmpI=stmpI->next;
+      stmpI=NULL;
+      if(tmpI!=NULL)
+	goto NESTED0;
     }
 #ifdef DEBUG
     fprintf(stderr,"SERVICE : %s\n",s->name);

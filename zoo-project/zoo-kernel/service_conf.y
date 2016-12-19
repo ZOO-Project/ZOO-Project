@@ -33,6 +33,7 @@ static int defaultsc=0;
 static bool wait_maincontent=true;
 static bool wait_mainmetadata=false;
 static bool wait_metadata=false;
+static bool wait_nested=false;
 static bool wait_inputs=false;
 static bool wait_defaults=false;
 static bool wait_supporteds=false;
@@ -46,6 +47,7 @@ static int debug=0;
 static int data=-1;
 static int previous_data=0;
 static int current_data=0;
+static int nested_level=0;
 // namespace
 using namespace std;
 
@@ -144,7 +146,7 @@ STag
   fflush(stderr);
   dumpMap(current_content);
 #endif
-  if(my_service->content==NULL){
+  if(my_service->content==NULL && current_content!=NULL){
 #ifdef DEBUG_SERVICE_CONF
     fprintf(stderr,"NO CONTENT\n");
 #endif
@@ -155,6 +157,17 @@ STag
     my_service->metadata=NULL;
     wait_maincontent=false;
   }
+  if(strncasecmp($2,"EndNested",9)==0){
+#ifdef DEBUG_SERVICE_CONF
+      fprintf(stderr,"(ENDNESTED - %d) \n",__LINE__);
+      fflush(stderr);
+#endif
+      nested_level-=1;
+      if(nested_level==0){
+	wait_nested=false;
+      }
+  }
+
   if(strncasecmp($2,"DataInputs",10)==0){
     if(current_element==NULL){
 #ifdef DEBUG_SERVICE_CONF
@@ -166,15 +179,7 @@ STag
       fprintf(stderr,"(DATAINPUTS - %d) ALLOCATE current_element\n",__LINE__);
 #endif
       current_element=NULL;
-      current_element=(elements*)malloc(ELEMENTS_SIZE);
-      current_element->name=NULL;
-      current_element->content=NULL;
-      current_element->metadata=NULL;
-      current_element->format=NULL;
-      current_element->defaults=NULL;
-      current_element->supported=NULL;
-      current_element->child=NULL;
-      current_element->next=NULL;
+      current_element=createEmptyElements();
     }
     wait_inputs=true;
     current_data=1;
@@ -216,15 +221,7 @@ STag
 	fprintf(stderr,"(DATAOUTPUTS - %d) ALLOCATE current_element (%s)\n",__LINE__,$2);
 	fflush(stderr);
 #endif
-	current_element=(elements*)malloc(ELEMENTS_SIZE);
-	current_element->name=NULL;
-	current_element->content=NULL;
-	current_element->metadata=NULL;
-	current_element->format=NULL;
-	current_element->defaults=NULL;
-	current_element->supported=NULL;
-	current_element->child=NULL;
-	current_element->next=NULL;
+	current_element=createEmptyElements();
       }
       wait_outputs=1;
       current_data=2;
@@ -268,6 +265,7 @@ STag
 	    current_element->format=zStrdup($2);
 	  current_element->defaults=NULL;
 	  current_element->supported=NULL;
+	  current_element->child=NULL;
 	  current_content=NULL;
 	}
 	else
@@ -284,8 +282,8 @@ STag
 	      current_data=5;
 	    }
 #ifdef DEBUG_SERVICE_CONF
-  printf("* Identifiant : %s\n",$2);
-  fflush(stdout);
+  fprintf(stderr,"* Identifiant : %s\n",$2);
+  fflush(stderr);
 #endif
 }
  ;
@@ -339,7 +337,52 @@ EmptyElemTag
      wait_defaults=false;
      current_content=NULL;
      current_element->supported=NULL;
+     current_element->child=NULL;
      current_element->next=NULL;
+   }
+   if(strncasecmp($2,"EndNested",9)==0){
+     if(current_data==1){
+       elements* cursor=my_service->inputs;
+       while(cursor->next!=NULL)
+	 cursor=cursor->next;
+       if(nested_level>1){
+	 for(int j=0;j<nested_level-1;j++){
+	   cursor=cursor->child;
+	   while(cursor->next!=NULL)
+	     cursor=cursor->next;
+	 }
+       }
+       if(cursor->child==NULL){
+	 cursor->child=dupElements(current_element);
+       }else{
+	 addToElements(&cursor->child,current_element);
+       }
+     }else{
+       if(current_element->name!=NULL){
+	 elements* cursor=my_service->outputs;
+	 while(cursor->next!=NULL)
+	   cursor=cursor->next;
+	 if(nested_level>1){
+	   for(int j=0;j<nested_level-1;j++){
+	     cursor=cursor->child;
+	     while(cursor->next!=NULL)
+	       cursor=cursor->next;
+	   }
+	 }
+	 if(cursor->child==NULL){
+	   cursor->child=dupElements(current_element);
+	 }else
+	   addToElements(&cursor->child,current_element);
+       }
+     }
+     freeElements(&current_element);
+     free(current_element);
+     current_element=NULL;
+     current_element=createEmptyElements();
+     nested_level-=1;
+     if(nested_level==0){
+       wait_nested=false;       
+     }
    }
  }
  ;
@@ -394,6 +437,7 @@ ETag
 	current_element->next=NULL;
 	current_element->defaults=NULL;
 	current_element->supported=NULL;
+	current_element->child=NULL;
       }else{
 	if(wait_mainmetadata){
 	  addMapToMap(&my_service->metadata,current_content);
@@ -427,6 +471,7 @@ ETag
     wait_defaults=false;
     current_content=NULL;
     current_element->supported=NULL;
+    current_element->child=NULL;
     current_element->next=NULL;
   }
   if(strcmp($3,"Supported")==0){
@@ -442,6 +487,7 @@ ETag
 	current_content=NULL;
       }else{
 	current_element->supported=NULL;
+	current_element->child=NULL;
 	current_element->next=NULL;
       }
     }
@@ -552,22 +598,15 @@ processid
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"processid (%s %d) %s\n",__FILE__,__LINE__,$1);
 #endif
-//  if(data==-1){
-//    data=1;
   if(::data==-1){ // knut: add namespace to avoid ambiguous symbol
     ::data=1;	
     if($1!=NULL){
       char *cen=zStrdup($1);
-      my_service->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
       cen[strlen(cen)-1]=0;
       cen+=1;
-      sprintf(my_service->name,"%s",cen);
+      setServiceName(&my_service,cen);
       cen-=1;
       free(cen);
-      my_service->content=NULL;
-      my_service->metadata=NULL;
-      my_service->inputs=NULL;
-      my_service->outputs=NULL;
     }
   } else {
     if(current_data==1){
@@ -578,7 +617,44 @@ processid
 	  tmp_count++;
 	}
 	else{
-	  addToElements(&my_service->inputs,current_element);
+	  if(wait_nested){
+	    elements* cursor=my_service->inputs;
+	    while(cursor->next!=NULL)
+	      cursor=cursor->next;
+	    if(nested_level>1){
+	      for(int j=0;j<nested_level-1;j++){
+		cursor=cursor->child;
+		while(cursor->next!=NULL)
+		  cursor=cursor->next;
+	      }
+	    }
+	    if(cursor->child==NULL){
+	      cursor->child=dupElements(current_element);
+	    }else{
+	      addToElements(&cursor->child,current_element);
+	    }
+	  }else
+	    addToElements(&my_service->inputs,current_element);
+	}
+	if(current_element->format==NULL){
+	  wait_nested=true;
+	  nested_level+=1;
+	  if(current_content!=NULL){
+	    elements* cursor=my_service->inputs;
+	    while(cursor->next!=NULL)
+	      cursor=cursor->next;
+	    if(nested_level>1){
+	      for(int j=0;j<nested_level-1;j++){
+		cursor=cursor->child;
+		while(cursor->next!=NULL)
+		  cursor=cursor->next;
+	      }
+	    }
+	    addMapToMap(&cursor->content,current_content);
+	    freeMap(&current_content);
+	    free(current_content);
+	    current_content=NULL;
+	  }
 	}
 #ifdef DEBUG_SERVICE_CONF
 	fprintf(stderr,"(%s %d)FREE current_element (after adding to allread existing inputs)",__FILE__,__LINE__);
@@ -592,14 +668,7 @@ processid
 #ifdef DEBUG_SERVICE_CONF
 	fprintf(stderr,"(DATAINPUTS - 489) ALLOCATE current_element\n");
 #endif
-	current_element=(elements*)malloc(ELEMENTS_SIZE);
-	current_element->name=NULL;
-	current_element->content=NULL;
-	current_element->metadata=NULL;
-	current_element->format=NULL;
-	current_element->defaults=NULL;
-	current_element->supported=NULL;
-	current_element->next=NULL;
+	current_element=createEmptyElements();
       }
       if(current_element->name==NULL){
 #ifdef DEBUG_SERVICE_CONF
@@ -612,21 +681,14 @@ processid
 #endif
 	if($1!=NULL){ 
 	  char *cen=zStrdup($1);
-	  current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char*));
 	  cen[strlen(cen)-1]=0;
 	  cen+=1;
-	  sprintf(current_element->name,"%s",cen);
+	  setElementsName(&current_element,cen);
 	  cen-=1;
 	  free(cen);
 #ifdef DEBUG_SERVICE_CONF
 	  fprintf(stderr,"NAME IN %s (current - %s)\n",$1,current_element->name);
 #endif
-	  current_element->content=NULL;
-	  current_element->metadata=NULL;
-	  current_element->format=NULL;
-	  current_element->defaults=NULL;
-	  current_element->supported=NULL;
-	  current_element->next=NULL;
 #ifdef DEBUG_SERVICE_CONF
 	  fprintf(stderr,"NAME IN %s (current - %s)\n",$1,current_element->name);
 #endif
@@ -658,14 +720,7 @@ processid
 #ifdef DEBUG_SERVICE_CONF
 	    fprintf(stderr,"(DATAOUTPUTS -%d) ALLOCATE current_element %s \n",__LINE__,__FILE__);
 #endif
-	    current_element=(elements*)malloc(ELEMENTS_SIZE);
-	    current_element->name=NULL;
-	    current_element->content=NULL;
-	    current_element->metadata=NULL;
-	    current_element->format=NULL;
-	    current_element->defaults=NULL;
-	    current_element->supported=NULL;
-	    current_element->next=NULL;
+	    current_element=createEmptyElements();
 	  }
 	  if(current_element->name==NULL){
 #ifdef DEBUG_SERVICE_CONF
@@ -674,18 +729,11 @@ processid
 #endif
 	    if($1!=NULL){ 
 	      char *cen=zStrdup($1);
-	      current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
 	      cen[strlen(cen)-1]=0;
 	      cen+=1;
-	      sprintf(current_element->name,"%s",cen);
+	      setElementsName(&current_element,cen);
 	      cen-=1;
 	      free(cen);
-	      current_element->content=NULL;
-	      current_element->metadata=NULL;
-	      current_element->format=NULL;
-	      current_element->defaults=NULL;
-	      current_element->supported=NULL;
-	      current_element->next=NULL;
 	    }
 	  }
 
@@ -695,8 +743,46 @@ processid
 	  if(current_element!=NULL && current_element->name!=NULL){
 	    if(my_service->outputs==NULL)
 	      my_service->outputs=dupElements(current_element);
-	    else
-	      addToElements(&my_service->outputs,current_element);
+	    else{
+	      if(wait_nested){
+		elements* cursor=my_service->outputs;
+		while(cursor->next!=NULL)
+		  cursor=cursor->next;
+		if(nested_level>1){
+		  for(int j=0;j<nested_level-1;j++){
+		    cursor=cursor->child;
+		    while(cursor->next!=NULL)
+		      cursor=cursor->next;
+		  }
+		}
+		if(cursor->child==NULL){
+		  cursor->child=dupElements(current_element);
+		}else
+		  addToElements(&cursor->child,current_element);
+	      }else
+		addToElements(&my_service->outputs,current_element);
+	    }
+	    if(current_element->format==NULL){
+	      wait_nested=true;
+	      nested_level+=1;
+	      if(current_content!=NULL){
+		elements* cursor=my_service->outputs;
+		while(cursor->next!=NULL)
+		  cursor=cursor->next;
+		if(nested_level>1){
+		  for(int j=0;j<nested_level-1;j++){
+		    cursor=cursor->child;
+		    while(cursor->next!=NULL)
+		      cursor=cursor->next;
+		  }
+		}
+		addMapToMap(&cursor->content,current_content);
+		freeMap(&current_content);
+		free(current_content);
+		current_content=NULL;
+	      }
+	    }
+
 #ifdef DEBUG_SERVICE_CONF
 	    fprintf(stderr,"ADD TO OUTPUTS Elements\n");
 	    dupElements(current_element);
@@ -704,20 +790,13 @@ processid
 	    freeElements(&current_element);
 	    free(current_element);
 	    current_element=NULL;
-	    current_element=(elements*)malloc(ELEMENTS_SIZE);
+	    
 	    char *cen=zStrdup($1);
-	    current_element->name=(char*)malloc((strlen(cen)-1)*sizeof(char));
 	    cen[strlen(cen)-1]=0;
 	    cen+=1;
-	    sprintf(current_element->name,"%s",cen);
+	    current_element=createElements(cen);
 	    cen-=1;
 	    free(cen);
-	    current_element->content=NULL;
-	    current_element->metadata=NULL;
-	    current_element->format=NULL;
-	    current_element->defaults=NULL;
-	    current_element->supported=NULL;
-	    current_element->next=NULL;
 	  }
 	  else{
 #ifdef DEBUG_SERVICE_CONF
@@ -726,21 +805,14 @@ processid
 #endif
 	    if($1!=NULL){ 
 	      char *cen=zStrdup($1);
-	      current_element->name=(char*)malloc((strlen(cen))*sizeof(char*));
 	      cen[strlen(cen)-1]=0;
 #ifdef DEBUG
 	      fprintf(stderr,"tmp %s\n",cen);
 #endif
 	      cen+=1;
-	      sprintf(current_element->name,"%s",cen);
+	      setElementsName(&current_element,cen);
 	      cen-=1;
 	      free(cen);
-	      current_element->content=NULL;
-	      current_element->metadata=NULL;
-	      current_element->format=NULL;
-	      current_element->defaults=NULL;
-	      current_element->supported=NULL;
-	      current_element->next=NULL;
 	    }
 	  }
 	wait_inputs=false;
@@ -779,8 +851,10 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
     current_content=NULL;
   }
 #ifdef DEBUG_SERVICE_CONF
-  fprintf(stderr,"(STARTING)FREE current_element\n");
+  fprintf(stderr,"(STARTING)FREE current_element %s\n",file);
 #endif
+  fflush(stderr);
+  fflush(stdout);
   if(current_element!=NULL){
     freeElements(&current_element);
     free(current_element);
@@ -796,6 +870,7 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   wait_supporteds=false;
   wait_outputs=-1;
   wait_data=false;
+  wait_nested=false;
 //data=-1;
   ::data=-1; // knut: add namespace to avoid ambiguous symbol
   previous_data=1;
@@ -830,7 +905,23 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
 #ifdef DEBUG_SERVICE_CONF
       fprintf(stderr,"(DATAOUTPUTS - %d) COPY current_element\n",__LINE__);
 #endif
-      addToElements(&my_service->outputs,current_element);
+      if(wait_nested){
+	elements* cursor=my_service->outputs;
+	while(cursor->next!=NULL)
+	  cursor=cursor->next;
+	if(nested_level>1){
+	  for(int j=0;j<nested_level-1;j++){
+	    cursor=cursor->child;
+	    while(cursor->next!=NULL)
+	      cursor=cursor->next;
+	  }
+	}
+	if(cursor->child==NULL){
+	  cursor->child=dupElements(current_element);
+	}else
+	  addToElements(&cursor->child,current_element);
+      }else
+	addToElements(&my_service->outputs,current_element);
     }
 #ifdef DEBUG_SERVICE_CONF
     fprintf(stderr,"(DATAOUTPUTS - %d) FREE current_element\n",__LINE__);

@@ -424,6 +424,11 @@ JSObject* JSObject_FromMaps(JSContext *cx,maps* t){
   maps* tmp=t;
   while(tmp!=NULL){
     JSObject *pval=JSObject_FromMap(cx,tmp->content);
+    if(tmp->child!=NULL){
+      JSObject *pvalc=JSObject_FromMaps(cx,tmp->child);
+      jsval pvaljc=OBJECT_TO_JSVAL(pvalc);
+      JS_SetProperty(cx, pval, "child", &pvaljc);
+    }
     jsval pvalj=OBJECT_TO_JSVAL(pval);
     JS_SetProperty(cx, res, tmp->name, &pvalj);
 #ifdef JS_DEBUG
@@ -547,10 +552,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	len1 = JS_GetStringLength(jsmsg);
 	
 	tmp=JS_EncodeString(cx,jsmsg);
-	tres=(maps*)malloc(MAPS_SIZE);
-	tres->name=zStrdup(tmp);
-	tres->content=NULL;
-	tres->next=NULL;
+	tres=createMaps(tmp);
 
 	jsval nvp=JSVAL_NULL;
 	if((JS_GetProperty(cx, tt, tmp, &nvp)==JS_FALSE)){
@@ -566,6 +568,19 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	  tres->content=mapFromJSObject(cx,nvp1j);
 	}
 
+	jsval nvp0=JSVAL_NULL;
+	JSObject *nvp01=JSVAL_TO_OBJECT(JSVAL_NULL);
+	if((JS_GetProperty(cx, nvp1, "child", &nvp0)==JS_FALSE)){
+#ifdef JS_DEBUG
+	  fprintf(stderr,"Enumerate id : %d => %s => No more value\n",oi,tmp);
+#endif
+	}
+	JS_ValueToObject(cx,nvp0,&nvp01);
+	jsval nvp01j=OBJECT_TO_JSVAL(nvp01);
+	if(!JSVAL_IS_NULL(nvp01j)){
+	  tres->child=mapsFromJSObject(cx,nvp01j);
+	}
+
 	if(res==NULL)
 	  res=dupMaps(&tres);
 	else
@@ -573,7 +588,6 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
 	freeMaps(&tres);
 	free(tres);
 	tres=NULL;
-		
       }
       JS_DestroyIdArray(cx,idp);
     }
@@ -724,15 +738,17 @@ map* mapFromJSObject(JSContext *cx,jsval t){
 #ifdef JS_DEBUG
       fprintf(stderr,"Enumerate id : %d [ %s => %s ]\n",index,tmp,tmp1);
 #endif
-      if(res!=NULL){
+      if(strcasecmp(tmp,"child")!=0){
+	if(res!=NULL){
 #ifdef JS_DEBUG
-	fprintf(stderr,"%s - %s\n",tmp,tmp1);
+	  fprintf(stderr,"%s - %s\n",tmp,tmp1);
 #endif
-	addToMap(res,tmp,tmp1);
-      }
-      else{
-	res=createMap(tmp,tmp1);
-	res->next=NULL;
+	  addToMap(res,tmp,tmp1);
+	}
+	else{
+	  res=createMap(tmp,tmp1);
+	  res->next=NULL;
+	}
       }
       free(tmp);
       free(tmp1);

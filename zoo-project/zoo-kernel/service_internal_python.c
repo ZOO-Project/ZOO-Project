@@ -355,14 +355,16 @@ void PythonZooReport(maps* m,const char* module,int load){
     if(PyString_Check(trace)){
       if(pbt!=NULL)
 	free(pbt);
-      pbt=(char*)malloc((90+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
-      sprintf(pbt,_("%s\nUnable to run your python process properly. Please check the following messages : %s"),tpbt,PyString_AsString(trace));
+      char* format=_("%s\nUnable to run your python process properly. Please check the following messages : %s");
+      pbt=(char*)malloc((strlen(format)+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
+      sprintf(pbt,format,tpbt,PyString_AsString(trace));
     }
     else{
       if(pbt!=NULL)
 	free(pbt);
-      pbt=(char*)malloc((90+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));      
-      sprintf(pbt,_("%s \n Unable to run your python process properly. Unable to provide any further information."),tpbt);
+      char* format=_("%s \n Unable to run your python process properly. Unable to provide any further information.");
+      pbt=(char*)malloc((strlen(format)+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
+      sprintf(pbt,format,tpbt);
     }
     free(tpbt);
   }
@@ -389,6 +391,15 @@ PyDictObject* PyDict_FromMaps(maps* t){
   maps* tmp=t;
   while(tmp!=NULL){
     PyObject* value=(PyObject*)PyDict_FromMap(tmp->content);
+    if(tmp->child!=NULL){
+      PyObject* cname=PyString_FromString("child");
+      PyObject* childs=(PyObject*)PyDict_FromMaps(tmp->child);
+      if(PyDict_SetItem(value,cname,childs)<0){
+	fprintf(stderr,"Unable to set map value ...");
+	return NULL;
+      } 
+      Py_DECREF(cname);
+    }
     PyObject* name=PyString_FromString(tmp->name);
     if(PyDict_SetItem(res,name,value)<0){
       fprintf(stderr,"Unable to set map value ...");
@@ -542,9 +553,13 @@ maps* mapsFromPyDict(PyDictObject* t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-    cursor=(maps*)malloc(MAPS_SIZE);
-    cursor->name=zStrdup(PyString_AsString(key));
+    cursor=createMaps(PyString_AsString(key));
     cursor->content=mapFromPyDict((PyDictObject*)value);
+    PyObject* cname=PyString_FromString("child");
+    PyObject* childs=PyDict_GetItem((PyObject*)value,cname);
+    if(childs!=NULL)
+      cursor->child=mapsFromPyDict((PyDictObject*)childs);
+    Py_DECREF(cname);
 #ifdef DEBUG
     dumpMap(cursor->content);
 #endif
@@ -625,39 +640,40 @@ map* mapFromPyDict(PyDictObject* t){
     fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
-    
-    if(strncmp(PyString_AsString(key),"value",5)==0){
-      char *buffer=NULL;
-      Py_ssize_t size;
+    if(strncmp(PyString_AsString(key),"child",5)!=0){
+      if(strncmp(PyString_AsString(key),"value",5)==0){
+	char *buffer=NULL;
+	Py_ssize_t size;
 #if PY_MAJOR_VERSION >= 3
-      if(PyBytes_Check(value)){
-	size=PyBytes_Size(value);
-	buffer=PyBytes_AsString(value);
-      }
-      else
-	if(PyUnicode_Check(value) && PyUnicode_READY(value) == 0){
-	  buffer=PyUnicode_AsUTF8AndSize(value,&size);
+	if(PyBytes_Check(value)){
+	  size=PyBytes_Size(value);
+	  buffer=PyBytes_AsString(value);
+	}
+	else
+	  if(PyUnicode_Check(value) && PyUnicode_READY(value) == 0){
+	    buffer=PyUnicode_AsUTF8AndSize(value,&size);
+	  }
+	  else{
+#ifdef DEBUG
+	    fprintf(stderr,"Unsupported return value.");
+#endif
+	    return NULL;
+	  }
+#else
+	PyString_AsStringAndSize(value,&buffer,&size);
+#endif      
+	res = addToMapWithSize(res,PyString_AsString(key),buffer,size);
+      }else{
+	char* lkey=PyString_AsString(key);
+	char* lvalue=PyString_AsString(value);
+	if(res!=NULL){
+	  if(PyString_Size(value)>0)
+	    addToMap(res,lkey,lvalue);
 	}
 	else{
-#ifdef DEBUG
-	  fprintf(stderr,"Unsupported return value.");
-#endif
-	  return NULL;
+	  if(PyString_Size(value)>0)
+	    res=createMap(lkey,lvalue);
 	}
-#else
-      PyString_AsStringAndSize(value,&buffer,&size);
-#endif      
-	  res = addToMapWithSize(res,PyString_AsString(key),buffer,size);
-    }else{
-      char* lkey=PyString_AsString(key);
-      char* lvalue=PyString_AsString(value);
-      if(res!=NULL){
-	if(PyString_Size(value)>0)
-	  addToMap(res,lkey,lvalue);
-      }
-      else{
-	if(PyString_Size(value)>0)
-	  res=createMap(lkey,lvalue);
       }
     }
   }

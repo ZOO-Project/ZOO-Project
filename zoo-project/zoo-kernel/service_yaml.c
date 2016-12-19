@@ -83,11 +83,16 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
   /* Set input file */
   yaml_parser_set_input_file(&parser, fh);
   /* BEGIN new code */
+  int nleveld=-1;
   int level=0;
   int plevel=level;
+  int nlevel=0;
+  int pnlevel=0;
   int ilevel=-1;
   int blevel=-1;
   int ttype=0;
+  int outputs=-1;
+  int noutputs=-1;
   int wait_metadata=-1;
   char *cur_key;
   do {
@@ -144,7 +149,13 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 #endif
       blevel++;
       break;
-    case YAML_SCALAR_TOKEN:  
+    case YAML_SCALAR_TOKEN:
+      if((blevel-1)/2<nlevel){
+	pnlevel=nlevel;
+	nlevel=(blevel-1)/2;
+	nleveld=1;
+      }else
+	nleveld=-1;
       if(ttype==0){
 	cur_key=zStrdup((char *)token.data.scalar.value);
       }
@@ -180,6 +191,48 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	current_content=NULL;
 	wait_metadata=1;
       }
+      if(strcasecmp((char *)token.data.scalar.value,"Child")==0){
+	elements* cursor=my_service->inputs;
+	if(outputs==1)
+	  cursor=my_service->outputs;
+	for(int i=0;(blevel/2)>1 && i<(blevel/2)-1 && cursor!=NULL;i++){
+	  while(cursor->next!=NULL)
+	    cursor=cursor->next;
+	  if(cursor->child!=NULL){
+	    cursor=cursor->child;
+	  }
+	}
+	if(current_content!=NULL){
+	  addMapToMap(&current_element->content,current_content);
+	  freeMap(&current_content);
+	  free(current_content);
+	  current_content=NULL;
+	}
+	if(current_element!=NULL){
+	  if(blevel/2>1 && cursor!=NULL){
+	    if(cursor->child==NULL)
+	      cursor->child=dupElements(current_element);
+	    else
+	      addToElements(&cursor->child,current_element);
+	  }
+	  else{
+	    if(outputs<0)
+	      if(my_service->inputs==NULL)
+		my_service->inputs=dupElements(current_element);
+	      else
+		addToElements(&my_service->inputs,current_element);
+	    else
+	      if(my_service->inputs==NULL)
+		my_service->outputs=dupElements(current_element);
+	      else
+		addToElements(&my_service->outputs,current_element);
+	  }
+	  freeElements(&current_element);
+	  free(current_element);
+	  current_element=NULL;
+	}
+	nlevel+=1;
+      }
       if(ttype==0 && strcasecmp((char *)token.data.scalar.value,"inputs")==0 && blevel==0){
 	if(wait_metadata>0){
 	  addMapToMap(&my_service->metadata,current_content);
@@ -199,6 +252,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	level++;
       }
       if(ttype==0 && strcasecmp((char *)token.data.scalar.value,"outputs")==0 && blevel==1){
+	outputs=1;
 	level++;
 #ifdef DEBUG_YAML
 	dumpMap(current_content);
@@ -302,6 +356,59 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 #endif
       }
 
+      if(strcasecmp(token.data.scalar.value,"default")!=0 && strcasecmp(token.data.scalar.value,"supported")!=0 && level==1 && (blevel-1)%2==0 && blevel!=1 && (blevel-1)/2==nlevel){
+	if(current_element==NULL)
+	  current_element=createElements((char *)token.data.scalar.value);
+	else{
+	  if(current_content!=NULL){
+	    if(current_element->defaults==NULL){
+	      current_element->defaults=(iotype*)malloc(IOTYPE_SIZE);
+	      current_element->defaults->content=NULL;
+	      current_element->defaults->next=NULL;
+	      addMapToMap(&current_element->defaults->content,current_content);
+	    }else{
+	      if(current_element->supported==NULL){
+		current_element->supported=(iotype*)malloc(IOTYPE_SIZE);
+		current_element->supported->content=NULL;
+		current_element->supported->next=NULL;
+		addMapToMap(&current_element->supported->content,current_content);
+	      }else
+		addMapToIoType(&current_element->supported,current_content);
+	    }
+	    freeMap(&current_content);
+	    free(current_content);
+	    current_content=NULL;
+	  }
+	  
+	  elements* cursor=my_service->inputs;
+	  if(outputs==1)
+	    cursor=my_service->outputs;
+	  int llevel=((blevel-1)/2);
+	  if(nleveld>0)
+	    llevel=((blevel-1)/2)+1;
+	  for(int i=0;llevel>1 && i<llevel-1 && cursor!=NULL;i++){
+	    while(cursor->next!=NULL)
+	      cursor=cursor->next;
+	    if(cursor->child!=NULL){
+	      cursor=cursor->child;
+	    }
+	  }
+	  if(llevel>1)
+	    if(cursor->child==NULL)
+	      cursor->child=dupElements(current_element);
+	    else
+	      addToElements(&cursor->child,current_element);
+	  else
+	    if(cursor==NULL)
+	      cursor=dupElements(current_element);
+	    else
+	      addToElements(&cursor,current_element);
+	  freeElements(&current_element);
+	  free(current_element);
+	  current_element=NULL;
+	  current_element=createElements((char *)token.data.scalar.value);
+	}
+      }
       if(blevel==1 && level==1){
 	if(current_element!=NULL && current_content!=NULL){
 	  if(current_element->defaults==NULL){
@@ -318,25 +425,50 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	    }else
 	      addMapToIoType(&current_element->supported,current_content);
 	  }
+	  freeMap(&current_content);
+	  free(current_content);
+	  current_content=NULL;
 	}
-	if(current_element!=NULL){
-	  if(my_service->inputs==NULL)
-	    my_service->inputs=dupElements(current_element);
-	  else
-	    addToElements(&my_service->inputs,current_element);
-	  freeElements(&current_element);
-	  free(current_element);
+	if(nleveld<0){
+	  if(current_element!=NULL){
+	    if(outputs<0)
+	      if(my_service->inputs==NULL)
+		my_service->inputs=dupElements(current_element);
+	      else
+		addToElements(&my_service->inputs,current_element);
+	    else
+	      if(my_service->outputs==NULL)
+		my_service->outputs=dupElements(current_element);
+	      else
+		addToElements(&my_service->outputs,current_element);
+	    freeElements(&current_element);
+	    free(current_element);
+	  }
 	}
+	else{
+	  if(current_element!=NULL){
+	    elements* cursor=my_service->inputs;
+	    if(outputs==1)
+	      cursor=my_service->outputs;
+	    while(cursor->next!=NULL)
+	      cursor=cursor->next;
+	    for(int i=0;pnlevel>1 && i<pnlevel-1 && cursor!=NULL;i++){
+	      while(cursor->next!=NULL)
+		cursor=cursor->next;
+	      if(cursor->child!=NULL){
+		cursor=cursor->child;
+	      }
+	    }
+	    if(cursor->child==NULL)
+	      cursor->child=dupElements(current_element);
+	    else
+	      addToElements(&cursor->child,current_element);
+	    freeElements(&current_element);
+	    free(current_element);
+	  }
+	}   
 	plevel=level;
-	current_element=(elements*)malloc(ELEMENTS_SIZE);
-	current_element->name=zStrdup((char *)token.data.scalar.value);
-	current_element->content=NULL;
-	current_element->metadata=NULL;
-	current_element->format=NULL;
-	current_element->defaults=NULL;
-	current_element->supported=NULL;
-	current_element->next=NULL;
-	
+	current_element=createElements((char *)token.data.scalar.value);	
       }
       if(blevel==1 && level==2){
 	if(current_element!=NULL && current_content!=NULL){
@@ -354,6 +486,9 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	    }else
 	      addMapToIoType(&current_element->supported,current_content);
 	  }
+	  freeMaps(&current_content);
+	  free(current_content);
+	  current_content=NULL;
 	}
 	if(current_element!=NULL){
 	  if(plevel==level){
@@ -371,16 +506,16 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	  free(current_element);
 	}
 	plevel=level;
-	current_element=(elements*)malloc(ELEMENTS_SIZE);
-	current_element->name=zStrdup((char *)token.data.scalar.value);
-	current_element->content=NULL;
-	current_element->metadata=NULL;
-	current_element->format=NULL;
-	current_element->defaults=NULL;
-	current_element->supported=NULL;
-	current_element->next=NULL;
+	current_element=createElements((char *)token.data.scalar.value);	
 	
       }
+
+      if(noutputs>0)
+	outputs=1;
+      if(strcasecmp((char *)token.data.scalar.value,"outputs")==0 && ttype==0 && blevel==0){
+	noutputs=1;
+      }
+      
 
 
 #ifdef DEBUG_YAML
@@ -432,11 +567,29 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
     free(current_content);
     current_content=NULL;
   }
+
   if(current_element!=NULL){
-    if(my_service->outputs==NULL)
-      my_service->outputs=dupElements(current_element);
-    else
-      addToElements(&my_service->outputs,current_element);
+    if(nlevel>0){
+      elements* cursor=my_service->inputs;
+      if(outputs==1)
+	cursor=my_service->outputs;
+      for(int i=0;nlevel>1 && i<nlevel-1 && cursor!=NULL;i++){
+	while(cursor->next!=NULL)
+	  cursor=cursor->next;
+	if(cursor->child!=NULL){
+	  cursor=cursor->child;
+	}
+      }
+      if(cursor->child==NULL)
+	cursor->child=dupElements(current_element);
+      else
+	addToElements(&cursor->child,current_element);
+    }else{
+      if(my_service->outputs==NULL)
+	my_service->outputs=dupElements(current_element);
+      else
+	addToElements(&my_service->outputs,current_element);
+    }
     freeElements(&current_element);
     free(current_element);
     current_element=NULL;

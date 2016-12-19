@@ -582,9 +582,13 @@ void readBase64(map **in){
 char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
   map *res=*err;
   elements* tmpInputs=in;
+  elements* tmpInputss=NULL;
   maps* out1=*out;
+  maps* out1s=NULL;
   char *result=NULL;
   int nb=0;
+  int inb=0;
+ loopOnInputs:
   if(type==1){
     while(out1!=NULL){
       if(getElements(in,out1->name)==NULL){
@@ -596,22 +600,21 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	nb++;
 	result=out1->name;
       }
+      inb++;
       out1=out1->next;
     }
     if(res!=NULL){
+      fflush(stderr);
       *err=res;
       return result;
     }
-    out1=*out;
+    if(out1==NULL && inb>=1)
+      out1=*out;
   }
   while(tmpInputs!=NULL){
     maps *tmpMaps=getMaps(out1,tmpInputs->name);
     if(tmpMaps==NULL){
-      maps* tmpMaps2=(maps*)malloc(MAPS_SIZE);
-      tmpMaps2->name=strdup(tmpInputs->name);
-      tmpMaps2->content=NULL;
-      tmpMaps2->next=NULL;
-      
+      maps* tmpMaps2=createMaps(tmpInputs->name);
       if(type==0){
 	map* tmpMapMinO=getMap(tmpInputs->content,"minOccurs");
 	if(tmpMapMinO!=NULL){
@@ -650,7 +653,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	  }
 	}
       }
-
+      
       if(res==NULL){
 	iotype* tmpIoType=tmpInputs->defaults;
 	if(tmpIoType!=NULL){
@@ -684,57 +687,64 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
       }
     }
     else{
-      iotype* tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
-					     tmpMaps->content);
-      if(type==0) {
-	/**
-	 * In case of an Input maps, then add the minOccurs and maxOccurs to the
-	 * content map.
-	 */
-	map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
-	if(tmpMap1!=NULL){
-	  if(tmpMaps->content==NULL)
-	    tmpMaps->content=createMap("minOccurs",tmpMap1->value);
-	  else
-	    addToMap(tmpMaps->content,"minOccurs",tmpMap1->value);
-	}
-	map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
-	if(tmpMaxO!=NULL){
-	  if(tmpMaps->content==NULL)
-	    tmpMaps->content=createMap("maxOccurs",tmpMaxO->value);
-	  else
-	    addToMap(tmpMaps->content,"maxOccurs",tmpMaxO->value);
-	}
-	map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
-	if(tmpMaxMB!=NULL){
-	  if(tmpMaps->content==NULL)
-	    tmpMaps->content=createMap("maximumMegabytes",tmpMaxMB->value);
-	  else
-	    addToMap(tmpMaps->content,"maximumMegabytes",tmpMaxMB->value);
-	}
-	/**
-	 * Parsing BoundingBoxData, fill the following map and then add it to
-	 * the content map of the Input maps: 
-	 * lowerCorner, upperCorner, srs and dimensions
-	 * cf. parseBoundingBox
-	 */
-	if(tmpInputs->format!=NULL && strcasecmp(tmpInputs->format,"BoundingBoxData")==0){
-	  maps* tmpI=getMaps(*out,tmpInputs->name);
-	  if(tmpI!=NULL){
-	    map* tmpV=getMap(tmpI->content,"value");
-	    if(tmpV!=NULL){
-	      char *tmpVS=strdup(tmpV->value);
-	      map* tmp=parseBoundingBox(tmpVS);
-	      free(tmpVS);
-	      map* tmpC=tmp;
-	      while(tmpC!=NULL){
-		addToMap(tmpMaps->content,tmpC->name,tmpC->value);
-		tmpC=tmpC->next;
+      iotype* tmpIoType=NULL;
+      if(tmpMaps->content!=NULL){
+	tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
+				       tmpMaps->content);
+	if(type==0) {
+	  /**
+	   * In case of an Input maps, then add the minOccurs and maxOccurs to the
+	   * content map.
+	   */
+	  map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
+	  if(tmpMap1!=NULL){
+	    if(tmpMaps->content==NULL)
+	      tmpMaps->content=createMap("minOccurs",tmpMap1->value);
+	    else
+	      addToMap(tmpMaps->content,"minOccurs",tmpMap1->value);
+	  }
+	  map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
+	  if(tmpMaxO!=NULL){
+	    if(tmpMaps->content==NULL)
+	      tmpMaps->content=createMap("maxOccurs",tmpMaxO->value);
+	    else
+	      addToMap(tmpMaps->content,"maxOccurs",tmpMaxO->value);
+	  }
+	  map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
+	  if(tmpMaxMB!=NULL){
+	    if(tmpMaps->content==NULL)
+	      tmpMaps->content=createMap("maximumMegabytes",tmpMaxMB->value);
+	    else
+	      addToMap(tmpMaps->content,"maximumMegabytes",tmpMaxMB->value);
+	  }
+	  /**
+	   * Parsing BoundingBoxData, fill the following map and then add it to
+	   * the content map of the Input maps: 
+	   * lowerCorner, upperCorner, srs and dimensions
+	   * cf. parseBoundingBox
+	   */
+	  if(tmpInputs->format!=NULL && strcasecmp(tmpInputs->format,"BoundingBoxData")==0){
+	    maps* tmpI=getMaps(*out,tmpInputs->name);
+	    if(tmpI!=NULL){
+	      map* tmpV=getMap(tmpI->content,"value");
+	      if(tmpV!=NULL){
+		char *tmpVS=strdup(tmpV->value);
+		map* tmp=parseBoundingBox(tmpVS);
+		free(tmpVS);
+		map* tmpC=tmp;
+		while(tmpC!=NULL){
+		  addToMap(tmpMaps->content,tmpC->name,tmpC->value);
+		  tmpC=tmpC->next;
+		}
+		freeMap(&tmp);
+		free(tmp);
 	      }
-	      freeMap(&tmp);
-	      free(tmp);
 	    }
 	  }
+	}
+      }else{
+	if(tmpInputs!=NULL){
+	  tmpIoType=tmpInputs->defaults;
 	}
       }
 
@@ -806,9 +816,31 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	tmpMaps->content=createMap("inRequest","true");
       else
 	addToMap(tmpMaps->content,"inRequest","true");
-
+      elements* tmpElements=getElements(in,tmpMaps->name);
+      if(tmpMaps->child!=NULL and tmpElements!=NULL and tmpElements->child!=NULL){
+	char *res=addDefaultValues(&tmpMaps->child,tmpElements->child,m,type,err);
+	if(strlen(res)>0){
+	  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+	  return res;
+	}
+      }
     }
-    tmpInputs=tmpInputs->next;
+    if(tmpInputs->child!=NULL){
+      tmpInputss=tmpInputs->next;
+      tmpInputs=tmpInputs->child;
+      if(tmpMaps!=NULL){
+	out1=tmpMaps->child;
+	out1s=tmpMaps;
+      }
+    }else
+      tmpInputs=tmpInputs->next;
+  }
+  if(tmpInputss!=NULL){
+    out1=out1s;
+    tmpInputs=tmpInputss;
+    tmpInputss=NULL;
+    out1s=NULL;
+    goto loopOnInputs;
   }
   if(res!=NULL){
     *err=res;
@@ -878,6 +910,7 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
     {
       maps *res = (maps *) malloc (MAPS_SIZE);
       conf_read (fbkpid, res);
+      res->child=NULL;
       map* status=getMapFromMaps(res,"status","status");
       addToMap(statusInfo,"Status",status->value);
       freeMaps(&res);

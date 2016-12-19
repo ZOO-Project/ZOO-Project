@@ -769,7 +769,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   map *tmpPath = getMapFromMaps (m, "lenv", "cwd");
 
   map *tmpReq = getMap (request_inputs, "xrequest");
-  
+
   if(r_inputs2 != NULL && tmpReq != NULL) {
     const char key[] = "rfile=";
     char* kvp = (char*) malloc((FILENAME_MAX + strlen(key))*sizeof(char));
@@ -921,9 +921,10 @@ runRequest (map ** inputs)
   m = (maps *) malloc (MAPS_SIZE);
   if (m == NULL)
     {
-      return errorException (m, _("Unable to allocate memory"),
+      return errorException (NULL, _("Unable to allocate memory"),
                              "InternalError", NULL);
     }
+  m->child=NULL;
   char ntmp[1024];
 #ifndef ETC_DIR
 #ifndef WIN32
@@ -1536,9 +1537,9 @@ runRequest (map ** inputs)
 							   "InternalError",
 							   NULL);
 				  }
-#ifdef DEBUG
-				printf
-				  ("#################\n(%s) %s\n#################\n",
+#ifdef DEBUG_SERVICE_CONF
+				fprintf
+				  (stderr,"#################\n(%s) %s\n#################\n",
 				   r_inputs->value, buff1);
 #endif
 				char *tmp0 = zStrdup (dp->d_name);
@@ -1702,7 +1703,7 @@ runRequest (map ** inputs)
 
   map *postRequest = NULL;
   postRequest = getMap (request_inputs, "xrequest");
-
+  
   if(vid==1 && postRequest==NULL){
     errorException (m,_("Unable to run Execute request using the GET HTTP method"),"InvalidParameterValue", "request");  
     freeMaps (&m);
@@ -1816,7 +1817,6 @@ runRequest (map ** inputs)
   maps *request_input_real_format = NULL;
   maps *tmpmaps = request_input_real_format;
 
-
   if(parseRequest(&m,&request_inputs,s1,&request_input_real_format,&request_output_real_format,&hInternet)<0){
     freeMaps (&m);
     free (m);
@@ -1827,7 +1827,6 @@ runRequest (map ** inputs)
     free (s1);
     return 0;
   }
-
 
   // Define each env variable in runing environment
   maps *curs = getMaps (m, "env");
@@ -1988,8 +1987,7 @@ runRequest (map ** inputs)
    * the created process)
    *
    */
-  maps *_tmpMaps = (maps *) malloc (MAPS_SIZE);
-  _tmpMaps->name = zStrdup ("lenv");
+  maps *_tmpMaps = createMaps("lenv");
   char tmpBuff[100];
   struct ztimeval tp;
   if (zGettimeofday (&tp, NULL) == 0)
@@ -1997,7 +1995,6 @@ runRequest (map ** inputs)
   else
     sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
   _tmpMaps->content = createMap ("osid", tmpBuff);
-  _tmpMaps->next = NULL;
   sprintf (tmpBuff, "%i", cpid);
   addToMap (_tmpMaps->content, "sid", tmpBuff);
   char* tmpUuid=get_uuid();
@@ -2080,6 +2077,7 @@ runRequest (map ** inputs)
                      strstr (cgiCookie, "=") + 1);
           free (tcook);
           maps *tmpSess = (maps *) malloc (MAPS_SIZE);
+	  tmpSess->child=NULL;
           struct stat file_status;
           int istat = stat (session_file_path, &file_status);
           if (istat == 0 && file_status.st_size > 0)
@@ -2105,10 +2103,7 @@ runRequest (map ** inputs)
 #else
     *environ;
 #endif
-  _tmpMaps = (maps *) malloc (MAPS_SIZE);
-  _tmpMaps->name = zStrdup ("renv");
-  _tmpMaps->content = NULL;
-  _tmpMaps->next = NULL;
+  _tmpMaps = createMaps("renv");
   for (; s; ei++) {
     char* tmpName=zStrdup(s);
     char* tmpValue=strstr(s,"=")+1;
@@ -2228,10 +2223,8 @@ runRequest (map ** inputs)
             malloc ((strlen (r_inputs->value) +
                      strlen (usid->value) + 7) * sizeof (char));                    
           sprintf (fbkpres, "%s/%s.res", r_inputs->value, usid->value);
-	  bmap = (maps *) malloc (MAPS_SIZE);
-	  bmap->name=zStrdup("status");
+	  bmap = createMaps("status");
 	  bmap->content=createMap("usid",usid->value);
-	  bmap->next=NULL;
 	  addToMap(bmap->content,"sid",tmpm->value);
 	  addIntToMap(bmap->content,"pid",getpid());
 	  

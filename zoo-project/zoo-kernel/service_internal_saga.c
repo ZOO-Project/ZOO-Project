@@ -689,10 +689,8 @@ int sagaExportTIN(maps** conf, maps** in,const char* tname/*,CSG_Parameter* para
     strncpy(&tmpName[0]+(strlen(gfile->value)+strlen(tmpSubName)-4),fext,(strlen(fext))*sizeof(char));
     tmpName[strlen(fext)+(strlen(gfile->value)+strlen(tmpSubName)-4)]=0;
 
-    maps* louts=(maps*)malloc(MAPS_SIZE);
-    louts->name=zStrdup(tinOut[i]);
+    maps* louts=createMaps(tinOut[i]);
     louts->content=createMap("mimeType","UNKOWN");
-    louts->next=NULL;
     
     addToMap(arg,tinOut[i],tmpName);
     
@@ -740,10 +738,8 @@ int sagaImportGDAL(maps** conf, maps** in){
       addToMap(arg,"FILES",v->value);
     addToMap(arg,"GRIDS","");
 
-    maps* louts=(maps*)malloc(MAPS_SIZE);
-    louts->name=zStrdup("GRIDS");
+    maps* louts=createMaps("GRIDS");
     louts->content=createMap("mimeType","UNKOWN");
-    louts->next=NULL;
 
     sagaExecuteCmd(conf,"io_gdal","0",arg,&louts);
 
@@ -785,10 +781,8 @@ int sagaImportOGR(maps** conf, maps** in){
     if(v!=NULL)
       addToMap(arg,"FILES",v->value);
 
-    maps* louts=(maps*)malloc(MAPS_SIZE);
-    louts->name=zStrdup("SHAPES");
+    maps* louts=createMaps("SHAPES");
     louts->content=createMap("mimeType","UNKOWN");
-    louts->next=NULL;
 
     sagaExecuteCmd(conf,"io_gdal","3",arg,&louts);
 
@@ -831,10 +825,8 @@ bool sagaImportTIN(maps** conf, maps** in){
     arg=createMap("TIN","");
     if(v!=NULL)
       addToMap(arg,"SHAPES",v->value);
-    maps* louts=(maps*)malloc(MAPS_SIZE);
-    louts->name=zStrdup("TIN");
+    maps* louts=createMaps("TIN");
     louts->content=createMap("mimeType","UNKOWN");
-    louts->next=NULL;
     sagaExecuteCmd(conf,"tin_tools","2",arg,&louts);
     map* tmp=getMapFromMaps(louts,"TIN","generated_file");
     v=getMapArray((*in)->content,"saga_value",i);
@@ -886,10 +878,8 @@ int sagaImportTable(maps** conf, maps** in){
       addToMap(arg,"FILENAME",v->value);
 
     // Create the output maps
-    maps* louts=(maps*)malloc(MAPS_SIZE);
-    louts->name=zStrdup("TABLE");
+    maps* louts=createMaps("TABLE");
     louts->content=createMap("mimeType","UNKOWN");
-    louts->next=NULL;
 
     // Execute the saga command
     sagaExecuteCmd(conf,"io_table","1",arg,&louts);
@@ -939,10 +929,8 @@ int sagaImportPC(maps** conf, maps** in){
       addToMap(arg,"FILES",v->value);
 
     // Create the output maps
-    maps* louts=(maps*)malloc(MAPS_SIZE);
-    louts->name=zStrdup("POINTS");
+    maps* louts=createMaps("POINTS");
     louts->content=createMap("mimeType","UNKOWN");
-    louts->next=NULL;
 
     // Execute the saga command
     sagaExecuteCmd(conf,"io_shapes_las","1",arg,&louts);

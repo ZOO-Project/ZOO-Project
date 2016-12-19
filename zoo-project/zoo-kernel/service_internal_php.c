@@ -305,12 +305,12 @@ zval *php_Array_from_map(map* t){
   tres=array_init(mapArray);
   while(tmp!=NULL){
     map* sMap=getMapArray(tmp,"size",0);    
-	if(strncmp(tmp->name,"value",5)==0 && sMap!=NULL && tmp->value != NULL){
+    if(strncmp(tmp->name,"value",5)==0 && sMap!=NULL && tmp->value != NULL){
       tres=add_assoc_stringl(mapArray,tmp->name,tmp->value,atoi(sMap->value),1);
-	} 
-	else if (tmp->value != NULL) {
+    } 
+    else if (tmp->value != NULL) {
       tres=add_assoc_string(mapArray,tmp->name,tmp->value,1);
-	}
+    }
     tmp=tmp->next;
   }
   return mapArray;
@@ -361,22 +361,21 @@ maps* php_maps_from_Array(HashTable *t){
       /**
        * String Key / Associative
        */
-      cursor=(maps*)malloc(MAPS_SIZE);
-      cursor->name=strdup(key);
-    }
+      cursor=createMaps(key);
 #ifdef DEBUG	
-    fprintf(stderr,"key : %s\n",key);
+      fprintf(stderr,"key : %s\n",key);
 #endif	
-    HashTable* t=HASH_OF(*ppzval);
+      HashTable* t=HASH_OF(*ppzval);
 #ifdef DEBUG
-    fprintf(stderr,"key : %s\n",key);
+      fprintf(stderr,"key : %s\n",key);
 #endif
-    cursor->content=php_map_from_HasTable(t);
-    cursor->next=NULL;
-    if(final_res==NULL)
-      final_res=cursor;
-    else{
-      addMapsToMaps(&final_res,cursor);
+      cursor->content=php_map_from_HasTable(t);
+      cursor->next=NULL;
+      if(final_res==NULL)
+	final_res=dupMaps(&cursor);
+      else{
+	addMapsToMaps(&final_res,cursor);
+      }
       freeMaps(&cursor);
       free(cursor);
     }

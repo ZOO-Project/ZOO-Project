@@ -590,12 +590,16 @@ int main( int nArgc, char ** papszArgv )
 /*      Open data source.                                               */
 /* -------------------------------------------------------------------- */
 #if GDAL_VERSION_MAJOR >= 2
-      GDALDataset *poDS;
+      GDALDataset *poDS
+	= (GDALDataset*) GDALOpenEx( pszDataSource,
+				     GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				     NULL, NULL, NULL );
       GDALDataset *poODS;
       GDALDriverManager* poR=GetGDALDriverManager();
       GDALDriver          *poDriver = NULL;
 #else
-      OGRDataSource* poDS;
+      OGRDataSource* poDS
+	= OGRSFDriverRegistrar::Open( pszDataSource, FALSE );
       OGRDataSource *poODS;
       OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
       OGRSFDriver          *poDriver = NULL;
@@ -736,16 +740,32 @@ int main( int nArgc, char ** papszArgv )
 #endif
         if( poODS == NULL )
         {
+	  poODS = 
+#if GDAL_VERSION_MAJOR >= 2
+	    (GDALDataset*) GDALOpenEx( pszDestDataSource,
+				       GDAL_OF_UPDATE | GDAL_OF_VECTOR,
+				       NULL, NULL, NULL )
+#else
+	    OGRSFDriverRegistrar::Open( pszDestDataSource, TRUE )
+#endif
+	    ;
+	  if( poODS == NULL )
+	    {
+	      fprintf( stderr, "FAILURE:\n"
+		       "Unable to open existing output datasource `%s'.\n",
+		       pszDestDataSource );
+#ifdef ZOO_SERVICE
+	      char tmp[1024];
+	      sprintf(tmp,"Unable to open existing output datasource `%s'.",pszDestDataSource);
+	      setMapInMaps(conf,"lenv","message",tmp);
+	      return SERVICE_FAILED;
+#else
+	      exit( 1 );
+#endif
+
             fprintf( stderr,  "%s driver failed to create %s\n", 
                     pszFormat, pszDestDataSource );
-#ifdef ZOO_SERVICE
-	    char tmp[1024];
-	    sprintf(tmp,"%s driver failed to create %s",pszFormat, pszDestDataSource);
-	    setMapInMaps(conf,"lenv","message",tmp);
-	    return SERVICE_FAILED;
-#else
-            exit( 1 );
-#endif
+	    }
         }
     }
 
