@@ -16,8 +16,12 @@ The ZOO-Service configuration file is divided into three distinct sections :
 
 .. warning:: The ZOO-Service configuration file is case sensitive.
 
-.. note:: There are many example ZCFG files in the ``cgi-env`` directory of the `ZOO-Project svn <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services>`__.
+.. note:: There are many example ZCFG files in the ``cgi-env``
+	  directory of the `ZOO-Project svn
+	  <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services>`__.
 
+.. note:: A ZCFG file can be converted to the YAML syntaxe by using
+	  the zcfg2yaml command line tool.
 
 Main section
 -------------------------
@@ -115,7 +119,14 @@ section.
  * :ref:`BoundingBoxData <BoundingBoxData>`
  * :ref:`ComplexData <ComplexData>`
 
- .. warning:: Every *BoundingBoxData* and *ComplexData* must have at least one ``<Default>`` node (even empty like ``<Default />``)
+ .. warning:: Every *BoundingBoxData* and *ComplexData* must have at
+	      least one ``<Default>`` node (even empty like ``<Default
+	      />``)
+
+ .. warning:: In WPS 2.0.0 version, it is possible to define nested
+	      inputs and outputs. So, from revision `790
+	      <http://www.zoo-project.org/trac/changeset/790>`__, you
+	      are allowed to use a new input/output definition here.
 
 .. _LiteralData:
 
