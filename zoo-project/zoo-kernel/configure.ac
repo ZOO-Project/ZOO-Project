@@ -636,6 +636,53 @@ AC_SUBST([JAVA_ENABLED])
 AC_SUBST([JAVA_FILE])
 
 # ===========================================================================
+# Detect if mono is installed
+# ===========================================================================
+
+AC_ARG_WITH([mono], 
+	[AS_HELP_STRING([--with-mono=PATH], [To enable mono support, specify the path to find pkg-config,  disabled by default])], 
+	[MONOHOME="$withval"; MONO_ENABLED="-DUSE_MONO"], [MONO_ENABLED=""])
+
+if test -z "$MONO_ENABLED"
+then
+	MONO_FILE=""
+else
+	MONO_FILE="service_internal_mono.o"
+	if test "x$MONOHOME" = "x"; 
+	then
+		MONOHOME="/usr"
+	fi
+	if test "x$MONOHOME" = "xyes"; 
+	then
+		MONOHOME="/usr"
+	fi
+
+	# Extract the linker and include flags
+	MONO_CFLAGS=`$MONOHOME/bin/pkg-config --cflags mono-2`
+	MONO_LDFLAGS=`$MONOHOME/bin/pkg-config --libs mono-2`
+
+	AC_LANG([C++])
+	echo $JAVA_CPPFLAGS
+	# Check headers file (second time we check that in fact)
+	CPPFLAGS_SAVE="$CFLAGS"
+	CPPFLAGS="$MONO_CFLAGS"
+	AC_CHECK_HEADERS([mono/jit/jit.h],
+			 [], [AC_MSG_ERROR([could not find jit.h file])])
+	CPPFLAGS="$CPPFLAGS_SAVE"
+	# Ensure we can link against libmono-2.0
+	LIBS_SAVE="$LIBS"
+	LIBS="$MONO_LDFLAGS"
+	AC_CHECK_LIB([mono-2.0], [mono_runtime_invoke], [], [AC_MSG_ERROR([could not find libmono])], [])
+	LIBS="$LIBS_SAVE"
+
+	AC_SUBST([MONO_CFLAGS])
+	AC_SUBST([MONO_LDFLAGS])
+fi 
+
+AC_SUBST([MONO_ENABLED])
+AC_SUBST([MONO_FILE])
+
+# ===========================================================================
 # Detect if ruby is installed
 # ===========================================================================
 AC_ARG_WITH([ruby], 

@@ -1,4 +1,5 @@
 Version 1.6.0-dev
+  * Add the C# as a supported programming language for Services 
   * Add nested inputs and outputs support (WPS 2.0.0)
   * Add servicePath special key to specify the service location
   * Add --with-etc-dir option to specify the location of the main.cfg file

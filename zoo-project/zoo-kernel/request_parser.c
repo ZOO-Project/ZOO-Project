@@ -1626,8 +1626,8 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
               int BufferLen = 1024;
               cgiFilePtr file;
               int targetFile;
-              char storageNameOnServer[2048];
-              char fileNameOnServer[64];
+              char *storageNameOnServer;
+              char *fileNameOnServer;
               char contentType[1024];
               char buffer[1024];
               char *tmpStr = NULL;
@@ -1650,8 +1650,10 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                       else
                         break;
                     }
+		  fileNameOnServer=(char*)malloc((strlen(name) - t - 1 )*sizeof(char));
                   strcpy (fileNameOnServer, name + t + 1);
 
+		  storageNameOnServer=(char*)malloc((strlen(path->value) + strlen(fileNameOnServer) + 2)*sizeof(char));
                   sprintf (storageNameOnServer, "%s/%s", path->value,
                            fileNameOnServer);
 #ifdef DEBUG
@@ -1682,6 +1684,8 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                   addToMap (tmpReqI->content, "lref", storageNameOnServer);
                   cgiFormFileClose (file);
                   close (targetFile);
+		  free(fileNameOnServer);
+		  free(storageNameOnServer);
 #ifdef DEBUG
                   fprintf (stderr, "File \"%s\" has been uploaded",
                            fileNameOnServer);

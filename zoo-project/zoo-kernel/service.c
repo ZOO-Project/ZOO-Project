@@ -514,7 +514,8 @@ map* addToMapWithSize(map* m,const char* n,const char* v,int size){
   if(tmp->value!=NULL)
     free(tmp->value);
   tmp->value=(char*)malloc((size+1)*sizeof(char));
-  memmove(tmp->value,v,size*sizeof(char));
+  if(v!=NULL)
+    memmove(tmp->value,v,size*sizeof(char));
   tmp->value[size]=0;
   char sin[128];
   sprintf(sin,"%d",size);
