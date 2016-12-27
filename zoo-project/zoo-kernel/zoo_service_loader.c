@@ -82,6 +82,10 @@ extern "C" int crlex ();
 #include "service_internal_perl.h"
 #endif
 
+#ifdef USE_MONO
+#include "service_internal_mono.h"
+#endif
+
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
@@ -704,6 +708,16 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     {
       *eres =
         zoo_ruby_support (&m, request_inputs, s1, &request_input_real_format,
+                          &request_output_real_format);
+    }
+  else
+#endif
+
+#ifdef USE_MONO
+  if (strncasecmp (r_inputs->value, "Mono", 4) == 0)
+    {
+      *eres =
+        zoo_mono_support (&m, request_inputs, s1, &request_input_real_format,
                           &request_output_real_format);
     }
   else

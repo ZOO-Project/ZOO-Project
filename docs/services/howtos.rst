@@ -5,8 +5,11 @@ Create your own ZOO-Services
 
 :ref:`services_index` are quite easy to create once you have installed the ZOO Kernel and have 
 chosen code (in the language of your choice) to turn into a ZOO service. Here are some 
-HelloWorlds in Python, PHP, Java  and JavaScript with links to their corresponding 
+HelloWorlds in Python, PHP, Java, C#  and JavaScript with links to their corresponding 
 ``.zcfg`` files.
+
+
+.. contents:: :depth: 3
 
 
 General information
@@ -198,7 +201,7 @@ Sample ZOO PHP Services Provider
 Java
 ----
 
-Specifically for the Java support, you may add the following two
+Specifically for the Java support, you may add the following three
 sections to your ``main.cfg`` file:
 
 :[java]:
@@ -309,6 +312,87 @@ Sample ZOO Java Services Provider
        return ZOO.SERVICE_SUCCEEDED;
     }
   }
+
+C#
+----
+
+Specifically for the C# support, you should add the following
+section to your ``main.cfg`` file.
+
+
+:[mono]:
+   This section is used to define both ``libPath`` and ``etcPath``
+   required by the Mono .NET Framework.
+
+ZOO-API
+*******
+
+Before you build your first ZOO-Service implemented in Mono, you
+should first build the ``ZMaps.dll`` containing the Mono ZOO-API.
+
+.. Note:: You should build ZOO-Kernel prior to follow this instructions.
+
+.. code-block:: guess
+
+  cd zoo-api/mono
+  make
+
+Then you should copy the ``ZMaps.dll`` in your ``servicePath`` or in
+the directory where your ``zoo_loader.cgi`` file is stored.
+
+The ZOO-API is available from a C# class named ZOO_API and provides
+the following static variables:
+
+:int SERVICE_SUCCEEDED:
+   Value to return in case your service end successfully.
+:int SERVICE_FAILED:
+   Value to retrun in case of failure.
+
+The ZOO-API provides the following static functions:
+
+:string Translate(String s):
+   This function call the internal ZOO-Kernel function responsible for
+   searching a translation of ``s`` in the zoo-services dictionary.
+
+:void UpdateStatus(ZMaps conf,String pourcent,String message):
+   This function call the updateStatus ZOO-Kernel function responsible
+   for updating the status of the running service (only usefull when
+   the service has been called asynchronously).
+
+
+C# ZCFG requirements
+**********************************
+
+.. Note:: For each Service provided by your ZOO Mono Services Provider
+          (your corresponding Mono class), the ZCFG File should have
+          the name of the Mono public static function corresponding to the
+          service (case-sensitive).
+
+The ZCFG file should contain the following :
+
+serviceType
+    Mono 
+serviceProvider
+    The full name of the C# dll containing the ZOO-Service Provider
+    (including ``.dll``).
+serviceNameSpace
+    The namespace of the C# class containing the ZOO-Service Provider.
+serviceClass
+    The name of the C# class containing the ZOO-Service Provider definition.
+
+C# Data Structure used
+********************************
+
+The three parameters of the function are passed to the Mono static
+function as ``ZMaps`` which are basically
+``Dictionary<String,_ZMaps>``.
+
+Sample ZOO C# Services Provider
+******************************************
+
+.. literalinclude:: ../../zoo-project/zoo-services/hello-mono/test.cs
+   :language: csharp
+   :lines: 24-100
 
 Javascript
 ----------
