@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: ZOO-Kernel Internationalization\n"
 "Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
 "POT-Creation-Date: 2015-07-02 18:06+0200\n"
-"PO-Revision-Date: 2016-01-15 15:13+0000\n"
+"PO-Revision-Date: 2016-11-15 09:11+0000\n"
 "Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>\n"
 "Language-Team: French (France) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/fr_FR/)\n"
 "MIME-Version: 1.0\n"
@@ -123,7 +123,7 @@ msgid ""
 "The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
 "background task. Please access the URL in the statusLocation attribute "
 "provided in this document to get the up-to-date status and results."
-msgstr "Le service \"%s\" a été accepté par le ZOO-Kernel et est en cours d'exécution en tâche de fond. Merci d'utiliser le lien URL fournis dans l'attribut statusLocation de la racine de ce document pour obtenir des information sur l'état d'éxcution du service."
+msgstr "Le service \"%s\" a été accepté par le ZOO-Kernel et est en cours d'exécution en tâche de fond. Merci d'utiliser le lien URL fournis dans l'attribut statusLocation de la racine de ce document pour obtenir des informations sur l'état d'éxcution du service."
 
 #: response_print.c:1661
 msgid "No more information available"
@@ -243,7 +243,7 @@ msgstr "%s\nImpossible de charger votre service python correctement. Veuillez vo
 msgid ""
 "%s \n"
 " Unable to run your python process properly. Unable to provide any further information."
-msgstr "%s\nImpossible de charger votre service python correctement. Aucune information supplémentaire."
+msgstr "%s\nImpossible d'exécuter votre servce Python correctement. Impossible de fournir plus d'informations."
 
 #: zoo_service_loader.c:352
 #, c-format
@@ -253,7 +253,7 @@ msgstr "ZOO-Kernel n'as pas pu traiter votre requête, recevant un signal %d = %
 #: zoo_service_loader.c:527
 #, c-format
 msgid "Error occurred while running the %s function: %s"
-msgstr "Une erreur est survenue pendant l'execution de la %s fonction: %s"
+msgstr "Une erreur s'est produite lors de l'exécution de la fonction %s : %s"
 
 #: zoo_service_loader.c:578
 #, c-format
@@ -274,6 +274,10 @@ msgstr "Impossible de mettre la requête Execute HTTP POST en cache."
 #: zoo_service_loader.c:895
 msgid "Unable to load the main.cfg file."
 msgstr "Impossible de charger le fichier main.cfg."
+
+#: zoo_service_loader.c:895
+msgid "%s The following file: %s cannot be found."
+msgstr "%s Le fichier : %s ne peut pas être trouvé."
 
 #: zoo_service_loader.c:940
 #, c-format
