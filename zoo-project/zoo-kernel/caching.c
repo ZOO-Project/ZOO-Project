@@ -153,9 +153,10 @@ char* isInCache(maps* conf,char* request){
  * @param in the input
  * @param index the input index
  * @param hInternet the internet connection
- * @return 0 in case of success, 4 in case of failure
+ * @param error the error map pointer
+ * @return 0 in case of success, -1 in case of failure
  */
-int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet){
+int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** error){
   map* tmp1;
   char sindex[5];
   maps* content=*in;
@@ -206,10 +207,10 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet){
     if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
       
       if(getMap(content->content,icname)==NULL){
-	
 	fcontent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
 	if(fcontent == NULL){
-	  return errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
+	  errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
+	  return -1;
 	}
 	size_t dwRead;
 	InternetReadFile(hInternet->ihandle[*index], 
@@ -230,6 +231,25 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet){
 	  return errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
 	}
 	memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
+	if(hInternet->ihandle[*index].code!=200){
+	  char *error_rep_str=_("Unable to download the file for the input <%s>, response code was : %d.");
+	  char *error_msg=(char*)malloc((strlen(error_rep_str)+strlen(content->name)+4)*sizeof(char));
+	  sprintf(error_msg,error_rep_str,content->name,hInternet->ihandle[*index].code);
+	  if(*error==NULL){
+	    *error=createMap("text",error_msg);
+	    addToMap(*error,"locator",content->name);
+	    addToMap(*error,"code","InvalidParameterValue");
+	  }else{
+	    int nb=1;
+	    map* tmpMap=getMap(*error,"length");
+	    if(tmpMap!=NULL)
+	      nb=atoi(tmpMap->value);
+	    setMapArray(*error,"text",nb,error_msg);
+	    setMapArray(*error,"locator",nb,content->name);
+	    setMapArray(*error,"code",nb,"InvalidParameterValue");
+	  }
+	  return -1;
+	}
 	
 	char ltmp1[256];
 	sprintf(ltmp1,"%d",fsize);
@@ -265,9 +285,11 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet){
  * @param inputs the maps containing the inputs (defined in the requests+added
  *  per default based on the zcfg file)
  * @param hInternet the HINTERNET pointer
- * @return 0 on success
+ * @param error the error map pointer
+ * @return 0 on success, -1 on failure
  */
-int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
+int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
+  int hasAFailure=0;
   if(hInternet!=NULL && hInternet->nb>0){
     processDownloads(hInternet);
     maps* content=*inputs;
@@ -276,16 +298,21 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet){
       if(content->child!=NULL){
 	maps* cursor=content->child;
 	while(cursor!=NULL){
-	  readCurrentInput(m,&cursor,&index,hInternet);
+	  int red=readCurrentInput(m,&cursor,&index,hInternet,error);
+	  if(red<0)
+	    hasAFailure=red;
 	  cursor=cursor->next;
 	}
       }
-      else
-	readCurrentInput(m,&content,&index,hInternet);
+      else{
+	int red=readCurrentInput(m,&content,&index,hInternet,error);
+	if(red<0)
+	  hasAFailure=red;
+      }
       content=content->next;
-    } 
+    }
   }
-  return 0;
+  return hasAFailure;
 }
 
 /**

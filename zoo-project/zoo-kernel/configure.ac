@@ -421,7 +421,7 @@ else
 	PYTHON_FILE="service_internal_python.o"
 	if test  "$PYTHON_PATH" = "yes"
 	then
-		# PHP was not specified, so search within the current path
+		# PYTHON was not specified, so search within the current path
 		PYTHONCFG_PATH=`which python${PYTHON_VERS}-config`
 		if test -z "${PYTHONCFG_PATH}" ; then
 		AC_PATH_PROG([PYTHONCONFIG], [python-config-${PYTHON_VERS}])
@@ -528,13 +528,22 @@ AC_ARG_WITH([php],
 	[AS_HELP_STRING([--with-php=PATH], [To enable php support or specify an alternative directory for php installation,  disabled by default])], 
 	[PHP_PATH="$withval"; PHP_ENABLED="-DUSE_PHP"], [PHP_ENABLED=""])
 
+AC_ARG_WITH([php-version], 
+	[AS_HELP_STRING([--with-phpvers=NUM], [To use a specific php version])], 
+	[PHP_VERS="$withval"], [PHP_VERS=""])
+
 
 if test -z "$PHP_ENABLED"
 then
 	PHP_FILE=""
 else
 	PHPCONFIG="$PHP_PATH/bin/php-config"
-	PHP_FILE="service_internal_php.o"
+	if test "x$PHP_VERS" = "x7"
+	then
+		PHP_FILE="service_internal_php7.o"
+	else
+		PHP_FILE="service_internal_php.o"
+	fi
 	if test  "$PHP_PATH" = "yes"
 	then
 		# PHP was not specified, so search within the current path
@@ -544,7 +553,12 @@ else
 	fi
 
 	# Extract the linker and include flags 
-	PHP_LDFLAGS="-L/`$PHPCONFIG --prefix`/lib -lphp5"
+	if test "x$PHP_VERS" = "x7"
+	then
+		PHP_LDFLAGS="-L/`$PHPCONFIG --prefix`/lib64 -lphp7"
+	else
+		PHP_LDFLAGS="-L/`$PHPCONFIG --prefix`/lib -lphp5"
+	fi
 	PHP_CPPFLAGS=`$PHPCONFIG --includes`
 
 	# Check headers file
@@ -557,7 +571,13 @@ else
 	LIBS_SAVE="$LIBS"
 	LIBS="$PHP_LDFLAGS"
 	# Shouldn't we get php here rather than php5 :) ??
-	AC_CHECK_LIB([php5], [call_user_function], [], [AC_MSG_ERROR([could not find libphp])], [])
+	if test "x$PHP_VERS" = "x7"
+	then
+		echo $LIBS
+		#AC_CHECK_LIB([php7], [call_user_function], [], [AC_MSG_ERROR([could not find libphp])], [])
+	else
+		AC_CHECK_LIB([php5], [call_user_function], [], [AC_MSG_ERROR([could not find libphp])], [])
+	fi
 	LIBS="$LIBS_SAVE"
 	AC_SUBST([PHP_CPPFLAGS])
 	AC_SUBST([PHP_LDFLAGS])

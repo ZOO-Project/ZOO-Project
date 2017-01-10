@@ -91,12 +91,13 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
 	;
 #endif
     sscanf((char*)buffer,"%s; path=%s; domain=%s",env,path,domain);
-    tmp=strcat(env,CCookie[0]);
+    _HINTERNET *psInternet=(_HINTERNET *)data;
+    tmp=strcat(env,CCookie[psInternet->id][0]);
 #ifdef MSG_LAF_OUT
     printf("\n**Cookie env : [%s] , path : [%s], domain : [%s]**\n",env,path,domain);
     printf("buffer : %d (%s) (%s) (%s)\n",(buffer==NULL),buffer,tmp,CCookie);
 #endif
-    strcpy(CCookie[0],tmp);
+    strcpy(CCookie[psInternet->id][0],tmp);
   }
   return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
 };

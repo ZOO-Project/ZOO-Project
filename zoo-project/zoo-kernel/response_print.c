@@ -2205,7 +2205,7 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map
  * Set hasPrinted value to true in the [lenv] section.
  * 
  * @param m the maps containing the settings of the main.cfg file
- * @param s the map containing the text,code,locator keys
+ * @param s the map containing the text,code,locator keys (or a map array of the same keys)
  */
 void printExceptionReportResponse(maps* m,map* s){
   if(getMapFromMaps(m,"lenv","hasPrinted")!=NULL)
