@@ -76,6 +76,9 @@ otbZooWatcher.o: otbZooWatcher.cxx otbZooWatcher.h  service.h
 service_internal_php.o: service_internal_php.c service.h
 	g++ -c ${XML2CFLAGS} ${PHPCFLAGS} ${CFLAGS}  ${PHP_ENABLED} service_internal_php.c
 
+service_internal_php7.o: service_internal_php7.c service.h
+	g++ -c ${XML2CFLAGS} ${PHPCFLAGS} ${CFLAGS}  ${PHP_ENABLED} service_internal_php7.c
+
 service_internal_perl.o: service_internal_perl.c service.h
 	gcc -c ${XML2CFLAGS} ${PERLCFLAGS} ${CFLAGS}  ${PERL_ENABLED} service_internal_perl.c
 

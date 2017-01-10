@@ -31,7 +31,7 @@ extern "C" {
 
   void addToCache(maps*,char*,char*,char*,int,char*,size_t);
   char* isInCache(maps*,char*);
-  int runHttpRequests(maps**,maps**,HINTERNET*);
+  int runHttpRequests(maps**,maps**,HINTERNET*,map**);
   void addRequestToQueue(maps**,HINTERNET*,const char*,bool);
   int loadRemoteFile(maps**,map**,HINTERNET*,char*);
 
