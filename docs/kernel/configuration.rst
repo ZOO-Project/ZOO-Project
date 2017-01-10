@@ -85,12 +85,19 @@ The main.cfg ``[main]`` section parameters are explained bellow.
  * ``lang``: Supported natural languages separated by a coma (the first is the default one),
  * ``cors``: Define if the ZOO-Kernel should support `Cross-Origin
    Resource Sharing <https://www.w3.org/TR/cors/>`__. If this
-   paramater is not defined, then the ZOO-Kernel won't support CORS.
+   parameter is not defined, then the ZOO-Kernel won't support CORS.
  * ``servicePath``: Define a specific location to search for services
    rather than using the ZOO-Kernel directory. If this parameter is
    not defined, then the ZOO-Kernel will search for services using its
    directory.
+ * ``libPath``: (Optional) Path to a directory where the ZOO-kernel should search for
+   service providers, e.g., shared libraries with service implementations 
+   (the ``serviceProvider`` parameter in the service configuration (.zcfg) file).   
 
+.. warning:: 
+  The ``libPath`` parameter is currently only recognized by services implemented
+  in C/C++ or PHP, and may be moved to another section in future versions.
+  
 In case you have activated the MapServer support, please refer to
 :ref:`this specific section <kernel-mapserver-main.cfg>`. 
 
@@ -251,6 +258,53 @@ With the previous database section, it will give the following:
 
 Please refer to this `section <zoo_create_db_backend>`_ to learn how
 to setup the database.
+
+Include section
+...............................
+
+The ``[include]`` section (optional) lists explicitely a set of service configuration files
+the the ZOO-Kernel should parse, e.g.,
+
+
+.. code-block:: guess
+    :linenos:
+    
+    [include]
+    servicename1 = /my/service/repository/service1.zcfg
+    servicename2 = /my/service/repository/service2.zcfg
+
+The ``[include]`` section may be used to control which services are exposed to particular user groups.
+While service configuration files (.zcfg) may be located in a common repository or in arbitrary folders,
+main.cfg files at different URLs may include different subsets of services. 
+
+When the ZOO-Kernel handles a request, it will first check if there is an ``[include]`` 
+section in main.cfg and then search for other .zcfg files in the current working directory (CWD) and 
+subdirectories. If an included service happens to be located in a CWD (sub)directory, 
+it will be published by its name in the ``[include]`` section. For example, the service
+``/[CWD]/name/space/myService.zcfg``
+would normally be published as name.space.myService, but if it is listed in the ``[include]`` section 
+it will be published simply as myService: 
+
+.. code-block:: guess
+    :linenos:
+    
+    [include]
+    myService =  /[CWD]/name/space/myService.zcfg
+
+On the other hand, with
+
+.. code-block:: guess
+    :linenos:
+    
+    [include]
+    myService =  /some/other/dir/myService.zcfg
+
+there would be two distinct services published as myService and name.space.myService, respectively, 
+with two different zcfg files.
+
+.. note:: 
+  As currently implemented, the ZOO-Kernel searches the CWD for the library files of 
+  included services if the ``libPath`` parameter is not set.
 
       
 .. rubric:: Footnotes

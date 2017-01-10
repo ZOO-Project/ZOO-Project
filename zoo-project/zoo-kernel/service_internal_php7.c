@@ -138,7 +138,8 @@ PHP_FUNCTION(zoo_Translate)
   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &value, &value_len) == FAILURE) {
     RETURN_NULL();
   }
-  RETURN_STRING(_ss(value), 1);
+  //RETURN_STRING(_ss(value), 1);
+  RETURN_STRINGL(_ss(value), 1);
 }
 
 PHP_FUNCTION(zoo_UpdateStatus)
