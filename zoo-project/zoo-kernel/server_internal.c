@@ -817,7 +817,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
       else
 	addToMap(tmpMaps->content,"inRequest","true");
       elements* tmpElements=getElements(in,tmpMaps->name);
-      if(tmpMaps->child!=NULL and tmpElements!=NULL and tmpElements->child!=NULL){
+      if(tmpMaps->child!=NULL && tmpElements!=NULL && tmpElements->child!=NULL){
 	char *res=addDefaultValues(&tmpMaps->child,tmpElements->child,m,type,err);
 	if(strlen(res)>0){
 	  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
