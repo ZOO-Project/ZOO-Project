@@ -11,8 +11,6 @@ the ZOO-Project for the first time in an `OSGeoLive
 .. toctree::
    :maxdepth: 1
 
-   2016/index
-   2015/index
    2014/index
    2013/index
    2012/index
