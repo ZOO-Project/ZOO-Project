@@ -830,14 +830,21 @@ else
 	CPPFLAGS="$OTB_CPPFLAGS"
 	LDFLAGS_SAVE="$LDFLAGS"
 	LIBS="$LIBS_SAVE $OTB_LDFLAGS"
-	echo $OTB_CPPFLAGS
-	#AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
-	#		[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
+	#echo $OTB_CPPFLAGS
+	AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
+			[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
 	LDFLAGS_SAVE="$LDFLAGS"
 	LDFLAGS="$OTB_LDFLAGS"
-	echo $OTB_LDFLAGS
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"],[std::vector<std::string> list = otb::Wrapwper::ApplicationRegistry::GetAvailableApplication();]])],
-		[AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
+	#echo $OTB_LDFLAGS
+	UVERS="$(echo -e '5.8\n$OTBVERS' | sort -r | head -n1)"
+	if test "$OTBVERS" ==  "$UVERS" ; then 
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplicationRegistry.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplications();]])],
+							   [AC_MSG_RESULT([checking for GetAvailableApplications... yes])],[AC_MSG_ERROR([checking for GetAvailableApplications... failed])])
+	else
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplication();]])],
+							   [AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
+	fi
+							   			
 	LDFLAGS="$LDFLAGS_SAVE"
 	AC_LANG_POP([C++])
 	AC_LANG(C++)
