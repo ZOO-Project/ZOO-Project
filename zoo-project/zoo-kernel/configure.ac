@@ -813,6 +813,13 @@ else
 		ITKVERS="4.5"
     	fi
 	OTB_ENABLED="-DUSE_OTB"
+	IVERS="$(echo -e '4.10\n$ITKVERS' | sort -r | head -n1)"
+	if test "$IVERS" == "$ITKVERS"; then
+	   ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS"
+	else
+		ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS"
+	fi
+
 	if test -a "${OTBPATH}/include/OTB-${OTBVERS}" ; then 
 		OTB_RPATH="$OTBPATH/include/OTB-${OTBVERS}/"
 		OTB_CPPFLAGS="-I${OTB_RPATH}ApplicationEngine -I$OTB_RPATH/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTB_RPATH/Utilities/ITK -I$OTB_RPATH/ -I$OTB_RPATH/IO -I$OTB_RPATH/UtilitiesAdapters/OssimAdapters -I$OTB_RPATH/UtilitiesAdapters/CurlAdapters -I$OTB_RPATH/Utilities/BGL -I$OTB_RPATH/UtilitiesAdapters/ITKPendingPatches -I$OTB_RPATH/Utilities/otbconfigfile $GDAL_CFLAGS"
@@ -836,14 +843,14 @@ else
 	LDFLAGS_SAVE="$LDFLAGS"
 	LDFLAGS="$OTB_LDFLAGS"
 	#echo $OTB_LDFLAGS
-	UVERS="$(echo -e '5.8\n$OTBVERS' | sort -r | head -n1)"
-	if test "$OTBVERS" ==  "$UVERS" ; then 
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplicationRegistry.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplications();]])],
-							   [AC_MSG_RESULT([checking for GetAvailableApplications... yes])],[AC_MSG_ERROR([checking for GetAvailableApplications... failed])])
-	else
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplication();]])],
-							   [AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
-	fi
+	#UVERS="$(echo -e '5.8\n$OTBVERS' | sort -r | head -n1)"
+	#if test "$OTBVERS" ==  "$UVERS" ; then 
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplicationRegistry.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplications();]])],
+			[AC_MSG_RESULT([checking for GetAvailableApplications... yes])],[AC_MSG_ERROR([checking for GetAvailableApplications... failed])])
+	#else
+	#	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplication();]])],
+	#						   [AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
+	#fi
 							   			
 	LDFLAGS="$LDFLAGS_SAVE"
 	AC_LANG_POP([C++])
