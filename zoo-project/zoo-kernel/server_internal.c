@@ -790,24 +790,26 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	/**
 	 * check for useMapServer presence
 	 */
-	map* tmpCheck=getMap(tmpIoType->content,"useMapServer");
-	if(tmpCheck!=NULL){
-	  // Get the default value
-	  tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,NULL);
-	  tmpCheck=getMap(tmpMaps->content,"mimeType");
-	  addToMap(tmpMaps->content,"requestedMimeType",tmpCheck->value);
-	  map* cursor=tmpIoType->content;
-	  while(cursor!=NULL){
-	    addToMap(tmpMaps->content,cursor->name,cursor->value);
-	    cursor=cursor->next;
-	  }
-	  
-	  cursor=tmpInputs->content;
-	  while(cursor!=NULL){
-	    if(strcasecmp(cursor->name,"Title")==0 ||
-	       strcasecmp(cursor->name,"Abstract")==0)
+	if(tmpIoType!=NULL){
+	  map* tmpCheck=getMap(tmpIoType->content,"useMapServer");
+	  if(tmpCheck!=NULL){
+	    // Get the default value
+	    tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,NULL);
+	    tmpCheck=getMap(tmpMaps->content,"mimeType");
+	    addToMap(tmpMaps->content,"requestedMimeType",tmpCheck->value);
+	    map* cursor=tmpIoType->content;
+	    while(cursor!=NULL){
 	      addToMap(tmpMaps->content,cursor->name,cursor->value);
-           cursor=cursor->next;
+	      cursor=cursor->next;
+	    }
+	  
+	    cursor=tmpInputs->content;
+	    while(cursor!=NULL){
+	      if(strcasecmp(cursor->name,"Title")==0 ||
+		 strcasecmp(cursor->name,"Abstract")==0)
+		addToMap(tmpMaps->content,cursor->name,cursor->value);
+	      cursor=cursor->next;
+	    }
 	  }
 	}
 #endif
