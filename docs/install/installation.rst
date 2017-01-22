@@ -93,7 +93,7 @@ Specific main.cfg location  (Optional)
 Per default, the ZOO-Kernel search for the ``main.cfg`` file from its
 installation directory but, in case you want to store this file in
 another place, then you can use the ``--with-etc-dir`` option so it
-will search for the ``main.cfg``file in the ``sysconfdir`` directory.
+will search for the ``main.cfg`` file in the ``sysconfdir`` directory.
 
 For instance, you can define that the directory to store the
 ``main.cfg`` file is the ``/etc/zoo-project`` directory, by using the
