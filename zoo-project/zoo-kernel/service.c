@@ -634,7 +634,7 @@ bool contains(map* m,map* i){
  */
 iotype* getIoTypeFromElement(elements* e,char *name, map* values){
   elements* cursor=e;
-  if(values!=NULL)
+  if(values!=NULL){
     while(cursor!=NULL){
       if(strcasecmp(cursor->name,name)==0 && (cursor->defaults!=NULL || cursor->supported!=NULL)){
 	if(contains(cursor->defaults->content,values)==true)
@@ -650,6 +650,14 @@ iotype* getIoTypeFromElement(elements* e,char *name, map* values){
       }
       cursor=cursor->next;
     }
+  }else{
+    while(cursor!=NULL){
+      if(strcasecmp(cursor->name,name)==0 && cursor->defaults!=NULL){
+	return cursor->defaults;
+      }
+      cursor=cursor->next;
+    }
+  }
   return NULL;
 }
 

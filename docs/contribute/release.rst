@@ -21,8 +21,8 @@ rules:
   breaking changes during upgrades. 
 * Read the documentation and remove outdated parts.
 * Create release candidate as .zip and .tar.bz2  then add them on this
-  `page <http://zoo-project.org/site/Downloads>`_ (by editing this
-  `wiki page <http://zoo-project.org/trac/wiki/Download>`_)
+  `page <http://zoo-project.org/new/Code/Download>`_ (by editing this
+  `wiki page <http://zoo-project.org/trac/wiki/ZooWebSite/2015/Code/Download>`_)
 * Cut a release candidate once you think that everything is in
   order. Announce the release candidate for review for at least 1
   week. In this period of time, it is also appropriate for you to

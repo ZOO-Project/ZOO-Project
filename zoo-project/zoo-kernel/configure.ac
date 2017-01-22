@@ -813,13 +813,20 @@ else
 		ITKVERS="4.5"
     	fi
 	OTB_ENABLED="-DUSE_OTB"
+	IVERS="$(echo -e '4.10\n$ITKVERS' | sort -r | head -n1)"
+	if test "$IVERS" == "$ITKVERS"; then
+	   ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS"
+	else
+		ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS"
+	fi
+
 	if test -a "${OTBPATH}/include/OTB-${OTBVERS}" ; then 
 		OTB_RPATH="$OTBPATH/include/OTB-${OTBVERS}/"
 		OTB_CPPFLAGS="-I${OTB_RPATH}ApplicationEngine -I$OTB_RPATH/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTB_RPATH/Utilities/ITK -I$OTB_RPATH/ -I$OTB_RPATH/IO -I$OTB_RPATH/UtilitiesAdapters/OssimAdapters -I$OTB_RPATH/UtilitiesAdapters/CurlAdapters -I$OTB_RPATH/Utilities/BGL -I$OTB_RPATH/UtilitiesAdapters/ITKPendingPatches -I$OTB_RPATH/Utilities/otbconfigfile $GDAL_CFLAGS"
-		OTB_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ -lOTBImageIO-$OTBVERS -lOTBCommon-$OTBVERS -lOTBApplicationEngine-$OTBVERS -L$ITKPATH/lib -lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS "
+		OTB_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ -lOTBImageIO-$OTBVERS -lOTBCommon-$OTBVERS -lOTBApplicationEngine-$OTBVERS -L$ITKPATH/lib $ITK_LDFLAGS"
 	else
 		OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
-		OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib -lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkdouble-conversion-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS -litkzlib-$ITKVERS"
+		OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib $ITK_LDFLAGS"
 
 	fi
 	OTB_FILE="otbZooWatcher.o service_internal_otb.o"
@@ -830,14 +837,21 @@ else
 	CPPFLAGS="$OTB_CPPFLAGS"
 	LDFLAGS_SAVE="$LDFLAGS"
 	LIBS="$LIBS_SAVE $OTB_LDFLAGS"
-	echo $OTB_CPPFLAGS
-	#AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
-	#		[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
+	#echo $OTB_CPPFLAGS
+	AC_CHECK_HEADERS([otbWrapperApplication.h otbWrapperInputImageListParameter.h otbWrapperApplicationRegistry.h],
+			[], [AC_MSG_ERROR([could not find header file $i related to OTB])])
 	LDFLAGS_SAVE="$LDFLAGS"
 	LDFLAGS="$OTB_LDFLAGS"
-	echo $OTB_LDFLAGS
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"],[std::vector<std::string> list = otb::Wrapwper::ApplicationRegistry::GetAvailableApplication();]])],
-		[AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
+	#echo $OTB_LDFLAGS
+	#UVERS="$(echo -e '5.8\n$OTBVERS' | sort -r | head -n1)"
+	#if test "$OTBVERS" ==  "$UVERS" ; then 
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplicationRegistry.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplications();]])],
+			[AC_MSG_RESULT([checking for GetAvailableApplications... yes])],[AC_MSG_ERROR([checking for GetAvailableApplications... failed])])
+	#else
+	#	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplication();]])],
+	#						   [AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
+	#fi
+							   			
 	LDFLAGS="$LDFLAGS_SAVE"
 	AC_LANG_POP([C++])
 	AC_LANG(C++)

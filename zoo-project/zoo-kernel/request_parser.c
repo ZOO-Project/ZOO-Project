@@ -860,10 +860,28 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		    while (cur4 != NULL){
 		      while(cur4 != NULL && 
 			    cur4->type != XML_CDATA_SECTION_NODE &&
-			    cur4->type != XML_TEXT_NODE)
+			    cur4->type != XML_TEXT_NODE &&
+			    cur4->type != XML_ELEMENT_NODE)
 			cur4=cur4->next;
 		      if(cur4!=NULL){
-			if(cur4->content!=NULL){
+			if (cur4->type == XML_ELEMENT_NODE)
+			  {
+			    xmlChar *mv;
+			    int buffersize;
+			    xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
+			    xmlDocSetRootElement (doc1, cur4);
+			    xmlDocDumpFormatMemoryEnc (doc1, &mv,
+						       &buffersize,
+						       "utf-8", 0);
+			    if (tmpmaps->content != NULL)
+			      addToMap (tmpmaps->content, "value",
+					(char *) mv);
+			    else
+			      tmpmaps->content =
+				createMap ("value", (char *) mv);
+			    free(mv);
+			  }
+			else{
 			  if (tmpmaps->content != NULL)
 			    addToMap (tmpmaps->content, "value",
 				      (char *) cur4->content);
