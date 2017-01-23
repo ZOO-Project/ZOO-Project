@@ -342,6 +342,10 @@ that the ``include/linux`` directory contains the ``jni.h`` headers file
 and that the ``jre/lib/i386/client/`` directory contains the ``libjvm.so``
 file.
 
+.. note:: 
+   You can use the `--with-java-rpath` option to produce a binary
+   aware of the libjvm location.
+
 
 .. note:: 
    With Mac OS X you only have to set *macos* as the value for the

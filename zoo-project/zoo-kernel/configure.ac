@@ -594,6 +594,10 @@ AC_ARG_WITH([java],
 	[AS_HELP_STRING([--with-java=PATH], [To enable java support, specify a JDK_HOME,  disabled by default])], 
 	[JDKHOME="$withval"; JAVA_ENABLED="-DUSE_JAVA"], [JAVA_ENABLED=""])
 
+AC_ARG_WITH([java-rpath], 
+	[AS_HELP_STRING([--with-java-rpath=yes], [To set rpath for java support, disabled by default])], 
+	[JAVA_RPATH="$withval"], [JAVA_RPATH=""])
+
 if test -z "$JAVA_ENABLED"
 then
 	JAVA_FILE=""
@@ -620,13 +624,22 @@ else
 		then
 			JAVA_LDFLAGS="-L$JDKHOME/jre/lib/i386/server/ -ljvm -lpthread"
 			JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+			if test x$JAVA_RPATH = "xyes"; then
+			   JAVA_LDFLAGS="$JAVA_LDFLAGS -Wl,-rpath,$JDKHOME/jre/lib/i386/server/"
+			fi
 		else
 			if test -d "$JDKHOME/jre/lib/amd64"; then
 			   JAVA_LDFLAGS="-L$JDKHOME/jre/lib/amd64/server/ -ljvm -lpthread"
 			   JAVA_CPPFLAGS="-I$JDKHOME/include -I$JDKHOME/include/linux"
+			   if test x$JAVA_RPATH = "xyes"; then
+			      JAVA_LDFLAGS="$JAVA_LDFLAGS -Wl,-rpath,$JDKHOME/jre/lib/amd64/server/"
+			   fi
 			else
 			   JAVA_LDFLAGS="-L$JDKHOME/jre/lib/server/ -ljvm -lpthread"
 			   JAVA_CPPFLAGS="-I$JDKHOME/include/ -I$JDKHOME/include/darwin"
+			   if test x$JAVA_RPATH = "xyes"; then
+			      JAVA_LDFLAGS="$JAVA_LDFLAGS -Wl,-rpath,$JDKHOME/jre/lib/server/"
+			   fi
 			fi
 		fi
 	fi
