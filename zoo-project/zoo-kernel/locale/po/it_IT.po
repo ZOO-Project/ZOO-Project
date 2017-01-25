@@ -3,14 +3,14 @@
 # This file is distributed under the same license as the PACKAGE package.
 # 
 # Translators:
-# Luca Delucchi <lucadeluge@gmail.com>, 2015
+# Luca Delucchi <lucadeluge@gmail.com>, 2015,2017
 msgid ""
 msgstr ""
 "Project-Id-Version: ZOO-Kernel Internationalization\n"
 "Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
 "POT-Creation-Date: 2015-07-02 18:06+0200\n"
-"PO-Revision-Date: 2016-06-30 09:31+0000\n"
-"Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>\n"
+"PO-Revision-Date: 2017-01-25 07:49+0000\n"
+"Last-Translator: Luca Delucchi <lucadeluge@gmail.com>\n"
 "Language-Team: Italian (Italy) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/it_IT/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -198,7 +198,7 @@ msgstr "Il processo non può essere rimosso, un file non può essere rimosso"
 
 #: server_internal.c:1063
 msgid "Unable to open the registry directory."
-msgstr ""
+msgstr "Impossibile aprire la directory del registro"
 
 #: server_internal.c:1082
 msgid "Unable to allocate memory."
@@ -242,7 +242,7 @@ msgstr "%s\nImpossibile eseguire il processo di Python correttamente. Controllar
 msgid ""
 "%s \n"
 " Unable to run your python process properly. Unable to provide any further information."
-msgstr ""
+msgstr "%s\nImpossibile eseguire il processo python correttamente. Impossible fornire nessun'altra informazione"
 
 #: zoo_service_loader.c:352
 #, c-format
@@ -252,7 +252,7 @@ msgstr "ZOO Kernel è fallito processando la richiesta, ricevendo il segnale %d 
 #: zoo_service_loader.c:527
 #, c-format
 msgid "Error occurred while running the %s function: %s"
-msgstr ""
+msgstr "Errore accaduto durante l'esecuzione della funzione %s: %s"
 
 #: zoo_service_loader.c:578
 #, c-format
@@ -276,7 +276,7 @@ msgstr "Impossibile caricare il file main.cfg"
 
 #: zoo_service_loader.c:895
 msgid "%s The following file: %s cannot be found."
-msgstr ""
+msgstr "%s il senguente file: %s non può essere trovato"
 
 #: zoo_service_loader.c:940
 #, c-format
