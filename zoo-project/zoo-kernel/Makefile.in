@@ -60,7 +60,7 @@ service_yaml.o: service_yaml.c service.h
 
 service_internal_ms.o: service_internal_ms.c
 	gcc ${JS_ENABLED} ${GDAL_CFLAGS}  ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
-	echo "SYMBOLSET\nEND" > sybols.sym
+	echo "SYMBOLSET\nEND" > symbols.sym
 
 service_internal_python.o: service_internal_python.c service.h
 	g++ ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c service_internal_python.c
@@ -119,7 +119,7 @@ install: zoo_loader.cgi
 	(cd ${DESTDIR}${INST_LIB} ; \
 	 if [ -e "libzoo_service.${EXT}" ]; then rm  libzoo_service.${EXT}; fi ; \
 	 ln -s ${LIBZOO_SERVICE} libzoo_service.${EXT})
-	if [ -z "${MS_FILE}" ] ; then echo "No symbols.sym" ; else install -d ${SHAREDSTATEDIR}; install symbols.sym ${SHAREDSTATEDIR}; fi
+	if [ -z "${MS_FILE}" ] ; then echo "No symbols.sym" ; else install -d ${DESTDIR}${SHAREDSTATEDIR}; install symbols.sym ${DESTDIR}${SHAREDSTATEDIR}; fi
 	install -d ${DESTDIR}${INST_INCLUDE}/zoo
 	install sqlapi.h service.h service_internal.h ${DESTDIR}${INST_INCLUDE}/zoo
 
