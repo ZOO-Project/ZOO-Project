@@ -119,7 +119,7 @@ install: zoo_loader.cgi
 	(cd ${DESTDIR}${INST_LIB} ; \
 	 if [ -e "libzoo_service.${EXT}" ]; then rm  libzoo_service.${EXT}; fi ; \
 	 ln -s ${LIBZOO_SERVICE} libzoo_service.${EXT})
-	if [ -z "${MS_FILE}" ] ; then echo "No symbols.sym" ; else install -d ${DESTDIR}${SHAREDSTATEDIR}; install symbols.sym ${DESTDIR}${SHAREDSTATEDIR}; fi
+	if [ -z "${MS_FILE}" ] ; then echo "No symbols.sym" ; else install -d ${DESTDIR}${SHAREDSTATEDIR}; install -m644 symbols.sym ${DESTDIR}${SHAREDSTATEDIR}; fi
 	install -d ${DESTDIR}${INST_INCLUDE}/zoo
 	install sqlapi.h service.h service_internal.h ${DESTDIR}${INST_INCLUDE}/zoo
 
