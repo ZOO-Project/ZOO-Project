@@ -60,6 +60,7 @@ service_yaml.o: service_yaml.c service.h
 
 service_internal_ms.o: service_internal_ms.c
 	gcc ${JS_ENABLED} ${GDAL_CFLAGS}  ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
+	echo "SYMBOLSET\nEND" > sybols.sym
 
 service_internal_python.o: service_internal_python.c service.h
 	g++ ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c service_internal_python.c
@@ -111,15 +112,16 @@ zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main
 	g++ -g -O2 ${JSCFLAGS} ${RUBYCFLAGS} ${XML2CFLAGS} ${CFLAGS} -c zcfg2yaml.c  -fno-common -DPIC -o zcfg2yaml.o
 	g++  ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o server_internal.o service_internal.o ${MS_FILE} response_print.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml -L. ${LDFLAGS}
 
-install:
+install: zoo_loader.cgi
 	install -d ${DESTDIR}${CGI_DIR}
 	install zoo_loader.cgi ${DESTDIR}${CGI_DIR}/
 	install libzoo_service.${EXT} ${DESTDIR}${INST_LIB}/${LIBZOO_SERVICE}
 	(cd ${DESTDIR}${INST_LIB} ; \
 	 if [ -e "libzoo_service.${EXT}" ]; then rm  libzoo_service.${EXT}; fi ; \
 	 ln -s ${LIBZOO_SERVICE} libzoo_service.${EXT})
+	if [ -z "${MS_FILE}" ] ; then echo "No symbols.sym" ; else install -d ${SHAREDSTATEDIR}; install symbols.sym ${SHAREDSTATEDIR}; fi
 	install -d ${DESTDIR}${INST_INCLUDE}/zoo
 	install sqlapi.h service.h service_internal.h ${DESTDIR}${INST_INCLUDE}/zoo
 
 clean:
-	rm -f version.h *.o *.zo *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM *${EXT}
+	rm -f version.h symbols.sym *.o *.cgi *.eo *.tab.c *.tab.h *.sr.c* service_loader lex.* *.lreg *.sibling service_loader.dSYM *${EXT}
