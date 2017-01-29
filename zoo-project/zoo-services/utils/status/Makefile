@@ -7,6 +7,9 @@ cgi-env/wps_status.zo: service.c
 
 install:
 	install -d ${CGI_DIR}
-	install cgi-env/* ${CGI_DIR}/
+	install cgi-env/*.zcfg ${CGI_DIR}/
+	install cgi-env/*.zo ${CGI_DIR}/
+	install cgi-env/updateStatus.xsl ${SHAREDSTATEDIR}/
+
 clean:
 	rm -f cgi-env/wps_status.zo

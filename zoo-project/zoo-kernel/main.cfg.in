@@ -5,8 +5,8 @@ serverAddress = http://www.zoo-project.org/zoo/
 language = en-US
 lang = fr-FR,en-CA,en-US
 tmpPath=/tmp/
-tmpUrl = ../mpPathRelativeToServerAdress/
-dataPath = /tmp/
+tmpUrl = ../tmpPathRelativeToServerAdress/
+dataPath = @sharedstatedir@/zoo-project
 cacheDir = /tmp/
 
 [identification]
