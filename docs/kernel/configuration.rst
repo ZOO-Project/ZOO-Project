@@ -126,6 +126,9 @@ found in this `XML Schema Document
 Additional sections
 --------------------------------
 
+All the additional sections discribed in the following section are
+optional.
+
 Headers section
 ...............................
 
@@ -223,6 +226,43 @@ means that ZOO-Kernel will create a file named ``sess_XXX1000000.cfg``
 in the ``cacheDir`` directory, and will return the specified cookie to the client. Each time the client will 
 request ZOO-Kernel using this cookie, it will automatically load the
 value stored before the Service execution.
+
+Security section
+...............................
+
+The ``[security]`` section can be used to define what headers, the
+ZOO-Kernel has initially received in the request, should be passed
+to other servers for accessing resources (such as WMS, WFS, WCS
+or any other file passed as a reference). This section contains two
+parameters:
+
+ * ``attributes``: The header to pass to other servers (such as
+   Authorization, Cookie, User-Agent ...),
+ * ``hosts``: The host for wich the restriction apply (can be "*" to
+   forward header to every server or a coma separated list of host
+   names, domain, IP).
+
+Both parameters are mandatory.
+
+Suppose you need to share Authorization, Cookie and User-Agent to
+every server for accessing ressources, then yo ucan use the following
+section definition:
+
+.. code:: 
+
+    [security]
+    attributes=Authorization,Cookie,User-Agent
+    hosts=*
+
+In case only local servers require such header forwarding, you may use
+the following definition:
+
+.. code:: 
+
+    [security]
+    attributes=Authorization,Cookie,User-Agent
+    hosts=localhost,127.0.0.1
+
 
 .. _zoo_activate_db_backend:
 

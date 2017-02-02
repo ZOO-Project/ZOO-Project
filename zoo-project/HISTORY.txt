@@ -1,4 +1,9 @@
-Version 1.6.0-dev
+Version 1.7.0-dev
+  * Pass all headers listed in the attributes parameter from the
+  [security] section to the hosts listed in the hosts parameter of the
+  same section (ticket #139)
+
+Version 1.6.0
   * Add the C# as a supported programming language for Services 
   * Add nested inputs and outputs support (WPS 2.0.0)
   * Add servicePath special key to specify the service location

@@ -2099,8 +2099,8 @@ runRequest (map ** inputs)
               conf_read (session_file_path, tmpSess);
               addMapsToMaps (&m, tmpSess);
               freeMaps (&tmpSess);
-              free (tmpSess);
             }
+	  free (tmpSess);
         }
     }
   addMapsToMaps (&m, _tmpMaps);

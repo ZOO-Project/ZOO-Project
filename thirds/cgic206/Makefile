@@ -2,11 +2,11 @@ OS:=$(shell uname -s)
 CPU:=$(shell uname -m)
 ifeq ($(OS),Darwin)
 	MACOS_CFLAGS=-arch x86_64
-	LIBS= -L./ -lcgic /usr/lib/libfcgi.dylib
+	LIBS= -L./ -lcgic /usr/local/lib/libfcgi.dylib
 else
 	LIBS= -L./ -lcgic /usr/lib/libfcgi.a
 endif
-CFLAGS=-g -Wall ${MACOS_CFLAGS}
+CFLAGS=-I/usr/local/include -g -Wall ${MACOS_CFLAGS}
 CC=gcc
 AR=ar
 RANLIB=ranlib
