@@ -134,5 +134,11 @@ Test the ZOO-Kernel installation with the following requests:
 
 .. warning:: 
 
+   The URLs provided here suppose that you have previously setup a web
+   server and defined cgi-bin as a location where you can run cgi
+   application.
+
+.. warning:: 
+
    If ZOO-Kernel returns an error please check the :ref:`kernel_config` and beware of the :ref:`install-prereq`.
 
