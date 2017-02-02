@@ -103,7 +103,7 @@ Install ZOO ServiceProviders, for example the basic Python service (as administr
 .. code-block:: guess
 
   cp ../zoo-services/hello-py/cgi-env/*.zcfg /usr/lib/cgi-bin
-  cp ../zoo-services/hello-py/*.py /usr/lib/cgi-bin/
+  cp ../zoo-services/hello-py/cgi-env/*.py /usr/lib/cgi-bin/
 
 Edit the *main.cfg* file as follow (example configuration):
 
