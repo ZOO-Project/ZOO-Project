@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
+#include "service.h"
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -83,6 +84,7 @@ extern "C" {
     char* filename; //!< the cached file name
     FILE* file; //!< the file pointer
     unsigned char *pabyData; //!< the downloaded content
+    char *url; //!< the url used to access the server
     char *mimeType; //!< the mimeType returned by the server
     char *post; //!< the potential POST XML content
     int hasCacheFile; //!< 1 if we used a cache file
@@ -132,6 +134,10 @@ extern "C" {
 typedef char* LPCTSTR;
 #endif
   HINTERNET InternetOpen(char*,int,char*,char*,int);
+
+  int isProtectedHost(const char*,const char*);
+  int AddMissingHeaderEntry(_HINTERNET*,const char*,const char*);
+  void AddHeaderEntries(HINTERNET*,maps*);
 
   void InternetCloseHandle(HINTERNET*);
 

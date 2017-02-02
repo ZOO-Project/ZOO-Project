@@ -291,6 +291,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
   int hasAFailure=0;
   if(hInternet!=NULL && hInternet->nb>0){
+    AddHeaderEntries(hInternet,*m);
     processDownloads(hInternet);
     maps* content=*inputs;
     int index=0;

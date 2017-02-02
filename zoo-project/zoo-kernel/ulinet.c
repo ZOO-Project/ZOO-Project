@@ -29,6 +29,7 @@
 #define MAX_WAIT_MSECS 180*1000 /* Wait max. 180 seconds */
 #include "ulinet.h"
 #include <assert.h>
+#include <ctype.h>
 
 /**
  * Write the downloaded content to a _HINTERNET structure
@@ -218,6 +219,100 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
 }
 
 /**
+ * Add missing headers to an existing _HINTERNET
+ * 
+ * 
+ * @param handle the _HINTERNET pointer
+ * @param key the header parameter name
+ * @param value the header parameter value
+ * @return 0 if the operation succeeded, -1 in other case.
+ */
+int AddMissingHeaderEntry(_HINTERNET* handle,const char* key,const char* value){
+  int length=strlen(key)+strlen(value)+3;
+  char *entry=(char*)malloc((length)*sizeof(char));
+  if(entry==NULL)
+    return -1;
+  snprintf (entry, length, "%s: %s", key, value);
+  handle->header = curl_slist_append (handle->header, entry);
+  free(entry);
+  return 0;
+}
+
+/**
+ * Verify if a host is protected (appear in [security] > hosts)
+ *
+ * @param protectedHosts string containing all the protected hosts (coma separated)
+ * @param url string used to extract the host from
+ * @return 1 if the host is listed as protected, 0 in other case
+ */
+int isProtectedHost(const char* protectedHosts,const char* url){
+  char *token, *saveptr;
+  token = strtok_r (url, "//", &saveptr);
+  int cnt=0;
+  char* host;
+  while(token!=NULL && cnt<=1){
+    fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,token);
+    if(cnt==1)
+      fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,strstr(protectedHosts,token));
+    fflush(stderr);
+    if(cnt==1 && strstr(protectedHosts,token)!=NULL){
+      fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,strstr(protectedHosts,token));
+      return 1;
+    }
+    token = strtok_r (NULL, "/", &saveptr);
+    cnt+=1;
+  }
+  return 0;
+}
+
+/**
+ * Add headers defined in [security] > attributes to an existing HINTERNET
+ * @see isProtectedHost, AddMissingHeaderEntry
+ * 
+ * @param handle the _HINTERNET pointer
+ * @param conf the header parameter name
+ * @param value the header parameter value
+ * @return 0 if the operation succeeded, -1 in other case.
+ */
+void AddHeaderEntries(HINTERNET* handle,maps* conf){
+  map* passThrough=getMapFromMaps(conf,"security","attributes");
+  map* targetHosts=getMapFromMaps(conf,"security","hosts");
+  char* passedHeader[10];
+  int cnt=0;
+  if(passThrough!=NULL && targetHosts!=NULL){
+    char *tmp=zStrdup(passThrough->value);
+    char *token, *saveptr;
+    token = strtok_r (tmp, ",", &saveptr);
+    for(int i=0;i<handle->nb;i++){
+      if(targetHosts->value[0]=='*' || isProtectedHost(targetHosts->value,handle->ihandle[i].url)==1){
+	while (token != NULL){
+	  int length=strlen(token)+6;
+	  char* tmp1=(char*)malloc(length*sizeof(char));
+	  snprintf(tmp1,6,"HTTP_");
+	  for(int i=0;token[i]!='\0';i++){
+	    if(token[i]!='-')
+	      tmp1[5+i]=toupper(token[i]);
+	    else
+	      tmp1[5+i]='_';
+	    tmp1[5+i+1]='\0';
+	  }
+	  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmp1);
+	  map* tmpMap = getMapFromMaps(conf,"renv",tmp1);
+	  if(tmpMap!=NULL)	    
+	    AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
+	  free(tmp1);
+	  if(handle->ihandle[i].header!=NULL)
+	    curl_easy_setopt(handle->ihandle[i].handle,CURLOPT_HTTPHEADER,handle->ihandle[i].header);
+	  cnt+=1;
+	  token = strtok_r (NULL, ",", &saveptr);
+	}
+      }
+    }
+    free(tmp);
+  }
+}
+
+/**
  * Close a HINTERNET connection and free allocated resources
  *
  * @param handle0 the HINTERNET connection to close
@@ -240,6 +335,8 @@ void InternetCloseHandle(HINTERNET* handle0){
     }
     if(handle.post!=NULL)
       free(handle.post);
+    if(handle.url!=NULL)
+      free(handle.url);
     free(handle.mimeType);
     handle.mimeType = NULL;
   }
@@ -269,6 +366,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
   hInternet->ihandle[hInternet->nb].hasCacheFile=0;
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
+  hInternet->ihandle[hInternet->nb].url = NULL;
   hInternet->ihandle[hInternet->nb].mimeType = NULL;
   hInternet->ihandle[hInternet->nb].nDataLen = 0;
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
@@ -339,6 +437,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
+  hInternet->ihandle[hInternet->nb].url = zStrdup(lpszUrl);
 
   curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
   
