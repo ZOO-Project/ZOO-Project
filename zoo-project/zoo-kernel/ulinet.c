@@ -190,11 +190,11 @@ OSStatus setProxiesForProtcol(CURL* handle,const char *proto){
  * @param handle a CURL handle
  * @param proto the protocol requiring the use of a proxy
  */
-bool setProxiesForProtcol(CURL* handle,const char *proto){
+int setProxiesForProtcol(CURL* handle,const char *proto){
 #ifdef MSG_LAF_VERBOSE
   fprintf( stderr, "setProxiesForProtocol (do nothing) ...\n" );
 #endif
-  return true;
+  return 0;
 }
 #endif
 
@@ -283,18 +283,20 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
     char *tmp=zStrdup(passThrough->value);
     char *token, *saveptr;
     token = strtok_r (tmp, ",", &saveptr);
-    for(int i=0;i<handle->nb;i++){
+    int i;
+    for(i=0;i<handle->nb;i++){
       if(targetHosts->value[0]=='*' || isProtectedHost(targetHosts->value,handle->ihandle[i].url)==1){
 	while (token != NULL){
 	  int length=strlen(token)+6;
 	  char* tmp1=(char*)malloc(length*sizeof(char));
 	  snprintf(tmp1,6,"HTTP_");
-	  for(int i=0;token[i]!='\0';i++){
-	    if(token[i]!='-')
-	      tmp1[5+i]=toupper(token[i]);
+	  int j;
+	  for(j=0;token[j]!='\0';j++){
+	    if(token[j]!='-')
+	      tmp1[5+j]=toupper(token[i]);
 	    else
-	      tmp1[5+i]='_';
-	    tmp1[5+i+1]='\0';
+	      tmp1[5+j]='_';
+	    tmp1[5+j+1]='\0';
 	  }
 	  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmp1);
 	  map* tmpMap = getMapFromMaps(conf,"renv",tmp1);
