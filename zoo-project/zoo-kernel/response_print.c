@@ -1981,12 +1981,14 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     maps* curs=m->child;
     elements* ecurs=getElements(e,(e!=NULL?e->name:m->name));
     ecurs=ecurs->child;
-    while(curs!=NULL && ecurs!=NULL){
+    while(curs!=NULL){
+      ecurs=getElements(ecurs,(curs->name));
       map* inRequest=getMap(curs->content,"inRequest");
       if(inRequest!=NULL && strncasecmp(inRequest->value,"true",4)==0)
 	printIOType(doc,nc1,ns_wps,ns_ows,ns_xlink,ecurs,curs,type,vid);
       curs=curs->next;
-      ecurs=ecurs->next;
+      ecurs=getElements(e,(e!=NULL?e->name:m->name));
+      ecurs=ecurs->child;
     }
   }
   else{

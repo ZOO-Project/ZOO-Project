@@ -661,17 +661,31 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	  while(tmpm!=NULL){
 	    if(tmpMaps2->content==NULL)
 	      tmpMaps2->content=createMap(tmpm->name,tmpm->value);
-	    else
+	    else{
 	      addToMap(tmpMaps2->content,tmpm->name,tmpm->value);
+	    }
 	    tmpm=tmpm->next;
 	  }
 	}
-	addToMap(tmpMaps2->content,"inRequest","false");
+	if(tmpMaps2->content==NULL){
+	  tmpMaps2->content=createMap("inRequest","false");
+	  dumpMaps(tmpMaps2);
+	}
+	else
+	  addToMap(tmpMaps2->content,"inRequest","false");
 	if(type==0){
 	  map *tmpMap=getMap(tmpMaps2->content,"value");
 	  if(tmpMap==NULL)
 	    addToMap(tmpMaps2->content,"value","NULL");
 	}
+	elements* tmpElements=getElements(in,tmpMaps2->name);
+	if(tmpElements!=NULL && tmpElements->child!=NULL){
+	  char *res=addDefaultValues(&tmpMaps2->child,tmpElements->child,m,type,err);
+	  if(strlen(res)>0){
+	    return res;
+	  }
+	}
+
 	if(out1==NULL){
 	  *out=dupMaps(&tmpMaps2);
 	  out1=*out;
@@ -686,7 +700,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	tmpMaps2=NULL;
       }
     }
-    else{
+    else { 
       iotype* tmpIoType=NULL;
       if(tmpMaps->content!=NULL){
 	tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
@@ -819,23 +833,14 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
       else
 	addToMap(tmpMaps->content,"inRequest","true");
       elements* tmpElements=getElements(in,tmpMaps->name);
-      if(tmpMaps->child!=NULL && tmpElements!=NULL && tmpElements->child!=NULL){
+      if(tmpElements!=NULL && tmpElements->child!=NULL){
 	char *res=addDefaultValues(&tmpMaps->child,tmpElements->child,m,type,err);
 	if(strlen(res)>0){
-	  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 	  return res;
 	}
       }
     }
-    if(tmpInputs->child!=NULL){
-      tmpInputss=tmpInputs->next;
-      tmpInputs=tmpInputs->child;
-      if(tmpMaps!=NULL){
-	out1=tmpMaps->child;
-	out1s=tmpMaps;
-      }
-    }else
-      tmpInputs=tmpInputs->next;
+    tmpInputs=tmpInputs->next;
   }
   if(tmpInputss!=NULL){
     out1=out1s;
