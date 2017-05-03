@@ -177,6 +177,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
     char mname[15];
     char icname[14];
     char xname[16];
+    char bname[8];
+    char hname[11];
     char oname[12];
     if(*index>0)
       sprintf(vname1,"value_%d",*index);
@@ -191,6 +193,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
       sprintf(mname,"mimeType_%d",i);
       sprintf(icname,"isCached_%d",i);
       sprintf(xname,"Reference_%d",i);
+      sprintf(bname,"body_%d",i);
+      sprintf(hname,"headers_%d",i);
       sprintf(oname,"Order_%d",i);
     }else{
       sprintf(cname,"cache_file");
@@ -199,6 +203,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
       sprintf(mname,"mimeType");
       sprintf(icname,"isCached");
       sprintf(xname,"Reference");
+      sprintf(bname,"body");
+      sprintf(hname,"headers",i);
       sprintf(oname,"Order");
     }
     
@@ -254,8 +260,27 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	char ltmp1[256];
 	sprintf(ltmp1,"%d",fsize);
 	map* tmp=getMapFromMaps(*m,"main","cacheDir");
+	char *request=NULL;
 	if(tmp!=NULL){
-	  char* md5str=getMd5(tmp1->value);
+	  map* tmp2;
+	  char* md5str=NULL;
+	  if((tmp2=getMap(content->content,bname))!=NULL){
+	    dumpMap(tmp2);
+	    char *tmpStr=(char*)malloc((strlen(tmp1->value)+strlen(tmp2->value)+1)*sizeof(char));
+	    sprintf(tmpStr,"%s%s",tmp1->value,tmp2->value);
+	    if((tmp2=getMap(content->content,"headers"))!=NULL){
+	      char *tmpStr2=zStrdup(tmpStr);
+	      tmpStr=(char*)malloc((strlen(tmpStr2)+strlen(tmp2->value)+1)*sizeof(char));
+	      sprintf(tmpStr,"%s%s",tmpStr2,tmp2->value);
+	      free(tmpStr2);
+	    }
+	    md5str=getMd5(tmpStr);
+	    request=zStrdup(tmpStr);
+	    free(tmpStr);
+	  }else{
+	    md5str=getMd5(tmp1->value);
+	    request=zStrdup(tmp1->value);
+	  }
 	  char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
 	  sprintf(fname,"%s/%s.zca",tmp->value,md5str);
 	  addToMap((*in)->content,cname,fname);
@@ -263,9 +288,10 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	}
 	addToMap((*in)->content,sname,ltmp1);
 	addToMap((*in)->content,mname,mimeType);
-	addToCache(*m,tmp1->value,fcontent,mimeType,fsize, NULL, 0);
+	addToCache(*m,request,fcontent,mimeType,fsize, NULL, 0);
 	free(fcontent);
 	free(mimeType);
+	free(request);
 	*index++;
 	
       }

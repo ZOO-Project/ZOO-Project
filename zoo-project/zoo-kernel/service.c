@@ -97,8 +97,11 @@ void dumpMaps(maps* m){
     fprintf(stderr,"MAP => [%s] \n",tmp->name);
     fprintf(stderr," * CONTENT [%s] \n",tmp->name);
     dumpMap(tmp->content);
-    fprintf(stderr," * CHILD [%s] \n",tmp->name);
-    dumpMaps(tmp->child);
+    if(tmp->child!=NULL){
+      fprintf(stderr," * CHILD [%s] \n",tmp->name);
+      dumpMaps(tmp->child);
+      fprintf(stderr," * /CHILD [%s] \n",tmp->name);
+    }
     tmp=tmp->next;
   }
 }
@@ -120,9 +123,9 @@ void _dumpMapsToFile(maps* m,FILE* file,int limit){
       dumpMapToFile(tmp->content,file);
     fflush(file);
     tmp=tmp->next;
-    cnt++;
     if(limit>=0 && cnt==limit)
       tmp=NULL;
+    cnt++;
   }
   fflush(file);
 }
@@ -402,16 +405,18 @@ void freeElements(elements** e){
       freeElements(&tmp->child);
       free(tmp->child);
     }
-    freeIOType(&tmp->defaults);
-    if(tmp->defaults!=NULL)
+    if(tmp->defaults!=NULL){
+      freeIOType(&tmp->defaults);
       free(tmp->defaults);
-    freeIOType(&tmp->supported);
+    }
     if(tmp->supported!=NULL){
+      freeIOType(&tmp->supported);
       free(tmp->supported);
     }
-    freeElements(&tmp->next);
-    if(tmp->next!=NULL)
+    if(tmp->next!=NULL){
+      freeElements(&tmp->next);
       free(tmp->next);
+    }
   }
 }
 
@@ -972,7 +977,7 @@ elements* createEmptyElements(){
  * @param name the elements name
  * @return a pointer to the allocated elements
  */
-elements* createElements(char* name){
+elements* createElements(const char* name){
   elements* res=(elements*)malloc(ELEMENTS_SIZE);
   res->name=zStrdup(name);
   res->content=NULL;

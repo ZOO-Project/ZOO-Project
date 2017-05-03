@@ -1,6 +1,6 @@
 /*
- * Author : David Saggiorato
- *          Gérald Fenoy
+ * Authors : David Saggiorato
+ *           Gérald Fenoy
  *  Copyright 2015 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-#ifdef RELY_ON_DB
 #include "ogr_api.h"
 #include "ogrsf_frmts.h"
 #include "ogr_p.h"
@@ -51,26 +50,33 @@ OGRDataSource
 OGRLayer *zoo_ResultSet = NULL;
 
 /**
- * Create a GDAL / OGR string for connecting to the db backend
- * (do not support active_schema)
+ * Create a GDAL / OGR string for connecting to a db backend defined in the
+ * key section.
  * 
  * @param conf the maps containing the setting of the main.cfg file
+ * @param key the name of the section containing the connection setting
+ * @return the OGR connection string
  */
-char* createInitString(maps* conf){
+char* _createInitString(maps* conf,const char* key){
   char* res=NULL;
-  char keywords[5][9]={
+  char keywords[6][14]={
     "dbname",
     "host",
     "port",
     "user",
-    "password"
+    "password",
+    "active_schema"    
   };
   int i=0;
-  maps* cconf=getMaps(conf,"database");
+  maps* cconf=getMaps(conf,key);
   int len=0;
-  for(i=0;i<5;i++){
+  for(i=0;i<6;i++){
     map* tmp=getMap(cconf->content,keywords[i]);
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
     if(tmp!=NULL){
+      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+      fflush(stderr);
       if(res==NULL){
 	res=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+4)*sizeof(char));
 	sprintf(res,"%s='%s'",keywords[i],tmp->value);
@@ -82,10 +88,16 @@ char* createInitString(maps* conf){
 	memcpy(res+len,res1,(strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
 	len+=strlen(res1);
 	res[len]=0;
+	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+	fflush(stderr);
 	free(res1);
       }
     }
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
   }
+  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+  fflush(stderr);
   map* tmp=getMap(cconf->content,"type");
   if(tmp!=NULL){
     char* fres=(char*)malloc((strlen(res)+strlen(tmp->value)+2)*sizeof(char));
@@ -97,13 +109,23 @@ char* createInitString(maps* conf){
 }
 
 /**
- * Connect to the db backend.
+ * Create a GDAL / OGR string for connecting to the db backend
+ * 
+ * @param conf the maps containing the setting of the main.cfg file
+ * @return the OGR connection string
+ */
+char* createInitString(maps* conf){
+  return _createInitString(conf,"database");
+}
+
+/**
+ * Connect to a db backend.
  * 
  * @param conf the maps containing the setting of the main.cfg file
  * @see createInitString
  */
-void init_sql(maps* conf){
-  char* sqlInitString=createInitString(conf);
+void _init_sql(maps* conf,const char* key){
+  char* sqlInitString=_createInitString(conf,key);
   OGRSFDriver *poDriver = NULL;
   OGRRegisterAll();
 
@@ -128,6 +150,16 @@ void init_sql(maps* conf){
   fflush(stderr);
 #endif
   free(sqlInitString);
+}
+
+/**
+ * Connect to the db backend.
+ * 
+ * @param conf the maps containing the setting of the main.cfg file
+ * @see createInitString
+ */
+void init_sql(maps* conf){
+  return _init_sql(conf,"database");
 }
 
 /**
@@ -157,6 +189,26 @@ void end_sql(){
 }
 
 /**
+ * Fetch a tuple set by executing a SQL query to the Database Backend.
+ * 
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param sqlQuery the SQL query to run
+ * @return NULL in case of failure or an OGRLayer pointer if the query succeed.
+ */
+OGRLayer *fetchSql(maps* conf,const char* sqlQuery){
+  OGRLayer *res=NULL;
+  res = zoo_DS->ExecuteSQL( sqlQuery, NULL, NULL);
+  return res;
+}
+
+void cleanFetchSql(maps* conf,OGRLayer *objects){
+  if( objects != NULL ){
+    zoo_DS->ReleaseResultSet( objects );
+    objects=NULL;
+  }
+}
+
+/**
  * Execute a SQL query to the SQL Database Backend.
  * 
  * @param conf the maps containing the setting of the main.cfg file
@@ -164,11 +216,13 @@ void end_sql(){
  * @return -1 in case of failure and 1 if the query succeed.
  */
 int execSql(maps* conf,const char* sqlQuery){
+  int res=-1;
   zoo_ResultSet = zoo_DS->ExecuteSQL( sqlQuery, NULL, NULL);
   if( zoo_ResultSet != NULL ){
-    return 1;
+    res=1;
   }
-  return -1;
+  zoo_DS->ReleaseResultSet( zoo_ResultSet );
+  return res;
 }
 
 /**
@@ -259,6 +313,7 @@ void recordResponse(maps* conf,char* filename){
   cleanUpResultSet(conf);
 }
 
+#ifdef RELY_ON_DB
 /**
  * Update the current status of the running service.
  *
