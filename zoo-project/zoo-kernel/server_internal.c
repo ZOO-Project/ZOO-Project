@@ -367,7 +367,6 @@ char* getVersion(maps* m){
 void readGeneratedFile(maps* m,map* content,char* filename){
   FILE * file=fopen(filename,"rb");
   if(file==NULL){
-    fprintf(stderr,"Failed to open file %s for reading purpose.\n",filename);
     setMapInMaps(m,"lenv","message","Unable to read produced file. Please try again later");
     return ;
   }
@@ -597,6 +596,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	}else{
 	  setMapArray(res,"value",nb,out1->name);
 	}
+
 	nb++;
 	result=out1->name;
       }
@@ -700,7 +700,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	tmpMaps2=NULL;
       }
     }
-    else { 
+    else /*toto*/{ 
       iotype* tmpIoType=NULL;
       if(tmpMaps->content!=NULL){
 	tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
@@ -833,14 +833,22 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
       else
 	addToMap(tmpMaps->content,"inRequest","true");
       elements* tmpElements=getElements(in,tmpMaps->name);
-      if(tmpElements!=NULL && tmpElements->child!=NULL){
+      if(/*tmpMaps->child!=NULL && */tmpElements!=NULL && tmpElements->child!=NULL){
 	char *res=addDefaultValues(&tmpMaps->child,tmpElements->child,m,type,err);
 	if(strlen(res)>0){
 	  return res;
 	}
       }
     }
-    tmpInputs=tmpInputs->next;
+    /*if(tmpInputs->child!=NULL){
+      tmpInputss=tmpInputs->next;
+      tmpInputs=tmpInputs->child;
+      if(tmpMaps!=NULL){
+	out1=tmpMaps->child;
+	out1s=tmpMaps;
+      }
+      }else*/
+      tmpInputs=tmpInputs->next;
   }
   if(tmpInputss!=NULL){
     out1=out1s;

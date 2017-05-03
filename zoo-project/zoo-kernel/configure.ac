@@ -1,5 +1,7 @@
 AC_INIT([ZOO Kernel], [1.7.0], [bugs@zoo-project.org])
 
+AC_CONFIG_MACRO_DIR([macros])
+
 # Checks for programs.
 AC_PROG_YACC
 AC_PROG_CC
@@ -11,7 +13,6 @@ AC_PROG_SED
 AC_CHECK_LIB([curl], [curl_easy_init,curl_easy_setopt,curl_easy_cleanup,curl_easy_perform])
 AC_CHECK_LIB([dl], [dlopen,dlsym,dlerror,dlclose])
 AC_CHECK_LIB([crypto], [EVP_DigestInit,EVP_md5,EVP_DigestUpdate,BIO_f_base64,BIO_new])
-AC_CHECK_LIB([uuid], [uuid_generate_time])
 
 DEFAULT_LIBS="$LIBS"
 AC_SUBST([DEFAULT_LIBS])
@@ -19,7 +20,7 @@ AC_SUBST([DEFAULT_LIBS])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h inttypes.h malloc.h stddef.h stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -39,6 +40,27 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([dup2 getcwd memset setenv strdup strstr])
 
 #============================================================================
+# Detect if uuid is available
+#============================================================================
+
+AC_ARG_WITH([uuid],
+    [AS_HELP_STRING([--with-uuid=PATH], [Specifies an alternative location for the ossp-uuid library])],
+    [UUID_DIR="$withval"], [UUID_DIR="/usr/"])
+UUID_CFLAGS="-I$UUID_DIR/include"
+UUID_LDFLAGS="-L$UUID_DIR/lib -luuid"
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$UUID_CFLAGS"
+LIBS_SAVE="$LIBS"
+LIBS="$UUID_LDFLAGS"
+AC_CHECK_HEADERS([uuid/uuid.h],
+			[], [AC_MSG_ERROR([could not find header file uuid.h])])
+AC_CHECK_LIB([uuid], [uuid_generate_time],
+			[], [AC_MSG_ERROR([could not find function in uuid library])])
+CPPFLAGS="$CPPFLAGS_SAVE"
+AC_SUBST([UUID_CFLAGS])
+AC_SUBST([UUID_LDFLAGS])
+
+#============================================================================
 # Detect if openssl is available
 #============================================================================
 
@@ -55,8 +77,28 @@ AC_CHECK_HEADERS([openssl/md5.h openssl/hmac.h openssl/evp.h openssl/bio.h opens
 			[], [AC_MSG_ERROR([could not find header file $i related to openssl])])
 AC_CHECK_LIB(crypto, BIO_f_base64,
 			[], [AC_MSG_ERROR([could not find $i function in openssl library])])
+CPPFLAGS="$CPPFLAGS_SAVE"
 AC_SUBST([OPENSSL_CFLAGS])
 AC_SUBST([OPENSSL_LDFLAGS])
+
+#============================================================================
+# Detect if gettext is available
+#============================================================================
+
+AC_ARG_WITH([gettext],
+    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
+    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
+GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
+GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
+CFLAGS_SAVE="$CFLAGS"
+CFLAGS="$GETTEXT_CFLAGS"
+LIBS_SAVE="$LIBS"
+LIBS="$GETTEXT_LDFLAGS"
+AM_GNU_GETTEXT([external], [], [])
+AC_CHECK_LIB(intl,
+			[dgettext], [] , [AC_MSG_ERROR([could not find $i function in gettext library])])
+AC_SUBST([GETTEXT_CFLAGS])
+AC_SUBST([GETTEXT_LDFLAGS])
 
 #============================================================================
 # Detect if run on debian / ubuntu
@@ -143,6 +185,60 @@ AC_CHECK_HEADERS([fcgi_stdio.h],
 LIBS="$LIBS_SAVE"
 AC_SUBST([FCGI_CPPFLAGS])
 AC_SUBST([FCGI_LDFLAGS])
+
+AC_ARG_WITH([metadb],
+        [AS_HELP_STRING([--with-metadb=yes], [Activates the metadata database support])],
+        [WITHMETADB="$withval"], [WITHMETADB=""])
+
+if test "x$WITHMETADB" = "xyes"; then
+   	METADB="-DMETA_DB"
+	METADB_FILE="meta_sql.o sqlapi.o"
+else
+	METADB=""
+	METADB_FILE=""
+fi
+
+AC_SUBST([METADB])
+AC_SUBST([METADB_FILE])
+
+AC_ARG_WITH([hpc],
+        [AS_HELP_STRING([--with-hpc=yes], [Specifies if you need to activate HPC support])],
+        [HPCWITH="$withval"], [HPCWITH="no"])
+
+if test "x$HPCWITH" = "xyes"; then
+   	HPC_FILES="service_internal_hpc.o sshapi.o"
+	HPC_ENABLED="-DUSE_HPC"
+	HPC_CPPFLAGS=""
+	HPC_LDFLAGS=""
+fi
+
+AC_SUBST([HPC_CPPFLAGS])
+AC_SUBST([HPC_LDFLAGS])
+AC_SUBST([HPC_ENABLED])
+AC_SUBST([HPC_FILES])
+
+AC_ARG_WITH([ssh2],
+        [AS_HELP_STRING([--with-ssh2=PATH], [Specifies an alternative location for the ssh2 library])],
+        [SSH2PATH="$withval"], [SSH2PATH="/usr"])
+
+# Extract the linker and include flags
+SSH2_LDFLAGS="-L$SSH2PATH/lib -lssh2"
+SSH2_CPPFLAGS="-I$SSH2PATH/include"
+# Check headers file
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$SSH2_CPPFLAGS"
+LIBS_SAVE="$LIBS"
+LIBS="$SSH2_LDFLAGS"
+echo $CPPFLAGS
+echo $LIBS
+
+AC_CHECK_HEADERS([libssh2.h],
+                 [], [AC_MSG_ERROR([could not find headers related to libssh2])])
+AC_CHECK_LIB([ssh2], [libssh2_session_init])
+
+LIBS="$LIBS_SAVE"
+AC_SUBST([SSH2_CPPFLAGS])
+AC_SUBST([SSH2_LDFLAGS])
 
 # ===========================================================================
 # Detect if libxml2 is installed
@@ -399,6 +495,7 @@ MS_LIBS="$MS_LDFLAGS"
 AC_SUBST([MS_CFLAGS])
 AC_SUBST([MS_LIBS])
 AC_SUBST([MS_FILE])
+AC_SUBST([MS_VERSION])
 
 # ===========================================================================
 # Detect if python is installed

@@ -25,8 +25,19 @@
 extern "C" int yylex ();
 extern "C" int crlex ();
 
+#ifdef META_DB
+#include "ogrsf_frmts.h"
+#if GDAL_VERSION_MAJOR >= 2
+#include <gdal_priv.h>
+#endif
+#endif
+
 #ifdef USE_OTB
 #include "service_internal_otb.h"
+#endif
+
+#ifdef USE_HPC
+#include "service_internal_hpc.h"
 #endif
 
 #include "cgic.h"
@@ -52,6 +63,10 @@ extern "C" int crlex ();
 #include "sqlapi.h"
 #ifdef WIN32
 #include "caching.h"
+#endif
+
+#ifdef META_DB
+#include "meta_sql.h"
 #endif
 
 #ifdef USE_PYTHON
@@ -304,7 +319,7 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
                                   "InternalError", NULL);
                   return -1;
                 }
-  #ifdef DEBUG
+  #ifndef DEBUG
               fprintf (stderr, "#################\n%s\n#################\n",
                        tmps1);
   #endif
@@ -329,7 +344,7 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
               fflush (stdout);
               fflush (stderr);
   #endif
-        inheritance(r,&s1);
+	      inheritance(r,&s1);
               func (r, m, n, s1);
               freeService (&s1);
               free (s1);
@@ -630,8 +645,19 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     }
   else
 
+#ifdef USE_HPC
+  if (strncasecmp (r_inputs->value, "HPC", 3) == 0)
+    {
+      *eres =
+        zoo_hpc_support (&m, request_inputs, s1,
+                            &request_input_real_format,
+                            &request_output_real_format);
+    }
+  else
+#endif
+
 #ifdef USE_SAGA
-  if (strncasecmp (r_inputs->value, "SAGA", 6) == 0)
+  if (strncasecmp (r_inputs->value, "SAGA", 4) == 0)
     {
       *eres =
         zoo_saga_support (&m, request_inputs, s1,
@@ -642,7 +668,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 
 #ifdef USE_OTB
-  if (strncasecmp (r_inputs->value, "OTB", 6) == 0)
+  if (strncasecmp (r_inputs->value, "OTB", 3) == 0)
     {
       *eres =
         zoo_otb_support (&m, request_inputs, s1,
@@ -1303,6 +1329,9 @@ runRequest (map ** inputs)
         }
       fflush (stdout);
       dup2 (saved_stdout, fileno (stdout));
+#ifdef META_DB
+      fetchServicesFromDb(zooRegistry,m,n,printGetCapabilitiesForProcess);
+#endif      
       printDocument (m, doc, getpid ());
       freeMaps (&m);
       free (m);
@@ -1411,6 +1440,10 @@ runRequest (map ** inputs)
 		    recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
 				    printDescribeProcessForProcess) < 0)
 		  return res;
+#ifdef META_DB
+		fetchServicesFromDb(zooRegistry,m,n,printDescribeProcessForProcess);
+#endif      
+
 	      }
 	    else
 	      {
@@ -1426,49 +1459,58 @@ runRequest (map ** inputs)
 		    map* import = getMapFromMaps (m, IMPORTSERVICE, corig);   
 		    if (import != NULL && import->value != NULL) 
 		      {
-			s1 = (service *) malloc (SERVICE_SIZE);
-			t = readServiceFile (m, import->value, &s1, import->name);
+#ifdef META_DB			
+			service* s2=extractServiceFromDb(m,import->name);
+			fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+			fflush(stderr);
+			if(s2==NULL){
+#endif
+			  s1 = (service *) malloc (SERVICE_SIZE);
+			  t = readServiceFile (m, import->value, &s1, import->name);
                 
-			if (t < 0) // failure reading zcfg
-			  {
-			    map *tmp00 = getMapFromMaps (m, "lenv", "message");
-			    char tmp01[1024];
-			    if (tmp00 != NULL)
-			      sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"), import->value, tmp00->value);
-			    else
-			      sprintf (tmp01, _("Unable to parse the ZCFG file: %s."), import->value);
+			  if (t < 0) // failure reading zcfg
+			    {
+			      map *tmp00 = getMapFromMaps (m, "lenv", "message");
+			      char tmp01[1024];
+			      if (tmp00 != NULL)
+				sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"), import->value, tmp00->value);
+			      else
+				sprintf (tmp01, _("Unable to parse the ZCFG file: %s."), import->value);
+			      
+			      dup2 (saved_stdout, fileno (stdout));
+			      errorException (m, tmp01, "InternalError", NULL);
+			      
+			      freeMaps (&m);
+			      free (m);
 
-			    dup2 (saved_stdout, fileno (stdout));
-			    errorException (m, tmp01, "InternalError", NULL);
-            
-			    freeMaps (&m);
-			    free (m);
-
-			    if(zooRegistry!=NULL){
-			      freeRegistry(&zooRegistry);
-			      free(zooRegistry);
-			    }
-			    free (orig);
-			    free (REQUEST);
-			    closedir (dirp);
-			    xmlFreeDoc (doc);
-			    xmlCleanupParser ();
-			    zooXmlCleanupNs ();
+			      if(zooRegistry!=NULL){
+				freeRegistry(&zooRegistry);
+				free(zooRegistry);
+			      }
+			      free (orig);
+			      free (REQUEST);
+			      closedir (dirp);
+			      xmlFreeDoc (doc);
+			      xmlCleanupParser ();
+			      zooXmlCleanupNs ();
                     
-			    return 1;
-			  }
+			      return 1;
+			    }
 #ifdef DEBUG
-			dumpService (s1);
+			  dumpService (s1);
 #endif
 
-			inheritance(zooRegistry,&s1);
-			printDescribeProcessForProcess (zooRegistry,m, n, s1);
-			freeService (&s1);
-			free (s1);
-			s1 = NULL;
-			scount++;
-			hasVal = 1;                
-		    }
+			  inheritance(zooRegistry,&s1);
+			  printDescribeProcessForProcess (zooRegistry,m, n, s1);
+			  freeService (&s1);
+			  free (s1);
+			  s1 = NULL;
+			  scount++;
+			  hasVal = 1;                
+#ifdef META_DB
+			}
+#endif
+		      }
 		    else if (strstr (corig, ".") != NULL)
 		      {
 
@@ -1478,133 +1520,161 @@ runRequest (map ** inputs)
 			  addToMap (request_inputs, "metapath", tmpMap->value);
 			map *tmpMapI = getMapFromMaps (m, "lenv", "Identifier");
 
-			s1 = (service *) malloc (SERVICE_SIZE);
-			t = readServiceFile (m, buff1, &s1, tmpMapI->value);
-			if (t < 0)
-			  {
-			    map *tmp00 = getMapFromMaps (m, "lenv", "message");
-			    char tmp01[1024];
-			    if (tmp00 != NULL)
-			      sprintf (tmp01,
-				       _
-				       ("Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"),
-				       tmps, tmp00->value);
-			    else
-			      sprintf (tmp01,
-				       _
-				       ("Unable to parse the ZCFG file for the following ZOO-Service: %s."),
-				       tmps);
-			    dup2 (saved_stdout, fileno (stdout));
-			    errorException (m, tmp01, "InvalidParameterValue",
-					    "identifier");
-			    freeMaps (&m);
-			    free (m);
-			    if(zooRegistry!=NULL){
-			      freeRegistry(&zooRegistry);
-			      free(zooRegistry);
-			    }
-			    free (REQUEST);
-			    free (corig);
-			    free (orig);
-			    free (SERVICE_URL);
-			    free (s1);
-			    closedir (dirp);
-			    xmlFreeDoc (doc);
-			    xmlCleanupParser ();
-			    zooXmlCleanupNs ();
-			    return 1;
-			  }
-#ifdef DEBUG
-			dumpService (s1);
+#ifdef META_DB
+			service* s2=extractServiceFromDb(m,tmpMapI->name);
+			fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+			fflush(stderr);
+			if(s2==NULL){
 #endif
-			inheritance(zooRegistry,&s1);
-			printDescribeProcessForProcess (zooRegistry,m, n, s1);
-			freeService (&s1);
-			free (s1);
-			s1 = NULL;
-			scount++;
-			hasVal = 1;
-			setMapInMaps (m, "lenv", "level", "0");
+			  s1 = (service *) malloc (SERVICE_SIZE);
+			  t = readServiceFile (m, buff1, &s1, tmpMapI->value);
+			  if (t < 0)
+			    {
+			      map *tmp00 = getMapFromMaps (m, "lenv", "message");
+			      char tmp01[1024];
+			      if (tmp00 != NULL)
+				sprintf (tmp01,
+					 _
+					 ("Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"),
+					 tmps, tmp00->value);
+			      else
+				sprintf (tmp01,
+					 _
+					 ("Unable to parse the ZCFG file for the following ZOO-Service: %s."),
+					 tmps);
+			      dup2 (saved_stdout, fileno (stdout));
+			      errorException (m, tmp01, "InvalidParameterValue",
+					      "identifier");
+			      freeMaps (&m);
+			      free (m);
+			      if(zooRegistry!=NULL){
+				freeRegistry(&zooRegistry);
+				free(zooRegistry);
+			      }
+			      free (REQUEST);
+			      free (corig);
+			      free (orig);
+			      free (SERVICE_URL);
+			      free (s1);
+			      closedir (dirp);
+			      xmlFreeDoc (doc);
+			      xmlCleanupParser ();
+			      zooXmlCleanupNs ();
+			      return 1;
+			    }
+#ifdef DEBUG
+			  dumpService (s1);
+#endif
+			  inheritance(zooRegistry,&s1);
+			  printDescribeProcessForProcess (zooRegistry,m, n, s1);
+			  freeService (&s1);
+			  free (s1);
+			  s1 = NULL;
+			  scount++;
+			  hasVal = 1;
+			  setMapInMaps (m, "lenv", "level", "0");
+#ifdef META_DB
+			}
+#endif
 		      }
 		    else
 		      {
+			fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+			fflush(stderr);
+#ifdef META_DB
+			_init_sql(m,"metadb");
+			service* s2=extractServiceFromDb(m,corig);
+			if(s2!=NULL){
+			  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+			  fflush(stderr);
+			  inheritance(zooRegistry,&s2);
+			  printDescribeProcessForProcess (zooRegistry,m, n, s2);
+			  freeService (&s2);
+			  free (s2);
+			  s2 = NULL;
+			  hasVal = 1;
+			}else /*TOTO*/{
+#endif
 			memset (buff, 0, 256);
 			snprintf (buff, 256, "%s.zcfg", corig);
 			memset (buff1, 0, 1024);
 #ifdef DEBUG
-			printf ("\n#######%s\n########\n", buff);
+			  printf ("\n#######%s\n########\n", buff);
 #endif
-			while ((dp = readdir (dirp)) != NULL)
-			  {
-			    if (strcasecmp (dp->d_name, buff) == 0)
-			      {
-				memset (buff1, 0, 1024);
-				snprintf (buff1, 1024, "%s/%s", conf_dir,
-					  dp->d_name);
-				s1 = (service *) malloc (SERVICE_SIZE);
-				if (s1 == NULL)
-				  {
-				    dup2 (saved_stdout, fileno (stdout));
-				    return errorException (m,
-							   _
-							   ("Unable to allocate memory"),
-							   "InternalError",
-							   NULL);
-				  }
-#ifdef DEBUG_SERVICE_CONF
-				fprintf
-				  (stderr,"#################\n(%s) %s\n#################\n",
-				   r_inputs->value, buff1);
-#endif
-				char *tmp0 = zStrdup (dp->d_name);
-				tmp0[strlen (tmp0) - 5] = 0;
-				t = readServiceFile (m, buff1, &s1, tmp0);
-				free (tmp0);
-				if (t < 0)
-				  {
-				    map *tmp00 =
-				      getMapFromMaps (m, "lenv", "message");
-				    char tmp01[1024];
-				    if (tmp00 != NULL)
-				      sprintf (tmp01,
-					       _
-					       ("Unable to parse the ZCFG file: %s (%s)"),
-					       dp->d_name, tmp00->value);
-				    else
-				      sprintf (tmp01,
-					       _
-					       ("Unable to parse the ZCFG file: %s."),
-					       dp->d_name);
-				    dup2 (saved_stdout, fileno (stdout));
-				    errorException (m, tmp01, "InternalError",
-						    NULL);
-				    freeMaps (&m);
-				    free (m);
-				    if(zooRegistry!=NULL){
-				      freeRegistry(&zooRegistry);
-				      free(zooRegistry);
+			  while ((dp = readdir (dirp)) != NULL)
+			    {
+			      if (strcasecmp (dp->d_name, buff) == 0)
+				{
+				  memset (buff1, 0, 1024);
+				  snprintf (buff1, 1024, "%s/%s", conf_dir,
+					    dp->d_name);
+				  s1 = (service *) malloc (SERVICE_SIZE);
+				  if (s1 == NULL)
+				    {
+				      dup2 (saved_stdout, fileno (stdout));
+				      return errorException (m,
+							     _
+							     ("Unable to allocate memory"),
+							     "InternalError",
+							     NULL);
 				    }
-				    free (orig);
-				    free (REQUEST);
-				    closedir (dirp);
-				    xmlFreeDoc (doc);
-				    xmlCleanupParser ();
-				    zooXmlCleanupNs ();
-				    return 1;
-				  }
-#ifdef DEBUG
-				dumpService (s1);
+#ifdef DEBUG_SERVICE_CONF
+				  fprintf
+				    (stderr,"#################\n(%s) %s\n#################\n",
+				     r_inputs->value, buff1);
 #endif
-				inheritance(zooRegistry,&s1);
-				printDescribeProcessForProcess (zooRegistry,m, n, s1);
-				freeService (&s1);
-				free (s1);
-				s1 = NULL;
-				scount++;
-				hasVal = 1;
-			      }
-			  }
-		      }
+				  char *tmp0 = zStrdup (dp->d_name);
+				  tmp0[strlen (tmp0) - 5] = 0;
+				  t = readServiceFile (m, buff1, &s1, tmp0);
+				  free (tmp0);
+				  if (t < 0)
+				    {
+				      map *tmp00 =
+					getMapFromMaps (m, "lenv", "message");
+				      char tmp01[1024];
+				      if (tmp00 != NULL)
+					sprintf (tmp01,
+						 _
+						 ("Unable to parse the ZCFG file: %s (%s)"),
+						 dp->d_name, tmp00->value);
+				      else
+					sprintf (tmp01,
+						 _
+						 ("Unable to parse the ZCFG file: %s."),
+						 dp->d_name);
+				      dup2 (saved_stdout, fileno (stdout));
+				      errorException (m, tmp01, "InternalError",
+						      NULL);
+				      freeMaps (&m);
+				      free (m);
+				      if(zooRegistry!=NULL){
+					freeRegistry(&zooRegistry);
+					free(zooRegistry);
+				      }
+				      free (orig);
+				      free (REQUEST);
+				      closedir (dirp);
+				      xmlFreeDoc (doc);
+				      xmlCleanupParser ();
+				      zooXmlCleanupNs ();
+				      return 1;
+				    }
+#ifdef DEBUG
+				  dumpService (s1);
+#endif
+				  inheritance(zooRegistry,&s1);
+				  printDescribeProcessForProcess (zooRegistry,m, n, s1);
+				  freeService (&s1);
+				  free (s1);
+				  s1 = NULL;
+				  scount++;
+				  hasVal = 1;
+				}
+			    }
+#ifdef META_DB
+			}
+#endif
+		      }		      
 		    if (hasVal < 0)
 		      {
 			map *tmp00 = getMapFromMaps (m, "lenv", "message");
@@ -2364,10 +2434,10 @@ runRequest (map ** inputs)
         }
     }
 
-#ifdef DEBUG
+  //#ifdef DEBUG
   dumpMaps (request_output_real_format);
-#endif
-
+  //#endif
+  //sleep(120);
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,

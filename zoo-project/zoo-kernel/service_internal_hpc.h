@@ -1,7 +1,7 @@
 /*
- * Author : David Saggiorato
+ * Author : Gérald FENOY
  *
- *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ * Copyright (c) 2015 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,43 +22,20 @@
  * THE SOFTWARE.
  */
 
-#ifndef ZOO_SQLAPI_H
-#define ZOO_SQLAPI_H 1
+#ifndef ZOO_SERVICE_INTERNAL_HPC_H
+#define ZOO_SERVICE_INTERNAL_HPC_H 1
 
-#ifdef META_DB
-#include "ogrsf_frmts.h"
-#if GDAL_VERSION_MAJOR >= 2
-#include <gdal_priv.h>
-#endif
-#endif
+#pragma once 
 
-#include "service.h"
 #include "service_internal.h"
+#include "service.h"
+#include "cgic.h"
+#ifdef WIN32
+#include <windows.h>
+#include <direct.h>
+#endif
+#include "sshapi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
-#ifdef META_DB
-  ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
-  ZOO_DLL_EXPORT void _init_sql(maps*,const char*);
-  ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,const char*);
-#endif
-#ifdef RELY_ON_DB
-  ZOO_DLL_EXPORT void init_sql(maps*);
-  ZOO_DLL_EXPORT void close_sql(maps*);
-  ZOO_DLL_EXPORT int execSql(maps*,const char*);
-  ZOO_DLL_EXPORT void recordStoredFile(maps*,const char*,const char*,const char*);
-  ZOO_DLL_EXPORT void recordServiceStatus(maps*);
-  ZOO_DLL_EXPORT void recordResponse(maps*,char*);
-  ZOO_DLL_EXPORT void readFinalRes(maps*,char*,map*);
-  ZOO_DLL_EXPORT int isRunning(maps*,char*);
-  ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
-  ZOO_DLL_EXPORT void removeService(maps*,char*);
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+int zoo_hpc_support(maps**,map*,service*,maps**,maps**);
 
 #endif

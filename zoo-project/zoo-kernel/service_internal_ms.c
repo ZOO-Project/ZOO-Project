@@ -130,7 +130,17 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
  * @param tmpI the specific output maps to add the Reference key
  */
 void setReferenceUrl(maps* m,maps* tmpI){
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMaps(tmpI);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   outputMapfile(m,tmpI);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMaps(tmpI);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   if(msUrl==NULL){
     errorException (m, _("Unable to find any mapserverAddress defined in the main.cfg file"),
@@ -149,7 +159,8 @@ void setReferenceUrl(maps* m,maps* tmpI){
   char options[3][5][25]={
     {"WMS","1.3.0","GetMap","layers=%s","wms_extent"},
     {"WFS","1.1.0","GetFeature","typename=%s","wcs_extent"},
-    {"WCS","1.1.0","GetCoverage","coverage=%s","wcs_extent"}
+    //{"WCS","1.1.0","GetCoverage","coverage=%s","wcs_extent"}
+    {"WCS","2.0.0","GetCoverage","coverageid=%s","wcs_extent"}
   };
   int proto=0;
   if(rformat==NULL){
@@ -987,7 +998,11 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
  * @param outputs a specific output maps
  */
 void outputMapfile(maps* conf,maps* outputs){
-
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMaps(outputs);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   /**
    * First store the value on disk
    */
@@ -997,6 +1012,8 @@ void outputMapfile(maps* conf,maps* outputs){
     if(strncasecmp(mime->value,"application/json",16)==0)
       ext="json";
 
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   map* tmpMap=getMapFromMaps(conf,"main","dataPath");
   map* sidMap=getMapFromMaps(conf,"lenv","usid");
   char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
@@ -1008,24 +1025,40 @@ void outputMapfile(maps* conf,maps* outputs){
   }
   map* sizeMap=getMap(outputs->content,"size");
   map* vData=getMap(outputs->content,"value");
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   if(sizeMap!=NULL){
     zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char));
   }
   else{
     zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char));
   }
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   close(f);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   addToMap(outputs->content,"storage",pszDataSource);
   free(pszDataSource);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
   /*
    * Create an empty map, set name, default size and extent
    */
   mapObj *myMap=msNewMapObj();
   free(myMap->name);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   myMap->name=zStrdup("ZOO-Project_WXS_Server");
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   msMapSetSize(myMap,2048,2048);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   msMapSetExtent(myMap,-1,-1,1,1);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   
   /*
    * Set imagepath and imageurl using tmpPath and tmpUrl from main.cfg
@@ -1034,6 +1067,8 @@ void outputMapfile(maps* conf,maps* outputs){
   myMap->web.imagepath=zStrdup(tmp1->value);
   tmp1=getMapFromMaps(conf,"main","tmpUrl");
   myMap->web.imageurl=zStrdup(tmp1->value);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
   
   /*
    * Define supported output formats
@@ -1044,13 +1079,22 @@ void outputMapfile(maps* conf,maps* outputs){
   o1->inmapfile=MS_TRUE;
   msAppendOutputFormat(myMap,msCloneOutputFormat(o1));
   msFreeOutputFormat(o1);
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
 #ifdef USE_KML
   outputFormatObj *o2=msCreateDefaultOutputFormat(NULL,"KML","kml");
-  o2->inmapfile=MS_TRUE;  
-  msAppendOutputFormat(myMap,msCloneOutputFormat(o2));
-  msFreeOutputFormat(o2);
+  if(!o2){
+    perror("Unable to initialize KML driver");
+    fprintf(stderr,"Unable to initialize KML driver !\n");
+  }else{
+    o2->inmapfile=MS_TRUE;  
+    msAppendOutputFormat(myMap,msCloneOutputFormat(o2));
+    msFreeOutputFormat(o2);
+  }
 #endif
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
   outputFormatObj *o3=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","tiff");
   if(!o3)
@@ -1061,6 +1105,8 @@ void outputMapfile(maps* conf,maps* outputs){
     msAppendOutputFormat(myMap,msCloneOutputFormat(o3));
     msFreeOutputFormat(o3);
   }
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
   outputFormatObj *o4=msCreateDefaultOutputFormat(NULL,"GDAL/AAIGRID","grd");
   if(!o4)
@@ -1071,6 +1117,8 @@ void outputMapfile(maps* conf,maps* outputs){
     msAppendOutputFormat(myMap,msCloneOutputFormat(o4));
     msFreeOutputFormat(o4);
   }
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
 #ifdef USE_CAIRO
   outputFormatObj *o5=msCreateDefaultOutputFormat(NULL,"CAIRO/PNG","cairopng");
@@ -1084,12 +1132,16 @@ void outputMapfile(maps* conf,maps* outputs){
     msFreeOutputFormat(o5);
   }
 #endif
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
   /*
    * Set default projection to EPSG:4326
    */
   msLoadProjectionStringEPSG(&myMap->projection,"EPSG:4326");
   myMap->transparent=1;
+  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
+  fflush(stderr);
 
   /**
    * Set metadata extracted from main.cfg file maps

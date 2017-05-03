@@ -280,7 +280,7 @@ extern "C" {
   
 
   ZOO_DLL_EXPORT elements* createEmptyElements();
-  ZOO_DLL_EXPORT elements* createElements(char*);
+  ZOO_DLL_EXPORT elements* createElements(const char*);
   ZOO_DLL_EXPORT void setElementsName(elements**,char*);
   ZOO_DLL_EXPORT bool hasElement(elements*,const char*);
   ZOO_DLL_EXPORT elements* getElements(elements*,char*);
