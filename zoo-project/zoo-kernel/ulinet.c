@@ -81,9 +81,6 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
 size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
   if(strncmp("Set-Cookie: ",(char*)buffer,12)==0){
     int i;
-    char env[256];
-    char path[256];
-    char domain[256];
     char* tmp;
     for(i=0;i<12;i++)
 #ifndef WIN32
@@ -91,14 +88,12 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
 #else
 	;
 #endif
-    sscanf((char*)buffer,"%s; path=%s; domain=%s",env,path,domain);
     _HINTERNET *psInternet=(_HINTERNET *)data;
+    tmp=strtok(buffer,";");
+    if(tmp!=NULL){
+      sprintf(CCookie[psInternet->id],"%s",tmp);
+    }
     tmp=strcat(env,CCookie[psInternet->id][0]);
-#ifdef MSG_LAF_OUT
-    printf("\n**Cookie env : [%s] , path : [%s], domain : [%s]**\n",env,path,domain);
-    printf("buffer : %d (%s) (%s) (%s)\n",(buffer==NULL),buffer,tmp,CCookie);
-#endif
-    strcpy(CCookie[psInternet->id][0],tmp);
   }
   return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
 };
