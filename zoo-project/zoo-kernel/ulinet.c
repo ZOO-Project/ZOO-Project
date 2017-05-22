@@ -93,7 +93,6 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
     if(tmp!=NULL){
       sprintf(CCookie[psInternet->id],"%s",tmp);
     }
-    tmp=strcat(env,CCookie[psInternet->id][0]);
   }
   return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
 };
