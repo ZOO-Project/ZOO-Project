@@ -184,7 +184,7 @@ OSStatus setProxiesForProtcol(CURL* handle,const char *proto){
  * @param handle a CURL handle
  * @param proto the protocol requiring the use of a proxy
  */
-int setProxiesForProtcol(CURL* handle,const char *proto){
+bool setProxiesForProtcol(CURL* handle,const char *proto){
 #ifdef MSG_LAF_VERBOSE
   fprintf( stderr, "setProxiesForProtocol (do nothing) ...\n" );
 #endif
