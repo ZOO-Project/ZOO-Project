@@ -1,4 +1,5 @@
 Version 1.7.0-dev
+  * Support headers for GET requests from the js ZOO-API 
   * Pass all headers listed in the attributes parameter from the
   [security] section to the hosts listed in the hosts parameter of the
   same section (ticket #139)

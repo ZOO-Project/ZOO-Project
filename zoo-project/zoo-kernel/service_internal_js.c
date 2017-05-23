@@ -933,11 +933,21 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     free(body);
   }else{
     if(argc==3){
-      char *body=JSValToChar(cx,&argv[2]);
-      InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],body,strlen(body),
-		      INTERNET_FLAG_NO_CACHE_WRITE,0);
-      processDownloads(&hInternet);
-      free(body);
+      if(strncasecmp(method,"GET",3)==0){
+	header=JSVAL_TO_OBJECT(argv[2]);
+	if(JS_IsArrayObject(cx,header)){
+	  setHeader(&hInternet,cx,header);
+	}
+	InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],NULL,0,
+			INTERNET_FLAG_NO_CACHE_WRITE,0);
+	processDownloads(&hInternet);
+      }else{
+	char *body=JSValToChar(cx,&argv[2]);
+	InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],body,strlen(body),
+			INTERNET_FLAG_NO_CACHE_WRITE,0);
+	processDownloads(&hInternet);
+	free(body);
+      }
     }else{
       InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],NULL,0,
 		      INTERNET_FLAG_NO_CACHE_WRITE,0);

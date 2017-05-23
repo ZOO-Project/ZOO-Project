@@ -435,11 +435,12 @@ ZOO.Request = {
    * Parameters:
    * url - {String} The URL to request.
    * params - {Object} Params to add to the url
+   * headers - {Object/Array}  A key-value object of headers
    * 
    * Returns:
    * {String} Request result.
    */
-  Get: function(url,params) {
+    Get: function(url,params,headers) {
     var paramsArray = [];
     for (var key in params) {
       var value = params[key];
@@ -465,7 +466,14 @@ ZOO.Request = {
       var separator = (url.indexOf('?') > -1) ? '&' : '?';
       url += separator + paramString;
     }
-    return ZOORequest('GET',url);
+    if(!(headers instanceof Array)) {
+	var headersArray = [];
+	for (var name in headers) {
+            headersArray.push(name+': '+headers[name]); 
+	}
+	headers = headersArray;
+    }
+    return ZOORequest('GET',url,headers);
   },
   /**
    * Function: POST
