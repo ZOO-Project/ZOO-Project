@@ -34,6 +34,97 @@
 #include "server_internal.h"
 #include "response_print.h"
 
+static double PRECISION = 0.001;
+static int MAX_NUMBER_STRING_SIZE = 32;
+
+/**
+ * Double to ASCII
+ */
+char * dtoa(char *s, double n) {
+
+  // handle special cases
+  if (isnan(n)) {
+    strcpy(s, "nan");
+  } else if (isinf(n)) {
+    strcpy(s, "inf");
+  } else if (n == 0.0) {
+    strcpy(s, "0");
+  } else {
+    int digit, m, m1;
+    char *c = s;
+    int neg = (n < 0);
+    if (neg)
+      n = -n;
+    // calculate magnitude
+    m = log10(n);
+    int useExp = (m >= 14 || (neg && m >= 9) || m <= -9);
+    if (neg)
+      *(c++) = '-';
+    // set up for scientific notation
+    if (useExp) {
+      if (m < 0)
+        m -= 1.0;
+      n = n / pow(10.0, m);
+      m1 = m;
+      m = 0;
+    }
+    if (m < 1.0) {
+      m = 0;
+    }
+    // convert the number
+    while (n > PRECISION || m >= 0) {
+      double weight = pow(10.0, m);
+      if (weight > 0 && !isinf(weight)) {
+        digit = floor(n / weight);
+        n -= (digit * weight);
+        *(c++) = '0' + digit;
+      }
+      if (m == 0 && n > 0)
+        *(c++) = '.';
+      m--;
+    }
+    if (useExp) {
+      // convert the exponent
+      int i, j;
+      *(c++) = 'e';
+      if (m1 > 0) {
+        *(c++) = '+';
+      } else {
+        *(c++) = '-';
+        m1 = -m1;
+      }
+      m = 0;
+      while (m1 > 0) {
+        *(c++) = '0' + m1 % 10;
+        m1 /= 10;
+        m++;
+      }
+      c -= m;
+      for (i = 0, j = m-1; i<j; i++, j--) {
+        // swap without temporary
+        c[i] ^= c[j];
+        c[j] ^= c[i];
+        c[i] ^= c[j];
+      }
+      c += m;
+    }
+    *(c) = '\0';
+  }
+  return s;
+}
+
+/**
+ * List of allowed raster styles
+ */
+enum MS_RASTER_STYLES{
+  LINEAR_STRETCHING,
+  COLOR_PALETTE
+};
+enum LINEAR_STRETCHING_TYPE{
+  MINMAX,
+  MEANSTD
+};
+
 /**
  * Get a list of configuration keys having a corresponding mandatory ows_*.
  * Map composed by a main.cfg maps name as key and the corresponding 
@@ -726,13 +817,107 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
  * @param m the mapObj
  */
 int tryGdal(maps* conf,maps* output,mapObj* m){
+
+  /*
+   * Detect the raster style
+   */
+
+  /* msRasterResample (NEAREST/AVERAGE/BILINEAR) */
+  const char * msRasterResamplingType               = "msRasterResample";
+  /* msRasterStyle (linearStretching/colorPalette) */
+  const char * msRasterStylePropertyName            = "msRasterStyle";
+  const char * msRasterStyleLinearStretchingPropertyValue       = "linearStretching";
+  const char * msRasterStyleColorPalettePropertyValue           = "colorPalette";
+  /* msRasterStyleOptions (minMax/meanstd) */
+  const char * msRasterStyleOptionsPropertyName     = "msRasterStyleOptions";
+  const char * msRasterStyleLinearStretchingMinMaxPropertyName  = "minMax";
+  const char * msRasterStyleLinearStretchingMeanStdPropertyName = "meanStd";
+
+  // Default raster style
+  int defaultStyleType = LINEAR_STRETCHING;
+  int defaultLinearstretchingType = MEANSTD;
+
+  // Check if there is a defined raster style type
+  int styleType = defaultStyleType;
+  int linearStretchingType = defaultLinearstretchingType;
+  map* msRasterStyle=getMap(output->content, msRasterStylePropertyName);
+  char * msRasterStyleOptionsContent = "";
+  if(msRasterStyle!=NULL)
+    {
+    // Check if there is options attached
+    map* msRasterStyleOptions=getMap(output->content, msRasterStyleOptionsPropertyName);
+    if (msRasterStyleOptions!=NULL)
+      {
+      msRasterStyleOptionsContent = msRasterStyleOptions->value;
+      }
+
+    // Detect the raster style
+#ifdef DEBUGMS
+    fprintf(stderr,"Detect the raster style %s\n", msRasterStyle->value);
+#endif
+    if (strncasecmp(msRasterStyle->value, msRasterStyleLinearStretchingPropertyValue,
+        strlen(msRasterStyleLinearStretchingPropertyValue))==0)
+      {
+#ifdef DEBUGMS
+      fprintf(stderr,"The raster style is linear stretching\n");
+#endif
+      styleType = LINEAR_STRETCHING;
+      if (strlen(msRasterStyleOptionsContent)>0)
+        {
+        if (strncasecmp(msRasterStyleOptionsContent, msRasterStyleLinearStretchingMinMaxPropertyName,
+            strlen(msRasterStyleLinearStretchingMinMaxPropertyName))==0)
+          {
+          linearStretchingType = MINMAX;
+#ifdef DEBUGMS
+          fprintf(stderr,"The raster style linear stretching is minmax\n");
+#endif
+          }
+        else if (strncasecmp(msRasterStyleOptionsContent, msRasterStyleLinearStretchingMeanStdPropertyName,
+            strlen(msRasterStyleLinearStretchingMeanStdPropertyName))==0)
+          {
+          linearStretchingType = MEANSTD;
+#ifdef DEBUGMS
+          fprintf(stderr,"The raster style linear stretching is meanstd\n");
+#endif
+          }
+        else
+          {
+          fprintf(stderr,"Unknown raster style linear stretching method: %s\n", msRasterStyleOptionsContent);
+          }
+        }
+      else
+        {
+        fprintf(stderr,"Using default linear stretching type.");
+        }
+      }
+    else if (strncasecmp(msRasterStyle->value, msRasterStyleColorPalettePropertyValue,
+        strlen(msRasterStyleColorPalettePropertyValue))==0)
+      {
+#ifdef DEBUGMS
+      fprintf(stderr,"The raster style is color palette\n");
+#endif
+      styleType = COLOR_PALETTE;
+      }
+    else
+      {
+      fprintf(stderr,"Unknown raster style: %s. Using default.", msRasterStyle->value);
+      }
+    }
+
+#ifdef DEBUGMS
+  fprintf(stderr,"RasterStyle=%i Options=%s\n",styleType,msRasterStyleOptionsContent);
+#endif
+
+  /*
+   * Get storage
+   */
   map* tmpMap=getMap(output->content,"storage");
   char *pszFilename=tmpMap->value;
   GDALDatasetH hDataset;
   GDALRasterBandH hBand;
   double adfGeoTransform[6];
   int i, iBand;
-  
+
   /**
    * Try to open the DataSource using GDAL
    */
@@ -790,7 +975,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    */
   m->width=GDALGetRasterXSize( hDataset );
   m->height=GDALGetRasterYSize( hDataset );
-  
+
   /**
    * Set projection using Authority Code and Name if available or fallback to 
    * proj4 definition if available or fallback to default EPSG:4326
@@ -807,7 +992,6 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     fprintf(stderr,"NO SRS FOUND ! %s\n",GDALGetProjectionRef( hDataset ));    
   }
 
-
   /**
    * Set extent
    */
@@ -815,16 +999,16 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     if( adfGeoTransform[2] == 0.0 && adfGeoTransform[4] == 0.0 ){
 
       double minX = adfGeoTransform[0]
-	+ adfGeoTransform[2] * GDALGetRasterYSize(hDataset);
+                                    + adfGeoTransform[2] * GDALGetRasterYSize(hDataset);
       double minY = adfGeoTransform[3]
-	+ adfGeoTransform[5] * GDALGetRasterYSize(hDataset);
+                                    + adfGeoTransform[5] * GDALGetRasterYSize(hDataset);
 
       double maxX = adfGeoTransform[0]
-	+ adfGeoTransform[1] * GDALGetRasterXSize(hDataset);
+                                    + adfGeoTransform[1] * GDALGetRasterXSize(hDataset);
       double maxY = adfGeoTransform[3]
-	+ adfGeoTransform[4] * GDALGetRasterXSize(hDataset);
+                                    + adfGeoTransform[4] * GDALGetRasterXSize(hDataset);
 
-       setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
+      setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
 
     }
   }
@@ -856,121 +1040,191 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       sprintf(nameBands,"%s",lBands);
     }else{
       if(iBand<4){
-	char *tmpS=zStrdup(nameBands);
-	nameBands=(char*)realloc(nameBands,(strlen(nameBands)+strlen(lBands)+1)*sizeof(char));
-	sprintf(nameBands,"%s %s",tmpS,lBands);
-	free(tmpS);
+        char *tmpS=zStrdup(nameBands);
+        nameBands=(char*)realloc(nameBands,(strlen(nameBands)+strlen(lBands)+1)*sizeof(char));
+        sprintf(nameBands,"%s %s",tmpS,lBands);
+        free(tmpS);
       }
     }
   }
   msInsertHashTable(&(myLayer->metadata), "ows_bandnames", nameBands);
-  
+
   /**
    * Loops over metadata information to setup specific information
    */
-  for( iBand = 0; iBand < nBandsI; iBand++ ){
-    //int         bGotNodata;//, bSuccess;
-    double      adfCMinMax[2]/*, dfNoData*/;
-    //int         nBlockXSize, nBlockYSize, nMaskFlags;
-    //double      /*dfMean, dfStdDev*/;
+  for( iBand = 0; iBand < nBandsI; iBand++ )
+    {
+
+    // Compute statistics of the current band
     hBand = GDALGetRasterBand( hDataset, iBand+1 );
-
     CPLErrorReset();
-    GDALComputeRasterMinMax( hBand, FALSE, adfCMinMax );
-    char tmpN[21];
-    sprintf(tmpN,"Band%d",iBand+1);
-    if (CPLGetLastErrorType() == CE_None){
-      char tmpMm[100];
-      sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
-      char tmpI[21];
-      sprintf(tmpI,"%s_interval",tmpN);
-      msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
+    double min = 0.0;
+    double max = 0.0;
+    double mean = 0.0;
+    double std = 0.0;
+    GDALComputeRasterStatistics  (hBand, 1, &min, &max, &mean, &std, NULL, NULL);
 
-      map* test=getMap(output->content,"msClassify");
-      if(test!=NULL && strncasecmp(test->value,"true",4)==0){
-	/**
-	 * Classify one band raster pixel value using regular interval
-	 */
-	int _tmpColors[10][3]={
-	  {102,153,204},
-	  {51,102,153},
-	  {102,102,204},
-	  {51,204,0},
-	  {153,255,102},
-	  {204,255,102},
-	  {102,204,153},
-	  {255,69,64},
-	  {255,192,115},
-	  {255,201,115}
-	};
-	  
-	if(nBandsI==1){
-	  double delta=adfCMinMax[1]-adfCMinMax[0];
-	  double interval=delta/10;
-	  double cstep=adfCMinMax[0];
-	  for(i=0;i<10;i++){
-	    /**
-	     * Create a new class
-	     */
-	    if(msGrowLayerClasses(myLayer) == NULL)
-	      return -1;
-	    if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
-	      return -1;
-	    if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
-	      return -1;
-	    if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
-	      return -1;
-	    
-	    /**
-	     * Set class name
-	     */
-	    char className[7];
-	    sprintf(className,"class%d",i);
-	    myLayer->CLASS[myLayer->numclasses]->name=zStrdup(className);
-	    
-	    /**
-	     * Set expression
-	     */
-	    char expression[1024];
-	    if(i+1<10)
-	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<%.3f)",cstep,cstep+interval);
-	    else
-	      sprintf(expression,"([pixel]>=%.3f AND [pixel]<=%.3f)",cstep,cstep+interval);
-	    msLoadExpressionString(&myLayer->CLASS[myLayer->numclasses]->expression,expression);
-	    
-	    /**
-	     * Set color
-	     */
-	    myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=_tmpColors[i][0];
-	    myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=_tmpColors[i][1];
-	    myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=_tmpColors[i][2];
-	    cstep+=interval;
-	    myLayer->CLASS[myLayer->numclasses]->numstyles++;
-	    myLayer->numclasses++;
-	    
-	  }
-	  
-	  char tmpMm[100];
-	  sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
-	  
-	}
+    char bandIdentifier[21];
+    sprintf(bandIdentifier,"Band%d",iBand+1);
+    if (CPLGetLastErrorType() == CE_None)
+      {
+      char bandInterval[100];
+      sprintf(bandInterval,"%.3f %.3f",min,max);
+      char bandIntervalIdentifier[21];
+      sprintf(bandIntervalIdentifier,"%s_interval",bandIdentifier);
+      msInsertHashTable(&(myLayer->metadata), bandIntervalIdentifier, bandInterval);
+
+      // Apply the raster style
+      if(styleType == LINEAR_STRETCHING)
+        {
+
+        char msProcessingInstruction[1024];
+        double low = mean - 2*std;
+        double hi = mean + 2*std;
+
+        char s1[MAX_NUMBER_STRING_SIZE];
+        char s2[MAX_NUMBER_STRING_SIZE];
+
+        int bn = iBand+1;
+        if(linearStretchingType==MINMAX)
+          {
+          sprintf(msProcessingInstruction, "SCALE_%d=%s,%s",
+              bn,
+              dtoa(s1,min),
+              dtoa(s2,max));
+          }
+        else if (linearStretchingType==MEANSTD)
+          {
+          sprintf(msProcessingInstruction, "SCALE_%d=%s,%s",
+              bn,
+              dtoa(s1,low),
+              dtoa(s2,hi));
+          }
+
+        msLayerAddProcessing(myLayer,msProcessingInstruction);
+
+        } // styleType is LINEAR_STRETCHING
+      else if( styleType == COLOR_PALETTE )
+        {
+        /**
+         * Classify one band raster pixel value using regular interval
+         * TODO: parse msRasterStyleOptionsContent to retrieve the colormap
+         */
+        int discreteColorMap[10][3]={
+            {102,153,204},
+            {51,102,153},
+            {102,102,204},
+            {51,204,0},
+            {153,255,102},
+            {204,255,102},
+            {102,204,153},
+            {255,69,64},
+            {255,192,115},
+            {255,201,115}
+        };
+
+        if(nBandsI==1)
+          {
+          double delta = max - min;
+          double interval = delta / 10;
+          double cstep = min;
+          for(i=0; i<10; i++)
+            {
+            /**
+             * Create a new class
+             */
+            if(msGrowLayerClasses(myLayer) == NULL)
+              return -1;
+            if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
+              return -1;
+            if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
+              return -1;
+            if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
+              return -1;
+
+            /**
+             * Set class name
+             */
+            char className[7];
+            sprintf(className,"class%d",i);
+            myLayer->CLASS[myLayer->numclasses]->name=zStrdup(className);
+
+            /**
+             * Set expression
+             */
+            char expression[1024];
+            if(i+1<10)
+              sprintf(expression,"([pixel]>=%.3f AND [pixel]<%.3f)",cstep,cstep+interval);
+            else
+              sprintf(expression,"([pixel]>=%.3f AND [pixel]<=%.3f)",cstep,cstep+interval);
+            msLoadExpressionString(&myLayer->CLASS[myLayer->numclasses]->expression,expression);
+
+            /**
+             * Set color
+             */
+            myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=discreteColorMap[i][0];
+            myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=discreteColorMap[i][1];
+            myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=discreteColorMap[i][2];
+            cstep+=interval;
+            myLayer->CLASS[myLayer->numclasses]->numstyles++;
+            myLayer->numclasses++;
+
+            }
+
+          char tmpMm[100];
+          sprintf(tmpMm,"%.3f %.3f",min,max);
+
+          }
+        } // styleType is COLOR_PALETTE
+
+      } // If no error with GDAL functions
+    else
+      {
+      fprintf(stderr,"Unable to compute raster statistics!\n");
       }
-      else{
-	if(nBandsI==1){
-	  myLayer->offsite.red=0;
-	  myLayer->offsite.green=0;
-	  myLayer->offsite.blue=0;
-	}
-	msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
+
+    /*
+     * Set offsite
+     */
+    int offsiteR = 0;
+    int offsiteG = 0;
+    int offsiteB = 0;
+    int hasNoData = 0;
+    double noDataValue = GDALGetRasterNoDataValue(hBand, &hasNoData);
+    if (hasNoData)
+      {
+      offsiteR = (int) noDataValue;
+      offsiteG = (int) noDataValue;
+      offsiteB = (int) noDataValue;
       }
-    }
-    if( strlen(GDALGetRasterUnitType(hBand)) > 0 ){
+    myLayer->offsite.red    = offsiteR;
+    myLayer->offsite.green  = offsiteG;
+    myLayer->offsite.blue   = offsiteB;
+
+    /*
+     * Insert units
+     */
+    if( strlen(GDALGetRasterUnitType(hBand)) > 0 )
+      {
       char tmpU[21];
-      sprintf(tmpU,"%s_band_uom",tmpN);
+      sprintf(tmpU,"%s_band_uom",bandIdentifier);
       msInsertHashTable(&(myLayer->metadata), tmpU, GDALGetRasterUnitType(hBand));
-    }
+      }
 
-  }
+    } // next band
+
+  /*
+   * Check if there is resample option
+   */
+  char msResampleOptionInstruction[1024];
+  char * msRasterResampleOptionContent = "BILINEAR";
+  map* msRasterResamplingOption=getMap(output->content, msRasterResamplingType);
+  if (msRasterResamplingOption!=NULL)
+    {
+    msRasterResampleOptionContent = msRasterResamplingOption->value;
+    }
+  sprintf(msResampleOptionInstruction, "RESAMPLE=%s",msRasterResampleOptionContent);
+  msLayerAddProcessing(myLayer, msResampleOptionInstruction);
 
   m->layerorder[m->numlayers] = m->numlayers;
   m->numlayers++;
