@@ -135,7 +135,6 @@ enum CLASSES_TYPE{
 double interpolate( double val, double y0, double x0, double y1, double x1 ) {
     return (val-x0)*(y1-y0)/(x1-x0) + y0;
 }
-
 double base( double val ) {
     if ( val <= 0.25 ) return 0;
     else if ( val <= 0.75 ) return interpolate( val, 0.0, 0.25, 1.0, 0.75 );
@@ -842,17 +841,18 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Detect the raster style
    */
 
-  /* msRasterResample (NEAREST/AVERAGE/BILINEAR) */
-  const char * msRasterResamplingPropertyName       = "msRasterResample";
-  /* msRasterStyle (linearStretching/classify) */
-  const char * msRasterStylePropertyName            = "msRasterStyle";
-  const char * msRasterStyleLinearStretchingPropertyValue       = "linearStretching";
+  // Properties names
+  const char * msRasterResamplingPropertyName       = "msRasterResample";       /* can be NEAREST/AVERAGE/BILINEAR */
+  const char * msRasterStylePropertyName            = "msRasterStyle";          /* can be linearStretching/classify */
+  const char * msRasterStyleOptionsPropertyName     = "msRasterStyleOptions";   /* can be the path to a mapfile */
+
+  // Allowed properties values
+  const char * msRasterStyleLinearStretchingPropertyValue       = "linearStretching";   /* RasterStyle */
   const char * msRasterStyleColorPalettePropertyValue           = "classify";
-  const char * msRasterStyleOptionsPropertyName     = "msRasterStyleOptions";
-  /* options for linear stretching */
-  const char * msRasterStyleLinearStretchingMinMaxPropertyName  = "minMax";
+  const char * msRasterStyleLinearStretchingMinMaxPropertyName  = "minMax";             /* Linear stretching */
   const char * msRasterStyleLinearStretchingMeanStdPropertyName = "meanStd";
 
+  // Maximum number of classes (classify mode)
   const unsigned int msRasterStyleClassifyAutoMaximumNumberOfClasses = 256;
 
   // Default raster style
@@ -952,6 +952,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 
   /*
    * This is just for the backward compatibility and will be deprecated
+   * TODO: mark this as deprecated
    */
   {
   map* test=getMap(output->content,"msClassify");
@@ -1165,9 +1166,10 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
         msLayerAddProcessing(myLayer,msProcessingDirective);
 
         } // styleType is LINEAR_STRETCHING
+
       else if( styleType == CLASSIFY )
         {
-        if(iBand==0)
+        if(iBand==0) // classify only the first band
           {
           if (classifyType == USER)
             {
@@ -1290,6 +1292,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
             } // classify type is AUTO
 
           } // styleType is CLASSIFY
+
         } //iBand is 0
 
       } // If no error with GDAL functions
