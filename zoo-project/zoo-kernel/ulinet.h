@@ -53,15 +53,6 @@
 
 #define MAX_REQ 50
 
-#ifdef _ULINET
-static char CCookie[MAX_REQ][1024];
-#else
-/**
- * The cookies found
- */
-extern char CCookie[MAX_REQ][1024];
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -87,6 +78,7 @@ extern "C" {
     char *url; //!< the url used to access the server
     char *mimeType; //!< the mimeType returned by the server
     char *post; //!< the potential POST XML content
+    char* cookie; //!< The potential Cookie returned by the server
     int hasCacheFile; //!< 1 if we used a cache file
     int nDataLen; //!< the length of the downloaded content
     int nDataAlloc; //!< 
