@@ -69,14 +69,14 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
 
 /**
  * In case of presence of "Set-Cookie" in the headers red, store the cookie
- * identifier in CCookie
+ * identifier in cookie
  *
  * @param buffer the buffer to read
  * @param size size of each member
  * @param nmemb number of element to read
  * @param data the _HINTERNET structure to write in
  * @return the size red, -1 if buffer is NULL
- * @see CCookie
+ * @see cookie
  */
 size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
   if(strncmp("Set-Cookie: ",(char*)buffer,12)==0){
@@ -88,10 +88,12 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
 #else
 	;
 #endif
-    _HINTERNET *psInternet=(_HINTERNET *)data;
     tmp=strtok(buffer,";");
-    if(tmp!=NULL){
-      sprintf(CCookie[psInternet->id],"%s",tmp);
+    int cnt=0;
+    _HINTERNET *psInternet=(_HINTERNET *)data;
+    if(tmp!=NULL && psInternet!=NULL){
+      psInternet->cookie=(char*)malloc(sizeof(char)*(strlen(tmp)+1));
+      sprintf(psInternet->cookie,"%s",tmp);
     }
   }
   return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
@@ -333,8 +335,10 @@ void InternetCloseHandle(HINTERNET* handle0){
       free(handle.post);
     if(handle.url!=NULL)
       free(handle.url);
-    free(handle.mimeType);
-    handle.mimeType = NULL;
+    if(handle.mimeType!=NULL)
+      free(handle.mimeType);
+    if(handle.cookie!=NULL)
+      free(handle.cookie);
   }
   if(handle0->handle)
     curl_multi_cleanup(handle0->handle);
@@ -364,12 +368,13 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
   hInternet->ihandle[hInternet->nb].url = NULL;
   hInternet->ihandle[hInternet->nb].mimeType = NULL;
+  hInternet->ihandle[hInternet->nb].cookie = NULL;
   hInternet->ihandle[hInternet->nb].nDataLen = 0;
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
   hInternet->ihandle[hInternet->nb].pabyData = NULL;
   hInternet->ihandle[hInternet->nb].post = NULL;
-
+  
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIEFILE, "ALL");
 #ifndef TIGER
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIELIST, "ALL");
@@ -473,14 +478,16 @@ int processDownloads(HINTERNET* hInternet){
 }
 
 /**
- * Initialize the CCookie for a specific index (hInternet.nb)
+ * Initialize the cookie for a specific index (hInternet.nb)
  *
- * @param hInternet the HINTERNET structure to know the CCookie index to reset
+ * @param hInternet the HINTERNET structure to know the cookie index to reset
  * @return 1
  * @see HINTERNET
  */
 int freeCookieList(HINTERNET hInternet){
-  memset(&CCookie[hInternet.nb][0],0,1024);
+  if(hInternet.ihandle[hInternet.nb].cookie)
+    free(hInternet.ihandle[hInternet.nb].cookie);
+  hInternet.ihandle[hInternet.nb].cookie=NULL;
 #ifndef TIGER
   curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle, CURLOPT_COOKIELIST, "ALL");
 #endif
@@ -528,8 +535,6 @@ int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToR
     hInternet.pabyData = NULL;
     hInternet.nDataAlloc = hInternet.nDataLen = 0;
   }
-
-  CCookie[hInternet.id][0]=0;
 
   if( *lpdwNumberOfBytesRead < dwDataSize )
       return 0;
