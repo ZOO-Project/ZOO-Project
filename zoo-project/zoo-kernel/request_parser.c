@@ -1740,7 +1740,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
   map* r_inputs = getMap (request,toCheck);
   if (r_inputs == NULL){
     if(mandatory>0){
-      char *replace=_("Mandatory parameter <%s> was not specified");
+      const char *replace=_("Mandatory parameter <%s> was not specified");
       char *message=(char*)malloc((strlen(replace)+strlen(toCheck)+1)*sizeof(char));
       sprintf(message,replace,toCheck);
       if(lres==NULL){
@@ -1789,10 +1789,10 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       }
     }
     if(hasValidValue<0){
-      char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
+      const char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
       nb=0;
       char *vvalues=NULL;
-      char* num=_("is");
+      const char* num=_("is");
       while(avalues[nb]!=NULL){
 	char *tvalues;
 	if(vvalues==NULL){
