@@ -232,7 +232,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	}
 	memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
 	if(hInternet->ihandle[*index].code!=200){
-	  char *error_rep_str=_("Unable to download the file for the input <%s>, response code was : %d.");
+	  const char *error_rep_str=_("Unable to download the file for the input <%s>, response code was : %d.");
 	  char *error_msg=(char*)malloc((strlen(error_rep_str)+strlen(content->name)+4)*sizeof(char));
 	  sprintf(error_msg,error_rep_str,content->name,hInternet->ihandle[*index].code);
 	  if(*error==NULL){
