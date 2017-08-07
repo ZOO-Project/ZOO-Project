@@ -596,7 +596,6 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	}else{
 	  setMapArray(res,"value",nb,out1->name);
 	}
-
 	nb++;
 	result=out1->name;
       }
@@ -805,8 +804,8 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	 * check for useMapServer presence
 	 */
 	if(tmpIoType!=NULL){
-	  map* tmpCheck=getMap(tmpIoType->content,"useMapServer");
-	  if(tmpCheck!=NULL){
+	  map* tmpCheck=getMap(tmpIoType->content,"useMapserver");
+	  if(tmpCheck!=NULL && strncasecmp(tmpCheck->value,"true",4)==0){
 	    // Get the default value
 	    tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,NULL);
 	    tmpCheck=getMap(tmpMaps->content,"mimeType");
@@ -840,15 +839,15 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	}
       }
     }
-    /*if(tmpInputs->child!=NULL){
+    if(tmpInputs->child!=NULL){
       tmpInputss=tmpInputs->next;
       tmpInputs=tmpInputs->child;
       if(tmpMaps!=NULL){
 	out1=tmpMaps->child;
 	out1s=tmpMaps;
       }
-      }else*/
-      tmpInputs=tmpInputs->next;
+    }
+    tmpInputs=tmpInputs->next;
   }
   if(tmpInputss!=NULL){
     out1=out1s;
@@ -979,7 +978,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
     map* statusInfo=createMap("JobID",pid);
     if(isRunning(conf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
-	errorException (conf, _("The result for the requested JobID has not yet been generated. "),
+	errorException (conf, _("The result for the requested JobID has not yet been generated. (1)"),
 			"ResultNotReady", pid);
 	return;
       }
@@ -1011,7 +1010,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  free(statusInfo);
 	  return;
 	}else{
-	  errorException (conf, _("The result for the requested JobID has not yet been generated. "),
+	  errorException (conf, _("The result for the requested JobID has not yet been generated. (2)"),
 			  "ResultNotReady", pid);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
@@ -1033,6 +1032,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  }
 	}
     }
+    free(sid);
     printStatusInfo(conf,statusInfo,req);
     freeMap(&statusInfo);
     free(statusInfo);

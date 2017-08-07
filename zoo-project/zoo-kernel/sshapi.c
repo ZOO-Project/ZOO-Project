@@ -8,7 +8,7 @@
  * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed 
  * by the French National Research Agency
  *
- * permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -248,9 +248,8 @@ int ssh_get_cnt(maps* conf){
  * remote host
  * @return true in case of success, false if failure occured
  */
-size_t ssh_file_exists(maps* conf,const char* targetPath){
+size_t ssh_file_exists(maps* conf,const char* targetPath,int cnt){
   size_t result=-1;
-  int cnt=ssh_get_cnt(conf);
   if(cnt>0)
     cnt-=1;
   int rc;
@@ -302,14 +301,13 @@ size_t ssh_file_exists(maps* conf,const char* targetPath){
  * remote host
  * @return true in case of success, false if failure occured
  */
-bool ssh_copy(maps* conf,const char* localPath,const char* targetPath){
+bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
   char mem[1024 * 1000];
   size_t nread;
   size_t memuse=0;
   time_t start;
   long total = 0;
   int duration;
-  int cnt=ssh_get_cnt(conf);
   int rc;
   LIBSSH2_SFTP_HANDLE *sftp_handle;
   //map* myMap=getMapFromMaps(conf,"lenv","cnt_session");
@@ -322,7 +320,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath){
   FILE *local = fopen(localPath, "rb");
   if (!local) {
     fprintf(stderr, "Can't open local file %s\n", localPath);
-    return -1;
+    return false;
   }
 
   do {
@@ -381,7 +379,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath){
   
   duration = (int)(time(NULL)-start);
   fclose(local);
-  libssh2_sftp_close(sftp_handle);
+  libssh2_sftp_close_handle(sftp_handle);
 
   libssh2_sftp_shutdown(sessions[cnt]->sftp_session);
   return true;
@@ -395,14 +393,13 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath){
  * remote host
  * @return true in case of success, false if failure occured
  */
-int ssh_fetch(maps* conf,const char* localPath,const char* targetPath){
+int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
   char mem[1024];
   size_t nread;
   size_t memuse=0;
   time_t start;
   long total = 0;
   int duration;
-  int cnt=ssh_get_cnt(conf);
   int rc;
   LIBSSH2_SFTP_HANDLE *sftp_handle;
   FILE *local = fopen(localPath, "wb");
@@ -427,7 +424,6 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath){
  
         if (!sftp_handle) {
             if (libssh2_session_last_errno(sessions[cnt]->session) != LIBSSH2_ERROR_EAGAIN) {
-
                 fprintf(stderr, "Unable to open file with SFTP\n");
                 return -1;
             }
@@ -442,11 +438,10 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath){
     do {
         do {
             rc = libssh2_sftp_read(sftp_handle, mem, sizeof(mem));
-            fprintf(stderr, "libssh2_sftp_read returned %d\n",
-                    rc);
- 
+            /*fprintf(stderr, "libssh2_sftp_read returned %d\n",
+	      rc);*/
             if(rc > 0) {
-                write(2, mem, rc);
+	      //write(2, mem, rc);
                 fwrite(mem, rc, 1, local);
             }
         } while (rc > 0);
@@ -478,7 +473,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath){
     } while (1);
   duration = (int)(time(NULL)-start);
   fclose(local);
-  libssh2_sftp_close(sftp_handle);
+  libssh2_sftp_close_handle(sftp_handle);
 
   libssh2_sftp_shutdown(sessions[cnt]->sftp_session);
   return 0;
@@ -490,8 +485,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath){
  * @param command const char pointer to the command to be executed
  * @return bytecount resulting from the execution of the command
  */
-int ssh_exec(maps* conf,const char* command){
-  int cnt=ssh_get_cnt(conf);
+int ssh_exec(maps* conf,const char* command,int cnt){
   LIBSSH2_CHANNEL *channel;
   int rc;
   int bytecount = 0;
@@ -570,12 +564,12 @@ int ssh_exec(maps* conf,const char* command){
 bool ssh_close_session(maps* conf,SSHCON* con){
   while (libssh2_session_disconnect(con->session, "Normal Shutdown, Thank you for using the ZOO-Project sshapi")
 	 == LIBSSH2_ERROR_EAGAIN);
-  libssh2_session_free(con->session);
 #ifdef WIN32
   closesocket(con->sock_id);
 #else
   close(con->sock_id);
 #endif
+  libssh2_session_free(con->session);
   return true;
 }
 
@@ -594,4 +588,80 @@ bool ssh_close(maps* conf){
   }
   libssh2_exit();
   return true;
+}
+
+bool addToUploadQueue(maps** conf,maps* input){
+  map* queueMap=getMapFromMaps(*conf,"uploadQueue","length");
+  if(queueMap==NULL){
+    maps* queueMaps=createMaps("uploadQueue");
+    queueMaps->content=createMap("length","0");
+    addMapsToMaps(conf,queueMaps);
+    freeMaps(&queueMaps);
+    free(queueMaps);
+    queueMap=getMapFromMaps(*conf,"uploadQueue","length");
+  }
+  maps* queueMaps=getMaps(*conf,"uploadQueue");
+  int queueIndex=atoi(queueMap->value);
+  if(input!=NULL){
+    if(getMap(input->content,"cache_file")!=NULL){
+      map* length=getMap(input->content,"length");
+      if(length==NULL){
+	addToMap(input->content,"length","1");
+	length=getMap(input->content,"length");
+      }
+      int len=atoi(length->value);
+      int i=0;
+      for(i=0;i<len;i++){
+	
+	map* tmp[2]={getMapArray(input->content,"localPath",i),
+		     getMapArray(input->content,"targetPath",i)};
+
+	setMapArray(queueMaps->content,"input",queueIndex,input->name);
+	setMapArray(queueMaps->content,"localPath",queueIndex,tmp[0]->value);
+	setMapArray(queueMaps->content,"targetPath",queueIndex,tmp[1]->value);
+	queueIndex+=1;
+      }
+    }
+  }
+#ifdef DEBUG  
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMaps(queueMaps);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMaps(*conf);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
+#endif
+  return true;
+}
+
+bool runUpload(maps** conf){
+  SSHCON *test=ssh_connect(*conf);
+  if(test==NULL){
+    return false;
+  }
+#ifdef DEBUG
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMaps(getMaps(*conf,"uploadQueue"));
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
+#endif
+  map* queueLengthMap=getMapFromMaps(*conf,"uploadQueue","length");
+  maps* queueMaps=getMaps(*conf,"uploadQueue");
+  if(queueLengthMap!=NULL){
+    int cnt=atoi(queueLengthMap->value);
+    int i=0;
+    for(i=0;i<cnt;i++){
+      map* argv[3]={
+	getMapArray(queueMaps->content,"input",i),
+	getMapArray(queueMaps->content,"localPath",i),
+	getMapArray(queueMaps->content,"targetPath",i)
+      };
+      fprintf(stderr,"%s %d %s %s\n",__FILE__,__LINE__,argv[1]->value,argv[2]->value);
+      ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf));
+    }    
+  }
+  return true; 
 }

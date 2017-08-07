@@ -44,14 +44,18 @@ create table services (
        response TEXT,
        creation_time timestamp with time zone default now(),
        end_time timestamp with time zone default NULL,
+       -- queue_duration ,
+       -- run_duration ,
        progress int,
-       message TEXT
+       message TEXT,
+       -- data_lifetime timestamp with time zone default now() + interval '48 hours',
+       rps_step int4 default 0
 );
 --------------------------------------------------------------------------------
 -- Responses table 
 -- Used to store the response provided by a services running asynchronously
 create table responses (
-       uuid text references services(uuid) ON DELETE CASCADE,
+       uuid text references process(uuid) ON DELETE CASCADE,
        content text,
        creation_time timestamp with time zone default now()
 );

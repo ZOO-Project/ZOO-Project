@@ -130,17 +130,7 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
  * @param tmpI the specific output maps to add the Reference key
  */
 void setReferenceUrl(maps* m,maps* tmpI){
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
-  dumpMaps(tmpI);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   outputMapfile(m,tmpI);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
-  dumpMaps(tmpI);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   if(msUrl==NULL){
     errorException (m, _("Unable to find any mapserverAddress defined in the main.cfg file"),
@@ -168,7 +158,8 @@ void setReferenceUrl(maps* m,maps* tmpI){
   }
   if(strncasecmp(rformat->value,"text/xml",8)==0)
     proto=1;
-  if(strncasecmp(rformat->value,"image/tiff",10)==0)
+  if(strncasecmp(rformat->value,"image/tiff",10)==0 ||
+     strncasecmp(rformat->value,"image/geotiff",10)==0)
     proto=2;
   if(protoMap!=NULL){
     if(strncasecmp(protoMap->value,"WMS",3)==0)
@@ -477,7 +468,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   if( poDS1 == NULL ){
     fprintf(stderr,"Unable to access the DataSource as ZIP File\n");
     setMapInMaps(conf,"lenv","message","Unable to open datasource in read only mode");
-    OGR_DS_Destroy(poDS1);
+    //OGR_DS_Destroy(poDS1);
   }else{
 #ifdef DEBUGMS
     fprintf(stderr,"The DataSource is a  ZIP File\n");
@@ -548,8 +539,8 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     fprintf(stderr,"Unable to access the DataSource %s\n",pszDataSource);
 #endif
     setMapInMaps(conf,"lenv","message","Unable to open datasource in read only mode");
-    OGR_DS_Destroy(poDS);
-    OGRCleanupAll();
+    //OGR_DS_Destroy(poDS);
+    //OGRCleanupAll();
 #ifdef DEBUGMS
     fprintf(stderr,"Unable to access the DataSource, exit! \n"); 
 #endif
@@ -651,6 +642,10 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     OGREnvelope oExt;
     if (OGR_L_GetExtent(poLayer,&oExt, TRUE) == OGRERR_NONE){
       setMsExtent(output,m,myLayer,oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
+      char extent[1024];
+      memset(&extent,0,1024);
+      sprintf(extent,"%d,%d,%d,%d",oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
+      addToMap(output->content,"boundingbox",extent);
     }
   
     /**
@@ -723,8 +718,8 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
   }
 
-  OGR_DS_Destroy(poDS);
-  OGRCleanupAll();
+  //OGR_DS_Destroy(poDS);
+  //OGRCleanupAll();
 
   return 1;
 }
@@ -818,7 +813,6 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     fprintf(stderr,"NO SRS FOUND ! %s\n",GDALGetProjectionRef( hDataset ));    
   }
 
-
   /**
    * Set extent
    */
@@ -835,8 +829,11 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       double maxY = adfGeoTransform[3]
 	+ adfGeoTransform[4] * GDALGetRasterXSize(hDataset);
 
-       setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
-
+      setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
+      char extent[1024];
+      memset(&extent,0,1024);
+      sprintf(extent,"%d,%d,%d,%d",minX,minY,maxX,maxY);
+      addToMap(output->content,"boundingbox",extent);
     }
   }
 
@@ -845,9 +842,12 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * processing directive
    */
   char nBands[3];
+  memset(&nBands,0,3);
   int nBandsI=GDALGetRasterCount( hDataset );
-  sprintf(nBands,"%d",GDALGetRasterCount( hDataset ));
-  msInsertHashTable(&(myLayer->metadata), "ows_bandcount", nBands);
+  if(nBandsI<100){
+    sprintf(nBands,"%d",GDALGetRasterCount( hDataset ));
+    msInsertHashTable(&(myLayer->metadata), "ows_bandcount", nBands);
+  }
   if(nBandsI>=3)
     msLayerAddProcessing(myLayer,"BANDS=1,2,3");
   else if(nBandsI>=2)
@@ -859,23 +859,27 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Name available Bands
    */
   char lBands[7];
+  memset(&nBands,0,7);
   char *nameBands=NULL;
   for( iBand = 0; iBand < nBandsI; iBand++ ){
-    sprintf(lBands,"Band%d",iBand+1);
+    sprintf(lBands,"Band%d",iBand+1);    
     if(nameBands==NULL){
       nameBands=(char*)malloc((strlen(lBands)+1)*sizeof(char));
       sprintf(nameBands,"%s",lBands);
     }else{
       if(iBand<4){
 	char *tmpS=zStrdup(nameBands);
-	nameBands=(char*)realloc(nameBands,(strlen(nameBands)+strlen(lBands)+1)*sizeof(char));
+	nameBands=(char*)realloc(nameBands,(strlen(tmpS)+strlen(lBands)+2)*sizeof(char));
 	sprintf(nameBands,"%s %s",tmpS,lBands);
 	free(tmpS);
       }
     }
   }
-  msInsertHashTable(&(myLayer->metadata), "ows_bandnames", nameBands);
-  
+  if(nameBands!=NULL){
+    msInsertHashTable(&(myLayer->metadata), "ows_bandnames", nameBands);
+    free(nameBands);
+  }
+
   /**
    * Loops over metadata information to setup specific information
    */
@@ -893,7 +897,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     if (CPLGetLastErrorType() == CE_None){
       char tmpMm[100];
       sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
-      char tmpI[21];
+      char tmpI[31];      
       sprintf(tmpI,"%s_interval",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
 
@@ -976,7 +980,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       }
     }
     if( strlen(GDALGetRasterUnitType(hBand)) > 0 ){
-      char tmpU[21];
+      char tmpU[31];
       sprintf(tmpU,"%s_band_uom",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpU, GDALGetRasterUnitType(hBand));
     }
@@ -987,6 +991,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   m->numlayers++;
   GDALClose( hDataset );
   GDALDestroyDriverManager();
+
   CPLCleanupTLS();
   return 1;
 }
@@ -998,11 +1003,6 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
  * @param outputs a specific output maps
  */
 void outputMapfile(maps* conf,maps* outputs){
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
-  dumpMaps(outputs);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   /**
    * First store the value on disk
    */
@@ -1012,12 +1012,10 @@ void outputMapfile(maps* conf,maps* outputs){
     if(strncasecmp(mime->value,"application/json",16)==0)
       ext="json";
 
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   map* tmpMap=getMapFromMaps(conf,"main","dataPath");
   map* sidMap=getMapFromMaps(conf,"lenv","usid");
   char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
-  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext); 
+  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext);
   int f=zOpen(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   map *gfile=getMap(outputs->content,"generated_file");
   if(gfile!=NULL){
@@ -1025,40 +1023,24 @@ void outputMapfile(maps* conf,maps* outputs){
   }
   map* sizeMap=getMap(outputs->content,"size");
   map* vData=getMap(outputs->content,"value");
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   if(sizeMap!=NULL){
     zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char));
   }
   else{
     zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char));
   }
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   close(f);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   addToMap(outputs->content,"storage",pszDataSource);
   free(pszDataSource);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
   /*
    * Create an empty map, set name, default size and extent
    */
   mapObj *myMap=msNewMapObj();
   free(myMap->name);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   myMap->name=zStrdup("ZOO-Project_WXS_Server");
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   msMapSetSize(myMap,2048,2048);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   msMapSetExtent(myMap,-1,-1,1,1);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   
   /*
    * Set imagepath and imageurl using tmpPath and tmpUrl from main.cfg
@@ -1067,8 +1049,6 @@ void outputMapfile(maps* conf,maps* outputs){
   myMap->web.imagepath=zStrdup(tmp1->value);
   tmp1=getMapFromMaps(conf,"main","tmpUrl");
   myMap->web.imageurl=zStrdup(tmp1->value);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
   
   /*
    * Define supported output formats
@@ -1079,8 +1059,6 @@ void outputMapfile(maps* conf,maps* outputs){
   o1->inmapfile=MS_TRUE;
   msAppendOutputFormat(myMap,msCloneOutputFormat(o1));
   msFreeOutputFormat(o1);
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
 #ifdef USE_KML
   outputFormatObj *o2=msCreateDefaultOutputFormat(NULL,"KML","kml");
@@ -1093,8 +1071,6 @@ void outputMapfile(maps* conf,maps* outputs){
     msFreeOutputFormat(o2);
   }
 #endif
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
   outputFormatObj *o3=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","tiff");
   if(!o3)
@@ -1105,8 +1081,6 @@ void outputMapfile(maps* conf,maps* outputs){
     msAppendOutputFormat(myMap,msCloneOutputFormat(o3));
     msFreeOutputFormat(o3);
   }
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
   outputFormatObj *o4=msCreateDefaultOutputFormat(NULL,"GDAL/AAIGRID","grd");
   if(!o4)
@@ -1117,8 +1091,6 @@ void outputMapfile(maps* conf,maps* outputs){
     msAppendOutputFormat(myMap,msCloneOutputFormat(o4));
     msFreeOutputFormat(o4);
   }
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
 #ifdef USE_CAIRO
   outputFormatObj *o5=msCreateDefaultOutputFormat(NULL,"CAIRO/PNG","cairopng");
@@ -1132,16 +1104,12 @@ void outputMapfile(maps* conf,maps* outputs){
     msFreeOutputFormat(o5);
   }
 #endif
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
   /*
    * Set default projection to EPSG:4326
    */
   msLoadProjectionStringEPSG(&myMap->projection,"EPSG:4326");
   myMap->transparent=1;
-  fprintf(stderr,"%s %D \n",__FILE__,__LINE__);
-  fflush(stderr);
 
   /**
    * Set metadata extracted from main.cfg file maps

@@ -41,13 +41,14 @@ extern "C" {
   
 #ifdef META_DB
   ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
-  ZOO_DLL_EXPORT void _init_sql(maps*,const char*);
-  ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,const char*);
+  ZOO_DLL_EXPORT int _init_sql(maps*,const char*);
+  ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,int,const char*);
+  ZOO_DLL_EXPORT void cleanFetchSql(maps*,int,OGRLayer*);
 #endif
 #ifdef RELY_ON_DB
-  ZOO_DLL_EXPORT void init_sql(maps*);
-  ZOO_DLL_EXPORT void close_sql(maps*);
-  ZOO_DLL_EXPORT int execSql(maps*,const char*);
+  ZOO_DLL_EXPORT int init_sql(maps*);
+  ZOO_DLL_EXPORT void close_sql(maps*,int);
+  ZOO_DLL_EXPORT int execSql(maps*,int,const char*);
   ZOO_DLL_EXPORT void recordStoredFile(maps*,const char*,const char*,const char*);
   ZOO_DLL_EXPORT void recordServiceStatus(maps*);
   ZOO_DLL_EXPORT void recordResponse(maps*,char*);
@@ -55,6 +56,7 @@ extern "C" {
   ZOO_DLL_EXPORT int isRunning(maps*,char*);
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
   ZOO_DLL_EXPORT void removeService(maps*,char*);
+  ZOO_DLL_EXPORT void end_sql();
 #endif
 
 #ifdef __cplusplus

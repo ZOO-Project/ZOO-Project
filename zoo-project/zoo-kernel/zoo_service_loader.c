@@ -101,6 +101,9 @@ extern "C" int crlex ();
 #include "service_internal_mono.h"
 #endif
 
+#include "service_json.h"
+#include "service_callback.h"
+
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
@@ -157,9 +160,9 @@ extern "C"
 #define __(String) dgettext ("zoo-service",String)
 
 #ifdef WIN32
-  #ifndef PROGRAMNAME
-    #define PROGRAMNAME "zoo_loader.cgi"
-  #endif
+#ifndef PROGRAMNAME
+#define PROGRAMNAME "zoo_loader.cgi"
+#endif
 #endif
 
 
@@ -212,6 +215,7 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
   fwrite (tmps1, 1, flen, f3);
   fclose (f2);
   fclose (f3);
+  free(tmps1);
   return 1;
 }
 
@@ -232,9 +236,9 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
  * @see inheritance, readServiceFile
  */
 int
-recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir, 
+recursReaddirF ( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_dir, 
 		 char *prefix, int saved_stdout, int level, 
-		 void (func) (registry *, maps *, xmlNodePtr, service *) )
+		 void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr, service *) )
 {
   struct dirent *dp;
   int scount = 0;
@@ -281,7 +285,7 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
             sprintf (levels1, "%d", level + 1);
             setMapInMaps (m, "lenv", "level", levels1);
             res =
-              recursReaddirF (m, r, n, tmp, prefix, saved_stdout, level + 1,
+              recursReaddirF (m, r, doc, n, tmp, prefix, saved_stdout, level + 1,
                               func);
             sprintf (levels1, "%d", level);
             setMapInMaps (m, "lenv", "level", levels1);
@@ -319,7 +323,7 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
                                   "InternalError", NULL);
                   return -1;
                 }
-  #ifndef DEBUG
+  #ifdef DEBUG
               fprintf (stderr, "#################\n%s\n#################\n",
                        tmps1);
   #endif
@@ -345,7 +349,7 @@ recursReaddirF ( maps * m, registry *r, xmlNodePtr n, char *conf_dir,
               fflush (stderr);
   #endif
 	      inheritance(r,&s1);
-              func (r, m, n, s1);
+              func (r, m, doc, n, s1);
               freeService (&s1);
               free (s1);
               scount++;
@@ -948,8 +952,11 @@ runRequest (map ** inputs)
   signal (SIGABRT, sig_handler);
 #endif
 
+  
   map *r_inputs = NULL;
   map *request_inputs = *inputs;
+  //fprintf(stderr,"%s \n",json_object_to_json_string_ext(mapToJson(request_inputs),JSON_C_TO_STRING_PLAIN));
+  
 #ifdef IGNORE_METAPATH
   addToMap(request_inputs, "metapath", "");
 #endif  
@@ -1304,7 +1311,7 @@ runRequest (map ** inputs)
 	      continue;
 	    }
 	    inheritance(zooRegistry, &svc);
-	    printGetCapabilitiesForProcess(zooRegistry, m, n, svc);
+	    printGetCapabilitiesForProcess(zooRegistry, m, doc, n, svc);
 	    freeService(&svc);
 	    free(svc);                             
 	  }
@@ -1313,7 +1320,7 @@ runRequest (map ** inputs)
       }
 
       if (int res =		  
-          recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
+          recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
                           printGetCapabilitiesForProcess) < 0)
         {
           freeMaps (&m);
@@ -1330,7 +1337,9 @@ runRequest (map ** inputs)
       fflush (stdout);
       dup2 (saved_stdout, fileno (stdout));
 #ifdef META_DB
-      fetchServicesFromDb(zooRegistry,m,n,printGetCapabilitiesForProcess);
+      fetchServicesFromDb(zooRegistry,m,doc,n,printGetCapabilitiesForProcess,1);
+      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
+      close_sql(m,0);
 #endif      
       printDocument (m, doc, getpid ());
       freeMaps (&m);
@@ -1352,7 +1361,7 @@ runRequest (map ** inputs)
 	    strncasecmp (REQUEST, "GetResult", strlen(REQUEST)) == 0){
 	  runGetStatus(m,r_inputs->value,REQUEST);
 	  freeMaps (&m);
-	  free (m);
+	  free(m);
 	  if(zooRegistry!=NULL){
 	    freeRegistry(&zooRegistry);
 	    free(zooRegistry);
@@ -1428,7 +1437,11 @@ runRequest (map ** inputs)
                         continue;
 		      }
 		      inheritance(zooRegistry, &svc);
-		      printDescribeProcessForProcess(zooRegistry, m, n, svc);
+#ifdef USE_HPC
+		      addNestedOutputs(&svc);
+#endif
+
+		      printDescribeProcessForProcess(zooRegistry, m, doc, n, svc);
 		      freeService(&svc);
 		      free(svc);                             
 		    }
@@ -1437,11 +1450,12 @@ runRequest (map ** inputs)
 		}
   
 		if (int res =
-		    recursReaddirF (m, zooRegistry, n, conf_dir, NULL, saved_stdout, 0,
+		    recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
 				    printDescribeProcessForProcess) < 0)
 		  return res;
 #ifdef META_DB
-		fetchServicesFromDb(zooRegistry,m,n,printDescribeProcessForProcess);
+		fetchServicesFromDb(zooRegistry,m,doc,n,printDescribeProcessForProcess,0);
+		close_sql(m,0);
 #endif      
 
 	      }
@@ -1460,9 +1474,7 @@ runRequest (map ** inputs)
 		    if (import != NULL && import->value != NULL) 
 		      {
 #ifdef META_DB			
-			service* s2=extractServiceFromDb(m,import->name);
-			fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-			fflush(stderr);
+			service* s2=extractServiceFromDb(m,import->name,0);
 			if(s2==NULL){
 #endif
 			  s1 = (service *) malloc (SERVICE_SIZE);
@@ -1499,9 +1511,11 @@ runRequest (map ** inputs)
 #ifdef DEBUG
 			  dumpService (s1);
 #endif
-
 			  inheritance(zooRegistry,&s1);
-			  printDescribeProcessForProcess (zooRegistry,m, n, s1);
+#ifdef USE_HPC
+			  addNestedOutputs(&s1);
+#endif
+			  printDescribeProcessForProcess (zooRegistry, m, doc, n, s1);
 			  freeService (&s1);
 			  free (s1);
 			  s1 = NULL;
@@ -1519,11 +1533,8 @@ runRequest (map ** inputs)
 			if (tmpMap != NULL)
 			  addToMap (request_inputs, "metapath", tmpMap->value);
 			map *tmpMapI = getMapFromMaps (m, "lenv", "Identifier");
-
 #ifdef META_DB
-			service* s2=extractServiceFromDb(m,tmpMapI->name);
-			fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-			fflush(stderr);
+			service* s2=extractServiceFromDb(m,tmpMapI->name,0);
 			if(s2==NULL){
 #endif
 			  s1 = (service *) malloc (SERVICE_SIZE);
@@ -1566,7 +1577,10 @@ runRequest (map ** inputs)
 			  dumpService (s1);
 #endif
 			  inheritance(zooRegistry,&s1);
-			  printDescribeProcessForProcess (zooRegistry,m, n, s1);
+#ifdef USE_HPC
+			  addNestedOutputs(&s1);
+#endif
+			  printDescribeProcessForProcess (zooRegistry, m, doc, n, s1);
 			  freeService (&s1);
 			  free (s1);
 			  s1 = NULL;
@@ -1579,16 +1593,19 @@ runRequest (map ** inputs)
 		      }
 		    else
 		      {
-			fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-			fflush(stderr);
 #ifdef META_DB
 			_init_sql(m,"metadb");
-			service* s2=extractServiceFromDb(m,corig);
+			//FAILED CONNECTING DB
+			if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
+			  fprintf(stderr,"ERROR CONNECTING METADB");
+			}
+			service* s2=extractServiceFromDb(m,corig,0);
 			if(s2!=NULL){
-			  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-			  fflush(stderr);
 			  inheritance(zooRegistry,&s2);
-			  printDescribeProcessForProcess (zooRegistry,m, n, s2);
+#ifdef USE_HPC
+			  addNestedOutputs(&s2);
+#endif
+			  printDescribeProcessForProcess (zooRegistry,m, doc, n, s2);
 			  freeService (&s2);
 			  free (s2);
 			  s2 = NULL;
@@ -1663,7 +1680,10 @@ runRequest (map ** inputs)
 				  dumpService (s1);
 #endif
 				  inheritance(zooRegistry,&s1);
-				  printDescribeProcessForProcess (zooRegistry,m, n, s1);
+#ifdef USE_HPC
+				  addNestedOutputs(&s1);
+#endif
+				  printDescribeProcessForProcess (zooRegistry,m, doc, n, s1);
 				  freeService (&s1);
 				  free (s1);
 				  s1 = NULL;
@@ -1724,6 +1744,10 @@ runRequest (map ** inputs)
 	    free (REQUEST);
 	    free (SERVICE_URL);
 	    fflush (stdout);
+#ifdef META_DB
+	    close_sql(m,0);
+      //end_sql();
+#endif
 	    return 0;
 	  }
 	else if (strncasecmp (REQUEST, "Execute", strlen (REQUEST)) != 0)
@@ -1802,23 +1826,10 @@ runRequest (map ** inputs)
     return 0;
   }
   s1 = NULL;
-  s1 = (service *) malloc (SERVICE_SIZE);
-  if (s1 == NULL)
-    {
-      freeMaps (&m);
-      free (m);
-      if(zooRegistry!=NULL){
-	freeRegistry(&zooRegistry);
-	free(zooRegistry);
-      }
-      free (REQUEST);
-      free (SERVICE_URL);
-      return errorException (m, _("Unable to allocate memory"),
-                             "InternalError", NULL);
-    }
-
+  if(postRequest!=NULL)
+    setMapInMaps (m, "lenv", "xrequest", postRequest->value);
+  
   r_inputs = getMap (request_inputs, "Identifier");
-
   map* import = getMapFromMaps (m, IMPORTSERVICE, r_inputs->value); 
   if (import != NULL && import->value != NULL) { 
       strncpy(tmps1, import->value, 1024);
@@ -1847,10 +1858,49 @@ runRequest (map ** inputs)
   }
 
   r_inputs = getMapFromMaps (m, "lenv", "Identifier");
+  
+#ifdef META_DB
+  int metadb_id=_init_sql(m,"metadb");
+  fprintf(stderr,"CONNECTING METADB!\n");
+  //FAILED CONNECTING DB
+  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
+    fprintf(stderr,"ERROR CONNECTING METADB\n");
+  }
+  s1=extractServiceFromDb(m,r_inputs->value,0);
+  //close_sql(m,0);
+  if(s1!=NULL){
+    inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+    addNestedOutputs(&s1);
+#endif
+    if(zooRegistry!=NULL){
+      freeRegistry(&zooRegistry);
+      free(zooRegistry);
+    }
+  }else /* Not found in MetaDB */{
+#endif
+  s1 = (service *) malloc (SERVICE_SIZE);
+  if (s1 == NULL)
+    {
+      freeMaps (&m);
+      free (m);
+      if(zooRegistry!=NULL){
+	freeRegistry(&zooRegistry);
+	free(zooRegistry);
+      }
+      free (REQUEST);
+      free (SERVICE_URL);
+      return errorException (m, _("Unable to allocate memory"),
+                             "InternalError", NULL);
+    }
+
   int saved_stdout = dup (fileno (stdout));
   dup2 (fileno (stderr), fileno (stdout));
   t = readServiceFile (m, tmps1, &s1, r_inputs->value);
   inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+  addNestedOutputs(&s1);
+#endif
   if(zooRegistry!=NULL){
     freeRegistry(&zooRegistry);
     free(zooRegistry);
@@ -1874,7 +1924,10 @@ runRequest (map ** inputs)
       return 0;
     }
   close (saved_stdout);
-
+#ifdef META_DB
+  }
+#endif
+  
 #ifdef DEBUG
   dumpService (s1);
 #endif
@@ -1911,7 +1964,8 @@ runRequest (map ** inputs)
     free (s1);
     return 0;
   }
-
+  //InternetCloseHandle (&hInternet);
+  
   // Define each env variable in runing environment
   maps *curs = getMaps (m, "env");
   if (curs != NULL)
@@ -2051,6 +2105,12 @@ runRequest (map ** inputs)
   int eres = SERVICE_STARTED;
   int cpid = getpid ();
 
+  // Create a map containing a copy of the request map
+  maps *_tmpMaps = createMaps("request");
+  addMapToMap(&_tmpMaps->content,request_inputs);
+  addMapsToMaps (&m, _tmpMaps);
+  freeMaps (&_tmpMaps);
+  free (_tmpMaps);
   /**
    * Initialize the specific [lenv] section which contains runtime variables:
    * 
@@ -2071,7 +2131,7 @@ runRequest (map ** inputs)
    * the created process)
    *
    */
-  maps *_tmpMaps = createMaps("lenv");
+  _tmpMaps = createMaps("lenv");
   char tmpBuff[100];
   struct ztimeval tp;
   if (zGettimeofday (&tp, NULL) == 0)
@@ -2181,23 +2241,27 @@ runRequest (map ** inputs)
   dumpMap (request_inputs);
 #endif
   int ei = 1;
-  char *s = 
+  char **orig = 
 #ifdef WIN32
-    GetEnvironmentStrings();
+    GetEnvironmentStrings()
 #else
-    *environ;
+    environ
 #endif
+    ;
+  char *s=*orig;
   _tmpMaps = createMaps("renv");
   for (; s; ei++) {
     char* tmpName=zStrdup(s);
     char* tmpValue=strstr(s,"=")+1;
-    tmpName[strlen(tmpName)-strlen(tmpValue)-1]=0;
+    char* tmpName1=(char*)malloc((1+(strlen(tmpName)-strlen(tmpValue)))*sizeof(char));
+    snprintf(tmpName1,(strlen(tmpName)-strlen(tmpValue)),"%s",tmpName);
     if(_tmpMaps->content == NULL)
-      _tmpMaps->content = createMap (tmpName,tmpValue);
+      _tmpMaps->content = createMap (tmpName1,tmpValue);
     else
-      addToMap (_tmpMaps->content,tmpName,tmpValue);
+      addToMap (_tmpMaps->content,tmpName1,tmpValue);
     free(tmpName);
-    s = *(environ+ei);
+    free(tmpName1);
+    s = *(orig+ei);
   }
   addMapsToMaps (&m, _tmpMaps);
   freeMaps (&_tmpMaps);
@@ -2227,6 +2291,9 @@ runRequest (map ** inputs)
     setMapInMaps (m, "lenv", "uusid", test1->value);
   }
 #endif
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  invokeCallback(m,NULL,NULL,0,0);
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
@@ -2235,6 +2302,13 @@ runRequest (map ** inputs)
       status = NULLMAP;
   if (status == NULLMAP)
     {
+      /*        hInternet = InternetOpen (
+#ifndef WIN32
+				  (LPCTSTR)
+#endif
+				  "ZooWPSClient\0",
+				  INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);*/
+
       if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	freeService (&s1);
 	free (s1);
@@ -2250,6 +2324,9 @@ runRequest (map ** inputs)
 	free (tmpmaps);
 	return -1;
       }
+      fprintf(stderr,"*************************\n\n");
+      //fprintf(stderr,"%s \n",json_object_to_json_string_ext(mapsToJson(request_input_real_format),JSON_C_TO_STRING_PLAIN));
+      fprintf(stderr,"*************************\n\n");
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
                          &request_output_real_format, &eres);
     }
@@ -2299,6 +2376,7 @@ runRequest (map ** inputs)
           map* tmpm = getMapFromMaps (m, "lenv", "osid");
           int cpid = atoi (tmpm->value);
           r_inputs = getMapFromMaps (m, "main", "tmpPath");
+          setMapInMaps (m, "lenv", "async","true");
 	  map* r_inputs1 = createMap("ServiceName", s1->name);
 
 	  // Create the filename for the result file (.res)
@@ -2395,6 +2473,22 @@ runRequest (map ** inputs)
 
           f1 = freopen (fbkp1, "w+", stdout);
 
+	  map* serviceTypeMap=getMap(s1->content,"serviceType");
+	  if(serviceTypeMap!=NULL)
+	    setMapInMaps (m, "lenv", "serviceType", serviceTypeMap->value);
+
+          char *flenv =
+            (char *)
+            malloc ((strlen (r_inputs->value) + 
+                     strlen (usid->value) + 12) * sizeof (char));
+          sprintf (flenv, "%s/%s_lenv.cfg", r_inputs->value, usid->value);
+	  maps* lenvMaps=getMaps(m,"lenv");
+	  dumpMapsToFile(lenvMaps,flenv,0);
+	  free(flenv);
+
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	  invokeCallback(m,request_input_real_format,NULL,1,0);
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
 	    free (s1);
@@ -2418,6 +2512,7 @@ runRequest (map ** inputs)
 	    fflush (stderr);
 	    return -1;
 	  }
+	  setMapInMaps(m,"lenv","ds_nb","1");
           loadServiceAndRun (&m, s1, request_inputs,
                              &request_input_real_format,
                              &request_output_real_format, &eres);
@@ -2434,10 +2529,11 @@ runRequest (map ** inputs)
         }
     }
 
-  //#ifdef DEBUG
+#ifdef DEBUG
+  fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
   dumpMaps (request_output_real_format);
-  //#endif
-  //sleep(120);
+  fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
+#endif
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,
@@ -2461,7 +2557,6 @@ runRequest (map ** inputs)
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
       fclose (stdout);
-      fclose (stderr);
 
       fclose (f0);
       fclose (f1);
@@ -2485,12 +2580,19 @@ runRequest (map ** inputs)
       removeShmLock (m, 1);
 #else
       recordResponse(m,fbkp1);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      invokeCallback(m,NULL,request_output_real_format,5,1);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
       freeMaps(&bmap);
       free(bmap);
       unlink (fbkp1);
       unlink (flog);
       unhandleStatus (m);
+#ifdef META_DB
+      close_sql(m,0);
+      //end_sql();
+#endif
       free(fbkpid);
       free(fbkpres); 
       free (flog);           
@@ -2498,8 +2600,18 @@ runRequest (map ** inputs)
       // free (tmps1); // tmps1 is stack memory and should not be freed
       if(cgiSid!=NULL)
 	free(cgiSid);
+      //InternetCloseHandle (&hInternet);  
+      fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
+      fflush(stderr);
+      fclose (stderr);
     }
-
+  else{
+    //InternetCloseHandle (&hInternet);  
+#ifdef META_DB
+    //close_sql(m,0);
+#endif
+  }
+  
   freeService (&s1);
   free (s1);
   freeMaps (&m);

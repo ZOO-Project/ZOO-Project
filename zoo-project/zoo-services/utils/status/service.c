@@ -84,9 +84,9 @@ extern "C" {
        * Parse Status to extract Status / Message
        */
       char *tmpStr=_getStatus(conf,tmpMap->value);
-#ifdef DEBUG
+      //#ifdef DEBUG
       fprintf(stderr,"DEBUG: %s \n",tmpStr);
-#endif
+      //#endif
       if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	char *tmpStr1=strdup(tmpStr);
 	char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
@@ -139,6 +139,8 @@ extern "C" {
     while(i<100){
       char message[10];
       sprintf(message,"Step %d",i);
+      fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
+      fflush(stderr);
       updateStatus(conf,i,message);
 #ifndef WIN32
       sleep(1);

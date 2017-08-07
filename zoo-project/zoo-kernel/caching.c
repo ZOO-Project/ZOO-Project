@@ -157,6 +157,7 @@ char* isInCache(maps* conf,char* request){
  * @return 0 in case of success, -1 in case of failure
  */
 int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** error){
+  
   map* tmp1;
   char sindex[5];
   maps* content=*in;
@@ -211,8 +212,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
     map* tmap=getMap(content->content,oname);
     sprintf(sindex,"%d",*index+1);
     if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
-      
-      if(getMap(content->content,icname)==NULL){
+
+      if(getMap(content->content,icname)==NULL){	
 	fcontent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
 	if(fcontent == NULL){
 	  errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
@@ -265,11 +266,11 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	  map* tmp2;
 	  char* md5str=NULL;
 	  if((tmp2=getMap(content->content,bname))!=NULL){
-	    dumpMap(tmp2);
 	    char *tmpStr=(char*)malloc((strlen(tmp1->value)+strlen(tmp2->value)+1)*sizeof(char));
 	    sprintf(tmpStr,"%s%s",tmp1->value,tmp2->value);
 	    if((tmp2=getMap(content->content,"headers"))!=NULL){
 	      char *tmpStr2=zStrdup(tmpStr);
+	      free(tmpStr);
 	      tmpStr=(char*)malloc((strlen(tmpStr2)+strlen(tmp2->value)+1)*sizeof(char));
 	      sprintf(tmpStr,"%s%s",tmpStr2,tmp2->value);
 	      free(tmpStr2);
@@ -292,8 +293,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	free(fcontent);
 	free(mimeType);
 	free(request);
-	*index++;
-	
+	(*index)++;
       }
     }
   }
@@ -360,7 +360,7 @@ void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
     freeMaps(&oreq);
     free(oreq);
   }else{
-    setMapArray(oreq->content,"value",hInternet->nb-1,url);
+    setMapArray(oreq->content,"value",hInternet->nb,url);
   }
 }
 
@@ -443,6 +443,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       sprintf(fname,"%s/%s.zca",tmp->value,md5str);
       addToMap(*content,"cache_file",fname);
       free(fname);
+      free(md5str);
     }
   }
   free(fcontent);

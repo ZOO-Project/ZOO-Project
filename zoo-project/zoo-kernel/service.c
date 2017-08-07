@@ -145,6 +145,18 @@ void dumpMapsToFile(maps* m,char* file_path,int limit){
 }
 
 /**
+ * Create a new iotype*
+ *
+ * @return a pointer to the allocated iotype 
+ */
+iotype* createIoType(){
+  iotype* io=(iotype*)malloc(IOTYPE_SIZE);
+  io->content=NULL;
+  io->next=NULL;
+  return io;
+}
+
+/**
  * Create a new map
  *
  * @param name the key to add to the map
@@ -399,6 +411,9 @@ void freeElements(elements** e){
     freeMap(&tmp->metadata);
     if(tmp->metadata!=NULL)
       free(tmp->metadata);
+    freeMap(&tmp->additional_parameters);
+    if(tmp->additional_parameters!=NULL)
+      free(tmp->additional_parameters);
     if(tmp->format!=NULL)
       free(tmp->format);
     if(tmp->child!=NULL){
@@ -830,8 +845,10 @@ void setMapArray(map* m,const char* key,int index,const char* value){
       addToMap(m,"length",tmp0);
     }
   }
-  else
+  else{
     sprintf(tmp,"%s",key);
+    addToMap(m,"length","1");
+  }
   map* tmpSize=getMapArray(m,"size",index);
   if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
 #ifdef DEBUG
@@ -963,6 +980,7 @@ elements* createEmptyElements(){
   res->name=NULL;
   res->content=NULL;
   res->metadata=NULL;
+  res->additional_parameters=NULL;  
   res->format=NULL;
   res->defaults=NULL;
   res->supported=NULL;
@@ -982,6 +1000,7 @@ elements* createElements(const char* name){
   res->name=zStrdup(name);
   res->content=NULL;
   res->metadata=NULL;
+  res->additional_parameters=NULL;
   res->format=NULL;
   res->defaults=NULL;
   res->supported=NULL;
@@ -1021,6 +1040,8 @@ void dumpElements(elements* e){
     dumpMap(tmp->content);
     fprintf(stderr," > METADATA [%s]\n",tmp->name);
     dumpMap(tmp->metadata);
+    fprintf(stderr," > ADDITIONAL PARAMETERS [%s]\n",tmp->name);
+    dumpMap(tmp->additional_parameters);
     fprintf(stderr," > FORMAT [%s]\n",tmp->format);
     iotype* tmpio=tmp->defaults;
     int ioc=0;
@@ -1138,7 +1159,7 @@ void dumpElementsAsYAML(elements* e,int level){
 elements* dupElements(elements* e){
   elements* cursor=e;
   elements* tmp=NULL;
-  if(cursor!=NULL){
+  if(cursor!=NULL && e->name!=NULL){
 #ifdef DEBUG
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
     dumpElements(e);
@@ -1150,6 +1171,8 @@ elements* dupElements(elements* e){
     addMapToMap(&tmp->content,e->content);
     tmp->metadata=NULL;
     addMapToMap(&tmp->metadata,e->metadata);
+    tmp->additional_parameters=NULL;
+    addMapToMap(&tmp->additional_parameters,e->additional_parameters);
     if(e->format!=NULL)
       tmp->format=zStrdup(e->format);
     else
@@ -1186,7 +1209,10 @@ elements* dupElements(elements* e){
       tmp->child=dupElements(cursor->child);
     else
       tmp->child=NULL;
-    tmp->next=dupElements(cursor->next);
+    if(cursor->next!=NULL)
+      tmp->next=dupElements(cursor->next);
+    else
+      tmp->next=NULL;
   }
   return tmp;
 }
@@ -1233,8 +1259,12 @@ void dumpService(service* s){
   if(s->content!=NULL){
     fprintf(stderr,"CONTENT MAP\n");
     dumpMap(s->content);
-    fprintf(stderr,"CONTENT METADATA\n");
+    if(s->metadata!=NULL)
+      fprintf(stderr,"CONTENT METADATA\n");
     dumpMap(s->metadata);
+    if(s->additional_parameters!=NULL)
+      fprintf(stderr,"CONTENT AdditionalParameters\n");
+    dumpMap(s->additional_parameters);
   }
   if(s->inputs!=NULL){
     fprintf(stderr,"INPUT ELEMENTS [%s]\n------------------\n",s->name);
@@ -1292,6 +1322,8 @@ service* dupService(service* s){
   addMapToMap(&res->content,s->content);
   res->metadata=NULL;
   addMapToMap(&res->metadata,s->metadata);
+  res->additional_parameters=NULL;
+  addMapToMap(&res->additional_parameters,s->additional_parameters);
   res->inputs=dupElements(s->inputs);
   res->outputs=dupElements(s->outputs);
   return res;

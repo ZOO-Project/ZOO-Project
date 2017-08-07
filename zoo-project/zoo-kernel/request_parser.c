@@ -532,6 +532,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	  if(vid==1){
 	    xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
 	    tmpmaps = createMaps((char *) val);
+	    xmlFree(val);
 	  }
 
 	  xmlNodePtr cur2 = cur->children;
@@ -623,7 +624,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  else
 			    tmpmaps->content =
 			      createMap (refs[l], (char *) val);
-
 			  map *ltmp = getMap (tmpmaps->content, "method");
 			  if (l == 4 )
 			    {
@@ -749,6 +749,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					  
 				      map *btmp =
 					getMap (tmpmaps->content, "Reference");
+				      addToMap (tmpmaps->content, "Body", tmp);
 				      if (btmp != NULL)
 					{
 					  addRequestToQueue(main_conf,hInternet,(char *) btmp->value,false);
@@ -814,7 +815,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						  ihandle[0].nDataLen,
 						  &bRead);
 				tmp[bInternet.ihandle[0].nDataLen] = 0;
-				InternetCloseHandle (&bInternet);
+				InternetCloseHandle(&bInternet);
+				addToMap (tmpmaps->content, "Body", tmp);
 				map *btmp =
 				  getMap (tmpmaps->content, "href");
 				if (btmp != NULL)
@@ -831,6 +833,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				  }
 				free (tmp);
+				xmlFree (val);
 			      }
 			}
 		      cur3 = cur3->next;
@@ -1119,6 +1122,7 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	tmpmaps = createMaps("unknownIdentifier");
       const char ress[4][13] =
 	{ "mimeType", "encoding", "schema", "transmission" };
+      xmlFree (val);
       for (l = 0; l < 4; l++){
 	val = xmlGetProp (cur, BAD_CAST ress[l]);
 	if (val != NULL && strlen ((char *) val) > 0)
@@ -1138,11 +1142,13 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	xmlNodePtr ccur = cur->children;
 	while (ccur != NULL){
 	  if(ccur->type == XML_ELEMENT_NODE){
-	    char *xpathExpr=(char*)malloc(65+strlen(tmpmaps->name));
-	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);
+	    char *xpathExpr=(char*)malloc(66+strlen(tmpmaps->name));
+	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);	    
 	    xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
 	    xmlNodeSet* cnodes = tmpsptr->nodesetval;
 	    xmlParseOutputs2(main_conf,request_inputs,&tmpmaps->child,doc,cnodes);
+	    xmlXPathFreeObject (tmpsptr);
+	    free(xpathExpr);
 	    break;
 	  }
 	  ccur = ccur->next;
@@ -1423,6 +1429,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 	    addToMap(*request_inputs,"mode",(char*)val);
 	  else
 	    addToMap(*request_inputs,"mode","auto");
+	  xmlFree(val);
 	  val = xmlGetProp (cur, BAD_CAST "response");
 	  if(val!=NULL){
 	    addToMap(*request_inputs,"response",(char*)val);
@@ -1435,6 +1442,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 	    addToMap(*request_inputs,"response","document");
 	    addToMap(*request_inputs,"ResponseDocument","");
 	  }
+	  xmlFree(val);
 	}
       }
     }
