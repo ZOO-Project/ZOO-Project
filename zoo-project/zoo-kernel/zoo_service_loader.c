@@ -39,7 +39,7 @@ extern "C" int crlex ();
 
 #include "ulinet.h"
 
-#include <libintl.h>
+#include <libinti.h>
 #include <locale.h>
 #include <string.h>
 
@@ -106,30 +106,6 @@ extern "C" int crlex ();
 
 #ifndef WIN32
 extern char **environ;
-#endif
-
-
-#ifdef WIN32
-extern "C"
-{
-  __declspec (dllexport) char *strcasestr (char const *a, char const *b)
-#ifndef USE_MS
-  {
-    char *x = zStrdup (a);
-    char *y = zStrdup (b);
-
-      x = _strlwr (x);
-      y = _strlwr (y);
-    char *pos = strstr (x, y);
-    char *ret = pos == NULL ? NULL : (char *) (a + (pos - x));
-      free (x);
-      free (y);
-      return ret;
-  };
-#else
-   ;
-#endif
-}
 #endif
 
 /**

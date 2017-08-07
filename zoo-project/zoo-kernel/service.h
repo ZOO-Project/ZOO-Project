@@ -34,6 +34,10 @@
 #endif
 
 #ifdef WIN32
+ZOO_DLL_EXPORT char *strcasestr (char const *,char const *);
+#endif
+
+#ifdef WIN32
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #define strtok_r strtok_s
