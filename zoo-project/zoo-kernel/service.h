@@ -36,6 +36,7 @@
 #ifdef WIN32
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
+#define strtok_r strtok_s
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define snprintf _snprintf
 #endif
