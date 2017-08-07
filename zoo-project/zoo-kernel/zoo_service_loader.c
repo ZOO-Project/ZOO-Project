@@ -39,7 +39,7 @@ extern "C" int crlex ();
 
 #include "ulinet.h"
 
-#include <libinti.h>
+#include <libintl.h>
 #include <locale.h>
 #include <string.h>
 
