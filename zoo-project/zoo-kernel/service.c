@@ -1593,3 +1593,23 @@ void charxxxToMaps(char*** c,maps**m){
   }
   m=&trorf;
 }
+
+#ifdef WIN32
+char *strcasestr (char const *a, char const *b)
+#ifndef USE_MS
+  {
+    char *x = zStrdup (a);
+    char *y = zStrdup (b);
+ 
+      x = _strlwr (x);
+      y = _strlwr (y);
+    char *pos = strstr (x, y);
+    char *ret = pos == NULL ? NULL : (char *) (a + (pos - x));
+      free (x);
+      free (y);
+      return ret;
+  };
+#else
+   ;
+#endif
+#endif
