@@ -84,11 +84,14 @@ extern "C" {
 
   
   ZOO_DLL_EXPORT SSHCON *ssh_connect(maps*);
-  ZOO_DLL_EXPORT bool ssh_copy(maps*,const char*,const char*);
-  ZOO_DLL_EXPORT int ssh_fetch(maps*,const char*,const char*);
-  ZOO_DLL_EXPORT int ssh_exec(maps*,const char*);
+  ZOO_DLL_EXPORT bool ssh_copy(maps*,const char*,const char*,int);
+  ZOO_DLL_EXPORT int ssh_get_cnt(maps*);
+  ZOO_DLL_EXPORT int ssh_fetch(maps*,const char*,const char*,int);
+  ZOO_DLL_EXPORT int ssh_exec(maps*,const char*,int);
   ZOO_DLL_EXPORT bool ssh_close_session(maps*,SSHCON*);
   ZOO_DLL_EXPORT bool ssh_close(maps*);
+  ZOO_DLL_EXPORT bool addToUploadQueue(maps**,maps*);
+  ZOO_DLL_EXPORT bool runUpload(maps**);
   
 #ifdef __cplusplus
 }

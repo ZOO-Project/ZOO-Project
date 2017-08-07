@@ -311,6 +311,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	  std::cout << "  [" << paramKey << "]" << std::endl;
 	  std::string s=m_Application->GetParameterDescription(paramKey);
 	  if(s.length()>0){
+	    s=ReplaceAll(ReplaceAll(s,std::string("\n"),std::string("")),std::string("\t"),std::string(""));
 	    std::cout << "   Title = " << s << std::endl;
 	    std::cout << "   Abstract = " << s << std::endl;
 	  }else{

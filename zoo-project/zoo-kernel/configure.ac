@@ -61,6 +61,32 @@ AC_SUBST([UUID_CFLAGS])
 AC_SUBST([UUID_LDFLAGS])
 
 #============================================================================
+# Detect if json-c is available
+#============================================================================
+
+AC_ARG_WITH([json],
+    [AS_HELP_STRING([--with-json=PATH], [Specifies an alternative location for the json-c library])],
+    [JSON_DIR="$withval"], [JSON_DIR="/usr/"])
+JSON_CPPFLAGS="-I$JSON_DIR/include/json-c/"
+JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$JSON_CPPFLAGS"
+LIBS_SAVE="$LIBS"
+LIBS="$JSON_LDFLAGS"
+echo $CPPFLAGS
+AC_CHECK_HEADERS([json_object.h],
+			[], [AC_MSG_ERROR([could not find header file json_object.h])])
+AC_CHECK_LIB([json-c], [json_object_new_object],
+			[], [AC_MSG_ERROR([could not find function in json-c library])])
+CPPFLAGS="$CPPFLAGS_SAVE"
+JSON_FILE="service_json.o"
+JSON_ENABLED="-DJSON"
+AC_SUBST([JSON_CPPFLAGS])
+AC_SUBST([JSON_LDFLAGS])
+AC_SUBST([JSON_FILE])
+AC_SUBST([JSON_ENABLED])
+
+#============================================================================
 # Detect if openssl is available
 #============================================================================
 

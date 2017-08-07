@@ -1,7 +1,11 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2015 GeoLabs SARL
+ * Copyright (c) 2017 GeoLabs SARL
+ *
+ * This work was supported by public funds received in the framework of GEOSUD,
+ * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed 
+ * by the French National Research Agency
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +40,7 @@
 #endif
 #include "sshapi.h"
 
+void addNestedOutputs(service**);
 int zoo_hpc_support(maps**,map*,service*,maps**,maps**);
 
 #endif

@@ -208,9 +208,9 @@ extern "C" {
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*,const char*);
-  void printGetCapabilitiesForProcess(registry*,maps*,xmlNodePtr,service*);
-  void printDescribeProcessForProcess(registry*,maps*,xmlNodePtr,service*);
-  void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int);
+  void printGetCapabilitiesForProcess(registry*,maps*,xmlDocPtr,xmlNodePtr,service*);
+  void printDescribeProcessForProcess(registry*,maps*,xmlDocPtr,xmlNodePtr,service*);
+  void printFullDescription(xmlDocPtr,int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int,int,const map*);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
@@ -219,7 +219,8 @@ extern "C" {
   void printBoundingBoxDocument(maps*,maps*,FILE*);
   void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
   void printStatusInfo(maps*,map*,char*);
-  int addMetadata(map* meta,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink);
+  int addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
+  int addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr);
 
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 

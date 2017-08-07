@@ -147,8 +147,8 @@ char* _getStatusFile(maps* conf,char* pid){
     }
 
     //FILE* f0 = fopen (fileName, "r");
-	// knut: open file in binary mode to avoid conversion of line endings (yielding extra bytes) on Windows platforms
-	FILE* f0 = fopen(fileName, "rb"); 
+    // knut: open file in binary mode to avoid conversion of line endings (yielding extra bytes) on Windows platforms
+    FILE* f0 = fopen(fileName, "rb"); 
     if(f0!=NULL){
       fseek (f0, 0, SEEK_END);
       long flen = ftell (f0);
@@ -161,7 +161,6 @@ char* _getStatusFile(maps* conf,char* pid){
 	unlockShm(lockid);
 	free(stat);
       }
-
       return tmps1;
     }
     else{

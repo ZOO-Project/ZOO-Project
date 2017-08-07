@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#include "service.h"
 #include "response_print.h"
 #include "request_parser.h"
 #include "server_internal.h"
@@ -643,7 +644,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
  * @param serv the service structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlNodePtr nc,service* serv){
+void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xml,ns_xlink;
   xmlNodePtr n=NULL,nc1,nc2,nc3;
   map* version=getMapFromMaps(m,"main","rversion");
@@ -691,28 +692,14 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlNodePtr nc,service
     printDescription(nc1,ns_ows,serv->name,serv->content,vid);
     tmp1=serv->metadata;
 
-    addMetadata(tmp1,nc1,ns_ows,ns_xlink);
+    addMetadata(tmp1,doc,nc1,ns_ows,ns_xlink);
+    tmp1=serv->additional_parameters;
+    int fromDb=-1;
+    map* test=getMap(serv->content,"fromDb");
+    if(test!=NULL && strncasecmp(test->value,"true",4)==0)
+      fromDb=1;
+    addAdditionalParameters(tmp1,doc,nc1,ns_ows,ns_xlink,fromDb);
 
-    /*while(tmp1!=NULL){
-      nc2 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-      if(strcmp(tmp1->name,"title")==0 ||
-	 strcmp(tmp1->name,"href")==0 ||
-	 strcmp(tmp1->name,"role")==0 ||
-	 strcmp(tmp1->name,"link_type")==0){
-	xmlNewNsProp(nc2,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-	xmlAddChild(nc1,nc2);
-      }else{
-	if(nc3==NULL)
-	  nc3 = xmlNewNode(ns_ows, BAD_CAST "AdditionalParameter");
-	xmlNodePtr nc4 = xmlNewNode(ns_ows, BAD_CAST "Name");
-	xmlAddChild(nc4,xmlNewText(BAD_CAST tmp1->name));
-	xmlNodePtr nc5 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	xmlAddChild(nc5,xmlNewText(BAD_CAST tmp1->value));
-	xmlAddChild(nc3,nc4);
-	xmlAddChild(nc3,nc5);
-      }
-      tmp1=tmp1->next;
-      }*/
     if(nc3!=NULL)
       xmlAddChild(nc1,nc3);
     xmlAddChild(nc,nc1);
@@ -755,7 +742,7 @@ void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
   }
 }
 
-int addMetadata(map* meta,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink){
+int addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink){
     int hasTitle=-1;
     int hasValue=-1;
     xmlNodePtr nc1;
@@ -829,6 +816,88 @@ int addMetadata(map* meta,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink){
     }
 }
 
+
+int addAdditionalParameters(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,int fromDb){
+    int hasTitle=-1;
+    int hasValue=-1;
+    xmlNodePtr nc1;
+    map* oMeta=meta;
+    int isAdditionalParameters=-1;
+    //if(count(oMeta)>=2){
+    int level=0;
+    map* test=getMap(meta,"title");
+    if(test!=NULL)
+      level+=1;
+    test=getMap(meta,"href");
+    if(test!=NULL)
+      level+=1;
+    test=getMap(meta,"role");
+    if(test!=NULL)
+      level+=1;
+    if(count(oMeta)>level+1)
+      isAdditionalParameters=1;
+    //}
+    char *ctitle=NULL;
+    while(meta!=NULL){
+      if(hasTitle<0)
+	if(hasValue<0)
+	  nc1 = xmlNewNode(ns_ows, BAD_CAST "AdditionalParameters");
+      if(strncasecmp(meta->name,"title",5)==0 ||
+	 strcasecmp(meta->name,"href")==0 ||
+	 strcasecmp(meta->name,"role")==0 ){
+	int index=5;
+	if(strncasecmp(meta->name,"title",5)==0){
+	  index=6;
+	  hasTitle=1;
+	  if(ctitle!=NULL && strcasecmp(meta->value,ctitle)!=0){
+	      xmlAddChild(nc,nc1);
+	      nc1 = xmlNewNode(ns_ows, BAD_CAST "AdditionalParameters");
+	      free(ctitle);
+	      ctitle=NULL;
+	  }
+	  if(ctitle==NULL){
+	    char *tmp=(char*)malloc((strlen(meta->name)+1)*sizeof(char));
+	    snprintf(tmp,index,"%s",meta->name);
+	    xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp,BAD_CAST meta->value);
+	    free(tmp);
+	  }	  
+	  if(ctitle!=NULL)
+	    free(ctitle);
+	  ctitle=zStrdup(meta->value);
+	}
+      }else{
+	xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "AdditionalParameter");
+	xmlNodePtr nc3 = xmlNewNode(ns_ows, BAD_CAST "Name");
+	xmlAddChild(nc3,xmlNewText(BAD_CAST meta->name));
+	xmlAddChild(nc2,nc3);
+	if(fromDb<0){
+	  char *mptr;
+	  char* meta_values=strtok_r(meta->value,",",&mptr);
+	  while(meta_values!=NULL){
+	    xmlNodePtr nc4 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	    xmlAddChild(nc4,xmlNewText(BAD_CAST meta_values));
+	    xmlAddChild(nc2,nc4);
+	    meta_values=strtok_r(NULL,",",&mptr);
+	  }
+	}else{
+	  xmlNodePtr nc4 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	  xmlAddChild(nc4,xmlNewCDataBlock(doc,BAD_CAST meta->value,strlen(meta->value)));
+	  xmlAddChild(nc2,nc4);
+	}
+	xmlAddChild(nc1,nc2);
+	hasTitle=-1;
+      }
+      meta=meta->next;
+      if(hasTitle<0){
+	xmlAddChild(nc,nc1);
+	hasValue=1;
+      }
+    }
+    if(oMeta!=NULL && hasValue<0 && nc1!=NULL){
+      xmlAddChild(nc,nc1);
+    }
+}
+
 /**
  * Add the ows:Metadata nodes relative to the profile registry
  *
@@ -885,12 +954,17 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
  * @param serv the servive structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service* serv){
+void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNodePtr nc,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc1;
   xmlNodePtr nc2 = NULL;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
+  int fromDb=-1;
+  map* serviceType=getMap(serv->content,"serviceType");
+  map* test=getMap(serv->content,"fromDb");
+  if(test!=NULL && strncasecmp(test->value,"true",4)==0)
+    fromDb=1;
 
   n=nc;
   
@@ -936,7 +1010,7 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service
   if(vid==0){
     tmp1=serv->metadata;
     while(tmp1!=NULL){
-      addMetadata(tmp1,nc,ns_ows,ns_xlink);
+      addMetadata(tmp1,doc,nc,ns_ows,ns_xlink);
       /*nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
       xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
       xmlAddChild(nc,nc1);*/
@@ -950,30 +1024,32 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service
     }
   }else{
     tmp1=serv->metadata;
-    addMetadata(tmp1,nc,ns_ows,ns_xlink);
+    addMetadata(tmp1,doc,nc,ns_ows,ns_xlink);
     addInheritedMetadata(nc,ns_ows,ns_xlink,reg,m,serv);
+    tmp1=serv->additional_parameters;
+    addAdditionalParameters(tmp1,doc,nc,ns_ows,ns_xlink,fromDb);
   }
 
   if(serv->inputs!=NULL){
     elements* e=serv->inputs;
     if(vid==0){
       nc1 = xmlNewNode(NULL, BAD_CAST "DataInputs");
-      printFullDescription(1,e,"Input",ns,ns_ows,nc1,vid);
+      printFullDescription(doc,1,e,"Input",ns,ns_ows,nc1,vid,fromDb,NULL);
       xmlAddChild(nc,nc1);
     }
     else{
-      printFullDescription(1,e,"wps:Input",ns,ns_ows,nc,vid);
+      printFullDescription(doc,1,e,"wps:Input",ns,ns_ows,nc,vid,fromDb,NULL);
     }
   }
 
   elements* e=serv->outputs;
   if(vid==0){
     nc1 = xmlNewNode(NULL, BAD_CAST "ProcessOutputs");
-    printFullDescription(0,e,"Output",ns,ns_ows,nc1,vid);
+    printFullDescription(doc,0,e,"Output",ns,ns_ows,nc1,vid,fromDb,NULL);
     xmlAddChild(nc,nc1);
   }
   else{
-    printFullDescription(0,e,"wps:Output",ns,ns_ows,nc,vid);
+    printFullDescription(doc,0,e,"wps:Output",ns,ns_ows,nc,vid,fromDb,serviceType);
   }
   if(vid==0)
     xmlAddChild(n,nc);
@@ -995,8 +1071,10 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlNodePtr nc,service
  * @param ns_ows the ows XML namespace
  * @param nc1 the XML node to use to add the created tree
  * @param vid the WPS version id (0 for 1.0.0, 1 for 2.0.0)
+ * @param fromDb 1 in case the metadata comes from the DB, -1 in other cases
+ * @param serviceType the serviceType found in the ZCFG file or the DB
  */
-void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xmlNsPtr ns_ows,xmlNodePtr nc1,int vid){
+void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,xmlNsPtr ns,xmlNsPtr ns_ows,xmlNodePtr nc1,int vid,int fromDb,const map* serviceType){
   xmlNsPtr ns1=NULL;
   if(vid==1)
     ns1=ns;
@@ -1031,6 +1109,9 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
     printDescription(nc2,ns_ows,e->name,e->content,vid);
 
     if(e->format!=NULL){
+#ifdef USE_HPC	    
+    DEFAULT_OUT:
+#endif
       const char orderedFields[13][14]={
 	"mimeType",
 	"encoding",
@@ -1137,7 +1218,8 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
 	      nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
 	      char *tmps=strdup(token);
 	      tmps[strlen(tmps)]=0;
-	      xmlAddChild(nc7,xmlNewText(BAD_CAST tmps));
+	      nc8 = xmlNewText(BAD_CAST tmps);
+	      xmlAddChild(nc7,nc8);
 	      free(tmps);
 	      xmlAddChild(nc6,nc7);
 	      token=strtok_r(NULL,",",&saveptr1);
@@ -1436,8 +1518,9 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
 	int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
 	xmlNsPtr ns_xlink=usedNs[xlinkId];
 
-	dumpMap(metadata);
-	addMetadata(metadata,nc2,ns_ows,ns_xlink);
+	//dumpMap(metadata);
+	addMetadata(metadata,doc,nc2,ns_ows,ns_xlink);
+	addAdditionalParameters(e->additional_parameters,doc,nc2,ns_ows,ns_xlink,fromDb);
 
       }
 
@@ -1582,11 +1665,12 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
     
       xmlAddChild(nc2,nc3);
     }else{
-      if(e->child!=NULL && vid!=0){
-	printFullDescription(in,e->child,type,ns,ns_ows,nc2,vid);
+      if(e->child!=NULL){
+	if(e->child!=NULL && vid!=0){
+	  printFullDescription(doc,in,e->child,type,ns,ns_ows,nc2,vid,fromDb,NULL);
+	}
       }
     }
-    
     if(e->child!=NULL && vid==0){
       elements* children=dupElements(e->child);
       elements* cursor=children;
@@ -1597,13 +1681,12 @@ void printFullDescription(int in,elements *elem,const char* type,xmlNsPtr ns,xml
 	sprintf(cursor->name,"%s.%s",e->name,tmp);
 	cursor=cursor->next;
       }
-      printFullDescription(in,children,type,ns,ns_ows,nc2,vid);
+      printFullDescription(doc,in,children,type,ns,ns_ows,nc2,vid,fromDb,serviceType);
       xmlAddChild(nc1,nc2);
       freeElements(&children);
       free(children);
     }else
       xmlAddChild(nc1,nc2);
-    
     e=e->next;
   }
 }
@@ -2587,7 +2670,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
-      if(toto!=NULL && strcasecmp(toto->value,"true")==0 && testMap==NULL)
+      if(toto!=NULL && strcasecmp(toto->value,"true")==0 && (testMap==NULL || strncasecmp(testMap->value,"true",4)!=0) )
 #else
       if(toto!=NULL && strcasecmp(toto->value,"true")==0)
 #endif

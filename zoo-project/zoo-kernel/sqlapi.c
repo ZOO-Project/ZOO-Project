@@ -42,7 +42,7 @@ GDALDataset
 #else
 OGRDataSource 
 #endif
- *zoo_DS = NULL;
+ **zoo_DS = NULL;
 
 /**
  * Global OGRLayer pointer pointing to the lastest result set
@@ -69,14 +69,12 @@ char* _createInitString(maps* conf,const char* key){
   };
   int i=0;
   maps* cconf=getMaps(conf,key);
+  if(cconf==NULL)
+    return "-1";
   int len=0;
   for(i=0;i<6;i++){
     map* tmp=getMap(cconf->content,keywords[i]);
-    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-    fflush(stderr);
     if(tmp!=NULL){
-      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-      fflush(stderr);
       if(res==NULL){
 	res=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+4)*sizeof(char));
 	sprintf(res,"%s='%s'",keywords[i],tmp->value);
@@ -88,16 +86,10 @@ char* _createInitString(maps* conf,const char* key){
 	memcpy(res+len,res1,(strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
 	len+=strlen(res1);
 	res[len]=0;
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	free(res1);
       }
     }
-    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-    fflush(stderr);
   }
-  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-  fflush(stderr);
   map* tmp=getMap(cconf->content,"type");
   if(tmp!=NULL){
     char* fres=(char*)malloc((strlen(res)+strlen(tmp->value)+2)*sizeof(char));
@@ -124,32 +116,66 @@ char* createInitString(maps* conf){
  * @param conf the maps containing the setting of the main.cfg file
  * @see createInitString
  */
-void _init_sql(maps* conf,const char* key){
+int _init_sql(maps* conf,const char* key){
   char* sqlInitString=_createInitString(conf,key);
+  if(strncmp(sqlInitString,"-1",2)==0)
+    return -1;
   OGRSFDriver *poDriver = NULL;
   OGRRegisterAll();
-
+  int zoo_ds_nb=0;
+  map* dsNb=getMapFromMaps(conf,"lenv","ds_nb");
+  if(dsNb==NULL){
+    setMapInMaps(conf,"lenv","ds_nb","1");
+  }else{
+    zoo_ds_nb=atoi(dsNb->value);
+    char* tmp=(char*)malloc(11*sizeof(char));
+    sprintf(tmp,"%d",zoo_ds_nb+1);
+    setMapInMaps(conf,"lenv","ds_nb",(const char*)tmp);
+    free(tmp);
+  }
+  if(zoo_DS==NULL)
+    zoo_DS=
 #if GDAL_VERSION_MAJOR >= 2
-  zoo_DS = (GDALDataset*) GDALOpenEx( sqlInitString,
+      (GDALDataset**) malloc(sizeof(GDALDataset*))
+#else
+      (OGRDataSource**) malloc(sizeof(OGRDataSource*))
+#endif
+      ;
+  else
+    zoo_DS=      
+#if GDAL_VERSION_MAJOR >= 2
+      (GDALDataset**)realloc(zoo_DS,(zoo_ds_nb+1)*sizeof(GDALDataset*))
+#else
+      (OGRDataSource**)realloc(zoo_DS,(zoo_ds_nb+1)*sizeof(OGRDataSource*))
+#endif
+      ;
+  
+#if GDAL_VERSION_MAJOR >= 2
+  zoo_DS[zoo_ds_nb] = (GDALDataset*) GDALOpenEx( sqlInitString,
 				      GDAL_OF_UPDATE | GDAL_OF_VECTOR,
 				      NULL, NULL, NULL );
 #else
-  zoo_DS = OGRSFDriverRegistrar::Open(sqlInitString,false,&poDriver);
+  zoo_DS[zoo_ds_nb] = OGRSFDriverRegistrar::Open(sqlInitString,false,&poDriver);
 #endif
-  if( zoo_DS == NULL ){
+  if( zoo_DS[zoo_ds_nb] == NULL ){
 #ifdef DEBUG
     fprintf(stderr,"sqlInitString: %s FAILED !\n",sqlInitString);
     fflush(stderr);
 #endif
     free(sqlInitString);
-    setMapInMaps(conf,"lenv","message","Failed to connect to the database backend");
-    return;
+    setMapInMaps(conf,"lenv","dbIssue","1");
+    setMapInMaps(conf,"lenv","message",_("Failed to connect to the database backend"));
+    return -2;
   }
 #ifdef DEBUG
   fprintf(stderr,"sqlInitString: %s SUCEED !\n",sqlInitString);
   fflush(stderr);
 #endif
+  fprintf(stderr,"sqlInitString: %s SUCEED %d !\n",sqlInitString,zoo_ds_nb);
+  fflush(stderr);  
   free(sqlInitString);
+  zoo_ds_nb++;
+  return zoo_ds_nb;
 }
 
 /**
@@ -158,7 +184,7 @@ void _init_sql(maps* conf,const char* key){
  * @param conf the maps containing the setting of the main.cfg file
  * @see createInitString
  */
-void init_sql(maps* conf){
+int init_sql(maps* conf){
   return _init_sql(conf,"database");
 }
 
@@ -167,16 +193,16 @@ void init_sql(maps* conf){
  * 
  * @param conf the maps containing the setting of the main.cfg file
  */
-void close_sql(maps* conf){
+void close_sql(maps* conf,int cid){
   if( zoo_ResultSet != NULL )
-    zoo_DS->ReleaseResultSet( zoo_ResultSet );
+    zoo_DS[cid]->ReleaseResultSet( zoo_ResultSet );
   if(zoo_DS!=NULL){
 #if GDAL_VERSION_MAJOR >= 2
-    GDALClose(zoo_DS);
+    GDALClose(zoo_DS[cid]);
 #else
-    OGRDataSource::DestroyDataSource( zoo_DS );
+    OGRDataSource::DestroyDataSource( zoo_DS[cid] );
 #endif
-    zoo_DS=NULL;
+    zoo_DS[cid]=NULL;
   }
 }
 
@@ -195,15 +221,21 @@ void end_sql(){
  * @param sqlQuery the SQL query to run
  * @return NULL in case of failure or an OGRLayer pointer if the query succeed.
  */
-OGRLayer *fetchSql(maps* conf,const char* sqlQuery){
+OGRLayer *fetchSql(maps* conf,int cid,const char* sqlQuery){
+  if(zoo_DS[cid]==NULL)
+    return NULL;
   OGRLayer *res=NULL;
-  res = zoo_DS->ExecuteSQL( sqlQuery, NULL, NULL);
+#ifdef DEBUG
+  fprintf(stderr,"************************* %s %s %d\n\n",sqlQuery,__FILE__,__LINE__);
+  fflush(stderr);
+#endif
+  res = zoo_DS[cid]->ExecuteSQL( sqlQuery, NULL, NULL);
   return res;
 }
 
-void cleanFetchSql(maps* conf,OGRLayer *objects){
+void cleanFetchSql(maps* conf,int cid,OGRLayer *objects){
   if( objects != NULL ){
-    zoo_DS->ReleaseResultSet( objects );
+    zoo_DS[cid]->ReleaseResultSet( objects );
     objects=NULL;
   }
 }
@@ -215,13 +247,12 @@ void cleanFetchSql(maps* conf,OGRLayer *objects){
  * @param sqlQuery the SQL query to run
  * @return -1 in case of failure and 1 if the query succeed.
  */
-int execSql(maps* conf,const char* sqlQuery){
+int execSql(maps* conf,int cid,const char* sqlQuery){
   int res=-1;
-  zoo_ResultSet = zoo_DS->ExecuteSQL( sqlQuery, NULL, NULL);
+  zoo_ResultSet = zoo_DS[cid]->ExecuteSQL( sqlQuery, NULL, NULL);
   if( zoo_ResultSet != NULL ){
     res=1;
   }
-  zoo_DS->ReleaseResultSet( zoo_ResultSet );
   return res;
 }
 
@@ -232,11 +263,20 @@ int execSql(maps* conf,const char* sqlQuery){
  * @param sqlQuery the SQL query to run
  * @return -1 in case of failure and 1 if the query succeed.
  */
-void cleanUpResultSet(const maps* conf){
+void cleanUpResultSet(const maps* conf,int cid){
   if( zoo_ResultSet != NULL ){
-    zoo_DS->ReleaseResultSet( zoo_ResultSet );
+    zoo_DS[cid]->ReleaseResultSet( zoo_ResultSet );
     zoo_ResultSet=NULL;
   }
+}
+
+#ifdef RELY_ON_DB
+int getCurrentId(maps* conf){
+  int res=0;
+  map* dsNb=getMapFromMaps(conf,"lenv","ds_nb");
+  if(dsNb!=NULL)
+    res=atoi(dsNb->value);
+  return res;
 }
 
 /**
@@ -248,6 +288,7 @@ void cleanUpResultSet(const maps* conf){
  * @param name the maps containing the setting of the main.cfg file
  */
 void recordStoredFile(maps* conf,const char* filename,const char* type,const char* name){
+  int zoo_ds_nb=getCurrentId(conf);
   map *uusid=getMapFromMaps(conf,"lenv","usid");
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(uusid->value)+strlen(filename)+strlen(type)+(name!=NULL?strlen(name):2)+68+1)*sizeof(char));
@@ -255,9 +296,9 @@ void recordStoredFile(maps* conf,const char* filename,const char* type,const cha
     sprintf(sqlQuery,"INSERT INTO %s.files (uuid,filename,nature,name) VALUES ('%s','%s','%s','%s');",schema->value,uusid->value,filename,type,name);
   else
     sprintf(sqlQuery,"INSERT INTO %s.files (uuid,filename,nature,name) VALUES ('%s','%s','%s',NULL);",schema->value,uusid->value,filename,type);
-  execSql(conf,sqlQuery);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   free(sqlQuery);
-  cleanUpResultSet(conf);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
 }
 
 /**
@@ -266,6 +307,7 @@ void recordStoredFile(maps* conf,const char* filename,const char* type,const cha
  * @param conf the maps containing the setting of the main.cfg file
  */
 void recordServiceStatus(maps* conf){
+  int zoo_ds_nb=getCurrentId(conf);
   map *sid=getMapFromMaps(conf,"lenv","sid");
   map *osid=getMapFromMaps(conf,"lenv","osid");
   map *uusid=getMapFromMaps(conf,"lenv","usid");
@@ -283,9 +325,9 @@ void recordServiceStatus(maps* conf){
 	  sid->value,
 	  osid->value,
 	  wpsStatus[2]);
-  execSql(conf,sqlQuery);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   free(sqlQuery);
-  cleanUpResultSet(conf);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
 }
 
 /**
@@ -295,6 +337,7 @@ void recordServiceStatus(maps* conf){
  * @param filename the file's name
  */
 void recordResponse(maps* conf,char* filename){
+  int zoo_ds_nb=getCurrentId(conf);
   FILE *file = fopen (filename, "rb");
   fseek (file, 0, SEEK_END);
   long flen = ftell (file);
@@ -307,13 +350,12 @@ void recordResponse(maps* conf,char* filename){
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+flen+strlen(sid->value)+57+1)*sizeof(char));
   sprintf(sqlQuery,"INSERT INTO %s.responses (content,uuid) VALUES ($$%s$$,$$%s$$);",schema->value,tmps,sid->value);
-  execSql(conf,sqlQuery);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   free(sqlQuery);
   free(tmps);
-  cleanUpResultSet(conf);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
 }
 
-#ifdef RELY_ON_DB
 /**
  * Update the current status of the running service.
  *
@@ -321,17 +363,25 @@ void recordResponse(maps* conf,char* filename){
  * @return 0 on success, -2 if shmget failed, -1 if shmat failed
  */
 int _updateStatus(maps* conf){
+  int zoo_ds_nb=getCurrentId(conf);
   map *sid=getMapFromMaps(conf,"lenv","usid");
   map *p=getMapFromMaps(conf,"lenv","status");
   map *msg=getMapFromMaps(conf,"lenv","message");
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+64+1)*sizeof(char));
   sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$ where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
-  fflush(stderr);
-  if( zoo_DS == NULL )
+  if( zoo_ds_nb==
+#ifdef META_DB
+      1
+#else
+      0
+#endif
+      ){
     init_sql(conf);
-  execSql(conf,sqlQuery);
-  cleanUpResultSet(conf);
+    zoo_ds_nb++;
+  }
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
   return 0;
 }
@@ -344,12 +394,21 @@ int _updateStatus(maps* conf){
  * @return the reported status char* (MESSAGE|POURCENTAGE)
  */
 char* _getStatus(maps* conf,char* pid){
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
   sprintf(sqlQuery,"select status||'|'||message from %s.services where uuid=$$%s$$;",schema->value,pid);
-  if( zoo_DS == NULL )
+  if( zoo_ds_nb==
+#ifdef META_DB
+      1
+#else
+      0
+#endif
+      ){
     init_sql(conf);
-  execSql(conf,sqlQuery);
+    zoo_ds_nb++;
+  }
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   OGRFeature  *poFeature = NULL;
   const char *tmp1;
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
@@ -362,7 +421,7 @@ char* _getStatus(maps* conf,char* pid){
     }
     OGRFeature::DestroyFeature( poFeature );
   }
-  cleanUpResultSet(conf);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
   return (char*)tmp1;
 }
@@ -375,31 +434,43 @@ char* _getStatus(maps* conf,char* pid){
  * @return the reported status char* (temporary/final result)
  */
 char* _getStatusFile(maps* conf,char* pid){
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+82+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select content from %s.responses where uuid=$$%s$$"
 	  " order by creation_time desc limit 1",schema->value,pid);
-  if( zoo_DS == NULL )
+  if( zoo_ds_nb==
+#ifdef META_DB
+      1
+#else
+      0
+#endif
+      ){
     init_sql(conf);
-  execSql(conf,sqlQuery);
+    zoo_ds_nb++;
+  }
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   OGRFeature  *poFeature = NULL;
   const char *tmp1;
   int hasRes=-1;
-  while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
-    for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
-      if( poFeature->IsFieldSet( iField ) ){
-	tmp1=strdup(poFeature->GetFieldAsString( iField ));
-	hasRes=1;
+  if(zoo_ResultSet!=NULL){
+      while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+	for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+	  if( poFeature->IsFieldSet( iField ) ){
+	    tmp1=strdup(poFeature->GetFieldAsString( iField ));
+	    hasRes=1;
+	  }
+	  else
+	    tmp1=NULL;
+	}
+	OGRFeature::DestroyFeature( poFeature );
       }
-      else
-	tmp1=NULL;
-    }
-    OGRFeature::DestroyFeature( poFeature );
   }
   if(hasRes<0)
     tmp1=NULL;
-  cleanUpResultSet(conf);
+  else
+    cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
   return (char*)tmp1;
 }
@@ -411,18 +482,27 @@ char* _getStatusFile(maps* conf,char* pid){
  * @param pid the service identifier (usid key from the [lenv] section)
  */
 void removeService(maps* conf,char* pid){
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)
     malloc((strlen(pid)+strlen(schema->value)+38+1)
 	   *sizeof(char));
-  if( zoo_DS == NULL )
+  if( zoo_ds_nb==
+#ifdef META_DB
+      1
+#else
+      0
+#endif
+      ){
     init_sql(conf);
+    zoo_ds_nb++;
+  }
   sprintf(sqlQuery,
 	  "DELETE FROM %s.services where uuid=$$%s$$;",
 	  schema->value,pid);
-  execSql(conf,sqlQuery);
-  cleanUpResultSet(conf);
-  close_sql(conf);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
+  close_sql(conf,zoo_ds_nb-1);
   free(sqlQuery);
   end_sql();
 }
@@ -433,6 +513,7 @@ void removeService(maps* conf,char* pid){
  * @param conf the map containing the setting of the main.cfg file
  */
 void unhandleStatus(maps* conf){
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   map *sid=getMapFromMaps(conf,"lenv","usid");
   map *fstate=getMapFromMaps(conf,"lenv","fstate");
@@ -446,9 +527,9 @@ void unhandleStatus(maps* conf){
 	  "UPDATE %s.services set end_time=now(), fstate=$$%s$$"
 	  " where uuid=$$%s$$;",
 	  schema->value,(fstate!=NULL?fstate->value:"Failed"),sid->value);
-  execSql(conf,sqlQuery);
-  cleanUpResultSet(conf);
-  close_sql(conf);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
+  close_sql(conf,zoo_ds_nb-1);
   free(sqlQuery);
   end_sql();
 }
@@ -461,14 +542,17 @@ void unhandleStatus(maps* conf){
  * @return the sid value
  */
 char* getStatusId(maps* conf,char* pid){
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select osid from %s.services where uuid=$$%s$$",
 	  schema->value,pid);
-  if( zoo_DS == NULL )
+  if( zoo_ds_nb==0 ){
     init_sql(conf);
-  execSql(conf,sqlQuery);
+    zoo_ds_nb++;
+  }
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   OGRFeature  *poFeature = NULL;
   const char *tmp1;
   int hasRes=-1;
@@ -485,6 +569,7 @@ char* getStatusId(maps* conf,char* pid){
   if(hasRes<0)
     tmp1=NULL;
   free(sqlQuery);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   return (char*)tmp1;
 }
 
@@ -495,6 +580,7 @@ char* getStatusId(maps* conf,char* pid){
  * @param pid the service identifier (usid key from the [lenv] section)
  */
 void readFinalRes(maps* conf,char* pid,map* statusInfo){
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
   sprintf(sqlQuery,
@@ -502,7 +588,7 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
 	  schema->value,pid);
   if( zoo_DS == NULL )
     init_sql(conf);
-  execSql(conf,sqlQuery);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   OGRFeature  *poFeature = NULL;
   int hasRes=-1;
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
@@ -530,12 +616,15 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
  */
 int isRunning(maps* conf,char* pid){
   int res=0;
+  int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+73+1)*sizeof(char));
   sprintf(sqlQuery,"select count(*) as t from %s.services where uuid=$$%s$$ and end_time is null;",schema->value,pid);
-  if( zoo_DS == NULL )
+  if( zoo_ds_nb == 0 ){
     init_sql(conf);
-  execSql(conf,sqlQuery);
+    zoo_ds_nb++;
+  }
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
   OGRFeature  *poFeature = NULL;
   const char *tmp1;
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
@@ -548,7 +637,7 @@ int isRunning(maps* conf,char* pid){
     }
     OGRFeature::DestroyFeature( poFeature );
   }
-  cleanUpResultSet(conf);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
   return res;
 }

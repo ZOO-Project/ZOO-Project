@@ -138,7 +138,7 @@ extern "C" {
 /**
  * The memory size to create an elements
  */
-#define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*2)+sizeof(char*)+(((2*sizeof(char*))+sizeof(iotype*))*2)+(2*sizeof(elements*)))
+#define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*3)+sizeof(char*)+(((2*sizeof(char*))+sizeof(iotype*))*2)+(2*sizeof(elements*)))
 /**
  * The memory size to create a map
  */
@@ -158,7 +158,7 @@ extern "C" {
  * The memory size to create a service
  */
 //#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
-#define SERVICE_SIZE sizeof(char*) + 2*sizeof(map*) + 2*sizeof(elements*)
+#define SERVICE_SIZE sizeof(char*) + 3*sizeof(map*) + 2*sizeof(elements*)
 /**
  * The memory size to create a services
  */
@@ -227,6 +227,7 @@ extern "C" {
     char* name; //!< the name
     struct map* content; //!< the content map
     struct map* metadata; //!< the metadata map
+    struct map* additional_parameters; //!< the additional parameters map
     char* format; //!< the format: LiteralData or ComplexData or BoundingBoxData
     struct iotype* defaults; //!< the default iotype 
     struct iotype* supported; //!< the supported iotype 
@@ -241,6 +242,7 @@ extern "C" {
     char* name; //!< the name
     struct map* content; //!< the content map
     struct map* metadata; //!< the metadata map
+    struct map* additional_parameters; //!< the additional parameters map
     struct elements* inputs; //!< the inputs elements
     struct elements* outputs; //!< the outputs elements
   } service;
@@ -277,8 +279,7 @@ extern "C" {
   ZOO_DLL_EXPORT map* getMapFromMaps(maps*,const char*,const char*);
   ZOO_DLL_EXPORT void freeMap(map**);
   ZOO_DLL_EXPORT void freeMaps(maps** mo);
-  
-
+  ZOO_DLL_EXPORT iotype* createIoType();
   ZOO_DLL_EXPORT elements* createEmptyElements();
   ZOO_DLL_EXPORT elements* createElements(const char*);
   ZOO_DLL_EXPORT void setElementsName(elements**,char*);
