@@ -82,6 +82,8 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
   if(strncmp("Set-Cookie: ",(char*)buffer,12)==0){
     int i;
     char* tmp;
+    int cnt;
+    _HINTERNET *psInternet;
     for(i=0;i<12;i++)
 #ifndef WIN32
       buffer++;
@@ -89,8 +91,8 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
 	;
 #endif
     tmp=strtok(buffer,";");
-    int cnt=0;
-    _HINTERNET *psInternet=(_HINTERNET *)data;
+    cnt=0;
+    psInternet=(_HINTERNET *)data;
     if(tmp!=NULL && psInternet!=NULL){
       psInternet->cookie=(char*)malloc(sizeof(char)*(strlen(tmp)+1));
       sprintf(psInternet->cookie,"%s",tmp);
@@ -243,9 +245,10 @@ int AddMissingHeaderEntry(_HINTERNET* handle,const char* key,const char* value){
  */
 int isProtectedHost(const char* protectedHosts,const char* url){
   char *token, *saveptr;
+  int cnt;
+  char* host;  
   token = strtok_r (url, "//", &saveptr);
-  int cnt=0;
-  char* host;
+  cnt=0;
   while(token!=NULL && cnt<=1){
     fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,token);
     if(cnt==1)
@@ -278,15 +281,16 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
   if(passThrough!=NULL && targetHosts!=NULL){
     char *tmp=zStrdup(passThrough->value);
     char *token, *saveptr;
+    int i;    
     token = strtok_r (tmp, ",", &saveptr);
-    int i;
     for(i=0;i<handle->nb;i++){
       if(targetHosts->value[0]=='*' || isProtectedHost(targetHosts->value,handle->ihandle[i].url)==1){
 	while (token != NULL){
+	  int j;
+      map* tmpMap;	  
 	  int length=strlen(token)+6;
 	  char* tmp1=(char*)malloc(length*sizeof(char));
 	  snprintf(tmp1,6,"HTTP_");
-	  int j;
 	  for(j=0;token[j]!='\0';j++){
 	    if(token[j]!='-')
 	      tmp1[5+j]=toupper(token[i]);
@@ -295,7 +299,7 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	    tmp1[5+j+1]='\0';
 	  }
 	  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmp1);
-	  map* tmpMap = getMapFromMaps(conf,"renv",tmp1);
+	  tmpMap = getMapFromMaps(conf,"renv",tmp1);
 	  if(tmpMap!=NULL)	    
 	    AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
 	  free(tmp1);
