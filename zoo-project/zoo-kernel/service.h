@@ -39,6 +39,11 @@
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define snprintf _snprintf
 #endif
+#if defined(_MSC_VER) && _MSC_VER < 1800
+#define false 0
+#define true 1
+#define bool int
+#endif
 #define zStrdup _strdup
 #define zMkdir _mkdir
 #define zOpen _open
