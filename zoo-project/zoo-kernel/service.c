@@ -1595,8 +1595,8 @@ void charxxxToMaps(char*** c,maps**m){
 }
 
 #ifdef WIN32
-char *strcasestr (char const *a, char const *b)
 #ifndef USE_MS
+char *strcasestr (char const *a, char const *b)
   {
     char *x = zStrdup (a);
     char *y = zStrdup (b);
