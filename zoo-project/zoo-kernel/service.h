@@ -34,7 +34,9 @@
 #endif
 
 #ifdef WIN32
+#ifndef USE_MS
 ZOO_DLL_EXPORT char *strcasestr (char const *,char const *);
+#endif
 #endif
 
 #ifdef WIN32
