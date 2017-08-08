@@ -289,7 +289,7 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	  int j;
 	  for(j=0;token[j]!='\0';j++){
 	    if(token[j]!='-')
-	      tmp1[5+j]=toupper(token[i]);
+	      tmp1[5+j]=toupper(token[j]);
 	    else
 	      tmp1[5+j]='_';
 	    tmp1[5+j+1]='\0';

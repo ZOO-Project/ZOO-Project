@@ -248,6 +248,7 @@ extern "C" {
 		     (char*)jsonStr, strlen(jsonStr),
 		     INTERNET_FLAG_NO_CACHE_WRITE,
 		     0);
+    AddHeaderEntries(&hInternet,m);
     //curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle, CURLOPT_VERBOSE, 1);
     processDownloads(&hInternet);
     char *tmp = (char *) malloc ((hInternet.ihandle[0].nDataLen + 1)
