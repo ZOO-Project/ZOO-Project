@@ -40,9 +40,11 @@ typedef struct {
   char* target_file;
 } local_params;
 
-#ifdef PTHREADS
-#endif
-
+/**
+ * Add nested outputs to every outputs that is geographic format 
+ * @see isGeographic
+ * @param s the service current definition
+ */ 
 void addNestedOutputs(service** s){
   if((*s)==NULL){
     return;
