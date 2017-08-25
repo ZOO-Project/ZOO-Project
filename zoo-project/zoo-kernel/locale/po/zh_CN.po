@@ -1,0 +1,333 @@
+# ZOO-Kernel Internationalization.
+# Copyright (C) 2015 GeoLabs SARL
+# This file is distributed under the same license as the PACKAGE package.
+# 
+# Translators:
+# 许秋熹 <xqx930807@gmail.com>, 2017
+# 许秋熹 <xqx930807@gmail.com>, 2017
+msgid ""
+msgstr ""
+"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
+"POT-Creation-Date: 2015-07-02 18:06+0200\n"
+"PO-Revision-Date: 2017-08-18 02:35+0000\n"
+"Last-Translator: 许秋熹 <xqx930807@gmail.com>\n"
+"Language-Team: Chinese (China) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/zh_CN/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: caching.c:217 caching.c:235 caching.c:356 request_parser.c:214
+#: request_parser.c:225 request_parser.c:262 request_parser.c:403
+#: request_parser.c:414 request_parser.c:441 request_parser.c:537
+#: request_parser.c:562 request_parser.c:665 request_parser.c:782
+#: request_parser.c:1112 request_parser.c:1204 zcfg2yaml.c:38
+#: zoo_service_loader.c:259 zoo_service_loader.c:880 zoo_service_loader.c:1363
+#: zoo_service_loader.c:1559
+msgid "Unable to allocate memory"
+msgstr "无法分配内存"
+
+#: caching.c:344
+msgid "Unable to download the file."
+msgstr "无法下载文件."
+
+#: request_parser.c:92
+#, c-format
+msgid "The maximum allowed occurrences for <%s> (%i) was exceeded."
+msgstr "<%s>所允许的最大事件(%i)溢出了"
+
+#: request_parser.c:113
+#, c-format
+msgid "ZOO-Kernel was unable to load your data for %s position %s."
+msgstr "ZOO核心无法从%s的位置上为%s载入您的数据。"
+
+#: request_parser.c:124
+#, c-format
+msgid "The maximum allowed occurrences for <%s> is one."
+msgstr "<%s>所允许的最大事件只有一个."
+
+#: request_parser.c:315
+#, c-format
+msgid "Unable to find a valid protocol to download the remote file %s"
+msgstr "无法找到有效的协议用于下载远程文件%s"
+
+#: request_parser.c:613
+msgid "Unable to add a request in the queue."
+msgstr "无法在队列中加入请求。"
+
+#: request_parser.c:1021
+msgid "Unable to append maps to maps."
+msgstr "无法将追加键值."
+
+#: request_parser.c:1291
+msgid "Duplicate <Output> elements in WPS Execute request"
+msgstr "元素<Output>的副本在WPS Execute请求中"
+
+#: request_parser.c:1487
+#, c-format
+msgid ""
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
+msgstr "参数<%s>在 ZOO服务提供者的配置文件中定义了大小限制%s(MB)，您提供的参考超过了该限制(%fMB)."
+
+#: request_parser.c:1519
+#, c-format
+msgid ""
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
+msgstr "参数<%s>在输入数据中未定义，但是根据ZOO服务提供者配置文件中要求提供。"
+
+#: request_parser.c:1545
+#, c-format
+msgid ""
+"The <%s> argument specified as %s identifier was not recognized (not defined"
+" in the ZOO Configuration File)."
+msgstr "被定义为标识符%s的参数<%s>未被识别(在ZOO服务提供者配置文件中未定义)。"
+
+#: request_parser.c:1663
+#, c-format
+msgid "Mandatory parameter <%s> was not specified"
+msgstr "强制参数<%s>未定义"
+
+#: request_parser.c:1712
+#, c-format
+msgid "The value <%s> was not recognized, %s %s the only acceptable value."
+msgstr "值<%s>未被识别，%s%s仅有的可接受值。"
+
+#: request_parser.c:1715
+msgid "is"
+msgstr "是"
+
+#: request_parser.c:1727
+msgid "are"
+msgstr "是"
+
+#: response_print.c:1630
+#, c-format
+msgid "The service \"%s\" ran successfully."
+msgstr "“%s”服务成功运行"
+
+#: response_print.c:1638
+#, c-format
+msgid ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
+msgstr "ZOO服务“%s”正在运行。请重新载入页面以获取服务的最新状态。"
+
+#: response_print.c:1644
+#, c-format
+msgid ""
+"The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
+msgstr "服务\"%s\"已经被ZOO核心接受并在后台任务运行。请打开该网页中状态位置属性里的URL以获得最新状态和结果。"
+
+#: response_print.c:1661
+msgid "No more information available"
+msgstr "没有更多可获得的信息"
+
+#: response_print.c:1668
+#, c-format
+msgid "error code not know : %i\n"
+msgstr "未知错误状态码:%i\n"
+
+#: response_print.c:1760
+msgid "Lock failed."
+msgstr "加锁失败。"
+
+#: response_print.c:1773
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
+msgstr "无法创建文件\"%s\"以存储执行响应。"
+
+#: response_print.c:2290
+msgid "No debug message available"
+msgstr "没有可获得的调试信息"
+
+#: response_print.c:2378
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "无法创建文件\"%s\"以存储会话映射。"
+
+#: response_print.c:2394
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
+msgstr "无法运行服务.服务返回的信息如下:"
+
+#: response_print.c:2395
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
+msgstr "无法运行服务.服务返回的信息如下:%s"
+
+#: response_print.c:2398 response_print.c:2399
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr "无法运行服务.服务没有返回更多信息."
+
+#: response_print.c:2486
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the %s final result."
+msgstr "无法创建文件\"%s\"以存储%s最后结果。"
+
+#: response_print.c:2572
+#, c-format
+msgid ""
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+msgstr "错误的元数据输出参数：对于输入参数“%s”无法获取任何结果。"
+
+#: server_internal.c:869 server_internal.c:946
+msgid ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+msgstr "请求的JobID和该服务器上运行的任务不匹配"
+
+#: server_internal.c:875 server_internal.c:907
+msgid "The result for the requested JobID has not yet been generated. "
+msgstr "请求的JobID的几个还未生成."
+
+#: server_internal.c:988
+msgid "The job cannot be removed, a file cannot be removed"
+msgstr "任务不能移除，文件不能移除"
+
+#: server_internal.c:1063
+msgid "Unable to open the registry directory."
+msgstr "无法打开注册目录。"
+
+#: server_internal.c:1082
+msgid "Unable to allocate memory."
+msgstr "无法分配内存。"
+
+#: server_internal.c:1093 zoo_service_loader.c:276 zoo_service_loader.c:1384
+#: zoo_service_loader.c:1427
+#, c-format
+msgid "Unable to parse the ZCFG file: %s (%s)"
+msgstr "无法解析ZCFG文件:%s(%s)"
+
+#: server_internal.c:1096 zoo_service_loader.c:279 zoo_service_loader.c:1389
+#: zoo_service_loader.c:1431
+#, c-format
+msgid "Unable to parse the ZCFG file: %s."
+msgstr "无法解析ZCFG文件:%s."
+
+#: service_internal_ms.c:136
+msgid "Unable to find any mapserverAddress defined in the main.cfg file"
+msgstr "无法找到main.cfg文件中定义的mapserver地址"
+
+#: service_internal_php.c:227
+#, c-format
+msgid "Unable to load the PHP file %s"
+msgstr "无法载入PHP文件%s"
+
+#: service_internal_python.c:316
+#, c-format
+msgid "Python module %s cannot be loaded. Message: %s\n"
+msgstr "Python模块%s无法载入。信息如下：%s\n"
+
+#: service_internal_python.c:355
+#, c-format
+msgid ""
+"%s\n"
+"Unable to run your python process properly. Please check the following messages : %s"
+msgstr "%s\n无法正确运行您的python进程。请检查下面的信息：%s"
+
+#: service_internal_python.c:361
+#, c-format
+msgid ""
+"%s \n"
+" Unable to run your python process properly. Unable to provide any further information."
+msgstr "%s\n无法正确运行您的python进程。无法提供更多信息。"
+
+#: zoo_service_loader.c:352
+#, c-format
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s"
+msgstr "ZOO核心无法处理您的请求，收到信号%d=%s"
+
+#: zoo_service_loader.c:527
+#, c-format
+msgid "Error occurred while running the %s function: %s"
+msgstr "运行%s函数时发生错误：%s"
+
+#: zoo_service_loader.c:578
+#, c-format
+msgid "Unable to load C Library %s"
+msgstr "无法载入C程序库%s"
+
+#: zoo_service_loader.c:672
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
+" Kernel.\n"
+msgstr "ZCFG文件中设置的编程语言(%s)尚未被ZOO核心支持。\n"
+
+#: zoo_service_loader.c:737
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "无法缓存HTTP POST执行请求。"
+
+#: zoo_service_loader.c:895
+msgid "Unable to load the main.cfg file."
+msgstr "无法载入main.cfg文件。"
+
+#: zoo_service_loader.c:895
+msgid "%s The following file: %s cannot be found."
+msgstr "%s下面的文件：%s找不到"
+
+#: zoo_service_loader.c:940
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "参数<language>不支持值%s"
+
+#: zoo_service_loader.c:1238
+msgid "The specified path does not exist."
+msgstr "指定的路径不存在。"
+
+#: zoo_service_loader.c:1303
+#, c-format
+msgid ""
+"Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"
+msgstr "无法解析下列ZOO服务：%s的ZCFG文件。信息：%s"
+
+#: zoo_service_loader.c:1308
+#, c-format
+msgid "Unable to parse the ZCFG file for the following ZOO-Service: %s."
+msgstr "无法解析下列ZOO服务：%s的ZCFG文件。"
+
+#: zoo_service_loader.c:1534
+msgid "Unable to run Execute request using the GET HTTP method"
+msgstr "无法使用HTTP GET方法执行请求"
+
+#: zoo_service_loader.c:1606
+#, c-format
+msgid ""
+"The value for <identifier> seems to be wrong (%s). Please specify one of the"
+" processes in the list returned by a GetCapabilities request."
+msgstr "<identifier>的值看起来不对(%s)。请定义一个在GetCapabilities请求返回列表中的处理进程。"
+
+#: zoo_service_loader.c:1733
+msgid ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to"
+" false. Please modify your request parameters."
+msgstr "如果storeExecuteResponse被设置为false,状态参数不能被设置为true.请调整您的请求参数."
+
+#: zoo_service_loader.c:1761
+msgid "The process does not permit the desired execution mode."
+msgstr "该进程不允许期望的执行模式."
+
+#: zoo_service_loader.c:1837
+msgid "No message provided"
+msgstr "没有可以提供的信息"
+
+#: zoo_service_loader.c:1995
+msgid "Initializing"
+msgstr "初始化中..."
+
+#: zoo_service_loader.c:2142
+msgid "Unable to run the child process properly"
+msgstr "无法正确执行子进程"
