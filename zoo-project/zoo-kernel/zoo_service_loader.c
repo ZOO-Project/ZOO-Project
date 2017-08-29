@@ -303,15 +303,16 @@ recursReaddirF ( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_
     else
       {
         char* extn = strstr(dp->d_name, ".zcfg");
-        if(dp->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
+        if(dp->d_name[0] != '.' && extn != NULL && strlen(extn) == 5 && strlen(dp->d_name)>6)
           {
             int t;
             char tmps1[1024];
             memset (tmps1, 0, 1024);
             snprintf (tmps1, 1024, "%s/%s", conf_dir, dp->d_name);
 
-            char *tmpsn = zStrdup (dp->d_name);
-            tmpsn[strlen (tmpsn) - 5] = 0;
+	    char *tmpsn = (char*)malloc((strlen(dp->d_name)-4)*sizeof(char));//zStrdup (dp->d_name);
+	    memset (tmpsn, 0, strlen(dp->d_name)-4);
+	    snprintf(tmpsn,strlen(dp->d_name)-4,"%s",dp->d_name);
             
             map* import = getMapFromMaps (m, IMPORTSERVICE, tmpsn);
             if (import == NULL || import->value == NULL || zoo_path_compare(tmps1, import->value) != 0 ) { // service is not in [include] block 
@@ -1180,21 +1181,29 @@ runRequest (map ** inputs)
     NULL
   };
   r_inputs = getMap (request_inputs, "Request");
-  REQUEST = zStrdup (r_inputs->value);
+  fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
+  fflush(stderr);
+  dumpMap(r_inputs);
+  fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
+  fflush(stderr);
+  if(r_inputs!=NULL)
+    REQUEST = zStrdup (r_inputs->value);
+  fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
+  fflush(stderr);
   int reqId=-1;
   if (strncasecmp (REQUEST, "GetCapabilities", 15) != 0){
     checkValidValue(request_inputs,&err,"version",(const char**)vvv,1);
     int j=0;
     for(j=0;j<nbSupportedRequests;j++){
       if(requests[vid][j]!=NULL && requests[vid][j+1]!=NULL){
-	if(j<nbReqIdentifier && strncasecmp(REQUEST,requests[vid][j+1],strlen(REQUEST))==0){
+	if(j<nbReqIdentifier && strncasecmp(REQUEST,requests[vid][j+1],strlen(requests[vid][j+1]))==0){
 	  checkValidValue(request_inputs,&err,"identifier",NULL,1);
 	  reqId=j+1;
 	  break;
 	}
 	else
 	  if(j>=nbReqIdentifier && j<nbReqIdentifier+nbReqJob && 
-	     strncasecmp(REQUEST,requests[vid][j+1],strlen(REQUEST))==0){
+	     strncasecmp(REQUEST,requests[vid][j+1],strlen(requests[vid][j+1]))==0){
 	    checkValidValue(request_inputs,&err,"jobid",NULL,1);
 	    reqId=j+1;
 	    break;
@@ -1357,9 +1366,16 @@ runRequest (map ** inputs)
     {
       r_inputs = getMap (request_inputs, "JobId");
       if(reqId>nbReqIdentifier){
-	if (strncasecmp (REQUEST, "GetStatus", strlen(REQUEST)) == 0 ||
-	    strncasecmp (REQUEST, "GetResult", strlen(REQUEST)) == 0){
+	if (strncasecmp (REQUEST, "GetStatus", 9) == 0 ||
+	    strncasecmp (REQUEST, "GetResult", 9) == 0){
 	  runGetStatus(m,r_inputs->value,REQUEST);
+#ifdef RELY_ON_DB
+	  map* dsNb=getMapFromMaps(m,"lenv","ds_nb");
+	  if(dsNb!=NULL && atoi(dsNb->value)>1)
+	    close_sql(m,1);
+	  close_sql(m,0);
+#endif
+	  
 	  freeMaps (&m);
 	  free(m);
 	  if(zooRegistry!=NULL){
@@ -2159,7 +2175,8 @@ runRequest (map ** inputs)
   else
     addToMap (_tmpMaps->content, "soap", "false");
 
-  // Parse the session file and add it to the main maps 
+  // Parse the session file and add it to the main maps
+  char* originalCookie=NULL;
   if (cgiCookie != NULL && strlen (cgiCookie) > 0)
     {
       int hasValidCookie = -1;
@@ -2251,10 +2268,11 @@ runRequest (map ** inputs)
   char *s=*orig;
   _tmpMaps = createMaps("renv");
   for (; s; ei++) {
+    int len=strlen(s);
     char* tmpName=zStrdup(s);
     char* tmpValue=strstr(s,"=")+1;
-    char* tmpName1=(char*)malloc((1+(strlen(tmpName)-strlen(tmpValue)))*sizeof(char));
-    snprintf(tmpName1,(strlen(tmpName)-strlen(tmpValue)),"%s",tmpName);
+    char* tmpName1=(char*)malloc((1+(len-strlen(tmpValue)))*sizeof(char));
+    snprintf(tmpName1,(len-strlen(tmpValue))+1,"%s",tmpName);
     if(_tmpMaps->content == NULL)
       _tmpMaps->content = createMap (tmpName1,tmpValue);
     else
@@ -2262,6 +2280,14 @@ runRequest (map ** inputs)
     free(tmpName);
     free(tmpName1);
     s = *(orig+ei);
+  }
+  if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
+    /*map* tmpMap1=getMap(_tmpMaps->content,"HTTP_COOKIE");
+    free(tmpMap1->value);
+    tmpMap1->value=zStrdup(cgiCookie);*/
+    fprintf(stderr,"[%s]\n",cgiCookie);
+    addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
+    dumpMap(_tmpMaps->content);
   }
   addMapsToMaps (&m, _tmpMaps);
   freeMaps (&_tmpMaps);
@@ -2291,9 +2317,6 @@ runRequest (map ** inputs)
     setMapInMaps (m, "lenv", "uusid", test1->value);
   }
 #endif
-  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-  invokeCallback(m,NULL,NULL,0,0);
-  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
@@ -2445,6 +2468,9 @@ runRequest (map ** inputs)
 	  init_sql(m);
 	  recordServiceStatus(m);
 #endif
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	  invokeCallback(m,NULL,NULL,0,0);
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	  if(vid==0){
 	    /**
 	     * set status to SERVICE_STARTED and flush stdout to ensure full 
@@ -2512,6 +2538,9 @@ runRequest (map ** inputs)
 	    fflush (stderr);
 	    return -1;
 	  }
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	  invokeCallback(m,request_input_real_format,NULL,1,1);
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	  setMapInMaps(m,"lenv","ds_nb","1");
           loadServiceAndRun (&m, s1, request_inputs,
                              &request_input_real_format,

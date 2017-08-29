@@ -395,6 +395,7 @@ int _updateStatus(maps* conf){
  */
 char* _getStatus(maps* conf,char* pid){
   int zoo_ds_nb=getCurrentId(conf);
+  int created=-1;
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
   sprintf(sqlQuery,"select status||'|'||message from %s.services where uuid=$$%s$$;",schema->value,pid);
@@ -407,6 +408,7 @@ char* _getStatus(maps* conf,char* pid){
       ){
     init_sql(conf);
     zoo_ds_nb++;
+    created=1;
   }
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   OGRFeature  *poFeature = NULL;
