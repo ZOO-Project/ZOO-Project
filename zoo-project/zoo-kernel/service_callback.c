@@ -35,6 +35,25 @@ extern "C" {
 #endif
 
   /**
+   * Check if a service name is prohibited, meaning that we don't have to invoke
+   * the callback for this specific service.
+   *
+   */
+  bool isProhibited(maps* conf,const char* serviceName){
+    map* plist=getMapFromMaps(conf,"callback","prohibited");
+    if(plist!=NULL){
+      char *tmp=plist->value;
+      char *tmpS=strtok(tmp,",");
+      while(tmpS!=NULL){
+	if(strcmp(serviceName,tmpS)==0)
+	  return true;
+	tmpS=strtok(NULL,",");
+      }
+    }
+    return false;
+  }
+  
+  /**
    * Invoke the callback in case there is a [callback] section containing a url parameter
    * 
    * @param m the maps containing the main configuration file definitions
@@ -56,9 +75,12 @@ extern "C" {
     map* url=getMapFromMaps(m,"callback","url");
     if(url==NULL)
       return false;
-
+      
     maps* lenv=getMaps(m,"lenv");
-
+    map* sname=getMap(lenv->content,"identifier");
+    if(sname!=NULL && isProhibited(m,sname->value))
+      return false;
+      
     json_object *res=json_object_new_object();
 
     map* sid=getMapFromMaps(m,"lenv","usid");
@@ -86,7 +108,7 @@ extern "C" {
       // Fetching data inputs
       maps* curs=inputs;
       
-      char *keys[4][2]={
+      char *keys[8][2]={
 	{
 	  "href",
 	  "ref"
@@ -102,12 +124,29 @@ extern "C" {
 	{
 	  "size",
 	  "size"
-	}
+	},
+	{
+	  "ref_wms_link",
+	  "ref_wms_link"
+	},
+	{
+	  "ref_wcs_link",
+	  "ref_wcs_link"
+	},
+	{
+	  "ref_wfs_link",
+	  "ref_wfs_link"
+	},
+	{
+	  "datatype",
+	  "datatype"
+	}	
       };
       json_object *res1=json_object_new_object();
       while(curs!=NULL){
 	map* tmpMap=getMap(curs->content,"cache_file");
-	if(tmpMap!=NULL){
+	sid=getMap(curs->content,"ref_wms_link");
+	if(tmpMap!=NULL && sid==NULL){
 	  addToMap(curs->content,"generated_file",tmpMap->value);
 	  tmpMap=getMap(curs->content,"fmimeType");
 	  if(tmpMap!=NULL){
@@ -120,7 +159,7 @@ extern "C" {
 	json_object *res2=json_object_new_object();
 	int i=0;
 	int hasRef=-1;
-	for(;i<4;i++){
+	for(;i<8;i++){
 	  sid=getMap(curs->content,keys[i][0]);
 	  if(sid!=NULL){
 	    json_object *jsStr=json_object_new_string(sid->value);

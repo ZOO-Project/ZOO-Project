@@ -338,10 +338,10 @@ void addLanguageNodes(maps* conf,xmlNodePtr n,xmlNsPtr ns,xmlNsPtr ns_ows){
 	j++;
       }
       else{
-	nc4 = xmlNewNode(ns_ows, BAD_CAST "Language");
-	xmlAddChild(nc4,xmlNewText(BAD_CAST buff));
 	if(dcount==0){
 	  if(vid==0){
+	    nc4 = xmlNewNode(ns_ows, BAD_CAST "Language");
+	    xmlAddChild(nc4,xmlNewText(BAD_CAST buff));
 	    xmlAddChild(nc2,nc4);
 	    xmlAddChild(nc1,nc2);
 	  }
@@ -866,32 +866,35 @@ int addAdditionalParameters(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ow
 	  ctitle=zStrdup(meta->value);
 	}
       }else{
-	xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "AdditionalParameter");
-	xmlNodePtr nc3 = xmlNewNode(ns_ows, BAD_CAST "Name");
-	xmlAddChild(nc3,xmlNewText(BAD_CAST meta->name));
-	xmlAddChild(nc2,nc3);
-	if(fromDb<0){
-	  char *mptr;
-	  char* meta_values=strtok_r(meta->value,",",&mptr);
-	  while(meta_values!=NULL){
+	if(strncasecmp(meta->name,"length",6)!=0 && strncasecmp(meta->name,"fromDb",6)!=0){
+	  xmlNodePtr nc2 = xmlNewNode(ns_ows, BAD_CAST "AdditionalParameter");
+	  xmlNodePtr nc3 = xmlNewNode(ns_ows, BAD_CAST "Name");
+	  xmlAddChild(nc3,xmlNewText(BAD_CAST meta->name));
+	  xmlAddChild(nc2,nc3);
+	  if(fromDb<0){
+	    char *mptr;
+	    char* meta_values=strtok_r(meta->value,",",&mptr);
+	    while(meta_values!=NULL){
+	      xmlNodePtr nc4 = xmlNewNode(ns_ows, BAD_CAST "Value");
+	      xmlAddChild(nc4,xmlNewText(BAD_CAST meta_values));
+	      xmlAddChild(nc2,nc4);
+	      meta_values=strtok_r(NULL,",",&mptr);
+	    }
+	  }else{
 	    xmlNodePtr nc4 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	    xmlAddChild(nc4,xmlNewText(BAD_CAST meta_values));
+	    xmlAddChild(nc4,xmlNewCDataBlock(doc,BAD_CAST meta->value,strlen(meta->value)));
 	    xmlAddChild(nc2,nc4);
-	    meta_values=strtok_r(NULL,",",&mptr);
 	  }
-	}else{
-	  xmlNodePtr nc4 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	  xmlAddChild(nc4,xmlNewCDataBlock(doc,BAD_CAST meta->value,strlen(meta->value)));
-	  xmlAddChild(nc2,nc4);
+	  xmlAddChild(nc1,nc2);
 	}
-	xmlAddChild(nc1,nc2);
 	hasTitle=-1;
       }
       meta=meta->next;
       if(hasTitle<0){
 	xmlAddChild(nc,nc1);
 	hasValue=1;
-      }
+      }else
+	free(ctitle);
     }
     if(oMeta!=NULL && hasValue<0 && nc1!=NULL){
       xmlAddChild(nc,nc1);
@@ -1403,7 +1406,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		  }
 		}
 		else
-		  xmlFree(nc9);
+		  xmlFreeNode(nc9);
 		if(strcasecmp(tmp1->name,"uom")==0)
 		  hasUOM1=true;
 		hasUOM=true;
@@ -1600,10 +1603,10 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		if(vid==0 || oI!=4)
 		  xmlAddChild(nc5,nc6);
 		else
-		  xmlFree(nc6);
+		  xmlFreeNode(nc6);
 	      }
 	      else
-		xmlFree(nc6);
+		xmlFreeNode(nc6);
 	    }
 	    tmp1=tmp1->next;
 	  }
@@ -1630,12 +1633,15 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	      xmlAddChild(nc3,nc4);
 	    }
 	    else{
+	      xmlFreeNode(nc4);
 	      xmlAddChild(nc3,nc5);
 	    }
 	  }
 	  else
-	    if(datatype!=1)
+	    if(datatype!=1){
+	      xmlFreeNode(nc4);
 	      xmlAddChild(nc3,nc5);
+	    }
 
 	_tmp=_tmp->next;
       }
@@ -1653,6 +1659,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	  xmlAddChild(nc3,nc4);
 	}
 	else{
+	  xmlFreeNode(nc4);
 	  xmlAddChild(nc3,nc5);
 	}
       }
@@ -1672,12 +1679,13 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
       }
     }
     if(e->child!=NULL && vid==0){
+      xmlFreeNode(nc3);
       elements* children=dupElements(e->child);
       elements* cursor=children;
       while(cursor!=NULL){
 	char* tmp=strdup(cursor->name);
 	free(cursor->name);
-	cursor->name=(char*)malloc((strlen(cursor->name)+strlen(e->name)+2)*sizeof(char));
+	cursor->name=(char*)malloc((strlen(tmp)+strlen(e->name)+2)*sizeof(char));
 	sprintf(cursor->name,"%s.%s",e->name,tmp);
 	cursor=cursor->next;
       }

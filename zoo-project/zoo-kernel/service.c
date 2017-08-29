@@ -416,8 +416,8 @@ void freeElements(elements** e){
       free(tmp->additional_parameters);
     if(tmp->format!=NULL)
       free(tmp->format);
+    freeElements(&tmp->child);
     if(tmp->child!=NULL){
-      freeElements(&tmp->child);
       free(tmp->child);
     }
     if(tmp->defaults!=NULL){
@@ -452,6 +452,9 @@ void freeService(service** s){
     freeMap(&tmp->metadata);
     if(tmp->metadata!=NULL)
       free(tmp->metadata);
+    freeMap(&tmp->additional_parameters);
+    if(tmp->additional_parameters!=NULL)
+      free(tmp->additional_parameters);
     freeElements(&tmp->inputs);
     if(tmp->inputs!=NULL)
       free(tmp->inputs);
@@ -1159,14 +1162,14 @@ void dumpElementsAsYAML(elements* e,int level){
 elements* dupElements(elements* e){
   elements* cursor=e;
   elements* tmp=NULL;
-  if(cursor!=NULL && e->name!=NULL){
+  if(cursor!=NULL && cursor->name!=NULL){
 #ifdef DEBUG
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
     dumpElements(e);
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
     tmp=(elements*)malloc(ELEMENTS_SIZE);
-    tmp->name=zStrdup(e->name);
+    tmp->name=zStrdup(cursor->name);
     tmp->content=NULL;
     addMapToMap(&tmp->content,e->content);
     tmp->metadata=NULL;
@@ -1227,7 +1230,7 @@ elements* dupElements(elements* e){
 void addToElements(elements** m,elements* e){
   elements* tmp=e;
   if(*m==NULL){
-    *m=dupElements(tmp);
+    (*m)=dupElements(tmp);
   }else{
     addToElements(&(*m)->next,tmp);
   }

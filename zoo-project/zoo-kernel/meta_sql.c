@@ -143,7 +143,7 @@ int fillAdditionalParameters(maps* conf,map** ap,const char* dref){
       const char *tmp=meta->GetFieldAsString(i+1);
       if(strlen(tmp)>0)
 	if(*ap==NULL){
-	  *ap=createMap(fields[i],tmp);
+	  (*ap)=createMap(fields[i],tmp);
 	  addToMap(*ap,"fromDb","true");
 	}
 	else
@@ -305,6 +305,7 @@ elements* extractInput(maps* conf,OGRFeature *input){
   addToMap(res->content,"maxOccurs",input->GetFieldAsString( 5 ));
   // Extract metadata
   fillMetadata(conf,&res->metadata,input->GetFieldAsString( 0 ));
+  res->additional_parameters=NULL;
   fillAdditionalParameters(conf,&res->additional_parameters,input->GetFieldAsString( 0 ));
   res->defaults=NULL;
   res->supported=NULL;
@@ -400,6 +401,7 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       s->outputs=NULL;
       if(minimal==1){
 	OGRFeature::DestroyFeature( poFeature );
+	cleanFetchSql(conf,0,res);
 	return s;
       }
       char* inputsQuery=(char*)malloc((META_SERVICES_LIST_INPUTS_FROM_PROCESS_LENGTH+strlen(poFeature->GetFieldAsString( 0 ))+1)*sizeof(char));
@@ -409,9 +411,14 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       free(inputsQuery);
       while( (input = inputs->GetNextFeature()) != NULL ){
 	elements* in=extractInput(conf,input);
-	addToElements(&s->inputs,in);
-	freeElements(&in);
-	free(in);	
+	if(in!=NULL){
+	  if(s->inputs==NULL)
+	    s->inputs=dupElements(in);
+	  else
+	    addToElements(&s->inputs,in);
+	  freeElements(&in);
+	  free(in);
+	}
 	OGRFeature::DestroyFeature( input );
       }
       cleanFetchSql(conf,0,inputs);
@@ -423,7 +430,10 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       s->outputs=NULL;
       while( (output = outputs->GetNextFeature()) != NULL ){
 	elements* in=extractOutput(conf,output);
-	addToElements(&s->outputs,in);
+	if(s->outputs==NULL)
+	  s->outputs=dupElements(in);
+	else
+	  addToElements(&s->outputs,in);
 	freeElements(&in);
 	free(in);
 	OGRFeature::DestroyFeature( output );
@@ -462,33 +472,19 @@ int fetchServicesFromDb(registry* reg,maps* conf, xmlDocPtr doc, xmlNodePtr n,
     const char *tmp1;
     poFeature = res->GetNextFeature();
     while( poFeature != NULL ){
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-      fflush(stderr);
       service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
 #ifdef USE_HPC
       addNestedOutputs(&s);
 #endif
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-      fflush(stderr);
-      dumpMap(s->content);
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-      fflush(stderr);
       func(reg,conf,doc,n,s);
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-      fflush(stderr);
       freeService(&s);
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-      fflush(stderr);
       free(s);
       OGRFeature::DestroyFeature( poFeature );
       poFeature = res->GetNextFeature();
       result++;
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-      fflush(stderr);
     }
+    cleanFetchSql(conf,0,res);
   }
-  fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
-  fflush(stderr);
   return result;
 }
 

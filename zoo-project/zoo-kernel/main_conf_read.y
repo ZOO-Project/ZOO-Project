@@ -86,7 +86,7 @@ contentetoile
  | {/* Epsilon */}
  ;
 
-pair: PAIR {curr_key=zStrdup($1);}
+pair: PAIR {if(curr_key!=NULL) free(curr_key);curr_key=zStrdup($1);}
 | EPAIR {
   if(current_content==NULL) 
     current_content=createMap(curr_key,$1);
@@ -100,7 +100,7 @@ pair: PAIR {curr_key=zStrdup($1);}
   free(curr_key);
   curr_key=NULL;
   }
-| SPAIR  {curr_key=zStrdup($1);if(debug) printf("SPAIR FOUND !!\n"); }
+| SPAIR  {if(curr_key!=NULL) free(curr_key);curr_key=zStrdup($1);if(debug) printf("SPAIR FOUND !!\n"); }
  ;
 
 

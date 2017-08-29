@@ -285,6 +285,7 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	while (token != NULL){
 	  int length=strlen(token)+6;
 	  char* tmp1=(char*)malloc(length*sizeof(char));
+	  map* tmpMap;
 	  snprintf(tmp1,6,"HTTP_");
 	  int j;
 	  for(j=0;token[j]!='\0';j++){
@@ -295,9 +296,11 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	    tmp1[5+j+1]='\0';
 	  }
 	  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmp1);
-	  map* tmpMap = getMapFromMaps(conf,"renv",tmp1);
-	  if(tmpMap!=NULL)	    
-	    AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
+	  if(strncmp(tmp1,"HTTP_COOKIE",11)!=0){	    
+	    tmpMap = getMapFromMaps(conf,"renv",tmp1);
+	    if(tmpMap!=NULL)
+	      AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
+	  }
 	  free(tmp1);
 	  if(handle->ihandle[i].header!=NULL)
 	    curl_easy_setopt(handle->ihandle[i].handle,CURLOPT_HTTPHEADER,handle->ihandle[i].header);

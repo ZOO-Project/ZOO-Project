@@ -79,6 +79,8 @@ void addNestedOutputs(service** s){
 	    tmp[i]->next=NULL;
 	  }
 	  free(tmp[i]->name);
+	  if(tmp[i]->format!=NULL)
+	    free(tmp[i]->format);
 	  tmp[i]->format=zStrdup("ComplexData");
 	  freeMap(&tmp[i]->content);
 	  free(tmp[i]->content);
@@ -159,6 +161,7 @@ void addNestedOutputs(service** s){
     }
     cur=cur->next;
   }
+  //dumpElements((*s)->outputs);
 }
 
 /**
@@ -350,12 +353,6 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     input=input->next;
   }
   
-  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-  fflush(stderr);
-  invokeCallback(m,inputs,NULL,3,0);
-  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-  fflush(stderr);
-
   // Produce the SBATCH File locally
   char *scriptPath=(char*)malloc((strlen(s->name)+strlen(tmpPath->value)+strlen(uuid->value)+10)*sizeof(char));
   sprintf(scriptPath,"%s/zoo_%s_%s.sh",tmpPath->value,s->name,uuid->value);
@@ -488,7 +485,11 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     }else
       setMapInMaps(*main_conf,"lenv","message",_("Unable to fetch the remote error log file"));
     tmpPath=getMapFromMaps(*main_conf,"lenv","message");
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     invokeCallback(m,NULL,NULL,7,1);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     sprintf(tmpS, "Cannot execute the HPC ZOO-Service %s: %s", s->name, tmpPath->value);
     errorException(m,tmpS,"NoApplicableCode",NULL);
     free(command);
@@ -532,17 +533,19 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       if(rc==0){
 	sleep(1);
 	setMapInMaps(*main_conf,"lenv","message",_("Read closed"));
+	invokeCallback(m,NULL,NULL,7,1);
 	return -1;
       }else{
 	if(rc<0){
 	  setMapInMaps(*main_conf,"lenv","message",_("Read error"));
+	  invokeCallback(m,NULL,NULL,7,1);
 	  return -1;
 	}
       }
       hasPassed=1;
       res=atoi(buf);
       unlink(sname);
-      //free(sname);  
+      //free(sname);
 
       if(res==3){
 	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -596,6 +599,11 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  }
 	  input=input->next;
 	}
+	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	fflush(stderr);
+	invokeCallback(m,NULL,outputs,5,1);
+	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	fflush(stderr);
       }
       //free(buf);
     }
@@ -606,7 +614,11 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       return SERVICE_FAILED;
     }
   }
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   ssh_close(*main_conf);
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   return res;
 }
 

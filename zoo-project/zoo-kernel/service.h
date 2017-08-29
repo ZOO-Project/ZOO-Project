@@ -138,7 +138,7 @@ extern "C" {
 /**
  * The memory size to create an elements
  */
-#define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*3)+sizeof(char*)+(((2*sizeof(char*))+sizeof(iotype*))*2)+(2*sizeof(elements*)))
+#define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*3)+sizeof(char*)+((sizeof(map*) + sizeof(iotype*))*2)+(2*sizeof(elements*)))
 /**
  * The memory size to create a map
  */

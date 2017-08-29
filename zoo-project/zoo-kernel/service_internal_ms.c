@@ -193,46 +193,70 @@ void setReferenceUrl(maps* m,maps* tmpI){
   sprintf(layers,options[proto][3],tmpI->name);
 
   char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(format->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
-
+  map* datatype=getMap(tmpI->content,"datatype");
+  
+  sprintf(webService_url,
+	  "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	  msUrl->value,
+	  dataPath->value,
+	  tmpI->name,
+	  sid->value,
+	  options[proto][2],
+	  options[proto][0],
+	  protoVersion,
+	  layers,
+	  rformat->value,
+	  extent->value,
+	  crs->value
+	  );
   if(proto>0){
-    sprintf(webService_url,
-	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
-	    msUrl->value,
-	    dataPath->value,
-	    tmpI->name,
-	    sid->value,
-	    options[proto][2],
-	    options[proto][0],
-	    protoVersion,
-	    layers,
-	    rformat->value,
-	    extent->value,
-	    crs->value
-	    );
+    addToMap(tmpI->content,"Reference",webService_url);
+    proto=0;
+    rformat=createMap("mimeType","image/png");
   }
   else{
-    sprintf(webService_url,
-	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
-	    msUrl->value,
-	    dataPath->value,
-	    tmpI->name,
-	    sid->value,
-	    options[proto][2],
-	    options[proto][0],
-	    protoVersion,
-	    layers,
-	    width->value,
-	    height->value,
-	    rformat->value,
-	    extent->value,
-	    crs->value
-	    );
+    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+      proto=2;
+      rformat=createMap("mimeType","image/tiff");
+    }
+    else{
+      proto=1;
+      rformat=createMap("mimeType","text/xml");
+    }
   }
+  if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+    addToMap(tmpI->content,"ref_wcs_link",webService_url);
+  }
+  else{
+    addToMap(tmpI->content,"ref_wfs_link",webService_url);
+  }
+  protoVersion=options[proto][1];
+  extent=getMap(tmpI->content,options[proto][4]);
+  memset(webService_url,0,strlen(webService_url));
+  sprintf(webService_url,
+	  "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
+	  msUrl->value,
+	  dataPath->value,
+	  tmpI->name,
+	  sid->value,
+	  options[proto][2],
+	  options[proto][0],
+	  protoVersion,
+	  layers,
+	  width->value,
+	  height->value,
+	  rformat->value,
+	  extent->value,
+	  crs->value
+	  );
+  if(proto>0){
+    addToMap(tmpI->content,"Reference",webService_url);
+  }
+  addToMap(tmpI->content,"ref_wms_link",webService_url);
   if(hasCRS==0){
     freeMap(&crs);
     free(crs);
   }
-  addToMap(tmpI->content,"Reference",webService_url);
   free(webService_url);
 }
 
@@ -530,7 +554,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   }
   free(sdsName);
   free(dsName);
-
+  
   OGRDataSourceH poDS = NULL;
   OGRSFDriverH *poDriver = NULL;
   poDS = OGROpen( pszDataSource, FALSE, poDriver );
@@ -547,6 +571,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     return -1;
   }
 
+  addToMap(output->content,"datatype","vector");
   int iLayer = 0;
   for( iLayer=0; iLayer < OGR_DS_GetLayerCount(poDS); iLayer++ ){
     OGRLayerH poLayer = OGR_DS_GetLayer(poDS,iLayer);
@@ -756,6 +781,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   fprintf(stderr,"Accessing the DataSource %s %d\n",pszFilename,__LINE__);
 #endif
 
+  addToMap(output->content,"datatype","raster");
   /**
    * Add a new layer set name, data
    */

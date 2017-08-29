@@ -459,7 +459,8 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,inputs->name,tmpSid->value,0,file_ext);
 	if(cSize!=NULL){
 	  length=atoi(cSize->value);
-	}
+	}else
+	  length=strlen(cValue->value);
 	writeFile(val,cValue->value,length);
 	addToMap(cMap,"cache_file",val);
 	free(val);
