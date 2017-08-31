@@ -193,28 +193,50 @@ void setReferenceUrl(maps* m,maps* tmpI){
   sprintf(layers,options[proto][3],tmpI->name);
 
   char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(format->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
-  map* datatype=getMap(tmpI->content,"datatype");
+  map* datatype=getMap(tmpI->content,"geodatatype");
   
-  sprintf(webService_url,
-	  "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
-	  msUrl->value,
-	  dataPath->value,
-	  tmpI->name,
-	  sid->value,
-	  options[proto][2],
-	  options[proto][0],
-	  protoVersion,
-	  layers,
-	  rformat->value,
-	  extent->value,
-	  crs->value
-	  );
   if(proto>0){
-    addToMap(tmpI->content,"Reference",webService_url);
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+      addToMap(tmpI->content,"ref_wcs_link",webService_url);
+    }
+    else{
+      addToMap(tmpI->content,"ref_wfs_link",webService_url);
+    }
     proto=0;
     rformat=createMap("mimeType","image/png");
   }
   else{
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    width->value,
+	    height->value,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    addToMap(tmpI->content,"ref_wms_link",webService_url);
     if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
       proto=2;
       rformat=createMap("mimeType","image/tiff");
@@ -224,40 +246,59 @@ void setReferenceUrl(maps* m,maps* tmpI){
       rformat=createMap("mimeType","text/xml");
     }
   }
-  if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
-    addToMap(tmpI->content,"ref_wcs_link",webService_url);
-  }
-  else{
-    addToMap(tmpI->content,"ref_wfs_link",webService_url);
-  }
+  addToMap(tmpI->content,"Reference",webService_url);
+
   protoVersion=options[proto][1];
   extent=getMap(tmpI->content,options[proto][4]);
   memset(webService_url,0,strlen(webService_url));
-  sprintf(webService_url,
-	  "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
-	  msUrl->value,
-	  dataPath->value,
-	  tmpI->name,
-	  sid->value,
-	  options[proto][2],
-	  options[proto][0],
-	  protoVersion,
-	  layers,
-	  width->value,
-	  height->value,
-	  rformat->value,
-	  extent->value,
-	  crs->value
-	  );
   if(proto>0){
-    addToMap(tmpI->content,"Reference",webService_url);
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+      addToMap(tmpI->content,"ref_wcs_link",webService_url);
+    }
+    else{
+      addToMap(tmpI->content,"ref_wfs_link",webService_url);
+    }
+  }else{
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    width->value,
+	    height->value,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    addToMap(tmpI->content,"ref_wms_link",webService_url);
   }
-  addToMap(tmpI->content,"ref_wms_link",webService_url);
   if(hasCRS==0){
     freeMap(&crs);
     free(crs);
   }
+  freeMap(&rformat);
+  free(rformat);
   free(webService_url);
+  dumpMaps(tmpI);
 }
 
 /**
@@ -551,6 +592,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       VSIFCloseL(vsif);
       i++;
     }
+    OGR_DS_Destroy(poDS1);
   }
   free(sdsName);
   free(dsName);
@@ -571,7 +613,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     return -1;
   }
 
-  addToMap(output->content,"datatype","vector");
+  addToMap(output->content,"geodatatype","vector");
   int iLayer = 0;
   for( iLayer=0; iLayer < OGR_DS_GetLayerCount(poDS); iLayer++ ){
     OGRLayerH poLayer = OGR_DS_GetLayer(poDS,iLayer);
@@ -743,7 +785,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 
   }
 
-  //OGR_DS_Destroy(poDS);
+  OGR_DS_Destroy(poDS);
   //OGRCleanupAll();
 
   return 1;
@@ -773,6 +815,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 #ifdef DEBUGMS
     fprintf(stderr,"Unable to access the DataSource %s \n",pszFilename);
 #endif
+    addToMap(output->content,"geodatatype","other");
     setMapInMaps(conf,"lenv","message","gdalinfo failed - unable to open");
     GDALDestroyDriverManager();
     return -1;
@@ -781,7 +824,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   fprintf(stderr,"Accessing the DataSource %s %d\n",pszFilename,__LINE__);
 #endif
 
-  addToMap(output->content,"datatype","raster");
+  addToMap(output->content,"geodatatype","raster");
   /**
    * Add a new layer set name, data
    */
@@ -1017,7 +1060,6 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   m->numlayers++;
   GDALClose( hDataset );
   GDALDestroyDriverManager();
-
   CPLCleanupTLS();
   return 1;
 }

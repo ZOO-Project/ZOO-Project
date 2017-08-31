@@ -2268,17 +2268,19 @@ runRequest (map ** inputs)
   char *s=*orig;
   _tmpMaps = createMaps("renv");
   for (; s; ei++) {
-    int len=strlen(s);
-    char* tmpName=zStrdup(s);
-    char* tmpValue=strstr(s,"=")+1;
-    char* tmpName1=(char*)malloc((1+(len-strlen(tmpValue)))*sizeof(char));
-    snprintf(tmpName1,(len-strlen(tmpValue))+1,"%s",tmpName);
-    if(_tmpMaps->content == NULL)
-      _tmpMaps->content = createMap (tmpName1,tmpValue);
-    else
-      addToMap (_tmpMaps->content,tmpName1,tmpValue);
-    free(tmpName);
-    free(tmpName1);
+    if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
+      int len=strlen(s);
+      char* tmpName=zStrdup(s);
+      char* tmpValue=strstr(s,"=")+1;
+      char* tmpName1=(char*)malloc((1+(len-strlen(tmpValue)))*sizeof(char));
+      snprintf(tmpName1,(len-strlen(tmpValue))+1,"%s",tmpName);
+      if(_tmpMaps->content == NULL)
+	_tmpMaps->content = createMap (tmpName1,tmpValue);
+      else
+	addToMap (_tmpMaps->content,tmpName1,tmpValue);
+      free(tmpName1);
+      free(tmpName);
+    }
     s = *(orig+ei);
   }
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
@@ -2352,6 +2354,13 @@ runRequest (map ** inputs)
       fprintf(stderr,"*************************\n\n");
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
                          &request_output_real_format, &eres);
+#ifdef RELY_ON_DB
+#ifdef META_DB
+      close_sql(m,1);
+      //end_sql();
+#endif
+      close_sql(m,0);
+#endif      
     }
   else
     {
@@ -2585,6 +2594,12 @@ runRequest (map ** inputs)
 
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
+      invokeCallback(m,NULL,request_output_real_format,5,1);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
+
       fclose (stdout);
 
       fclose (f0);
@@ -2610,18 +2625,22 @@ runRequest (map ** inputs)
 #else
       recordResponse(m,fbkp1);
       fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-      invokeCallback(m,NULL,request_output_real_format,5,1);
+      invokeCallback(m,NULL,request_output_real_format,6,0);
       fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
       freeMaps(&bmap);
       free(bmap);
       unlink (fbkp1);
-      unlink (flog);
       unhandleStatus (m);
+#ifdef RELY_ON_DB
 #ifdef META_DB
-      close_sql(m,0);
+      cleanupCallbackThreads();
+      close_sql(m,1);
       //end_sql();
 #endif
+      close_sql(m,0);
+#endif
+      unlink (flog);
       free(fbkpid);
       free(fbkpres); 
       free (flog);           
@@ -2629,7 +2648,7 @@ runRequest (map ** inputs)
       // free (tmps1); // tmps1 is stack memory and should not be freed
       if(cgiSid!=NULL)
 	free(cgiSid);
-      //InternetCloseHandle (&hInternet);  
+      //InternetCloseHandle (&hInternet);
       fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
       fflush(stderr);
       fclose (stderr);

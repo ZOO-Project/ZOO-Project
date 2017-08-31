@@ -136,7 +136,6 @@ void addNestedOutputs(service** s){
 	    break;
 	  }
 	}
-	
 	addToElements(&cur->child,tmp[0]);
 	addToElements(&cur->child,tmp[1]);
 	addToElements(&cur->child,tmp[2]);
@@ -300,6 +299,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       }
       char *targetPath=(char*)malloc((strlen(targetPathMap->value)+strlen(targetName)+2)*sizeof(char));
       sprintf(targetPath,"%s/%s",targetPathMap->value,targetName);
+      free(targetName);
       setMapInMaps(*real_outputs,input->name,"generated_file",targetPath);
       // We should verify if any optional tag for output is required
       // (i.e. -out output.tiff *int8*), meaning that we should search
@@ -336,6 +336,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       }
       char *targetPath=(char*)malloc((strlen(targetPathMap->value)+strlen(targetName)+2)*sizeof(char));
       sprintf(targetPath,"%s/%s",targetPathMap->value,targetName);
+      free(targetName);
       addToMap(input->content,"generated_file",targetPath);
       // We should verify if any optional tag for output is required
       // (i.e. -out output.tiff *int8*), meaning that we should search
@@ -498,6 +499,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     sleep(120);
     return -1;
   }
+  free(targetPath);
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   fflush(stderr);
   invokeCallback(m,NULL,NULL,4,1);
@@ -590,20 +592,18 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		maps* output=getMaps(*real_outputs,input->name);
 		setMapInMaps(output->child,"download_link","generated_file",targetPath);
 		setMapInMaps(output->child,"download_link","useMapserver","false");
-		setMapInMaps(output->child,"WMS_LINK","generated_file",targetPath);
-		setMapInMaps(output->child,"WMS_LINK","useMapserver","true");
-		setMapInMaps(output->child,"WCS_LINK","generated_file",targetPath);
-		setMapInMaps(output->child,"WCS_LINK","useMapserver","true");
+		setMapInMaps(output->child,"wms_link","generated_file",targetPath);
+		setMapInMaps(output->child,"wms_link","useMapserver","true");
+		setMapInMaps(output->child,"wms_link","msOgc","WMS");
+		setMapInMaps(output->child,"wms_link","requestedMimeType","image/png");
+		setMapInMaps(output->child,"wcs_link","generated_file",targetPath);
+		setMapInMaps(output->child,"wcs_link","useMapserver","true");
 	      }
+	      free(targetPath);
 	    }
 	  }
 	  input=input->next;
 	}
-	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-	fflush(stderr);
-	invokeCallback(m,NULL,outputs,5,1);
-	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-	fflush(stderr);
       }
       //free(buf);
     }
