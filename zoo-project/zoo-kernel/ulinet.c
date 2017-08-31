@@ -343,11 +343,21 @@ void InternetCloseHandle(HINTERNET* handle0){
     if(handle.cookie!=NULL)
       free(handle.cookie);
   }
+  fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
+  fflush(stderr);
   if(handle0->handle)
     curl_multi_cleanup(handle0->handle);
+  fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
+  fflush(stderr);
   free(handle0->agent);
+  fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
+  fflush(stderr);
   for(i=handle0->nb-1;i>=0;i--){
+    fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
+    fflush(stderr);
     free(handle0->waitingRequests[i]);
+      fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
+      fflush(stderr);
   }
 }
 

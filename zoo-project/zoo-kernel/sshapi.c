@@ -336,7 +336,6 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
   do {
     sftp_handle =
       libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,
-			
 			LIBSSH2_FXF_WRITE|LIBSSH2_FXF_CREAT|LIBSSH2_FXF_TRUNC,
 			LIBSSH2_SFTP_S_IRUSR|LIBSSH2_SFTP_S_IWUSR|
 			LIBSSH2_SFTP_S_IRGRP|LIBSSH2_SFTP_S_IROTH);
@@ -512,6 +511,7 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   char *logPath=(char*)malloc((strlen(tmpPath->value)+strlen(uuid->value)+11)*sizeof(char));
   sprintf(logPath,"%s/exec_out_%s",tmpPath->value,uuid->value);
   FILE* logFile=fopen(logPath,"wb");
+  free(logPath);
   while(true){
     int rc;
     do {

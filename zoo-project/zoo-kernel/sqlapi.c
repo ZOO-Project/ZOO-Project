@@ -531,7 +531,7 @@ void unhandleStatus(maps* conf){
 	  schema->value,(fstate!=NULL?fstate->value:"Failed"),sid->value);
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   cleanUpResultSet(conf,zoo_ds_nb-1);
-  close_sql(conf,zoo_ds_nb-1);
+  //close_sql(conf,zoo_ds_nb-1);
   free(sqlQuery);
   end_sql();
 }
@@ -603,6 +603,7 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
     }
     OGRFeature::DestroyFeature( poFeature );
   }
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   if(hasRes<0)
     addToMap(statusInfo,"Status","Failed");
   free(sqlQuery);

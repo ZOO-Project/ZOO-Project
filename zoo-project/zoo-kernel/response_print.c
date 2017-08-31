@@ -2666,7 +2666,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       map* testMap=getMap(tmpI->content,"useMapserver");	
 #endif
       map *gfile=getMap(tmpI->content,"generated_file");
-      char *file_name;
+      char *file_name=NULL;
       if(gfile!=NULL){
 	gfile=getMap(tmpI->content,"expected_generated_file");
 	if(gfile==NULL){
@@ -2675,7 +2675,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	readGeneratedFile(m,tmpI->content,gfile->value);
 	file_name=zStrdup((gfile->value)+strlen(tmp1->value));
       }
-
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
       if(toto!=NULL && strcasecmp(toto->value,"true")==0 && (testMap==NULL || strncasecmp(testMap->value,"true",4)!=0) )
@@ -2713,7 +2712,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      map* mtype=getMap(tmpI->content,"mimeType");
 	      getFileExtension(mtype != NULL ? mtype->value : NULL, file_ext, 32);
 	    }
-
+	    if(file_name!=NULL)
+	      free(file_name);
 	    file_name=(char*)malloc((strlen(s->name)+strlen(usid->value)+strlen(file_ext)+strlen(tmpI->name)+45)*sizeof(char));
 	    sprintf(file_name,"%s_%s_%s_%d.%s",s->name,tmpI->name,usid->value,itn,file_ext);
 	    itn++;
@@ -2760,7 +2760,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  addToMap(tmpI->content,"Reference",file_url);
 	  free(file_name);
 	  free(file_url);
-	  
+	  file_name=NULL;
 	}
 #ifdef USE_MS
       else{
@@ -2769,6 +2769,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	}
       }
 #endif
+      if(file_name!=NULL){
+	free(file_name);
+	file_name=NULL;
+      }
       tmpI=tmpI->next;
     }
     if(stmpI!=NULL){
@@ -2776,7 +2780,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       stmpI=NULL;
       if(tmpI!=NULL)
 	goto NESTED0;
-    }
+    }    
 #ifdef DEBUG
     fprintf(stderr,"SERVICE : %s\n",s->name);
     dumpMaps(m);

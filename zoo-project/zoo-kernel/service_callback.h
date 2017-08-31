@@ -42,7 +42,8 @@ extern "C" {
 #endif
 
   bool invokeCallback(maps*,maps*,maps*,int,int);
-
+  void cleanupCallbackThreads();
+  
 #ifdef __cplusplus
 }
 #endif
