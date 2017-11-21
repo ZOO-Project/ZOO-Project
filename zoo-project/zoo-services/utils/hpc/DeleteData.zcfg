@@ -1,0 +1,50 @@
+[DeleteData]
+ Title = Delete the data associated with an input or an output
+ Abstract = Delete the data associated with an input or an output
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = wps_hpc.zo
+ serviceType = C
+ <DataInputs>
+  [jobid]
+   Title = the image
+   Abstract = The image to process
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+  [filename]
+   Title = the image
+   Abstract = The image to process
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+  [ioname]
+   Title = the input / output name
+   Abstract = the input / output name
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting string
+   Abstract = The resulting message string.
+   <LiteralOutput>
+    DataType = string
+    <Default>
+    </Default>
+   </LiteralOutput>
+ </DataOutputs>  
