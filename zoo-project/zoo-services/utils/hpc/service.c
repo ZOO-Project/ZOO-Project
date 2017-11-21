@@ -3,6 +3,10 @@
  *
  * Copyright 2008-2009 GeoLabs SARL. All rights reserved.
  *
+ * This work was supported by public funds received in the framework of GEOSUD,
+ * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed
+ * by the French National Research Agency
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -26,6 +30,7 @@
 #include "service.h"
 #include "service_internal.h"
 #include "sshapi.h"
+#include "server_internal.h"
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -56,12 +61,35 @@ extern "C" {
     char buf[100]="3";
     int fd,rc=NULL;
     int i=0;
-    SSHCON *test=ssh_connect(conf);
-    if(test==NULL){
-      return SERVICE_FAILED;
-    }
     map* usid=getMapFromMaps(conf,"lenv","usid");
     map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
+
+    char *flenv =
+      (char *) malloc ((strlen (tmpPath->value) + 
+			strlen (jobid->value) + 12) * sizeof (char));
+    sprintf (flenv, "%s/%s_lenv.cfg", tmpPath->value, jobid->value);
+    maps* m = (maps *) malloc (MAPS_SIZE);
+    m->child=NULL;
+    m->next=NULL;
+    map* configId=NULL;
+
+    
+    if(conf_read(flenv, m) != 2){
+      configId=getMapFromMaps(m,"lenv","configId");
+      setMapInMaps(conf,"lenv","configId",configId->value);
+    }else{
+      setMapInMaps(conf,"lenv","message",_("Unable to read the lenv section file of the requested jobid"));
+      return SERVICE_FAILED;
+    }
+    unlink(flenv);
+    free(flenv);
+
+    SSHCON *test=ssh_connect(conf);
+    if(test==NULL){
+      setMapInMaps(conf,"lenv","message",_("Unable to connect using through ssh."));
+      return SERVICE_FAILED;
+    }
+
     char *logPath=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+12)*sizeof(char));
     sprintf(logPath,"%s/exec_out_%s",tmpPath->value,jobid->value);
     struct stat f_status;
@@ -79,17 +107,17 @@ extern "C" {
       return SERVICE_FAILED;
     }
     free(logPath);
-    // Run scontrol to see if the service execution ends
+    // Run scontrol to check if the service execution ended.
     // Store all the informations returned by scontrol command as a cfg file to
     // be parsed back by the ZOO-Kernel waiting for the execution of the remote
     // service
     maps* tmpMaps=createMaps("henv");
     char* command=(char*)malloc((126)*sizeof(char));
-    //memset(&command,0,34);
-    sprintf(command,"scontrol show jobid | grep -A24 %s",fcontent);    
+    sprintf(command,"scontrol show jobid | grep -A24 JobId=%s",fcontent);    
     if(ssh_exec(conf,command,ssh_get_cnt(conf))==0){
       free(command);
       setMapInMaps(conf,"lenv","message",_("Failed to run scontrol remotely"));
+      // TODO: check status in db and if available continue in other case return SERVICE_FAILED
       return SERVICE_FAILED;
     }else{
       free(command);
@@ -97,69 +125,55 @@ extern "C" {
       sprintf(logPath,"%s/exec_out_%s",tmpPath->value,usid->value);
       int ts=stat(logPath, &f_status);
       if(ts==0) {
-        fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-        FILE* f=fopen(logPath,"rb");
-        fread(fcontent,f_status.st_size,1,f);
-        int fsize=f_status.st_size;
-        fcontent[fsize]=0;
-        fclose(f);
-        free(logPath);
-        fprintf(stderr,"%s \n",fcontent);
-        char *token, *saveptr;
-        token = strtok_r (fcontent, " ", &saveptr);
-        while (token != NULL)
-          {
-            //fprintf(stderr,"%s %d\n",token,__LINE__);
-            char *token1, *saveptr1;
-            char *tmpToken=strdup(token);
-            token1 = strtok_r (tmpToken, "=", &saveptr1);
-            int isNext=-1;
-            int hasTwoElements=0;
-            char *name=NULL;
-            while (token1 != NULL)
-              {
-                if(hasTwoElements==0)
-                  name=strdup(token1);
-                if(hasTwoElements<1)
-                  hasTwoElements+=1;
-                else{
-                  char *value=strdup(token1);
-                  if(value[strlen(value)-1]=='\n')
-                    value[strlen(value)-1]=0;
-                  if(strlen(name)>0 && strlen(value)>0){
-                    if(tmpMaps->content==NULL)
-                      tmpMaps->content=createMap(name,value);
-                    else
-                      addToMap(tmpMaps->content,name,value);
-                    free(value);
-                  }
-                  free(name);
-                  hasTwoElements=0;
-                }
-                token1 = strtok_r (NULL, "=", &saveptr1);
-              }
-            free(tmpToken);
-            token = strtok_r (NULL, " ", &saveptr);
-          }
+	fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+	FILE* f=fopen(logPath,"rb");
+	fread(fcontent,f_status.st_size,1,f);
+	int fsize=f_status.st_size;
+	fcontent[fsize]=0;
+	fclose(f);
+	free(logPath);
+	char *token, *saveptr;
+	token = strtok_r (fcontent, " ", &saveptr);
+	while (token != NULL)
+	  {
+	    char *token1, *saveptr1;
+	    char *tmpToken=strdup(token);
+	    token1 = strtok_r (tmpToken, "=", &saveptr1);
+	    int isNext=-1;
+	    int hasTwoElements=0;
+	    char *name=NULL;
+	    while (token1 != NULL)
+	      {
+		if(hasTwoElements==0)
+		  name=strdup(token1);
+		if(hasTwoElements<1)
+		  hasTwoElements+=1;
+		else{
+		  char *value=strdup(token1);
+		  if(value[strlen(value)-1]=='\n')
+		    value[strlen(value)-1]=0;
+		  if(strlen(name)>0 && strlen(value)>0){
+		    if(tmpMaps->content==NULL)
+		      tmpMaps->content=createMap(name,value);
+		    else
+		      addToMap(tmpMaps->content,name,value);
+		    free(value);
+		  }
+		  free(name);
+		  hasTwoElements=0;
+		}
+		token1 = strtok_r (NULL, "=", &saveptr1);
+	      }
+	    free(tmpToken);
+	    token = strtok_r (NULL, " ", &saveptr);
+	  }
       }else{
-        setMapInMaps(conf,"lenv","message",_("Unable to access the downloaded execution log file"));
-        return SERVICE_FAILED;
+	setMapInMaps(conf,"lenv","message",_("Unable to access the downloaded execution log file"));
+	return SERVICE_FAILED;
       }
     }
-    logPath=(char*)malloc((strlen(tmpPath->value)+strlen(usid->value)+15)*sizeof(char));
-    sprintf(logPath,"%s/exec_status_%s",tmpPath->value,usid->value);
-    dumpMapsToFile(tmpMaps,logPath,0);
-
-    char *sname=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+21));
-    sprintf(sname,"%s/.wait_socket_%s.sock",tmpPath->value,jobid->value);
-    if ( (fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-      perror("socket error");
-      setMapInMaps(conf,"lenv","message",_("Socket error"));
-      return SERVICE_FAILED;
-      }
-    }
-    logPath=(char*)malloc((strlen(tmpPath->value)+strlen(usid->value)+15)*sizeof(char));
-    sprintf(logPath,"%s/exec_status_%s",tmpPath->value,usid->value);
+    logPath=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+15)*sizeof(char));
+    sprintf(logPath,"%s/exec_status_%s",tmpPath->value,jobid->value);
     dumpMapsToFile(tmpMaps,logPath,0);
     char *sname=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+21));
     sprintf(sname,"%s/.wait_socket_%s.sock",tmpPath->value,jobid->value);
@@ -178,10 +192,10 @@ extern "C" {
     }
     if (write(fd, "3", 1) != rc) {
       if (rc < 0) {
-        perror("write error");
-        setMapInMaps(conf,"lenv","message",_("Unable to announce the successful execution of the HPC service"));
-        close(fd);
-        return SERVICE_FAILED;
+	perror("write error");
+	setMapInMaps(conf,"lenv","message",_("Unable to announce the successful execution of the HPC service"));
+	close(fd);
+	return SERVICE_FAILED;
       }
     }
     close(fd);

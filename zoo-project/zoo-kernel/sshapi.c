@@ -28,6 +28,7 @@
  */
 
 #include "sshapi.h"
+#include "service_internal.h"
 
 SSHCON *sessions[MAX_PARALLEL_SSH_CON];
 
@@ -93,17 +94,33 @@ SSHCON *ssh_connect(maps* conf){
   char error[1024];
   int port=22;
 
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
+  map* hpc_config=getMapFromMaps(conf,"lenv","configId");
+  
+  map* hpc_host=getMapFromMaps(conf,hpc_config->value,"ssh_host");
+  map* hpc_port=getMapFromMaps(conf,hpc_config->value,"ssh_port");
+  map* hpc_user=getMapFromMaps(conf,hpc_config->value,"ssh_user");
+  map* hpc_password=getMapFromMaps(conf,hpc_config->value,"ssh_password");
+  map* hpc_public_key=getMapFromMaps(conf,hpc_config->value,"ssh_key");
 
-  map* hpc_host=getMapFromMaps(conf,"HPC","host");
-  map* hpc_port=getMapFromMaps(conf,"HPC","port");
-  map* hpc_user=getMapFromMaps(conf,"HPC","user");
-  map* hpc_password=getMapFromMaps(conf,"HPC","password");
-  map* hpc_public_key=getMapFromMaps(conf,"HPC","key");
-
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
+  char ip[100];
+  struct hostent *my_hostent;
+  struct in_addr **addrs;
+  
+  if (hpc_host != NULL) {
+    // Fetch ip address for the hostname
+    if ( (my_hostent = gethostbyname( hpc_host->value ) ) == NULL){
+      herror("gethostbyname");
+      setMapInMaps(conf,"lenv","message",_("Issue when invoking gethostbyname!"));
+      return NULL;
+    }
+ 
+    addrs = (struct in_addr **) my_hostent->h_addr_list;
+  
+    for(i = 0; addrs[i] != NULL; i++) {
+      strcpy(ip , inet_ntoa(*addrs[i]) );
+      break;
+    }
+  }
 
 #ifdef WIN32
   WSADATA wsadata;
@@ -116,9 +133,8 @@ SSHCON *ssh_connect(maps* conf){
   }
 #endif
 
-  // TODO: fetch ip address for the hostname
   if (hpc_host != NULL) {
-    hostaddr = inet_addr(hpc_host->value);
+    hostaddr = inet_addr(ip);
   } else {
     setMapInMaps(conf,"lenv","message","No host parameter found in your main.cfg file!\n");
     return NULL;
@@ -234,7 +250,7 @@ SSHCON *ssh_connect(maps* conf){
  */
 int ssh_get_cnt(maps* conf){
   int result=0;
-  map* myMap=getMapFromMaps(conf,"lenv","cnt_session");
+  map* myMap=getMapFromMaps(conf,"lenv","nb_sessions");
   if(myMap!=NULL){
     result=atoi(myMap->value);
   }
@@ -322,7 +338,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
     fprintf(stderr, "Can't open local file %s\n", localPath);
     return false;
   }
-
+  
   do {
     sessions[cnt]->sftp_session = libssh2_sftp_init(sessions[cnt]->session);
     if (!sessions[cnt]->sftp_session &&
@@ -390,7 +406,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
  * @param localPath const char* defining the local path for storing the file
  * @param targetPath const char* defining the path for accessing the file on the
  * remote host
- * @return true in case of success, false if failure occured
+ * @return 0 in case of success, -1 if failure occured
  */
 int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
   char mem[1024];
@@ -413,67 +429,63 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
 	(libssh2_session_last_errno(sessions[cnt]->session) != LIBSSH2_ERROR_EAGAIN)) {
       
       fprintf(stderr, "Unable to init SFTP session\n");
-      return false;
+      return -1;
     }
   } while (!sessions[cnt]->sftp_session);
+  do {
+    sftp_handle = libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,   
+				    LIBSSH2_FXF_READ, 0);
+    if (!sftp_handle) {
+      if (libssh2_session_last_errno(sessions[cnt]->session) != LIBSSH2_ERROR_EAGAIN) {
+	fprintf(stderr, " ** Unable to open file with SFTP\n");
+	return -1;
+      }
+      else {
+	//non-blocking open
+	waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session); 
+      }
+    }
+  } while (!sftp_handle);
+ 
+  int result=0;
+  do {
     do {
-        sftp_handle = libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,
-
-                                        LIBSSH2_FXF_READ, 0);
+      rc = libssh2_sftp_read(sftp_handle, mem, sizeof(mem));
+      /*fprintf(stderr, "libssh2_sftp_read returned %d\n",
+	rc);*/
+      if(rc > 0) {
+	//write(2, mem, rc);
+	fwrite(mem, rc, 1, local);
+      }
+    } while (rc > 0);
+    
+    if(rc != LIBSSH2_ERROR_EAGAIN) {
+      result=-1;
+      break;
+    }
+    
+    struct timeval timeout;
+    fd_set fd;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
  
-        if (!sftp_handle) {
-            if (libssh2_session_last_errno(sessions[cnt]->session) != LIBSSH2_ERROR_EAGAIN) {
-                fprintf(stderr, "Unable to open file with SFTP\n");
-                return -1;
-            }
-            else {
-                fprintf(stderr, "non-blocking open\n");
-                waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session); 
-            }
-        }
-    } while (!sftp_handle);
+    FD_ZERO(&fd);
  
-    int result=1;
-    do {
-        do {
-            rc = libssh2_sftp_read(sftp_handle, mem, sizeof(mem));
-            /*fprintf(stderr, "libssh2_sftp_read returned %d\n",
-	      rc);*/
-            if(rc > 0) {
-	      //write(2, mem, rc);
-                fwrite(mem, rc, 1, local);
-            }
-        } while (rc > 0);
+    FD_SET(sessions[cnt]->sock_id, &fd);
  
-        if(rc != LIBSSH2_ERROR_EAGAIN) {
-	  result=-1;
-	  break;
-        }
-
-	struct timeval timeout;
-	fd_set fd;
-        timeout.tv_sec = 10;
-        timeout.tv_usec = 0;
+    rc = select(sessions[cnt]->sock_id+1, &fd, &fd, NULL, &timeout);
+    if(rc <= 0) {
+      if(rc==0)
+	fprintf(stderr, "SFTP download timed out: %d\n", rc);
+      else
+	fprintf(stderr, "SFTP download error: %d\n", rc);
+      return -1;
+    }
  
-        FD_ZERO(&fd);
- 
-        FD_SET(sessions[cnt]->sock_id, &fd);
- 
-        rc = select(sessions[cnt]->sock_id+1, &fd, &fd, NULL, &timeout);
-        if(rc <= 0) {
-	  if(rc==0)
-            fprintf(stderr, "SFTP download timed out: %d\n", rc);
-	  else
-	    fprintf(stderr, "SFTP download error: %d\n", rc);
-	  result=-1;
-	  break;
-        }
- 
-    } while (1);
+  } while (1);
   duration = (int)(time(NULL)-start);
   fclose(local);
   libssh2_sftp_close_handle(sftp_handle);
-
   libssh2_sftp_shutdown(sessions[cnt]->sftp_session);
   return 0;
 }
@@ -490,21 +502,35 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   int bytecount = 0;
   int exitcode;
   char *exitsignal=(char *)"none";
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   while( (channel = libssh2_channel_open_session(sessions[cnt]->session)) == NULL &&
 	 libssh2_session_last_error(sessions[cnt]->session,NULL,NULL,0) == LIBSSH2_ERROR_EAGAIN ) {
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+    fflush(stderr);
       waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   if( channel == NULL ){
     fprintf(stderr,"Error\n");
-    return 1;
+    return -1;
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   while( (rc = libssh2_channel_exec(channel, command)) == LIBSSH2_ERROR_EAGAIN ) {
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+    fflush(stderr);
     waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   if( rc != 0 ) {
     fprintf(stderr,"Error\n");
     return -1;
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
 
   map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
   map* uuid=getMapFromMaps(conf,"lenv","usid");
@@ -512,6 +538,8 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   sprintf(logPath,"%s/exec_out_%s",tmpPath->value,uuid->value);
   FILE* logFile=fopen(logPath,"wb");
   free(logPath);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   while(true){
     int rc;
     do {
@@ -534,21 +562,33 @@ int ssh_exec(maps* conf,const char* command,int cnt){
     else
       break;
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   fclose(logFile);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   exitcode = 127;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   while( (rc = libssh2_channel_close(channel)) == LIBSSH2_ERROR_EAGAIN )
     waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   if( rc == 0 ) {
     exitcode = libssh2_channel_get_exit_status( channel );
     libssh2_channel_get_exit_signal(channel, &exitsignal,
 				    NULL, NULL, NULL, NULL, NULL);
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   if (exitsignal)
     fprintf(stderr, "\nGot signal: %s\n", exitsignal);
   else
     fprintf(stderr, "\nEXIT: %d bytecount: %d\n", exitcode, bytecount);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   libssh2_channel_free(channel);
 
@@ -642,10 +682,10 @@ bool runUpload(maps** conf){
     return false;
   }
 #ifdef DEBUG
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fprintf(stderr,"*** %s %d\n",__FILE__,__LINE__);
   fflush(stderr);
   dumpMaps(getMaps(*conf,"uploadQueue"));
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fprintf(stderr,"*** %s %d\n",__FILE__,__LINE__);
   fflush(stderr);
 #endif
   map* queueLengthMap=getMapFromMaps(*conf,"uploadQueue","length");
@@ -659,8 +699,23 @@ bool runUpload(maps** conf){
 	getMapArray(queueMaps->content,"localPath",i),
 	getMapArray(queueMaps->content,"targetPath",i)
       };
-      fprintf(stderr,"%s %d %s %s\n",__FILE__,__LINE__,argv[1]->value,argv[2]->value);
-      ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf));
+      fprintf(stderr,"*** %s %d %s %s\n",__FILE__,__LINE__,argv[1]->value,argv[2]->value);
+      /**/zooLock* lck;
+      if((lck=lockFile(*conf,argv[1]->value,'w'))!=NULL){/**/
+	if(ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf))!=true){
+	  char* templateStr=_("Unable to copy over SSH the file requested for setting the value of %s.");
+	  char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv[0]->value)+1)*sizeof(char));
+	  sprintf(tmpMessage,templateStr,argv[0]->value);
+	  setMapInMaps(*conf,"lenv","message",tmpMessage);
+	  free(tmpMessage);
+	  unlockFile(*conf,lck);
+	  return false;
+	}
+	/**/unlockFile(*conf,lck);
+      }else{
+	setMapInMaps(*conf,"lenv","message",_("Unable to lock the file for upload!"));
+	return false;
+      }/**/
     }    
   }
   return true; 

@@ -106,6 +106,7 @@ extern "C" int crlex ();
 
 #include <dirent.h>
 #include <signal.h>
+#include <execinfo.h>
 #include <unistd.h>
 #ifndef WIN32
 #include <dlfcn.h>
@@ -121,6 +122,16 @@ extern "C" int crlex ();
 #include <fcntl.h>
 #include <time.h>
 #include <stdarg.h>
+
+#include <libxml/tree.h>
+#include <libxml/parser.h>
+#include <libxml/xpath.h>
+#include <libxml/xpathInternals.h>
+
+#include <libxslt/xslt.h>
+#include <libxslt/xsltInternals.h>
+#include <libxslt/transform.h>
+#include <libxslt/xsltutils.h>
 
 #ifndef WIN32
 extern char **environ;
@@ -384,6 +395,7 @@ donothing (int sig)
 void
 sig_handler (int sig)
 {
+  
   char tmp[100];
   const char *ssig;
   switch (sig)
@@ -412,7 +424,7 @@ sig_handler (int sig)
     }
   sprintf (tmp,
            _
-           ("ZOO Kernel failed to process your request, receiving signal %d = %s"),
+           ("ZOO Kernel failed to process your request, receiving signal %d = %s "),
            sig, ssig);
   errorException (NULL, tmp, "InternalError", NULL);
 #ifdef DEBUG
@@ -989,9 +1001,9 @@ runRequest (map ** inputs)
   snprintf (conf_file, 10240, "%s/%s/main.cfg", ntmp, r_inputs->value);
 #ifdef ETC_DIR
 #ifndef WIN32
-    getcwd (ntmp, 1024);
+  getcwd (ntmp, 1024);
 #else
-    _getcwd (ntmp, 1024);
+  _getcwd (ntmp, 1024);
 #endif
 #endif
 
@@ -1183,7 +1195,7 @@ runRequest (map ** inputs)
   r_inputs = getMap (request_inputs, "Request");
   fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
   fflush(stderr);
-  dumpMap(r_inputs);
+  //dumpMap(r_inputs);
   fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
   fflush(stderr);
   if(r_inputs!=NULL)
@@ -1293,6 +1305,8 @@ runRequest (map ** inputs)
     close(saved_stdout);
   }
 
+  dumpMap(request_inputs);
+
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
     {
 #ifdef DEBUG
@@ -1347,7 +1361,6 @@ runRequest (map ** inputs)
       dup2 (saved_stdout, fileno (stdout));
 #ifdef META_DB
       fetchServicesFromDb(zooRegistry,m,doc,n,printGetCapabilitiesForProcess,1);
-      fprintf(stderr,"************************* %s %d\n\n",__FILE__,__LINE__);
       close_sql(m,0);
 #endif      
       printDocument (m, doc, getpid ());
@@ -1429,6 +1442,8 @@ runRequest (map ** inputs)
 	    xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
 	    r_inputs = NULL;
 	    r_inputs = getMap (request_inputs, "version");
+	    fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
+	    fflush(stderr);
 	    xmlNodePtr n = printWPSHeader(doc,m,"DescribeProcess",
 					  root_nodes[vid][1],(version!=NULL?version->value:"1.0.0"),1);
 
@@ -1518,7 +1533,7 @@ runRequest (map ** inputs)
 			      free (orig);
 			      free (REQUEST);
 			      closedir (dirp);
-			      xmlFreeDoc (doc);
+			      //xmlFreeDoc (doc);
 			      xmlCleanupParser ();
 			      zooXmlCleanupNs ();
                     
@@ -1549,10 +1564,13 @@ runRequest (map ** inputs)
 			if (tmpMap != NULL)
 			  addToMap (request_inputs, "metapath", tmpMap->value);
 			map *tmpMapI = getMapFromMaps (m, "lenv", "Identifier");
+			/**
+			 * No support for dot in service name stored in metadb!?
 #ifdef META_DB
-			service* s2=extractServiceFromDb(m,tmpMapI->name,0);
+			service* s2=extractServiceFromDb(m,tmpMapI->value,0);
 			if(s2==NULL){
 #endif
+			*/
 			  s1 = (service *) malloc (SERVICE_SIZE);
 			  t = readServiceFile (m, buff1, &s1, tmpMapI->value);
 			  if (t < 0)
@@ -1584,7 +1602,7 @@ runRequest (map ** inputs)
 			      free (SERVICE_URL);
 			      free (s1);
 			      closedir (dirp);
-			      xmlFreeDoc (doc);
+			      //xmlFreeDoc (doc);
 			      xmlCleanupParser ();
 			      zooXmlCleanupNs ();
 			      return 1;
@@ -1603,9 +1621,11 @@ runRequest (map ** inputs)
 			  scount++;
 			  hasVal = 1;
 			  setMapInMaps (m, "lenv", "level", "0");
+			  /*
 #ifdef META_DB
 			}
 #endif
+			  */
 		      }
 		    else
 		      {
@@ -1687,7 +1707,7 @@ runRequest (map ** inputs)
 				      free (orig);
 				      free (REQUEST);
 				      closedir (dirp);
-				      xmlFreeDoc (doc);
+				      //xmlFreeDoc (doc);
 				      xmlCleanupParser ();
 				      zooXmlCleanupNs ();
 				      return 1;
@@ -1735,7 +1755,7 @@ runRequest (map ** inputs)
 			free (orig);
 			free (REQUEST);
 			closedir (dirp);
-			xmlFreeDoc (doc);
+			//xmlFreeDoc (doc);
 			xmlCleanupParser ();
 			zooXmlCleanupNs ();
 			return 1;
@@ -1842,9 +1862,7 @@ runRequest (map ** inputs)
     return 0;
   }
   s1 = NULL;
-  if(postRequest!=NULL)
-    setMapInMaps (m, "lenv", "xrequest", postRequest->value);
-  
+ 
   r_inputs = getMap (request_inputs, "Identifier");
   map* import = getMapFromMaps (m, IMPORTSERVICE, r_inputs->value); 
   if (import != NULL && import->value != NULL) { 
@@ -1879,10 +1897,11 @@ runRequest (map ** inputs)
   int metadb_id=_init_sql(m,"metadb");
   fprintf(stderr,"CONNECTING METADB!\n");
   //FAILED CONNECTING DB
-  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
+  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<0){
     fprintf(stderr,"ERROR CONNECTING METADB\n");
   }
-  s1=extractServiceFromDb(m,r_inputs->value,0);
+  if(metadb_id>=0)
+    s1=extractServiceFromDb(m,r_inputs->value,0);
   //close_sql(m,0);
   if(s1!=NULL){
     inheritance(zooRegistry,&s1);
@@ -2180,9 +2199,11 @@ runRequest (map ** inputs)
   if (cgiCookie != NULL && strlen (cgiCookie) > 0)
     {
       int hasValidCookie = -1;
-      char *tcook = zStrdup (cgiCookie);
+      char *tcook = originalCookie = zStrdup (cgiCookie);
+      //fprintf(stderr,">>>>> %s %d %s\n",__FILE__,__LINE__,tcook );
       char *tmp = NULL;
       map *testing = getMapFromMaps (m, "main", "cookiePrefix");
+      parseCookie(&m,originalCookie);
       if (testing == NULL)
         {
           tmp = zStrdup ("ID=");
@@ -2196,7 +2217,7 @@ runRequest (map ** inputs)
       if (strstr (cgiCookie, ";") != NULL)
         {
           char *token, *saveptr;
-          token = strtok_r (cgiCookie, ";", &saveptr);
+          token = strtok_r (tcook, ";", &saveptr);
           while (token != NULL)
             {
               if (strcasestr (token, tmp) != NULL)
@@ -2243,9 +2264,14 @@ runRequest (map ** inputs)
           int istat = stat (session_file_path, &file_status);
           if (istat == 0 && file_status.st_size > 0)
             {
+	      int saved_stdout = dup (fileno (stdout));
+	      dup2 (fileno (stderr), fileno (stdout));
               conf_read (session_file_path, tmpSess);
               addMapsToMaps (&m, tmpSess);
               freeMaps (&tmpSess);
+	      fflush(stdout);
+	      dup2 (saved_stdout, fileno (stdout));
+	      close(saved_stdout);
             }
 	  free (tmpSess);
         }
@@ -2272,8 +2298,8 @@ runRequest (map ** inputs)
       int len=strlen(s);
       char* tmpName=zStrdup(s);
       char* tmpValue=strstr(s,"=")+1;
-      char* tmpName1=(char*)malloc((1+(len-strlen(tmpValue)))*sizeof(char));
-      snprintf(tmpName1,(len-strlen(tmpValue))+1,"%s",tmpName);
+      char* tmpName1=(char*)malloc((1+(len-(strlen(tmpValue)+1)))*sizeof(char));
+      snprintf(tmpName1,(len-strlen(tmpValue)),"%s",tmpName);
       if(_tmpMaps->content == NULL)
 	_tmpMaps->content = createMap (tmpName1,tmpValue);
       else
@@ -2284,17 +2310,14 @@ runRequest (map ** inputs)
     s = *(orig+ei);
   }
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
-    /*map* tmpMap1=getMap(_tmpMaps->content,"HTTP_COOKIE");
-    free(tmpMap1->value);
-    tmpMap1->value=zStrdup(cgiCookie);*/
-    fprintf(stderr,"[%s]\n",cgiCookie);
     addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
-    dumpMap(_tmpMaps->content);
   }
   addMapsToMaps (&m, _tmpMaps);
   freeMaps (&_tmpMaps);
   free (_tmpMaps);
-
+  if(postRequest!=NULL)
+    setMapInMaps (m, "renv", "xrequest", postRequest->value);
+  //dumpMaps(m);
 #ifdef WIN32
   char *cgiSidL = NULL;
   if (getenv ("CGISID") != NULL)
@@ -2333,7 +2356,6 @@ runRequest (map ** inputs)
 #endif
 				  "ZooWPSClient\0",
 				  INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);*/
-
       if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	freeService (&s1);
 	free (s1);
@@ -2349,18 +2371,17 @@ runRequest (map ** inputs)
 	free (tmpmaps);
 	return -1;
       }
-      fprintf(stderr,"*************************\n\n");
-      //fprintf(stderr,"%s \n",json_object_to_json_string_ext(mapsToJson(request_input_real_format),JSON_C_TO_STRING_PLAIN));
-      fprintf(stderr,"*************************\n\n");
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
                          &request_output_real_format, &eres);
-#ifdef RELY_ON_DB
+
 #ifdef META_DB
-      close_sql(m,1);
-      //end_sql();
-#endif
-      close_sql(m,0);
+      close_sql(m,0);      
 #endif      
+
+      /*#ifdef RELY_ON_DB
+      //close_sql(m,1);
+      //end_sql();
+      #endif*/
     }
   else
     {
@@ -2386,6 +2407,7 @@ runRequest (map ** inputs)
 	  updateStatus(m,0,_("Initializing"));
         }
 #endif
+      //InternetCloseHandle (&hInternet);
       if (pid > 0)
         {
 	  /**
@@ -2410,6 +2432,17 @@ runRequest (map ** inputs)
           r_inputs = getMapFromMaps (m, "main", "tmpPath");
           setMapInMaps (m, "lenv", "async","true");
 	  map* r_inputs1 = createMap("ServiceName", s1->name);
+
+	  /*hInternet = InternetOpen (
+#ifndef WIN32
+				    (LPCTSTR)
+#endif
+				    "ZooWPSClient\0",
+				    INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+#ifndef WIN32
+	  if (!CHECK_INET_HANDLE (hInternet))
+	    fprintf (stderr, "WARNING : hInternet handle failed to initialize");
+	    #endif*/
 
 	  // Create the filename for the result file (.res)
           fbkpres =
@@ -2524,15 +2557,36 @@ runRequest (map ** inputs)
 	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	  invokeCallback(m,request_input_real_format,NULL,1,0);
 	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	  dumpMaps(request_output_real_format);
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
 	    free (s1);
+	    fflush (stdout);
+	    fflush (stderr);
 	    fclose (f0);
 	    fclose (f1);
 	    if(dumpBackFinalFile(m,fbkp,fbkp1)<0)
 	      return -1;
+	    //dumpBackFinalFile(m,fbkp,fbkp1);
+#ifndef RELY_ON_DB
+	    dumpMapsToFile(bmap,fbkpres,1);
+	    removeShmLock (m, 1);
+#else
+	    recordResponse(m,fbkp1);
+	    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	    invokeCallback(m,NULL,NULL,7,0);
+	    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+#endif
 	    unlink (fbkpid);
 	    unhandleStatus (m);
+#ifdef RELY_ON_DB
+#ifdef META_DB
+	    cleanupCallbackThreads();
+	    close_sql(m,1);
+	    //end_sql();
+#endif
+	    close_sql(m,0);
+#endif
 	    freeMaps (&m);
 	    free (m);
 	    free (REQUEST);
@@ -2543,17 +2597,24 @@ runRequest (map ** inputs)
 	    free (request_output_real_format);
 	    freeMaps (&tmpmaps);
 	    free (tmpmaps);
-	    fflush (stdout);
-	    fflush (stderr);
 	    return -1;
 	  }
+	  dumpMaps(request_output_real_format);
 	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	  invokeCallback(m,request_input_real_format,NULL,1,1);
 	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-	  setMapInMaps(m,"lenv","ds_nb","1");
-          loadServiceAndRun (&m, s1, request_inputs,
-                             &request_input_real_format,
-                             &request_output_real_format, &eres);
+          if(getMapFromMaps(m,"lenv","mapError")!=NULL){
+		setMapInMaps(m,"lenv","message",_("Issue with geographic data"));
+	  	invokeCallback(m,NULL,NULL,7,0);
+		eres=-1;//SERVICE_FAILED;
+	  }else{
+	    setMapInMaps(m,"lenv","ds_nb","0");
+	    close_sql(m,0);
+	    loadServiceAndRun (&m, s1, request_inputs,
+			       &request_input_real_format,
+			       &request_output_real_format, &eres);
+	    setMapInMaps(m,"lenv","ds_nb","2");
+	  }
         }
       else
         {
@@ -2572,6 +2633,8 @@ runRequest (map ** inputs)
   dumpMaps (request_output_real_format);
   fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
 #endif
+fflush(stdout);
+rewind(stdout);
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,
@@ -2594,11 +2657,11 @@ runRequest (map ** inputs)
 
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
-      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      if (eres == SERVICE_SUCCEEDED)
+	invokeCallback(m,NULL,request_output_real_format,5,1);
+
       fflush(stderr);
-      invokeCallback(m,NULL,request_output_real_format,5,1);
-      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-      fflush(stderr);
+      fflush(stdout);
 
       fclose (stdout);
 
@@ -2618,15 +2681,14 @@ runRequest (map ** inputs)
 	setMapInMaps(bmap,"status","status",wpsStatus[0]);
 	setMapInMaps(m,"lenv","fstate",wpsStatus[0]);
 	break;
-      }      
+      }
 #ifndef RELY_ON_DB
       dumpMapsToFile(bmap,fbkpres,1);
       removeShmLock (m, 1);
 #else
       recordResponse(m,fbkp1);
-      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-      invokeCallback(m,NULL,request_output_real_format,6,0);
-      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      if (eres == SERVICE_SUCCEEDED)
+	invokeCallback(m,NULL,request_output_real_format,6,0);
 #endif
       freeMaps(&bmap);
       free(bmap);
@@ -2636,14 +2698,12 @@ runRequest (map ** inputs)
 #ifdef META_DB
       cleanupCallbackThreads();
       close_sql(m,1);
-      //end_sql();
 #endif
       close_sql(m,0);
+      end_sql();
 #endif
-      unlink (flog);
       free(fbkpid);
       free(fbkpres); 
-      free (flog);           
       free (fbkp1);
       // free (tmps1); // tmps1 is stack memory and should not be freed
       if(cgiSid!=NULL)
@@ -2652,6 +2712,8 @@ runRequest (map ** inputs)
       fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
       fflush(stderr);
       fclose (stderr);
+      unlink (flog);
+      free (flog);
     }
   else{
     //InternetCloseHandle (&hInternet);  

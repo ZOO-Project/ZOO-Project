@@ -30,8 +30,8 @@
 -------------------------------------------------------------------------------- 
 -- Create a dedicated schema to store all tables
 -- Uncomment the following 2 lines to activate the schema use
--- CREATE SCHEMA zoo;
--- SET search_path TO zoo;
+-- CREATE SCHEMA process;
+-- SET search_path TO process;
 --------------------------------------------------------------------------------
 -- Services table
 -- Used to store information about services running asynchronously
@@ -44,18 +44,14 @@ create table services (
        response TEXT,
        creation_time timestamp with time zone default now(),
        end_time timestamp with time zone default NULL,
-       -- queue_duration ,
-       -- run_duration ,
        progress int,
-       message TEXT,
-       -- data_lifetime timestamp with time zone default now() + interval '48 hours',
-       rps_step int4 default 0
+       message TEXT
 );
 --------------------------------------------------------------------------------
 -- Responses table 
 -- Used to store the response provided by a services running asynchronously
 create table responses (
-       uuid text references process(uuid) ON DELETE CASCADE,
+       uuid text references services(uuid) ON DELETE CASCADE,
        content text,
        creation_time timestamp with time zone default now()
 );

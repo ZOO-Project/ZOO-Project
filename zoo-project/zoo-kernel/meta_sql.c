@@ -296,8 +296,6 @@ int fillComplexData(maps* conf,elements* in,OGRFeature  *input,const char* ltype
  * @return a new elements* corresponding to the current input
  */
 elements* extractInput(maps* conf,OGRFeature *input){
-  fprintf(stderr,"************************* %s %s %d\n\n",input->GetFieldAsString( 0 ),__FILE__,__LINE__);
-  fprintf(stderr,"************************* %s %s %d\n\n",input->GetFieldAsString( 1 ),__FILE__,__LINE__);
   elements* res=createElements(input->GetFieldAsString( 1 ));
   res->content=createMap("title",input->GetFieldAsString( 2 ));
   addToMap(res->content,"abstract",input->GetFieldAsString( 3 ));
@@ -347,10 +345,6 @@ elements* extractOutput(maps* conf,OGRFeature *output){
   addToMap(res->content,"abstract",output->GetFieldAsString( 3 ));
   fillMetadata(conf,&res->metadata,output->GetFieldAsString( 0 ));
   fillAdditionalParameters(conf,&res->additional_parameters,output->GetFieldAsString( 0 ));
-  res->defaults=NULL;
-  res->supported=NULL;
-  res->child=NULL;
-  res->next=NULL;
   int ioCnt=fillLiteralData(conf,res,output,"Output");
   if(ioCnt==0)
     ioCnt=fillComplexData(conf,res,output,"Output");
@@ -360,7 +354,7 @@ elements* extractOutput(maps* conf,OGRFeature *output){
   OGRLayer *noutputs=fetchSql(conf,0,nestedOutputsQuery);
   free(nestedOutputsQuery);
   while( (noutput = noutputs->GetNextFeature()) != NULL ){
-    elements* nout=extractInput(conf,noutput);
+    elements* nout=extractOutput(conf,noutput);
     addToElements(&res->child,nout);
     freeElements(&nout);
     free(nout);
@@ -412,10 +406,7 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       while( (input = inputs->GetNextFeature()) != NULL ){
 	elements* in=extractInput(conf,input);
 	if(in!=NULL){
-	  if(s->inputs==NULL)
-	    s->inputs=dupElements(in);
-	  else
-	    addToElements(&s->inputs,in);
+	  addToElements(&s->inputs,in);
 	  freeElements(&in);
 	  free(in);
 	}
@@ -430,12 +421,11 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       s->outputs=NULL;
       while( (output = outputs->GetNextFeature()) != NULL ){
 	elements* in=extractOutput(conf,output);
-	if(s->outputs==NULL)
-	  s->outputs=dupElements(in);
-	else
+	if(in!=NULL){
 	  addToElements(&s->outputs,in);
-	freeElements(&in);
-	free(in);
+	  freeElements(&in);
+	  free(in);
+	}
 	OGRFeature::DestroyFeature( output );
       }
       cleanFetchSql(conf,0,outputs);
@@ -462,8 +452,8 @@ int fetchServicesFromDb(registry* reg,maps* conf, xmlDocPtr doc, xmlNodePtr n,
 			void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr,
 				     service *), int minimal ){
   int result=0;
-  _init_sql(conf,"metadb");
-  if(getMapFromMaps(conf,"lenv","dbIssue")!=NULL)
+  result=_init_sql(conf,"metadb");
+  if(getMapFromMaps(conf,"lenv","dbIssue")!=NULL || result < 0)
     return -1;
   // Fetch every services
   OGRLayer *res=fetchSql(conf,0,META_SERVICES_LIST_ALL);

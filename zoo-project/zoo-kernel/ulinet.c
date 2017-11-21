@@ -210,8 +210,55 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
   ret.handle=curl_multi_init();
   ret.agent=strdup(lpszAgent);
   ret.nb=0;
+  ret.waitingRequests[ret.nb] = NULL;
   ret.ihandle[ret.nb].header=NULL;
+  ret.ihandle[ret.nb].handle=NULL;
+  ret.ihandle[ret.nb].hasCacheFile=0;
+  ret.ihandle[ret.nb].nDataAlloc = 0;
+  ret.ihandle[ret.nb].url = NULL;
+  ret.ihandle[ret.nb].mimeType = NULL;
+  ret.ihandle[ret.nb].cookie = NULL;
+  ret.ihandle[ret.nb].nDataLen = 0;
+  ret.ihandle[ret.nb].nDataAlloc = 0;
+  ret.ihandle[ret.nb].pabyData = NULL;
+  ret.ihandle[ret.nb].post = NULL;
   return ret;
+}
+
+/**
+ * Verify if the URL should use a shared cache or not.
+ *
+ * In case the security section contains a key named "shared", then if the
+ * domain listed in the shared key are contained in the url given as parameter
+ * then it return "SHARED" in other cases, it returns "OTHER".
+ *
+ * @param conf the main configuration file maps
+ * @param url the URL to evaluate
+ * @return a string "SHARED" in case the host is in a domain listed in the
+ * shared key, "OTHER" in other cases.
+ */
+char* getProvenance(maps* conf,const char* url){
+  map* sharedCache=getMapFromMaps(conf,"security","shared");
+  if(sharedCache!=NULL){
+    char *res=NULL;
+    char *hosts=sharedCache->value;
+    char *curs=strtok(hosts,",");
+    while(curs!=NULL){
+      fprintf(stderr,"### %s %d %s \n",__FILE__,__LINE__,strstr(url,curs));
+      fflush(stderr);
+      if(strstr(url,curs)==NULL)
+	res="OTHER";
+      else{
+	res="SHARED";
+	fprintf(stderr,"### %s %d %s \n",__FILE__,__LINE__,"SHARED");
+	fflush(stderr);
+	return res;
+      }
+      curs=strtok(NULL,",");
+    }
+    return res;
+  }
+  return "OTHER";
 }
 
 /**
@@ -281,7 +328,7 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
     token = strtok_r (tmp, ",", &saveptr);
     int i;
     for(i=0;i<handle->nb;i++){
-      if(targetHosts->value[0]=='*' || isProtectedHost(targetHosts->value,handle->ihandle[i].url)==1){
+      if(strstr(targetHosts->value,"*")!=NULL || isProtectedHost(targetHosts->value,handle->ihandle[i].url)==1){
 	while (token != NULL){
 	  int length=strlen(token)+6;
 	  char* tmp1=(char*)malloc(length*sizeof(char));
@@ -296,10 +343,12 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	    tmp1[5+j+1]='\0';
 	  }
 	  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmp1);
-	  if(strncmp(tmp1,"HTTP_COOKIE",11)!=0){	    
-	    tmpMap = getMapFromMaps(conf,"renv",tmp1);
-	    if(tmpMap!=NULL)
-	      AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
+	  //dumpMaps(conf);
+	  tmpMap = getMapFromMaps(conf,"renv",tmp1);
+	  if(tmpMap!=NULL){
+	    fprintf(stderr,"add header %s %s\n",token,tmpMap->value);
+	    fflush(stderr);
+	    AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
 	  }
 	  free(tmp1);
 	  if(handle->ihandle[i].header!=NULL)
@@ -320,44 +369,48 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
  */
 void InternetCloseHandle(HINTERNET* handle0){
   int i=0;
-  for(i=0;i<handle0->nb;i++){
-    _HINTERNET handle=handle0->ihandle[i];
-    if(handle.hasCacheFile>0){
-      fclose(handle.file);
-      unlink(handle.filename);
+  if(handle0!=NULL){
+    for(i=0;i<handle0->nb;i++){
+      _HINTERNET handle=handle0->ihandle[i];
+      if(handle.hasCacheFile>0){
+	fclose(handle.file);
+	unlink(handle.filename);
+      }
+      else{
+	handle.pabyData = NULL;
+	handle.nDataAlloc = handle.nDataLen = 0;
+      }
+      if(handle.header!=NULL){
+	curl_slist_free_all(handle.header);
+	handle.header=NULL;
+      }
+      if(handle.post!=NULL){
+	free(handle.post);
+	handle.post=NULL;
+      }
+      if(handle.url!=NULL){
+	free(handle.url);
+	handle.url=NULL;
+      }
+      if(handle.mimeType!=NULL){
+	free(handle.mimeType);
+	handle.mimeType=NULL;
+      }
+      if(handle.cookie!=NULL){
+	free(handle.cookie);
+	handle.cookie=NULL;
+      }
+      if(handle0->waitingRequests[i]!=NULL){
+	free(handle0->waitingRequests[i]);
+	handle0->waitingRequests[i]=NULL;
+      }
     }
-    else{
-      handle.pabyData = NULL;
-      handle.nDataAlloc = handle.nDataLen = 0;
+    if(handle0->handle)
+      curl_multi_cleanup(handle0->handle);
+    if(handle0->agent!=NULL){
+      free(handle0->agent);
+      handle0->agent=NULL;
     }
-    if(handle0->ihandle[i].header!=NULL){
-      curl_slist_free_all(handle0->ihandle[i].header);
-      handle0->ihandle[i].header=NULL;
-    }
-    if(handle.post!=NULL)
-      free(handle.post);
-    if(handle.url!=NULL)
-      free(handle.url);
-    if(handle.mimeType!=NULL)
-      free(handle.mimeType);
-    if(handle.cookie!=NULL)
-      free(handle.cookie);
-  }
-  fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
-  fflush(stderr);
-  if(handle0->handle)
-    curl_multi_cleanup(handle0->handle);
-  fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
-  fflush(stderr);
-  free(handle0->agent);
-  fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
-  fflush(stderr);
-  for(i=handle0->nb-1;i>=0;i--){
-    fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
-    fflush(stderr);
-    free(handle0->waitingRequests[i]);
-      fprintf(stderr,"%s%d\n",__FILE__,__LINE__);
-      fflush(stderr);
   }
 }
 
@@ -376,32 +429,68 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   char filename[255];
   struct MemoryStruct header;
 
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].hasCacheFile=0;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].url = NULL;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].mimeType = NULL;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].cookie = NULL;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].nDataLen = 0;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].pabyData = NULL;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   hInternet->ihandle[hInternet->nb].post = NULL;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIEFILE, "ALL");
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
 #ifndef TIGER
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIELIST, "ALL");
 #endif
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_USERAGENT, hInternet->agent);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_FOLLOWLOCATION,1);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_MAXREDIRS,3);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   header.memory=NULL;
   header.size = 0;
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_HEADERFUNCTION, header_write_data);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEHEADER, (void *)&header);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
 
 #ifdef MSG_LAF_VERBOSE
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
@@ -430,6 +519,8 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
       hInternet->ihandle[hInternet->nb].nDataLen=0;
       break;
     }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
 #ifdef ULINET_DEBUG
   fprintf(stderr,"URL (%s)\nBODY (%s)\n",lpszUrl,lpszHeaders);
 #endif
@@ -447,16 +538,27 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
   }
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   if(hInternet->ihandle[hInternet->nb].header!=NULL)
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
 
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
   hInternet->ihandle[hInternet->nb].url = zStrdup(lpszUrl);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
 
   curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   hInternet->ihandle[hInternet->nb].header=NULL;
+  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+  fflush(stderr);
   ++hInternet->nb;
+  hInternet->ihandle[hInternet->nb].header=NULL;
 
 #ifdef ULINET_DEBUG
   fprintf(stderr,"DEBUG MIMETYPE: %s\n",hInternet.mimeType);
@@ -480,12 +582,18 @@ int processDownloads(HINTERNET* hInternet){
   }while(still_running);  
   for(i=0;i<hInternet->nb;i++){
     char *tmp;
+    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
+    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     if(tmp!=NULL)
       hInternet->ihandle[i].mimeType=strdup(tmp);
+    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_RESPONSE_CODE,&hInternet->ihandle[i].code);
+    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
+    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
+    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     //fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,hInternet->ihandle[i].mimeType);
     //fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,hInternet->ihandle[i].pabyData);
   }

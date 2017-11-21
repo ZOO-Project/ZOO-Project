@@ -69,8 +69,10 @@ char* _createInitString(maps* conf,const char* key){
   };
   int i=0;
   maps* cconf=getMaps(conf,key);
-  if(cconf==NULL)
+  if(cconf==NULL){
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     return "-1";
+  }
   int len=0;
   for(i=0;i<6;i++){
     map* tmp=getMap(cconf->content,keywords[i]);
@@ -118,8 +120,12 @@ char* createInitString(maps* conf){
  */
 int _init_sql(maps* conf,const char* key){
   char* sqlInitString=_createInitString(conf,key);
+  fprintf(stderr,"Try to connect to: %s %s !\n",key,sqlInitString);
+  fflush(stderr);  
   if(strncmp(sqlInitString,"-1",2)==0)
     return -1;
+  fprintf(stderr,"Try to connect to: %s !\n",key);
+  fflush(stderr);  
   OGRSFDriver *poDriver = NULL;
   OGRRegisterAll();
   int zoo_ds_nb=0;
@@ -194,9 +200,11 @@ int init_sql(maps* conf){
  * @param conf the maps containing the setting of the main.cfg file
  */
 void close_sql(maps* conf,int cid){
-  if( zoo_ResultSet != NULL )
+  if( zoo_ResultSet != NULL ){
     zoo_DS[cid]->ReleaseResultSet( zoo_ResultSet );
-  if(zoo_DS!=NULL){
+    zoo_ResultSet=NULL;
+  }
+  if(zoo_DS!=NULL && zoo_DS[cid]!=NULL){
 #if GDAL_VERSION_MAJOR >= 2
     GDALClose(zoo_DS[cid]);
 #else
@@ -222,7 +230,7 @@ void end_sql(){
  * @return NULL in case of failure or an OGRLayer pointer if the query succeed.
  */
 OGRLayer *fetchSql(maps* conf,int cid,const char* sqlQuery){
-  if(zoo_DS[cid]==NULL)
+  if(zoo_DS==NULL || zoo_DS[cid]==NULL)
     return NULL;
   OGRLayer *res=NULL;
 #ifdef DEBUG
@@ -249,6 +257,8 @@ void cleanFetchSql(maps* conf,int cid,OGRLayer *objects){
  */
 int execSql(maps* conf,int cid,const char* sqlQuery){
   int res=-1;
+  if(zoo_DS == NULL || zoo_DS[cid]==NULL)
+    return -1;
   zoo_ResultSet = zoo_DS[cid]->ExecuteSQL( sqlQuery, NULL, NULL);
   if( zoo_ResultSet != NULL ){
     res=1;
@@ -370,19 +380,15 @@ int _updateStatus(maps* conf){
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+64+1)*sizeof(char));
   sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$ where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
-  if( zoo_ds_nb==
-#ifdef META_DB
-      1
-#else
-      0
-#endif
-      ){
+  if(zoo_ds_nb==0){
     init_sql(conf);
     zoo_ds_nb++;
   }
-  execSql(conf,zoo_ds_nb-1,sqlQuery);
-  cleanUpResultSet(conf,zoo_ds_nb-1);
+  execSql(conf,0,sqlQuery);
+  cleanUpResultSet(conf,0);
+  close_sql(conf,0);
   free(sqlQuery);
+  setMapInMaps(conf,"lenv","ds_nb","0");
   return 0;
 }
 
@@ -438,6 +444,9 @@ char* _getStatus(maps* conf,char* pid){
 char* _getStatusFile(maps* conf,char* pid){
   int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
+  OGRFeature  *poFeature = NULL;
+  const char *tmp1=NULL;
+  int hasRes=-1;
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+82+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select content from %s.responses where uuid=$$%s$$"
@@ -453,9 +462,6 @@ char* _getStatusFile(maps* conf,char* pid){
     zoo_ds_nb++;
   }
   execSql(conf,zoo_ds_nb-1,sqlQuery);
-  OGRFeature  *poFeature = NULL;
-  const char *tmp1;
-  int hasRes=-1;
   if(zoo_ResultSet!=NULL){
       while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
 	for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
@@ -471,8 +477,7 @@ char* _getStatusFile(maps* conf,char* pid){
   }
   if(hasRes<0)
     tmp1=NULL;
-  else
-    cleanUpResultSet(conf,zoo_ds_nb-1);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
   return (char*)tmp1;
 }
@@ -533,7 +538,7 @@ void unhandleStatus(maps* conf){
   cleanUpResultSet(conf,zoo_ds_nb-1);
   //close_sql(conf,zoo_ds_nb-1);
   free(sqlQuery);
-  end_sql();
+  //end_sql();
 }
 
 /**
@@ -554,7 +559,8 @@ char* getStatusId(maps* conf,char* pid){
     init_sql(conf);
     zoo_ds_nb++;
   }
-  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  if(execSql(conf,zoo_ds_nb-1,sqlQuery)<0)
+    return NULL;
   OGRFeature  *poFeature = NULL;
   const char *tmp1;
   int hasRes=-1;

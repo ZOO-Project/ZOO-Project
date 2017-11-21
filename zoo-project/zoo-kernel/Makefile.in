@@ -44,7 +44,7 @@ service_json.o: service_json.c
 	g++ -fPIC ${JSON_CFLAGS} ${CFLAGS} -c service_json.c
 
 service_callback.o: service_callback.c
-	g++ -fPIC ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c
+	g++ -fPIC ${XML2CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c
 
 request_parser.o: request_parser.c request_parser.h
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c
@@ -59,10 +59,10 @@ response_print.o: response_print.c response_print.h
 	g++ -fPIC ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} ${HPC_ENABLED} -c response_print.c
 
 server_internal.o: server_internal.c server_internal.h service.h mimetypes.h
-	g++ ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
+	g++ ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
 
 service_internal.o: service_internal.c service_internal.h service.h
-	gcc ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
+	gcc ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
 service_yaml.o: service_yaml.c service.h
 	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
@@ -125,7 +125,7 @@ zoo_loader.cgi: version.h libzoo_service.${EXT} zoo_loader.c zoo_service_loader.
 
 zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main_conf_read.tab.o lex.cr.o response_print.o server_internal.o service_internal.o ${MS_FILE} ${YAML_FILE}
 	g++ -g -O2 ${JSCFLAGS} ${RUBYCFLAGS} ${XML2CFLAGS} ${CFLAGS} -c zcfg2yaml.c  -fno-common -DPIC -o zcfg2yaml.o
-	g++  ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o server_internal.o service_internal.o ${MS_FILE} response_print.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml -L. ${LDFLAGS}
+	g++  ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o ulinet.o service_callback.o server_internal.o service_internal.o ${MS_FILE} response_print.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml -L. ${LDFLAGS}
 
 install: zoo_loader.cgi
 	install -d ${DESTDIR}${CGI_DIR}

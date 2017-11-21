@@ -62,7 +62,7 @@
 /**
  * Number of time the ZOO-Kernel will try to acquire lock
  */
-#define ZOO_LOCK_MAX_RETRY 10
+#define ZOO_LOCK_MAX_RETRY 180
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -84,6 +84,8 @@
 #include <xlocale.h>
 #endif
 
+#include <fcntl.h>
+  
 #include "service.h"
 
 #if defined(macintosh) || (defined(__MACH__) && defined(__APPLE__))
@@ -93,13 +95,30 @@
 
 #endif
 
+/**
+ * The lock structure used by the ZOO-Kernel to ensure atomicity of operations
+ *
+ */ 
+typedef struct zooLock{
+  struct flock lock; //!< The lock
+  FILE* lockfile;    //!< The pointer to the lock file
+  char* filename;    //!< The filename to lock
+} zooLock;
+
+static zooLock** zoo_file_locks=NULL;
+static int zoo_file_locks_cnt=0;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+  
   ZOO_DLL_EXPORT char *readVSIFile(maps*,const char*);
   ZOO_DLL_EXPORT int  setOutputValue( maps*, const char*, char*, size_t);
   ZOO_DLL_EXPORT char* getInputValue( maps*,const char*,size_t*);
+
+  ZOO_DLL_EXPORT struct zooLock* lockFile(maps*,const char*,const char);
+  ZOO_DLL_EXPORT int unlockFile(maps*,struct zooLock*);
 
   ZOO_DLL_EXPORT void unhandleStatus(maps*);
   ZOO_DLL_EXPORT int _updateStatus(maps*);

@@ -1848,3 +1848,41 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
     *res=lres;
   }
 }
+
+/**
+ * Parse cookie contained in request headers.
+ *
+ * @param conf the conf maps containinfg the main.cfg
+ * @param cookie the 
+ */
+void parseCookie(maps** conf,const char* cookie){
+  char* tcook=zStrdup(cookie);
+  char *token, *saveptr;
+  token = strtok_r (tcook, "; ", &saveptr);
+  maps* res=createMaps("cookies");
+  while (token != NULL){
+    char *token1, *saveptr1, *name;
+    int i=0;
+    token1 = strtok_r (token, "=", &saveptr1);
+    while (token1 != NULL){
+      if(i==0){
+	name=zStrdup(token1);
+	i++;
+      }
+      else{
+	if(res->content==NULL)
+	  res->content=createMap(name,token1);
+	else
+	  addToMap(res->content,name,token1);
+	free(name);
+	i=0;
+      }
+      token1 = strtok_r (NULL, "=", &saveptr1);
+    }
+    token = strtok_r (NULL, "; ", &saveptr);
+  }
+  addMapsToMaps(conf,res);
+  freeMaps(&res);
+  free(res);
+  free(tcook);
+}

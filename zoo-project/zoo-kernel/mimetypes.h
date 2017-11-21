@@ -817,23 +817,24 @@ static bool getFileExtension(const char* mimeType, char* extension, size_t lengt
 * @return a map with name "extension" and value set to file extension, e.g. "png"; if not found the default value is "txt" 
 */
 static map* getFileExtensionMap(const char* mimeType, bool* hasExt) {
-
-	map* ext = createMap("extension", "txt");
-	*hasExt = false;
+  map* ext = createMap("extension", "txt");
+  *hasExt = false;
 	
-	if (mimeType != NULL) { 	
-		for (int i = 0; i < NUM_MIME_TYPES; i++) {			
-			if 	(strncmp(mimeType, MIME[i][M_Type], strlen(MIME[i][M_Type])) == 0) {
-				ext->value = zStrdup(MIME[i][M_Extension]);
-				*hasExt = true;
-				break;				
-			}		
-		}
-		if (*hasExt == false && strncmp(mimeType, "image/", 6) == 0) {
-			ext->value = zStrdup(strstr(mimeType, "/") + 1);
-		}			
-	}	
-	return ext;
+  if (mimeType != NULL) { 	
+    for (int i = 0; i < NUM_MIME_TYPES; i++) {			
+      if(strncmp(mimeType, MIME[i][M_Type], strlen(MIME[i][M_Type])) == 0) {
+	free(ext->value);
+	ext->value = zStrdup(MIME[i][M_Extension]);
+	*hasExt = true;
+	break;				
+      }	
+    }
+    if (*hasExt == false && strncmp(mimeType, "image/", 6) == 0) {
+      free(ext->value);
+      ext->value = zStrdup(strstr(mimeType, "/") + 1);
+    }
+  }	
+  return ext;
 }
 
 static int isGeographic(const char* mimeType){

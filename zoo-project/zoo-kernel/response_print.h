@@ -219,8 +219,8 @@ extern "C" {
   void printBoundingBoxDocument(maps*,maps*,FILE*);
   void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
   void printStatusInfo(maps*,map*,char*);
-  int addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
-  int addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr);
+  void addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
+  void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr);
 
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
