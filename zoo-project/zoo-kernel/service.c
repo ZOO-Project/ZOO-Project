@@ -1171,19 +1171,19 @@ elements* dupElements(elements* e){
     tmp=(elements*)malloc(ELEMENTS_SIZE);
     tmp->name=zStrdup(cursor->name);
     tmp->content=NULL;
-    addMapToMap(&tmp->content,e->content);
+    addMapToMap(&tmp->content,cursor->content);
     tmp->metadata=NULL;
-    addMapToMap(&tmp->metadata,e->metadata);
+    addMapToMap(&tmp->metadata,cursor->metadata);
     tmp->additional_parameters=NULL;
-    addMapToMap(&tmp->additional_parameters,e->additional_parameters);
-    if(e->format!=NULL)
-      tmp->format=zStrdup(e->format);
+    addMapToMap(&tmp->additional_parameters,cursor->additional_parameters);
+    if(cursor->format!=NULL)
+      tmp->format=zStrdup(cursor->format);
     else
       tmp->format=NULL;
-    if(e->defaults!=NULL){
+    if(cursor->defaults!=NULL){
       tmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
       tmp->defaults->content=NULL;
-      addMapToMap(&tmp->defaults->content,e->defaults->content);
+      addMapToMap(&tmp->defaults->content,cursor->defaults->content);
       tmp->defaults->next=NULL;
 #ifdef DEBUG
       fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
@@ -1191,12 +1191,12 @@ elements* dupElements(elements* e){
 #endif
     }else
       tmp->defaults=NULL;
-    if(e->supported!=NULL){
+    if(cursor->supported!=NULL && cursor->supported->content!=NULL){
       tmp->supported=(iotype*)malloc(IOTYPE_SIZE);
       tmp->supported->content=NULL;
-      addMapToMap(&tmp->supported->content,e->supported->content);
+      addMapToMap(&tmp->supported->content,cursor->supported->content);
       tmp->supported->next=NULL;
-      iotype *tmp2=e->supported->next;
+      iotype *tmp2=cursor->supported->next;
       while(tmp2!=NULL){
 	addMapToIoType(&tmp->supported,tmp2->content);
 #ifdef DEBUG

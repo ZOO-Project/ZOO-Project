@@ -56,7 +56,7 @@ static PyObject* ZooError;
  * Define the following functions available from a service loaded and running
  * from the ZOO-Kernel Python environment:
  *  - "_" corresponding to the PythonTranslate function
- *  - "updte_status" corresponding to the PythonUpdateStatus function
+ *  - "update_status" corresponding to the PythonUpdateStatus function
  * @see PythonTranslate, PythonUpdateStatus
  */
 PyMethodDef zooMethods[] = {
@@ -162,7 +162,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #ifdef DEBUG
     fprintf(stderr,"PYTHON SUPPORT (%i)\n",strlen(tmp->value));
 #endif
-    python_path=(char*)malloc((strlen(tmp->value))*sizeof(char));
+    python_path=(char*)malloc((strlen(tmp->value)+1)*sizeof(char));
     sprintf(python_path,"%s",tmp->value);
     hasToClean=1;
   }
@@ -280,7 +280,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	dumpMaps(inputs);
 	dumpMaps(*real_outputs);
 #endif
-      }else{	  
+      }else{
 	PythonZooReport(m,tmp->value,0);
 	res=-1;
       }
@@ -322,12 +322,12 @@ void PythonZooReport(maps* m,const char* module,int load){
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
   if(PyString_Check(trace)){
-    pbt=(char*)malloc((7+strlen(PyString_AsString(trace))+1)*sizeof(char));
+    pbt=(char*)malloc((8+strlen(PyString_AsString(trace)))*sizeof(char));
     sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
   }
   else
     fprintf(stderr,"EMPTY TRACE ?");
-  
+
   trace=NULL;
   
   trace=PyObject_Str(ptype);

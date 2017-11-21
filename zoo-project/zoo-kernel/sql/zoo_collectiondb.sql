@@ -313,7 +313,7 @@ CREATE OR REPLACE VIEW public.ows_process AS
 	title,
 	abstract,
 	(SELECT service_type FROM CollectionDB.zoo_ServiceTypes WHERE id = (SELECT service_type_id FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id)))) as service_type,
-	(SELECT executable_name  as service_provider FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id)))  as service_provider,
+	(SELECT executable_name  as service_provider FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as service_provider,
 	availability
 	FROM CollectionDB.ows_Process
 	WHERE

@@ -127,6 +127,7 @@ typedef char* LPCTSTR;
 #endif
   HINTERNET InternetOpen(char*,int,char*,char*,int);
 
+  char* getProvenance(maps*,const char*);
   int isProtectedHost(const char*,const char*);
   int AddMissingHeaderEntry(_HINTERNET*,const char*,const char*);
   void AddHeaderEntries(HINTERNET*,maps*);

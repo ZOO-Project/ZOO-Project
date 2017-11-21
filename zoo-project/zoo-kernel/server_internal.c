@@ -25,6 +25,7 @@
 #include "server_internal.h"
 #include "service_internal.h"
 #include "response_print.h"
+#include "service_callback.h"
 #include "mimetypes.h"
 #ifndef WIN32
 #include <dlfcn.h>
@@ -443,7 +444,8 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	  length=0;
 	  if(cSize!=NULL){
 	    length=atoi(cSize->value);
-	  }
+	  }else
+	    length=strlen(cValue->value);
 	  writeFile(val,cValue->value,length);
 	  setMapArray(cMap,"cache_file",k,val);
 	  free(val);
@@ -465,6 +467,7 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	addToMap(cMap,"cache_file",val);
 	free(val);
       }
+      addToMap(inputs->content,"byValue","true");
     }
     inputs=inputs->next;
   }
@@ -979,7 +982,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
     map* statusInfo=createMap("JobID",pid);
     if(isRunning(conf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
-	errorException (conf, _("The result for the requested JobID has not yet been generated. (1)"),
+	errorException (conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
 			"ResultNotReady", pid);
 	return;
       }
@@ -1007,11 +1010,13 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
 	  printf("%s",result);
 	  fflush(stdout);
+	  free(sid);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
+	  free(result);
 	  return;
 	}else{
-	  errorException (conf, _("The result for the requested JobID has not yet been generated. (2)"),
+	  errorException (conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
 			  "ResultNotReady", pid);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
@@ -1103,6 +1108,11 @@ void runDismiss(maps* conf,char* pid){
 #ifdef RELY_ON_DB
     removeService(conf,pid);
 #endif
+    /*
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      invokeCallback(conf,NULL,NULL,7,1);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    */
     map* statusInfo=createMap("JobID",pid);
     addToMap(statusInfo,"Status","Dismissed");
     printStatusInfo(conf,statusInfo,"Dismiss");

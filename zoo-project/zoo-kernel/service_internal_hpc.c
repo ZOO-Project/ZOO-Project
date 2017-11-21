@@ -143,10 +143,12 @@ void addNestedOutputs(service** s){
 	cur->format=NULL;
 	if(cur->defaults!=NULL){
 	  freeIOType(&cur->defaults);
+	  free(cur->defaults);
 	  cur->defaults=NULL;
 	}
 	if(cur->supported!=NULL){
 	  freeIOType(&cur->supported);
+	  free(cur->supported);
 	  cur->supported=NULL;
 	}
 	freeElements(&tmp[2]);
@@ -161,6 +163,117 @@ void addNestedOutputs(service** s){
     cur=cur->next;
   }
   //dumpElements((*s)->outputs);
+}
+
+/**
+ * Acquire a read lock on every files used as input for executing a service.
+ * @param conf the main configuration file map
+ * @return 0 if every file can be locked, -1 if one lock has failed.
+ */
+int addReadLocks(maps** conf){
+  map* queueLengthMap=getMapFromMaps(*conf,"uploadQueue","length");
+  maps* queueMaps=getMaps(*conf,"uploadQueue");
+  if(queueLengthMap!=NULL){
+    int cnt=atoi(queueLengthMap->value);
+    int i=0;
+    for(i=0;i<cnt;i++){
+      map* argv[2]={
+	getMapArray(queueMaps->content,"input",i),
+	getMapArray(queueMaps->content,"localPath",i)
+      };
+      zooLock* lck;
+      if((lck=lockFile(*conf,argv[1]->value,'r'))==NULL){
+	char* templateStr=_("Unable to lock the file for %s in read mode.");
+	char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv[0]->value)+1)*sizeof(char));
+	sprintf(tmpMessage,templateStr,argv[0]->value);
+	setMapInMaps(*conf,"lenv","message",tmpMessage);
+	free(tmpMessage);
+	return -1;
+      }else{
+	if(zoo_file_locks_cnt==0){
+	  zoo_file_locks=(zooLock**)malloc(sizeof(zooLock*));
+	}
+	else{
+	  zoo_file_locks=(zooLock**)realloc(zoo_file_locks,(zoo_file_locks_cnt+1)*sizeof(zooLock*));
+	}
+	zoo_file_locks[zoo_file_locks_cnt]=lck;
+	zoo_file_locks_cnt++;
+      }
+    }
+  }
+  return 0;
+}
+
+/**
+ * Remove all read locks set for files used as input for executing the service.
+ * @param conf the main configuration maps pointer
+ * @return 0 in case of success, -1 if any error occured. In case of error, one
+ * can refer to the message map array from the lenv section.
+ */
+int removeReadLocks(maps** conf){
+  int res=0;
+  int nberr=0;
+  map* queueLengthMap=getMapFromMaps(*conf,"uploadQueue","length");
+  maps* queueMaps=getMaps(*conf,"uploadQueue");
+  if(queueLengthMap!=NULL){
+    int cnt=atoi(queueLengthMap->value);
+    int i=0;
+    for(i=0;i<cnt;i++){
+      if(unlockFile(*conf,zoo_file_locks[i])<1){
+	map* argv=getMapArray(queueMaps->content,"input",i);
+	char* templateStr=_("Unable to unlock the file for %s after execution.");
+	char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv->value)+1)*sizeof(char));
+	sprintf(tmpMessage,templateStr,argv->value);
+	maps* lenv=getMaps(*conf,"lenv");
+	setMapArray(lenv->content,"message",nberr,tmpMessage);
+	free(tmpMessage);
+	res=-1;
+	nberr++;
+      }
+    }
+  }
+  free(zoo_file_locks);
+  return res;
+}
+
+/**
+ * Get the section name depending on number of features and/or pixels of each
+ * inputs and the threshold defined in a section.
+ * It supposes that your inputs has been published using MapServer support, 
+ * implying that the number of features (nb_features), respectively pixels 
+ * (nb_pixels), are defined. The section, identified by confId, should contain
+ * preview_max_features and preview_max_pixels defining the threshold values.
+ * @param conf the main configuration file maps pointer
+ * @param inputs the inputs maps pointer
+ * @param confId the section identifier
+ * @return "preview_conf" in case the numbers are lower than the threshold,
+ * "fullres_conf" in other cases.
+ */
+char* getConfiguration(maps** conf,maps** inputs,const char* confId){
+  maps* input=*inputs;
+  map* max_pixels=getMapFromMaps(*conf,confId,"preview_max_pixels");
+  map* max_features=getMapFromMaps(*conf,confId,"preview_max_features");
+  int i_max_pixels=atoi(max_pixels->value);
+  int i_max_features=atoi(max_features->value);
+  while(input!=NULL && input->content!=NULL){
+    map* tmpMap=getMap(input->content,"geodatatype");
+    if(tmpMap!=NULL){
+      map* currentNb;
+      if(strcasecmp(tmpMap->value,"raster")==0 ){
+	currentNb=getMap(input->content,"nb_pixels");
+	if(atoi(currentNb->value)>i_max_pixels)
+	  return "fullres_conf";
+      }else{
+	if(strcasecmp(tmpMap->value,"vector")==0 ){
+	  currentNb=getMap(input->content,"nb_features");
+	  if(atoi(currentNb->value)>i_max_features)
+	    return "fullres_conf";
+	}
+      }
+    }
+    input=input->next;
+  }
+  return "preview_conf";
 }
 
 /**
@@ -180,15 +293,31 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   char *ntmp=tmp0->value;
   map* tmp=NULL;
   int res=-1;
+  // Get the configuration id depending on service type and defined thresholds
+  // then, set the configId key in the lenv section
   char *serviceType;
   map* mServiceType=getMap(s->content,"serviceType");
   if(mServiceType!=NULL)
     serviceType=mServiceType->value;
   else
     serviceType="HPC";
-  map* targetPathMap=getMapFromMaps(*main_conf,serviceType,"storagePath");
   map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
   map* uuid=getMapFromMaps(*main_conf,"lenv","usid");
+  map* confMap=getMapFromMaps(*main_conf,serviceType,getConfiguration(main_conf,real_inputs,serviceType));
+  char * configurationId=confMap->value;
+  setMapInMaps(*main_conf,"lenv","configId",configurationId);
+  // Dump lenv maps again after having set the configId ...
+  char *flenv =
+    (char *)
+    malloc ((strlen (tmpPath->value) + 
+	     strlen (uuid->value) + 12) * sizeof (char));
+  sprintf (flenv, "%s/%s_lenv.cfg", tmpPath->value, uuid->value);
+  maps* lenvMaps=getMaps(m,"lenv");
+  dumpMapsToFile(lenvMaps,flenv,0);
+  free(flenv);
+
+  map* targetPathMap=getMapFromMaps(*main_conf,configurationId,"remote_data_path");
+  
   pthread_t threads_pool[50];
   // Force the HPC services to be called asynchronously
   map* isAsync=getMapFromMaps(*main_conf,"lenv","async");
@@ -214,6 +343,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  // TODO: publish input through MapServer / use output publication
 	  dumpMapsValuesToFiles(main_conf,&input);
 	  addToMap(input->content,"toPublish","true");
+	  addToMap(input->content,"useMapserver","true");
 	}
 	if(getMap(input->content,"cache_file")!=NULL){
 	  map* length=getMap(input->content,"length");
@@ -263,26 +393,33 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   invokeCallback(m,inputs,NULL,2,0);
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  dumpMaps(inputs);
+  if(getMapFromMaps(m,"lenv","mapError")!=NULL){
+    invokeCallback(m,inputs,NULL,7,0);
+    return -1;
+  }
 
   // Upload data on HPC
-  runUpload(main_conf);
-  
+  if(runUpload(main_conf)==false){
+    errorException (m, _("Unable to lock the file for upload!"),
+		    "InternalError", NULL);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    invokeCallback(m,inputs,NULL,7,0);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    return -1;
+  }
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   invokeCallback(m,inputs,NULL,2,1);
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 
-  // Add the filename to generate for every output to the parameters
+  // Add the filename to generate for every output to parameters
   input=*real_outputs;
   // TODO: fix appendOutputParameters
   //appendOutputParameters(input,parameters,&parameters_cnt,s,uuid,targetPathMap);
+  dumpMaps(input);
   while(input!=NULL){
     // TODO: parse all outputs including inner outputs if required.
     if(input->child==NULL){
-      parameters_cnt+=1;
-      if(parameters_cnt==1)
-	parameters=(char**)malloc(parameters_cnt*sizeof(char*));
-      else
-	parameters=(char**)realloc(parameters,parameters_cnt*sizeof(char*));
       // Name every files that should be produced by the service execution
       map* mime=getMap(input->content,"mimeType");
       char* targetName;
@@ -301,25 +438,29 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       sprintf(targetPath,"%s/%s",targetPathMap->value,targetName);
       free(targetName);
       setMapInMaps(*real_outputs,input->name,"generated_file",targetPath);
-      // We should verify if any optional tag for output is required
-      // (i.e. -out output.tiff *int8*), meaning that we should search
-      // for a corresponding inputs name.
-      map* inValue=getMapFromMaps(*real_inputs,input->name,"value");
-      if(inValue!=NULL){
-	parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+strlen(inValue->value)+4)*sizeof(char));
-	sprintf(parameters[parameters_cnt-1],"-%s %s %s",input->name,targetPath,inValue->value);
-      }else{
-	parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+3)*sizeof(char));
-	sprintf(parameters[parameters_cnt-1],"-%s %s",input->name,targetPath);
+      if(strcasecmp(input->name,"wms_link")!=0&&
+	 strcasecmp(input->name,"wcs_link")!=0 &&
+	 strcasecmp(input->name,"wfs_link")!=0){
+	parameters_cnt+=1;
+	if(parameters_cnt==1)
+	  parameters=(char**)malloc(parameters_cnt*sizeof(char*));
+	else
+	  parameters=(char**)realloc(parameters,parameters_cnt*sizeof(char*));
+	// We should verify if any optional tag for output is required
+	// (i.e. -out output.tiff *int8*), meaning that we should search
+	// for a corresponding inputs name.
+	map* inValue=getMapFromMaps(*real_inputs,input->name,"value");
+	if(inValue!=NULL){
+	  parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+strlen(inValue->value)+4)*sizeof(char));
+	  sprintf(parameters[parameters_cnt-1],"-%s %s %s",input->name,targetPath,inValue->value);
+	}else{
+	  parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+3)*sizeof(char));
+	  sprintf(parameters[parameters_cnt-1],"-%s %s",input->name,targetPath);
+	}
       }
       free(targetPath);
     }// In other case it means we need to return the cache_file as generated_file
     else{
-      parameters_cnt+=1;
-      if(parameters_cnt==1)
-	parameters=(char**)malloc(parameters_cnt*sizeof(char*));
-      else
-	parameters=(char**)realloc(parameters,parameters_cnt*sizeof(char*));
       // Name every files that should be produced by the service execution
       map* mime=getMap(input->child->content,"mimeType");
       char* targetName;
@@ -338,22 +479,31 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       sprintf(targetPath,"%s/%s",targetPathMap->value,targetName);
       free(targetName);
       addToMap(input->content,"generated_file",targetPath);
-      // We should verify if any optional tag for output is required
-      // (i.e. -out output.tiff *int8*), meaning that we should search
-      // for a corresponding inputs name.
-      map* inValue=getMapFromMaps(*real_inputs,input->name,"value");
-      if(inValue!=NULL){
-	parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+strlen(inValue->value)+4)*sizeof(char));
-	sprintf(parameters[parameters_cnt-1],"-%s %s %s",input->name,targetPath,inValue->value);
-      }else{
-	parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+3)*sizeof(char));
-	sprintf(parameters[parameters_cnt-1],"-%s %s",input->name,targetPath);
+      addToMap(input->content,"storage",targetPath);
+      if(strcasecmp(input->name,"wms_link")!=0&&
+	 strcasecmp(input->name,"wcs_link")!=0 &&
+	 strcasecmp(input->name,"wfs_link")!=0){
+	parameters_cnt+=1;
+	if(parameters_cnt==1)
+	  parameters=(char**)malloc(parameters_cnt*sizeof(char*));
+	else
+	  parameters=(char**)realloc(parameters,parameters_cnt*sizeof(char*));
+	// We should verify if any optional tag for output is required
+	// (i.e. -out output.tiff *int8*), meaning that we should search
+	// for a corresponding inputs name.
+	map* inValue=getMapFromMaps(*real_inputs,input->name,"value");
+	if(inValue!=NULL){
+	  parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+strlen(inValue->value)+4)*sizeof(char));
+	  sprintf(parameters[parameters_cnt-1],"-%s %s %s",input->name,targetPath,inValue->value);
+	}else{
+	  parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(targetPath)+3)*sizeof(char));
+	  sprintf(parameters[parameters_cnt-1],"-%s %s",input->name,targetPath);
+	}
       }
       free(targetPath);
     }
     input=input->next;
   }
-  
   // Produce the SBATCH File locally
   char *scriptPath=(char*)malloc((strlen(s->name)+strlen(tmpPath->value)+strlen(uuid->value)+10)*sizeof(char));
   sprintf(scriptPath,"%s/zoo_%s_%s.sh",tmpPath->value,s->name,uuid->value);
@@ -364,7 +514,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   fflush(stderr);
   FILE* scriptFile=fopen(scriptPath,"w+");
-  map* headerMap=getMapFromMaps(*main_conf,serviceType,"header");
+  map* headerMap=getMapFromMaps(*main_conf,configurationId,"jobscript_header");
   if(headerMap!=NULL){
     // Use the header file if defined in the HPC section of the main.cfg file
     struct stat f_status;
@@ -382,11 +532,12 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       fprintf(scriptFile,"#!/bin/bash\n\n### *** Default ZOO-Service HEADER (no header found) *** ###\n\n");
   }else
     fprintf(scriptFile,"#!/bin/bash\n\n### *** Default ZOO-Service HEADER *** ###\n\n");
-  maps* hpc_opts=getMaps(*main_conf,"sbatch_options");
+  maps* hpc_opts=getMaps(*main_conf,configurationId);
   if(hpc_opts!=NULL){
     map* hpc_opts_content=hpc_opts->content;
     while(hpc_opts_content!=NULL){
-      fprintf(scriptFile,"#SBATCH --%s=%s\n",hpc_opts_content->name,hpc_opts_content->value);
+      if(strncasecmp(hpc_opts_content->name,"sbatch_options_",15)==0)
+	fprintf(scriptFile,"#SBATCH --%s=%s\n",strstr(hpc_opts_content->name,"sbatch_options_")+15,hpc_opts_content->value);
       hpc_opts_content=hpc_opts_content->next;
     }
   }
@@ -395,7 +546,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   if(mods!=NULL)
     fprintf(scriptFile,"#SBATCH --export=MODULES=%s\n",mods->value);
 
-  map* bodyMap=getMapFromMaps(*main_conf,serviceType,"body");
+  map* bodyMap=getMapFromMaps(*main_conf,configurationId,"jobscript_body");
   if(bodyMap!=NULL){
     // Use the header file if defined in the HPC section of the main.cfg file
     struct stat f_status;
@@ -414,7 +565,6 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   }else
     fprintf(scriptFile,"#!/bin/bash\n\n### *** Default ZOO-Service BODY *** ###\n\n");
 
-  
   map* sp=getMap(s->content,"serviceProvider");
   
   // Require to produce the command line to be executed
@@ -432,7 +582,6 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(scriptFile,"echo \"Job finished at: $(date)\"\n");
   fflush(scriptFile);
   fclose(scriptFile);
-  
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   invokeCallback(m,inputs,NULL,3,1);
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -441,9 +590,17 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   invokeCallback(m,inputs,NULL,4,0);
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-  targetPathMap=getMapFromMaps(*main_conf,serviceType,"executePath");
+  targetPathMap=getMapFromMaps(*main_conf,configurationId,"remote_work_path");
   if(targetPathMap==NULL){
-    setMapInMaps(*main_conf,"lenv","message",_("There is no executePath defined in you HPC section!"));
+    setMapInMaps(*main_conf,"lenv","message",_("There is no remote_work_path defined in your section!"));
+    setMapInMaps(*main_conf,"lenv","status","failed");
+    errorException (m, _("There is no remote_work_path defined in your section!"),
+		    "InternalError", NULL);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
+    invokeCallback(m,NULL,NULL,7,0);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     return SERVICE_FAILED;
   }
   char* targetName=strrchr(scriptPath,'/');
@@ -452,9 +609,11 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   setMapInMaps(*main_conf,"lenv","remote_script",targetPath);
   SSHCON *test=ssh_connect(*main_conf);
   ssh_copy(*main_conf,scriptPath,targetPath,ssh_get_cnt(*main_conf));
-  
+  unlink(scriptPath);
+  free(scriptPath);
   // Execute the SBATCH script remotely
-  map* subStr=getMapFromMaps(*main_conf,"HPC","subStr");
+  addReadLocks(main_conf);
+  map* subStr=getMapFromMaps(*main_conf,configurationId,"sbatch_substr");
   char *command=(char*)malloc((strlen(targetPath)+strlen(targetPathMap->value)+strlen(subStr->value)+strlen(uuid->value)+137)*sizeof(char));
   sprintf(command,"sbatch %s 2> %s/error_%s.log | sed \"s:%s::g\"",targetPath,targetPathMap->value,uuid->value,subStr->value);
   if(ssh_exec(*main_conf,command,ssh_get_cnt(m))==0){
@@ -488,7 +647,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     tmpPath=getMapFromMaps(*main_conf,"lenv","message");
     fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
     fflush(stderr);
-    invokeCallback(m,NULL,NULL,7,1);
+    invokeCallback(m,NULL,NULL,7,0);
     fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
     fflush(stderr);
     sprintf(tmpS, "Cannot execute the HPC ZOO-Service %s: %s", s->name, tmpPath->value);
@@ -496,7 +655,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     free(command);
     free(targetPath);
     ssh_close(*main_conf);
-    sleep(120);
+    sleep(1);
     return -1;
   }
   free(targetPath);
@@ -506,28 +665,72 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   fflush(stderr);
   free(command);
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
 
   struct sockaddr_un addr;
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   memset(&addr, 0, sizeof(addr));
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   addr.sun_family = AF_UNIX;
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   int rc, cl, fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   char *sname=(char*)malloc((strlen(tmpPath->value)+strlen(uuid->value)+20));
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   sprintf(sname,"%s/.wait_socket_%s.sock",tmpPath->value,uuid->value);
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   strncpy(addr.sun_path, sname, sizeof(addr.sun_path)-1);
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   
   if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
     perror("bind error");
+    setMapInMaps(m,"lenv","message",_("Unable to bind socket!"));
+    errorException (m, _("Unable to bind socket!"),
+		    "InternalError", NULL);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
+    invokeCallback(m,NULL,NULL,7,0);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     sleep(120);
     return -1;
   }
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   if (listen(fd, 5) == -1) {
     setMapInMaps(*main_conf,"lenv","message",_("Listen error"));
+    errorException (m, _("Listen error"),
+		    "InternalError", NULL);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
+    invokeCallback(m,NULL,NULL,7,0);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     return -1;
   }
+  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+  fflush(stderr);
   if ( (cl = accept(fd, NULL, NULL)) == -1) {
     setMapInMaps(*main_conf,"lenv","message",_("Accept error"));
+    errorException (m, _("Accept error"),
+		    "InternalError", NULL);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
+    invokeCallback(m,NULL,NULL,7,0);
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     return -1;
   }else{
+    fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    fflush(stderr);
     int hasPassed=-1;
     char buf[11];
     memset(&buf,0,11);
@@ -535,20 +738,43 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       if(rc==0){
 	sleep(1);
 	setMapInMaps(*main_conf,"lenv","message",_("Read closed"));
-	invokeCallback(m,NULL,NULL,7,1);
+	errorException (m, _("Read closed"),
+			"InternalError", NULL);
+	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	fflush(stderr);
+	invokeCallback(m,NULL,NULL,7,0);
+	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	fflush(stderr);
 	return -1;
       }else{
 	if(rc<0){
 	  setMapInMaps(*main_conf,"lenv","message",_("Read error"));
-	  invokeCallback(m,NULL,NULL,7,1);
+	  errorException (m, _("Read error"),
+			  "InternalError", NULL);
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	  fflush(stderr);
+	  invokeCallback(m,NULL,NULL,7,0);
+	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	  fflush(stderr);
 	  return -1;
 	}
       }
       hasPassed=1;
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
       res=atoi(buf);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
       unlink(sname);
-      //free(sname);
-
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
+      free(sname);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
+      removeReadLocks(main_conf);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
+  
       if(res==3){
 	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	fflush(stderr);
@@ -572,6 +798,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		sprintf(tmpStr,_("Unable to fetch the remote file for %s"),filename);
 		setMapInMaps(*main_conf,"lenv","message",tmpStr);
 		free(tmpStr);
+		invokeCallback(m,NULL,NULL,7,0);
 		return SERVICE_FAILED;
 	      }
 	    }	    
@@ -586,30 +813,92 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	      test=ssh_connect(*main_conf);
 	      if(ssh_fetch(*main_conf,targetPath,generatedFile->value,ssh_get_cnt(m))==0){
 		maps* tmp=getMaps(*real_outputs,input->name);
+		char serviceName[9];
 		freeMap(&tmp->content);
 		free(tmp->content);
 		tmp->content=NULL;
 		maps* output=getMaps(*real_outputs,input->name);
 		setMapInMaps(output->child,"download_link","generated_file",targetPath);
+		setMapInMaps(output->child,"download_link","storage",targetPath);
 		setMapInMaps(output->child,"download_link","useMapserver","false");
+		setMapInMaps(output->child,"download_link","replicateStorageNext","true");
+		setMapInMaps(output->child,"download_link","asReference","true");
+		setMapInMaps(output->child,"download_link","inRequest","true");
 		setMapInMaps(output->child,"wms_link","generated_file",targetPath);
+		setMapInMaps(output->child,"wms_link","storage",targetPath);
 		setMapInMaps(output->child,"wms_link","useMapserver","true");
 		setMapInMaps(output->child,"wms_link","msOgc","WMS");
 		setMapInMaps(output->child,"wms_link","requestedMimeType","image/png");
-		setMapInMaps(output->child,"wcs_link","generated_file",targetPath);
-		setMapInMaps(output->child,"wcs_link","useMapserver","true");
+		setMapInMaps(output->child,"wms_link","asReference","true");
+		if(getMaps(output->child,"wcs_link")!=NULL){
+		  sprintf(serviceName,"wcs_link");
+		  setMapInMaps(output->child,serviceName,"msOgc","WCS");
+		}
+		else{
+		  sprintf(serviceName,"wfs_link");
+		  setMapInMaps(output->child,serviceName,"msOgc","WFS");
+		}
+		setMapInMaps(output->child,serviceName,"storage",targetPath);
+		setMapInMaps(output->child,serviceName,"generated_file",targetPath);
+		setMapInMaps(output->child,serviceName,"useMapserver","true");
+		setMapInMaps(output->child,serviceName,"asReference","true");
+	      }else{
+                char *tmpStr=(char*)malloc((strlen(filename)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
+                sprintf(tmpStr,_("Unable to fetch the remote file for %s"),filename);
+                setMapInMaps(*main_conf,"lenv","message",tmpStr);
+                free(tmpStr);
+                invokeCallback(m,NULL,NULL,7,0);
+                return SERVICE_FAILED;
 	      }
 	      free(targetPath);
 	    }
 	  }
 	  input=input->next;
 	}
+
+	// Read informations provided by FinalizeHPC as a configuration file
+	// then, remove the file.
+	map* jobid=getMapFromMaps(*main_conf,"lenv","usid");
+	map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
+	char *filePath=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+15)*sizeof(char));
+	sprintf(filePath,"%s/exec_status_%s",tmpPath->value,jobid->value);
+	maps* m = (maps *) malloc (MAPS_SIZE);
+	m->child=NULL;
+	m->next=NULL;
+	int saved_stdout = dup (fileno (stdout));
+	dup2 (fileno (stderr), fileno (stdout));
+	conf_read(filePath,m);
+	fflush(stdout);
+	dup2 (saved_stdout, fileno (stdout));
+	close(saved_stdout);
+	unlink(filePath);
+	free(filePath);
+	addMapsToMaps(main_conf,m);
+	freeMaps(&m);
+	free(m);
+      }else{
+	// Try to access remotely to the log file and return a more relevant error message
+	setMapInMaps(m,"lenv","message",_("HPC Execution failed!"));
+	errorException (m, _("HPC Execution failed!"),
+			"InternalError", NULL);
+	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	fflush(stderr);
+	invokeCallback(m,NULL,NULL,7,0);
+	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	fflush(stderr);
       }
       //free(buf);
     }
     if(hasPassed<0){
       perror("Failed to read");
       setMapInMaps(*main_conf,"lenv","message",_("Unable to parse the value returned by remote execution"));
+      errorException (m, _("Unable to parse the value returned by remote execution"),
+		      "InternalError", NULL);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
+      invokeCallback(m,NULL,NULL,7,0);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      fflush(stderr);
       sleep(120);
       return SERVICE_FAILED;
     }
@@ -621,5 +910,3 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fflush(stderr);
   return res;
 }
-
-    

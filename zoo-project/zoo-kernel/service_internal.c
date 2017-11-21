@@ -38,6 +38,127 @@
 #endif
 
 #define ERROR_MSG_MAX_LENGTH 1024
+
+/**
+ * Lock a file for read, write and upload.
+ * @param conf the main configuration maps
+ * @param filename the file to lock
+ * @param mode define access: 'r' for read, 'w' for write
+ * @return a new zooLock structure on sucess, NULL on failure 
+ */
+struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
+  struct stat f_status;
+  int itn=0;
+  int s;
+  struct zooLock* myLock=(struct zooLock*)malloc(sizeof(struct flock)+sizeof(FILE*)+sizeof(char*));
+  int len=6;
+  char *template="%s.lock";
+  int res=-1;
+ retryLockFile:
+  myLock->filename=(char*)malloc((strlen(filename)+len)*sizeof(char));
+  sprintf(myLock->filename,"%s.lock",filename);
+  s=stat(myLock->filename, &f_status);
+  if(s==0 && mode!='r'){
+    if(itn<ZOO_LOCK_MAX_RETRY){
+      itn++;
+      sleep(5);
+      free(myLock->filename);
+      goto retryLockFile;
+    }else{
+      free(myLock->filename);
+      free(myLock);
+      return NULL;
+    }
+  }else{
+    char local_mode[3];
+    memset(local_mode,0,3);
+    if(mode=='w')
+      sprintf(local_mode,"%c+",mode);
+    else
+      sprintf(local_mode,"%c",mode);
+    myLock->lockfile=fopen(myLock->filename,local_mode);
+    char tmp[512];
+    sprintf(tmp,"%d",getpid());
+    if(myLock->lockfile==NULL){
+      myLock->lockfile=fopen(myLock->filename,"w+");
+      fwrite(tmp,sizeof(char),strlen(tmp),myLock->lockfile);
+      fflush(myLock->lockfile);
+      fclose(myLock->lockfile);
+      myLock->lockfile=fopen(myLock->filename,local_mode);
+    }/*else
+       fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,(myLock->lockfile==NULL));*/
+    if(mode!='r'){
+      fwrite(tmp,sizeof(char),strlen(tmp),myLock->lockfile);
+      fflush(myLock->lockfile);
+    }
+    int cnt=0;
+    if(mode=='r'){
+      myLock->lock.l_type = F_RDLCK;
+    }else
+      myLock->lock.l_type = F_WRLCK;
+    myLock->lock.l_whence = 0;
+    myLock->lock.l_start = 0;
+    myLock->lock.l_len = strlen(tmp)*sizeof(char);
+    while (true) {
+      if((res=fcntl(fileno(myLock->lockfile), F_SETLK, &(myLock->lock)))==-1 &&
+	 (errno==EAGAIN || errno==EACCES)){
+	if(cnt >= ZOO_LOCK_MAX_RETRY){
+	  char message[51];	  
+	  sprintf(message,"Unable to get the lock after %d attempts.\n",cnt);
+	  setMapInMaps(conf,"lenv","message",message);
+	  fclose(myLock->lockfile);
+	  free(myLock->filename);
+	  free(myLock);
+	  return NULL;
+	}
+	fprintf(stderr,"(%d) Wait for lock on  %s, tried %d times ... \n",getpid(),myLock->filename,cnt);
+	fflush(stderr);
+	sleep(1);
+	cnt++;
+      }else
+	break;
+    }
+    if(res<0){
+      char *tmp;
+      if(errno==EBADF)
+	tmp="Either: the filedes argument is invalid; you requested a read lock but the filedes is not open for read access; or, you requested a write lock but the filedes is not open for write access.";
+      else
+	if(errno==EINVAL)
+	  tmp="Either the lockp argument doesn’t specify valid lock information, or the file associated with filedes doesn’t support locks.";
+	else
+	  tmp="The system has run out of file lock resources; there are already too many file locks in place.";
+      fprintf(stderr,"Unable to get the lock on %s due to the following error: %s\n",myLock->filename,tmp);
+      return NULL;
+    }
+    return myLock;
+  }
+}
+
+/**
+ * Remove a lock.
+ * @param conf the main configuration maps
+ * @param s the zooLock structure
+ * @return 0 on success, -1 on failure.
+ */
+int unlockFile(maps* conf,struct zooLock* s){
+  int res=-1;
+  if(s!=NULL){
+    s->lock.l_type = F_UNLCK;
+    res=fcntl(fileno(s->lockfile), F_SETLK, &s->lock);
+    if(res==-1)
+      return res;
+    // Check if there is any process locking a file and delete the lock if not.
+    s->lock.l_type = F_WRLCK;
+    if(fcntl(fileno(s->lockfile), F_GETLK, &s->lock)!=-1 && s->lock.l_type == F_UNLCK){
+      unlink(s->filename);
+    }
+    fclose(s->lockfile);
+    free(s->filename);
+    free(s);
+  }
+  return res;
+}
+
 #ifndef RELY_ON_DB
 #include <dirent.h>
 

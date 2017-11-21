@@ -2485,6 +2485,21 @@ __declspec(dllexport)
       sprintf((char*)pszDstFilename,"%s",tmpMap->value);
       setMapInMaps(outputs,"Result","value",tmpMap->value);
     }
+    
+    tmpMap=getMapFromMaps(inputs,"co","value");
+    if(tmpMap!=NULL){
+      papszCreateOptions = CSLAddString( papszCreateOptions, tmpMap->value );  
+      map* tmpMap1;
+      maps* tmpMaps=getMaps(inputs,"co");
+      if((tmpMap1=getMapFromMaps(inputs,"co","length"))!=NULL){
+        int i=1;
+        int length=atoi(tmpMap1->value);
+        for(;i<length;i++){
+          tmpMap=getMapArray(tmpMaps->content,"value",i);
+          papszCreateOptions = CSLAddString( papszCreateOptions, tmpMap->value );
+        }
+      } 
+    }    
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"utility","value");

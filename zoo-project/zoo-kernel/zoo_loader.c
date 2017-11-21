@@ -85,6 +85,12 @@ int cgiMain(){
   fprintf (stderr, "ContentLength: %d\n", cgiContentLength);
   fflush(stderr);
 #endif
+  fprintf (stderr, "Addr:%s\n", cgiRemoteAddr); 
+  fprintf (stderr, "RequestMethod: (%s) %d %d\n", cgiRequestMethod,strncasecmp(cgiRequestMethod,"post",4),strncmp(cgiContentType,"text/xml",8)==0 || strncasecmp(cgiRequestMethod,"post",4)==0); 
+  fprintf (stderr, "Request: %s\n", cgiQueryString);
+  fprintf (stderr, "ContentType: %s\n", cgiContentType);
+  fprintf (stderr, "ContentLength: %d\n", cgiContentLength);
+  fflush(stderr);
   
   char *strQuery=NULL;
   if(cgiQueryString!=NULL)
