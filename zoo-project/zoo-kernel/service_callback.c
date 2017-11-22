@@ -615,7 +615,7 @@ extern "C" {
 	  "datatype"
 	},
 	{
-	  "wms_extent",
+	  "wcs_extent",
 	  "boundingbox"
 	},
 	{
@@ -627,7 +627,7 @@ extern "C" {
 	  "ref_wcs_link"
 	},
 	{
-	  "ref_wcs_link",
+	  "ref_wcs_preview_link",
 	  "ref_wcs_preview_link"
 	},
 	{
