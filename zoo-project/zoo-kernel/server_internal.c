@@ -1108,7 +1108,7 @@ void runDismiss(maps* conf,char* pid){
 #ifdef RELY_ON_DB
     removeService(conf,pid);
 #endif
-    /*
+    /* No need to call 7_1 when an execution is dismissed.
       fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
       invokeCallback(conf,NULL,NULL,7,1);
       fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);

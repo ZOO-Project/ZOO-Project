@@ -244,14 +244,10 @@ char* getProvenance(maps* conf,const char* url){
     char *hosts=sharedCache->value;
     char *curs=strtok(hosts,",");
     while(curs!=NULL){
-      fprintf(stderr,"### %s %d %s \n",__FILE__,__LINE__,strstr(url,curs));
-      fflush(stderr);
       if(strstr(url,curs)==NULL)
 	res="OTHER";
       else{
 	res="SHARED";
-	fprintf(stderr,"### %s %d %s \n",__FILE__,__LINE__,"SHARED");
-	fflush(stderr);
 	return res;
       }
       curs=strtok(NULL,",");
@@ -294,12 +290,7 @@ int isProtectedHost(const char* protectedHosts,const char* url){
   int cnt=0;
   char* host;
   while(token!=NULL && cnt<=1){
-    fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,token);
-    if(cnt==1)
-      fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,strstr(protectedHosts,token));
-    fflush(stderr);
     if(cnt==1 && strstr(protectedHosts,token)!=NULL){
-      fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,strstr(protectedHosts,token));
       return 1;
     }
     token = strtok_r (NULL, "/", &saveptr);
@@ -342,12 +333,8 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	      tmp1[5+j]='_';
 	    tmp1[5+j+1]='\0';
 	  }
-	  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmp1);
-	  //dumpMaps(conf);
 	  tmpMap = getMapFromMaps(conf,"renv",tmp1);
 	  if(tmpMap!=NULL){
-	    fprintf(stderr,"add header %s %s\n",token,tmpMap->value);
-	    fflush(stderr);
 	    AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
 	  }
 	  free(tmp1);
@@ -429,68 +416,32 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   char filename[255];
   struct MemoryStruct header;
 
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].hasCacheFile=0;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].url = NULL;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].mimeType = NULL;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].cookie = NULL;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].nDataLen = 0;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].pabyData = NULL;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   hInternet->ihandle[hInternet->nb].post = NULL;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIEFILE, "ALL");
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
 #ifndef TIGER
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIELIST, "ALL");
 #endif
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_USERAGENT, hInternet->agent);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_FOLLOWLOCATION,1);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_MAXREDIRS,3);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   header.memory=NULL;
   header.size = 0;
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_HEADERFUNCTION, header_write_data);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEHEADER, (void *)&header);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
 
 #ifdef MSG_LAF_VERBOSE
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
@@ -519,8 +470,6 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
       hInternet->ihandle[hInternet->nb].nDataLen=0;
       break;
     }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
 #ifdef ULINET_DEBUG
   fprintf(stderr,"URL (%s)\nBODY (%s)\n",lpszUrl,lpszHeaders);
 #endif
@@ -538,25 +487,15 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   if(hInternet->ihandle[hInternet->nb].header!=NULL)
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
 
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
   hInternet->ihandle[hInternet->nb].url = zStrdup(lpszUrl);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
 
   curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   hInternet->ihandle[hInternet->nb].header=NULL;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   ++hInternet->nb;
   hInternet->ihandle[hInternet->nb].header=NULL;
 
@@ -578,24 +517,22 @@ int processDownloads(HINTERNET* hInternet){
   int msgs_left=0;
   int i=0;
   do{
-    curl_multi_perform(hInternet->handle, &still_running);
+    if(curl_multi_perform(hInternet->handle, &still_running)==CURLM_OK)
+      if(still_running){
+	struct timespec tv;
+	tv.tv_sec = 0;
+	tv.tv_nsec = (long) 5*1e+9;
+	nanosleep(&tv, &tv);
+      }
   }while(still_running);  
   for(i=0;i<hInternet->nb;i++){
     char *tmp;
-    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
-    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     if(tmp!=NULL)
       hInternet->ihandle[i].mimeType=strdup(tmp);
-    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_RESPONSE_CODE,&hInternet->ihandle[i].code);
-    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
-    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
-    fprintf(stderr," *** %s %d %d \n",__FILE__,__LINE__,i);
-    //fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,hInternet->ihandle[i].mimeType);
-    //fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,hInternet->ihandle[i].pabyData);
   }
   return 0;
 }
