@@ -521,7 +521,7 @@ int processDownloads(HINTERNET* hInternet){
       if(still_running){
 	struct timespec tv;
 	tv.tv_sec = 0;
-	tv.tv_nsec = (long) 5*1e+9;
+	tv.tv_nsec = (long) 100;
 	nanosleep(&tv, &tv);
       }
   }while(still_running);  
