@@ -2200,52 +2200,12 @@ runRequest (map ** inputs)
     {
       int hasValidCookie = -1;
       char *tcook = originalCookie = zStrdup (cgiCookie);
-      //fprintf(stderr,">>>>> %s %d %s\n",__FILE__,__LINE__,tcook );
-      char *tmp = NULL;
       map *testing = getMapFromMaps (m, "main", "cookiePrefix");
       parseCookie(&m,originalCookie);
-      if (testing == NULL)
+      map *sessId=getMapFromMaps(m,"cookies",(testing==NULL?"ID":testing->value));
+      if (sessId!=NULL)
         {
-          tmp = zStrdup ("ID=");
-        }
-      else
-        {
-          tmp =
-            (char *) malloc ((strlen (testing->value) + 2) * sizeof (char));
-          sprintf (tmp, "%s=", testing->value);
-        }
-      if (strstr (cgiCookie, ";") != NULL)
-        {
-          char *token, *saveptr;
-          token = strtok_r (tcook, ";", &saveptr);
-          while (token != NULL)
-            {
-              if (strcasestr (token, tmp) != NULL)
-                {
-                  if (tcook != NULL)
-                    free (tcook);
-                  tcook = zStrdup (token);
-                  hasValidCookie = 1;
-                }
-              token = strtok_r (NULL, ";", &saveptr);
-            }
-        }
-      else
-        {
-          if (strstr (cgiCookie, "=") != NULL
-              && strcasestr (cgiCookie, tmp) != NULL)
-            {
-              tcook = zStrdup (cgiCookie);
-              hasValidCookie = 1;
-            }
-          if (tmp != NULL)
-            {
-              free (tmp);
-            }
-        }
-      if (hasValidCookie > 0)
-        {
-          addToMap (_tmpMaps->content, "sessid", strstr (tcook, "=") + 1);
+	  addToMap (_tmpMaps->content, "sessid", sessId->value);
           char session_file_path[1024];
           map *tmpPath = getMapFromMaps (m, "main", "sessPath");
           if (tmpPath == NULL)
@@ -2253,10 +2213,10 @@ runRequest (map ** inputs)
           char *tmp1 = strtok (tcook, ";");
           if (tmp1 != NULL)
             sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     strstr (tmp1, "=") + 1);
+                     sessId->value);
           else
             sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     strstr (cgiCookie, "=") + 1);
+                     sessId->value);
           free (tcook);
           maps *tmpSess = (maps *) malloc (MAPS_SIZE);
 	  tmpSess->child=NULL;
@@ -2350,12 +2310,6 @@ runRequest (map ** inputs)
       status = NULLMAP;
   if (status == NULLMAP)
     {
-      /*        hInternet = InternetOpen (
-#ifndef WIN32
-				  (LPCTSTR)
-#endif
-				  "ZooWPSClient\0",
-				  INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);*/
       if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	freeService (&s1);
 	free (s1);
@@ -2377,11 +2331,6 @@ runRequest (map ** inputs)
 #ifdef META_DB
       close_sql(m,0);      
 #endif      
-
-      /*#ifdef RELY_ON_DB
-      //close_sql(m,1);
-      //end_sql();
-      #endif*/
     }
   else
     {
@@ -2432,17 +2381,6 @@ runRequest (map ** inputs)
           r_inputs = getMapFromMaps (m, "main", "tmpPath");
           setMapInMaps (m, "lenv", "async","true");
 	  map* r_inputs1 = createMap("ServiceName", s1->name);
-
-	  /*hInternet = InternetOpen (
-#ifndef WIN32
-				    (LPCTSTR)
-#endif
-				    "ZooWPSClient\0",
-				    INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-#ifndef WIN32
-	  if (!CHECK_INET_HANDLE (hInternet))
-	    fprintf (stderr, "WARNING : hInternet handle failed to initialize");
-	    #endif*/
 
 	  // Create the filename for the result file (.res)
           fbkpres =
@@ -2557,7 +2495,7 @@ runRequest (map ** inputs)
 	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	  invokeCallback(m,request_input_real_format,NULL,1,0);
 	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-	  dumpMaps(request_output_real_format);
+	  //dumpMaps(request_output_real_format);
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
 	    free (s1);
@@ -2599,10 +2537,6 @@ runRequest (map ** inputs)
 	    free (tmpmaps);
 	    return -1;
 	  }
-	  dumpMaps(request_output_real_format);
-	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-	  invokeCallback(m,request_input_real_format,NULL,1,1);
-	  fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
           if(getMapFromMaps(m,"lenv","mapError")!=NULL){
 		setMapInMaps(m,"lenv","message",_("Issue with geographic data"));
 	  	invokeCallback(m,NULL,NULL,7,0);
@@ -2633,8 +2567,9 @@ runRequest (map ** inputs)
   dumpMaps (request_output_real_format);
   fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
 #endif
-fflush(stdout);
-rewind(stdout);
+  fflush(stdout);
+  rewind(stdout);
+
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,

@@ -80,10 +80,13 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
  * The crossplatform write alias
  */
 #define zWrite write
+#include "unistd.h"
 /**
  * The crossplatform sleep alias
  */
-#define zSleep sleep
+static int zSleep(const long millisecond){
+  return usleep(millisecond*1000);
+}
 /**
  * The crossplatform gettimeofday alias
  */

@@ -282,7 +282,9 @@ size_t ssh_file_exists(maps* conf,const char* targetPath,int cnt){
       return 0;
     }
   }while(!sftp_handle);
+#ifdef SSH_DEBUG
   fprintf(stderr, "libssh2_sftp_open() is done, get file information\n");
+#endif
   do {
   rc = libssh2_sftp_stat_ex(sessions[cnt]->sftp_session, targetPath, strlen(targetPath),
 			    LIBSSH2_SFTP_LSTAT, &attrs );
@@ -294,10 +296,12 @@ size_t ssh_file_exists(maps* conf,const char* targetPath,int cnt){
     }
   else
     {
+#ifdef SSH_DEBUG
       fprintf(stderr, "Stat Data: RetCode=%d\n", rc);
       fprintf(stderr, "Stat Data: Size=%llu\n", attrs.filesize);
       fprintf(stderr, "Stat Data: Perm=%lx\n",  attrs.permissions);
       fprintf(stderr, "Stat Data: mtime=%lu\n",  attrs.mtime);
+#endif
       if(rc==0)
 	break;
       result=attrs.filesize;
@@ -347,6 +351,8 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
       fprintf(stderr, "Unable to init SFTP session\n");
       return false;
     }
+    if(!sessions[cnt]->sftp_session)
+      zSleep(10);
   } while (!sessions[cnt]->sftp_session);
 
   do {
@@ -362,6 +368,8 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
       fprintf(stderr, "Unable to open file with SFTP\n");
       return false;
     }
+    if(!sftp_handle)
+      zSleep(10);
   } while (!sftp_handle);
   start = time(NULL);
   
@@ -431,6 +439,8 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       fprintf(stderr, "Unable to init SFTP session\n");
       return -1;
     }
+    if(!sessions[cnt]->sftp_session)
+      zSleep(10);
   } while (!sessions[cnt]->sftp_session);
   do {
     sftp_handle = libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,   
@@ -481,7 +491,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
 	fprintf(stderr, "SFTP download error: %d\n", rc);
       return -1;
     }
- 
+    
   } while (1);
   duration = (int)(time(NULL)-start);
   fclose(local);
@@ -502,35 +512,21 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   int bytecount = 0;
   int exitcode;
   char *exitsignal=(char *)"none";
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   while( (channel = libssh2_channel_open_session(sessions[cnt]->session)) == NULL &&
 	 libssh2_session_last_error(sessions[cnt]->session,NULL,NULL,0) == LIBSSH2_ERROR_EAGAIN ) {
-    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-    fflush(stderr);
-      waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
+    waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   if( channel == NULL ){
     fprintf(stderr,"Error\n");
     return -1;
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   while( (rc = libssh2_channel_exec(channel, command)) == LIBSSH2_ERROR_EAGAIN ) {
-    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-    fflush(stderr);
     waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   if( rc != 0 ) {
     fprintf(stderr,"Error\n");
     return -1;
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
 
   map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
   map* uuid=getMapFromMaps(conf,"lenv","usid");
@@ -538,8 +534,6 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   sprintf(logPath,"%s/exec_out_%s",tmpPath->value,uuid->value);
   FILE* logFile=fopen(logPath,"wb");
   free(logPath);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   while(true){
     int rc;
     do {
@@ -562,33 +556,21 @@ int ssh_exec(maps* conf,const char* command,int cnt){
     else
       break;
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   fclose(logFile);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   exitcode = 127;
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   while( (rc = libssh2_channel_close(channel)) == LIBSSH2_ERROR_EAGAIN )
     waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   if( rc == 0 ) {
     exitcode = libssh2_channel_get_exit_status( channel );
     libssh2_channel_get_exit_signal(channel, &exitsignal,
 				    NULL, NULL, NULL, NULL, NULL);
   }
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   if (exitsignal)
     fprintf(stderr, "\nGot signal: %s\n", exitsignal);
   else
     fprintf(stderr, "\nEXIT: %d bytecount: %d\n", exitcode, bytecount);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
   
   libssh2_channel_free(channel);
 
@@ -663,7 +645,7 @@ bool addToUploadQueue(maps** conf,maps* input){
       }
     }
   }
-#ifdef DEBUG  
+#ifdef SSH_DEBUG  
   fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
   fflush(stderr);
   dumpMaps(queueMaps);
@@ -681,7 +663,7 @@ bool runUpload(maps** conf){
   if(test==NULL){
     return false;
   }
-#ifdef DEBUG
+#ifdef SSH_DEBUG
   fprintf(stderr,"*** %s %d\n",__FILE__,__LINE__);
   fflush(stderr);
   dumpMaps(getMaps(*conf,"uploadQueue"));
@@ -699,7 +681,9 @@ bool runUpload(maps** conf){
 	getMapArray(queueMaps->content,"localPath",i),
 	getMapArray(queueMaps->content,"targetPath",i)
       };
+#ifdef SSH_DEBUG      
       fprintf(stderr,"*** %s %d %s %s\n",__FILE__,__LINE__,argv[1]->value,argv[2]->value);
+#endif      
       /**/zooLock* lck;
       if((lck=lockFile(*conf,argv[1]->value,'w'))!=NULL){/**/
 	if(ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf))!=true){

@@ -2464,7 +2464,9 @@ void printExceptionReportResponse(maps* m,map* s){
   }
   else
     exceptionCode="501 Internal Server Error";
-
+  tmp=getMapFromMaps(m,"lenv","status_code");
+  if(tmp!=NULL)
+    exceptionCode=tmp->value;
   if(m!=NULL){
     map *tmpSid=getMapFromMaps(m,"lenv","sid");
     if(tmpSid!=NULL){
@@ -2604,7 +2606,6 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
  */
 void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 		    map* request_inputs1,int cpid,maps* m,int res){
-		
 #ifdef DEBUG
   dumpMaps(request_inputs);
   dumpMaps(request_outputs);
@@ -2658,7 +2659,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       dumpMapsToFile(tmpSess,session_file_path,1);
     }
   }
- 		 
   if(res==SERVICE_FAILED){
     map *lenv;
     lenv=getMapFromMaps(m,"lenv","message");
@@ -2717,7 +2717,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       }
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
-      restartNoMS:
+    restartNoMS:
       map* geodatatype=getMap(tmpI->content,"geodatatype");
       
       if(toto!=NULL && strcasecmp(toto->value,"true")==0 &&
@@ -2777,6 +2777,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    }
 
 	    toto=getMap(tmpI->content,"value");
+	    if(toto==NULL){
+	      char tmpMsg[1024];
+	      sprintf(tmpMsg,_("No value found for the requested output %s."),tmpI->name);
+	      errorException(m,tmpMsg,"InternalError",NULL);
+	      fclose(ofile);
+	      free(file_name);
+	      free(file_path);
+	      return;
+	    }
 	    if(strcasecmp(format,"BoundingBoxData")!=0){
 	      map* size=getMap(tmpI->content,"size");
 	      if(size!=NULL && toto!=NULL)

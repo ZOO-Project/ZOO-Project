@@ -315,11 +315,11 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
   int cnt=0;
   if(passThrough!=NULL && targetHosts!=NULL){
     char *tmp=zStrdup(passThrough->value);
-    char *token, *saveptr;
-    token = strtok_r (tmp, ",", &saveptr);
     int i;
     for(i=0;i<handle->nb;i++){
       if(strstr(targetHosts->value,"*")!=NULL || isProtectedHost(targetHosts->value,handle->ihandle[i].url)==1){
+	char *token, *saveptr;
+	token = strtok_r (tmp, ",", &saveptr);
 	while (token != NULL){
 	  int length=strlen(token)+6;
 	  char* tmp1=(char*)malloc(length*sizeof(char));
@@ -337,9 +337,9 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	  if(tmpMap!=NULL){
 	    AddMissingHeaderEntry(&handle->ihandle[i],token,tmpMap->value);
 	  }
-	  free(tmp1);
 	  if(handle->ihandle[i].header!=NULL)
 	    curl_easy_setopt(handle->ihandle[i].handle,CURLOPT_HTTPHEADER,handle->ihandle[i].header);
+	  free(tmp1);
 	  cnt+=1;
 	  token = strtok_r (NULL, ",", &saveptr);
 	}
@@ -519,10 +519,7 @@ int processDownloads(HINTERNET* hInternet){
   do{
     if(curl_multi_perform(hInternet->handle, &still_running)==CURLM_OK)
       if(still_running){
-	struct timespec tv;
-	tv.tv_sec = 0;
-	tv.tv_nsec = (long) 100;
-	nanosleep(&tv, &tv);
+	zSleep(10);
       }
   }while(still_running);  
   for(i=0;i<hInternet->nb;i++){

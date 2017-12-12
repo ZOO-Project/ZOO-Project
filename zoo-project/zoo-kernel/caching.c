@@ -271,8 +271,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
       sprintf(vname1,"value");
     
     if(i>0){
-      tmp1=getMap(content->content,cname);
       sprintf(cname,"cache_file_%d",i);
+      tmp1=getMap(content->content,cname);
       sprintf(vname,"value_%d",i);
       sprintf(sname,"size_%d",i);
       sprintf(mname,"mimeType_%d",i);

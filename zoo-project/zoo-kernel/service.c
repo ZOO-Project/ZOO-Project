@@ -867,6 +867,20 @@ void setMapArray(map* m,const char* key,int index,const char* value){
 }
 
 /**
+ * Add a key and an integer value to an existing map array.
+ *
+ * @param m the map to add the KVP
+ * @param n the key to add
+ * @param index the index of the MapArray 
+ * @param v the corresponding value to add
+ */
+void addIntToMapArray(map* m,const char* n,int index,const int v){
+  char svalue[10];
+  sprintf(svalue,"%d",v);
+  setMapArray(m,n,index,svalue);
+}
+
+/**
  * Access the map "type"
  *
  * @param mt the map
