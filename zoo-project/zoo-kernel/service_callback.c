@@ -141,11 +141,7 @@ extern "C" {
     while( (arg->step!=7 || isOngoing>0) &&
 	   ( cStep!=arg->step || (arg->state!=0 && steps[arg->step][0]==false) )
 	   ){
-      struct timespec tv;
-      tv.tv_sec = 0;
-      tv.tv_nsec = (long) 5*1e+9;
-      nanosleep(&tv, &tv);
-      //sleep(1);
+      zSleep(100);
     }
     isOngoing=1;
 #ifdef CALLBACK_DEBUG
@@ -306,103 +302,8 @@ extern "C" {
     }
       
     case 1: {
-      // Fetching data inputs
-      maps* curs=inputs;
-      dumpMaps(curs);
-      char *keys[10][2]={
-	{
-	  "href",
-	  "ref"
-	},
-	{
-	  "cache_file",
-	  "cachefile"
-	},
-	{
-	  "fmimeType",
-	  "mimetype"
-	},
-	{
-	  "size",
-	  "size"
-	},
-	{
-	  "ref_wms_link",
-	  "ref_wms_link"
-	},
-	{
-	  "ref_wcs_link",
-	  "ref_wcs_link"
-	},
-	{
-	  "ref_wcs_link",
-	  "ref_wcs_link"
-	},
-	{
-	  "ref_wcs_preview_link",
-	  "ref_wcs_preview_link"
-	},
-	{
-	  "geodatatype",
-	  "datatype"
-	},
-	{
-	  "wcs_extent",
-	  "boundingbox"
-	}	
-      };
-      json_object *res1=json_object_new_object();
-      while(curs!=NULL){
-	map* tmpMap=getMap(curs->content,"cache_file");
-	sid=getMap(curs->content,"ref_wms_link");
-	json_object *res2=json_object_new_object();
-	if(tmpMap!=NULL){
-	  if(sid==NULL){
-	    addToMap(curs->content,"generated_file",tmpMap->value);
-	    addToMap(curs->content,"storage",tmpMap->value);
-	  }
-	  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-	  dumpMap(curs->content);
-	  struct stat buf;
-	  char timeStr[ 100 ] = "";
-	  if (stat(tmpMap->value, &buf)==0){
-	    strftime(timeStr, 100, "%d-%m-%Y %H:%M:%S", localtime( &buf.st_mtime));
-	    json_object *jsStr=json_object_new_string(timeStr);
-	    json_object_object_add(res2,"creation_date",jsStr);
-	  }
-	  tmpMap=getMap(curs->content,"fmimeType");
-	  if(tmpMap!=NULL){
-	    addToMap(curs->content,"mimeType",tmpMap->value);
-	  }
-	  setReferenceUrl(conf,curs);
-	}
-	int i=0;
-	int hasRef=-1;
-	for(;i<10;i++){
-	  sid=getMap(curs->content,keys[i][0]);
-	  if(sid!=NULL){
-	    json_object *jsStr=json_object_new_string(sid->value);
-	    json_object_object_add(res2,keys[i][1],jsStr);
-	    if(i==0){
-	      hasRef=1;
-	      json_object *jsStr1=json_object_new_string(getProvenance(conf,url->value));
-	      json_object_object_add(res2,"dataOrigin",jsStr1);
-	    }
-	  }
-	}
-	if(hasRef<0)
-	  json_object_put(res2);
-	else
-	  json_object_object_add(res1,curs->name,res2);
-	curs=curs->next;
-      }
-      json_object_object_add(res,"inputs",res1);
-      break;
-    }
-      
-    case 2: {
-      // Update the execute request stored on disk at step 1,1 to modify the references used.
-      if(state==0){
+      // Update the execute request stored on disk at step 0,0 to modify the references used.
+      if(state==1){
 	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
 	fflush(stderr);
 	maps* curs=inputs;
@@ -423,7 +324,13 @@ extern "C" {
 	  // TODO handle mapArray
 	  //if(bvMap!=NULL && strncasecmp(bvMap->value,"true",4)==0){
 	  if(getMap(curs->content,"href")==NULL && getMap(curs->content,"mimeType")!=NULL){
-	    map* tmpMap=getMap(curs->content,"cache_file");
+	    map* tmpMap=getMap(curs->content,"value");
+	    char tmpStr[100];
+	    sprintf(tmpStr,"%d",strlen(tmpMap->value));
+	    addToMap(curs->content,"size",tmpStr);
+	    tmpMap=getMap(curs->content,"mimeType");
+	    addToMap(curs->content,"fmimeType",tmpMap->value);
+	    tmpMap=getMap(curs->content,"cache_file");
 	    addToMap(curs->content,"generated_file",tmpMap->value);
 	    addToMap(curs->content,"storage",tmpMap->value);
 	    setReferenceUrl(conf,curs);
@@ -458,8 +365,10 @@ extern "C" {
 	    fflush(stderr);
 	    char *tmpParam=(char*)malloc((strlen(curs->name)+11)*sizeof(char));
 	    char *tmpParam1=(char*)malloc((strlen(filePath->value)+11)*sizeof(char));
-	    sprintf(tmpParam,"string(\"%s\")",curs->name);	    
-	    sprintf(tmpParam1,"string(\"%s\")",filePath->value);	    
+	    addToMap(curs->content,"href",filePath->value);
+	    addToMap(curs->content,"xlink:href",filePath->value);
+	    sprintf(tmpParam,"string(\"%s\")",curs->name);
+	    sprintf(tmpParam1,"string(\"%s\")",filePath->value);
 	    params[0]="attr";
 	    params[1]=tmpParam;
 	    params[2]="value";
@@ -537,6 +446,122 @@ extern "C" {
 	}
       }
 
+      // Fetching data inputs
+      maps* curs=inputs;
+      dumpMaps(curs);
+      char *keys[11][2]={
+	{
+	  "xlink:href",
+	  "ref"
+	},
+	{
+	  "cache_file",
+	  "cachefile"
+	},
+	{
+	  "fmimeType",
+	  "mimetype"
+	},
+	{
+	  "size",
+	  "size"
+	},
+	{
+	  "ref_wms_link",
+	  "ref_wms_link"
+	},
+	{
+	  "ref_wfs_link",
+	  "ref_wfs_link"
+	},
+	{
+	  "ref_wcs_link",
+	  "ref_wcs_link"
+	},
+	{
+	  "ref_wcs_link",
+	  "ref_wcs_link"
+	},
+	{
+	  "ref_wcs_preview_link",
+	  "ref_wcs_preview_link"
+	},
+	{
+	  "geodatatype",
+	  "datatype"
+	},
+	{
+	  "wgs84_extent",
+	  "boundingbox"
+	}	
+      };
+      json_object *res1=json_object_new_object();
+      while(curs!=NULL){
+	if(getMap(curs->content,"length")==NULL){
+	  addToMap(curs->content,"length","1");
+	}
+	map* length=getMap(curs->content,"length");
+	int len=atoi(length->value);
+	json_object *res3;
+	int hasRef=-1;
+	for(int ii=0;ii<len;ii++){
+	  map* tmpMap=getMapArray(curs->content,"cache_file",ii);
+	  sid=getMapArray(curs->content,"ref_wms_link",ii);
+	  json_object *res2=json_object_new_object();
+	  if(tmpMap!=NULL){
+	    if(sid==NULL){
+	      setMapArray(curs->content,"generated_file",ii,tmpMap->value);
+	      setMapArray(curs->content,"storage",ii,tmpMap->value);
+	    }
+	    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+	    dumpMap(curs->content);
+	    struct stat buf;
+	    char timeStr[ 100 ] = "";
+	    if (stat(tmpMap->value, &buf)==0){
+	      strftime(timeStr, 100, "%d-%m-%Y %H:%M:%S", localtime( &buf.st_mtime));
+	      json_object *jsStr=json_object_new_string(timeStr);
+	      json_object_object_add(res2,"creation_date",jsStr);
+	    }
+	    tmpMap=getMapArray(curs->content,"fmimeType",ii);
+	    if(tmpMap!=NULL){
+	      setMapArray(curs->content,"mimeType",ii,tmpMap->value);
+	    }
+	    setReferenceUrl(conf,curs);
+	  }else{	  
+	  }
+	  addIntToMap(curs->content,"published_id",ii+1);
+	  int i=0;
+	  for(;i<11;i++){
+	    sid=getMapArray(curs->content,keys[i][0],ii);
+	    if(sid!=NULL){
+	      json_object *jsStr=json_object_new_string(sid->value);
+	      json_object_object_add(res2,keys[i][1],jsStr);
+	      if(i==0){
+		hasRef=1;
+		json_object *jsStr1=json_object_new_string(getProvenance(conf,sid->value));
+		json_object_object_add(res2,"dataOrigin",jsStr1);
+	      }
+	    }
+	  }
+	  if(len>1){
+	    if(ii==0)
+	      res3=json_object_new_array();
+	    json_object_array_add(res3,res2);
+	  }else
+	    res3=res2;
+	}
+	if(hasRef<0)
+	  json_object_put(res3);
+	else
+	  json_object_object_add(res1,curs->name,res3);
+	addIntToMap(curs->content,"published_id",0);
+	curs=curs->next;
+      }
+      json_object_object_add(res,"inputs",res1);
+      break;
+    }
+      
+    case 2: {
       // Uploading data input to cluster
       maps* in=getMaps(conf,"uploadQueue");
       if(in!=NULL){
@@ -544,7 +569,7 @@ extern "C" {
 	map* length=getMapFromMaps(in,"uploadQueue","length");
 	if(length!=NULL){
 	  json_object *res1=json_object_new_object();
-	  json_object *res2=json_object_new_object();
+	  json_object *res3=json_object_new_array();
 	  int limit=atoi(length->value);
 	  int i=0;
 	  maps* uploadQueue=getMaps(in,"uploadQueue");
@@ -554,13 +579,28 @@ extern "C" {
 	    map* tmp1=getMapArray(tmp,"localPath",i);
 	    map* tmp2=getMapArray(tmp,"targetPath",i);
 	    if(tmp0!=NULL && tmp1!=NULL && tmp2!=NULL){
+	      json_object *res2=json_object_new_object();
 	      json_object *jsStr=json_object_new_string(tmp1->value);
 	      json_object_object_add(res2,"local_path",jsStr);
 	      jsStr=json_object_new_string(tmp2->value);
 	      json_object_object_add(res2,"target_path",jsStr);
-	      json_object_object_add(res1,tmp0->value,res2);
+	      json_object *res4=json_object_object_get(res1,tmp0->value);
+	      if(json_object_is_type(res4,json_type_null)){
+		json_object_object_add(res1,tmp0->value,res2);
+	      }else{
+		if(json_object_is_type(res4,json_type_object)){
+		  json_object_array_add(res3,res4);
+		}
+		json_object_array_add(res3,res2);
+		if(json_object_is_type(res4,json_type_object)){
+		  json_object_object_del(res1,tmp0->value);
+		  json_object_object_add(res1,tmp0->value,res3);
+		}
+	      }
 	    }
 	  }
+	  if(json_object_array_length(res3)==0)
+	    json_object_put(res3);
 	  json_object_object_add(res,"inputs",res1);
 	}
 	//json_object_object_add(res,"inputs",in);
@@ -615,7 +655,7 @@ extern "C" {
 	  "datatype"
 	},
 	{
-	  "wcs_extent",
+	  "wgs84_extent",
 	  "boundingbox"
 	},
 	{
@@ -683,7 +723,10 @@ extern "C" {
 	      int hasRef0=-1;
 	      int i0=0;
 	      for(;i0<6;i0++){
-		sid=getMap(specificMaps->content,keys[i0][0]);
+		if(i0==0)
+		  sid=getMap(specificMaps->content,specifics[i][1]);
+		else
+		  sid=getMap(specificMaps->content,keys[i0][0]);
 		if(sid!=NULL){
 		  json_object *jsStr=json_object_new_string(sid->value);
 		  if(i0==0){

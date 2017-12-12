@@ -120,12 +120,12 @@ char* createInitString(maps* conf){
  */
 int _init_sql(maps* conf,const char* key){
   char* sqlInitString=_createInitString(conf,key);
+#ifdef SQL_DEBUG
   fprintf(stderr,"Try to connect to: %s %s !\n",key,sqlInitString);
   fflush(stderr);  
+#endif
   if(strncmp(sqlInitString,"-1",2)==0)
     return -1;
-  fprintf(stderr,"Try to connect to: %s !\n",key);
-  fflush(stderr);  
   OGRSFDriver *poDriver = NULL;
   OGRRegisterAll();
   int zoo_ds_nb=0;
@@ -164,7 +164,7 @@ int _init_sql(maps* conf,const char* key){
   zoo_DS[zoo_ds_nb] = OGRSFDriverRegistrar::Open(sqlInitString,false,&poDriver);
 #endif
   if( zoo_DS[zoo_ds_nb] == NULL ){
-#ifdef DEBUG
+#ifdef SQL_DEBUG
     fprintf(stderr,"sqlInitString: %s FAILED !\n",sqlInitString);
     fflush(stderr);
 #endif
@@ -173,12 +173,10 @@ int _init_sql(maps* conf,const char* key){
     setMapInMaps(conf,"lenv","message",_("Failed to connect to the database backend"));
     return -2;
   }
-#ifdef DEBUG
+#ifdef SQL_DEBUG
   fprintf(stderr,"sqlInitString: %s SUCEED !\n",sqlInitString);
   fflush(stderr);
 #endif
-  fprintf(stderr,"sqlInitString: %s SUCEED %d !\n",sqlInitString,zoo_ds_nb);
-  fflush(stderr);  
   free(sqlInitString);
   zoo_ds_nb++;
   return zoo_ds_nb;
@@ -233,7 +231,7 @@ OGRLayer *fetchSql(maps* conf,int cid,const char* sqlQuery){
   if(zoo_DS==NULL || zoo_DS[cid]==NULL)
     return NULL;
   OGRLayer *res=NULL;
-#ifdef DEBUG
+#ifdef SQL_DEBUG
   fprintf(stderr,"************************* %s %s %d\n\n",sqlQuery,__FILE__,__LINE__);
   fflush(stderr);
 #endif
@@ -380,7 +378,13 @@ int _updateStatus(maps* conf){
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+64+1)*sizeof(char));
   sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$ where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
-  if(zoo_ds_nb==0){
+  if( zoo_ds_nb==
+#ifdef META_DB
+      1
+#else
+      0
+#endif     
+     ){
     init_sql(conf);
     zoo_ds_nb++;
   }

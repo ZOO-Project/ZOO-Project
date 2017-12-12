@@ -648,7 +648,7 @@ int getShmLockId(maps* conf, int nsems){
 #ifdef DEBUG
 	      fprintf(stderr,"Retry to access the semaphore later ...\n");
 #endif
-	      zSleep(1);
+	      zSleep(1000);
             }
         }
 	errno = ZOO_LOCK_ACQUIRE_FAILED;
