@@ -1193,15 +1193,8 @@ runRequest (map ** inputs)
     NULL
   };
   r_inputs = getMap (request_inputs, "Request");
-  fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
-  fflush(stderr);
-  //dumpMap(r_inputs);
-  fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
-  fflush(stderr);
   if(r_inputs!=NULL)
     REQUEST = zStrdup (r_inputs->value);
-  fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
-  fflush(stderr);
   int reqId=-1;
   if (strncasecmp (REQUEST, "GetCapabilities", 15) != 0){
     checkValidValue(request_inputs,&err,"version",(const char**)vvv,1);
@@ -1304,8 +1297,6 @@ runRequest (map ** inputs)
     dup2 (saved_stdout, fileno (stdout));
     close(saved_stdout);
   }
-
-  dumpMap(request_inputs);
 
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
     {
@@ -1895,7 +1886,6 @@ runRequest (map ** inputs)
   
 #ifdef META_DB
   int metadb_id=_init_sql(m,"metadb");
-  fprintf(stderr,"CONNECTING METADB!\n");
   //FAILED CONNECTING DB
   if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<0){
     fprintf(stderr,"ERROR CONNECTING METADB\n");
