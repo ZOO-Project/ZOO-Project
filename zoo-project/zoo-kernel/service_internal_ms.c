@@ -143,16 +143,18 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
  * @param tmpI the specific output maps to add the Reference key
  */
 void setReferenceUrl(maps* m,maps* tmpI){
+  int imyIndex=getPublishedId(tmpI);
+  if(getMapArray(tmpI->content,"ref_wms_link",imyIndex)!=NULL)
+    return;
+  outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   if(msUrl==NULL){
     errorException (m, _("Unable to find any mapserverAddress defined in the main.cfg file"),
 		    "InternalError", NULL);
     exit(-1);
   }
-  int imyIndex=getPublishedId(tmpI);
   if(getMapArray(tmpI->content,"ref_wms_link",imyIndex)!=NULL)
     return;
-  outputMapfile(m,tmpI);
   int finalProto=-1;
   map *msOgcVersion=getMapFromMaps(m,"main","msOgcVersion");
   map *dataPath=getMapFromMaps(m,"main","dataPath");
@@ -164,18 +166,26 @@ void setReferenceUrl(maps* m,maps* tmpI){
   map* protoMap=getMapArray(tmpI->content,"msOgc",imyIndex);
   map* versionMap=getMapArray(tmpI->content,"msOgcVersion",imyIndex);
   map* datatype=getMapArray(tmpI->content,"geodatatype",imyIndex);
+  map* layerName=getMapArray(tmpI->content,"msLayer",imyIndex);
   char options[4][5][25]={
     {"WMS","1.3.0","GetMap","layers=%s","wms_extent"},
-    {"WFS","1.1.0","GetFeature","typename=%s","wcs_extent"},
+    {"WFS","1.0.0","GetFeature","typename=%s","wcs_extent"},
     {"WCS","2.0.0","GetCoverage","coverageid=%s","wcs_extent"},
-    {"WCS","1.1.0","GetCoverage","coverage=%s","wcs_extent"}
+    {"WCS","1.0.0","GetCoverage","coverage=%s","wcs_extent"}
   };
-  if(datatype==NULL || strncmp(datatype->value,"other",5)==0){
+  map *nbElements=getMapArray(tmpI->content,"nb_features",imyIndex);
+  if(nbElements==NULL)
+    nbElements=getMapArray(tmpI->content,"nb_pixels",imyIndex);
+  if(datatype==NULL || strncmp(datatype->value,"other",5)==0 || (nbElements!=NULL && atoi(nbElements->value)==0)){
     map* minNb=getMap(tmpI->content,"minoccurs");
-    if(minNb==NULL || atoi(minNb->value)>=1){
+    map* useMs=getMap(tmpI->content,"useMapserver");
+    if((minNb==NULL || atoi(minNb->value)>=1) && useMs!=NULL && strncasecmp(useMs->value,"true",4)==0){
       setMapInMaps(m,"lenv","mapError","true");
       setMapInMaps(m,"lenv","locator",tmpI->name);
-      setMapInMaps(m,"lenv","message",_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
+      if(nbElements==NULL)
+	setMapInMaps(m,"lenv","message",_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
+      else
+	setMapInMaps(m,"lenv","message",_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
       if(getMapFromMaps(m,"lenv","state")==NULL)
 	errorException (m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
     }
@@ -228,8 +238,11 @@ void setReferenceUrl(maps* m,maps* tmpI){
     }
   }
   char layers[128];
-  sprintf(layers,options[proto][3],tmpI->name);
-
+  if(layerName==NULL)
+    sprintf(layers,options[proto][3],tmpI->name);
+  else
+    sprintf(layers,options[proto][3],layerName->value);
+  
   if(format==NULL || width==NULL || height==NULL || extent==NULL){
     char tmpStr[1024];
     sprintf(tmpStr,_("Unable to create the mapfile for %s because of missing values."),tmpI->name);
@@ -524,6 +537,7 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
 		 double minX,double minY,double maxX,double maxY){
   int imyIndex=getPublishedId(output);
   msMapSetExtent(m,minX,minY,maxX,maxY);
+  m->maxsize=4096;
 #ifdef DEBUGMS
   fprintf(stderr,"Extent %.15f %.15f %.15f %.15f\n",minX,minY,maxX,maxY);
 #endif
@@ -742,14 +756,19 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     /**
      * Add a new layer set name, data
      */
-    if(msGrowMapLayers(m)==NULL){
-      return -1;
+    layerObj* myLayer=NULL;
+    if(getMapArray(output->content,"msInclude",imyIndex)==NULL){
+      if(msGrowMapLayers(m)==NULL){
+	return -1;
+      }
+      if(initLayer((m->layers[m->numlayers]), m) == -1){
+	return -1;
+      }
+      myLayer=m->layers[m->numlayers];
+    }else{
+      myLayer=m->layers[m->numlayers-1];
     }
-    if(initLayer((m->layers[m->numlayers]), m) == -1){
-      return -1;
-    }
-
-    layerObj* myLayer=m->layers[m->numlayers];
+    
 #ifdef DEBUGMS
     dumpMaps(output);
 #endif
@@ -851,55 +870,56 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       msInsertHashTable(&(myLayer->metadata), "ows_title", tmpMap->value);
     else
       msInsertHashTable(&(myLayer->metadata), "ows_title", "Default Title");
+
+    if(getMapArray(output->content,"msInclude",imyIndex)==NULL){
+      if(msGrowLayerClasses(myLayer) == NULL)
+	return -1;
+      if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
+	return -1;
+      if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
+	return -1;
+      if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
+	return -1;
+      /**
+       * Apply msStyle else fallback to the default style
+       */
+      tmpMap=getMap(output->content,"msStyle");
+      if(tmpMap!=NULL)
+	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
+      else{
+	/**
+	 * Set style
+	 */
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=125;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=125;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=255;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
+	
+	/**
+	 * Set specific style depending on type
+	 */
+	if(myLayer->type == MS_LAYER_POLYGON)
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
+	if(myLayer->type == MS_LAYER_LINE){
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
+	}
+	if(myLayer->type == MS_LAYER_POINT){
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->symbol=1;
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->size=15;
+	}
+	
+      }
+      myLayer->CLASS[myLayer->numclasses]->numstyles++;
+      myLayer->numclasses++;
     
-    if(msGrowLayerClasses(myLayer) == NULL)
-      return -1;
-    if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
-      return -1;
-    if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
-      return -1;
-    if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
-      return -1;
-    /**
-     * Apply msStyle else fallback to the default style
-     */
-    tmpMap=getMap(output->content,"msStyle");
-    if(tmpMap!=NULL)
-      msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
-    else{
-      /**
-       * Set style
-       */
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=125;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=125;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=255;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
-      
-      /**
-       * Set specific style depending on type
-       */
-      if(myLayer->type == MS_LAYER_POLYGON)
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
-      if(myLayer->type == MS_LAYER_LINE){
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
-      }
-      if(myLayer->type == MS_LAYER_POINT){
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->symbol=1;
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->size=15;
-      }
-      
+      m->layerorder[m->numlayers] = m->numlayers;
+      m->numlayers++;
+
     }
-    myLayer->CLASS[myLayer->numclasses]->numstyles++;
-    myLayer->numclasses++;
-    
-    m->layerorder[m->numlayers] = m->numlayers;
-    m->numlayers++;
-
   }
-
   OGR_DS_Destroy(poDS);
   //OGRCleanupAll();
 
@@ -981,8 +1001,25 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    */
   m->width=GDALGetRasterXSize( hDataset );
   m->height=GDALGetRasterYSize( hDataset );
+  if(m->width>4096 || m->height>4096){
+    if(m->width>m->height)
+      m->maxsize=m->width;
+    else  
+      m->maxsize=m->height;
+  }else
+    m->maxsize=4096;
   addIntToMapArray(output->content,"nb_pixels",imyIndex,GDALGetRasterXSize( hDataset )*GDALGetRasterYSize( hDataset ));
-  
+  int pixel_type=GDALGetRasterDataType( hDataset );
+  addIntToMapArray(output->content,"pixel_data_type",imyIndex,pixel_type);
+
+  int outputIndex=msGetOutputFormatIndex(m,"tiff");
+  if(outputIndex>=0){
+    m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));
+    outputIndex=msGetOutputFormatIndex(m,"geotiff");
+    m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));    
+  }
+  //
+    
   /**
    * Set projection using Authority Code and Name if available or fallback to 
    * proj4 definition if available or fallback to default EPSG:4326
@@ -1240,7 +1277,22 @@ void outputMapfile(maps* conf,maps* outputs){
   /*
    * Create an empty map, set name, default size and extent
    */
-  mapObj *myMap=msNewMapObj();
+  map* mapfileTemplate=getMapArray(outputs->content,"msInclude",imyIndex);
+  mapObj *myMap=NULL;
+  if(mapfileTemplate==NULL){
+    myMap=msNewMapObj();
+  }
+  else{
+    map* dataPath=getMapFromMaps(conf,"main","dataPath");
+    map* sid=getMapFromMaps(conf,"lenv","sid");
+    char *mapfileTemplatePath=(char*)malloc(((strlen(dataPath->value)+strlen(sid->value)+strlen(outputs->name)+10)*sizeof(char)));
+    sprintf(mapfileTemplatePath,"%s/%s_%s.map",dataPath->value,outputs->name,sid->value);
+    myMap=msLoadMap(mapfileTemplate->value,mapfileTemplatePath);
+    if(myMap==NULL){
+      setMapInMaps(conf,"lenv","message",_("Unable to open your template mapfile!"));
+      return ;
+    }
+  }
   free(myMap->name);
   myMap->name=zStrdup("ZOO-Project_WXS_Server");
   msMapSetSize(myMap,2048,2048);
@@ -1280,7 +1332,7 @@ void outputMapfile(maps* conf,maps* outputs){
   if(!o3)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
-    o3->imagemode=MS_IMAGEMODE_BYTE;
+    o3->imagemode=MS_IMAGEMODE_INT16;
     o3->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o3));
     msFreeOutputFormat(o3);
@@ -1290,7 +1342,7 @@ void outputMapfile(maps* conf,maps* outputs){
   if(!o4)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
-    o4->imagemode=MS_IMAGEMODE_INT16;
+    o4->imagemode=MS_IMAGEMODE_BYTE;
     o4->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o4));
     msFreeOutputFormat(o4);
@@ -1309,6 +1361,7 @@ void outputMapfile(maps* conf,maps* outputs){
   }
 #endif
 
+  
   outputFormatObj *o6=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","geotiff");
   if(!o6)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
@@ -1320,6 +1373,7 @@ void outputMapfile(maps* conf,maps* outputs){
     msFreeOutputFormat(o6);
   }
 
+  
   /*
    * Set default projection to EPSG:4326
    */
@@ -1407,10 +1461,30 @@ void outputMapfile(maps* conf,maps* outputs){
     (char*)malloc((14+strlen(sid->value)+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
   sprintf(mapPath,"%s/%s_%d_%s.map",tmp1->value,outputs->name,imyIndex,sid->value);
   msSaveMap(myMap,mapPath);
+  saveMapNames(conf,outputs,mapPath);
   free(mapPath);
+  //free(myMap->symbolset.filename);
   //msFreeSymbolSet(&myMap->symbolset);
   msFreeMap(myMap);
   //msFree(myMap);
   msGDALCleanup();
 }
 
+/**
+ * Save the map fullpath in a text file (.maps)
+ * @param conf the main configuration map pointer
+ * @param output the current output for which a mapfile has been generated
+ * @param mapfile the mapfile saved to store in the text file
+ */
+void saveMapNames(maps* conf,maps* output,char* mapfile){
+  map* storage=getMap(output->content,"storage");
+  char *tmp=zStrdup(storage->value);
+  tmp[strlen(tmp)-strlen(strrchr(tmp,'.'))]=0;
+  char* mapName=(char*)malloc((strlen(tmp)+6)*sizeof(char*));
+  sprintf(mapName,"%s.maps",tmp);
+  FILE* myMaps=fopen(mapName,"a");
+  if(myMaps!=NULL){
+    fprintf(myMaps,"%s\n",mapfile);
+    fclose(myMaps);
+  } 
+}

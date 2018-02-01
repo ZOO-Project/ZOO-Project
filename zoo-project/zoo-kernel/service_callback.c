@@ -111,7 +111,6 @@ extern "C" {
     return false;
   }
 
-
   /**
    * Practically invoke the callback, meaning sending the HTTP POST request.
    * 
@@ -120,6 +119,11 @@ extern "C" {
   void* _invokeCallback(void* args){
     local_params* arg=(local_params*)args;
     HINTERNET hInternet,res1;
+    const struct tm *tm;
+    size_t len;
+    time_t now;
+    char *tmp1;
+    map *tmpStatus;
     hInternet=InternetOpen("ZooWPSClient\0",
 			   INTERNET_OPEN_TYPE_PRECONFIG,
 			   NULL,NULL, 0);
@@ -133,10 +137,16 @@ extern "C" {
     hInternet.waitingRequests[0] = zStrdup(URL);
     free(URL);
 #ifdef CALLBACK_DEBUG
+    now = time ( NULL );
+    tm = localtime ( &now );
+    tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
+    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
     fprintf(stderr,"************************* From thread %d %s %d: REQUEST PARAMETERS cStep %d %d\n",pthread_self(),__FILE__,__LINE__,cStep,isOngoing);
     fprintf(stderr," * JSON: [%s] \n",jsonStr);
     fprintf(stderr," * URL: %s/ \n\n",hInternet.waitingRequests[0]);
+    fprintf(stderr," * DATE: %s/ \n\n",tmp1);
     fprintf(stderr,"************************* From thread %d %s %d: REQUEST PARAMETERS\n",pthread_self(),__FILE__,__LINE__);
+    free(tmp1);
 #endif
     while( (arg->step!=7 || isOngoing>0) &&
 	   ( cStep!=arg->step || (arg->state!=0 && steps[arg->step][0]==false) )
@@ -151,11 +161,6 @@ extern "C" {
       fprintf(stderr,"%d) %d %d\n",i,steps[i][0],steps[i][1]);
     }
 #endif
-    const struct tm *tm;
-    size_t len;
-    time_t now;
-    char *tmp1;
-    map *tmpStatus;
     
     now = time ( NULL );
     tm = localtime ( &now );
@@ -183,7 +188,7 @@ extern "C" {
     
 #ifdef CALLBACK_DEBUG    
     fprintf(stderr,"************************* From thread %d %s %d: REQUEST END (%s)\n\n",pthread_self(),__FILE__,__LINE__,tmp1);
-#endif    
+#endif
     free(tmp1);
     char *tmp = (char *) malloc ((hInternet.ihandle[0].nDataLen + 1)
 				 * sizeof (char));
@@ -205,20 +210,26 @@ extern "C" {
     isOngoing=0;
     if(cStep==0 || cStep==6 || arg->state==1)
       cStep=arg->step+1;
-#ifdef CALLBACK_DEBUG    
-    fprintf(stderr,"************************* From thread %d %s %d: RESPONSE CONTENT\n",pthread_self(),__FILE__,__LINE__);
+#ifdef CALLBACK_DEBUG
+    now = time ( NULL );
+    tm = localtime ( &now );
+    tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
+    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    fprintf(stderr,"************************* From thread %d %s %d: RESPONSE CONTENT (%s)\n",pthread_self(),__FILE__,__LINE__,,tmp1);
     for(i=0;i<7;i++){
       fprintf(stderr,"%d) %d %d\n",i,steps[i][0],steps[i][1]);
     }
     fprintf(stderr,"Result: \n%s\n\n",tmp);
     fprintf(stderr,"************************* From thread %d %s %d\n\n",pthread_self(),__FILE__,__LINE__);
     fflush(stderr);
+    free(tmp1);
 #endif
     steps[arg->step][arg->state]=true;
     free(tmp);
-    //free(args);
+#ifdef CALLBACK_DEBUG
     fprintf(stderr,"************************* From thread %d %s %d: EXIT\n\n",pthread_self(),__FILE__,__LINE__);
     fflush(stderr);
+#endif
     pthread_exit(NULL);
   }
   
@@ -304,113 +315,95 @@ extern "C" {
     case 1: {
       // Update the execute request stored on disk at step 0,0 to modify the references used.
       if(state==1){
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	maps* curs=inputs;
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	xmlInitParser();
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	map* xmlPath=getMapFromMaps(conf,"lenv","execute_file");
-	dumpMap(xmlPath);
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	while(curs!=NULL){
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
-	  dumpMap(curs->content);
-	  //map* bvMap=getMap(curs->content,"byValue");
-	  // TODO handle mapArray
-	  //if(bvMap!=NULL && strncasecmp(bvMap->value,"true",4)==0){
-	  if(getMap(curs->content,"href")==NULL && getMap(curs->content,"mimeType")!=NULL){
-	    map* tmpMap=getMap(curs->content,"value");
-	    char tmpStr[100];
-	    sprintf(tmpStr,"%d",strlen(tmpMap->value));
-	    addToMap(curs->content,"size",tmpStr);
-	    tmpMap=getMap(curs->content,"mimeType");
-	    addToMap(curs->content,"fmimeType",tmpMap->value);
-	    tmpMap=getMap(curs->content,"cache_file");
-	    addToMap(curs->content,"generated_file",tmpMap->value);
-	    addToMap(curs->content,"storage",tmpMap->value);
-	    setReferenceUrl(conf,curs);
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    dumpMap(curs->content);
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    const char *params[5];
-	    int xmlLoadExtDtdDefaultValue;
-	    int hasFile=-1;
-	    map* xslPath=getMapFromMaps(conf,"callback","template");
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    dumpMap(xslPath);
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    map* filePath=getMap(curs->content,"ref_wfs_link");
-	    if(filePath==NULL)
-	      filePath=getMap(curs->content,"ref_wcs_link");
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    dumpMap(filePath);
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    char* inputName=curs->name;
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    if(xslPath==NULL || xmlPath==NULL || filePath==NULL)
-	      break;
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    char *tmpParam=(char*)malloc((strlen(curs->name)+11)*sizeof(char));
-	    char *tmpParam1=(char*)malloc((strlen(filePath->value)+11)*sizeof(char));
-	    addToMap(curs->content,"href",filePath->value);
-	    addToMap(curs->content,"xlink:href",filePath->value);
-	    sprintf(tmpParam,"string(\"%s\")",curs->name);
-	    sprintf(tmpParam1,"string(\"%s\")",filePath->value);
-	    params[0]="attr";
-	    params[1]=tmpParam;
-	    params[2]="value";
-	    params[3]=tmpParam1;//filePath->value;
-	    params[4]=NULL;
-	    fprintf(stderr, "## XSLT PARAMETERS ATTR: %s VALUE: %s \n",
-		    tmpParam,tmpParam1);
-	    xmlSubstituteEntitiesDefault(1);
-	    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	    fflush(stderr);
-	    xmlLoadExtDtdDefaultValue = 0;
-	    xsltStylesheetPtr cur = NULL;
-	    xmlDocPtr doc, res;
-	    cur = xsltParseStylesheetFile(BAD_CAST xslPath->value);
-	    doc = xmlParseFile(xmlPath->value);
-	    fflush(stderr);
-	    res = xsltApplyStylesheet(cur, doc, params);
-	    xmlChar *xmlbuff;
-	    int buffersize;
-	    xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
-	    // Store the executeRequest in file again
-	    free(tmpParam);
-	    free(tmpParam1);
-	    fprintf(stderr," # Request / XSLT: %s\n",xmlbuff);
-	    fflush(stderr);
-	    FILE* saveExecute=fopen(xmlPath->value,"wb");
-	    fwrite(xmlbuff,1,buffersize,saveExecute);
-	    fflush(saveExecute);
-	    fclose(saveExecute);
-	    xmlFree(xmlbuff);
-	    xmlFreeDoc(doc);
-	    xsltFreeStylesheet(cur);
+	  map* length=getMap(curs->content,"length");
+	  map* useMS=getMap(curs->content,"useMapserver");
+	  if(length==NULL){
+	    addToMap(curs->content,"length","1");
+	    length=getMap(curs->content,"length");
 	  }
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
+	  int len=atoi(length->value);
+	  for(int ii=0;ii<len;ii++){
+	    if(getMapArray(curs->content,"byValue",ii)!=NULL && getMapArray(curs->content,"mimeType",ii)!=NULL && useMS!=NULL && strncasecmp(useMS->value,"true",4)==0){
+	      map* tmpMap=getMapArray(curs->content,"value",ii);
+	      char tmpStr[100];
+	      sprintf(tmpStr,"%d",strlen(tmpMap->value));
+	      setMapArray(curs->content,"size",ii,tmpStr);
+	      tmpMap=getMapArray(curs->content,"mimeType",ii);
+	      setMapArray(curs->content,"fmimeType",ii,tmpMap->value);
+	      tmpMap=getMapArray(curs->content,"cache_file",ii);
+	      setMapArray(curs->content,"generated_file",ii,tmpMap->value);
+	      setMapArray(curs->content,"storage",ii,tmpMap->value);
+	      setReferenceUrl(conf,curs);
+	      addIntToMap(curs->content,"published_id",ii+1);
+	      const char *params[7];
+	      int xmlLoadExtDtdDefaultValue;
+	      int hasFile=-1;
+	      map* xslPath=getMapFromMaps(conf,"callback","template");
+	      map* filePath=getMapArray(curs->content,"ref_wfs_link",ii);
+	      if(filePath==NULL)
+		filePath=getMap(curs->content,"ref_wcs_link");
+	      char* inputName=curs->name;
+	      if(xslPath==NULL || xmlPath==NULL || filePath==NULL)
+		break;
+	      char *tmpParam=(char*)malloc((strlen(curs->name)+11)*sizeof(char));
+	      char *tmpParam1=(char*)malloc((strlen(filePath->value)+11)*sizeof(char));
+	      char tmpParam2[16];
+	      sprintf(tmpParam2,"string(\"%d\")",ii);
+	      setMapArray(curs->content,"href",ii,filePath->value);
+	      setMapArray(curs->content,"xlink:href",ii,filePath->value);
+	      tmpMap=getMapArray(curs->content,"cache_url",ii);
+	      if(tmpMap!=NULL)
+		setMapArray(curs->content,"xlink:href",ii,tmpMap->value);
+	      else
+		setMapArray(curs->content,"xlink:href",ii,filePath->value);
+	      sprintf(tmpParam,"string(\"%s\")",curs->name);
+	      sprintf(tmpParam1,"string(\"%s\")",filePath->value);
+	      sprintf(tmpParam2,"string(\"%d\")",ii);
+	      params[0]="attr";
+	      params[1]=tmpParam;
+	      params[2]="value";
+	      params[3]=tmpParam1;//filePath->value;
+	      params[4]="cnt";
+	      params[5]=tmpParam2;
+	      params[6]=NULL;
+	      fprintf(stderr, "## XSLT PARAMETERS ATTR: %s VALUE: %s INDEX: %s\n",
+		      tmpParam,tmpParam1,tmpParam2);
+	      fflush(stderr);
+	      xmlSubstituteEntitiesDefault(1);
+	      xmlLoadExtDtdDefaultValue = 0;
+	      xsltStylesheetPtr cur = NULL;
+	      xmlDocPtr doc, res;
+	      cur = xsltParseStylesheetFile(BAD_CAST xslPath->value);
+	      doc = xmlParseFile(xmlPath->value);
+	      fflush(stderr);
+	      res = xsltApplyStylesheet(cur, doc, params);
+	      xmlChar *xmlbuff;
+	      int buffersize;
+	      xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
+	      // Store the executeRequest in file again
+	      free(tmpParam);
+	      free(tmpParam1);
+	      fprintf(stderr," # Request / XSLT: %s\n",xmlbuff);
+	      fflush(stderr);
+	      FILE* saveExecute=fopen(xmlPath->value,"wb");
+	      if(saveExecute!=NULL){
+		fwrite(xmlbuff,1,buffersize,saveExecute);
+		fflush(saveExecute);
+		fclose(saveExecute);
+	      }
+	      xmlFree(xmlbuff);
+	      xmlFreeDoc(doc);
+	      xsltFreeStylesheet(cur);
+	    }
+	  }
+	  addIntToMap(curs->content,"published_id",0);
 	  curs=curs->next;
 	}
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	xmlCleanupParser();
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	FILE* f0=fopen(xmlPath->value,"rb");
 	if(f0!=NULL){
 	  long flen;
@@ -422,27 +415,13 @@ extern "C" {
 	  fread(fcontent,flen,1,f0);
 	  fcontent[flen]=0;
 	  fclose(f0);
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	  map *schema=getMapFromMaps(conf,"database","schema");
 	  map* sid=getMapFromMaps(conf,"lenv","usid");
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	  char *req=(char*)malloc((flen+strlen(schema->value)+strlen(sid->value)+66)*sizeof(char));
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	  sprintf(req,"UPDATE %s.services set request_execute_content=$$%s$$ WHERE uuid=$$%s$$",schema->value,fcontent,sid->value);
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	  execSql(conf,1,req);
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	  free(fcontent);
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	  free(req);
-	  fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	  fflush(stderr);
 	}
       }
 
@@ -452,7 +431,7 @@ extern "C" {
       char *keys[11][2]={
 	{
 	  "xlink:href",
-	  "ref"
+	  "ref_download_link"
 	},
 	{
 	  "cache_file",
@@ -513,8 +492,6 @@ extern "C" {
 	      setMapArray(curs->content,"generated_file",ii,tmpMap->value);
 	      setMapArray(curs->content,"storage",ii,tmpMap->value);
 	    }
-	    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-	    dumpMap(curs->content);
 	    struct stat buf;
 	    char timeStr[ 100 ] = "";
 	    if (stat(tmpMap->value, &buf)==0){
@@ -552,8 +529,10 @@ extern "C" {
 	}
 	if(hasRef<0)
 	  json_object_put(res3);
-	else
-	  json_object_object_add(res1,curs->name,res3);
+	else{
+	  json_object_object_add(res1,curs->name,json_object_get(res3));
+	  json_object_put(res3);
+	}
 	addIntToMap(curs->content,"published_id",0);
 	curs=curs->next;
       }
@@ -569,7 +548,6 @@ extern "C" {
 	map* length=getMapFromMaps(in,"uploadQueue","length");
 	if(length!=NULL){
 	  json_object *res1=json_object_new_object();
-	  json_object *res3=json_object_new_array();
 	  int limit=atoi(length->value);
 	  int i=0;
 	  maps* uploadQueue=getMaps(in,"uploadQueue");
@@ -588,22 +566,19 @@ extern "C" {
 	      if(json_object_is_type(res4,json_type_null)){
 		json_object_object_add(res1,tmp0->value,res2);
 	      }else{
-		if(json_object_is_type(res4,json_type_object)){
-		  json_object_array_add(res3,res4);
-		}
-		json_object_array_add(res3,res2);
-		if(json_object_is_type(res4,json_type_object)){
+		if(json_object_is_type(res4,json_type_object) && !json_object_is_type(res4, json_type_array)){
+		  json_object *res3=json_object_new_array();
+		  json_object_array_add(res3,json_object_get(res4));
+		  json_object_array_add(res3,res2);
 		  json_object_object_del(res1,tmp0->value);
 		  json_object_object_add(res1,tmp0->value,res3);
-		}
+		}else
+		  json_object_array_add(res4,res2);
 	      }
 	    }
 	  }
-	  if(json_object_array_length(res3)==0)
-	    json_object_put(res3);
 	  json_object_object_add(res,"inputs",res1);
 	}
-	//json_object_object_add(res,"inputs",in);
       }
       break;
     }
@@ -630,7 +605,6 @@ extern "C" {
       
     case 5: {
       // Downloading process outputs from cluster
-      //json_object* in=mapsToJson(outputs);
       maps* curs=outputs;
       dumpMaps(curs);
       char *keys[10][2]={
@@ -707,8 +681,19 @@ extern "C" {
 	  if(sid!=NULL){
 	    json_object *jsStr=json_object_new_string(sid->value);
 	    json_object_object_add(res2,keys[i][1],jsStr);
-	    if(i==0)
+	    if(i==0){
 	      hasRef=1;
+	      json_object_object_add(res2,"ref_download_link",jsStr);
+	    }
+	    if(i==1){
+	      struct stat buf;
+	      char timeStr[ 100 ] = "";
+	      if (stat(sid->value, &buf)==0){
+		strftime(timeStr, 100, "%d-%m-%Y %H:%M:%S", localtime( &buf.st_mtime));
+		json_object *jsStr=json_object_new_string(timeStr);
+		json_object_object_add(res2,"creation_date",jsStr);
+	      }
+	    }
 	  }
 	}
 	if(hasRef>0)
@@ -723,10 +708,7 @@ extern "C" {
 	      int hasRef0=-1;
 	      int i0=0;
 	      for(;i0<6;i0++){
-		if(i0==0)
-		  sid=getMap(specificMaps->content,specifics[i][1]);
-		else
-		  sid=getMap(specificMaps->content,keys[i0][0]);
+		sid=getMap(specificMaps->content,keys[i0][0]);
 		if(sid!=NULL){
 		  json_object *jsStr=json_object_new_string(sid->value);
 		  if(i0==0){
@@ -759,7 +741,6 @@ extern "C" {
 		if(sid!=NULL){
 		  json_object *jsStr=json_object_new_string(sid->value);
 		  json_object_object_add(res3,keys[i0][1],jsStr);
-		  //if(i0==0)
 		  hasRef0=1;
 		}
 	      }
@@ -857,7 +838,6 @@ extern "C" {
     local_arguments[nbThreads]->res=res;
     local_arguments[nbThreads]->step=step;
     local_arguments[nbThreads]->state=state;
-    //pthread_t p1;
     if(myThreads==NULL)
       myThreads=(pthread_t*)malloc((nbThreads+1)*sizeof(pthread_t));
     else
@@ -866,7 +846,6 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",_("Unable to create a new thread"));
       return false;
     }
-    //free(argumentsA);
     nbThreads++;
     return true;
   }
@@ -877,8 +856,6 @@ extern "C" {
   void cleanupCallbackThreads(){
     int i=0;
     for(i=0;i<nbThreads;i++){
-      fprintf(stderr,"%s %d %d \n",__FILE__,__LINE__,i);
-      fflush(stderr);
       pthread_join(myThreads[i],NULL);
       free(local_arguments[i]);
     }

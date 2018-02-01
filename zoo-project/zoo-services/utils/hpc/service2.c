@@ -1,8 +1,12 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright 2008-2009 GeoLabs SARL. All rights reserved.
- * 
+ * Copyright 2017 GeoLabs SARL. All rights reserved.
+ *
+ * This work was supported by public funds received in the framework of GEOSUD,
+ * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed
+ * by the French National Research Agency
+ *
  * This work was supported by public funds received in the framework of GEOSUD,
  * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed
  * by the French National Research Agency
@@ -41,7 +45,49 @@
 #include <libxslt/xsltutils.h>
 
 #include <dirent.h>
+#include <string.h>
+#include <cerrno>
+
 extern "C" {
+
+  /** 
+   * Retrieve the error message which occured when trying to remove a file
+   * (return values can be EACCES, EBUSY, EFAULT, EIO, EISDIR, ELOOP, 
+   * ENAMETOOLONG, ENOENT, ENOMEM, ENOTDIR, EPERM, EROFS, UNKNOWN).
+   *
+   * @param errn
+   * @result a string corresponding to the error number 
+   */ 
+  char* fetchErrno(int errn){
+   switch(errn){
+    case EACCES:
+	return "EACCES";
+    case EBUSY:
+	return "EBUSY";
+    case EFAULT:
+	return "EFAULT";
+    case EIO:
+	return "EIO";
+    case EISDIR:
+	return "EISDIR";
+    case ELOOP:
+	return "ELOOP";
+    case ENAMETOOLONG:
+	return "ENAMETOOLONG";
+    case ENOENT:
+	return "ENOENT";
+    case ENOMEM:
+	return "ENOMEM";
+    case ENOTDIR:
+	return "ENOTDIR";
+    case EPERM:
+	return "EPERM";
+    case EROFS:
+	return "EROFS";
+    default:
+	return "UNKNOWN";
+   }
+  }
 
   /**
    * Try to delete a cache file.
@@ -77,13 +123,18 @@ extern "C" {
    * @return 0 in case of success
    */
   int tryDeleteDataFile(const char* storage,const char* filename){
-    char* fullpath=(char*)malloc((strlen(storage)+strlen(filename)+2)*sizeof(char));
-    sprintf(fullpath,"%s/%s",storage,filename);
+    char* fullpath=NULL;
+    if(filename!=NULL){
+      fullpath=(char*)malloc((strlen(storage)+strlen(filename)+2)*sizeof(char));
+      sprintf(fullpath,"%s/%s",storage,filename);
+    }
+    else
+      fullpath=zStrdup(storage);
     if(unlink(fullpath)==0){
       // TODO store the filename_full in the deletedfiles
-      fprintf(stderr,"#### DeleteData #### %s %d %s has been successfully deleted\n",__FILE__,__LINE__,filename);
+      fprintf(stderr,"#### DeleteData #### %s %d %s has been successfully deleted\n",__FILE__,__LINE__,(strlen(filename)>0?filename:fullpath));
     }else{
-      fprintf(stderr,"#### DeleteData #### unable to delete %s \n",fullpath);
+      fprintf(stderr,"#### DeleteData #### unable to delete %s %s \n",fullpath,fetchErrno(errno));
     }
     free(fullpath);
     return 0;
@@ -137,16 +188,13 @@ extern "C" {
 	  fclose(f0);
 	}
 	if(fcontent!=NULL && strcasecmp(fcontent,"SHARED")!=0){
-	  // Delete associated zcm and zcp
+	  // Delete associated zcm, zcp and maps files
 	  tryDeleteCacheFile(cacheDir->value,filename->value,"zca");
 	  tryDeleteCacheFile(cacheDir->value,filename->value,"zcm");
 	  tryDeleteCacheFile(cacheDir->value,filename->value,"zcp");
-	  // Delete ZOO_DATA_<input>_<sid>.data and <input>_<sid>.map
+	  tryDeleteCacheFile(tmpPath->value,filename->value,"maps");
+	  // Delete <input>_<sid>.map
 	  char* datafile=(char*)malloc((strlen(jobid->value)+strlen(ioname->value)+19)*sizeof(char));
-	  sprintf(datafile,"ZOO_DATA_%s_%s.data",ioname->value,jobid->value);
-	  tryDeleteDataFile(dataPath->value,datafile);
-	  free(datafile);
-	  datafile=(char*)malloc((strlen(jobid->value)+strlen(ioname->value)+19)*sizeof(char));
 	  sprintf(datafile,"%s_%s.map",ioname->value,jobid->value);
 	  tryDeleteDataFile(dataPath->value,datafile);
 	  free(datafile);
@@ -159,8 +207,27 @@ extern "C" {
       }else{
 	char tmp1[8];
 	snprintf(tmp1,7,"%s",filename->value);
-	if(strcasecmp(tmp1,"output")==0){
-	  tryDeleteDataFile(tmpPath->value,filename->value);
+	if(strcasecmp(tmp1,"output")==0 || strcasecmp(tmp1,"input_")==0){
+	  trydeletedatafile(tmppath->value,filename->value);
+          char *tmp=zStrdup(filename->value);
+	  tmp[strlen(tmp)-strlen(strrchr(tmp,'.'))]=0;
+	  char *mapsfile=(char*)malloc((strlen(tmp)+6)*sizeof(char));
+	  sprintf(mapsfile,"%s.maps",tmp);
+          char* mapPath=(char*)malloc((strlen(tmpPath->value)+strlen(mapsfile)+2)*sizeof(char));
+          sprintf(mapPath,"%s/%s",tmpPath->value,mapsfile);
+	  FILE* myMapsfile=fopen(mapPath,"r");
+          if(myMapsfile!=NULL){
+	    char *buffer=(char*)malloc(1024*sizeof(char));
+	    while(fgets(buffer, 1024, myMapsfile) != NULL){
+	      buffer[strlen(buffer)-1]=0;
+	      tryDeleteDataFile(buffer,NULL);
+	    }
+	    free(buffer);
+	    fclose(myMapsfile);
+          }
+          tryDeleteDataFile(mapPath,NULL);
+          free(mapPath);
+          free(mapsfile);
 	  // Delete ZOO_DATA_<output>_<sid>.data and <output>_<sid>.map
 	  char* datafile=(char*)malloc((strlen(jobid->value)+strlen(ioname->value)+19)*sizeof(char));
 	  sprintf(datafile,"ZOO_DATA_%s_%s.data",ioname->value,jobid->value);

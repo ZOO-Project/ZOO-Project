@@ -64,6 +64,11 @@ using namespace std;
 #define FALSE -1
 #endif
 
+int cgiInit(){
+  fprintf(FCGI_stderr,"ZOO-Kernel initialization %s %d ... \n",__FILE__,__LINE__);
+  fflush(FCGI_stderr);
+}
+
 /**
  * Main entry point for cgic.
  * @return 0 on sucess.
