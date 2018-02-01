@@ -2561,6 +2561,8 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
     if(tmp!=NULL){
       xmlNodePtr txt=xmlNewText(BAD_CAST tmp->value);
       xmlAddChild(nc1,txt);
+      if(cnt==0)
+	setMapInMaps(m,"lenv","message",tmp->value);
     }
     else{
       xmlNodeSetContent(nc1, BAD_CAST _("No debug message available"));
@@ -2717,9 +2719,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       }
       toto=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
-    restartNoMS:
       map* geodatatype=getMap(tmpI->content,"geodatatype");
-      
       if(toto!=NULL && strcasecmp(toto->value,"true")==0 &&
 	 (testMap==NULL ||
 	  strncasecmp(testMap->value,"true",4)!=0 ||
@@ -2748,7 +2748,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  if(gfile==NULL) {
 	    map *ext=getMap(tmpI->content,"extension");
 	    char file_ext[32];
-
+	    
 	    if( ext != NULL && ext->value != NULL) {
 	      strncpy(file_ext, ext->value, 32);
 	    }
@@ -2811,16 +2811,6 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    sprintf(file_url,"%s/%s/%s",tmp3->value,tmp2->value,file_name);
 	  }
 	  addToMap(tmpI->content,"Reference",file_url);
-	  /*maps* curs=tmpI;
-	  curs=curs->next;
-	  map* test=getMap(tmpI->content,"replicateStorageNext");
-	  if(test!=NULL && strncasecmp(test->value,"true",4)==0)
-	    while(curs!=NULL){
-	      addToMap(curs->content,"storage",file_path);
-	      curs=curs->next;
-	      }
-	  if(file_path!=NULL)
-	  free(file_path);*/
 	  if(file_name!=NULL)
 	    free(file_name);
 	  if(file_url!=NULL)
@@ -2829,14 +2819,14 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	}
 #ifdef USE_MS
       else{
-	if(testMap!=NULL){
-	  setMapInMaps(m,"lenv","state","out");
-	  setReferenceUrl(m,tmpI);
-	  geodatatype=getMap(tmpI->content,"geodatatype");
-	  if(geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0)
-	    goto restartNoMS;
+	  if(testMap!=NULL){
+	    setMapInMaps(m,"lenv","state","out");
+	    setReferenceUrl(m,tmpI);
+	    geodatatype=getMap(tmpI->content,"geodatatype");
+	    if(geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0)
+	      res=SERVICE_FAILED;
+	  }
 	}
-      }
 #endif
       if(file_name!=NULL){
 	free(file_name);

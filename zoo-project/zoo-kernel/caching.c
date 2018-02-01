@@ -297,7 +297,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
     sprintf(sindex,"%d",*index+1);
     if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
 
-      if(getMap(content->content,icname)==NULL){	
+      if(getMap(content->content,icname)==NULL){
 	fcontent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
 	if(fcontent == NULL){
 	  errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
@@ -512,7 +512,6 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
 
   map* tmpMap=getMapOrFill(content,"value","");
-    
   free(tmpMap->value);
   tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
   if(tmpMap->value==NULL || fcontent == NULL)

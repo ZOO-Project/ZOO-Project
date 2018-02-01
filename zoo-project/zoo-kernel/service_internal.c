@@ -61,6 +61,8 @@ struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
   if(s==0 && mode!='r'){
     if(itn<ZOO_LOCK_MAX_RETRY){
       itn++;
+      fprintf(stderr,"(%d) Wait for write lock on %s, tried %d times (sleep) ... \n",getpid(),myLock->filename,itn);
+      fflush(stderr);
       sleep(5);
       free(myLock->filename);
       goto retryLockFile;

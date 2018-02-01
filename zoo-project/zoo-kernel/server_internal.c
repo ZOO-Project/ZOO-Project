@@ -376,15 +376,20 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   rewind(file);
   struct stat file_status; 
   stat(filename, &file_status);
-  map* tmpMap1=getMap(content,"value");
-  if(tmpMap1==NULL){
-    addToMap(content,"value","");
-    tmpMap1=getMap(content,"value");
+  if(getMap(content,"storage")==NULL){
+    map* tmpMap1=getMap(content,"value");
+    if(tmpMap1==NULL){
+      addToMap(content,"value","");
+      tmpMap1=getMap(content,"value");
+    }
+    free(tmpMap1->value);
+    tmpMap1->value=(char*) malloc((count+1)*sizeof(char));
+    if(tmpMap1->value==NULL){
+      setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
+    }
+    fread(tmpMap1->value,1,count,file);
+    tmpMap1->value[count]=0;
   }
-  free(tmpMap1->value);
-  tmpMap1->value=(char*) malloc((count+1)*sizeof(char));  
-  fread(tmpMap1->value,1,count,file);
-  tmpMap1->value[count]=0;
   fclose(file);
   char rsize[1000];
   sprintf(rsize,"%ld",count);
@@ -422,6 +427,7 @@ int writeFile(char* fname,char* val,int length){
  */
 void dumpMapsValuesToFiles(maps** main_conf,maps** in){
   map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
+  map* tmpUrl=getMapFromMaps(*main_conf,"main","tmpUrl");
   map* tmpSid=getMapFromMaps(*main_conf,"lenv","usid");
   maps* inputs=*in;
   int length=0;
@@ -449,6 +455,11 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	  writeFile(val,cValue->value,length);
 	  setMapArray(cMap,"cache_file",k,val);
 	  free(val);
+	  val=(char*)malloc((strlen(tmpUrl->value)+strlen(inputs->name)+strlen(tmpSid->value)+strlen(file_ext)+16)*sizeof(char));
+	  sprintf(val,"%s/Input_%s_%s_%d.%s",tmpUrl->value,inputs->name,tmpSid->value,k,file_ext);
+	  setMapArray(cMap,"cache_url",k,val);
+	  setMapArray(cMap,"byValue",k,"true");
+	  free(val);
 	}
       }else{
 	int length=0;
@@ -466,8 +477,12 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	writeFile(val,cValue->value,length);
 	addToMap(cMap,"cache_file",val);
 	free(val);
+	val=(char*)malloc((strlen(tmpUrl->value)+strlen(inputs->name)+strlen(tmpSid->value)+strlen(file_ext)+16)*sizeof(char));
+	sprintf(val,"%s/Input_%s_%s_%d.%s",tmpUrl->value,inputs->name,tmpSid->value,0,file_ext);
+	addToMap(cMap,"cache_url",val);
+	addToMap(cMap,"byValue",val);
+	free(val);
       }
-      addToMap(inputs->content,"byValue","true");
     }
     inputs=inputs->next;
   }
@@ -640,6 +655,13 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	  }
 	}
 	if(res==NULL){
+	  map* tmpMaxO0=getMap(tmpInputs->content,"useMapserver");
+	  if(tmpMaxO0!=NULL){
+	    if(tmpMaps2->content==NULL)
+	      tmpMaps2->content=createMap("useMapserver",tmpMaxO0->value);
+	    else
+	      addToMap(tmpMaps2->content,"useMapserver",tmpMaxO0->value);
+	  }
 	  map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
 	  if(tmpMaxO!=NULL){
 	    if(tmpMaps2->content==NULL)
@@ -713,26 +735,18 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	   * In case of an Input maps, then add the minOccurs and maxOccurs to the
 	   * content map.
 	   */
-	  map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
-	  if(tmpMap1!=NULL){
-	    if(tmpMaps->content==NULL)
-	      tmpMaps->content=createMap("minOccurs",tmpMap1->value);
-	    else
-	      addToMap(tmpMaps->content,"minOccurs",tmpMap1->value);
-	  }
-	  map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
-	  if(tmpMaxO!=NULL){
-	    if(tmpMaps->content==NULL)
-	      tmpMaps->content=createMap("maxOccurs",tmpMaxO->value);
-	    else
-	      addToMap(tmpMaps->content,"maxOccurs",tmpMaxO->value);
-	  }
-	  map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
-	  if(tmpMaxMB!=NULL){
-	    if(tmpMaps->content==NULL)
-	      tmpMaps->content=createMap("maximumMegabytes",tmpMaxMB->value);
-	    else
-	      addToMap(tmpMaps->content,"maximumMegabytes",tmpMaxMB->value);
+	  char* keys[4]={
+	    "minOccurs",
+	    "maxOccurs",
+	    "maximumMegabytes",
+	    "useMapserver"
+	  };
+	  int i=0;
+	  for(i=0;i<4;i++){
+	    map* tmpMap1=getMap(tmpInputs->content,keys[i]);
+	    if(tmpMap1!=NULL){
+	      addToMap(tmpMaps->content,keys[i],tmpMap1->value);
+	    }
 	  }
 	  /**
 	   * Parsing BoundingBoxData, fill the following map and then add it to
@@ -811,6 +825,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	  map* tmpCheck=getMap(tmpIoType->content,"useMapserver");
 	  if(tmpCheck!=NULL && strncasecmp(tmpCheck->value,"true",4)==0){
 	    // Get the default value
+	    addToMap(tmpMaps->content,"useMapserver","true");
 	    tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,NULL);
 	    tmpCheck=getMap(tmpMaps->content,"mimeType");
 	    addToMap(tmpMaps->content,"requestedMimeType",tmpCheck->value);

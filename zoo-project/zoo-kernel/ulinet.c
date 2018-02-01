@@ -28,6 +28,7 @@
 #define _ULINET
 #define MAX_WAIT_MSECS 180*1000 /* Wait max. 180 seconds */
 #include "ulinet.h"
+#include "server_internal.h"
 #include <assert.h>
 #include <ctype.h>
 
@@ -66,6 +67,36 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
   buffer=NULL;
   return realsize;
 }
+
+/**
+ * Write the downloaded content to a _HINTERNET structure
+ *
+ * @param buffer the buffer to read
+ * @param size size of each member
+ * @param nmemb number of element to read
+ * @param data the _HINTERNET structure to write in
+ * @return the size red, -1 if buffer is NULL
+ */
+size_t write_data_into_file(void *buffer, size_t size, size_t nmemb, void *data) 
+{ 
+   size_t realsize = size * nmemb;
+   int writen=0;
+   _HINTERNET *psInternet;
+   if(buffer==NULL){
+     buffer=NULL;
+     return -1;
+   }
+   psInternet=(_HINTERNET *)data;
+   writen+=fwrite(buffer, size, nmemb, psInternet->file);
+   if(psInternet->nDataLen>0){
+     psInternet->nDataAlloc+=psInternet->nDataLen+writen+1;
+     psInternet->nDataLen += realsize;
+   }else
+     psInternet->nDataLen=realsize+1;
+   buffer=NULL;
+   return realsize;
+}
+
 
 /**
  * In case of presence of "Set-Cookie" in the headers red, store the cookie
@@ -362,6 +393,7 @@ void InternetCloseHandle(HINTERNET* handle0){
       if(handle.hasCacheFile>0){
 	fclose(handle.file);
 	unlink(handle.filename);
+	free(handle.filename);
       }
       else{
 	handle.pabyData = NULL;
@@ -410,6 +442,7 @@ void InternetCloseHandle(HINTERNET* handle0){
  * @param dwHeadersLength the size of the additional headers
  * @param dwFlags desired download mode (INTERNET_FLAG_NO_CACHE_WRITE for not using cache file)
  * @param dwContext not used
+ * @return the updated HINTERNET 
  */
 HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
 
@@ -446,28 +479,24 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 #ifdef MSG_LAF_VERBOSE
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
-
       
   switch(dwFlags)
     {
     case INTERNET_FLAG_NO_CACHE_WRITE:
-      hInternet->ihandle[hInternet->nb].hasCacheFile=-1;
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, write_data_into);
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEDATA, (void*)&hInternet->ihandle[hInternet->nb]);
+      hInternet->ihandle[hInternet->nb].hasCacheFile=-1;
       break;
     default:
-      sprintf(hInternet->ihandle[hInternet->nb].filename,"/tmp/ZOO_Cache%d",(int)time(NULL));
-      hInternet->ihandle[hInternet->nb].filename[24]=0;
-#ifdef MSG_LAF_VERBOSE
-      fprintf(stderr,"file=%s",hInternet->ihandle[hInternet->nb].filename);
-#endif
-      hInternet->ihandle[hInternet->nb].filename=filename;
+      memset(filename,0,255);
+      char* tmpUuid=get_uuid();
+      sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
+      free(tmpUuid);
+      hInternet->ihandle[hInternet->nb].filename=strdup(filename);
       hInternet->ihandle[hInternet->nb].file=fopen(hInternet->ihandle[hInternet->nb].filename,"w+");
-    
       hInternet->ihandle[hInternet->nb].hasCacheFile=1;
-      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, NULL);
-      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEDATA, hInternet->ihandle[hInternet->nb].file);
-      hInternet->ihandle[hInternet->nb].nDataLen=0;
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, write_data_into_file);
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEDATA, (void*)&hInternet->ihandle[hInternet->nb]);
       break;
     }
 #ifdef ULINET_DEBUG
@@ -513,14 +542,19 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
  * @return 0
  */
 int processDownloads(HINTERNET* hInternet){
-  int still_running=0;
+  int still_running=0,numfds;
   int msgs_left=0;
   int i=0;
   do{
-    if(curl_multi_perform(hInternet->handle, &still_running)==CURLM_OK)
-      if(still_running){
-	zSleep(10);
-      }
+    CURLMcode mc;
+    mc = curl_multi_perform(hInternet->handle, &still_running);
+    if(mc==CURLM_OK){
+      mc = curl_multi_wait(hInternet->handle, NULL, 0, 1000, &numfds);
+    }
+    if(mc != CURLM_OK) {
+      fprintf(stderr, "curl_multi failed, code %d.n", mc);
+      break;
+    }
   }while(still_running);  
   for(i=0;i<hInternet->nb;i++){
     char *tmp;
@@ -564,7 +598,9 @@ int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToR
   if(hInternet.hasCacheFile>0){
     fseek (hInternet.file , 0 , SEEK_END);
     dwDataSize=ftell(hInternet.file); //taille du ficher
-    rewind (hInternet.file);
+    //dwDataSize=hInternet.nDataLen;
+    //rewind (hInternet.file);
+    fseek(hInternet.file, 0, SEEK_SET);
   }
   else{
     memset(lpBuffer,0,hInternet.nDataLen+1);
@@ -574,15 +610,17 @@ int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToR
     hInternet.pabyData=NULL;
   }
 
-  if( dwNumberOfBytesToRead /* buffer size */ < dwDataSize )
+  if( dwNumberOfBytesToRead /* buffer size */ < dwDataSize ){
     return 0;
+  }
 
 #ifdef MSG_LAF_VERBOSE
-  printf("\nfile size : %dko\n",dwDataSize/1024);
+  fprintf(stderr,"\nfile size : %dko\n",dwDataSize/1024);
 #endif
 
   if(hInternet.hasCacheFile>0){
-    *lpdwNumberOfBytesRead = fread(lpBuffer,1,dwDataSize,hInternet.file); 
+    int freadRes = fread(lpBuffer,dwDataSize+1,1,hInternet.file); 
+    *lpdwNumberOfBytesRead = hInternet.nDataLen;
   }
   else{
     *lpdwNumberOfBytesRead = hInternet.nDataLen;

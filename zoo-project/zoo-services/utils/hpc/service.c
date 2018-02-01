@@ -1,7 +1,7 @@
 /**
  * Author : Gérald FENOY
  *
- * Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ * Copyright 2017 GeoLabs SARL. All rights reserved.
  *
  * This work was supported by public funds received in the framework of GEOSUD,
  * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed

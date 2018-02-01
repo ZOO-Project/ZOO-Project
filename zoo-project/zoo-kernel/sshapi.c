@@ -204,7 +204,7 @@ SSHCON *ssh_connect(maps* conf){
   if (!result->session)
     return NULL;
 
-  libssh2_session_set_blocking(result->session, 0);
+  libssh2_session_set_blocking(result->session, 1);
 
   while ((rc = libssh2_session_handshake(result->session, result->sock_id))
 	 == LIBSSH2_ERROR_EAGAIN);
@@ -417,7 +417,6 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
  * @return 0 in case of success, -1 if failure occured
  */
 int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
-  char mem[1024];
   size_t nread;
   size_t memuse=0;
   time_t start;
@@ -435,7 +434,6 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
     sessions[cnt]->sftp_session = libssh2_sftp_init(sessions[cnt]->session);
     if (!sessions[cnt]->sftp_session &&
 	(libssh2_session_last_errno(sessions[cnt]->session) != LIBSSH2_ERROR_EAGAIN)) {
-      
       fprintf(stderr, "Unable to init SFTP session\n");
       return -1;
     }
@@ -451,22 +449,22 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
 	return -1;
       }
       else {
-	//non-blocking open
 	waitsocket(sessions[cnt]->sock_id, sessions[cnt]->session); 
       }
     }
+    if(!sftp_handle)
+      zSleep(100);
   } while (!sftp_handle);
  
   int result=0;
   do {
     do {
-      rc = libssh2_sftp_read(sftp_handle, mem, sizeof(mem));
-      /*fprintf(stderr, "libssh2_sftp_read returned %d\n",
-	rc);*/
+      char* mem=(char*)malloc(16*1024*1024);
+      rc = libssh2_sftp_read(sftp_handle, mem,16*1024*1024);
       if(rc > 0) {
-	//write(2, mem, rc);
 	fwrite(mem, rc, 1, local);
       }
+      free(mem);
     } while (rc > 0);
     
     if(rc != LIBSSH2_ERROR_EAGAIN) {
@@ -584,6 +582,8 @@ int ssh_exec(maps* conf,const char* command,int cnt){
  * @return true in case of success, false if failure occured
  */
 bool ssh_close_session(maps* conf,SSHCON* con){
+  if(con==NULL)
+    return true;
   while (libssh2_session_disconnect(con->session, "Normal Shutdown, Thank you for using the ZOO-Project sshapi")
 	 == LIBSSH2_ERROR_EAGAIN);
 #ifdef WIN32
@@ -592,6 +592,7 @@ bool ssh_close_session(maps* conf,SSHCON* con){
   close(con->sock_id);
 #endif
   libssh2_session_free(con->session);
+  con=NULL;
   return true;
 }
 
@@ -638,23 +639,13 @@ bool addToUploadQueue(maps** conf,maps* input){
 	map* tmp[2]={getMapArray(input->content,"localPath",i),
 		     getMapArray(input->content,"targetPath",i)};
 
-	setMapArray(queueMaps->content,"input",queueIndex,input->name);
-	setMapArray(queueMaps->content,"localPath",queueIndex,tmp[0]->value);
-	setMapArray(queueMaps->content,"targetPath",queueIndex,tmp[1]->value);
-	queueIndex+=1;
+	setMapArray(queueMaps->content,"input",queueIndex+i,input->name);
+	setMapArray(queueMaps->content,"localPath",queueIndex+i,tmp[0]->value);
+	setMapArray(queueMaps->content,"targetPath",queueIndex+i,tmp[1]->value);
+
       }
     }
   }
-#ifdef SSH_DEBUG  
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
-  dumpMaps(queueMaps);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
-  dumpMaps(*conf);
-  fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
-#endif
   return true;
 }
 
@@ -663,13 +654,6 @@ bool runUpload(maps** conf){
   if(test==NULL){
     return false;
   }
-#ifdef SSH_DEBUG
-  fprintf(stderr,"*** %s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
-  dumpMaps(getMaps(*conf,"uploadQueue"));
-  fprintf(stderr,"*** %s %d\n",__FILE__,__LINE__);
-  fflush(stderr);
-#endif
   map* queueLengthMap=getMapFromMaps(*conf,"uploadQueue","length");
   maps* queueMaps=getMaps(*conf,"uploadQueue");
   if(queueLengthMap!=NULL){
@@ -681,9 +665,6 @@ bool runUpload(maps** conf){
 	getMapArray(queueMaps->content,"localPath",i),
 	getMapArray(queueMaps->content,"targetPath",i)
       };
-#ifdef SSH_DEBUG      
-      fprintf(stderr,"*** %s %d %s %s\n",__FILE__,__LINE__,argv[1]->value,argv[2]->value);
-#endif      
       /**/zooLock* lck;
       if((lck=lockFile(*conf,argv[1]->value,'w'))!=NULL){/**/
 	if(ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf))!=true){
@@ -702,5 +683,19 @@ bool runUpload(maps** conf){
       }/**/
     }    
   }
+  while (libssh2_session_disconnect(test->session, "Normal Shutdown, Thank you for using the ZOO-Project sshapi")
+         == LIBSSH2_ERROR_EAGAIN);
+#ifdef WIN32
+  closesocket(test->sock_id);
+#else
+  close(test->sock_id);
+#endif
+  libssh2_session_free(test->session);
+  free(test);
+  test=NULL;
+  sessions[ssh_get_cnt(*conf)-1]=NULL;
+  maps* tmp=getMaps(*conf,"lenv");
+  addIntToMap(tmp->content,"nb_sessions",ssh_get_cnt(*conf)-1);  
+
   return true; 
 }

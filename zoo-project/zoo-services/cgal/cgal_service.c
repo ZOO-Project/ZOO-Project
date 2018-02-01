@@ -23,7 +23,7 @@
  */
 #include "cgal_service.h"
 
-int parseInput(maps* conf,maps* inputs, std::vector<Point>* points,char* filename){
+int parseInput(maps* conf,maps* inputs, std::vector<Pointz>* points,char* filename){
   map* tmpm=NULL;
   tmpm=getMapFromMaps(inputs,"InputPoints","value");
   VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmpm->value,strlen(tmpm->value),FALSE);
@@ -86,7 +86,7 @@ int parseInput(maps* conf,maps* inputs, std::vector<Point>* points,char* filenam
 	if( poFeature == NULL )
 	  break;
 	if(poFeature->GetGeometryRef() != NULL){
-	  points->push_back(Point(OGR_G_GetX(poFeature->GetGeometryRef(),0),OGR_G_GetY(poFeature->GetGeometryRef(),0)));
+	  points->push_back(Pointz(OGR_G_GetX(poFeature->GetGeometryRef(),0),OGR_G_GetY(poFeature->GetGeometryRef(),0)));
 	}
       }
     }
