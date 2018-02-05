@@ -98,13 +98,7 @@ def extractInputs(conf,obj):
         print >> sys.stderr,obj
         geometry=[]
         ds = osgeo.ogr.Open(obj["cache_file"])
-        if sql is not None:
-            if sql.count("from")==0:
-                layerName=ds.GetLayerByIndex(0).GetName()
-                sql+=" from "+layerName
-            lyr=ds.ExecuteSQL( sql, None, None )
-        else:
-            lyr = ds.GetLayer(0)
+        lyr = ds.GetLayer(0)
         feat = lyr.GetNextFeature()
         while feat is not None:
             geometry+=[feat.Clone()]
