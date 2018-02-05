@@ -99,6 +99,8 @@ extern "C" {
 
   size_t write_data_into(void*,size_t,size_t,void*);
 
+  size_t write_data_into_file(void*,size_t,size_t,void*);
+
   size_t header_write_data(void*,size_t,size_t,void*);
 
   void setProxy(CURL*,char*,long);
@@ -157,7 +159,7 @@ typedef char* LPCTSTR;
 
 #  define CHECK_INET_HANDLE(h) (h.handle != 0)
 
-  HINTERNET InternetOpenUrl(HINTERNET*,LPCTSTR,LPCTSTR,size_t,size_t,size_t);
+  HINTERNET InternetOpenUrl(HINTERNET*,LPCTSTR,LPCTSTR,size_t,size_t,size_t,const maps*);
 
   int processDownloads(HINTERNET*);
 

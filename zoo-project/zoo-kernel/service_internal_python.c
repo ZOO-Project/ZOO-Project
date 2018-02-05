@@ -424,6 +424,8 @@ PyDictObject* PyDict_FromMap(map* t){
   int hasSize=0;
   map* isArray=getMap(tmp,"isArray");
   map* size=getMap(tmp,"size");
+  map* useFile=getMap(tmp,"use_file");
+  map* cacheFile=getMap(tmp,"cache_file");
   map* tmap=getMapType(tmp);
   while(tmp!=NULL){
     PyObject* name=PyString_FromString(tmp->name);
@@ -434,25 +436,36 @@ PyDictObject* PyDict_FromMap(map* t){
 	PyObject* value=PyList_New(cnt);
 	PyObject* mvalue=PyList_New(cnt);
 	PyObject* svalue=PyList_New(cnt);
+	PyObject* cvalue=PyList_New(cnt);
 
 	for(int i=0;i<cnt;i++){
 	  
-	  map* vMap=getMapArray(tmp,"value",i);	    
-	  map* sMap=getMapArray(tmp,"size",i);
+	  map* vMap=getMapArray(t,"value",i);
+	  map* uMap=getMapArray(t,"use_file",i);
+	  map* sMap=getMapArray(t,"size",i);
+	  map* cMap=getMapArray(t,"cache_file",i);
 
 	  if(vMap!=NULL){
 	    
 	    PyObject* lvalue;
 	    PyObject* lsvalue;
-	    if(sMap==NULL){
+	    PyObject* lcvalue;
+	    if(sMap==NULL || uMap!=NULL){
 	      lvalue=PyString_FromString(vMap->value);
-	      lsvalue=Py_None;
 	    }
 	    else{    
 	      lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
+	    }
+	    if(sMap!=NULL){
 	      lsvalue=PyString_FromString(sMap->value);
 	      hasSize=1;
 	    }
+	    else
+	      lsvalue=Py_None;
+	    if(uMap!=NULL){
+	      lcvalue=PyString_FromString(cMap->value);;
+	    }else
+	      lcvalue=Py_None;
 
 	    if(PyList_SetItem(value,i,lvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
@@ -462,10 +475,14 @@ PyDictObject* PyDict_FromMap(map* t){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
 	    } 
+	    if(PyList_SetItem(cvalue,i,lcvalue)<0){
+	      fprintf(stderr,"Unable to set key value pair...");
+	      return NULL;
+	    }
 	  }
 	  
-	  map* mMap=getMapArray(tmp,tmap->name,i);
 	  PyObject* lmvalue;
+	  map* mMap=getMapArray(tmp,tmap->name,i);
 	  if(mMap!=NULL){
 	    lmvalue=PyString_FromString(mMap->value);
 	  }else
@@ -486,13 +503,17 @@ PyDictObject* PyDict_FromMap(map* t){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
+	if(PyDict_SetItem(res,PyString_FromString("cache_file"),cvalue)<0){
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
+	}
 	if(hasSize>0)
 	  if(PyDict_SetItem(res,PyString_FromString("size"),svalue)<0){
 	    fprintf(stderr,"Unable to set key value pair...");
 	    return NULL;
 	  }
       }
-      else if(size!=NULL){
+      else if(size!=NULL && useFile==NULL){
 	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);

@@ -900,6 +900,8 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
   char *method;
   char* tmpValue;
   size_t dwRead;
+  maps *tmpConf=createMaps("main");
+  tmpConf->content=createMap("memory","load");
   JS_MaybeGC(cx);
   hInternet=InternetOpen("ZooWPSClient\0",
 			 INTERNET_OPEN_TYPE_PRECONFIG,
@@ -928,7 +930,7 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
     fprintf(stderr,"BODY (%s)\n",body);
 #endif
     InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],body,strlen(body),
-		    INTERNET_FLAG_NO_CACHE_WRITE,0);    
+		    INTERNET_FLAG_NO_CACHE_WRITE,0,tmpConf);    
     processDownloads(&hInternet);
     free(body);
   }else{
@@ -939,18 +941,18 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
 	  setHeader(&hInternet,cx,header);
 	}
 	InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],NULL,0,
-			INTERNET_FLAG_NO_CACHE_WRITE,0);
+			INTERNET_FLAG_NO_CACHE_WRITE,0,tmpConf);
 	processDownloads(&hInternet);
       }else{
 	char *body=JSValToChar(cx,&argv[2]);
 	InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],body,strlen(body),
-			INTERNET_FLAG_NO_CACHE_WRITE,0);
+			INTERNET_FLAG_NO_CACHE_WRITE,0,tmpConf);
 	processDownloads(&hInternet);
 	free(body);
       }
     }else{
       InternetOpenUrl(&hInternet,hInternet.waitingRequests[hInternet.nb],NULL,0,
-		      INTERNET_FLAG_NO_CACHE_WRITE,0);
+		      INTERNET_FLAG_NO_CACHE_WRITE,0,tmpConf);
       processDownloads(&hInternet);
     }
   }
@@ -971,6 +973,8 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
   free(url);
   if(argc>=2)
     free(method);
+  freeMaps(&tmpConf);
+  free(tmpConf);
   InternetCloseHandle(&hInternet);
   JS_MaybeGC(cx);
   return JS_TRUE;

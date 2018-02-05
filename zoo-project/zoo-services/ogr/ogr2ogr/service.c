@@ -365,13 +365,6 @@ int main( int nArgc, char ** papszArgv )
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  dfMaxSegmentLength = atof(tmpMap->value);
     }
-
-    /*tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"segmentize","value");
-    if(tmpMap!=NULL){
-	  dfMaxSegmentLength = atof(tmpMap->value);
-    }*/
-
    
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"InputDSN","value");

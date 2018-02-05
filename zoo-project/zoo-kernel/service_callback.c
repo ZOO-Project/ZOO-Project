@@ -124,6 +124,8 @@ extern "C" {
     time_t now;
     char *tmp1;
     map *tmpStatus;
+    maps* tmpConf=createMaps("main");
+    tmpConf->content=createMap("memory","load");
     hInternet=InternetOpen("ZooWPSClient\0",
 			   INTERNET_OPEN_TYPE_PRECONFIG,
 			   NULL,NULL, 0);
@@ -177,10 +179,12 @@ extern "C" {
 			    hInternet.waitingRequests[0], 
 			    (char*)jsonStr, strlen(jsonStr),
 			    INTERNET_FLAG_NO_CACHE_WRITE,
-			    0);
+			    0,tmpConf);
     AddHeaderEntries(&hInternet,arg->conf);
     //curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle, CURLOPT_VERBOSE, 1);x
     processDownloads(&hInternet);
+    freeMaps(&tmpConf);
+    free(tmpConf);
     now = time ( NULL );
     tm = localtime ( &now );
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
