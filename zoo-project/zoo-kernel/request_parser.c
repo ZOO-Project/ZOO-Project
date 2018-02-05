@@ -758,7 +758,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							   tmp,
 							   xmlStrlen(btmps),
 							   INTERNET_FLAG_NO_CACHE_WRITE,
-							   0);
+							   0,
+							   *main_conf);
 					  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 					}
 				      xmlFree (btmps);
@@ -794,7 +795,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						   bInternet.waitingRequests
 						   [0], NULL, 0,
 						   INTERNET_FLAG_NO_CACHE_WRITE,
-						   0);
+						   0,
+						   *main_conf);
 				processDownloads (&bInternet);
 				char *tmp =
 				  (char *)
@@ -829,7 +831,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						       tmp,
 						       strlen(tmp),
 						       INTERNET_FLAG_NO_CACHE_WRITE,
-						       0);
+						       0,
+						       *main_conf);
 				    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				  }
 				free (tmp);

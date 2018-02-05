@@ -69,7 +69,7 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
 }
 
 /**
- * Write the downloaded content to a _HINTERNET structure
+ * Write the downloaded content in the file pouted by the _HINTERNET structure
  *
  * @param buffer the buffer to read
  * @param size size of each member
@@ -88,11 +88,9 @@ size_t write_data_into_file(void *buffer, size_t size, size_t nmemb, void *data)
    }
    psInternet=(_HINTERNET *)data;
    writen+=fwrite(buffer, size, nmemb, psInternet->file);
-   if(psInternet->nDataLen>0){
-     psInternet->nDataAlloc+=psInternet->nDataLen+writen+1;
-     psInternet->nDataLen += realsize;
-   }else
-     psInternet->nDataLen=realsize+1;
+   fflush(psInternet->file);
+   psInternet->nDataLen += realsize;
+
    buffer=NULL;
    return realsize;
 }
@@ -442,12 +440,15 @@ void InternetCloseHandle(HINTERNET* handle0){
  * @param dwHeadersLength the size of the additional headers
  * @param dwFlags desired download mode (INTERNET_FLAG_NO_CACHE_WRITE for not using cache file)
  * @param dwContext not used
+ * @param conf the main configuration file maps pointer
  * @return the updated HINTERNET 
  */
-HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext){
+HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext,const maps* conf){
 
   char filename[255];
+  int ldwFlags=INTERNET_FLAG_NEED_FILE;
   struct MemoryStruct header;
+  map* memUse=getMapFromMaps(conf,"main","memory");
 
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
   hInternet->ihandle[hInternet->nb].hasCacheFile=0;
@@ -479,8 +480,11 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 #ifdef MSG_LAF_VERBOSE
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
-      
-  switch(dwFlags)
+
+  if(memUse!=NULL && strcasecmp(memUse->value,"load")==0)
+    ldwFlags=INTERNET_FLAG_NO_CACHE_WRITE;
+  
+  switch(ldwFlags)
     {
     case INTERNET_FLAG_NO_CACHE_WRITE:
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, write_data_into);
@@ -490,7 +494,16 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     default:
       memset(filename,0,255);
       char* tmpUuid=get_uuid();
-      sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
+      map* tmpPath=NULL;
+      if(conf!=NULL){
+	tmpPath=getMapFromMaps(conf,"main","tmpPath");
+      }
+      if(tmpPath==NULL)
+	sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
+      else
+	sprintf(filename,"/%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
+      fprintf(stderr," *** %s %d %s",__FILE__,__LINE__,filename);
+      fflush(stderr);
       free(tmpUuid);
       hInternet->ihandle[hInternet->nb].filename=strdup(filename);
       hInternet->ihandle[hInternet->nb].file=fopen(hInternet->ihandle[hInternet->nb].filename,"w+");
