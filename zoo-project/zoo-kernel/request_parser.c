@@ -778,6 +778,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				xmlChar *val =
 				  xmlGetProp (cur3, BAD_CAST "href");
 				HINTERNET bInternet, res1, res;
+				maps *tmpConf=createMaps("main");
+				tmpConf->content=createMap("memory","load");
 				bInternet = InternetOpen (
 #ifndef WIN32
 							  (LPCTSTR)
@@ -796,8 +798,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						   [0], NULL, 0,
 						   INTERNET_FLAG_NO_CACHE_WRITE,
 						   0,
-						   *main_conf);
+						   tmpConf);
 				processDownloads (&bInternet);
+				freeMaps(&tmpConf);
+				free(tmpConf);
 				char *tmp =
 				  (char *)
 				  malloc ((bInternet.ihandle[0].nDataLen +

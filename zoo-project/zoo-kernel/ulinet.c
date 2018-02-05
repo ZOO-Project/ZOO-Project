@@ -502,8 +502,6 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 	sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
       else
 	sprintf(filename,"/%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
-      fprintf(stderr," *** %s %d %s",__FILE__,__LINE__,filename);
-      fflush(stderr);
       free(tmpUuid);
       hInternet->ihandle[hInternet->nb].filename=strdup(filename);
       hInternet->ihandle[hInternet->nb].file=fopen(hInternet->ihandle[hInternet->nb].filename,"w+");
