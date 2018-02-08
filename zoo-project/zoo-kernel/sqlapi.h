@@ -27,6 +27,7 @@
 
 #ifdef META_DB
 #include "ogrsf_frmts.h"
+#include "ogr_p.h"
 #if GDAL_VERSION_MAJOR >= 2
 #include <gdal_priv.h>
 #endif
@@ -35,9 +36,20 @@
 #include "service.h"
 #include "service_internal.h"
 
+#ifdef META_DB
+extern "C" 
+#if GDAL_VERSION_MAJOR >=2
+  GDALDataset
+#else
+  OGRDataSource 
+#endif
+  **zoo_DS;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
   
 #ifdef META_DB
   ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
