@@ -378,15 +378,13 @@ int _updateStatus(maps* conf){
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+64+1)*sizeof(char));
   sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$ where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
-  if( zoo_ds_nb == 0 ){
+  if( zoo_DS == NULL || zoo_DS[zoo_ds_nb-1]==NULL ){
     init_sql(conf);
     zoo_ds_nb++;
   }
-  execSql(conf,0,sqlQuery);
-  cleanUpResultSet(conf,0);
-  close_sql(conf,0);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
-  setMapInMaps(conf,"lenv","ds_nb","0");
   return 0;
 }
 

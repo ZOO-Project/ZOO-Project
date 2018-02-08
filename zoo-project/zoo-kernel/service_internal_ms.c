@@ -1380,30 +1380,6 @@ void outputMapfile(maps* conf,maps* outputs){
   msLoadProjectionStringEPSG(&myMap->projection,"EPSG:4326");
   myMap->transparent=1;
 
-  /**
-   * Set metadata extracted from main.cfg file maps
-   */
-  maps* cursor=conf;
-  map* correspondance=getCorrespondance();
-  while(cursor!=NULL){
-    map* _cursor=cursor->content;
-    map* vMap;
-    while(_cursor!=NULL){
-      if((vMap=getMap(correspondance,_cursor->name))!=NULL){
-	if (msInsertHashTable(&(myMap->web.metadata), vMap->value, _cursor->value) == NULL){
-#ifdef DEBUGMS
-	  fprintf(stderr,"Unable to add metadata");
-#endif
-	  return;
-	}
-      }
-      _cursor=_cursor->next;
-    }
-    cursor=cursor->next;
-  }
-  freeMap(&correspondance);
-  free(correspondance);
-
   /*
    * Set mapserver PROJ_LIB/GDAL_DATA or any other config parameter from 
    * the main.cfg [mapserver] section if any
@@ -1444,6 +1420,35 @@ void outputMapfile(maps* conf,maps* outputs){
     return;
   }
   msInsertHashTable(&(myMap->web.metadata), "ows_srs", "EPSG:4326");
+
+  /**
+   * Set metadata extracted from main.cfg file maps
+   */
+  maps* cursor=conf;
+  map* correspondance=getCorrespondance();
+  while(cursor!=NULL){
+    if(strstr(cursor->name,"_help")==NULL){
+      map* _cursor=cursor->content;
+      map* vMap;
+      while(_cursor!=NULL){
+	if((vMap=getMap(correspondance,_cursor->name))!=NULL){
+	  if (msInsertHashTable(&(myMap->web.metadata), vMap->value, _cursor->value) == NULL){
+#ifdef DEBUGMS
+	    fprintf(stderr,"Unable to add metadata");
+#endif
+	    freeMap(&correspondance);
+	    free(correspondance);
+	    return;
+	  }
+	}
+	_cursor=_cursor->next;
+      }
+    }
+    cursor=cursor->next;
+  }
+  freeMap(&correspondance);
+  free(correspondance);
+
 
   if(tryOgr(conf,outputs,myMap)<0)
     if(tryGdal(conf,outputs,myMap)<0)

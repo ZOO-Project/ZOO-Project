@@ -423,7 +423,9 @@ extern "C" {
 	  map* sid=getMapFromMaps(conf,"lenv","usid");
 	  char *req=(char*)malloc((flen+strlen(schema->value)+strlen(sid->value)+66)*sizeof(char));
 	  sprintf(req,"UPDATE %s.services set request_execute_content=$$%s$$ WHERE uuid=$$%s$$",schema->value,fcontent,sid->value);
+#ifdef RELY_ON_DB
 	  execSql(conf,1,req);
+#endif
 	  free(fcontent);
 	  free(req);
 	}

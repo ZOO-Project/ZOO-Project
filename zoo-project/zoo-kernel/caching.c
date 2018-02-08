@@ -479,7 +479,6 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
     freeMap(&length);
     free(length);
   }
-  dumpMaps(*in);
   return 0;
 }
 
