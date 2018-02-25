@@ -41,6 +41,7 @@ extern "C" {
   int appendMapsToMaps (maps*, maps*, maps*, elements*);
   void ensureDecodedBase64(maps**);
   int kvpParseInputs(maps**,service*,map*,maps**,HINTERNET*);
+  int xmlParseBoundingBox(maps**,map**,xmlDocPtr);
   int kvpParseOutputs(maps**,map *,maps**);
   int xmlParseInputs(maps**,service*,maps**,xmlDocPtr,xmlNodeSet*,HINTERNET*);
   int xmlParseOutputs(maps**,map**,maps**,xmlDocPtr,xmlNodePtr,bool);

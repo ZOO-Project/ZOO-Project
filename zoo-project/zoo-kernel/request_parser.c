@@ -996,6 +996,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							     &buffersize,
 							     "utf-8", 0);
+				  xmlFreeDoc (doc1);
 				}
 			      else
 				{
@@ -1011,16 +1012,28 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				}
 			      addIntToMap (tmpmaps->content, "size",
 					   buffersize);
-			      xmlFreeDoc (doc1);
 			    }else{
-			    xmlNodePtr cur5 = cur4->children;
-			    while (cur5 != NULL
-				   && cur5->type != XML_CDATA_SECTION_NODE)
-			      cur5 = cur5->next;
-			    if (cur5 != NULL
-				&& cur5->type == XML_CDATA_SECTION_NODE){
-			      xmlFree(mv);
-			      mv=xmlStrdup(cur5->content);
+			    if(xmlStrcasecmp
+			       (cur4->name, BAD_CAST "BoundingBoxData") == 0){
+			      xmlDocPtr doc1 = xmlNewDoc(BAD_CAST "1.0");
+			      int buffersize;
+			      xmlDocSetRootElement(doc1,cur4);
+			      xmlDocDumpFormatMemoryEnc(doc1,&mv,
+							&buffersize,
+							"utf-8",0);
+			      addIntToMap (tmpmaps->content, "size",
+					   buffersize);
+			      xmlParseBoundingBox(main_conf,&tmpmaps->content,doc1);
+			    }else{
+			      xmlNodePtr cur5 = cur4->children;
+			      while (cur5 != NULL
+				     && cur5->type != XML_CDATA_SECTION_NODE)
+				cur5 = cur5->next;
+			      if (cur5 != NULL
+				  && cur5->type == XML_CDATA_SECTION_NODE){
+				xmlFree(mv);
+				mv=xmlStrdup(cur5->content);
+			      }
 			    }
 			  }
 			  if (mv != NULL)
@@ -1091,6 +1104,43 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	}
     }
   return 1;
+}
+
+/**
+ * Parse a BoundingBoxData node
+ *
+ * http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd: BoundingBoxType
+ * 
+ * A map to store boundingbox information will contain:
+ *  - LowerCorner : double double (minimum within this bounding box)
+ *  - UpperCorner : double double (maximum within this bounding box)
+ *  - crs : URI (Reference to definition of the CRS)
+ *  - dimensions : int 
+ *
+ * @param main_conf the conf maps containing the main.cfg settings
+ * @param request_inputs the map storing KVP raw value 
+ * @param doc the xmlDocPtr containing the BoudingoxData node
+ * @return a map containing all the bounding box keys
+ */
+int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc){
+  xmlNode *root_element = xmlDocGetRootElement(doc);
+  for(xmlAttrPtr attr = root_element->properties; NULL != attr; attr = attr->next){
+    xmlChar *val = xmlGetProp (root_element, BAD_CAST attr->name);
+    addToMap(*current_input,(char*)attr->name,(char*)val);
+    xmlFree(val);
+    xmlNodePtr cur = root_element->children;
+    while(cur!=NULL && cur->type != XML_ELEMENT_NODE)
+      cur=cur->next;
+    while(cur!=NULL && cur->type==XML_ELEMENT_NODE){
+      xmlChar *val =
+	xmlNodeListGetString (doc, cur->xmlChildrenNode, 1);
+      addToMap(*current_input,(char*)cur->name,(char*)val);
+      cur=cur->next;
+      xmlFree(val);
+      while(cur!=NULL && cur->type != XML_ELEMENT_NODE)
+	cur=cur->next;
+    }
+  }
 }
 
 /**
