@@ -2622,9 +2622,20 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   maps* tmpSess=getMaps(m,"senv");
   if(tmpSess!=NULL){
     map *_tmp=getMapFromMaps(m,"lenv","cookie");
+    maps *tmps=getMaps(m,"senv");
     char* sessId=NULL;
     if(_tmp!=NULL){
       printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
+      map *_tmp1=getMapFromMaps(m,"senv","ecookie_length");
+      if(_tmp1!=NULL){
+	int len=atoi(_tmp1->value);
+	int cnt=0;
+	for(cnt=0;cnt<len;cnt++){
+	  map* _tmp2=getMapArray(tmps->content,"ecookie",cnt);
+	  if(_tmp2!=NULL)
+	    printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
+	}
+      }
       printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
       char session_file_path[100];
       char *tmp1=strtok(_tmp->value,";");

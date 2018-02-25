@@ -43,6 +43,7 @@ extern "C" {
   int kvpParseInputs(maps**,service*,map*,maps**,HINTERNET*);
   int kvpParseOutputs(maps**,map *,maps**);
   int xmlParseInputs(maps**,service*,maps**,xmlDocPtr,xmlNodeSet*,HINTERNET*);
+  int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc);
   int xmlParseOutputs(maps**,map**,maps**,xmlDocPtr,xmlNodePtr,bool);
   int xmlParseRequest(maps**,const char*,map**,service*,maps**,maps**,HINTERNET*);
   int parseRequest(maps**,map**,service*,maps**,maps**,HINTERNET*);

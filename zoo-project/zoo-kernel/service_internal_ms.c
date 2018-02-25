@@ -80,12 +80,15 @@ map* getCorrespondance(){
  * @return the integer value of the publish_id field, if any, 0 otherwise
  */ 
 int getPublishedId(maps* elem){
-  map* myIndex=getMap(elem->content,"published_id");
-  if(myIndex!=NULL){
-    return atoi(myIndex->value);
+  if(elem!=NULL && elem->content!=NULL){
+    map* myIndex=getMap(elem->content,"published_id");
+    if(myIndex!=NULL){
+      return atoi(myIndex->value);
+    }
   }
   return 0;
 }
+
 /**
  * Add width and height keys to an output maps containing the maximum width
  * and height for displaying the full data extent.
@@ -242,7 +245,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
     sprintf(layers,options[proto][3],tmpI->name);
   else
     sprintf(layers,options[proto][3],layerName->value);
-  
+
   if(format==NULL || width==NULL || height==NULL || extent==NULL){
     char tmpStr[1024];
     sprintf(tmpStr,_("Unable to create the mapfile for %s because of missing values."),tmpI->name);

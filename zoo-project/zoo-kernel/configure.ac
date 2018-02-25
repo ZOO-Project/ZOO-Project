@@ -111,18 +111,18 @@ AC_SUBST([OPENSSL_LDFLAGS])
 # Detect if gettext is available
 #============================================================================
 
-AC_ARG_WITH([gettext],
-    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
-    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
-GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
-GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
-CFLAGS_SAVE="$CFLAGS"
-CFLAGS="$GETTEXT_CFLAGS"
-LIBS_SAVE="$LIBS"
-LIBS="$GETTEXT_LDFLAGS"
-AM_GNU_GETTEXT([external], [], [])
-AC_CHECK_LIB(intl,
-			[dgettext], [] , [AC_MSG_ERROR([could not find $i function in gettext library])])
+#AC_ARG_WITH([gettext],
+#    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
+#    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
+#GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
+#GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
+#CFLAGS_SAVE="$CFLAGS"
+#CFLAGS="$GETTEXT_CFLAGS"
+#LIBS_SAVE="$LIBS"
+#LIBS="$GETTEXT_LDFLAGS"
+#AM_GNU_GETTEXT([external], [], [])
+#AC_CHECK_LIB(intl,
+#			[dgettext], [] , [AC_MSG_ERROR([could not find $i function in gettext library])])
 AC_SUBST([GETTEXT_CFLAGS])
 AC_SUBST([GETTEXT_LDFLAGS])
 
