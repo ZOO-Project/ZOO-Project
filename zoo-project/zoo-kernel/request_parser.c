@@ -967,7 +967,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  test = getMap (tmpmaps->content, "encoding");
 			}
 
-		      if (strcasecmp (test->value, "base64") != 0)
+		      if (getMap(tmpmaps->content,"dataType")==NULL && strcasecmp (test->value, "base64") != 0)
 			{ 
 			  xmlChar *mv = xmlNodeListGetString (doc,
 							      cur4->xmlChildrenNode,
@@ -1045,12 +1045,27 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			}
 		      else
 			{
-			  xmlChar *tmp = xmlNodeListGetRawString (doc,
-								  cur4->xmlChildrenNode,
-								  0);
-			  addToMap (tmpmaps->content, "value",
-				    (char *) tmp);
-			  xmlFree (tmp);
+			  xmlNodePtr cur5 = cur4->children;
+			  while (cur5 != NULL
+				 && cur5->type != XML_CDATA_SECTION_NODE)
+			    cur5 = cur5->next;
+			  if (cur5 != NULL
+			      && cur5->type == XML_CDATA_SECTION_NODE)
+			    {
+			      addToMap (tmpmaps->content,
+					"value",
+					(char *) cur5->content);
+			    }
+			  else{
+			    if(cur4->xmlChildrenNode!=NULL){
+			      xmlChar *tmp = xmlNodeListGetRawString (doc,
+								      cur4->xmlChildrenNode,
+								      0);
+			      addToMap (tmpmaps->content, "value",
+					(char *) tmp);
+			      xmlFree (tmp);
+			    }
+			  }
 			}
 
 		      cur4 = cur4->next;
