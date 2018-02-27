@@ -932,8 +932,18 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  else
 				    tmpmaps->content =
 				      createMap (list[l], (char *) val);
+				  xmlFree (val);
 				}
-			      xmlFree (val);
+			      else{
+				if(l==0){
+				  if (tmpmaps->content != NULL)
+				    addToMap (tmpmaps->content, list[l],
+					      "string");
+				  else
+				    tmpmaps->content =
+				      createMap (list[l],"string");
+				}
+			      }
 			      free (list[l]);
 			    }
 			}
@@ -958,15 +968,15 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    else
 				      tmpmaps->content =
 					createMap (coms[l], (char *) val);
+				    xmlFree (val);
 				  }
-				xmlFree (val);
 			      }
 			  }
 
 		      map *test = getMap (tmpmaps->content, "encoding");
-
+		      
 		      if (test == NULL)
-			{ 
+			{
 			  if (tmpmaps->content != NULL)
 			    addToMap (tmpmaps->content, "encoding",
 				      "utf-8");
@@ -976,13 +986,13 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  test = getMap (tmpmaps->content, "encoding");
 			}
 
-		      if (strcasecmp (test->value, "base64") != 0)
+		      if (getMap(tmpmaps->content,"dataType")==NULL && test!=NULL && strcasecmp (test->value, "base64") != 0)
 			{
 			  xmlChar *mv = xmlNodeListGetString (doc,
 							      cur4->xmlChildrenNode,
 							      1);
 			  map *ltmp =
-			    getMap (tmpmaps->content, "mimeType");
+			    getMap (tmpmaps->content, "mimeType");			  
 			  if (mv == NULL
 			      ||
 			      (xmlStrcasecmp
@@ -1067,12 +1077,27 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			}
 		      else
 			{
-			  xmlChar *tmp = xmlNodeListGetRawString (doc,
-								  cur4->xmlChildrenNode,
-								  0);
-			  addToMap (tmpmaps->content, "value",
-				    (char *) tmp);
-			  xmlFree (tmp);
+			  xmlNodePtr cur5 = cur4->children;
+			  while (cur5 != NULL
+				 && cur5->type != XML_CDATA_SECTION_NODE)
+			    cur5 = cur5->next;
+			  if (cur5 != NULL
+			      && cur5->type == XML_CDATA_SECTION_NODE)
+			    {
+			      addToMap (tmpmaps->content,
+					"value",
+					(char *) cur5->content);
+			    }
+			  else{
+			    if(cur4->xmlChildrenNode!=NULL){
+			      xmlChar *tmp = xmlNodeListGetRawString (doc,
+								      cur4->xmlChildrenNode,
+								      0);
+			      addToMap (tmpmaps->content, "value",
+					(char *) tmp);
+			      xmlFree (tmp);
+			    }
+			  }
 			}
 
 		      cur4 = cur4->next;

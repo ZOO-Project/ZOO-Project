@@ -560,7 +560,37 @@ int processDownloads(HINTERNET* hInternet){
     CURLMcode mc;
     mc = curl_multi_perform(hInternet->handle, &still_running);
     if(mc==CURLM_OK){
+#if LIBCURL_VERSION_MINOR >= 28
       mc = curl_multi_wait(hInternet->handle, NULL, 0, 1000, &numfds);
+#else
+      struct timeval timeout;
+      fd_set fdread;
+      fd_set fdwrite;
+      fd_set fdexcep;
+      int maxfd = -1;
+
+      long curl_timeo = -1;
+
+      FD_ZERO(&fdread);
+      FD_ZERO(&fdwrite);
+      FD_ZERO(&fdexcep);
+
+      /* set a suitable timeout to play around with */
+      timeout.tv_sec = 1;
+      timeout.tv_usec = 0;
+
+      curl_multi_timeout(hInternet->handle, &curl_timeo);
+      if(curl_timeo >= 0) {
+	timeout.tv_sec = curl_timeo / 1000;
+	if(timeout.tv_sec > 1)
+	  timeout.tv_sec = 1;
+	else
+	  timeout.tv_usec = (curl_timeo % 1000) * 1000;
+      }
+
+      /* get file descriptors from the transfers */
+      mc = curl_multi_fdset(hInternet->handle, &fdread, &fdwrite, &fdexcep, &maxfd);
+#endif
     }
     if(mc != CURLM_OK) {
       fprintf(stderr, "curl_multi failed, code %d.n", mc);

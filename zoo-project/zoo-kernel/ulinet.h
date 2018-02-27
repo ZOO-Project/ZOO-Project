@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
+#include <curl/curlver.h>
 #include "service.h"
 #ifndef WIN32
 #include <unistd.h>
