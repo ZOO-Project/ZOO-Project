@@ -885,7 +885,7 @@ int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
     len=atoi(tmpLength->value);
   }
 
-  char *tmpV[12]={
+  char *tmpV[14]={
     (char*)"size",
     (char*)"value",
     (char*)"uom",
@@ -897,12 +897,14 @@ int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
     typ,
     (char*)"schema",
     (char*)"encoding",
-    (char*)"isCached"
+    (char*)"isCached",
+    (char*)"LowerCorner",
+    (char*)"UpperCorner"    
   };
   sprintf(tmpLen,"%d",len+1);
   addToMap(_cursor->content,"length",tmpLen);
   int i=0;
-  for(i=0;i<12;i++){
+  for(i=0;i<14;i++){
     map* tmpVI=getMap(tmp->content,tmpV[i]);
     if(tmpVI!=NULL){
 #ifdef DEBUG
