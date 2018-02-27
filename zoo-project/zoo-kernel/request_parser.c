@@ -923,8 +923,18 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  else
 				    tmpmaps->content =
 				      createMap (list[l], (char *) val);
+				  xmlFree (val);
 				}
-			      xmlFree (val);
+			      else{
+				if(l==0){
+				  if (tmpmaps->content != NULL)
+				    addToMap (tmpmaps->content, list[l],
+					      "string");
+				  else
+				    tmpmaps->content =
+				      createMap (list[l],"string");
+				}
+			      }
 			      free (list[l]);
 			    }
 			}
@@ -949,8 +959,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				    else
 				      tmpmaps->content =
 					createMap (coms[l], (char *) val);
+				    xmlFree (val);
 				  }
-				xmlFree (val);
 			      }
 			  }
 
@@ -1031,7 +1041,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				cur5 = cur5->next;
 			      if (cur5 != NULL
 				  && cur5->type == XML_CDATA_SECTION_NODE){
-				xmlFree(mv);
+				if(mv!=NULL)
+				  xmlFree(mv);
 				mv=xmlStrdup(cur5->content);
 			      }
 			    }
