@@ -288,22 +288,30 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
 char* isInCache(maps* conf,char* request){
   map* tmpM=getMapFromMaps(conf,"main","cacheDir");
   if(tmpM!=NULL){
-    char* myRequest=getFilenameForRequest(conf,request);
-    char* md5str=getMd5(myRequest);
-    free(myRequest);
-#ifdef DEBUG
-    fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
-#endif
-    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
-    sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
-    struct stat f_status;
-    int s=stat(fname, &f_status);
-    if(s==0 && f_status.st_size>0){
-      free(md5str);
-      return fname;
+    if(strncasecmp(request,"file://",7)==0){
+      char* tmpStr=zStrdup(request+7);
+      fprintf(stderr,"**** %s %d %s \n",__FILE__,__LINE__,tmpStr);
+      return tmpStr;
     }
-    free(md5str);
-    free(fname);
+    else{
+
+      char* myRequest=getFilenameForRequest(conf,request);
+      char* md5str=getMd5(myRequest);
+      free(myRequest);
+#ifdef DEBUG
+      fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
+#endif
+      char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
+      sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
+      struct stat f_status;
+      int s=stat(fname, &f_status);
+      if(s==0 && f_status.st_size>0){
+	free(md5str);
+	return fname;
+      }
+      free(md5str);
+      free(fname);
+    }
   }
   return NULL;
 }
@@ -631,14 +639,16 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     map* tmp=getMapFromMaps(*m,"main","cacheDir");
     if(tmp!=NULL){
       map *c=getMap((*content),"xlink:href");
-      char *myRequest=getFilenameForRequest(*m,c->value);
-      char* md5str=getMd5(myRequest);
-      free(myRequest);
-      char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
-      sprintf(fname,"%s/%s.zca",tmp->value,md5str);
-      addToMap(*content,"cache_file",fname);
-      free(fname);
-      free(md5str);
+      if(strncasecmp(c->value,"file://",7)!=0){
+	char *myRequest=getFilenameForRequest(*m,c->value);
+	char* md5str=getMd5(myRequest);
+	free(myRequest);
+	char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
+	sprintf(fname,"%s/%s.zca",tmp->value,md5str);
+	addToMap(*content,"cache_file",fname);
+	free(fname);
+	free(md5str);
+      }
     }
   }
   free(fcontent);

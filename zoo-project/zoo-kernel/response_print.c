@@ -2633,7 +2633,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	for(cnt=0;cnt<len;cnt++){
 	  map* _tmp2=getMapArray(tmps->content,"ecookie",cnt);
 	  if(_tmp2!=NULL)
-	    printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
+	    printf("Set-Cookie: %s; HttpOnly\r\n",_tmp2->value);
 	}
       }
       printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
