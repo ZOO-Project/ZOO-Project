@@ -438,3 +438,77 @@ Sample ZOO Javascript Services Provider
      return Array(3,outputs);
   }
 
+
+R
+----------
+
+ZOO API
+*********
+
+For using the R language from the ZOO-Project, you have first to copy
+``minimal.r`` in the same directory as the ZOO-Kernel.
+
+The ZOO-API is available from a R script and provide access to a
+global zoo environment which contains both static variables and also
+the dictionaries for outputs and conf:
+
+:int zoo[["SERVICE_SUCCEEDED"]]:
+   Value to return in case your service end successfully.
+:int zoo[["SERVICE_FAILED"]]:
+   Value to retrun in case of failure.
+
+The ZOO-API provides the following functions:
+
+:string ZOOTranslate(String s):
+   This function call the internal ZOO-Kernel function responsible for
+   searching a translation of ``s`` in the zoo-services dictionary.
+
+:void ZOOUpdateStatus(ZMaps conf,String pourcent):
+   This function call the updateStatus ZOO-Kernel function responsible
+   for updating the status of the running service (only usefull when
+   the service has been called asynchronously).
+
+
+R ZCFG requirements
+**********************************
+
+.. Note:: For each Service provided by your ZOO R Services Provider,
+	  the ZCFG File must be named the same as the R function name
+	  (it is case-sensitive).
+
+The ZCFG file should contain the following :
+
+serviceType
+   R 
+serviceProvider
+    The name of the R file to use as a ZOO Service Provider. For instance, if your
+    script, located in the same directory as your ZOO Kernel, was named ``my_module.r`` then
+    you should use ``my_module.r``.
+
+
+R Data Structure used
+********************************
+
+The three parameters of the function are passed to the R function as
+R dictionaries.
+
+The specificity of the R language make that it was easier to use
+global variales than passing parameters by reference as we do in
+other progamming languages. It is the reason why you will have to
+access outpus by using the global variable as for the main
+configuration dictionary. 
+
+Sample ZOO R Services Provider
+******************************************
+
+.. code-block:: javascript
+
+    source("minimal.r")
+		
+    hellor <- function(a,b,c) {
+        # Set the result
+        zoo[["outputs"]][["Result"]][["value"]] <<- ZOOTranslate(paste("Hello",b[["S"]][["value"]],"from the R World!",sep=" "))
+        # Return SERVICE_SUCCEEDEED
+        return(zoo[["SERVICE_SUCCEEDEED"]])
+    }
+
