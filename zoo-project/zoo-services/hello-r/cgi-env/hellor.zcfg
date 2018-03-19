@@ -1,0 +1,28 @@
+[hellor]
+ Title = HelloWorld Service in R
+ Abstract = Output and Hello Wolrd string
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = hello.R
+ serviceType = R
+ <DataInputs>
+  [S]
+   Title = Name
+   Abstract = The name to display in the hello message
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting string
+   Abstract = The string created by service.
+   <LiteralOutput>
+     dataType = string
+    <Default />
+   </LiteralOutput>
+ </DataOutputs>  

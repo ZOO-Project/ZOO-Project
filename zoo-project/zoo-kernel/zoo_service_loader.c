@@ -36,6 +36,10 @@ extern "C" int crlex ();
 #include "service_internal_otb.h"
 #endif
 
+#ifdef USE_R
+#include "service_internal_r.h"
+#endif
+
 #ifdef USE_HPC
 #include "service_internal_hpc.h"
 #endif
@@ -699,6 +703,17 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     {	  
       *eres =
         zoo_python_support (&m, request_inputs, s1,
+                            &request_input_real_format,
+                            &request_output_real_format);
+    }
+  else
+#endif
+
+#ifdef USE_R
+  if (strncasecmp (r_inputs->value, "R", 6) == 0)
+    {	  
+      *eres =
+        zoo_r_support (&m, request_inputs, s1,
                             &request_input_real_format,
                             &request_output_real_format);
     }
@@ -1710,6 +1725,10 @@ runRequest (map ** inputs)
 #ifdef USE_HPC
 				  addNestedOutputs(&s1);
 #endif
+				  json_object* jobj=serviceToJson(s1);
+				  const char* jsonStr=json_object_to_json_string_ext(jobj,JSON_C_TO_STRING_PLAIN);
+				  fprintf(stderr,"*** %s %d %s \n",__FILE__,__LINE__,jsonStr);
+
 				  printDescribeProcessForProcess (zooRegistry,m, doc, n, s1);
 				  freeService (&s1);
 				  free (s1);
@@ -2546,6 +2565,8 @@ runRequest (map ** inputs)
 #endif
   fflush(stdout);
   rewind(stdout);
+
+  fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,eres);
 
   if (eres != -1)
     outputResponse (s1, request_input_real_format,

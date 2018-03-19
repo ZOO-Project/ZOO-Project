@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2014 GeoLabs SARL. All rights reserved.
+ * Copyright (c) 2009-2010 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +22,26 @@
  * THE SOFTWARE.
  */
 
-#ifndef ZOO_JSON_H
-#define ZOO_JSON_H 1
+#ifndef ZOO_SERVICE_INTERNAL_R_H
+#define ZOO_SERVICE_INTERNAL_R_H 1
 
-#pragma once
+#pragma once 
 
-#include <stdio.h>
-#include <ctype.h>
-#include <service.h>
-#include <json_object.h>
+#include <Rinternals.h>
+#include <Rembedded.h>
+#include "service_internal.h"
+#include "response_print.h"
+#include "cgic.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  json_object* mapToJson(map*);
-  json_object* mapsToJson(maps*);
-  json_object* serviceToJson(service*);
-#ifdef __cplusplus
-}
-#endif
+SEXP RList_FromMaps(maps* t);
+SEXP RList_FromMap(map* t);
+
+maps* mapsFromRList(SEXP t);
+map* mapFromRList(SEXP t);
+
+int zoo_r_support(maps**,map*,service*,maps**,maps**);
+
+SEXP RTranslate(SEXP);
+SEXP RUpdateStatus(SEXP,SEXP);
+
 #endif

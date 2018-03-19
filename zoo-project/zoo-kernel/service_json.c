@@ -88,6 +88,56 @@ extern "C" {
     return res;
   }
 
+  json_object* elementsToJson(elements* myElements){
+    json_object *res=json_object_new_object();
+    elements* cur=myElements;
+    while(cur!=NULL){
+      json_object *cres=json_object_new_object();
+      json_object_object_add(cres,"content",mapToJson(cur->content));
+      json_object_object_add(cres,"metadata",mapToJson(cur->metadata));
+      json_object_object_add(cres,"additional_parameters",mapToJson(cur->additional_parameters));
+      if(cur->format!=NULL){
+	json_object_object_add(cres,"format",json_object_new_string(cur->format));
+      }
+      if(cur->child==NULL){
+	if(cur->defaults!=NULL)
+	  json_object_object_add(cres,"defaults",mapToJson(cur->defaults->content));
+	else
+	  json_object_object_add(cres,"defaults",mapToJson(NULL));
+	iotype* scur=cur->supported;
+	json_object *resi=json_object_new_array();
+	while(scur!=NULL){
+	  json_object_array_add(resi,mapToJson(scur->content));
+	  scur=scur->next;
+	}
+	json_object_object_add(cres,"supported",resi);
+	fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+	fflush(stderr);
+      }
+      
+      dumpElements(cur->child);
+      json_object_object_add(cres,"child",elementsToJson(cur->child));
+      fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+      fflush(stderr);
+
+      json_object_object_add(res,cur->name,cres);
+      cur=cur->next;
+    }
+    return res;
+  }
+  
+  json_object* serviceToJson(service* myService){
+    json_object *res=json_object_new_object();
+    json_object_object_add(res,"name",json_object_new_string(myService->name));
+    json_object_object_add(res,"content",mapToJson(myService->content));
+    json_object_object_add(res,"metadata",mapToJson(myService->metadata));
+    json_object_object_add(res,"additional_parameters",mapToJson(myService->additional_parameters));
+    json_object_object_add(res,"inputs",elementsToJson(myService->inputs));
+    json_object_object_add(res,"outputs",elementsToJson(myService->outputs));
+    return res;
+  }
+  
+  
 #ifdef __cplusplus
 }
 #endif
