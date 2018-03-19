@@ -524,6 +524,42 @@ AC_SUBST([MS_FILE])
 AC_SUBST([MS_VERSION])
 
 # ===========================================================================
+# Detect if R is installed
+# ===========================================================================
+
+AC_ARG_WITH([r], 
+	[AS_HELP_STRING([--with-r=PATH], [To enable python support or Specifies an alternative directory for R installation,  disabled by default])], 
+	[R_PATH="$withval"; R_ENABLED="-DUSE_R"], [R_ENABLED=""])
+
+if test -z "$R_ENABLED"
+then
+	R_FILE=""
+else
+	R_FILE="service_internal_r.o"
+	# Extract the linker and include flags 
+	R_LDFLAGS="-L$R_PATH/lib/ -lR"
+	R_CPPFLAGS="-I$R_PATH/include/"
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$R_CPPFLAGS"
+	AC_CHECK_HEADERS([RInternals.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to R])])
+
+	# Ensure we can link against libphp
+	#LIBS_SAVE="$LIBS"
+	#LIBS="$R_LDFLAGS"
+	#AC_CHECK_LIB([$LIBS], [R_tryEval], [], [AC_MSG_ERROR([could not find libR])], [])
+	#LIBS="$LIBS_SAVE"
+fi
+
+AC_SUBST([R_CPPFLAGS])
+AC_SUBST([R_LDFLAGS])
+AC_SUBST([R_ENABLED])
+AC_SUBST([R_FILE])
+
+
+# ===========================================================================
 # Detect if python is installed
 # ===========================================================================
 

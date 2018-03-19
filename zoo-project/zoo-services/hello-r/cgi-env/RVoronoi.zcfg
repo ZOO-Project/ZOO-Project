@@ -1,0 +1,56 @@
+[RVoronoi]
+ Title = Voronoi Diagram. 
+ Abstract = Computes the edges of Voronoi diagram for a set of data points.
+ Profile = urn:ogc:wps:1.0.0:voronoi
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = hello.R
+ serviceType = R
+ <DataInputs>
+  [InputPoints]
+   Title = Data points
+   Abstract = The set of data points.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
+    </Default>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
+    </Supported>
+   </ComplexData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = Voronoi Diagram.
+   Abstract = JSON String / GML Entity of the Voronoi Diagram.
+   <ComplexOutput>
+    <Default>
+     mimeType = application/json
+     encoding = UTF-8
+    </Default>
+    <Supported>
+     mimeType = image/png
+     useMapserver = true
+     msStyle = STYLE COLOR 125 0 105 OUTLINECOLOR 0 0 0 WIDTH 0.3 OPACITY 65 END
+    </Supported>
+    <Supported>
+     mimeType = text/xml
+     encoding = base64
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
+     useMapserver = true
+    </Supported>
+    <Supported>
+     mimeType = text/xml
+     encoding = UTF-8
+     schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
+     useMapserver = true
+    </Supported>
+   </ComplexOutput>
+ </DataOutputs>  

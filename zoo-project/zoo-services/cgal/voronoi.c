@@ -196,12 +196,23 @@ extern "C" {
 
     int ns = 0;
     int nr = 0;
+    int nf = 0;
+    Face_iterator fit =T.faces_begin();
+    FILE* f=fopen("/tmp/toto.log","w+");
+    for ( ; fit !=T.faces_end(); ++fit) {
+      fprintf(stderr," *** %s %d %d %d\n",__FILE__,__LINE__,nf,fit.info());
+      fflush(stderr);
+      
+      nf++;
+    }
+    fclose(f);
     Edge_iterator eit =T.edges_begin();
     for ( ; eit !=T.edges_end(); ++eit) {
       CGAL::Object o = T.dual(eit);
       if (const Kernel::Segment_2 *tmp=CGAL::object_cast<Kernel::Segment_2>(&o)) {
 	const Pointz p1=tmp->source();
 	const Pointz p2=tmp->target();
+	fprintf(stderr,"P1 %d %d | P2 %d %d\n",p1.x(),p1.y(),p2.x(),p2.y());
 #ifdef DEBUG
 	fprintf(stderr,"P1 %d %d | P2 %d %d\n",p1.x(),p1.y(),p2.x(),p2.y());
 #endif

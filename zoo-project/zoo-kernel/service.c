@@ -189,11 +189,27 @@ maps* createMaps(const char* name){
 /**
  * Count number of map in a map
  *
- * @param m the maps to count
+ * @param m the map to count
  * @return number of map in a map
  */
 int count(map* m){
   map* tmp=m;
+  int c=0;
+  while(tmp!=NULL){
+    c++;
+    tmp=tmp->next;
+  }
+  return c;
+}
+
+/**
+ * Count number of maps in a maps
+ *
+ * @param m the maps to count
+ * @return number of maps in a maps
+ */
+int maps_length(maps* m){
+  maps* tmp=m;
   int c=0;
   while(tmp!=NULL){
     c++;
