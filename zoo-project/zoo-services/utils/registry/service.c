@@ -79,7 +79,7 @@ extern "C" {
       xmlNodePtr n = printWPSHeader(doc,conf,"DescribeProcess",
 				    root_nodes[1][1],"2.0.0",1);
       setMapInMaps(conf,"main","rversion","2.0.0");
-      printDescribeProcessForProcess(zooRegistry,conf,n,inherited);
+      printDescribeProcessForProcess(zooRegistry,conf,doc,n,inherited);
       setMapInMaps(conf,"main","rversion","1.0.0");
 
 
