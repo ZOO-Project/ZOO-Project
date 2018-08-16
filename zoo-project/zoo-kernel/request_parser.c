@@ -520,6 +520,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
   int k = 0;
   int l = 0;
   map* version=getMapFromMaps(*main_conf,"main","rversion");
+  map* memory=getMapFromMaps(*main_conf,"main","memory");
   int vid=getVersionId(version->value);
   for (k=0; k < nodes->nodeNr; k++)
     {
@@ -787,9 +788,11 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							  "ZooWPSClient\0",
 							  INTERNET_OPEN_TYPE_PRECONFIG,
 							  NULL, NULL, 0);
+#ifndef WIN32
 				if (!CHECK_INET_HANDLE (bInternet))
 				  fprintf (stderr,
 					   "WARNING : bInternet handle failed to initialize");
+#endif
 				bInternet.waitingRequests[0] =
 				  strdup ((char *) val);
 				res1 =
@@ -1108,6 +1111,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		cur2 = cur2->next;
 	      }
 	    }
+	  if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
+	    if(getMap(tmpmaps->content,"to_load")==NULL){
+	      addToMap(tmpmaps->content,"to_load","false");
+	    }
 	  {
 	    map* test=getMap(tmpmaps->content,"value");
 	    if(test==NULL && tmpmaps->child==NULL)
@@ -1188,6 +1195,7 @@ int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc){
 	cur=cur->next;
     }
   }
+  return 0;
 }
 
 /**
@@ -1969,10 +1977,13 @@ void parseCookie(maps** conf,const char* cookie){
 	else
 	  addToMap(res->content,name,token1);
 	free(name);
+	name=NULL;
 	i=0;
       }
       token1 = strtok_r (NULL, "=", &saveptr1);
     }
+    if(name!=NULL)
+      free(name);
     token = strtok_r (NULL, "; ", &saveptr);
   }
   addMapsToMaps(conf,res);

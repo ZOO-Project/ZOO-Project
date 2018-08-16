@@ -95,13 +95,12 @@ SSHCON *ssh_connect(maps* conf){
   int port=22;
 
   map* hpc_config=getMapFromMaps(conf,"lenv","configId");
-  
   map* hpc_host=getMapFromMaps(conf,hpc_config->value,"ssh_host");
   map* hpc_port=getMapFromMaps(conf,hpc_config->value,"ssh_port");
   map* hpc_user=getMapFromMaps(conf,hpc_config->value,"ssh_user");
   map* hpc_password=getMapFromMaps(conf,hpc_config->value,"ssh_password");
   map* hpc_public_key=getMapFromMaps(conf,hpc_config->value,"ssh_key");
-
+  
   char ip[100];
   struct hostent *my_hostent;
   struct in_addr **addrs;

@@ -378,13 +378,16 @@ RUpdateStatus(SEXP confdict,SEXP status)
   maps* conf;
   int istatus;
   char* cstatus=NULL;
-  if (!isInteger(status)){
+  if (!isInteger(status) && !isReal(status)){
 #ifdef DEBUG
     fprintf(stderr,"Incorrect arguments to update status function");
 #endif
     return R_NilValue;
   }
-  istatus=asInteger(status);
+  if(isInteger(status))
+    istatus=asInteger(status);
+  else
+    istatus=asReal(status);
   if (istatus < 0 || istatus > 100){
     return R_NilValue;
   }

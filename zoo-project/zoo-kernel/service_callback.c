@@ -219,7 +219,7 @@ extern "C" {
     tm = localtime ( &now );
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
     len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
-    fprintf(stderr,"************************* From thread %d %s %d: RESPONSE CONTENT (%s)\n",pthread_self(),__FILE__,__LINE__,,tmp1);
+    fprintf(stderr,"************************* From thread %d %s %d: RESPONSE CONTENT (%s)\n",pthread_self(),__FILE__,__LINE__,tmp1);
     for(i=0;i<7;i++){
       fprintf(stderr,"%d) %d %d\n",i,steps[i][0],steps[i][1]);
     }

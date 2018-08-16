@@ -207,14 +207,14 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   }
 #endif
 #ifdef JAVA7
-  cls_gr = (*env)NewGlobalRef(cls);
+  cls_gr = (*env).NewGlobalRef(cls);
 #else
   cls_gr = (*env)->NewGlobalRef(env, cls);
 #endif
 
   if (cls != NULL) {
 #ifdef JAVA7
-@    (*env).ExceptionClear();
+    (*env).ExceptionClear();
     pmid=(*env).GetStaticMethodID(cls, s->name, "(Ljava/util/HashMap;Ljava/util/HashMap;Ljava/util/HashMap;)I");
 #else
     (*env)->ExceptionClear(env);
@@ -283,7 +283,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     }
   }
 #ifdef JAVA7
-      (*jvm).DestroyJavaVM();
+  (*jvm).DestroyJavaVM();
 #else
   (*jvm)->DestroyJavaVM(jvm);
 #endif
@@ -437,7 +437,7 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 #ifdef JAVA7
 	      jbyteArray tmpData=(*env).NewByteArray(atoi(sizeV->value));
 	      (*env).SetByteArrayRegion(tmpData,0,atoi(sizeV->value),(const jbyte *)tmp1->value);
-	      (*env).CallObjectMethod(env,scObject1, put_mid, (*env).NewStringUTF(env,tmp1->name), tmpData);
+	      (*env).CallObjectMethod(scObject1, put_mid, (*env).NewStringUTF(tmp1->name), tmpData);
 #else
 	      jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sizeV->value));
 	      (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),(jbyte*) tmp1->value);

@@ -220,7 +220,7 @@ extern "C" {
   void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
   void printStatusInfo(maps*,map*,char*);
   void addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
-  void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr);
+  void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
 
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
