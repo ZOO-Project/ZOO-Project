@@ -95,6 +95,25 @@
 
 #endif
 
+#ifdef WIN32
+// fcntl flock definitions
+#define F_SETLK  8   // Non-Blocking set or clear a lock
+#define F_SETLKW 9   // Blocking set or clear a lock
+#define F_GETLK 10
+#define F_RDLCK  1   // read lock
+#define F_WRLCK  2   // write lock
+#define F_UNLCK  3   // remove lock
+struct flock {
+    short l_type;   // F_RDLCK, F_WRLCK, or F_UNLCK
+    short l_whence; // flag to choose starting offset, must be SEEK_SET
+    long  l_start;  // relative offset, in bytes, must be 0
+    long  l_len;    // length, in bytes; 0 means lock to EOF, must be 0
+    short l_pid;    // unused (returned with the unsupported F_GETLK)
+    short l_xxx;    // reserved for future use
+};
+
+#endif
+
 /**
  * The lock structure used by the ZOO-Kernel to ensure atomicity of operations
  *

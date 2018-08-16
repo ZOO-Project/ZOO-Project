@@ -49,7 +49,7 @@ void addNestedOutputs(service** s){
   if((*s)==NULL){
     return;
   }    
-  if(*s==NULL || (*s)->outputs==NULL){
+  if(*s==NULL || (*s)->outputs==NULL || (*s)->content==NULL){
     return;
   }
   elements *out=(*s)->outputs;
@@ -620,6 +620,26 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   free(parameters);
   fprintf(scriptFile,"\n");
   fprintf(scriptFile,"echo \"Job finished at: $(date)\"\n");
+  map* footerMap=getMapFromMaps(*main_conf,configurationId,"jobscript_footer");
+  if(footerMap!=NULL){
+    // Use the footer file if defined in the HPC section of the main.cfg file
+    struct stat f_status;
+    int s=stat(footerMap->value, &f_status);
+    if(s==0){
+      char* fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+      FILE* f=fopen(footerMap->value,"rb");
+      fread(fcontent,f_status.st_size,1,f);
+      int fsize=f_status.st_size;
+      fcontent[fsize]=0;
+      fclose(f);
+      char* ffcontent=(char*)malloc((strlen(fcontent)+(3*strlen(uuid->value))+1)*sizeof(char));
+      sprintf(ffcontent,fcontent,uuid->value,uuid->value,uuid->value);
+      fprintf(scriptFile,"%s\n### --- ZOO-Service FOOTER end --- ###\n\n",ffcontent);
+      free(fcontent);
+    }else
+      fprintf(scriptFile,"### *** Default ZOO-Service FOOTER (footer file failed to load) *** ###\n\n");
+  }else
+      fprintf(scriptFile,"### *** Default ZOO-Service FOOTER (no footer found) *** ###\n\n");
   fflush(scriptFile);
   fclose(scriptFile);
 #ifdef HPC_DEBUG

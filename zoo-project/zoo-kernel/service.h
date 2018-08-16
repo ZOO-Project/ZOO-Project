@@ -34,6 +34,7 @@
 #endif
 
 #ifdef WIN32
+#define strtok_r strtok_s
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #if defined(_MSC_VER) && _MSC_VER < 1900
@@ -195,6 +196,9 @@ extern "C" {
 
 #ifdef WIN32
 #define NULLMAP ((map*) 0)
+#define bool int
+#define true 1
+#define false 0
 #else
 #define NULLMAP NULL
 #endif
@@ -294,6 +298,7 @@ extern "C" {
   ZOO_DLL_EXPORT void freeService(service**);
   ZOO_DLL_EXPORT void addToMap(map*,const char*,const char*);
   ZOO_DLL_EXPORT void addIntToMap(map*,const char*,const int);
+  ZOO_DLL_EXPORT void addIntToMapArray(map*,const char*,int,const int);
   ZOO_DLL_EXPORT map* addToMapWithSize(map*,const char*,const char*,int);
   ZOO_DLL_EXPORT void addMapToMap(map**,map*);
   ZOO_DLL_EXPORT void addMapToIoType(iotype**,map*);

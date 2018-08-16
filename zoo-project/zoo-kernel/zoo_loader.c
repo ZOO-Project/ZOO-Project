@@ -67,6 +67,7 @@ using namespace std;
 int cgiInit(){
   fprintf(FCGI_stderr,"ZOO-Kernel initialization %s %d ... \n",__FILE__,__LINE__);
   fflush(FCGI_stderr);
+  return 0;
 }
 
 /**

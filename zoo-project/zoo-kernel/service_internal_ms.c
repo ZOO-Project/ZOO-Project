@@ -1019,7 +1019,8 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   if(outputIndex>=0){
     m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));
     outputIndex=msGetOutputFormatIndex(m,"geotiff");
-    m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));    
+    if(outputIndex>=0)
+      m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));
   }
   //
     

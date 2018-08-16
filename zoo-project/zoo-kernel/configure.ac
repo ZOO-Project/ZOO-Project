@@ -67,20 +67,22 @@ AC_SUBST([UUID_LDFLAGS])
 AC_ARG_WITH([json],
     [AS_HELP_STRING([--with-json=PATH], [Specifies an alternative location for the json-c library])],
     [JSON_DIR="$withval"], [JSON_DIR="/usr/"])
-JSON_CPPFLAGS="-I$JSON_DIR/include/json-c/"
-JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
-CPPFLAGS_SAVE="$CPPFLAGS"
-CPPFLAGS="$JSON_CPPFLAGS"
-LIBS_SAVE="$LIBS"
-LIBS="$JSON_LDFLAGS"
-echo $CPPFLAGS
-AC_CHECK_HEADERS([json_object.h],
-			[], [AC_MSG_ERROR([could not find header file json_object.h])])
-AC_CHECK_LIB([json-c], [json_object_new_object],
-			[], [AC_MSG_ERROR([could not find function in json-c library])])
-CPPFLAGS="$CPPFLAGS_SAVE"
-JSON_FILE="service_json.o"
-JSON_ENABLED="-DJSON"
+if test "x$JSON_DIR" != "x"
+then
+	JSON_CPPFLAGS="-I$JSON_DIR/include/json-c/"
+	JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$JSON_CPPFLAGS"
+	LIBS_SAVE="$LIBS"
+	LIBS="$JSON_LDFLAGS"
+	AC_CHECK_HEADERS([json_object.h],
+		[], [AC_MSG_ERROR([could not find header file json_object.h])])
+	AC_CHECK_LIB([json-c], [json_object_new_object],
+		[], [AC_MSG_ERROR([could not find function in json-c library])])
+	CPPFLAGS="$CPPFLAGS_SAVE"
+	JSON_FILE="service_json.o"
+	JSON_ENABLED="-DJSON"
+fi
 AC_SUBST([JSON_CPPFLAGS])
 AC_SUBST([JSON_LDFLAGS])
 AC_SUBST([JSON_FILE])
@@ -111,11 +113,12 @@ AC_SUBST([OPENSSL_LDFLAGS])
 # Detect if gettext is available
 #============================================================================
 
-#AC_ARG_WITH([gettext],
-#    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
-#    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
-#GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
-#GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
+AC_ARG_WITH([gettext],
+    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
+    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
+
+GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
+GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
 #CFLAGS_SAVE="$CFLAGS"
 #CFLAGS="$GETTEXT_CFLAGS"
 #LIBS_SAVE="$LIBS"
@@ -231,11 +234,30 @@ AC_ARG_WITH([hpc],
         [AS_HELP_STRING([--with-hpc=yes], [Specifies if you need to activate HPC support])],
         [HPCWITH="$withval"], [HPCWITH="no"])
 
+
+AC_ARG_WITH([ssh2],
+        [AS_HELP_STRING([--with-ssh2=PATH], [Specifies an alternative location for the ssh2 library])],
+        [SSH2PATH="$withval"], [SSH2PATH="/usr"])
+
 if test "x$HPCWITH" = "xyes"; then
    	HPC_FILES="service_internal_hpc.o sshapi.o"
 	HPC_ENABLED="-DUSE_HPC"
 	HPC_CPPFLAGS=""
 	HPC_LDFLAGS=""
+	# Extract the linker and include flags
+	SSH2_LDFLAGS="-L$SSH2PATH/lib -lssh2"
+	SSH2_CPPFLAGS="-I$SSH2PATH/include"
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$SSH2_CPPFLAGS"
+	LIBS_SAVE="$LIBS"
+	LIBS="$SSH2_LDFLAGS"
+	
+	AC_CHECK_HEADERS([libssh2.h],
+                 [], [AC_MSG_ERROR([could not find headers related to libssh2])])
+	AC_CHECK_LIB([ssh2], [libssh2_session_init])
+
+	LIBS="$LIBS_SAVE"
 fi
 
 AC_SUBST([HPC_CPPFLAGS])
@@ -243,26 +265,6 @@ AC_SUBST([HPC_LDFLAGS])
 AC_SUBST([HPC_ENABLED])
 AC_SUBST([HPC_FILES])
 
-AC_ARG_WITH([ssh2],
-        [AS_HELP_STRING([--with-ssh2=PATH], [Specifies an alternative location for the ssh2 library])],
-        [SSH2PATH="$withval"], [SSH2PATH="/usr"])
-
-# Extract the linker and include flags
-SSH2_LDFLAGS="-L$SSH2PATH/lib -lssh2"
-SSH2_CPPFLAGS="-I$SSH2PATH/include"
-# Check headers file
-CPPFLAGS_SAVE="$CPPFLAGS"
-CPPFLAGS="$SSH2_CPPFLAGS"
-LIBS_SAVE="$LIBS"
-LIBS="$SSH2_LDFLAGS"
-echo $CPPFLAGS
-echo $LIBS
-
-AC_CHECK_HEADERS([libssh2.h],
-                 [], [AC_MSG_ERROR([could not find headers related to libssh2])])
-AC_CHECK_LIB([ssh2], [libssh2_session_init])
-
-LIBS="$LIBS_SAVE"
 AC_SUBST([SSH2_CPPFLAGS])
 AC_SUBST([SSH2_LDFLAGS])
 
@@ -804,7 +806,7 @@ else
 	fi
 
 	AC_LANG([C++])
-	echo $JAVA_CPPFLAGS
+	#echo $JAVA_CPPFLAGS
 	# Check headers file (second time we check that in fact)
 	CPPFLAGS_SAVE="$CPPFLAGS"
 	CPPFLAGS="$JAVA_CPPFLAGS"
@@ -854,7 +856,7 @@ else
 	MONO_LDFLAGS=`$MONOHOME/bin/pkg-config --libs mono-2`
 
 	AC_LANG([C++])
-	echo $JAVA_CPPFLAGS
+	#echo $JAVA_CPPFLAGS
 	# Check headers file (second time we check that in fact)
 	CPPFLAGS_SAVE="$CFLAGS"
 	CPPFLAGS="$MONO_CFLAGS"

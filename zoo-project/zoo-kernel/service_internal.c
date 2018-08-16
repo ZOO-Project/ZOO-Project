@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2015 GeoLabs SARL
+ * Copyright (c) 2009-2018 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,141 @@
 #define FALSE -1
 #endif
 
+#ifdef WIN32
+// cf. https://stackoverflow.com/questions/3168504/lockfileex-read-write-upgrade-downgrade
+// only works for (SEEK_SET, start=0, len=0) file locking.
+__inline int fcntl(int fd, int cmd, ...)
+{
+    va_list a;
+    va_start(a, cmd);
+    switch(cmd)
+    {
+    case F_SETLK:
+        {
+            struct flock *l = va_arg(a, struct flock*);
+            switch(l->l_type)
+            {
+            case F_RDLCK:
+                {
+                    LPOVERLAPPED o = { 0 };
+                    HANDLE h = (HANDLE)_get_osfhandle(fd);
+                    if (l->l_whence != SEEK_SET || l->l_start != 0 || l->l_len != 0)
+                    {
+                        _set_errno(ENOTSUP);
+                        return -1;
+                    }
+                    if (!LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY, 0, 0, 1, o)) // read lock
+                    {
+                        unsigned long x = GetLastError();
+                        _set_errno(GetLastError() == ERROR_LOCK_VIOLATION ? EAGAIN : EBADF);
+                        return -1;
+                    }
+                    UnlockFile(h, 0, 0, 1, 1); // write lock
+                }
+                break;
+            case F_WRLCK:
+                {
+                    LPOVERLAPPED o = { 0 };
+                    HANDLE h = (HANDLE)_get_osfhandle(fd);
+                    if (l->l_whence != SEEK_SET || l->l_start != 0 || l->l_len != 0)
+                    {
+                        _set_errno(ENOTSUP);
+                        return -1;
+                    }
+                    if (!LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY|LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 1, o)) // write lock
+                    {
+                        unsigned long x = GetLastError();
+                        _set_errno(GetLastError() == ERROR_LOCK_VIOLATION ? EAGAIN : EBADF);
+                        return -1;
+                    }
+                    UnlockFile(h, 0, 0, 0, 1); // read lock
+                }
+                break;
+            case F_UNLCK:
+                {
+                    HANDLE h = (HANDLE)_get_osfhandle(fd);
+                    if (l->l_whence != SEEK_SET || l->l_start != 0 || l->l_len != 0)
+                    {
+                        _set_errno(ENOTSUP);
+                        return -1;
+                    }
+                    UnlockFile(h, 0, 0, 0, 1); // read lock
+                    UnlockFile(h, 0, 0, 1, 1); // write lock
+                }
+                break;
+            default:
+                _set_errno(ENOTSUP);
+                return -1;
+            }
+        }
+        break;
+    case F_SETLKW:
+        {
+            struct flock *l = va_arg(a, struct flock*);
+            switch(l->l_type)
+            {
+            case F_RDLCK:
+                {
+                    LPOVERLAPPED o = { 0 };
+                    HANDLE h = (HANDLE)_get_osfhandle(fd);
+                    if (l->l_whence != SEEK_SET || l->l_start != 0 || l->l_len != 0)
+                    {
+                        _set_errno(ENOTSUP);
+                        return -1;
+                    }
+                    if(!LockFileEx(h, 0, 0, 0, 1, o)) // read lock
+                    {
+                        unsigned long x = GetLastError();
+                        return -1;
+                    }
+                    UnlockFile(h, 0, 0, 1, 1); // write lock
+                }
+                break;
+            case F_WRLCK:
+                {
+                    LPOVERLAPPED o = { 0 };
+                    HANDLE h = (HANDLE)_get_osfhandle(fd);
+                    if (l->l_whence != SEEK_SET || l->l_start != 0 || l->l_len != 0)
+                    {
+                        _set_errno(ENOTSUP);
+                        return -1;
+                    }
+                    if (!LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 1, o)) // write lock
+                    {
+                        unsigned long x = GetLastError();
+                        return -1;
+                    }
+                    UnlockFile(h, 0, 0, 0, 1); // read lock
+                }
+                break;
+            case F_UNLCK:
+                {
+                    flock *l = va_arg(a, flock*);
+                    HANDLE h = (HANDLE)_get_osfhandle(fd);
+                    if (l->l_whence != SEEK_SET || l->l_start != 0 || l->l_len != 0)
+                    {
+                        _set_errno(ENOTSUP);
+                        return -1;
+                    }
+                    UnlockFile(h, 0, 0, 0, 1); // read lock
+                    UnlockFile(h, 0, 0, 1, 1); // write lock
+                }
+                break;
+            default:
+                _set_errno(ENOTSUP);
+                return -1;
+            }
+        }
+        break;
+    default:
+        _set_errno(ENOTSUP);
+        return -1;
+    }
+
+    return 0;
+}
+#endif
+
 #define ERROR_MSG_MAX_LENGTH 1024
 
 /**
@@ -52,18 +187,18 @@ struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
   int s;
   struct zooLock* myLock=(struct zooLock*)malloc(sizeof(struct flock)+sizeof(FILE*)+sizeof(char*));
   int len=6;
-  char *template="%s.lock";
+  char *myTemplate="%s.lock";
   int res=-1;
  retryLockFile:
   myLock->filename=(char*)malloc((strlen(filename)+len)*sizeof(char));
-  sprintf(myLock->filename,"%s.lock",filename);
+  sprintf(myLock->filename,myTemplate,filename);
   s=stat(myLock->filename, &f_status);
   if(s==0 && mode!='r'){
     if(itn<ZOO_LOCK_MAX_RETRY){
       itn++;
       fprintf(stderr,"(%d) Wait for write lock on %s, tried %d times (sleep) ... \n",getpid(),myLock->filename,itn);
       fflush(stderr);
-      sleep(5);
+      zSleep(5);
       free(myLock->filename);
       goto retryLockFile;
     }else{
@@ -104,21 +239,21 @@ struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
     while (true) {
       if((res=fcntl(fileno(myLock->lockfile), F_SETLK, &(myLock->lock)))==-1 &&
 	 (errno==EAGAIN || errno==EACCES)){
-	if(cnt >= ZOO_LOCK_MAX_RETRY){
-	  char message[51];	  
-	  sprintf(message,"Unable to get the lock after %d attempts.\n",cnt);
-	  setMapInMaps(conf,"lenv","message",message);
-	  fclose(myLock->lockfile);
-	  free(myLock->filename);
-	  free(myLock);
-	  return NULL;
-	}
-	fprintf(stderr,"(%d) Wait for lock on  %s, tried %d times ... \n",getpid(),myLock->filename,cnt);
-	fflush(stderr);
-	sleep(1);
-	cnt++;
-      }else
-	break;
+	  if(cnt >= ZOO_LOCK_MAX_RETRY){
+	    char message[51];	  
+	    sprintf(message,"Unable to get the lock after %d attempts.\n",cnt);
+	    setMapInMaps(conf,"lenv","message",message);
+	    fclose(myLock->lockfile);
+	    free(myLock->filename);
+	    free(myLock);
+	    return NULL;
+	  }
+	  fprintf(stderr,"(%d) Wait for lock on  %s, tried %d times ... \n",getpid(),myLock->filename,cnt);
+	  fflush(stderr);
+	  zSleep(1);
+	  cnt++;
+	}else
+	   break;
     }
     if(res<0){
       char *tmp;
@@ -162,7 +297,7 @@ int unlockFile(maps* conf,struct zooLock* s){
 }
 
 #ifndef RELY_ON_DB
-#include <dirent.h>
+#include "dirent.h"
 
 /**
  * Read the sid file attached of a service if any

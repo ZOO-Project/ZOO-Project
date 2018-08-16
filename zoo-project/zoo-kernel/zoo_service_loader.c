@@ -67,6 +67,7 @@ extern "C" int crlex ();
 #include "sqlapi.h"
 #ifdef WIN32
 #include "caching.h"
+extern wchar_t**_wenviron;
 #endif
 
 #ifdef META_DB
@@ -110,7 +111,9 @@ extern "C" int crlex ();
 
 #include <dirent.h>
 #include <signal.h>
+#ifndef WIN32
 #include <execinfo.h>
+#endif
 #include <unistd.h>
 #ifndef WIN32
 #include <dlfcn.h>
@@ -364,7 +367,8 @@ recursReaddirF ( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_
               fflush (stdout);
               fflush (stderr);
   #endif
-	      inheritance(r,&s1);
+	      if(s1!=NULL)
+		inheritance(r,&s1);
               func (r, m, doc, n, s1);
               freeService (&s1);
               free (s1);
@@ -1448,8 +1452,10 @@ runRequest (map ** inputs)
 	    xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
 	    r_inputs = NULL;
 	    r_inputs = getMap (request_inputs, "version");
+#ifdef DEBUG
 	    fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
 	    fflush(stderr);
+#endif
 	    xmlNodePtr n = printWPSHeader(doc,m,"DescribeProcess",
 					  root_nodes[vid][1],(version!=NULL?version->value:"1.0.0"),1);
 
@@ -1627,11 +1633,6 @@ runRequest (map ** inputs)
 			scount++;
 			hasVal = 1;
 			setMapInMaps (m, "lenv", "level", "0");
-			/*
-			  #ifdef META_DB
-			  }
-			  #endif
-			*/
 		      }
 		    else
 		      {
@@ -1725,9 +1726,9 @@ runRequest (map ** inputs)
 #ifdef USE_HPC
 				  addNestedOutputs(&s1);
 #endif
-				  json_object* jobj=serviceToJson(s1);
+				  /*json_object* jobj=serviceToJson(s1);
 				  const char* jsonStr=json_object_to_json_string_ext(jobj,JSON_C_TO_STRING_PLAIN);
-				  fprintf(stderr,"*** %s %d %s \n",__FILE__,__LINE__,jsonStr);
+				  fprintf(stderr,"*** %s %d %s \n",__FILE__,__LINE__,jsonStr);*/
 
 				  printDescribeProcessForProcess (zooRegistry,m, doc, n, s1);
 				  freeService (&s1);
@@ -1941,10 +1942,14 @@ runRequest (map ** inputs)
     int saved_stdout = dup (fileno (stdout));
     dup2 (fileno (stderr), fileno (stdout));
     t = readServiceFile (m, tmps1, &s1, r_inputs->value);
-    inheritance(zooRegistry,&s1);
+    fprintf(stderr,"%d %s %d",t,__FILE__,__LINE__);
+    fflush(stderr);
+    if(t>=0){
+      inheritance(zooRegistry,&s1);
 #ifdef USE_HPC
-    addNestedOutputs(&s1);
+      addNestedOutputs(&s1);
 #endif
+    }
     if(zooRegistry!=NULL){
       freeRegistry(&zooRegistry);
       free(zooRegistry);
@@ -2253,14 +2258,15 @@ runRequest (map ** inputs)
   dumpMap (request_inputs);
 #endif
   int ei = 1;
-  char **orig = 
+  
 #ifdef WIN32
-    GetEnvironmentStrings()
+  LPVOID orig = GetEnvironmentStrings();
+  LPTSTR s = (LPTSTR) orig;
 #else
-    environ
-#endif
-    ;
+  char **orig = environ;
   char *s=*orig;
+#endif
+
   _tmpMaps = createMaps("renv");
   for (; s; ei++) {
     if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
@@ -2276,7 +2282,11 @@ runRequest (map ** inputs)
       free(tmpName1);
       free(tmpName);
     }
+#ifdef WIN32
+    s++;
+#else
     s = *(orig+ei);
+#endif
   }
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
     addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
@@ -2284,6 +2294,7 @@ runRequest (map ** inputs)
   addMapsToMaps (&m, _tmpMaps);
   freeMaps (&_tmpMaps);
   free (_tmpMaps);
+  
   if(postRequest!=NULL)
     setMapInMaps (m, "renv", "xrequest", postRequest->value);
   //dumpMaps(m);
@@ -2334,6 +2345,9 @@ runRequest (map ** inputs)
 	free (tmpmaps);
 	return -1;
       }
+      map* testMap=getMapFromMaps(m,"main","memory");
+      if(testMap!=NULL && strcasecmp(testMap->value,"load")!=0)
+	dumpMapsValuesToFiles(&m,&request_input_real_format);
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
                          &request_output_real_format, &eres);
 
@@ -2378,6 +2392,7 @@ runRequest (map ** inputs)
 	}
       else if (pid == 0)
 	{
+	  eres = SERVICE_ACCEPTED;
 	  //
 	  // son : have to close the stdout, stdin and stderr to let the parent
 	  // process answer to http client.
@@ -2456,7 +2471,9 @@ runRequest (map ** inputs)
 	  init_sql(m);
 	  recordServiceStatus(m);
 #endif
+#ifdef USE_HPC
 	  invokeCallback(m,NULL,NULL,0,0);
+#endif
 	  if(vid==0){
 	    //
 	    // set status to SERVICE_STARTED and flush stdout to ensure full 
@@ -2498,7 +2515,9 @@ runRequest (map ** inputs)
 	  dumpMapsToFile(lenvMaps,flenv,0);
 	  free(flenv);
 
+#ifdef USE_HPC
 	  invokeCallback(m,request_input_real_format,NULL,1,0);
+#endif
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	    freeService (&s1);
 	    free (s1);
@@ -2513,7 +2532,9 @@ runRequest (map ** inputs)
 	    removeShmLock (m, 1);
 #else
 	    recordResponse(m,fbkp1);
+#ifdef USE_HPC
 	    invokeCallback(m,NULL,NULL,7,0);
+#endif
 #endif
 	    unlink (fbkpid);
 	    unhandleStatus (m);
@@ -2538,9 +2559,14 @@ runRequest (map ** inputs)
 	  }
 	  if(getMapFromMaps(m,"lenv","mapError")!=NULL){
 	    setMapInMaps(m,"lenv","message",_("Issue with geographic data"));
+#ifdef USE_HPC
 	    invokeCallback(m,NULL,NULL,7,0);
+#endif
 	    eres=-1;//SERVICE_FAILED;
 	  }else{
+	    map* testMap=getMapFromMaps(m,"main","memory");
+	    if(testMap!=NULL && strcasecmp(testMap->value,"load")!=0)
+	      dumpMapsValuesToFiles(&m,&request_input_real_format);
 	    loadServiceAndRun (&m, s1, request_inputs,
 			       &request_input_real_format,
 			       &request_output_real_format, &eres);
@@ -2566,7 +2592,7 @@ runRequest (map ** inputs)
   fflush(stdout);
   rewind(stdout);
 
-  fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,eres);
+  //fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,eres);
 
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
@@ -2591,8 +2617,9 @@ runRequest (map ** inputs)
   if (((int) getpid ()) != cpid || cgiSid != NULL)
     {
       if (eres == SERVICE_SUCCEEDED)
+#ifdef USE_HPC
 	invokeCallback(m,NULL,request_output_real_format,5,1);
-
+#endif
       fflush(stderr);
       fflush(stdout);
 
@@ -2621,7 +2648,9 @@ runRequest (map ** inputs)
 #else
       recordResponse(m,fbkp1);
       if (eres == SERVICE_SUCCEEDED)
+#ifdef USE_HPC
 	invokeCallback(m,NULL,request_output_real_format,6,0);
+#endif
 #endif
       freeMaps(&bmap);
       free(bmap);

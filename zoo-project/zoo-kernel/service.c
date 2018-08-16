@@ -538,6 +538,9 @@ void addIntToMap(map* m,const char* n,const int v){
  * @return a pointer to the updated map m
  */
 map* addToMapWithSize(map* m,const char* n,const char* v,int size){
+  char sin[128];
+  char sname[10]="size";
+  map *tmp;
   if(hasKey(m,n)==false){
     map* _cursor=m;
     if(_cursor!=NULL){
@@ -546,17 +549,15 @@ map* addToMapWithSize(map* m,const char* n,const char* v,int size){
       m=createMap(n,"");
     }
   }
-  char sname[10]="size";
   if(strlen(n)>5)
     sprintf(sname,"size_%s",n+6);
-  map *tmp=getMap(m,n);
+  tmp=getMap(m,n);
   if(tmp->value!=NULL)
     free(tmp->value);
   tmp->value=(char*)malloc((size+1)*sizeof(char));
   if(v!=NULL)
     memmove(tmp->value,v,size*sizeof(char));
   tmp->value[size]=0;
-  char sin[128];
   sprintf(sin,"%d",size);
   addToMap(m,sname,sin);
   return m;
@@ -577,14 +578,10 @@ void addMapToMap(map** mo,map* mi){
       (*mo)->next=NULL;
     }
     else{
-#ifdef DEBUG
-      fprintf(stderr,"_CURSOR\n");
-      dumpMap(_cursor);
-#endif
-      while(_cursor->next!=NULL)
-	_cursor=_cursor->next;
       map* tmp1=getMap(*mo,tmp->name);
       if(tmp1==NULL){
+	while(_cursor->next!=NULL)
+	  _cursor=_cursor->next;
 	_cursor->next=createMap(tmp->name,tmp->value);
       }
       else{
@@ -593,10 +590,6 @@ void addMapToMap(map** mo,map* mi){
     }
     _cursor=*mo;
     tmp=tmp->next;
-#ifdef DEBUG
-    fprintf(stderr,"MO\n");
-    dumpMap(*mo);
-#endif
   }
 }
 
@@ -710,21 +703,22 @@ iotype* getIoTypeFromElement(elements* e,char *name, map* values){
 void loadMapBinary(map** out,map* in,int pos){
   map* size=getMap(in,"size");
   map *lout=*out;
+  map *tmpVin,*tmpVout;
   if(size!=NULL && pos>0){
     char tmp[11];
     sprintf(tmp,"size_%d",pos);
     size=getMap(in,tmp);
     sprintf(tmp,"value_%d",pos);
-    map* tmpVin=getMap(in,tmp);
-    map* tmpVout=getMap(lout,tmp);
+    tmpVin=getMap(in,tmp);
+    tmpVout=getMap(lout,tmp);
     free(tmpVout->value);
     tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
     memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
     tmpVout->value[atoi(size->value)]=0;
   }else{
     if(size!=NULL){
-      map* tmpVin=getMap(in,"value");
-      map* tmpVout=getMap(lout,"value");
+      tmpVin=getMap(in,"value");
+      tmpVout=getMap(lout,"value");
       free(tmpVout->value);
       tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
       memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
@@ -744,6 +738,11 @@ void loadMapBinary(map** out,map* in,int pos){
 void loadMapBinaries(map** out,map* in){
   map* size=getMap(in,"size");
   map* length=getMap(in,"length");
+  map* toload=getMap(in,"to_load");
+  if(toload!=NULL && strcasecmp(toload->value,"false")==0){
+    fprintf(stderr,"NO LOAD %s %d \n",__FILE__,__LINE__);
+    return ;
+  }
   if(length!=NULL){
     int len=atoi(length->value);
     int i=0;
@@ -766,13 +765,13 @@ maps* dupMaps(maps** mo){
   maps* _cursor=*mo;
   maps* res=NULL;
   if(_cursor!=NULL){
-    res=createMaps(_cursor->name);
     map* mc=_cursor->content;
+    maps* mcs=_cursor->child;
+    res=createMaps(_cursor->name);
     if(mc!=NULL){
       addMapToMap(&res->content,mc);
       loadMapBinaries(&res->content,mc);
     }
-    maps* mcs=_cursor->child;
     if(mcs!=NULL){
       res->child=dupMaps(&mcs);
     }
@@ -796,9 +795,9 @@ void addMapsToMaps(maps** mo,maps* mi){
       *mo=dupMaps(&mi);
     }
     else{
+      maps* tmp1=getMaps(*mo,tmp->name);
       while(_cursor->next!=NULL)
 	_cursor=_cursor->next;
-      maps* tmp1=getMaps(*mo,tmp->name);
       if(tmp1==NULL){
 	_cursor->next=dupMaps(&tmp);
 	if(tmp->child!=NULL)
@@ -829,6 +828,7 @@ void addMapsToMaps(maps** mo,maps* mi){
  */
 map* getMapArray(map* m,const char* key,int index){
   char tmp[1024];
+  map* tmpMap;
   if(index>0)
     sprintf(tmp,"%s_%d",key,index);
   else
@@ -836,7 +836,7 @@ map* getMapArray(map* m,const char* key,int index){
 #ifdef DEBUG
   fprintf(stderr,"** KEY %s\n",tmp);
 #endif
-  map* tmpMap=getMap(m,tmp);
+  tmpMap=getMap(m,tmp);
 #ifdef DEBUG
   if(tmpMap!=NULL)
     dumpMap(tmpMap);
@@ -855,9 +855,10 @@ map* getMapArray(map* m,const char* key,int index){
  */
 void setMapArray(map* m,const char* key,int index,const char* value){
   char tmp[1024];
+  map* tmpSize;
   if(index>0){
-    sprintf(tmp,"%s_%d",key,index);
     map* len=getMap(m,"length");
+    sprintf(tmp,"%s_%d",key,index);
     if((len!=NULL && atoi(len->value)<index+1) || len==NULL){
       char tmp0[5];
       sprintf(tmp0,"%d",index+1);
@@ -868,12 +869,12 @@ void setMapArray(map* m,const char* key,int index,const char* value){
     sprintf(tmp,"%s",key);
     addToMap(m,"length","1");
   }
-  map* tmpSize=getMapArray(m,"size",index);
+  tmpSize=getMapArray(m,"size",index);
   if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
+    map* ptr=getMapOrFill(&m,tmp,(char *)"");
 #ifdef DEBUG
     fprintf(stderr,"%s\n",tmpSize->value);
 #endif
-    map* ptr=getMapOrFill(&m,tmp,(char *)"");
     free(ptr->value);
     ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
     memcpy(ptr->value,value,atoi(tmpSize->value)); 
@@ -929,17 +930,8 @@ map* getMapType(map* mt){
 int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
   maps* tmp=mi;    
   maps* _cursor=getMaps(*mo,tmp->name);
-
-  if(_cursor==NULL)
-    return -1;
-
-  map* tmpLength=getMap(_cursor->content,"length");
   char tmpLen[10];
   int len=1;
-  if(tmpLength!=NULL){
-    len=atoi(tmpLength->value);
-  }
-
   char *tmpV[14]={
     (char*)"size",
     (char*)"value",
@@ -956,9 +948,19 @@ int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
     (char*)"LowerCorner",
     (char*)"UpperCorner"
   };
+  int i=0;
+  map* tmpLength;
+  
+  if(_cursor==NULL)
+    return -1;
+
+  tmpLength=getMap(_cursor->content,"length");
+  if(tmpLength!=NULL){
+    len=atoi(tmpLength->value);
+  }
+
   sprintf(tmpLen,"%d",len+1);
   addToMap(_cursor->content,"length",tmpLen);
-  int i=0;
   for(i=0;i<14;i++){
     map* tmpVI=getMap(tmp->content,tmpV[i]);
     if(tmpVI!=NULL){
@@ -1070,6 +1072,8 @@ void setElementsName(elements** elem,char* name){
 void dumpElements(elements* e){
   elements* tmp=e;
   while(tmp!=NULL){
+    iotype* tmpio=tmp->defaults;
+    int ioc=0;
     fprintf(stderr,"ELEMENT [%s]\n",tmp->name);
     fprintf(stderr," > CONTENT [%s]\n",tmp->name);
     dumpMap(tmp->content);
@@ -1078,8 +1082,6 @@ void dumpElements(elements* e){
     fprintf(stderr," > ADDITIONAL PARAMETERS [%s]\n",tmp->name);
     dumpMap(tmp->additional_parameters);
     fprintf(stderr," > FORMAT [%s]\n",tmp->format);
-    iotype* tmpio=tmp->defaults;
-    int ioc=0;
     while(tmpio!=NULL){
       fprintf(stderr," > DEFAULTS [%s] (%i)\n",tmp->name,ioc);
       dumpMap(tmpio->content);
@@ -1112,10 +1114,12 @@ void dumpElementsAsYAML(elements* e,int level){
   elements* tmp=e;
   int i;
   while(tmp!=NULL){
+    map* mcurs=tmp->content;
+    int ioc=0;
+    iotype* tmpio;
     for(i=0;i<2+(4*level);i++)
       fprintf(stderr," ");
     fprintf(stderr,"%s:\n",tmp->name);
-    map* mcurs=tmp->content;
     while(mcurs!=NULL){
       for(i=0;i<4+(4*level);i++)
 	fprintf(stderr," ");
@@ -1143,8 +1147,7 @@ void dumpElementsAsYAML(elements* e,int level){
       if(tmp->child!=NULL)
 	dumpElementsAsYAML(tmp->child,level+1);
     }
-    iotype* tmpio=tmp->defaults;
-    int ioc=0;
+    tmpio=tmp->defaults;
     while(tmpio!=NULL){
       for(i=0;i<6+(4*level);i++)
 	fprintf(stderr," ");
@@ -1224,12 +1227,12 @@ elements* dupElements(elements* e){
     }else
       tmp->defaults=NULL;
     if(cursor->supported!=NULL && cursor->supported->content!=NULL){
+      iotype *tmp2=cursor->supported->next;
       tmp->supported=(iotype*)malloc(IOTYPE_SIZE);
       tmp->supported->content=NULL;
       addMapToMap(&tmp->supported->content,cursor->supported->content);
       tmp->supported->next=NULL;
-      iotype *tmp2=cursor->supported->next;
-      while(tmp2!=NULL){
+            while(tmp2!=NULL){
 	addMapToIoType(&tmp->supported,tmp2->content);
 #ifdef DEBUG
 	fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
@@ -1372,8 +1375,8 @@ service* dupService(service* s){
 void dumpRegistry(registry* r){
   registry* p=r;
   while(p!=NULL){
-    fprintf(stderr,"%s \n",p->name);
     services* s=p->content;
+    fprintf(stderr,"%s \n",p->name);
     s=p->content;
     while(s!=NULL){
       dumpService(s->content);
@@ -1572,13 +1575,14 @@ void inheritElements(elements** out,elements* in){
  * @param s the service to update depending on its inheritance
  */
 void inheritance(registry *r,service** s){
+  service* ls=*s;
+  map *profile,*level;
   if(r==NULL)
     return;
-  service* ls=*s;
-  if(ls->content==NULL)
+  if(ls==NULL || ls->content==NULL)
     return;
-  map* profile=getMap(ls->content,"extend");
-  map* level=getMap(ls->content,"level");
+  profile=getMap(ls->content,"extend");
+  level=getMap(ls->content,"level");
   if(profile!=NULL&&level!=NULL){
     service* s1;
     if(strncasecmp(level->value,"profile",7)==0)
@@ -1613,13 +1617,13 @@ void mapsToCharXXX(maps* m,char*** c){
   char tmp[10][30][1024];
   memset(tmp,0,1024*10*10);
   while(tm!=NULL){
+    map* tc=tm->content;
     if(i>=10)
       break;
     strcpy(tmp[i][j],"name");
     j++;
     strcpy(tmp[i][j],tm->name);
     j++;
-    map* tc=tm->content;
     while(tc!=NULL){
       if(j>=30)
 	break;

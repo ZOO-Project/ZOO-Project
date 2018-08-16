@@ -22,15 +22,12 @@
  * THE SOFTWARE.
  */
 
+#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include "caching.h"
 #include "service.h"
 #include "service_internal.h"
 #include "response_print.h"
-#include <openssl/md5.h>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/buffer.h>
 
 /**
  * Compute md5
@@ -60,6 +57,41 @@ char* getMd5(char* url){
   }
   return fresult;
 }
+
+/**
+ * Compute md5 of a file
+ * 
+ * @param file the char* 
+ * @return a char* representing the md5 of the url
+ * @warning make sure to free resources returned by this function
+ */
+char* getMd5f(char* file){
+  EVP_MD_CTX md5ctx;
+  char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
+  unsigned char result[EVP_MAX_MD_SIZE];
+  unsigned int len;
+  int bytes;
+  unsigned char data[1024];
+  FILE *inFile = fopen (file, "rb");
+  EVP_DigestInit(&md5ctx, EVP_md5());
+  while ((bytes = fread (data, 1, 1024, inFile)) != 0)
+    EVP_DigestUpdate(&md5ctx, data, bytes);
+  EVP_DigestFinal_ex(&md5ctx,result,&len);
+  EVP_MD_CTX_cleanup(&md5ctx);
+  int i;
+  for(i = 0; i < len; i++){
+    if(i>0){
+      char *tmp=zStrdup(fresult);
+      sprintf(fresult,"%s%02x", tmp,result[i]);
+      free(tmp);
+    }
+    else
+      sprintf(fresult,"%02x",result[i]);
+  }
+  fclose (inFile);
+  return fresult;
+}
+
 
 
 /**
@@ -144,6 +176,7 @@ char* getFilenameForRequest(maps* conf, const char* request){
 void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
   char contentr[4096];
+  char* md5fstr=NULL;
   int cred=0;
   if(tmp!=NULL){
     char* myRequest=getFilenameForRequest(conf,request);
@@ -182,7 +215,8 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       unlockFile(conf,lck);
       fclose(fo);
       fclose(fi);
-	
+
+      // Store mimeType
       sprintf(fname,"%s/%s.zcm",tmp->value,md5str);
       fo=fopen(fname,"w+");
 #ifdef DEBUG
@@ -191,6 +225,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fwrite(mimeType,sizeof(char),strlen(mimeType),fo);
       fclose(fo);
 
+      // Store provenance
       sprintf(fname,"%s/%s.zcp",tmp->value,md5str);
       fo=fopen(fname,"w+");
       char* origin=getProvenance(conf,request);
@@ -198,6 +233,18 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fprintf(stderr,"ORIGIN: %s\n",mimeType);
 #endif
       fwrite(origin,sizeof(char),strlen(origin),fo);
+      fclose(fo);
+
+      // Store md5
+      sprintf(fname,"%s/%s.zca",tmp->value,md5str);
+      md5fstr=getMd5f(fname);
+      sprintf(fname,"%s/%s.zmd",tmp->value,md5str);
+      fo=fopen(fname,"w+");
+#ifdef DEBUG
+      fprintf(stderr,"MD5: %s\n",md5fstr);
+#endif
+      fwrite(md5fstr,sizeof(char),strlen(md5fstr),fo);
+      free(md5fstr);
       fclose(fo);
 
       free(md5str);

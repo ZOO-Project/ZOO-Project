@@ -692,7 +692,7 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
     printDescription(nc1,ns_ows,serv->name,serv->content,vid);
     tmp1=serv->metadata;
 
-    addMetadata(tmp1,doc,nc1,ns_ows,ns_xlink);
+    addMetadata(tmp1,doc,nc1,ns_ows,ns_xlink,vid);
     tmp1=serv->additional_parameters;
     int fromDb=-1;
     map* test=getMap(serv->content,"fromDb");
@@ -749,14 +749,14 @@ void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
  * @param nb the node to add the additional parameters
  * @param ns_ows the OWS namespace
  * @param ns_xlink the xlink namespace
+ * @param vid the version of WPS to use (0 for 1.0.0 and 1 for 2.0)
  */
-void addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink){
+void addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,int vid){
     int hasTitle=-1;
     int hasValue=-1;
     xmlNodePtr nc1;
     map* oMeta=meta;
     int isAdditionalParameters=-1;
-    //if(count(oMeta)>=2){
     int level=0;
     map* test=getMap(meta,"title");
     if(test!=NULL)
@@ -769,7 +769,6 @@ void addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr 
       level+=1;
     if(count(oMeta)>level+1)
       isAdditionalParameters=1;
-    //}
     char *ctitle=NULL;
     while(meta!=NULL){
       if(hasTitle<0)
@@ -814,9 +813,14 @@ void addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr 
       }
       meta=meta->next;
       if(hasTitle<0){
-	if(isAdditionalParameters)
-	  xmlAddChild(nc,nc1);
 	hasValue=1;
+	if(isAdditionalParameters){
+	  if(vid==0){
+	    meta=NULL;
+	    break;
+	  }else
+	    xmlAddChild(nc,nc1);
+	}
       }
     }
     if(oMeta!=NULL && hasValue<0 && nc1!=NULL){
@@ -1048,10 +1052,7 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
   if(vid==0){
     tmp1=serv->metadata;
     while(tmp1!=NULL){
-      addMetadata(tmp1,doc,nc,ns_ows,ns_xlink);
-      /*nc1 = xmlNewNode(ns_ows, BAD_CAST "Metadata");
-      xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp1->name,BAD_CAST tmp1->value);
-      xmlAddChild(nc,nc1);*/
+      addMetadata(tmp1,doc,nc,ns_ows,ns_xlink,vid);
       tmp1=tmp1->next;
     }
     tmp1=getMap(serv->content,"Profile");
@@ -1062,10 +1063,11 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
     }
   }else{
     tmp1=serv->metadata;
-    addMetadata(tmp1,doc,nc,ns_ows,ns_xlink);
+    addMetadata(tmp1,doc,nc,ns_ows,ns_xlink,vid);
     addInheritedMetadata(nc,ns_ows,ns_xlink,reg,m,serv);
     tmp1=serv->additional_parameters;
-    addAdditionalParameters(tmp1,doc,nc,ns_ows,ns_xlink,fromDb);
+    if(vid!=0)
+      addAdditionalParameters(tmp1,doc,nc,ns_ows,ns_xlink,fromDb);
   }
 
   if(serv->inputs!=NULL){
@@ -1125,6 +1127,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
     int default1=0;
     int isAnyValue=1;
     nc2 = xmlNewNode(NULL, BAD_CAST type);
+    // Extract min/max Occurence information
     if(strstr(type,"Input")!=NULL){
       tmp1=getMap(e->content,"minOccurs");
       if(tmp1!=NULL){
@@ -1167,7 +1170,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 
       //Build the (Literal/Complex/BoundingBox)Data node
       if(strncmp(type,"Output",6)==0){
-	if(strncasecmp(e->format,"LITERALDATA",strlen(e->format))==0)
+	if(strncasecmp(e->format,"LITERAL",7)==0)
 	  nc3 = xmlNewNode(ns1, BAD_CAST "LiteralOutput");
 	else if(strncasecmp(e->format,"COMPLEXDATA",strlen(e->format))==0)
 	  nc3 = xmlNewNode(ns1, BAD_CAST "ComplexOutput");
@@ -1213,7 +1216,15 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	else if(strcmp(e->format,"BoundingBoxOutput")==0 ||
 		strcmp(e->format,"BoundingBoxData")==0){
 	  datatype=2;
-	  nc5 = xmlNewNode(NULL, BAD_CAST "Default");
+	  if(vid==0)
+	    nc5 = xmlNewNode(NULL, BAD_CAST "Default");
+	  else{
+	    xmlNodePtr nc6 = xmlNewNode(ns1, BAD_CAST "Format");
+	    xmlNewProp(nc6,BAD_CAST "mimeType",BAD_CAST "text/xml");
+	    xmlNewProp(nc6,BAD_CAST "default",BAD_CAST "true");
+	    xmlAddChild(nc3,nc6);
+	    nc5 = xmlNewNode(NULL, BAD_CAST "SupportedCRS");
+	  }
 	}
 	else{
 	  if(vid==0)
@@ -1423,9 +1434,15 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		 strcasecmp(tmp1->name,"AllowedValues")!=0 &&
 		 strncasecmp(tmp1->name,"range",5)!=0){
 		if(datatype!=1){
-		  char *tmp2=zCapitalize1(tmp1->name);
-		  nc9 = xmlNewNode(NULL, BAD_CAST tmp2);
-		  free(tmp2);
+		  if(datatype==2 && vid==1){
+		    nc9 = xmlNewNode(ns, BAD_CAST "SupportedCRS");
+		    xmlNewProp(nc9,BAD_CAST "default",BAD_CAST "true");
+		  }
+		  else{
+		    char *tmp2=zCapitalize1(tmp1->name);
+		    nc9 = xmlNewNode(NULL, BAD_CAST tmp2);
+		    free(tmp2);
+		  }
 		}
 		else{
 		  char *tmp2=zCapitalize(tmp1->name);
@@ -1434,8 +1451,12 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		}
 		xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
 		if(vid==0 || oI>=3){
-		  if(vid==0 || oI!=4)
-		    xmlAddChild(nc5,nc9);
+		  if(vid==0 || oI!=4){
+		    if(datatype==2 && vid==1)
+		      xmlAddChild(nc3,nc9);
+		    else
+		      xmlAddChild(nc5,nc9);
+		  }
 		  if(oI==4 && vid==1){
 		    xmlNewProp(nc9,BAD_CAST "default",BAD_CAST "true");
 		  }
@@ -1446,8 +1467,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		if(strcasecmp(tmp1->name,"uom")==0)
 		  hasUOM1=true;
 		hasUOM=true;
-	      }else 	  
-		tmp1=tmp1->next;
+	      }
 	    }
 	}
     
@@ -1462,19 +1482,24 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    }
 	  }else{
 	    if(hasUOM1==false && vid==0){
-	      xmlFreeNode(nc5);
+	      if(nc5!=NULL)
+		xmlFreeNode(nc5);
 	      if(datatype==1){
 		xmlFreeNode(nc4);
 	      }
 	    }
-	    else
+	    else{
 	      xmlAddChild(nc3,nc5);
+	    }
 	  }
 	}else{
-	  xmlAddChild(nc3,nc5);
+	  if(vid==0)
+	    xmlAddChild(nc3,nc5);
+	  else
+	    xmlFreeNode(nc5);
 	}
       
-	if(datatype!=1 && default1<0){
+	if(datatype==0 && default1<0){
 	  xmlFreeNode(nc5);
 	  if(datatype!=2){
 	    xmlFreeNode(nc4);
@@ -1529,22 +1554,8 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	      char *tmp2=zCapitalize(tmp1->name);
 	      nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
 	      free(tmp2);
-	      //xmlNewProp(nc9, BAD_CAST "default", BAD_CAST "true");
 	      xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
 	      xmlAddChild(nc5,nc9);
-	      /*struct iotype * _ltmp=e->supported;
-		while(_ltmp!=NULL){
-		tmp1=getMap(_ltmp->content,"uom");
-		if(tmp1!=NULL){
-		char *tmp2=zCapitalize(tmp1->name);
-		nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-		free(tmp2);
-		xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
-		xmlAddChild(nc5,nc9);
-		}
-		_ltmp=_ltmp->next;
-		}*/
-	    
 	    }
 	  }
 	  if(e->defaults!=NULL && (tmp1=getMap(e->defaults->content,"value"))!=NULL){
@@ -1559,14 +1570,14 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	int xlinkId=zooXmlAddNs(n,"http://www.w3.org/1999/xlink","xlink");
 	xmlNsPtr ns_xlink=usedNs[xlinkId];
 
-	//dumpMap(metadata);
-	addMetadata(metadata,doc,nc2,ns_ows,ns_xlink);
-	addAdditionalParameters(e->additional_parameters,doc,nc2,ns_ows,ns_xlink,fromDb);
+	addMetadata(metadata,doc,nc2,ns_ows,ns_xlink,vid);
+	if(vid!=0)
+	  addAdditionalParameters(e->additional_parameters,doc,nc2,ns_ows,ns_xlink,fromDb);
 
       }
 
       _tmp=e->supported;
-      if(_tmp==NULL && datatype!=1)
+      if(_tmp==NULL && datatype==0)
 	_tmp=e->defaults;
 
       int hasSupported=-1;
@@ -1612,9 +1623,14 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	       strcmp(tmp1->name,"DataType")!=0 &&
 	       strcasecmp(tmp1->name,"extension")!=0){
 	      if(datatype!=1){
-		char *tmp2=zCapitalize1(tmp1->name);
-		nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
-		free(tmp2);
+		if(datatype==2 && vid==1){
+		  nc6 = xmlNewNode(ns, BAD_CAST "SupportedCRS");
+		}
+		else{
+		  char *tmp2=zCapitalize1(tmp1->name);
+		  nc6 = xmlNewNode(NULL, BAD_CAST tmp2);
+		  free(tmp2);
+		}
 	      }
 	      else{
 		char *tmp2=zCapitalize(tmp1->name);
@@ -1638,8 +1654,12 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		xmlAddChild(nc6,xmlNewText(BAD_CAST tmp1->value));
 	      }
 	      if(vid==0 || oI>=3){
-		if(vid==0 || oI!=4)
-		  xmlAddChild(nc5,nc6);
+		if(vid==0 || oI!=4){
+		  if(datatype==2 && vid==1)
+		    xmlAddChild(nc3,nc6);
+		  else
+		    xmlAddChild(nc5,nc6);
+		}
 		else{
 		  xmlFreeNode(nc6);
 		}
@@ -1657,11 +1677,12 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	      xmlAddChild(nc3,nc4);
 	    }
 	    else{
-	      xmlAddChild(nc3,nc5);
+	      if(datatype!=2)
+		xmlAddChild(nc3,nc5);
 	    }
 
 	  }else{
-	    if(datatype!=1)
+	    if(datatype==2 && vid==0)
 	      xmlAddChild(nc3,nc5);
 	  }
 	  hasSupported=1;
@@ -1677,7 +1698,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    }
 	  }
 	  else
-	    if(datatype!=1){
+	    if(datatype==0){
 	      xmlFreeNode(nc4);
 	      xmlAddChild(nc3,nc5);
 	    }
@@ -1712,29 +1733,29 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
     
       xmlAddChild(nc2,nc3);
     }else{
-      if(e->child!=NULL){
-	if(e->child!=NULL && vid!=0){
-	  printFullDescription(doc,in,e->child,type,ns,ns_ows,nc2,vid,fromDb,NULL);
-	}
+      if(e->child!=NULL && vid!=0){
+	printFullDescription(doc,in,e->child,type,ns,ns_ows,nc2,vid,fromDb,NULL);
       }
     }
     if(e->child!=NULL && vid==0){
-      xmlFreeNode(nc3);
       elements* children=dupElements(e->child);
       elements* cursor=children;
       while(cursor!=NULL){
-	char* tmp=strdup(cursor->name);
-	free(cursor->name);
-	cursor->name=(char*)malloc((strlen(tmp)+strlen(e->name)+2)*sizeof(char));
-	sprintf(cursor->name,"%s.%s",e->name,tmp);
+	elements* ccursor=cursor;
+	char* tmp=strdup(ccursor->name);
+	free(ccursor->name);
+	ccursor->name=(char*)malloc((strlen(tmp)+strlen(e->name)+2)*sizeof(char));
+	sprintf(ccursor->name,"%s.%s",e->name,tmp);
 	cursor=cursor->next;
       }
-      printFullDescription(doc,in,children,type,ns,ns_ows,nc2,vid,fromDb,serviceType);
-      xmlAddChild(nc1,nc2);
+      printFullDescription(doc,in,children,type,ns,ns_ows,nc1,vid,fromDb,serviceType);
       freeElements(&children);
       free(children);
-    }else
-      xmlAddChild(nc1,nc2);
+    }else{
+      if(nc2!=NULL){
+	xmlAddChild(nc1,nc2);
+      }
+    }
     e=e->next;
   }
 }
@@ -1965,6 +1986,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     if(vid==0){
       nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
     }
+    //dumpMaps(outputs);
     maps* mcursor=outputs;
     elements* scursor=serv->outputs;
     map* testResponse=getMap(request,"RawDataOutput");
@@ -1976,12 +1998,11 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       if(scursor!=NULL){
 	if(testResponse==NULL || tmp0==NULL){
 	  if(vid==0)
-	    printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
 	  else
-	    printIOType(doc,n,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
+	      printIOType(doc,n,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
 	}
 	else
-
 	  if(tmp0!=NULL && strncmp(tmp0->value,"true",4)==0){
 	    if(vid==0)
 	      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
@@ -2057,6 +2078,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     }
 #endif
   }
+
   printDocument(m,doc,pid);
 
   xmlCleanupParser();
@@ -2698,6 +2720,15 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     free(statusInfo);
     return;
   }
+
+  if(res!=SERVICE_SUCCEEDED){
+    printProcessResponse(m,request_inputs1,cpid,
+                         s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
+                         request_inputs,
+                         request_outputs);
+    return;
+  }
+    
 	
   map *tmp1=getMapFromMaps(m,"main","tmpPath");
   if(asRaw==0){
