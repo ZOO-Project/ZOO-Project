@@ -109,22 +109,12 @@ int zoo_r_support(maps** main_conf,map* request,service* s,maps **real_inputs,ma
   map* mp=getMap(request,"metapath");
   if(tmp!=NULL){
     if(mp!=NULL && strlen(mp->value)>0){
-      char *mps=zStrdup(mp->value);
-      int i,len=strlen(mps);
-      int j=0;
-      for(i=0;i<len;i++){
-	if(mps[i]=='/'){
-	  mps[i]='.';
-	}
-      }
-      char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
-      sprintf(mn,"%s.%s",mps,tmp->value);
+      char *mn=(char*)malloc((strlen(mp->value)+strlen(tmp->value)+2)*sizeof(char));
+      sprintf(mn,"%s/%s",mp->value,tmp->value);
       pName = mkString(mn);
       free(mn);
-      free(mps);
     }
     else{
-      dumpMap(tmp);
       char *tmpStr=(char*)malloc((strlen(r_path)+strlen(tmp->value)+2)*sizeof(char));
       sprintf(tmpStr,"%s/%s",r_path,tmp->value);
       pName = mkString(tmpStr);
@@ -188,8 +178,6 @@ int zoo_r_support(maps** main_conf,map* request,service* s,maps **real_inputs,ma
 	setMapInMaps(*main_conf,"lenv","message",tmpStr);
 	char* finalStr=(char*)malloc((strlen(tmpStr)+strlen(_("Unable to run your R service: "))+2)*sizeof(char));
 	sprintf(finalStr,"%s %s",_("Unable to run your R service: "),tmpStr);
-	fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,tmpStr);
-	fflush(stderr);
 	errorException(*main_conf,finalStr,"NoApplicableCode",NULL);
 	free(finalStr);
 	result=-1;

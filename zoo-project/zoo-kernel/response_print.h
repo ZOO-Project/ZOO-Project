@@ -37,7 +37,7 @@
 #define TIME_SIZE 40
 
 #include <libintl.h>
-#include <locale.h>
+#include <xlocale.h>
 /**
  * ZOO-Kernel internal messages translation function
  */
@@ -79,7 +79,7 @@
 #endif
 #endif
 #ifndef WIN32
-#include <xlocale.h>
+#include <locale.h>
 #endif
 #include "ulinet.h"
 

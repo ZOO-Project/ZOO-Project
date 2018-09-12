@@ -37,7 +37,7 @@
 #define TIME_SIZE 40
 
 #include <libintl.h>
-#include <locale.h>
+#include <xlocale.h>
 /**
  * ZOO-Kernel internal messages translation function
  */

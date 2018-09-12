@@ -44,12 +44,14 @@
 #endif
 #include "jsapi.h"
 #endif
+#ifndef __cplusplus
 #ifndef bool
 #define bool int
 #endif
 #ifndef true
 #define true 1
 #define false 0
+#endif
 #endif
 
 #define MAX_REQ 50

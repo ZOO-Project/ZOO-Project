@@ -33,6 +33,7 @@
 #include "service_internal_ms.h"
 #include "server_internal.h"
 #include "response_print.h"
+#include "caching.h"
 
 /**
  * Get a list of configuration keys having a corresponding mandatory ows_*.
@@ -1234,6 +1235,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   GDALClose( hDataset );
   GDALDestroyDriverManager();
   CPLCleanupTLS();
+  storeMd5(pszFilename);
   return 1;
 }
 
