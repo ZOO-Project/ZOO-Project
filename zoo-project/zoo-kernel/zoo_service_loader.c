@@ -106,8 +106,10 @@ extern wchar_t**_wenviron;
 #include "service_internal_mono.h"
 #endif
 
+#ifdef USE_HPC
 #include "service_json.h"
 #include "service_callback.h"
+#endif
 
 #include <dirent.h>
 #include <signal.h>
@@ -2346,7 +2348,7 @@ runRequest (map ** inputs)
 	return -1;
       }
       map* testMap=getMapFromMaps(m,"main","memory");
-      if(testMap!=NULL && strcasecmp(testMap->value,"load")!=0)
+      if(testMap==NULL || strcasecmp(testMap->value,"load")!=0)
 	dumpMapsValuesToFiles(&m,&request_input_real_format);
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
                          &request_output_real_format, &eres);

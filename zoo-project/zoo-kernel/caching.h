@@ -34,7 +34,9 @@ extern "C" {
   int runHttpRequests(maps**,maps**,HINTERNET*,map**);
   void addRequestToQueue(maps**,HINTERNET*,const char*,bool);
   int loadRemoteFile(maps**,map**,HINTERNET*,char*);
-
+  char* getMd5f(char*);
+  int storeMd5(char*);
+  
 #ifdef __cplusplus
 }
 #endif

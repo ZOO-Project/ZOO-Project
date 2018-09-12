@@ -977,7 +977,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  }
 
 		      map *test = getMap (tmpmaps->content, "encoding");
-		      
 		      if (test == NULL)
 			{
 			  if (tmpmaps->content != NULL)
@@ -991,13 +990,15 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 
 		      if (getMap(tmpmaps->content,"dataType")==NULL && test!=NULL && strcasecmp (test->value, "base64") != 0)
 			{
-			  xmlChar *mv = xmlNodeListGetString (doc,
-							      cur4->xmlChildrenNode,
-							      1);
+			  xmlChar *mv = NULL;
+			  /*if(cur4!=NULL && cur4->xmlChildrenNode!=NULL)
+			    xmlChar *mv = xmlNodeListGetString (doc,
+								cur4->xmlChildrenNode,
+								1);*/
 			  map *ltmp =
-			    getMap (tmpmaps->content, "mimeType");			  
-			  if (mv == NULL
-			      ||
+			    getMap (tmpmaps->content, "mimeType");
+			  if (/*mv == NULL
+			      ||*/
 			      (xmlStrcasecmp
 			       (cur4->name, BAD_CAST "ComplexData") == 0
 			       && (ltmp == NULL
@@ -1035,6 +1036,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      addIntToMap (tmpmaps->content, "size",
 					   buffersize);
 			    }else{
+
 			    if(xmlStrcasecmp
 			       (cur4->name, BAD_CAST "BoundingBoxData") == 0){
 			      xmlDocPtr doc1 = xmlNewDoc(BAD_CAST "1.0");
@@ -1050,10 +1052,12 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      xmlNodePtr cur5 = cur4->children;
 			      while (cur5 != NULL
 				     && cur5->type != XML_ELEMENT_NODE
+				     && cur5->type != XML_TEXT_NODE
 				     && cur5->type != XML_CDATA_SECTION_NODE)
 				cur5 = cur5->next;
 			      if (cur5 != NULL
-				  && cur5->type != XML_CDATA_SECTION_NODE)
+				  && cur5->type != XML_CDATA_SECTION_NODE
+				  && cur5->type != XML_TEXT_NODE)
 				{
 				  xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
 				  int buffersize;
@@ -1064,10 +1068,12 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  addIntToMap (tmpmaps->content, "size",
 					       buffersize);
 				}
-			      else /*if (cur5 != NULL
+			      else if (cur5 != NULL)/*
 				     && cur5->type == XML_CDATA_SECTION_NODE)*/{
 				xmlFree(mv);
-				mv=xmlStrdup(cur5->content);
+				if(cur5->content!=NULL){
+				  mv=xmlStrdup(cur5->content);
+				}
 			      }
 			    }
 			  }
@@ -1149,8 +1155,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		      }
 		  }
 	      }
-	    else
+	    else{
 	      addMapsToMaps (request_output, tmpmaps);
+	    }
 	  }
 	  freeMaps (&tmpmaps);
 	  free (tmpmaps);

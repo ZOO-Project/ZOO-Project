@@ -66,18 +66,20 @@ char* getMd5(char* url){
  * @warning make sure to free resources returned by this function
  */
 char* getMd5f(char* file){
-  EVP_MD_CTX md5ctx;
+  EVP_MD_CTX *md5ctx=EVP_MD_CTX_create();
   char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
   unsigned char result[EVP_MAX_MD_SIZE];
   unsigned int len;
   int bytes;
-  unsigned char data[1024];
+  int dlen=65536;
+  unsigned char data[dlen+1];
   FILE *inFile = fopen (file, "rb");
-  EVP_DigestInit(&md5ctx, EVP_md5());
-  while ((bytes = fread (data, 1, 1024, inFile)) != 0)
-    EVP_DigestUpdate(&md5ctx, data, bytes);
-  EVP_DigestFinal_ex(&md5ctx,result,&len);
-  EVP_MD_CTX_cleanup(&md5ctx);
+  EVP_DigestInit(md5ctx, EVP_md5());
+  while ((bytes = fread (data, sizeof(unsigned char), dlen, inFile)) != 0)
+    EVP_DigestUpdate(md5ctx, data, bytes);
+  EVP_DigestFinal_ex(md5ctx,result,&len);
+  EVP_MD_CTX_cleanup(md5ctx);
+  EVP_MD_CTX_destroy(md5ctx);
   int i;
   for(i = 0; i < len; i++){
     if(i>0){
@@ -161,6 +163,24 @@ char* getFilenameForRequest(maps* conf, const char* request){
 }
 
 /**
+ * Store MD5 of the content of a file
+ * @file char* the full path of the file
+ */
+int storeMd5(char* file){
+  char* storage=zStrdup(file);
+  char* md5fstr=getMd5f(file);
+  storage[strlen(storage)-2]='m';
+  storage[strlen(storage)-1]='d';
+  FILE* fo=fopen(storage,"w+");
+  if(fo==NULL)
+    return 1;
+  fwrite(md5fstr,sizeof(char),strlen(md5fstr),fo);
+  free(md5fstr);
+  fclose(fo);
+  return 0;
+}
+
+/**
  * Cache a file for a given request.
  * For each cached file, the are two files stored, a .zca and a .zcm containing
  * the downloaded content and the mimeType respectively. 
@@ -176,13 +196,24 @@ char* getFilenameForRequest(maps* conf, const char* request){
 void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename){
   map* tmp=getMapFromMaps(conf,"main","cacheDir");
   char contentr[4096];
-  char* md5fstr=NULL;
   int cred=0;
   if(tmp!=NULL){
     char* myRequest=getFilenameForRequest(conf,request);
     char* md5str=getMd5(myRequest);
     free(myRequest);
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
+    // Store md5
+    char* md5fstr=getMd5f(filename);
+    sprintf(fname,"%s/%s.zmd",tmp->value,md5str);
+    FILE* fo=fopen(fname,"w+");
+#ifdef DEBUG
+    fprintf(stderr,"filename: %s\n",filename);
+    fprintf(stderr,"MD5: %s\n",md5fstr);
+#endif
+    fwrite(md5fstr,sizeof(char),strlen(md5fstr),fo);
+    free(md5fstr);
+    fclose(fo);
+    
     sprintf(fname,"%s/%s.zca",tmp->value,md5str);
     zooLock* lck=lockFile(conf,fname,'w');
     if(lck!=NULL){
@@ -191,7 +222,8 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fflush(stderr);
 #endif
       FILE* fi=fopen(filename,"rb");
-      FILE* fo=fopen(fname,"w+");
+      sprintf(fname,"%s/%s.zca",tmp->value,md5str);
+      fo=fopen(fname,"w+");
       if(fo==NULL){
 #ifdef DEBUG
 	fprintf (stderr, "Failed to open %s for writing: %s\n",fname, strerror(errno));
@@ -235,21 +267,10 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fwrite(origin,sizeof(char),strlen(origin),fo);
       fclose(fo);
 
-      // Store md5
-      sprintf(fname,"%s/%s.zca",tmp->value,md5str);
-      md5fstr=getMd5f(fname);
-      sprintf(fname,"%s/%s.zmd",tmp->value,md5str);
-      fo=fopen(fname,"w+");
-#ifdef DEBUG
-      fprintf(stderr,"MD5: %s\n",md5fstr);
-#endif
-      fwrite(md5fstr,sizeof(char),strlen(md5fstr),fo);
-      free(md5fstr);
-      fclose(fo);
-
       free(md5str);
-      free(fname);
+
     }
+    free(fname);
   }
 }
 
@@ -341,7 +362,6 @@ char* isInCache(maps* conf,char* request){
       return tmpStr;
     }
     else{
-
       char* myRequest=getFilenameForRequest(conf,request);
       char* md5str=getMd5(myRequest);
       free(myRequest);
@@ -435,7 +455,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
     if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
 
       if(getMap(content->content,icname)==NULL) {
-	if(memUse!=NULL && strcasecmp(memUse->value,"load")==0){
+	if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
 	  fcontent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
 	  if(fcontent == NULL){
 	    errorException(*m, _("Unable to allocate memory"), "InternalError",NULL);
@@ -455,7 +475,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	  mimeType=zStrdup(hInternet->ihandle[*index].mimeType);	      
 	
 	map* tmpMap=getMapOrFill(&(*in)->content,vname,"");
-	if(memUse!=NULL && strcasecmp(memUse->value,"load")==0){
+	if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
 	  free(tmpMap->value);
 	  tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
 	  if(tmpMap->value==NULL){
@@ -517,7 +537,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	}
 	addToMap((*in)->content,sname,ltmp1);
 	addToMap((*in)->content,mname,mimeType);
-	if(memUse!=NULL && strcasecmp(memUse->value,"load")==0){
+	if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
 	  addToCache(*m,request,fcontent,mimeType,fsize, NULL, 0);
 	  free(fcontent);
 	}else{
@@ -627,7 +647,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       if(lck==NULL)
 	return -1;
       fsize=f_status.st_size;
-      if(memUse!=NULL && strcasecmp(memUse->value,"load")==0){
+      if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
 	fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
 	FILE* f=fopen(cached,"rb");
 	if(f!=NULL){
@@ -664,7 +684,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
 
   map* tmpMap=getMapOrFill(content,"value","");
-  if(memUse!=NULL && strcasecmp(memUse->value,"load")==0){
+  if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
     free(tmpMap->value);
     tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
     if(tmpMap->value==NULL || fcontent == NULL)
@@ -676,7 +696,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   sprintf(ltmp1,"%d",fsize);
   addToMap(*content,"size",ltmp1);
   if(cached==NULL){
-    if(memUse!=NULL && strcasecmp(memUse->value,"load")==0)
+    if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
       addToCache(*m,url,fcontent,mimeType,fsize, NULL, 0);
     else
       cacheFile(*m,url,mimeType,fsize,hInternet->ihandle[hInternet->nb-1].filename);
