@@ -451,9 +451,27 @@ void freeElements(elements** e){
   }
 }
 
+
+/**
+ * Allocate memory for a service.
+ * Require to call free after calling this function.
+ *
+ * @return the service
+ */
+service* createService(){
+  service *s1 = (service *) malloc (SERVICE_SIZE);
+  s1->name=NULL;
+  s1->content=NULL;
+  s1->metadata=NULL;
+  s1->additional_parameters=NULL;
+  s1->inputs=NULL;
+  s1->outputs=NULL;
+  return s1;
+}
+
 /**
  * Free allocated memory of a service.
- * Require to call free on e after calling this function.
+ * Require to be invoked for every createService call.
  *
  * @param s the service to free
  */
