@@ -336,7 +336,7 @@ recursReaddirF ( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_
             
             map* import = getMapFromMaps (m, IMPORTSERVICE, tmpsn);
             if (import == NULL || import->value == NULL || zoo_path_compare(tmps1, import->value) != 0 ) { // service is not in [include] block 
-              service *s1 = (service *) malloc (SERVICE_SIZE);
+              service *s1 = createService();
               if (s1 == NULL)
                 {
                   dup2 (saved_stdout, fileno (stdout));
@@ -1522,7 +1522,7 @@ runRequest (map ** inputs)
 			service* s2=extractServiceFromDb(m,import->name,0);
 			if(s2==NULL){
 #endif
-			  s1 = (service *) malloc (SERVICE_SIZE);
+			  s1 = createService();
 			  t = readServiceFile (m, import->value, &s1, import->name);
                 
 			  if (t < 0) // failure reading zcfg
@@ -1585,7 +1585,7 @@ runRequest (map ** inputs)
 			 if(s2==NULL){
 			 #endif
 			*/
-			s1 = (service *) malloc (SERVICE_SIZE);
+			s1 = createService();
 			t = readServiceFile (m, buff1, &s1, tmpMapI->value);
 			if (t < 0)
 			  {
@@ -1670,7 +1670,7 @@ runRequest (map ** inputs)
 				  memset (buff1, 0, 1024);
 				  snprintf (buff1, 1024, "%s/%s", conf_dir,
 					    dp->d_name);
-				  s1 = (service *) malloc (SERVICE_SIZE);
+				  s1 = createService();
 				  if (s1 == NULL)
 				    {
 				      dup2 (saved_stdout, fileno (stdout));
@@ -1926,7 +1926,7 @@ runRequest (map ** inputs)
     }
   }else /* Not found in MetaDB */{
 #endif
-    s1 = (service *) malloc (SERVICE_SIZE);
+    s1 = createService();
     if (s1 == NULL)
       {
 	freeMaps (&m);
