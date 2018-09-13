@@ -95,7 +95,7 @@ int Ogr2Ogr(maps*& conf,maps*& inputs,maps*& outputs)
 int main( int nArgc, char ** papszArgv )
 #endif
 {
-    const char  *pszDialect = NULL;
+    char  *pszDialect = NULL;
     const char  *pszFormat = "ESRI Shapefile";
     const char  *pszDataSource = NULL;
     const char  *pszDestDataSource = NULL;
