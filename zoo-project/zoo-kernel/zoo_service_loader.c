@@ -2567,7 +2567,7 @@ runRequest (map ** inputs)
 	    eres=-1;//SERVICE_FAILED;
 	  }else{
 	    map* testMap=getMapFromMaps(m,"main","memory");
-	    if(testMap!=NULL && strcasecmp(testMap->value,"load")!=0)
+	    if(testMap==NULL || strcasecmp(testMap->value,"load")!=0)
 	      dumpMapsValuesToFiles(&m,&request_input_real_format);
 	    loadServiceAndRun (&m, s1, request_inputs,
 			       &request_input_real_format,

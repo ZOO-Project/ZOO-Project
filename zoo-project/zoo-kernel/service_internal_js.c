@@ -157,6 +157,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
     return 1;
   if (!JS_DefineFunction(cx, global, "alert", JSAlert, 2, 0))
     return 1;  
+  if (!JS_DefineFunction(cx, global, "sleep", JSSleep, 1, 0))
+    return 1;  
   if (!JS_DefineFunction(cx, global, "importScripts", JSLoadScripts, 1, 0))
     return 1;
 
@@ -1022,6 +1024,28 @@ JSUpdateStatus(JSContext *cx, uintN argc, jsval *argv1)
   }
   freeMaps(&conf);
   free(conf);
+  JS_MaybeGC(cx);
+  return JS_TRUE;
+}
+
+/**
+ * The function used as sleep from the JavaScript environment
+ * (ZOO-API).
+ *
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ */
+JSBool
+JSSleep(JSContext *cx, uintN argc, jsval *argv1)
+{
+  jsval *argv = JS_ARGV(cx,argv1);
+  JS_MaybeGC(cx);
+  int isleep=0;
+  if(JS_ValueToInt32(cx,argv[0],&isleep)==JS_TRUE){
+    zSleep(isleep);
+  }
   JS_MaybeGC(cx);
   return JS_TRUE;
 }
