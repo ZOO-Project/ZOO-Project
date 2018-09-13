@@ -48,6 +48,7 @@ extern "C" {
   JSBool JSTranslate(JSContext*, uintN, jsval*);
   JSBool JSRequest(JSContext*, uintN, jsval*);
   JSBool JSUpdateStatus(JSContext*,uintN,jsval *);
+  JSBool JSSleep(JSContext*,uintN,jsval *);
 
   void reportError(JSContext *cx, const char *message, JSErrorReport *report);
   
