@@ -437,7 +437,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       return -1;
     }
     if(!sessions[cnt]->sftp_session)
-      zSleep(10);
+      zSleep(1);
   } while (!sessions[cnt]->sftp_session);
   do {
     sftp_handle = libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,   
@@ -452,7 +452,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       }
     }
     if(!sftp_handle)
-      zSleep(100);
+      zSleep(1);
   } while (!sftp_handle);
  
   int result=0;
@@ -529,6 +529,7 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   map* uuid=getMapFromMaps(conf,"lenv","usid");
   char *logPath=(char*)malloc((strlen(tmpPath->value)+strlen(uuid->value)+11)*sizeof(char));
   sprintf(logPath,"%s/exec_out_%s",tmpPath->value,uuid->value);
+  
   FILE* logFile=fopen(logPath,"wb");
   free(logPath);
   while(true){
@@ -541,6 +542,7 @@ int ssh_exec(maps* conf,const char* command,int cnt){
 	int i;
 	bytecount += rc;
 	buffer[rc]=0;
+	
 	fprintf(logFile,"%s",buffer);
 	fflush(logFile);
       }
@@ -648,6 +650,62 @@ bool addToUploadQueue(maps** conf,maps* input){
   return true;
 }
 
+int fileMd5Check(maps** conf,const char* localPath,const char* targetPath){
+  if(strstr(localPath,".zca")!=NULL){
+    char *logPath=NULL;
+    char *command=(char*)malloc((strlen(targetPath)+27)*sizeof(char));
+    sprintf(command,"md5sum %s | awk {'print $1'}",targetPath);
+    if(ssh_exec(*conf,command,ssh_get_cnt(*conf))<=0){
+      return -1;
+    }else{
+      struct stat f_status={};
+      map* usid=getMapFromMaps(*conf,"lenv","usid");
+      map* tmpMap=getMapFromMaps(*conf,"main","tmpPath");
+      char* tmpPath=zStrdup(localPath);
+      tmpPath[strlen(tmpPath)-2]='m';
+      tmpPath[strlen(tmpPath)-1]='d';
+      free(command);
+      logPath=(char*)malloc((strlen(tmpMap->value)+strlen(usid->value)+11)*sizeof(char));
+      sprintf(logPath,"%s/exec_out_%s",tmpMap->value,usid->value);
+      int ts=stat(logPath, &f_status);
+      if(ts==0) {
+	char* fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+	FILE* f=fopen(logPath,"rb");
+	fread(fcontent,f_status.st_size,1,f);
+	fcontent[f_status.st_size-1]=0;
+	fclose(f);
+	free(logPath);
+	struct stat f_status1={};
+	int ts1=stat(tmpPath, &f_status1);
+	if(ts1==0) {
+	  char* fcontent1=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+	  FILE* f1=fopen(tmpPath,"rb");
+	  fread(fcontent1,f_status1.st_size,1,f1);
+	  fcontent1[f_status1.st_size]=0;
+	  fclose(f1);
+	  free(tmpPath);
+	  if(strcmp(fcontent,fcontent1)==0){
+	    free(fcontent);
+	    free(fcontent1);
+	    return 0;
+	  }else{
+	    free(fcontent);
+	    free(fcontent1);
+	    return -1;
+	  }
+	}else{
+	  free(tmpPath);
+	  free(fcontent);
+	  return -1;
+	}	
+      }
+      free(logPath);
+      free(tmpPath);
+    }
+  }
+  return -1;
+}
+
 bool runUpload(maps** conf){
   SSHCON *test=ssh_connect(*conf);
   if(test==NULL){
@@ -664,22 +722,24 @@ bool runUpload(maps** conf){
 	getMapArray(queueMaps->content,"localPath",i),
 	getMapArray(queueMaps->content,"targetPath",i)
       };
-      /**/zooLock* lck;
-      if((lck=lockFile(*conf,argv[1]->value,'w'))!=NULL){/**/
-	if(ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf))!=true){
-	  char* templateStr=_("Unable to copy over SSH the file requested for setting the value of %s.");
-	  char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv[0]->value)+1)*sizeof(char));
-	  sprintf(tmpMessage,templateStr,argv[0]->value);
-	  setMapInMaps(*conf,"lenv","message",tmpMessage);
-	  free(tmpMessage);
-	  unlockFile(*conf,lck);
+      if(fileMd5Check(conf,argv[1]->value,argv[2]->value)<0){
+	/**/zooLock* lck;
+	if((lck=lockFile(*conf,argv[1]->value,'w'))!=NULL){/**/
+	  if(ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf))!=true){
+	    char* templateStr=_("Unable to copy over SSH the file requested for setting the value of %s.");
+	    char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv[0]->value)+1)*sizeof(char));
+	    sprintf(tmpMessage,templateStr,argv[0]->value);
+	    setMapInMaps(*conf,"lenv","message",tmpMessage);
+	    free(tmpMessage);
+	    unlockFile(*conf,lck);
+	    return false;
+	  }
+	  /**/unlockFile(*conf,lck);
+	}else{
+	  setMapInMaps(*conf,"lenv","message",_("Unable to lock the file for upload!"));
 	  return false;
-	}
-	/**/unlockFile(*conf,lck);
-      }else{
-	setMapInMaps(*conf,"lenv","message",_("Unable to lock the file for upload!"));
-	return false;
-      }/**/
+	}/**/
+      }
     }    
   }
   while (libssh2_session_disconnect(test->session, "Normal Shutdown, Thank you for using the ZOO-Project sshapi")

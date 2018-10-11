@@ -41,55 +41,55 @@
 #include "service_internal_hpc.h"
 #endif
 #define META_SERVICES_LIST_ALL \
-  "select id,identifier,title,abstract,service_type,service_provider"\
+  "select id,identifier,title,abstract,service_type,service_provider,conf_id"\
   " from ows_process"
-#define META_SERVICES_LIST_ALL_LENGTH 83
+#define META_SERVICES_LIST_ALL_LENGTH strlen(META_SERVICES_LIST_ALL)
 
 #define META_SERVICES_KEYWORDS_FROM_PROCESS \
   "SELECT keyword FROM CollectionDB.ows_Keywords where id in"\
   " (SELECT keywords_id FROM CollectionDB.DescriptionsKeywordsAssignment"\
   " where descriptions_id=%s) "
-#define META_SERVICES_KEYWORDS_FROM_PROCESS_LENGTH 162
+#define META_SERVICES_KEYWORDS_FROM_PROCESS_LENGTH strlen(META_SERVICES_KEYWORDS_FROM_PROCESS)
 
 #define META_SERVICES_META_FROM_ANYTHING \
   "SELECT title,role,href FROM CollectionDB.ows_Metadata where id in"\
   " (SELECT metadata_id FROM CollectionDB.DescriptionsMetadataAssignment"\
   " where descriptions_id=%s) "
-#define META_SERVICES_META_FROM_ANYTHING_LENGTH 162
+#define META_SERVICES_META_FROM_ANYTHING_LENGTH strlen(META_SERVICES_META_FROM_ANYTHING)
 
 #define META_SERVICES_AP_FROM_ANYTHING \
   "SELECT id,title,role,href FROM CollectionDB.ows_AdditionalParameters where id in"\
   " (SELECT additional_parameters_id FROM CollectionDB.DescriptionsAdditionalParametersAssignment"\
   " where descriptions_id=%s) "
-#define META_SERVICES_AP_FROM_ANYTHING_LENGTH 199
+#define META_SERVICES_AP_FROM_ANYTHING_LENGTH strlen(META_SERVICES_AP_FROM_ANYTHING)
 
 #define META_SERVICES_AP_FROM_AP \
   "SELECT key,value FROM CollectionDB.ows_AdditionalParameter where additional_parameters_id =$q$%s$q$"
-#define META_SERVICES_AP_FROM_AP_LENGTH 100
+#define META_SERVICES_AP_FROM_AP_LENGTH strlen(META_SERVICES_AP_FROM_AP)
 
 #define META_SERVICES_LIST_INPUTS_FROM_PROCESS				\
   "select id, identifier,title,abstract,min_occurs,max_occurs from CollectionDB.ows_Input where id in (SELECT input_id from CollectionDB.ProcessInputAssignment where process_id=%s) order by id"
-#define META_SERVICES_LIST_INPUTS_FROM_PROCESS_LENGTH 190
+#define META_SERVICES_LIST_INPUTS_FROM_PROCESS_LENGTH strlen(META_SERVICES_LIST_INPUTS_FROM_PROCESS)
 
 #define META_SERVICES_LIST_INPUTS_FROM_INPUT				\
   "select id, identifier,title,abstract,min_occurs,max_occurs from CollectionDB.ows_Input where id in (SELECT child_input from CollectionDB.InputInputAssignment where parent_input=%s) order by id"
-#define META_SERVICES_LIST_INPUTS_FROM_INPUT_LENGTH 193
+#define META_SERVICES_LIST_INPUTS_FROM_INPUT_LENGTH strlen(META_SERVICES_LIST_INPUTS_FROM_INPUT)
 
 #define META_SERVICES_LIST_OUTPUTS_FROM_PROCESS \
   "select id, identifier,title,abstract from CollectionDB.ows_Output where id in (SELECT output_id from CollectionDB.ProcessOutputAssignment where process_id=%s) order by id"
-#define META_SERVICES_LIST_OUTPUTS_FROM_PROCESS_LENGTH 171
+#define META_SERVICES_LIST_OUTPUTS_FROM_PROCESS_LENGTH strlen(META_SERVICES_LIST_OUTPUTS_FROM_PROCESS)
 
 #define META_SERVICES_LIST_OUTPUTS_FROM_OUTPUT \
   "select id, identifier,title,abstract from CollectionDB.ows_Output where id in (SELECT child_output from CollectionDB.OutputOutputAssignment where parent_output=%s) order by id"
-#define META_SERVICES_LIST_OUTPUTS_FROM_OUTPUT_LENGTH 176
+#define META_SERVICES_LIST_OUTPUTS_FROM_OUTPUT_LENGTH strlen(META_SERVICES_LIST_OUTPUTS_FROM_OUTPUT)
 
 #define META_SERVICES_LIST_LITERAL_FROM_IO \
   "select (SELECT name as type FROM CollectionDB.PrimitiveDatatypes where CollectionDB.PrimitiveDatatypes.id=data_type_id),default_value,(SELECT uom from CollectionDB.PrimitiveUOM where id=CollectionDB.LiteralDataDomain.uom),translate(translate(ARRAY((SELECT allowed_Value from CollectionDB.AllowedValues where id in (SELECT allowed_value_id from CollectionDB.AllowedValuesAssignment where literal_data_domain_id=CollectionDB.LiteralDataDomain.id)))::varchar,'{',''),'}',''),def as allowedvalues from CollectionDB.LiteralDataDomain where id in (SELECT data_description_id from CollectionDB.%sDataDescriptionAssignment where %s_id = %s);"
-#define META_SERVICES_LIST_LITERAL_FROM_IO_LENGTH 634
+#define META_SERVICES_LIST_LITERAL_FROM_IO_LENGTH strlen(META_SERVICES_LIST_LITERAL_FROM_IO)
 
 #define META_SERVICES_LIST_FORMATS_FROM_IO \
   "select mime_type,encoding,schema,maximum_megabytes,CASE WHEN use_mapserver THEN 'true' ELSE 'false' END, ms_styles, def from CollectionDB.ows_Format,CollectionDB.PrimitiveFormats where CollectionDB.ows_Format.primitive_format_id=CollectionDB.PrimitiveFormats.id and CollectionDB.ows_Format.id in (SELECT format_id from collectiondb.ows_datadescription where id in ( SELECT data_description_id from CollectionDB.%sDataDescriptionAssignment where %s_id = %s))"
-#define META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH 458
+#define META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH strlen(META_SERVICES_LIST_FORMATS_FROM_IO)
 
 /**
  * Create a new iotype pointer using field names from an OGRFeature
@@ -386,6 +386,7 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       addToMap(s->content,"abstract",poFeature->GetFieldAsString( 3 ));
       addToMap(s->content,"serviceType",poFeature->GetFieldAsString( 4 ));
       addToMap(s->content,"serviceProvider",poFeature->GetFieldAsString( 5 ));
+      addToMap(s->content,"confId",poFeature->GetFieldAsString( 6 ));
       addToMap(s->content,"fromDb","true");
       s->metadata=NULL;
       fillMetadata(conf,&s->metadata,poFeature->GetFieldAsString( 0 ));

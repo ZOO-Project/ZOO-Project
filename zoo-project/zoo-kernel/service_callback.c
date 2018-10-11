@@ -768,7 +768,8 @@ extern "C" {
       // Finalize HPC
       char *keys[6][2]={
 	{
-	  "SubmitTime",
+	  //"SubmitTime",
+	  "Submit",
 	  "hpc_submission_date"
 	},
 	{
@@ -780,15 +781,18 @@ extern "C" {
 	  "hpc_job_name"
 	},
 	{
-	  "StartTime",
+	  //"StartTime",
+	  "Start",
 	  "hpc_start_date"
 	},
 	{
-	  "EndTime",
+	  //"EndTime",
+	  "End",
 	  "hpc_end_date"
 	},
 	{
-	  "JobState",
+	  //"JobState",
+	  "State",
 	  "hpc_status"
 	}	
       };
