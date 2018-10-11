@@ -176,6 +176,7 @@ int storeMd5(char* file){
     return 1;
   fwrite(md5fstr,sizeof(char),strlen(md5fstr),fo);
   free(md5fstr);
+  free(storage);
   fclose(fo);
   return 0;
 }

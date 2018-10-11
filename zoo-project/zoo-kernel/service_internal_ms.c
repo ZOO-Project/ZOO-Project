@@ -541,7 +541,7 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
 		 double minX,double minY,double maxX,double maxY){
   int imyIndex=getPublishedId(output);
   msMapSetExtent(m,minX,minY,maxX,maxY);
-  m->maxsize=4096;
+  //m->maxsize=4096;
 #ifdef DEBUGMS
   fprintf(stderr,"Extent %.15f %.15f %.15f %.15f\n",minX,minY,maxX,maxY);
 #endif
@@ -950,7 +950,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Try to open the DataSource using GDAL
    */
   GDALAllRegister();
-  hDataset = GDALOpen( pszFilename, GA_Update );
+  hDataset = GDALOpen( pszFilename, GA_Update ); /*GA_ReadOnly*/
   if( hDataset == NULL ){
 #ifdef DEBUGMS
     fprintf(stderr,"Unable to access the DataSource %s \n",pszFilename);
@@ -1038,10 +1038,11 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 #endif
     setSrsInformations(output,m,myLayer,pszProjection);
   }else{
-    fprintf(stderr,"NO SRS FOUND ! %s\n",GDALGetProjectionRef( hDataset ));
+    fprintf(stderr,"NO SRS FOUND %s %d ! %s\n",__FILE__,__LINE__,GDALGetProjectionRef( hDataset ));
+    fflush(stderr);
     CPLErr sp=GDALSetProjection( hDataset , "+init=epsg:4326" );
     if(sp!=CE_None){
-      fprintf(stderr,"NO SRS FOUND ! %s\n",CPLGetLastErrorMsg());
+      fprintf(stderr,"NO SRS SET ! %s\n",CPLGetLastErrorMsg());
     }
   }
 
@@ -1132,7 +1133,8 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     hBand = GDALGetRasterBand( hDataset, iBand+1 );
 
     CPLErrorReset();
-    GDALComputeRasterStatistics( hBand, TRUE, &pdfMin, &pdfMax, &pdfMean, &pdfStdDev, NULL,NULL);
+    GDALGetRasterStatistics( hBand, TRUE, TRUE, &pdfMin, &pdfMax, &pdfMean, &pdfStdDev);
+    //GDALComputeRasterStatistics( hBand, TRUE, &pdfMin, &pdfMax, &pdfMean, &pdfStdDev, NULL,NULL);
     char tmpN[21];
     sprintf(tmpN,"Band%d",iBand+1);
     if (CPLGetLastErrorType() == CE_None){
@@ -1142,8 +1144,8 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       char tmpI[31];      
       sprintf(tmpI,"%s_interval",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
-      if(pdfMax>255)
-	msLayerAddProcessing(myLayer,tmpMp);
+      //if(pdfMax>255)
+      msLayerAddProcessing(myLayer,tmpMp);
       map* test=getMap(output->content,"msClassify");
       if(test!=NULL && strncasecmp(test->value,"true",4)==0){
 	/**
@@ -1497,5 +1499,7 @@ void saveMapNames(maps* conf,maps* output,char* mapfile){
   if(myMaps!=NULL){
     fprintf(myMaps,"%s\n",mapfile);
     fclose(myMaps);
-  } 
+  }
+  free(mapName);
+  free(tmp);
 }

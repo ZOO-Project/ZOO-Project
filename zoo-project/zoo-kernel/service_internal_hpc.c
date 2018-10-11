@@ -298,7 +298,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   // Get the configuration id depending on service type and defined thresholds
   // then, set the configId key in the lenv section
   char *serviceType;
-  map* mServiceType=getMap(s->content,"serviceType");
+  map* mServiceType=getMap(s->content,"confId");
   if(mServiceType!=NULL)
     serviceType=mServiceType->value;
   else
@@ -333,7 +333,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   int parameters_cnt=0;
   while(input!=NULL && input->content!=NULL){
     map* isInRequest=getMap(input->content,"inRequest");
-    map* minNb=getMap(input->content,"minoccurs");
+    map* minNb=getMap(input->content,"minOccurs");
     if(getMaps(*real_outputs,input->name)==NULL &&
        ( (isInRequest!=NULL && strncasecmp(isInRequest->value,"true",4)==0)
 	 || (minNb!=NULL && atoi(minNb->value)>0) ) ){
@@ -396,9 +396,33 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	// LitteralData and BboxData 
 	if(getMap(input->content,"dataType")!=NULL){
 	  // For LitteralData, simply pass the value
-	  map* val=getMap(input->content,"value");
-	  parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(val->value)+3)*sizeof(char));
-	  sprintf(parameters[parameters_cnt-1],"-%s %s",input->name,val->value);
+          map* length=getMap(input->content,"length");
+          if(length!=NULL){
+            char* value=NULL;
+            int len=atoi(length->value);
+            int i=0;
+            for(i=0;i<len;i++){
+              map* val=getMapArray(input->content,"value",i);
+              if(val!=NULL){
+                if(value==NULL){
+                  value=(char*)malloc((strlen(val->value)+3)*sizeof(char));
+                  sprintf(value,"\"%s\"",val->value);
+                }
+                else{
+                  value=(char*)realloc(value,(strlen(value)+strlen(val->value)+4)*sizeof(char));
+                  sprintf(value,"%s \"%s\"",value,val->value);
+                }
+              }
+            }
+            if(value!=NULL){
+              parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(value)+3)*sizeof(char));
+              sprintf(parameters[parameters_cnt-1],"-%s %s",input->name,value);
+            }
+          }else{
+            map* val=getMap(input->content,"value");
+            parameters[parameters_cnt-1]=(char*)malloc((strlen(input->name)+strlen(val->value)+5)*sizeof(char));
+            sprintf(parameters[parameters_cnt-1],"-%s \"%s\"",input->name,val->value);
+          }
 	}
       }
     }
@@ -887,6 +911,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	int saved_stdout = dup (fileno (stdout));
 	dup2 (fileno (stderr), fileno (stdout));
 	conf_read(filePath,m);
+	//dumpMaps(m);
 	fflush(stdout);
 	dup2 (saved_stdout, fileno (stdout));
 	close(saved_stdout);
@@ -909,8 +934,15 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		setMapInMaps(*real_outputs,input->name,"generated_file",targetPath);
 		free(targetPath);
 	      }else{
-                map* hpcStdErr=getMapFromMaps(*main_conf,"henv","StdErr");
-                if(hpcStdErr!=NULL && ssh_fetch(*main_conf,targetPath,hpcStdErr->value,ssh_get_cnt(m))==0){
+		map* hpcStdErr=getMapFromMaps(*main_conf,"henv","StdErr");
+		// Added for using sacct in place of scontrol
+		char *sourcePath=NULL;
+		if(hpcStdErr!=NULL){
+		  sourcePath=(char*)malloc((strlen(targetPathMap->value)+strlen(hpcStdErr->value)+2)*sizeof(char));
+		  sprintf(sourcePath,"%s/%s",targetPathMap->value,hpcStdErr->value);
+		}
+                if(hpcStdErr!=NULL && sourcePath!=NULL && ssh_fetch(*main_conf,targetPath,sourcePath,ssh_get_cnt(m))==0){
+		  free(sourcePath);
 		  struct stat f_status;
 		  int ts=stat(targetPath, &f_status);
 		  if(ts==0) {
@@ -924,8 +956,8 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    setMapInMaps(*main_conf,"lenv","message",fcontent);
 		    free(fcontent);
 		  }else{
-		    char *tmpStr=(char*)malloc((strlen(filename)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
-		    sprintf(tmpStr,_("Unable to fetch the remote file for %s"),filename);
+		    char *tmpStr=(char*)malloc((strlen(targetPath)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
+		    sprintf(tmpStr,_("Unable to fetch the remote file for %s"),targetPath);
 		    setMapInMaps(*main_conf,"lenv","message",tmpStr);
 		    free(tmpStr);
 		  }
@@ -938,7 +970,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		invokeCallback(*main_conf,NULL,NULL,7,0);
 		return SERVICE_FAILED;
 	      }
-	    }	    
+	    }
 	  }else{
 	    map* generatedFile=getMap(input->content,"generated_file");
 	    map* generatedUrl=getMap(input->content,"generated_url");
@@ -980,7 +1012,14 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		setMapInMaps(output->child,serviceName,"asReference","true");
 	      }else{
 		map* hpcStdErr=getMapFromMaps(*main_conf,"henv","StdErr");
-		if(hpcStdErr!=NULL && ssh_fetch(*main_conf,targetPath,hpcStdErr->value,ssh_get_cnt(m))==0){
+		char *sourcePath=NULL;
+		if(hpcStdErr!=NULL){
+		  dumpMap(hpcStdErr);
+		  sourcePath=(char*)malloc((strlen(targetPathMap->value)+strlen(hpcStdErr->value)+2)*sizeof(char));
+		  sprintf(sourcePath,"%s/%s",targetPathMap->value,hpcStdErr->value);
+		}
+                if(hpcStdErr!=NULL && sourcePath!=NULL && ssh_fetch(*main_conf,targetPath,sourcePath,ssh_get_cnt(m))==0){
+		  free(sourcePath);
 		  struct stat f_status;
 		  int ts=stat(targetPath, &f_status);
 		  if(ts==0) {
@@ -994,14 +1033,14 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    setMapInMaps(*main_conf,"lenv","message",fcontent);
 		    free(fcontent);
 		  }else{
-		    char *tmpStr=(char*)malloc((strlen(filename)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
-		    sprintf(tmpStr,_("Unable to fetch the remote file for %s"),filename);
+		    char *tmpStr=(char*)malloc((strlen(targetPath)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
+		    sprintf(tmpStr,_("Unable to fetch the remote file for %s"),targetPath);
 		    setMapInMaps(*main_conf,"lenv","message",tmpStr);
 		    free(tmpStr);
 		  }
 		}else{
-		  char *tmpStr=(char*)malloc((strlen(filename)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
-		  sprintf(tmpStr,_("Unable to fetch the remote file for %s"),filename);
+		  char *tmpStr=(char*)malloc((strlen(sourcePath)+strlen(_("Unable to fetch the remote file for %s"))+1)*sizeof(char));
+		  sprintf(tmpStr,_("Unable to fetch the remote file for %s"),sourcePath);
 		  setMapInMaps(*main_conf,"lenv","message",tmpStr);
 		  free(tmpStr);
 		}
