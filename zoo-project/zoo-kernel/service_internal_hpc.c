@@ -905,21 +905,21 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
 	char *filePath=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+15)*sizeof(char));
 	sprintf(filePath,"%s/exec_status_%s",tmpPath->value,jobid->value);
-	maps* m = (maps *) malloc (MAPS_SIZE);
-	m->child=NULL;
-	m->next=NULL;
+	maps* lm = (maps *) malloc (MAPS_SIZE);
+	lm->child=NULL;
+	lm->next=NULL;
 	int saved_stdout = dup (fileno (stdout));
 	dup2 (fileno (stderr), fileno (stdout));
-	conf_read(filePath,m);
+	conf_read(filePath,lm);
 	//dumpMaps(m);
 	fflush(stdout);
 	dup2 (saved_stdout, fileno (stdout));
 	close(saved_stdout);
 	unlink(filePath);
 	free(filePath);
-	addMapsToMaps(main_conf,m);
-	freeMaps(&m);
-	free(m);
+	addMapsToMaps(main_conf,lm);
+	freeMaps(&lm);
+	free(lm);
 
 	input=*real_outputs;
 	while(input!=NULL){
