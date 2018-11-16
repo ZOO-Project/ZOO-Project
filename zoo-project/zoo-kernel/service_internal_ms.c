@@ -184,12 +184,21 @@ void setReferenceUrl(maps* m,maps* tmpI){
     map* minNb=getMap(tmpI->content,"minoccurs");
     map* useMs=getMap(tmpI->content,"useMapserver");
     if((minNb==NULL || atoi(minNb->value)>=1) && useMs!=NULL && strncasecmp(useMs->value,"true",4)==0){
+      int lIndex=0;
+      maps* lenv=getMaps(m,"lenv");
+      if(getMapFromMaps(m,"lenv","mapErrorNb")==NULL)
+	setMapInMaps(m,"lenv","mapErrorNb","0");
+      else{
+	map* tmpV=getMapFromMaps(m,"lenv","mapErrorNb");
+	lIndex=atoi(tmpV->value)+1;
+	addIntToMap(lenv->content,"mapErrorNb",lIndex);
+      }
       setMapInMaps(m,"lenv","mapError","true");
-      setMapInMaps(m,"lenv","locator",tmpI->name);
+      setMapArray(lenv->content,"locator",lIndex,tmpI->name);
       if(nbElements==NULL)
-	setMapInMaps(m,"lenv","message",_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
+	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
       else
-	setMapInMaps(m,"lenv","message",_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
+	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
       if(getMapFromMaps(m,"lenv","state")==NULL)
 	errorException (m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
     }
@@ -888,6 +897,19 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
        * Apply msStyle else fallback to the default style
        */
       tmpMap=getMap(output->content,"msStyle");
+      if(tmpMap==NULL){
+        switch(myLayer->type){
+	case MS_LAYER_POLYGON:
+	  tmpMap=getMapFromMaps(conf,"main","msStylePoly");
+	  break;
+	case MS_LAYER_LINE:
+	  tmpMap=getMapFromMaps(conf,"main","msStyleLine");
+	  break;
+	default:
+	  tmpMap=getMapFromMaps(conf,"main","msStylePoint");
+	  break;
+        }
+      }
       if(tmpMap!=NULL)
 	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
       else{
@@ -1134,7 +1156,6 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 
     CPLErrorReset();
     GDALGetRasterStatistics( hBand, TRUE, TRUE, &pdfMin, &pdfMax, &pdfMean, &pdfStdDev);
-    //GDALComputeRasterStatistics( hBand, TRUE, &pdfMin, &pdfMax, &pdfMean, &pdfStdDev, NULL,NULL);
     char tmpN[21];
     sprintf(tmpN,"Band%d",iBand+1);
     if (CPLGetLastErrorType() == CE_None){

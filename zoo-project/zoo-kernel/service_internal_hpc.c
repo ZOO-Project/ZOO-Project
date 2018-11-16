@@ -319,6 +319,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   free(flenv);
 
   map* targetPathMap=getMapFromMaps(*main_conf,configurationId,"remote_data_path");
+  map* targetPersistentPathMap=getMapFromMaps(*main_conf,configurationId,"remote_persistent_data_path");
   
   pthread_t threads_pool[50];
   // Force the HPC services to be called asynchronously
@@ -361,9 +362,17 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  int i=0;
 	  for(i=0;i<len;i++){
 	    map* tmp=getMapArray(input->content,"cache_file",i);
+	    map* origin=getMapArray(input->content,"origin",i);
 	    char* targetName=strrchr(tmp->value,'/');
-	    char *targetPath=(char*)malloc((strlen(targetPathMap->value)+strlen(targetName)+2)*sizeof(char));
-	    sprintf(targetPath,"%s/%s",targetPathMap->value,targetName);
+	    char *targetPath;
+	    if(origin!=NULL && strcasecmp(origin->value,"SHARED")==0 && targetPersistentPathMap!=NULL){
+	      targetPath=(char*)malloc((strlen(targetPersistentPathMap->value)+strlen(targetName)+2)*sizeof(char));
+	      sprintf(targetPath,"%s/%s",targetPersistentPathMap->value,targetName);
+	    }
+	    else{
+	      targetPath=(char*)malloc((strlen(targetPathMap->value)+strlen(targetName)+2)*sizeof(char));
+	      sprintf(targetPath,"%s/%s",targetPathMap->value,targetName);
+	    }
 	    setMapArray(input->content,"targetPath",i,targetPath);
 	    setMapArray(input->content,"localPath",i,tmp->value);
 	    map* tmp1=getMapArray(input->content,"value",i);
