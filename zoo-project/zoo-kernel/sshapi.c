@@ -652,9 +652,9 @@ bool addToUploadQueue(maps** conf,maps* input){
 
 int fileMd5Check(maps** conf,const char* localPath,const char* targetPath){
   if(strstr(localPath,".zca")!=NULL){
-    char *logPath=NULL;
-    char *command=(char*)malloc((strlen(targetPath)+27)*sizeof(char));
-    sprintf(command,"md5sum %s | awk {'print $1'}",targetPath);
+    char *logPath=NULL;    
+    char *command=(char*)malloc(((2*strlen(targetPath))+42)*sizeof(char));
+    sprintf(command,"(md5sum %s | awk {'print $1'}) && touch %s",targetPath,targetPath);
     if(ssh_exec(*conf,command,ssh_get_cnt(*conf))<=0){
       return -1;
     }else{
