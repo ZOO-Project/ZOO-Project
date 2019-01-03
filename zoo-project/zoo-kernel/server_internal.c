@@ -941,7 +941,7 @@ int isRunning(maps* conf,char* pid){
   char* fbkpid =
     (char *)
     malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
-  sprintf (fbkpid, "%s/%s.pid", r_inputs->value, pid);
+  sprintf (fbkpid, "%s/%s.pid", r_inputs->value, pid);  
   FILE* f0 = fopen (fbkpid, "r");
   if(f0!=NULL){
     fclose(f0);
@@ -969,7 +969,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 		    "NoSuchJob", pid);
   }else{
     map* statusInfo=createMap("JobID",pid);
-    if(isRunning(conf,pid)>0){
+    if(isRunning(conf,pid)>0){		
       if(strncasecmp(req,"GetResult",strlen(req))==0){
 	errorException (conf, _("The result for the requested JobID has not yet been generated. "),
 			"ResultNotReady", pid);

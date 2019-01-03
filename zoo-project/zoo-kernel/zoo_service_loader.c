@@ -158,21 +158,24 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
     return -1;
   lockShm (lid);
 #endif
-  FILE *f3 = fopen (fbkp, "wb+");
-  free (fbkp);
+  FILE *f3 = fopen (fbkp, "wb+");  
+  free (fbkp);  
   fseek (f2, 0, SEEK_END);
   long flen = ftell (f2);
   fseek (f2, 0, SEEK_SET);
   char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
-  fread (tmps1, flen, 1, f2);
+  fread (tmps1, flen, 1, f2);  
 #ifdef WIN32
-  char *pchr=strrchr(tmps1,'>');
-  flen=strlen(tmps1)-strlen(pchr)+1;
-  tmps1[flen]=0;
-#endif
+  /* knut: I think this block can be dropped; pchr may be NULL if result is not in XML format
+  char *pchr=strrchr(tmps1,'>');   
+  flen=strlen(tmps1)-strlen(pchr)+1;  
+  tmps1[flen]=0;  
+  */
+#endif  
   fwrite (tmps1, 1, flen, f3);
+  free(tmps1);
   fclose (f2);
-  fclose (f3);
+  fclose (f3);  
   return 1;
 }
 
@@ -2217,7 +2220,7 @@ runRequest (map ** inputs)
 	  bmap->content=createMap("usid",usid->value);
 	  addToMap(bmap->content,"sid",tmpm->value);
 	  addIntToMap(bmap->content,"pid",getpid());
-	  
+	  	  
 	  // Create PID file referencing the OS process identifier
           fbkpid =
             (char *)
@@ -2308,7 +2311,7 @@ runRequest (map ** inputs)
 	    fclose (f1);
 	    if(dumpBackFinalFile(m,fbkp,fbkp1)<0)
 	      return -1;
-	    unlink (fbkpid);
+	    unlink (fbkpid);		
 	    unhandleStatus (m);
 	    freeMaps (&m);
 	    free (m);
@@ -2363,18 +2366,18 @@ runRequest (map ** inputs)
   signal (SIGFPE, donothing);
   signal (SIGABRT, donothing);
 #endif
-
   if (((int) getpid ()) != cpid || cgiSid != NULL)
-    {
+    {	  
       fclose (stdout);
       fclose (stderr);
 
       fclose (f0);
       fclose (f1);
-
-      if(dumpBackFinalFile(m,fbkp,fbkp1)<0)
-	return -1;
-      unlink (fbkpid);
+	 
+	  if (dumpBackFinalFile(m, fbkp, fbkp1) < 0)
+		  return -1;
+	
+      unlink (fbkpid);	  
       switch(eres){
       default:
       case SERVICE_FAILED:
@@ -2386,7 +2389,7 @@ runRequest (map ** inputs)
 	setMapInMaps(m,"lenv","fstate",wpsStatus[0]);
 	break;
       }      
-#ifndef RELY_ON_DB
+#ifndef RELY_ON_DB	  
       dumpMapsToFile(bmap,fbkpres,1);
       removeShmLock (m, 1);
 #else

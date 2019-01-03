@@ -242,7 +242,7 @@ char* _getStatus(maps* conf,char* lid){
  *
  * @param conf the map containing the setting of the main.cfg file
  */
-void unhandleStatus(maps *conf){
+void unhandleStatus(maps *conf){	
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
   map* usid = getMapFromMaps (conf, "lenv", "usid");
   char* fbkpid =
