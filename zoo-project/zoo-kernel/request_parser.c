@@ -627,7 +627,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  map *ltmp = getMap (tmpmaps->content, "method");
 			  if (l == 4 )
 			    {
-			      if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
+			      if ((ltmp==NULL || strncasecmp (ltmp->value, "POST",4) != 0)) // 
+			      //if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
 				{
 				  if (loadRemoteFile
 				      (main_conf, &tmpmaps->content, hInternet,
@@ -1167,6 +1168,7 @@ int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc){
 	cur=cur->next;
     }
   }
+  return 0;
 }
 
 /**
@@ -1467,7 +1469,8 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
   int vid=getVersionId(version->value);
 
   xmlInitParser ();
-  xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER);
+  //xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER);
+  xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER | XML_PARSE_HUGE); // 
 
   /**
    * Extract Input nodes from the XML Request.

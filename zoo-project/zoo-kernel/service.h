@@ -39,6 +39,20 @@ ZOO_DLL_EXPORT char *strcasestr (char const *,char const *);
 #endif
 #endif
 
+// knut: add bool if necessary
+#ifndef __cplusplus
+  #ifndef WIN32
+    #include <stdbool.h>
+  #else
+    typedef int bool;
+    #define false 0
+    #define true 1	
+  #endif
+#endif
+#ifndef __bool_true_false_are_defined
+  #define __bool_true_false_are_defined 1
+#endif
+
 #ifdef WIN32
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
@@ -46,11 +60,13 @@ ZOO_DLL_EXPORT char *strcasestr (char const *,char const *);
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define snprintf _snprintf
 #endif
+/* knut: see new definition of bool above
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #define false 0
 #define true 1
 #define bool int
 #endif
+*/
 #define zStrdup _strdup
 #define zMkdir _mkdir
 #define zOpen _open
@@ -123,7 +139,7 @@ extern "C" {
 #include <string.h>
 #ifndef WIN32
 #include <ctype.h>
-#include <stdbool.h>
+//#include <stdbool.h> // knut: see new definition of bool above
 #endif
 
 /**
@@ -273,6 +289,92 @@ extern "C" {
     struct services* content; //!< the content services pointer
     struct registry* next; //!< the next registry pointer
   } registry;
+  
+  // knut
+  enum WPSException {
+    /*
+    * StatusOK is not a WPS exception, it is added
+    * here for convenience.
+    */      
+    StatusOK,                 
+    /*
+    * See WPS 1.0 specification, Table 38 and Table 62.
+    */
+    MissingParameterValue,    
+    InvalidParameterValue,
+    NoApplicableCode,
+    NotEnoughStorage,
+    ServerBusy,
+    FileSizeExceeded,
+    StorageNotSupported,
+    VersionNegotiationFailed,
+    /*
+    * See WPS 2.0 specification, Tables 41, 46, 48, and 50.
+    */
+    NoSuchProcess,
+    NoSuchMode,
+    NoSuchInput,
+    NoSuchOutput,
+    DataNotAccessible,
+    SizeExceeded,
+    TooManyInputs,
+    TooManyOutputs,
+    NoSuchFormat,
+    WrongInputData,
+    InternalServerError,
+    NoSuchJob,
+    ResultNotReady
+  }; 
+  
+  static const char* const WPSExceptionCode[] = {
+    "StatusOK",
+    "MissingParameterValue", 
+    "InvalidParameterValue",
+    "NoApplicableCode",
+    "NotEnoughStorage",
+    "ServerBusy",
+    "FileSizeExceeded",
+    "StorageNotSupported",
+    "VersionNegotiationFailed",
+    "NoSuchProcess",
+    "NoSuchMode",
+    "NoSuchInput",
+    "NoSuchOutput",
+    "DataNotAccessible",
+    "SizeExceeded",
+    "TooManyInputs",
+    "TooManyOutputs",
+    "NoSuchFormat",
+    "WrongInputData",
+    "InternalServerError",
+    "NoSuchJob",
+    "ResultNotReady"    
+  };      
+
+  static const char* const WPSExceptionText[] = {
+    "No problem detected",
+    "Operation request does not include a parameter value, and this server did not declare a default value for that parameter.", 
+    "Operation request contains an invalid parameter value.",
+    "No other exceptionCode specified by this service and server applies to this exception.",
+    "The server does not have enough space available to store the inputs and outputs associated with the request.",
+    "The server is too busy to accept and queue the request at this time.",
+    "The file size of one of the input parameters was too large for this process to handle.",
+    "Execute operation request included transmission=”reference” for one of the outputs, but storage is not offered by this server.",
+    "Service version for a ComplexData xlink:href input was not supported by the referenced server, and version negotiation failed.",
+    "One of the identifiers passed does not match with any of the processes offered by this server.",
+    "The process does not permit the desired execution mode.",
+    "One or more of the input identifiers passed does not match with any of the input identifiers of this process.",
+    "One or more of the output identifiers passed does not match with any of the input identifiers of this process.",
+    "One of the referenced input data sets was inaccessible.",
+    "The size of one of the input parameters was too large for this process to handle.",
+    "Too many input items have been specified.",
+    "Too many output items have been specified.",
+    "One or more of the input or output formats specified in the request did not match with any of the formats defined for that particular input or output.",
+    "One or more of inputs for which the service was able to retrieve the data but could not read it.",
+    "",
+    "The JobID from the request does not match any of the Jobs running on this server.",
+    "The result for the requested JobID has not yet been generated."
+  };
 
   ZOO_DLL_EXPORT void _dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMap(map*);
@@ -339,6 +441,15 @@ extern "C" {
   // it is also used by services (e.g., GetStatus), therefore exported to shared library
   ZOO_DLL_EXPORT int snprintf(char *buffer, size_t n, const char *format, ...);
 #endif
+
+  // knut: some new utility functions; logMessage is primarily intended for debugging 	
+  ZOO_DLL_EXPORT bool nonempty(map* map);
+  ZOO_DLL_EXPORT bool hasvalue(maps* source, const char* node, const char* key, map** kvp);
+  ZOO_DLL_EXPORT void setErrorMessage(maps*& conf, const char* service, WPSException exc, const char* message = NULL);
+  ZOO_DLL_EXPORT void logMessage(const char* source, const char* function, int line, const char* file = NULL, const char* message = NULL);  
+  #define zooLogMsg(file,message) logMessage(__FILE__, __func__, __LINE__, (file), (message)) 
+  #define zooLog logMessage(__FILE__, __func__, __LINE__)  
+  
 #ifdef __cplusplus
 }
 #endif

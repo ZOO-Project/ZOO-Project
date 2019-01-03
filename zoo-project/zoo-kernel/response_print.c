@@ -2610,30 +2610,31 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     maps* tmpI=NULL;
     map* tmpIV=getMap(request_inputs1,"RawDataOutput");
     if(tmpIV!=NULL){
-      tmpI=getMaps(request_outputs,tmpIV->value);
+      tmpI=getMaps(request_outputs,tmpIV->value);	  
     }
     if(tmpI==NULL)
       tmpI=request_outputs;
+
     elements* e=getElements(s->outputs,tmpI->name);
     if(e!=NULL && strcasecmp(e->format,"BoundingBoxData")==0){
       printBoundingBoxDocument(m,tmpI,NULL);
     }else{
       map *gfile=getMap(tmpI->content,"generated_file");
       if(gfile!=NULL){
-	gfile=getMap(tmpI->content,"expected_generated_file");
+	gfile=getMap(tmpI->content,"expected_generated_file");	
 	if(gfile==NULL){
 	  gfile=getMap(tmpI->content,"generated_file");
 	}
 	readGeneratedFile(m,tmpI->content,gfile->value);
       }
-      toto=getMap(tmpI->content,"value");
+      toto=getMap(tmpI->content,"value");	 
       if(toto==NULL){
 	char tmpMsg[1024];
 	sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),tmpI->name);
 	errorException(m,tmpMsg,"InvalidParameterValue","RawDataOutput");
 	return;
-      }
-      map* fname=getMapFromMaps(tmpI,tmpI->name,"filename");
+      }	  
+      map* fname=getMapFromMaps(tmpI,tmpI->name,"filename");	  	  
       if(fname!=NULL)
 	printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
       map* rs=getMapFromMaps(tmpI,tmpI->name,"size");

@@ -24,6 +24,10 @@
 
 #include "service.h"
 
+// knut: time utilities required for new log function (logMessage)
+#include <ctime>
+#include <chrono>
+#include <process.h>
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #include <stdarg.h>
@@ -449,18 +453,20 @@ void freeService(service** s){
  * @param v the corresponding value to add
  */
 void addToMap(map* m,const char* n,const char* v){
-  if(hasKey(m,n)==false){
-    map* _cursor=m;
-    while(_cursor->next!=NULL){
-      _cursor=_cursor->next;
+  if (m != NULL) { // knut: add NULL-pointer check
+    if(hasKey(m,n)==false){
+      map* _cursor=m;
+      while(_cursor->next!=NULL){
+        _cursor=_cursor->next;
+      }
+      _cursor->next=createMap(n,v);
     }
-    _cursor->next=createMap(n,v);
-  }
-  else{
-    map *tmp=getMap(m,n);
-    if(tmp->value!=NULL)
-      free(tmp->value);
-    tmp->value=zStrdup(v);
+    else{
+      map *tmp=getMap(m,n);
+      if(tmp->value!=NULL)
+        free(tmp->value);
+      tmp->value=zStrdup(v);
+    }
   }
 }
 
@@ -1595,6 +1601,115 @@ void charxxxToMaps(char*** c,maps**m){
   }
   m=&trorf;
 }
+
+/**
+ * Verify that a map has a value
+ *
+ * @param map pointer to map that should be checked
+ * @return true if map has a value or false if value is missing/empty/NULL
+ */
+bool nonempty( map* map ) {
+    return ( map != NULL && map->value != NULL && strlen(map->value) > 0 && strcmp(map->value, "NULL") != 0 );
+}
+
+/**
+ * Verify that a particular map value exists in a maps 
+ * data structure, and obtain that value
+ *
+ * @param source pointer to maps structure
+ * @param node name of maps node to search
+ * @param key name of map node to find
+ * @param address to the map* if it exists, otherwise NULL
+ * @return true if map has a value or false if value is missing/NULL
+ */
+bool hasvalue( maps* source, const char* node, const char* key, map** kvp ) {
+    *kvp = getMapFromMaps(source, node, key);
+    return ( *kvp != NULL && (*kvp)->value != NULL && 
+             strlen((*kvp)->value) > 0 && strcmp((*kvp)->value, "NULL") != 0 );
+}
+
+/*
+ * Set error message in configuration maps
+ *
+ * @param conf reference to configuration maps
+ * @param service name of service 
+ * @param exc WPSException code
+ * @param message exception text (default: exception text in WPS specification)
+ */
+void setErrorMessage( maps*& conf, const char* service, WPSException exc, const char* message ) {
+  
+  if (message == NULL) {
+    message = WPSExceptionText[exc];
+  } 
+
+	size_t len = strlen( service ) + strlen(": ") + strlen( message ) + strlen(": ") + strlen(WPSExceptionCode[exc]) + 16;
+	char* msg = (char*) malloc( len * sizeof(char) );
+
+	if (msg != NULL) {
+		snprintf( msg, len*sizeof(char), "\n%s: %s: %s\n", service, message, WPSExceptionCode[exc] );
+		setMapInMaps( conf, "lenv", "message", msg );
+		free( msg );
+	}	
+}
+
+void logMessage(const char* source, const char* function, int line, const char* file, const char* message) { //, const char* source, const char* function, int line) {
+  
+  size_t msglen = 512;
+  const char empty[] = "";
+  
+  FILE* log;
+  
+  // system time, process time [nanoseconds]   
+  unsigned long long sys_t, proc_t;
+  
+  // processor time consumed by the program:
+  clock_t t = clock();
+    
+  // system time:
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  
+  std::time_t now_t = std::chrono::system_clock::to_time_t( now );
+  std::tm* tm = localtime( &now_t );
+	char* str = asctime(tm);
+  str[strlen(str)-1] = '\0'; // remove newline
+  
+  sys_t = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+  //proc_t = (unsigned long long)(1.0e9*t/CLOCKS_PER_SEC);
+  proc_t = t;
+  
+  if ( message != NULL ) {
+     msglen += strlen(message);
+  }  
+  else {
+    message = empty;
+  }
+  //getLastErrorMessage(); // cgiScriptName  
+  char* text = (char*) malloc( sizeof(char)*msglen );
+  
+  snprintf( text, msglen, "pid: %d %s line %d %s() %s systime: %lld ns ticks: %lld %s\n", 
+    _getpid(), source, line, function, str, sys_t, proc_t, message ); // __FILE__ __LINE__ __func__ //
+  
+  if ( file != NULL && (log = fopen( file, "a+" )) != NULL ) {
+    fputs( text, log );
+    fclose( log );
+  }
+  else {
+    #ifdef MSG_LOG_FILE
+    if ( (log = fopen( MSG_LOG_FILE, "a+" )) != NULL ) {
+      fputs( text, log );
+      fclose( log );
+    }      
+    #endif
+  }
+  
+  if ( text != NULL ) free( text );
+}
+
+// knut:
+// Example:
+// zooLog;
+// zooLogMsg(NULL, getLastErrorMessage()); 
+// zooLogMsg(log.txt, getLastErrorMessage()); 
 
 #ifdef WIN32
 #ifndef USE_MS
