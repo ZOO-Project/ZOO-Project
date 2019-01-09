@@ -758,7 +758,9 @@ void loadMapBinaries(map** out,map* in){
   map* length=getMap(in,"length");
   map* toload=getMap(in,"to_load");
   if(toload!=NULL && strcasecmp(toload->value,"false")==0){
+#ifdef DEBUG
     fprintf(stderr,"NO LOAD %s %d \n",__FILE__,__LINE__);
+#endif
     return ;
   }
   if(length!=NULL){

@@ -78,7 +78,7 @@ void addPrefix(maps* conf,map* level,service* serv){
       }
     }
     if(prefix!=NULL){
-      char* tmp0=strdup(serv->name);
+      char* tmp0=zStrdup(serv->name);
       free(serv->name);
       serv->name=(char*)malloc((strlen(prefix)+strlen(tmp0)+1)*sizeof(char));
       sprintf(serv->name,"%s%s",prefix,tmp0);
@@ -182,14 +182,14 @@ int zooXmlAddNs(xmlNodePtr nr,const char* url,const char* name){
   if(nbNs==0){
     nbNs++;
     currId=0;
-    nsName[currId]=strdup(name);
+    nsName[currId]=zStrdup(name);
     usedNs[currId]=xmlNewNs(nr,BAD_CAST url,BAD_CAST name);
   }else{
     currId=zooXmlSearchForNs(name);
     if(currId<0){
       nbNs++;
       currId=nbNs-1;
-      nsName[currId]=strdup(name);
+      nsName[currId]=zStrdup(name);
       usedNs[currId]=xmlNewNs(nr,BAD_CAST url,BAD_CAST name);
     }
   }
@@ -254,14 +254,14 @@ xmlNodePtr soapEnvelope(maps* conf,xmlNodePtr n){
   map* soap=getMapFromMaps(conf,"main","isSoap");
   if(soap!=NULL && strcasecmp(soap->value,"true")==0){
     int lNbNs=nbNs;
-    nsName[lNbNs]=strdup("soap");
+    nsName[lNbNs]=zStrdup("soap");
     usedNs[lNbNs]=xmlNewNs(NULL,BAD_CAST "http://www.w3.org/2003/05/soap-envelope",BAD_CAST "soap");
     nbNs++;
     xmlNodePtr nr = xmlNewNode(usedNs[lNbNs], BAD_CAST "Envelope");
-    nsName[nbNs]=strdup("soap");
+    nsName[nbNs]=zStrdup("soap");
     usedNs[nbNs]=xmlNewNs(nr,BAD_CAST "http://www.w3.org/2003/05/soap-envelope",BAD_CAST "soap");
     nbNs++;
-    nsName[nbNs]=strdup("xsi");
+    nsName[nbNs]=zStrdup("xsi");
     usedNs[nbNs]=xmlNewNs(nr,BAD_CAST "http://www.w3.org/2001/XMLSchema-instance",BAD_CAST "xsi");
     nbNs++;
     xmlNsPtr ns_xsi=usedNs[nbNs-1];
@@ -593,13 +593,13 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
   if(toto1!=NULL){
     map* tmp=getMap(toto1->content,"serverAddress");
     if(tmp!=NULL){
-      SERVICE_URL = strdup(tmp->value);
+      SERVICE_URL = zStrdup(tmp->value);
     }
     else
-      SERVICE_URL = strdup("not_defined");
+      SERVICE_URL = zStrdup("not_defined");
   }
   else
-    SERVICE_URL = strdup("not_defined");
+    SERVICE_URL = zStrdup("not_defined");
 
   for(j=0;j<nbSupportedRequests;j++){
     if(requests[vid][j]==NULL)
@@ -1268,7 +1268,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    token=strtok_r(tmp1->value,",",&saveptr1);
 	    while(token!=NULL){
 	      nc7 = xmlNewNode(ns_ows, BAD_CAST "Value");
-	      char *tmps=strdup(token);
+	      char *tmps=zStrdup(token);
 	      tmps[strlen(tmps)]=0;
 	      nc8 = xmlNewText(BAD_CAST tmps);
 	      xmlAddChild(nc7,nc8);
@@ -1745,7 +1745,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
       elements* cursor=children;
       while(cursor!=NULL){
 	elements* ccursor=cursor;
-	char* tmp=strdup(ccursor->name);
+	char* tmp=zStrdup(ccursor->name);
 	free(ccursor->name);
 	ccursor->name=(char*)malloc((strlen(tmp)+strlen(e->name)+2)*sizeof(char));
 	sprintf(ccursor->name,"%s.%s",e->name,tmp);
@@ -2670,13 +2670,13 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	sprintf(session_file_path,"%s",strstr(tmp1,"=")+1);
       else
 	sprintf(session_file_path,"%s",strstr(_tmp->value,"=")+1);
-      sessId=strdup(session_file_path);
+      sessId=zStrdup(session_file_path);
     }else{
       maps* t=getMaps(m,"senv");
       map*p=t->content;
       while(p!=NULL){
 	if(strstr(p->name,"ID")!=NULL){
-	  sessId=strdup(p->value);
+	  sessId=zStrdup(p->value);
 	  break;
 	}
 	p=p->next;

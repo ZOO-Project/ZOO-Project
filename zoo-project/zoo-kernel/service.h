@@ -42,7 +42,12 @@
 #endif
 #define zStrdup _strdup
 #define zMkdir _mkdir
+#define zGetpid _getpid
 #define zOpen _open
+#define zClose _close
+#define zUnlink _unlink
+#define zDup _dup
+#define zDup2 _dup2
 #define zWrite _write
 #define zSleep Sleep
 #include <sys/timeb.h>
@@ -64,6 +69,9 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
   return 0; // The gettimeofday() function shall return 0 on success
 }
 
+#define zStatStruct struct _stati64
+#define zStat _stati64
+
 #else
 /**
  * The crossplatform strdup alias
@@ -77,6 +85,22 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
  * The crossplatform open alias
  */
 #define zOpen open
+/**
+ * The crossplatform close alias
+ */
+#define zClose close
+/**
+ * The crossplatform unlink alias
+ */
+#define zUnlink unlink
+/**
+ * The crossplatform dup alias
+ */
+#define zDup dup
+/**
+ * The crossplatform dup2 alias
+ */
+#define zDup2 dup2
 /**
  * The crossplatform write alias
  */
@@ -96,6 +120,14 @@ static int zSleep(const long millisecond){
  * The crossplatform timeval alias
  */
 #define ztimeval timeval
+/**
+ * The crossplatform getpid alias
+ */
+#define zGetpid getpid
+
+#define zStatStruct struct stat64
+#define zStat stat64
+
 #endif 
 
 #ifdef __cplusplus

@@ -366,6 +366,7 @@ char* getVersion(maps* m){
  * @param filename the file to read
  */
 void readGeneratedFile(maps* m,map* content,char* filename){
+  char rsize[1024];
   FILE * file=fopen(filename,"rb");
   if(file==NULL){
     setMapInMaps(m,"lenv","message","Unable to read produced file. Please try again later");
@@ -373,9 +374,8 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   }
   fseek(file, 0, SEEK_END);
   long count = ftell(file);
+  sprintf(rsize,"%lld",ftell(file));
   rewind(file);
-  struct stat file_status; 
-  stat(filename, &file_status);
   if(getMap(content,"storage")==NULL){
     map* tmpMap1=getMap(content,"value");
     if(tmpMap1==NULL){
@@ -390,9 +390,7 @@ void readGeneratedFile(maps* m,map* content,char* filename){
     fread(tmpMap1->value,1,count,file);
     tmpMap1->value[count]=0;
   }
-  fclose(file);
-  char rsize[1000];
-  sprintf(rsize,"%ld",count);
+  fclose(file);  
   addToMap(content,"size",rsize);
 }
 
@@ -759,7 +757,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	    if(tmpI!=NULL){
 	      map* tmpV=getMap(tmpI->content,"value");
 	      if(tmpV!=NULL){
-		char *tmpVS=strdup(tmpV->value);
+		char *tmpVS=zStrdup(tmpV->value);
 		map* tmp=parseBoundingBox(tmpVS);
 		free(tmpVS);
 		map* tmpC=tmp;
@@ -796,7 +794,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	    if(hasPassed<0 && type==0 && getMap(tmpMaps->content,"isArray")!=NULL){
 	      map* length=getMap(tmpMaps->content,"length");
 	      int i;
-	      char *tcn=strdup(tmpContent->name);
+	      char *tcn=zStrdup(tmpContent->name);
 	      for(i=1;i<atoi(length->value);i++){
 #ifdef DEBUG
 		dumpMap(tmpMaps->content);
@@ -1006,8 +1004,8 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  addToMap(statusInfo,"Status","Running");
 	  char* tmpStr=_getStatus(conf,pid);
 	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	    char *tmpStr1=strdup(tmpStr);
-	    char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	    char *tmpStr1=zStrdup(tmpStr);
+	    char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
 	    free(tmpStr);
 	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
@@ -1042,8 +1040,8 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  readFinalRes(conf,pid,statusInfo);
 	  char* tmpStr=_getStatus(conf,pid);
 	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	    char *tmpStr1=strdup(tmpStr);
-	    char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	    char *tmpStr1=zStrdup(tmpStr);
+	    char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
 	    free(tmpStr);
 	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
