@@ -111,7 +111,6 @@ struct flock {
     short l_pid;    // unused (returned with the unsupported F_GETLK)
     short l_xxx;    // reserved for future use
 };
-
 #endif
 
 /**
