@@ -237,7 +237,7 @@ int setProxiesForProtcol(CURL* handle,const char *proto){
 HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char* lpszProxyBypass,int dwFlags){
   HINTERNET ret;
   ret.handle=curl_multi_init();
-  ret.agent=strdup(lpszAgent);
+  ret.agent=zStrdup(lpszAgent);
   ret.nb=0;
   ret.waitingRequests[ret.nb] = NULL;
   ret.ihandle[ret.nb].header=NULL;
@@ -268,22 +268,30 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
  */
 char* getProvenance(maps* conf,const char* url){
   map* sharedCache=getMapFromMaps(conf,"security","shared");
+  char *res="OTHER";
+  char *paths[2]={
+    "mapserverAddress",
+    "tmpUrl"
+  };
   if(sharedCache!=NULL){
-    char *res=NULL;
     char *hosts=sharedCache->value;
     char *curs=strtok(hosts,",");
     while(curs!=NULL){
-      if(strstr(url,curs)==NULL)
-	res="OTHER";
-      else{
-	res="SHARED";
-	return res;
+      if(strstr(url,curs)==NULL){
+	return "SHARED";
       }
       curs=strtok(NULL,",");
     }
-    return res;
   }
-  return "OTHER";
+  for(int i=0;i<2;i++){
+    sharedCache=getMapFromMaps(conf,"main",paths[i]);
+    if(sharedCache!=NULL){
+      if(strstr(url,sharedCache->value)!=NULL){
+	return "LOCAL";
+      }
+    }
+  }
+  return res;
 }
 
 /**
@@ -481,7 +489,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
 
-  if(memUse!=NULL && strcasecmp(memUse->value,"load")==0)
+  if(memUse==NULL || strcasecmp(memuse->value,"load")==0)
     ldwFlags=INTERNET_FLAG_NO_CACHE_WRITE;
   
   switch(ldwFlags)
@@ -501,9 +509,9 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
       if(tmpPath==NULL)
 	sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
       else
-	sprintf(filename,"/%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
+	sprintf(filename,"%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
       free(tmpUuid);
-      hInternet->ihandle[hInternet->nb].filename=strdup(filename);
+      hInternet->ihandle[hInternet->nb].filename=zStrdup(filename);
       hInternet->ihandle[hInternet->nb].file=fopen(hInternet->ihandle[hInternet->nb].filename,"w+");
       hInternet->ihandle[hInternet->nb].hasCacheFile=1;
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, write_data_into_file);
@@ -523,7 +531,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
 #endif
-    hInternet->ihandle[hInternet->nb].post=strdup(lpszHeaders);
+    hInternet->ihandle[hInternet->nb].post=zStrdup(lpszHeaders);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
   }
@@ -601,7 +609,7 @@ int processDownloads(HINTERNET* hInternet){
     char *tmp;
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
     if(tmp!=NULL)
-      hInternet->ihandle[i].mimeType=strdup(tmp);
+      hInternet->ihandle[i].mimeType=zStrdup(tmp);
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_RESPONSE_CODE,&hInternet->ihandle[i].code);
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
@@ -617,7 +625,7 @@ int processDownloads(HINTERNET* hInternet){
  * @see HINTERNET
  */
 int freeCookieList(HINTERNET hInternet){
-  hInternet.ihandle[hInternet.nb].cookie=strdup("");
+  hInternet.ihandle[hInternet.nb].cookie=zStrdup("");
 #ifndef TIGER
   curl_easy_setopt(hInternet.ihandle[hInternet.nb].handle, CURLOPT_COOKIELIST, "ALL");
 #endif

@@ -160,7 +160,7 @@ SSHCON *ssh_connect(maps* conf){
     use_pw=-1;
     if (hpc_public_key != NULL) {
       public_key = hpc_public_key->value;
-      private_key = strdup(hpc_public_key->value);
+      private_key = zStrdup(hpc_public_key->value);
       private_key[strlen(public_key)-4]=0;
     }else{
       setMapInMaps(conf,"lenv","message","No method found to authenticate!");

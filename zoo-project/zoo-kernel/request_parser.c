@@ -153,7 +153,7 @@ void ensureDecodedBase64(maps **in){
       readBase64(&tmp);
       addToMap(cursor->content,"base64_value",tmp->value);
       int size=0;
-      char *s=strdup(tmp->value);
+      char *s=zStrdup(tmp->value);
       free(tmp->value);
       tmp->value=base64d(s,strlen(s),&size);
       free(s);
@@ -173,7 +173,7 @@ void ensureDecodedBase64(maps **in){
 	  readBase64(&tmp);
 	  addToMap(cursor->content,key,tmp->value);
 	  int size=0;
-	  char *s=strdup(tmp->value);
+	  char *s=zStrdup(tmp->value);
 	  free(tmp->value);
 	  tmp->value=base64d(s,strlen(s),&size);
 	  free(s);
@@ -794,7 +794,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					   "WARNING : bInternet handle failed to initialize");
 #endif
 				bInternet.waitingRequests[0] =
-				  strdup ((char *) val);
+				  zStrdup ((char *) val);
 				res1 =
 				  InternetOpenUrl (&bInternet,
 						   bInternet.waitingRequests
@@ -1805,7 +1805,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                            fileNameOnServer);
 #endif
                   targetFile =
-                    open (storageNameOnServer, O_RDWR | O_CREAT | O_TRUNC,
+                    zOpen (storageNameOnServer, O_RDWR | O_CREAT | O_TRUNC,
                           S_IRWXU | S_IRGRP | S_IROTH);
                   if (targetFile < 0)
                     {
@@ -1825,7 +1825,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                     }
                   addToMap (tmpReqI->content, "lref", storageNameOnServer);
                   cgiFormFileClose (file);
-                  close (targetFile);
+                  zClose (targetFile);
 		  free(fileNameOnServer);
 		  free(storageNameOnServer);
 #ifdef DEBUG

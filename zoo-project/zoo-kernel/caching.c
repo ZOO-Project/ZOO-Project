@@ -48,7 +48,7 @@ char* getMd5(char* url){
   int i;
   for(i = 0; i < len; i++){
     if(i>0){
-      char *tmp=strdup(fresult);
+      char *tmp=zStrdup(fresult);
       sprintf(fresult,"%s%02x", tmp,result[i]);
       free(tmp);
     }
@@ -72,7 +72,7 @@ char* getMd5f(char* file){
   unsigned int len;
   int bytes;
   int dlen=65536;
-  unsigned char data[dlen+1];
+  unsigned char data[65537];
   FILE *inFile = fopen (file, "rb");
   EVP_DigestInit(md5ctx, EVP_md5());
   while ((bytes = fread (data, sizeof(unsigned char), dlen, inFile)) != 0)
@@ -355,31 +355,71 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
  * @warning make sure to free resources returned by this function (if not NULL)
  */
 char* isInCache(maps* conf,char* request){
+  map* tmpUrl=getMapFromMaps(conf,"main","tmpUrl");
   map* tmpM=getMapFromMaps(conf,"main","cacheDir");
-  if(tmpM!=NULL){
-    if(strncasecmp(request,"file://",7)==0){
-      char* tmpStr=zStrdup(request+7);
-      fprintf(stderr,"**** %s %d %s \n",__FILE__,__LINE__,tmpStr);
-      return tmpStr;
-    }
-    else{
-      char* myRequest=getFilenameForRequest(conf,request);
-      char* md5str=getMd5(myRequest);
-      free(myRequest);
-#ifdef DEBUG
-      fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
-#endif
-      char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
-      sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
-      struct stat f_status;
-      int s=stat(fname, &f_status);
-      if(s==0 && f_status.st_size>0){
-	free(md5str);
-	return fname;
+  if(tmpM==NULL)
+    tmpM=getMapFromMaps(conf,"main","tmpPath");
+  if(strstr(request,tmpUrl->value)!=NULL){
+    map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
+    char* tmpStr=strstr(request,tmpUrl->value);
+    char* tmpStr1=zStrdup(tmpStr+strlen(tmpUrl->value));
+    char* res=(char*) malloc((strlen(tmpPath->value)+strlen(tmpStr1)+2)*sizeof(char));
+    sprintf(res,"%s/%s",tmpPath->value,tmpStr1);
+    free(tmpStr1);
+    return res;
+  }
+#ifdef MS_FORCE_LOCAL_FILE_USE
+  map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
+  if(msUrl!=NULL && strstr(request,msUrl->value)!=NULL){
+    char *tmpStr=strstr(request,"?");
+    char *cursor=zStrdup(tmpStr+1);
+    char *token, *saveptr;
+    token = strtok_r (cursor, "&", &saveptr);
+    while(token!=NULL){
+      char *token1, *saveptr1;
+      token1 = strtok_r (token, "=", &saveptr1);
+      char *name=NULL;
+      while(token1!=NULL){
+	if(name==NULL)
+	  name=zStrdup(token1);
+	else
+	  if(strcasecmp(name,"map")==0){
+	    mapObj *myMap=msLoadMap(token1,NULL);
+	    char * res=zStrdup(myMap->layers[0]->data);
+	    free(name);
+	    free(cursor);
+	    msFreeMap(myMap);
+	    return res;
+	  }
+	token1 = strtok_r (NULL, "=", &saveptr1);
       }
-      free(md5str);
-      free(fname);
+      token = strtok_r (NULL, "&", &saveptr);
     }
+    free(cursor);
+  }
+#endif  
+  if(strncasecmp(request,"file://",7)==0){
+    char* tmpStr=zStrdup(request+7);
+    fprintf(stderr,"**** %s %d %s \n",__FILE__,__LINE__,tmpStr);
+    return tmpStr;
+  }
+  else{
+    char* myRequest=getFilenameForRequest(conf,request);
+    char* md5str=getMd5(myRequest);
+    free(myRequest);
+#ifdef DEBUG
+    fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
+#endif
+    char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
+    sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
+    zStatStruct f_status;
+    int s=zStat(fname, &f_status);
+    if(s==0 && f_status.st_size>0){
+      free(md5str);
+      return fname;
+    }
+    free(md5str);
+    free(fname);
   }
   return NULL;
 }
@@ -608,7 +648,7 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
  * @param url the url to add to the queue
  */
 void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
-  hInternet->waitingRequests[hInternet->nb]=strdup(url);
+  hInternet->waitingRequests[hInternet->nb]=zStrdup(url);
   if(req)
     InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0,*m);
   maps *oreq=getMaps(*m,"orequests");
@@ -647,8 +687,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
 
   if(cached!=NULL){
-    struct stat f_status;
-    int s=stat(cached, &f_status);
+    zStatStruct f_status;
+    int s=zStat(cached, &f_status);
     if(s==0){
       zooLock* lck=lockFile(*m,cached,'r');
       if(lck==NULL)
@@ -667,7 +707,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       unlockFile(*m,lck);
     }
     cached[strlen(cached)-1]='m';
-    s=stat(cached, &f_status);
+    s=zStat(cached, &f_status);
     if(s==0){
       zooLock* lck=lockFile(*m,cached,'r');
       if(lck==NULL)
@@ -680,7 +720,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       unlockFile(*m,lck);
     }
     cached[strlen(cached)-1]='p';
-    s=stat(cached, &f_status);
+    s=zStat(cached, &f_status);
     if(s==0){
       zooLock* lck=lockFile(*m,cached,'r');
       if(lck==NULL)
@@ -727,7 +767,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   else{
     addToMap(*content,"isCached","true");
     map* tmp=getMapFromMaps(*m,"main","cacheDir");
-    if(tmp!=NULL){
+    map* tmp1=getMap((*content),"cache_file");
+    if(tmp!=NULL && tmp1==NULL){
       map *c=getMap((*content),"xlink:href");
       if(strncasecmp(c->value,"file://",7)!=0){
 	char *myRequest=getFilenameForRequest(*m,c->value);

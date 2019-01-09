@@ -418,7 +418,7 @@ char* _getStatus(maps* conf,char* pid){
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
     for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
       if( poFeature->IsFieldSet( iField ) ){
-	tmp1=strdup(poFeature->GetFieldAsString( iField ));
+	tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
       }
       else
 	tmp1=NULL;
@@ -462,7 +462,7 @@ char* _getStatusFile(maps* conf,char* pid){
       while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
 	for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
 	  if( poFeature->IsFieldSet( iField ) ){
-	    tmp1=strdup(poFeature->GetFieldAsString( iField ));
+	    tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
 	    hasRes=1;
 	  }
 	  else

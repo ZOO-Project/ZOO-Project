@@ -200,7 +200,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
-  putenv(toto);
+  _putenv(toto);
   free(toto);
 #endif
   if(hasToClean>0)

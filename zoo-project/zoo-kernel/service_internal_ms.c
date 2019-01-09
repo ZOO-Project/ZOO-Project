@@ -1161,7 +1161,10 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     if (CPLGetLastErrorType() == CE_None){
       char tmpMm[100],tmpMp[100];
       sprintf(tmpMm,"%.3f %.3f",pdfMin,pdfMax);
-      sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
+      if(pdfMin!=pdfMax)
+	sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
+      /*else
+	sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMin,pdfMax);*/
       char tmpI[31];      
       sprintf(tmpI,"%s_interval",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
