@@ -1944,8 +1944,6 @@ runRequest (map ** inputs)
     int saved_stdout = zDup (fileno (stdout));
     zDup2 (fileno (stderr), fileno (stdout));
     t = readServiceFile (m, tmps1, &s1, r_inputs->value);
-    fprintf(stderr,"%d %s %d",t,__FILE__,__LINE__);
-    fflush(stderr);
     if(t>=0){
       inheritance(zooRegistry,&s1);
 #ifdef USE_HPC
