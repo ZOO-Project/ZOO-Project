@@ -160,6 +160,19 @@ void addNestedOutputs(service** s){
 	free(tmp[0]);
 	//addToMap(cur->content,"internal","true");
       }      
+    }else{
+      if(mimeType!=NULL){
+	elements *tmp=dupElements(cur);
+	tmp->name=zStrdup("download_link");
+	tmp->content=createMap("Title",_("Download link"));
+	addToMap(tmp->content,"Abstract",_("The download link"));
+	addToMap(tmp->defaults->content,"useMapserver","false");
+	if(tmp->supported!=NULL){
+	  freeIOType(&tmp->supported);
+	  free(tmp->supported);
+	  tmp->supported=NULL;
+	}
+      }
     }
     cur=cur->next;
   }
