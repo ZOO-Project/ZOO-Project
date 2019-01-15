@@ -162,16 +162,31 @@ void addNestedOutputs(service** s){
       }      
     }else{
       if(mimeType!=NULL){
-	elements *tmp=dupElements(cur);
-	tmp->name=zStrdup("download_link");
-	tmp->content=createMap("Title",_("Download link"));
-	addToMap(tmp->content,"Abstract",_("The download link"));
-	addToMap(tmp->defaults->content,"useMapserver","false");
-	if(tmp->supported!=NULL){
-	  freeIOType(&tmp->supported);
-	  free(tmp->supported);
-	  tmp->supported=NULL;
-	}
+        elements *tmp=dupElements(cur);
+        tmp->name=zStrdup("download_link");
+        tmp->content=createMap("Title",_("Download link"));
+        addToMap(tmp->content,"Abstract",_("The download link"));
+        addToMap(tmp->defaults->content,"useMapserver","false");
+        if(tmp->supported!=NULL){
+          freeIOType(&tmp->supported);
+          free(tmp->supported);
+          tmp->supported=NULL;
+        }
+        addToElements(&cur->child,tmp);
+        free(cur->format);
+        cur->format=NULL;
+        if(cur->defaults!=NULL){
+          freeIOType(&cur->defaults);
+          free(cur->defaults);
+          cur->defaults=NULL;
+        }
+        if(cur->supported!=NULL){
+          freeIOType(&cur->supported);
+          free(cur->supported);
+          cur->supported=NULL;
+        }
+        freeElements(&tmp);
+        free(tmp);
       }
     }
     cur=cur->next;
