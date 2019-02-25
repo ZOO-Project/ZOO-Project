@@ -24,6 +24,7 @@
 
 #ifdef WIN32
   #define NO_FCGI_DEFINES
+  #define ZEND_WIN32_KEEP_INLINE
 #endif
 
 #ifndef ZEND_DEBUG

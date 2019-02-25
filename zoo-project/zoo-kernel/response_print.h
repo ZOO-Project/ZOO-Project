@@ -37,7 +37,9 @@
 #define TIME_SIZE 40
 
 #include <libintl.h>
-#include <xlocale.h>
+//#include <xlocale.h> //#include <xlocale> 
+#include <locale.h>
+
 /**
  * ZOO-Kernel internal messages translation function
  */
@@ -79,7 +81,8 @@
 #endif
 #endif
 #ifndef WIN32
-#include <locale.h>
+//#include <locale.h>
+#include <xlocale.h> // knut: this appears to be a non-standard header file that has been removed in newer versions of glibc; it may be sufficient to include <locale.h> (see above) 
 #endif
 #include "ulinet.h"
 

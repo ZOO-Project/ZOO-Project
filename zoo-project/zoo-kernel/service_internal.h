@@ -37,7 +37,7 @@
 #define TIME_SIZE 40
 
 #include <libintl.h>
-#include <xlocale.h>
+#include <locale.h>
 /**
  * ZOO-Kernel internal messages translation function
  */
@@ -160,6 +160,8 @@ extern "C" {
   ZOO_DLL_EXPORT semid getShmLockId(maps*,int);
   ZOO_DLL_EXPORT int lockShm(semid);
   ZOO_DLL_EXPORT int unlockShm(semid);
+
+  ZOO_DLL_EXPORT char* file_exists(const char* dir, const char* name); 
 
 #ifdef __cplusplus
 }

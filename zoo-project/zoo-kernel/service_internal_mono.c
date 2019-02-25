@@ -29,6 +29,9 @@
 #include "service_internal_mono.h"
 #include "response_print.h"
 
+MonoClass *iclasses[4];
+MonoMethod *imethods[10];
+
 /**
  * Load a Mono dll then run the static public method corresponding to the 
  * service by passing the conf, inputs and outputs parameters.
@@ -68,23 +71,54 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
   else
     mono_config_parse(NULL);
 
-  MonoDomain* monoDomain = mono_jit_init_version("ZOO_Embedded_Domain",
-                                                 "v4.0.30319");
-
-  map* cwdMap=getMapFromMaps(*main_conf,"main","servicePath");
-  if(cwdMap==NULL)
-    cwdMap=getMapFromMaps(*main_conf,"lenv","cwd");
-  
-  char *zooAssembly=(char*)malloc((strlen(cwdMap->value)+11)*sizeof(char));
-  sprintf(zooAssembly,"%s/ZMaps.dll",cwdMap->value);
-  assembly = mono_domain_assembly_open(monoDomain,zooAssembly);
-  if(assembly==NULL){
-    setMapInMaps(*main_conf,"lenv","message",_("The ZMaps.dll assembly cannot be found!"));
-    return 4;
+  MonoDomain* monoDomain;
+  map* mono;
+  if (hasvalue(*main_conf, "mono", "version", &mono)) {	  
+	  monoDomain = mono_jit_init_version("ZOO_Embedded_Domain", mono->value);
   }
-  mono_add_internal_call ("ZOO_API::Translate", MonoTranslate);
-  mono_add_internal_call ("ZOO_API::UpdateStatus", MonoUpdateStatus);
+  else {	  
+	  monoDomain = mono_jit_init("ZOO_Embedded_Domain"); // use default framework version
+  }
 
+  //MonoDomain* monoDomain = mono_jit_init_version("ZOO_Embedded_Domain", "v4.0.30319"); 
+  //MonoDomain* monoDomain = mono_jit_init("ZOO_Embedded_Domain");  
+
+  char* ZMapsLib = "ZMaps.dll";
+  char *zooAssembly = NULL;
+  
+  map* config = NULL, *basedir = NULL;
+  if (hasvalue(*main_conf, "mono", "configdir", &basedir) && // knut: rename to e.g. "base_dir"?
+	  hasvalue(*main_conf, "mono", "configfile", &config)) {	  
+	  mono_domain_set_config(monoDomain, basedir->value, config->value); 
+	  zooAssembly = file_exists(basedir->value, ZMapsLib);
+  }
+  else {	  
+	  mono_domain_set_config(monoDomain, "./", "");
+  }    
+
+  map* cwdMap;
+  if (! hasvalue(*main_conf, "main", "servicePath", &cwdMap) &&
+	  ! hasvalue(*main_conf, "main", "libPath", &cwdMap) ) {
+	  cwdMap = getMapFromMaps(*main_conf, "lenv", "cwd");
+  }  
+
+  if (zooAssembly != NULL || (zooAssembly = file_exists(cwdMap->value, ZMapsLib)) != NULL) {
+	  assembly = mono_domain_assembly_open(monoDomain, zooAssembly);
+  }
+  else { 
+	  // try to load from default locations (GAC?)
+	  assembly = mono_domain_assembly_open(monoDomain, ZMapsLib);
+  }  
+  free(zooAssembly);
+
+  if (assembly == NULL) {
+	  setMapInMaps(*main_conf, "lenv", "message", _("The ZMaps.dll assembly cannot be found!"));
+	  return 4;
+  }
+
+  mono_add_internal_call ("ZOO_API::Translate", MonoTranslate);    
+  mono_add_internal_call("ZOO_API::UpdateStatus", MonoUpdateStatus);
+  
   monoImage = mono_assembly_get_image(assembly);
   MonoClass *KeysList = mono_class_from_name(monoImage, "ZooGenerics", "KeysList");
   MonoClass *ZMapsClass = mono_class_from_name(monoImage, "ZooGenerics", "ZMaps");
@@ -103,8 +137,9 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
 
   MonoClass *classes[3]={_ZMapsClass,ZMapsClass,ZMapClass};
   MonoMethod *methods[5]={ZMapsAdd,_ZMapsSetContent,_ZMapsSetChild,ZMapAdd,ZMapDisplay};
-
+  
   MonoMethod *ZMapsGetKeys = mono_class_get_method_from_name(ZMapsClass, "getKeys", 0);
+  
   MonoMethod *ZMapsGetKeysCount = mono_class_get_method_from_name(ZMapsClass, "getKeysCount", 0);
   MonoMethod *ZMapsGetKey = mono_class_get_method_from_name(ZMapsClass, "getKey", 1);
   MonoMethod *ZMapGetKeys = mono_class_get_method_from_name(ZMapClass, "getKeys", 0);
@@ -115,7 +150,7 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
   MonoMethod *ZMapGetMapAsBytes = mono_class_get_method_from_name(ZMapClass, "getMapAsBytes", 0);
   MonoClass *oclasses[4]={_ZMapsClass,ZMapsClass,ZMapClass,KeysList};
   MonoMethod *omethods[10]={ZMapsGetMaps,ZMapsGetKeysCount,ZMapsGetKey,ZMapGetMap,ZMapGetKeysCount,ZMapGetKey,_ZMapsGetContent,_ZMapsGetChild,ZMapGetSize,ZMapGetMapAsBytes};
-
+  
   for(int i=0;i<4;i++){
     iclasses[i]=oclasses[i];
     imethods[i]=omethods[i];
@@ -130,15 +165,32 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
   MonoObject * in=ZMapsFromMaps(monoDomain,classes,methods,&exc,inputs);
 
   MonoObject * out=ZMapsFromMaps(monoDomain,classes,methods,&exc,outputs);
-
+  
   args [0] = main;
   args [1] = in;
   args [2] = out;
 
-  tmp=getMap(s->content,"serviceProvider");
-  char *sName=(char*)malloc((strlen(tmp->value)+strlen(cwdMap->value)+2)*sizeof(char));
-  sprintf(sName,"%s/%s",cwdMap->value,tmp->value);
-  MonoAssembly* serviceAssembly = mono_domain_assembly_open(monoDomain,sName);
+  char* sName = NULL;
+  MonoAssembly* serviceAssembly = NULL;
+  
+  tmp = getMap(s->content, "serviceProvider");  
+  char* test = file_exists(NULL, "log.txt");
+  if ( (sName = file_exists(cwdMap->value, tmp->value)) != NULL ||
+	   (sName = file_exists(".", tmp->value)) != NULL ||  // in case servicePath is defined but serviceProvider is in working directory
+	   (basedir != NULL && (sName = file_exists(basedir->value, tmp->value)) != NULL) ) {
+
+	   serviceAssembly = mono_domain_assembly_open(monoDomain, sName);
+  }
+  else {
+	  // try to open from default locations	  
+	  serviceAssembly = mono_domain_assembly_open(monoDomain, tmp->value);
+  }
+  free(sName);
+
+  //char *sName=(char*)malloc((strlen(tmp->value)+strlen(cwdMap->value)+2)*sizeof(char));
+  //sprintf(sName,"%s/%s",cwdMap->value,tmp->value);
+  //MonoAssembly* serviceAssembly = mono_domain_assembly_open(monoDomain,sName);
+  
   if(serviceAssembly==NULL){
     char *msg=(char*)malloc((strlen(_("Your service assembly: %s cannot be found!"))+strlen(tmp->value)+1)*sizeof(char));
     sprintf(msg,_("Your service assembly %s cannot be found!"),tmp->value);
@@ -146,10 +198,11 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
     free(msg);
     return 4;
   }
-
+  
   MonoImage* serviceImage = mono_assembly_get_image(serviceAssembly);
 
   map* tmp1=getMap(s->content,"serviceNameSpace");
+  
   tmp=getMap(s->content,"serviceClass");
   MonoClass *serviceClass = mono_class_from_name(serviceImage, tmp1->value, tmp->value);
   if(serviceClass==NULL){
@@ -159,6 +212,7 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
     free(msg);
     return 4;
   }
+  
   MonoMethod *serviceFunction = mono_class_get_method_from_name(serviceClass, s->name, 3);
   if(serviceFunction==NULL){
     char *msg=(char*)malloc((strlen(_("Your service static method %s cannot be found!"))+strlen(s->name)+1)*sizeof(char));
@@ -167,20 +221,30 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
     free(msg);
     return 4;
   }
+  
   MonoObject *exception=NULL;
   MonoObject *result = mono_runtime_invoke(serviceFunction,NULL,args,&exception);
+  
+  if (exception != NULL) { // knut: add exception handling
+	  MonoString* pMsg = mono_object_to_string(exception, NULL);	  
+	  setErrorMessage(*main_conf, s->name, NoApplicableCode, mono_string_to_utf8(pMsg));
+	  return 4;
+  }
+
   res=*(int*)mono_object_unbox (result);
+  
   if(res==3){
     freeMaps(&outputs);
     free(outputs);
-    outputs=mapsFromZMaps(monoDomain,oclasses,omethods,args[2]);
+    outputs=mapsFromZMaps(monoDomain,oclasses,omethods,(MonoObject*)args[2]);
     *real_outputs=outputs;
   }
+  
   freeMaps(&m);
   free(m);
-  m=mapsFromZMaps(monoDomain,oclasses,omethods,args[0]);
+  m=mapsFromZMaps(monoDomain,oclasses,omethods,(MonoObject*)args[0]);
   *main_conf=m;
-  mono_jit_cleanup (monoDomain);
+  mono_jit_cleanup (monoDomain);  
   return res;
 }
 
@@ -287,12 +351,12 @@ maps* mapsFromZMaps(MonoDomain* domain,MonoClass **classes,MonoMethod **methods,
       void* values[1];
       values[0]=&i;
       exc=NULL;
-      MonoObject *okey = (MonoString*) mono_runtime_invoke(methods[2],m,values,&exc);
+      MonoString *okey = (MonoString*) mono_runtime_invoke(methods[2],m,values,&exc);
       char* key = mono_string_to_utf8(okey);
       maps* tmp=createMaps(key);
       values[0]=mono_string_new (domain, key);
-      MonoObject *content_ZMaps = (MonoString*) mono_runtime_invoke(methods[0],m,values,&exc);
-      MonoObject *content = mono_runtime_invoke(methods[6],content_ZMaps,NULL,&exc);
+      MonoString *content_ZMaps = (MonoString*) mono_runtime_invoke(methods[0],m,values,&exc);
+      MonoObject *content = mono_runtime_invoke(methods[6],(MonoObject*)content_ZMaps,NULL,&exc);
       tmp->content=mapFromZMap(domain,classes,methods,content);
       MonoObject *childs = mono_runtime_invoke(methods[7],content_ZMaps,NULL,&exc);
       tmp->child=mapsFromZMaps(domain,classes,methods,childs);
@@ -328,11 +392,11 @@ map* mapFromZMap(MonoDomain* domain,MonoClass **classes,MonoMethod **methods,Mon
       void* values[1];
       values[0]=&i;
       exc=NULL;
-      MonoObject *okey = (MonoString*) mono_runtime_invoke(methods[5],m,values,&exc);
+      MonoString *okey = (MonoString*) mono_runtime_invoke(methods[5],m,values,&exc);
       char* key = mono_string_to_utf8(okey);
       values[0]=mono_string_new (domain, key);
       exc=NULL;
-      MonoObject *ovalue = (MonoString*) mono_runtime_invoke(methods[3],m,values,&exc);
+      MonoString *ovalue = (MonoString*) mono_runtime_invoke(methods[3],m,values,&exc);
       char* value = mono_string_to_utf8(ovalue);
       if(res==NULL)
 	res=createMap(key,value);
@@ -349,7 +413,7 @@ map* mapFromZMap(MonoDomain* domain,MonoClass **classes,MonoMethod **methods,Mon
  * @return the translated string
  */
 static MonoString* MonoTranslate(MonoString *str){
-  return mono_string_new (mono_domain_get(), mono_string_to_utf8(_(str)));
+  return mono_string_new (mono_domain_get(), _(mono_string_to_utf8(str)));
 }
 
 /**
@@ -359,19 +423,16 @@ static MonoString* MonoTranslate(MonoString *str){
  * @param p the percentage of the 
  * @return the translated string
  */
-static void MonoUpdateStatus(MonoObject* obj,MonoString *str,int* p){
-  MonoDomain* domain = mono_object_get_domain (obj);
-  maps *confMaps=mapsFromZMaps(domain,iclasses,imethods,obj);
-  setMapInMaps(confMaps,"lenv","message",mono_string_to_utf8(str));
-  int tmp=p;
-  if (p < 0 || p > 100){
-    tmp=-1;
-  }
-  char tmpStatus[5];
-  snprintf(tmpStatus, 4, "%d", tmp);
-  setMapInMaps(confMaps,"lenv","status",(char*)tmpStatus);
-  _updateStatus(confMaps);
-  freeMaps(&confMaps);
-  free(confMaps);
-  return;
+static void MonoUpdateStatus(MonoObject* obj, MonoString *str, int p) {	
+	MonoDomain* domain = mono_object_get_domain(obj);	
+	maps *confMaps = mapsFromZMaps(domain, iclasses, imethods, obj);	
+	setMapInMaps(confMaps, "lenv", "message", mono_string_to_utf8(str));	
+	int tmp = p > 100 || p < 0 ? -1 : p;	
+	char tmpStatus[5];
+	snprintf(tmpStatus, 4, "%d", tmp);	
+	setMapInMaps(confMaps, "lenv", "status", (char*)tmpStatus);	
+	_updateStatus(confMaps);	
+	freeMaps(&confMaps);	
+	free(confMaps);
+	return;
 }
