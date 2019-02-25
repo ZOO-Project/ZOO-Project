@@ -45,13 +45,14 @@
 #include "jsapi.h"
 #endif
 #ifndef __cplusplus
-#ifndef bool
-#define bool int
-#endif
-#ifndef true
-#define true 1
-#define false 0
-#endif
+// knut: see new def of bool in service.h
+//#ifndef bool
+//#define bool int
+//#endif
+//#ifndef true
+//#define true 1
+//#define false 0
+//#endif
 #endif
 
 #define MAX_REQ 50
@@ -156,9 +157,10 @@ typedef char* LPCTSTR;
   typedef void* LPTSTR;
   typedef size_t* LPDWORD;
 #endif
-#ifndef bool
-#define bool int
-#endif
+// knut: see new definition of bool in service.h
+//#ifndef bool
+//#define bool int
+//#endif
 
 #  define CHECK_INET_HANDLE(h) (h.handle != 0)
 

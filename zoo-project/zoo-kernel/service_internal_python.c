@@ -145,16 +145,34 @@ PyMODINIT_FUNC init_zoo(){
  * @param real_outputs the maps containing the outputs
  */
 int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
+
   char *pythonpath;
   char *python_path;
+
+#ifdef WIN32
+  char* os_pathsep = ";";
+#else
+  char* os_pathsep = ":";
+#endif
+
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
   map* tmp0=getMapFromMaps(*main_conf,"lenv","cwd");
-  char *ntmp=tmp0->value;
+  char *ntmp=tmp0->value;  
   map* tmp=NULL;
   int hasToClean=0;
-  tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH");
+  tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH"); 
+
+  map* kvp = NULL;
+  char* libPath = NULL;
+  if (hasvalue(*main_conf, "main", "libPath", &kvp)) {
+	  libPath = kvp->value;
+  }
+  else {
+	  libPath = "";
+  }
+
 #ifdef DEBUG
   fprintf(stderr,"PYTHON SUPPORT \n");
 #endif
@@ -171,55 +189,71 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     if(cwdMap!=NULL)
       python_path=cwdMap->value;
     else
-      python_path=(char*)".";
+      python_path=(char*)".";	
   }
   tmp=NULL;
   tmp=getMap(request,"metapath");
   if(tmp!=NULL && strcmp(tmp->value,"")!=0){
-    pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
+    //pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
+	  pythonpath = (char*)malloc((5 + strlen(python_path) + strlen(ntmp) + strlen(tmp->value) + strlen(libPath)) * sizeof(char));
 #ifdef WIN32
-  sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+  //sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+	sprintf(pythonpath, "%s/%s/;%s;%s", ntmp, tmp->value, python_path, libPath);
 #else
-  sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  //sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  sprintf(pythonpath, "%s/%s/:%s:%s", ntmp, tmp->value, python_path, libPath);  
 #endif
   }
   else{
-    pythonpath=(char*)malloc((2+strlen(python_path)+strlen(ntmp))*sizeof(char));
+    //pythonpath=(char*)malloc((2+strlen(python_path)+strlen(ntmp))*sizeof(char));
+	  pythonpath = (char*)malloc((3 + strlen(python_path) + strlen(ntmp) + strlen(libPath)) * sizeof(char));
 #ifdef WIN32
-    sprintf(pythonpath,"%s;%s",ntmp,python_path);
+    //sprintf(pythonpath,"%s;%s",ntmp,python_path);
+	sprintf(pythonpath, "%s;%s;%s", ntmp, python_path, libPath);
 #else
-    sprintf(pythonpath,"%s:%s",ntmp,python_path);
-#endif
+    //sprintf(pythonpath,"%s:%s",ntmp,python_path);
+	sprintf(pythonpath, "%s:%s:%s", ntmp, python_path, libPath);
+#endif	
   }
 #ifdef DEBUG
     fprintf(stderr,"PYTHONPATH=%s\n",pythonpath);
 #endif
-#ifndef WIN32
-  setenv("PYTHONPATH",pythonpath,1);
-#else
+	map* home = NULL;
+// knut: also set PYTHONHOME environment variable so that Python can load standard modules
+#ifndef WIN32	
+  setenv("PYTHONPATH",pythonpath,1);  
+  //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
+  if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
+	  setenv("PYTHONHOME", home->value, 1); // overwrite
+  }
+#else	
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
   _putenv(toto);
   free(toto);
-#endif
+  if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) { 
+	  SetEnvironmentVariable("PYTHONHOME", home->value);
+  }
+  char buffer[128];        
+#endif  
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
 
   PyThreadState *mainstate;
-#if PY_MAJOR_VERSION >= 3
-  PyImport_AppendInittab("zoo", init_zoo);
+#if PY_MAJOR_VERSION >= 3  
+  PyImport_AppendInittab("zoo", init_zoo);  
 #else
   PyEval_InitThreads();
-#endif
-  Py_Initialize();
-#if PY_MAJOR_VERSION >= 3
+#endif  
+  Py_Initialize();  
+#if PY_MAJOR_VERSION >= 3  
   PyEval_InitThreads();
-  PyImport_ImportModule("zoo");
+  PyImport_ImportModule("zoo");  
 #else
   init_zoo();
-#endif
+#endif  
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
   PyGILState_STATE gstate;
@@ -239,7 +273,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       }
       char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
       sprintf(mn,"%s.%s",mps,tmp->value);
-      pName = PyString_FromString(mn);
+      pName = PyString_FromString(mn);	  
       free(mn);
       free(mps);
     }
@@ -250,8 +284,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   else{
     errorException (m, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
     exit(-1);
-  }
-  pModule = PyImport_Import(pName);
+  }  
+  pModule = PyImport_Import(pName);    
   int res=SERVICE_FAILED;
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
@@ -266,7 +300,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
       PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
       PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
-      pValue = PyObject_CallObject(pFunc, pArgs);
+      pValue = PyObject_CallObject(pFunc, pArgs);	  
       if (pValue != NULL) {
 	res=PyInt_AsLong(pValue);
 	freeMaps(real_outputs);
@@ -274,7 +308,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	freeMaps(main_conf);
 	free(*main_conf);
 	*main_conf=mapsFromPyDict(arg1);
-	*real_outputs=mapsFromPyDict(arg3);
+	*real_outputs=mapsFromPyDict(arg3);	
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
 	dumpMaps(inputs);
@@ -300,7 +334,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyEval_AcquireLock();
 #endif
   PyThreadState_Swap(mainstate);
-  Py_Finalize();
+  Py_Finalize();  
   return res;
 }
 

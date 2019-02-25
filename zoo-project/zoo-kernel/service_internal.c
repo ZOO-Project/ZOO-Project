@@ -916,3 +916,30 @@ int  setOutputValue( maps* outputs, const char* parameterName, char* data, size_
   return 0;
 }
 
+/**
+ * Check if file exists in specified folder
+ *
+ * @param dir the folder in which to search for file
+ * @param name the name of the file (not full path) 
+ * @return a character string with the full path [dir/name], or NULL if the file does not exist
+ *
+ * @attention Caller is responsible for applying free() to the returned pointer
+ */
+char* file_exists(const char* dir, const char* name) {
+	char* d = (dir != NULL ? dir : ".");
+	if (name != NULL) {
+		size_t length = strlen(d) + strlen(name) + 2; // including file separator and \0 character
+		char* path = (char*)calloc(length, sizeof(char));
+		snprintf(path, length, "%s/%s", d, name);
+
+		struct stat buffer;
+		if (stat(path, &buffer) != 0) {
+			free(path);
+			path = NULL;
+		}
+		return path;
+	}
+	else {
+		return NULL;
+	}
+}

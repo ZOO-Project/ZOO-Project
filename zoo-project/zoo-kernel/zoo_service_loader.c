@@ -228,9 +228,11 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
   char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
   fread (tmps1, flen, 1, f2);
 #ifdef WIN32
+  /* knut: I think this block can be dropped; pchr may be NULL if result is not in XML format
   char *pchr=strrchr(tmps1,'>');
   flen=strlen(tmps1)-strlen(pchr)+1;
   tmps1[flen]=0;
+  */
 #endif
   fwrite (tmps1, 1, flen, f3);
   fclose (f2);
@@ -482,8 +484,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   fflush (stderr);
 #endif
 
-  map* libp = getMapFromMaps(m, "main", "libPath");
-
+  map* libp = getMapFromMaps(m, "main", "libPath");  
   if (strlen (r_inputs->value) == 1
       && strncasecmp (r_inputs->value, "C", 1) == 0)
   {
@@ -706,11 +707,11 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 #ifdef USE_PYTHON
   if (strncasecmp (r_inputs->value, "PYTHON", 6) == 0)
-    {	  
+    {		  
       *eres =
         zoo_python_support (&m, request_inputs, s1,
                             &request_input_real_format,
-                            &request_output_real_format);
+                            &request_output_real_format);	  
     }
   else
 #endif
@@ -797,7 +798,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       *eres = -1;
     }
   *myMap = m;
-  *ioutputs = request_output_real_format;
+  *ioutputs = request_output_real_format;  
 }
 
 
@@ -2358,7 +2359,7 @@ if(orig!=NULL)
       if(testMap==NULL || strcasecmp(testMap->value,"load")!=0)
 	dumpMapsValuesToFiles(&m,&request_input_real_format);
       loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
-                         &request_output_real_format, &eres);
+                         &request_output_real_format, &eres);	  
 
 #ifdef META_DB
       close_sql(m,0);      
@@ -2592,7 +2593,7 @@ if(orig!=NULL)
 			  "InternalError", NULL);
         }
     }
-
+	
 #ifdef DEBUG
   fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
   dumpMaps (request_output_real_format);
@@ -2601,14 +2602,13 @@ if(orig!=NULL)
   fflush(stdout);
   rewind(stdout);
 
-  //fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,eres);
-
+  //fprintf(stderr,"%s %d %d\n",__FILE__,__LINE__,eres);  
   if (eres != -1)
     outputResponse (s1, request_input_real_format,
                     request_output_real_format, request_inputs,
                     cpid, m, eres);
   fflush (stdout);
-
+  
   /**
    * Ensure that if error occurs when freeing memory, no signal will return
    * an ExceptionReport document as the result was already returned to the 

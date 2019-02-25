@@ -117,7 +117,7 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
 #else
 	;
 #endif
-    tmp=strtok(buffer,";");
+    tmp=strtok((char*) buffer,";"); // knut: added cast to char*
     int cnt=0;
     _HINTERNET *psInternet=(_HINTERNET *)data;
     if(tmp!=NULL && psInternet!=NULL){
@@ -321,19 +321,33 @@ int AddMissingHeaderEntry(_HINTERNET* handle,const char* key,const char* value){
  * @param url string used to extract the host from
  * @return 1 if the host is listed as protected, 0 in other case
  */
-int isProtectedHost(const char* protectedHosts,const char* url){
-  char *token, *saveptr;
-  token = strtok_r (url, "//", &saveptr);
-  int cnt=0;
-  char* host;
-  while(token!=NULL && cnt<=1){
-    if(cnt==1 && strstr(protectedHosts,token)!=NULL){
-      return 1;
-    }
-    token = strtok_r (NULL, "/", &saveptr);
-    cnt+=1;
-  }
-  return 0;
+int isProtectedHost(const char* protectedHosts, const char* url) {
+	char *token, *saveptr;
+	int cnt;
+	char* host;
+
+	// knut: make a copy of url since strtok family modifies first argument and cannot be used on constant strings  
+	char* urlcpy = (char*)malloc(sizeof(char)*(strlen(url) + 1));
+	urlcpy = strncpy(urlcpy, url, strlen(url) + 1); // since count > strlen(url), a null character is properly appended
+
+	//token = strtok_r (url, "//", &saveptr);
+	token = strtok_r(urlcpy, "//", &saveptr);   // knut
+	cnt = 0;
+	while (token != NULL && cnt <= 1) {
+		fprintf(stderr, "%s %d %s \n", __FILE__, __LINE__, token);
+		if (cnt == 1)
+			fprintf(stderr, "%s %d %s \n", __FILE__, __LINE__, strstr(protectedHosts, token));
+		fflush(stderr);
+		if (cnt == 1 && strstr(protectedHosts, token) != NULL) {
+			fprintf(stderr, "%s %d %s \n", __FILE__, __LINE__, strstr(protectedHosts, token));
+			free(urlcpy);
+			return 1;
+		}
+		token = strtok_r(NULL, "/", &saveptr);
+		cnt += 1;
+	}
+	free(urlcpy);
+	return 0;
 }
 
 /**
@@ -456,7 +470,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   char filename[255];
   int ldwFlags=INTERNET_FLAG_NEED_FILE;
   struct MemoryStruct header;
-  map* memUse=getMapFromMaps(conf,"main","memory");
+  map* memUse=getMapFromMaps((maps*) conf,"main","memory"); // knut: addad cast to maps*
 
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
   hInternet->ihandle[hInternet->nb].hasCacheFile=0;
@@ -504,7 +518,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
       char* tmpUuid=get_uuid();
       map* tmpPath=NULL;
       if(conf!=NULL){
-	tmpPath=getMapFromMaps(conf,"main","tmpPath");
+	tmpPath=getMapFromMaps((maps*) conf,"main","tmpPath"); // knut added cast to maps*
       }
       if(tmpPath==NULL)
 	sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
