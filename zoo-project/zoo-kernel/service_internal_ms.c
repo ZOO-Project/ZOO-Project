@@ -402,7 +402,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
     protoVersion=options[proto][1];
     extent=getMapArray(tmpI->content,options[proto][4],imyIndex);
     memset(webService_url,0,strlen(webService_url));
-    freeMap(&rformat);
+     freeMap(&rformat);
     free(rformat);
     rformat=createMap("value","image/tiff");
     sprintf(webService_url,
@@ -577,36 +577,36 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
     msProjectPoint(&myLayer->projection,&tempSrs,&max);
   
     if(test!=NULL){
-      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.y,min.x,max.y,max.x);
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.y,min.x,max.y,max.x);
       map* isGeo=getMapArray(output->content,"crs_isGeographic",imyIndex);
 #ifdef DEBUGMS
       fprintf(stderr,"isGeo = %s\n",isGeo->value);
 #endif
       if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0){
-	sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.y,min.x,max.y,max.x);
+	sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.y,min.x,max.y,max.x);
 	setMapArray(output->content,"wgs84_extent",imyIndex,tmpExtent);
-        sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+        sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f", minY,minX, maxY, maxX);
       }else{
-	sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
+	sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.x,min.y,max.x,max.y);
 	setMapArray(output->content,"wgs84_extent",imyIndex,tmpExtent);
       }
       setMapArray(output->content,"wms_extent",imyIndex,tmpExtent);
-      sprintf(tmpSrsStr,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
+      sprintf(tmpSrsStr,"%.15f,%.15f,%.15f,%.15f",min.x,min.y,max.x,max.y);
       setMapArray(output->content,"wcs_extent",imyIndex,tmpExtent);
     }else{
-      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.x,min.y,max.x,max.y);
       setMapArray(output->content,"wgs84_extent",imyIndex,tmpExtent);
-      sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",minX, minY, maxX, maxY);
       map* isGeo=getMapArray(output->content,"crs_isGeographic",imyIndex);
       if(isGeo!=NULL){
 #ifdef DEBUGMS
 	fprintf(stderr,"isGeo = %s\n",isGeo->value);
 #endif
 	if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
-	  sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+	  sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f", minY,minX, maxY, maxX);
       }
       setMapArray(output->content,"wms_extent",imyIndex,tmpExtent); 
-      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",minX,minY,maxX,maxY);
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",minX,minY,maxX,maxY);
       setMapArray(output->content,"wcs_extent",imyIndex,tmpExtent);
     }
   }
@@ -753,6 +753,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     return -1;
   }
 
+  setMapArray(output->content,"gdalType",imyIndex,OGR_Dr_GetName(OGR_DS_GetDriver(poDS)));  
   setMapArray(output->content,"geodatatype",imyIndex,"vector");
   int iLayer = 0;
   for( iLayer=0; iLayer < OGR_DS_GetLayerCount(poDS); iLayer++ ){
@@ -962,6 +963,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
 int tryGdal(maps* conf,maps* output,mapObj* m){
   int imyIndex=getPublishedId(output);
   map* tmpMap=getMapArray(output->content,"storage",imyIndex);
+  map* styleMap=getMap(output->content,"msStyle");
   char *pszFilename=tmpMap->value;
   GDALDatasetH hDataset;
   GDALRasterBandH hBand;
@@ -1111,16 +1113,17 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     sprintf(nBands,"%d",GDALGetRasterCount( hDataset ));
     msInsertHashTable(&(myLayer->metadata), "ows_bandcount", nBands);
   }
-  if(nBandsI>=3)
-    if(nBandsI==4)
-      msLayerAddProcessing(myLayer,"BANDS=1,2,3,4");
+  if(styleMap==NULL || strstr(styleMap->value,"BANDS=")==NULL){
+    if(nBandsI>=3)
+      if(nBandsI==4)
+	msLayerAddProcessing(myLayer,"BANDS=1,2,3,4");
+      else
+	msLayerAddProcessing(myLayer,"BANDS=1,2,3");
+    else if(nBandsI>=2)
+      msLayerAddProcessing(myLayer,"BANDS=1,2");
     else
-      msLayerAddProcessing(myLayer,"BANDS=1,2,3");
-  else if(nBandsI>=2)
-    msLayerAddProcessing(myLayer,"BANDS=1,2");
-  else
-    msLayerAddProcessing(myLayer,"BANDS=1");
-  
+      msLayerAddProcessing(myLayer,"BANDS=1");
+  }
 
   /**
    * Name available Bands
@@ -1161,15 +1164,19 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     if (CPLGetLastErrorType() == CE_None){
       char tmpMm[100],tmpMp[100];
       sprintf(tmpMm,"%.3f %.3f",pdfMin,pdfMax);
-      if(pdfMin!=pdfMax)
-	sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
-      /*else
-	sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMin,pdfMax);*/
+      if(pdfMin!=pdfMax && (styleMap==NULL || strstr(styleMap->value,"SCALE_")==NULL)){
+        sprintf(tmpNb,"%d",iBand+1);
+        if(styleMap==NULL || strstr(styleMap->value,"BANDS=")==NULL || strstr(strstr(styleMap->value,"BANDS="),tmpNb)!=NULL){ 
+	  if(pdfMean-(2*pdfStdDev)<0)
+	    sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,0.0,pdfMean+(2*pdfStdDev));
+	  else
+	    sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
+	  msLayerAddProcessing(myLayer,tmpMp);
+        }
+      }
       char tmpI[31];      
       sprintf(tmpI,"%s_interval",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
-      //if(pdfMax>255)
-      msLayerAddProcessing(myLayer,tmpMp);
       map* test=getMap(output->content,"msClassify");
       if(test!=NULL && strncasecmp(test->value,"true",4)==0){
 	/**
@@ -1254,8 +1261,13 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     }
 
   }
-  msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
-
+  if(styleMap==NULL || strstr(styleMap->value,"RESAMPLE")==NULL)
+    msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
+  
+  if(styleMap!=NULL && strlen(styleMap->value)>9){
+    msUpdateLayerFromString(myLayer,styleMap->value,MS_FALSE);
+  }
+  
   m->layerorder[m->numlayers] = m->numlayers;
   m->numlayers++;
   GDALClose( hDataset );
@@ -1277,6 +1289,8 @@ void outputMapfile(maps* conf,maps* outputs){
    */
   int imyIndex=getPublishedId(outputs);
   map* mime=getMapArray(outputs->content,"mimeType",imyIndex);
+  map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
+  map* dataPath=getMapFromMaps(conf,"main","dataPath");
   char *ext="data";
   if(mime!=NULL)
     if(strncasecmp(mime->value,"application/json",16)==0)
@@ -1481,22 +1495,31 @@ void outputMapfile(maps* conf,maps* outputs){
   freeMap(&correspondance);
   free(correspondance);
 
+  map* sid=getMapFromMaps(conf,"lenv","usid");
+  char *mapPath=
+    (char*)malloc((14+strlen(sid->value)+strlen(outputs->name)+strlen(dataPath->value))*sizeof(char));
+  sprintf(mapPath,"%s/%s_%d_%s.map",dataPath->value,outputs->name,imyIndex,sid->value);
+  char *mapUrl=
+    (char*)malloc((6+strlen(mapPath)+strlen(msUrl->value))*sizeof(char));
+  sprintf(mapUrl,"%s?map=%s",msUrl->value,mapPath);
+
+  if (msInsertHashTable(&(myMap->web.metadata), "ows_onlineresource", mapUrl) == NULL){
+#ifdef DEBUGMS
+    fprintf(stderr,"Unable to add metadata");
+#endif
+    return;
+  }
 
   if(tryOgr(conf,outputs,myMap)<0)
     if(tryGdal(conf,outputs,myMap)<0)
       return ;
 
-  tmp1=getMapFromMaps(conf,"main","dataPath");
-  char *tmpPath=(char*)malloc((13+strlen(tmp1->value))*sizeof(char));
-  sprintf(tmpPath,"%s/symbols.sym",tmp1->value);
+  char *tmpPath=(char*)malloc((13+strlen(dataPath->value))*sizeof(char));
+  sprintf(tmpPath,"%s/symbols.sym",dataPath->value);
   msInitSymbolSet(&myMap->symbolset);
   myMap->symbolset.filename=zStrdup(tmpPath);
   free(tmpPath);
 
-  map* sid=getMapFromMaps(conf,"lenv","usid");
-  char *mapPath=
-    (char*)malloc((14+strlen(sid->value)+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
-  sprintf(mapPath,"%s/%s_%d_%s.map",tmp1->value,outputs->name,imyIndex,sid->value);
   msSaveMap(myMap,mapPath);
   saveMapNames(conf,outputs,mapPath);
   free(mapPath);

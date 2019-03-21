@@ -2870,9 +2870,10 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	    nbFeatures=getMap(tmpI->content,"nb_features");
 	    geodatatype=getMap(tmpI->content,"geodatatype");
 	    if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
-	       (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0))
+	       (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0)){
 	      error=1;
 	      res=SERVICE_FAILED;
+	    }
 	  }
 	}
 #endif	

@@ -1306,8 +1306,10 @@ runRequest (map ** inputs)
   map* reg = getMapFromMaps (m, "main", "registry");
   registry* zooRegistry=NULL;
   if(reg!=NULL){
+#ifndef WIN32
     int saved_stdout = zDup (fileno (stdout));
     zDup2 (fileno (stderr), fileno (stdout));
+#endif
     if(createRegistry (m,&zooRegistry,reg->value)<0){
       map *message=getMapFromMaps(m,"lenv","message");
       map *type=getMapFromMaps(m,"lenv","type");
@@ -1316,8 +1318,10 @@ runRequest (map ** inputs)
 		      type->value, NULL);
       return 0;
     }
+#ifndef WIN32
     zDup2 (saved_stdout, fileno (stdout));
     zClose(saved_stdout);
+#endif
   }
 
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
@@ -1769,7 +1773,9 @@ runRequest (map ** inputs)
 			free (orig);
 			free (REQUEST);
 			closedir (dirp);
-			//xmlFreeDoc (doc);
+			if (corig != NULL)
+			  free (corig);
+			xmlFreeDoc (doc);
 			xmlCleanupParser ();
 			zooXmlCleanupNs ();
 			return 1;
@@ -1778,7 +1784,7 @@ runRequest (map ** inputs)
 		    tmps = strtok_r (NULL, ",", &saveptr);
 		    if (corig != NULL)
 		      free (corig);
-		  }
+		  }		  
 	      }
 	    closedir (dirp);
 	    fflush (stdout);
@@ -2061,6 +2067,7 @@ runRequest (map ** inputs)
           fflush (stderr);
 #endif
 #endif
+
 #ifdef DEBUG
           fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
                    mapcs->value);
