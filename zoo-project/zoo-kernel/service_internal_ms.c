@@ -1162,7 +1162,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     char tmpN[21];
     sprintf(tmpN,"Band%d",iBand+1);
     if (CPLGetLastErrorType() == CE_None){
-      char tmpMm[100],tmpMp[100];
+      char tmpMm[100],tmpMp[100],tmpNb[3];
       sprintf(tmpMm,"%.3f %.3f",pdfMin,pdfMax);
       if(pdfMin!=pdfMax && (styleMap==NULL || strstr(styleMap->value,"SCALE_")==NULL)){
         sprintf(tmpNb,"%d",iBand+1);
