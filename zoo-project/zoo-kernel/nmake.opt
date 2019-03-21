@@ -86,6 +86,12 @@ RUBY_CFLAGS=$(RUBY_CFLAGS) -DHAVE_ROUND
 !ENDIF
 !ENDIF
 
+!IFDEF MONO_DIR
+MONO_CFLAGS=-DUSE_MONO -I"$(MONO_DIR)"\msvc -I"$(MONO_DIR)"\msvc\include -I"$(MONO_DIR)"
+MONO_LDFLAGS=/LIBPATH:"$(MONO_DIR)/msvc/build/sgen/x64/lib/Release" mono-2.0-sgen.lib
+MONO_FILE=service_internal_mono.obj
+!ENDIF
+
 !IFNDEF ZOOK_DIR
 ZOOK_DIR=.
 !ENDIF

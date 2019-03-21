@@ -687,6 +687,7 @@ int getShmLockId(maps* conf, int nsems){
                 return -1; /* error, check errno */
             }
         }
+	setMapInMaps(conf,"lenv","semaphore","Created");
     } else if (errno == EEXIST) { /* someone else got it first */
         int ready = 0;
 
@@ -717,6 +718,7 @@ int getShmLockId(maps* conf, int nsems){
 	  errno = ETIME;
 	  return -1;
         }
+	setMapInMaps(conf,"lenv","semaphore","Acquired");
     } else {
         return sem_id; /* error, check errno */
     }

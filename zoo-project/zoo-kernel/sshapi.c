@@ -2,7 +2,7 @@
  *
  * Author : Gérald FENOY
  *
- * Copyright 2017 GeoLabs SARL. All rights reserved.
+ * Copyright 2017-2019 GeoLabs SARL. All rights reserved.
  *
  * This work was supported by public funds received in the framework of GEOSUD,
  * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed 
@@ -321,11 +321,12 @@ size_t ssh_file_exists(maps* conf,const char* targetPath,int cnt){
  * @return true in case of success, false if failure occured
  */
 bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
-  char mem[1024 * 1000];
+  char mem[1024 * 16];
   size_t nread;
   size_t memuse=0;
   time_t start;
   long total = 0;
+  int counter=0;
   int duration;
   int rc;
   LIBSSH2_SFTP_HANDLE *sftp_handle;
@@ -390,12 +391,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
     if(rc < 0)
       break;
     
-    if(memuse - rc) {
-      memmove(&mem[0], &mem[rc], memuse - rc);
-      memuse -= rc;
-    }
-    else
-      memuse = 0;
+    memuse = 0;
     
   } while (rc > 0);
   
@@ -437,7 +433,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       return -1;
     }
     if(!sessions[cnt]->sftp_session)
-      zSleep(1);
+      zSleep(10);
   } while (!sessions[cnt]->sftp_session);
   do {
     sftp_handle = libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,   
@@ -452,34 +448,37 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       }
     }
     if(!sftp_handle)
-      zSleep(1);
+      zSleep(10);
   } while (!sftp_handle);
- 
+
   int result=0;
+  int counter=0;
   do {
     do {
-      char* mem=(char*)malloc(16*1024*1024);
-      rc = libssh2_sftp_read(sftp_handle, mem,16*1024*1024);
+      char* mem=(char*)malloc(16*1024);
+      rc = libssh2_sftp_read(sftp_handle, mem,16*1024);
       if(rc > 0) {
 	fwrite(mem, rc, 1, local);
       }
       free(mem);
+      if(counter%25==0)
+	zSleep(10);
     } while (rc > 0);
-    
+
     if(rc != LIBSSH2_ERROR_EAGAIN) {
       result=-1;
       break;
     }
-    
+
     struct timeval timeout;
     fd_set fd;
     timeout.tv_sec = 10;
     timeout.tv_usec = 0;
- 
+
     FD_ZERO(&fd);
- 
+
     FD_SET(sessions[cnt]->sock_id, &fd);
- 
+
     rc = select(sessions[cnt]->sock_id+1, &fd, &fd, NULL, &timeout);
     if(rc <= 0) {
       if(rc==0)
@@ -488,7 +487,11 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
 	fprintf(stderr, "SFTP download error: %d\n", rc);
       return -1;
     }
-    
+
+    if(counter%50==0)
+       zSleep(10);
+    counter++;
+
   } while (1);
   duration = (int)(time(NULL)-start);
   fclose(local);
