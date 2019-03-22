@@ -33,6 +33,7 @@
 #include "service_callback.h"
 #include "mimetypes.h"
 #include <sys/un.h>
+#include "cgic.h"
 
 typedef struct {
   maps* conf;

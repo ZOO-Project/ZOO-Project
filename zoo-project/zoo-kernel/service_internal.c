@@ -928,7 +928,7 @@ int  setOutputValue( maps* outputs, const char* parameterName, char* data, size_
  * @attention Caller is responsible for applying free() to the returned pointer
  */
 char* file_exists(const char* dir, const char* name) {
-	char* d = (dir != NULL ? dir : ".");
+	const char* d = (dir != NULL ? dir : ".");
 	if (name != NULL) {
 		size_t length = strlen(d) + strlen(name) + 2; // including file separator and \0 character
 		char* path = (char*)calloc(length, sizeof(char));

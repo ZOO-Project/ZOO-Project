@@ -37,14 +37,14 @@
  * @warning make sure to free resources returned by this function
  */
 char* getMd5(char* url){
-  EVP_MD_CTX md5ctx;
+  EVP_MD_CTX *md5ctx=EVP_MD_CTX_create();
   char* fresult=(char*)malloc((EVP_MAX_MD_SIZE+1)*sizeof(char));
   unsigned char result[EVP_MAX_MD_SIZE];
   unsigned int len;
-  EVP_DigestInit(&md5ctx, EVP_md5());
-  EVP_DigestUpdate(&md5ctx, url, strlen(url));
-  EVP_DigestFinal_ex(&md5ctx,result,&len);
-  EVP_MD_CTX_cleanup(&md5ctx);
+  EVP_DigestInit(md5ctx, EVP_md5());
+  EVP_DigestUpdate(md5ctx, url, strlen(url));
+  EVP_DigestFinal_ex(md5ctx,result,&len);
+  EVP_MD_CTX_destroy(md5ctx);
   int i;
   for(i = 0; i < len; i++){
     if(i>0){
@@ -78,7 +78,6 @@ char* getMd5f(char* file){
   while ((bytes = fread (data, sizeof(unsigned char), dlen, inFile)) != 0)
     EVP_DigestUpdate(md5ctx, data, bytes);
   EVP_DigestFinal_ex(md5ctx,result,&len);
-  EVP_MD_CTX_cleanup(md5ctx);
   EVP_MD_CTX_destroy(md5ctx);
   int i;
   for(i = 0; i < len; i++){
