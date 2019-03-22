@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2015 GeoLabs SARL
+ * Copyright (c) 2015-2019 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,9 @@
  // knut: time utilities required for new log function (logMessage)
 #include <ctime>
 #include <chrono>
+#ifdef WIN32
 #include <process.h>
+#endif
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #include <stdarg.h>
@@ -1783,7 +1785,7 @@ void logMessage(const char* source, const char* function, int line, const char* 
 	char* text = (char*)malloc(sizeof(char)*msglen);
 
 	snprintf(text, msglen, "pid: %d %s line %d %s() %s systime: %lld ns ticks: %lld %s\n",
-		_getpid(), source, line, function, str, sys_t, proc_t, message); // __FILE__ __LINE__ __func__ //
+		zGetpid(), source, line, function, str, sys_t, proc_t, message); // __FILE__ __LINE__ __func__ //
 
 	if (file != NULL && (log = fopen(file, "a+")) != NULL) {
 		fputs(text, log);

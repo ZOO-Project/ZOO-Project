@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2017 GeoLabs SARL. All rights reserved.
+ *  Copyright 2017-2019 GeoLabs SARL. All rights reserved.
  *
  * This work was supported by public funds received in the framework of GEOSUD,
  * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed 
@@ -131,7 +131,7 @@ extern "C" {
 			   NULL,NULL, 0);
     if(!CHECK_INET_HANDLE(hInternet)){
       InternetCloseHandle (&hInternet);
-      return false;
+      return NULL;
     }
     char *URL=(char*)malloc((strlen(arg->url->value)+5)*sizeof(char));
     sprintf(URL,"%s%d_%d/",arg->url->value,arg->step,arg->state);

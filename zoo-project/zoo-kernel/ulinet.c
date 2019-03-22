@@ -3,7 +3,7 @@
  *
  * Author : Gérald FENOY
  *
- * Copyright (c) 2008-2015 GeoLabs SARL
+ * Copyright (c) 2008-2019 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@
 #include "server_internal.h"
 #include <assert.h>
 #include <ctype.h>
+#include "fcgi_stdio.h"
 
 /**
  * Write the downloaded content to a _HINTERNET structure

@@ -33,7 +33,6 @@
 
 #include "service_internal.h"
 #include "service.h"
-#include "cgic.h"
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>

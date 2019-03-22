@@ -37,7 +37,6 @@
 #define TIME_SIZE 40
 
 #include <libintl.h>
-//#include <xlocale.h> //#include <xlocale> 
 #include <locale.h>
 
 /**
@@ -64,7 +63,6 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -96,6 +94,8 @@
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+
+#include "cgic.h"
 
 #ifdef __cplusplus
 extern "C" {

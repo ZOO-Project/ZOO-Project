@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2019 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@
 #ifndef _ULINET_H
 #define _ULINET_H
 
-#include "fcgi_stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>

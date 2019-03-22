@@ -8,7 +8,7 @@ version.h: Makefile
 	echo "#define LOCALEDIR \"@localedir@\"" >>  version.h
 
 service.o: service.c service.h
-	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service.c
+	g++ ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service.c
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
@@ -65,7 +65,7 @@ service_internal.o: service_internal.c service_internal.h service.h
 	gcc ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
 service_yaml.o: service_yaml.c service.h
-	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
+	g++ ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
 
 meta_sql.o: meta_sql.c meta_sql.h service.h
 	g++  ${METADB_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -c meta_sql.c

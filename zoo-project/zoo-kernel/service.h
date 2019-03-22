@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2015 GeoLabs SARL
+ * Copyright (c) 2009-2019 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -474,8 +474,10 @@ extern "C" {
   // knut: some new utility functions; logMessage is primarily intended for debugging 	
   ZOO_DLL_EXPORT bool nonempty(map* map);
   ZOO_DLL_EXPORT bool hasvalue(maps* source, const char* node, const char* key, map** kvp);
+#ifdef __cplusplus
   ZOO_DLL_EXPORT void setErrorMessage(maps*& conf, const char* service, WPSException exc, const char* message = NULL);
   ZOO_DLL_EXPORT void logMessage(const char* source, const char* function, int line, const char* file = NULL, const char* message = NULL);
+#endif
   #define zooLogMsg(file,message) logMessage(__FILE__, __func__, __LINE__, (file), (message)) 
   #define zooLog logMessage(__FILE__, __func__, __LINE__)  
 
