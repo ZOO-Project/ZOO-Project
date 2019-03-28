@@ -113,12 +113,12 @@ AC_SUBST([OPENSSL_LDFLAGS])
 # Detect if gettext is available
 #============================================================================
 
-AC_ARG_WITH([gettext],
-    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
-    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
+#AC_ARG_WITH([gettext],
+#    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
+#    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
 
-GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
-GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
+#GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
+#GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
 #CFLAGS_SAVE="$CFLAGS"
 #CFLAGS="$GETTEXT_CFLAGS"
 #LIBS_SAVE="$LIBS"
@@ -126,8 +126,8 @@ GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
 #AM_GNU_GETTEXT([external], [], [])
 #AC_CHECK_LIB(intl,
 #			[dgettext], [] , [AC_MSG_ERROR([could not find $i function in gettext library])])
-AC_SUBST([GETTEXT_CFLAGS])
-AC_SUBST([GETTEXT_LDFLAGS])
+#AC_SUBST([GETTEXT_CFLAGS])
+#AC_SUBST([GETTEXT_LDFLAGS])
 
 #============================================================================
 # Detect if run on debian / ubuntu
@@ -1048,6 +1048,10 @@ AC_ARG_WITH([saga],
         [AS_HELP_STRING([--with-saga=PATH], [Specifies an alternative location for the SAGA-GIS library])],
         [SAGAPATH="$withval"], [SAGAPATH=""])
 
+AC_ARG_WITH([saga-version],
+        [AS_HELP_STRING([--with-saga-version=VERSION], [Specifies the SAGA-GIS version number])],
+        [SAGAVERS="$withval"], [SAGAVERS="2"])
+
 if test -z "$SAGAPATH"
 then
 	SAGA_LDFLAGS=""
@@ -1063,7 +1067,7 @@ else
 	fi
 	WX_ISSUE="-D_WX_WXCRTVARARG_H_"
 	SAGA_DEFS="-D_SAGA_LINUX -D_TYPEDEF_BYTE -D_TYPEDEF_WORD -DMODULE_LIBRARY_PATH=\\\"$SAGAPATH/lib/saga\\\""
-	SAGA_CPPFLAGS=" -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
+	SAGA_CPPFLAGS="-DSAGA_VERSION=${SAGAVERS} -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
 	SAGA_LDFLAGS="-fPIC `$WXCFG --unicode=yes --static=no --libs` -lsaga_api"
 	SAGA_ENABLED="-DUSE_SAGA"
 	SAGA_FILE="service_internal_saga.o"
@@ -1074,10 +1078,18 @@ else
 	CPPFLAGS="$SAGA_CPPFLAGS"
 	LIBS_SAVE="$LIBS"
 	LIBS="$SAGA_LDFLAGS"
-	AC_CHECK_HEADERS([module_library.h],
-			[], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "module_library.h"],[SG_Get_Module_Library_Manager();]])],
-		[AC_MSG_RESULT([checking for SG_Get_Module_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Module_Library_Manager... failed])])
+        if test "$SAGAVERS" == "2"; then
+        AC_CHECK_HEADERS([module_library.h],
+                        [], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "module_library.h"],[SG_Get_Module_Library_Manager();]])],
+                [AC_MSG_RESULT([checking for SG_Get_Module_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Module_Library_Manager... failed])])
+        else
+        AC_CHECK_HEADERS([tool_library.h],
+                        [], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "tool_library.h"],[SG_Get_Tool_Library_Manager();]])],
+                [AC_MSG_RESULT([checking for SG_Get_Tool_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Tool_Library_Manager... failed])])
+        fi
+	
 	LIBS="$LIBS_SAVE"
 	AC_LANG_POP([C++])
 fi
