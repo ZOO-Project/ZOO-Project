@@ -29,7 +29,7 @@
 #include <wx/app.h>
 #include <api_core.h>
 #include <data_manager.h>
-#include <module_library.h>
+#include <saga_api.h>
 #define _ZOO_SAGA
 #include "service_internal_saga.h"
 #include "server_internal.h"
@@ -236,7 +236,9 @@ bool sagaLoadInput(CSG_Parameter* param,map* arg){
       if(!SG_Get_Data_Manager().Find(&fileName) && !SG_Get_Data_Manager().Add(&fileName) && !param->is_Optional() ){
 	return false;
       }
-      return( param->Set_Value(SG_Get_Data_Manager().Find(&fileName)) );
+      fprintf(stderr,"%s %s\n",carg->name,carg->value);
+      fflush(stderr);
+      return( param->Set_Value(SG_Get_Data_Manager().Find(&fileName,false)) );
     }
     else
       if(param->is_DataObject_List()){
@@ -249,7 +251,7 @@ bool sagaLoadInput(CSG_Parameter* param,map* arg){
 	  if( !SG_Get_Data_Manager().Find(&fileName) ){
 	    SG_Get_Data_Manager().Add(&fileName);
 	  }
-	  param->asList()->Add_Item(SG_Get_Data_Manager().Find(&fileName));
+	  param->asList()->Add_Item(SG_Get_Data_Manager().Find(&fileName,false));
 	}
       }
   }
@@ -326,10 +328,18 @@ bool sagaSetParameters(CSG_Parameters *params,map* argument){
 	  if(param->Get_Type()==PARAMETER_TYPE_Range){
 	    inmap=getMap(argument,(CSG_String(param->Get_Identifier())+"_MIN").b_str());
 	    if(inmap!=NULL)
+#if SAGA_MAJOR_VERSION == 2	      
 	      param->asRange()->Set_LoVal(strtod(inmap->value,NULL));
+#else
+	      param->asRange()->Set_Min(strtod(inmap->value,NULL));
+#endif	    
 	    inmap=getMap(argument,(CSG_String(param->Get_Identifier())+"_MAX").b_str());
 	    if(inmap!=NULL)
+#if SAGA_MAJOR_VERSION == 2	      
 	      param->asRange()->Set_HiVal(strtod(inmap->value,NULL));	    
+#else
+	      param->asRange()->Set_Max(strtod(inmap->value,NULL));
+#endif	    
 	  }
 	  if(inmap==NULL){
 	    param->Restore_Default();
@@ -385,9 +395,21 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 	    
 	    else if( param->is_DataObject_List() )
 	      {
-		for(int i=0; i<param->asList()->Get_Count(); i++)
+		for(int i=0; i<
+#if SAGA_MAJOR_VERSION == 2
+		      param->asList()->Get_Count()
+#else
+		      param->asList()->Get_Data_Count()
+#endif		      
+		      ; i++)
 		  {
-		    CSG_Data_Object *pObject = param->asList()->asDataObject(i);
+		    CSG_Data_Object *pObject =
+#if SAGA_MAJOR_VERSION == 2		      
+		      param->asList()->asDataObject(i)
+#else
+		      param->asList()->Get_Data(i)
+#endif		      
+		      ;
 		    
 		    if( pObject->is_Modified() && SG_File_Exists(pObject->Get_File_Name()) )
 		      {
@@ -438,7 +460,7 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 			  fileName.Clear();
 			}
 		    }
-		  
+#if SAGA_MAJOR_VERSION == 2		  
 		  int nFileNames = param->asList()->Get_Count() <= fileNames.Get_Count() ? fileNames.Get_Count() : fileNames.Get_Count() - 1;
 		  for(int i=0; i<param->asList()->Get_Count(); i++)
 		    {
@@ -457,6 +479,27 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 		      setMapArray(cMaps->content,"generated_file",i,
 				  CSG_String(param->asList()->asDataObject(i)->Get_File_Name()).b_str());
 		    }
+#else
+		  int nFileNames = param->asList()->Get_Data_Count() <= fileNames.Get_Count() ? fileNames.Get_Count() : fileNames.Get_Count() - 1;
+		  for(int i=0; i<param->asList()->Get_Data_Count(); i++)
+		    {
+		      if( i < nFileNames )
+			{
+			  param->asList()->Get_Data(i)->Save(fileNames[i]);
+			}
+		      else
+			{
+			  param->asList()->Get_Data(i)->Save(CSG_String::Format(SG_T("%s_%0*d"),
+										    fileNames[fileNames.Get_Count() - 1].c_str(),
+										    SG_Get_Digit_Count(param->asList()->Get_Data_Count()),
+										    1 + i - nFileNames
+										    ));
+			}
+		      setMapArray(cMaps->content,"generated_file",i,
+				  CSG_String(param->asList()->Get_Data(i)->Get_File_Name()).b_str());
+		    }
+		  
+#endif		  
 		}
 	    }
       }
@@ -476,7 +519,11 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 int sagaExecuteCmd(maps** main_conf,const char* lib_name,const char* module_name,map* arguments,maps** outputs=NULL){
   int res=SERVICE_FAILED;
 
+#if SAGA_MAJOR_VERSION == 2  
   CSG_Module_Library * library=SG_Get_Module_Library_Manager().Get_Library(CSG_String(lib_name),true);
+#else
+  CSG_Tool_Library * library=SG_Get_Tool_Library_Manager().Get_Library(CSG_String(lib_name),true);
+#endif  
   if( library == NULL){
     char tmp[255];
     sprintf(tmp,"Counld not load the %s SAGA library",lib_name);
@@ -485,7 +532,11 @@ int sagaExecuteCmd(maps** main_conf,const char* lib_name,const char* module_name
     return res;
   }
 
+#if SAGA_MAJOR_VERSION == 2  
   CSG_Module * module=library->Get_Module(atoi(module_name));
+#else
+  CSG_Tool * module=library->Get_Tool(atoi(module_name));
+#endif  
   if(module == NULL){
     char tmp[255];
     sprintf(tmp,"Counld not load the %s module from the %s SAGA library",module_name,lib_name);
@@ -984,8 +1035,14 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
 
   SG_Set_UI_Callback(Get_Callback(watcher));
 
+#if SAGA_MAJOR_VERSION == 2  
   int n = SG_Get_Module_Library_Manager().Add_Directory(wxT(MODULE_LIBRARY_PATH),false);
-  if( SG_Get_Module_Library_Manager().Get_Count() <= 0 ){
+  if( SG_Get_Module_Library_Manager().Get_Count() <= 0 )
+#else
+  int n = SG_Get_Tool_Library_Manager().Add_Directory(wxT(MODULE_LIBRARY_PATH),false);
+  if( SG_Get_Tool_Library_Manager().Get_Count() <= 0 )
+#endif
+  {
     setMapInMaps(*main_conf,"lenv","message","Could not load any SAGA tool library");
     res=SERVICE_FAILED;
     return res;
@@ -994,7 +1051,11 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
   map* serviceProvider=getMap(s->content,"serviceProvider");
 
   // Load the SAGA-GIS library corresponding to the serviceProvider
+#if SAGA_MAJOR_VERSION == 2  
   CSG_Module_Library * library=SG_Get_Module_Library_Manager().Get_Library(CSG_String(serviceProvider->value),true);
+#else
+  CSG_Tool_Library * library=SG_Get_Tool_Library_Manager().Get_Library(CSG_String(serviceProvider->value),true);
+#endif
   if( library == NULL){
     char tmp[255];
     sprintf(tmp,"Counld not load the %s SAGA library",serviceProvider->value);
@@ -1004,7 +1065,11 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
   }
   
   // Load the SAGA-GIS module corresponding to the service name from the library
+#if SAGA_MAJOR_VERSION == 2  
   CSG_Module * module=library->Get_Module(atoi(s->name));
+#else
+  CSG_Tool * module=library->Get_Tool(atoi(s->name));
+#endif
   if(module == NULL){
     char tmp[255];
     sprintf(tmp,"Counld not load the %s module from the %s SAGA library",
@@ -1016,7 +1081,6 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
 
   // Load all the parameters defined for the module
   CSG_Parameters * params=module->Get_Parameters();
-  int pc=params->Get_Count();
   if(!params){
     char tmp[255];
     sprintf(tmp,"Counld not find any param for the %s module from the %s SAGA library",
@@ -1025,6 +1089,7 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
     res=SERVICE_FAILED;
     return res;
   }
+  int pc=params->Get_Count();
 
   // Loop over each inputs to transform raster files to grid when needed, 
   // import tables, shapes or point clouds

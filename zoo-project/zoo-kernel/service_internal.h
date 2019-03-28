@@ -80,7 +80,7 @@
 #include <unistd.h>
 #endif
 #ifndef WIN32
-#include <xlocale.h>
+#include <locale.h>
 #endif
 
 #include <fcntl.h>

@@ -80,7 +80,7 @@
 #endif
 #ifndef WIN32
 //#include <locale.h>
-#include <xlocale.h> // knut: this appears to be a non-standard header file that has been removed in newer versions of glibc; it may be sufficient to include <locale.h> (see above) 
+#include <locale.h> // knut: this appears to be a non-standard header file that has been removed in newer versions of glibc; it may be sufficient to include <locale.h> (see above) 
 #endif
 #include "ulinet.h"
 
