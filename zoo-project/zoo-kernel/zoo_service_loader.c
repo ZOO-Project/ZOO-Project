@@ -106,7 +106,7 @@ extern wchar_t**_wenviron;
 #include "service_internal_mono.h"
 #endif
 
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 #include "service_json.h"
 #include "service_callback.h"
 #endif
@@ -2488,7 +2488,7 @@ if(orig!=NULL)
 	  init_sql(m);
 	  recordServiceStatus(m);
 #endif
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 	  invokeCallback(m,NULL,NULL,0,0);
 #endif
 	  if(vid==0){
@@ -2532,7 +2532,7 @@ if(orig!=NULL)
 	  dumpMapsToFile(lenvMaps,flenv,0);
 	  free(flenv);
 
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 	  invokeCallback(m,request_input_real_format,NULL,1,0);
 #endif
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
@@ -2549,7 +2549,7 @@ if(orig!=NULL)
 	    removeShmLock (m, 1);
 #else
 	    recordResponse(m,fbkp1);
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 	    invokeCallback(m,NULL,NULL,7,0);
 #endif
 #endif
@@ -2576,7 +2576,7 @@ if(orig!=NULL)
 	  }
 	  if(getMapFromMaps(m,"lenv","mapError")!=NULL){
 	    setMapInMaps(m,"lenv","message",_("Issue with geographic data"));
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 	    invokeCallback(m,NULL,NULL,7,0);
 #endif
 	    eres=-1;//SERVICE_FAILED;
@@ -2633,7 +2633,7 @@ if(orig!=NULL)
   if (((int) zGetpid ()) != cpid || cgiSid != NULL)
     {
       if (eres == SERVICE_SUCCEEDED)
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 	invokeCallback(m,NULL,request_output_real_format,5,1);
 #endif
       fflush(stderr);
@@ -2664,7 +2664,7 @@ if(orig!=NULL)
 #else
       recordResponse(m,fbkp1);
       if (eres == SERVICE_SUCCEEDED)
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 	invokeCallback(m,NULL,request_output_real_format,6,0);
 #endif
 #endif

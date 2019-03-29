@@ -486,7 +486,7 @@ int getServiceFromYAML(maps* conf, char* file,service** service,char *name){
 	    }else
 	      addMapToIoType(&current_element->supported,current_content);
 	  }
-	  freeMaps(&current_content);
+	  freeMap(&current_content);
 	  free(current_content);
 	  current_content=NULL;
 	}
