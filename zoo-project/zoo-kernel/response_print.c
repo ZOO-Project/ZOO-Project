@@ -32,7 +32,7 @@
 #else
 #include "cpl_vsi.h"
 #endif
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
 #include "service_callback.h"
 #endif
 
@@ -1989,7 +1989,6 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     if(vid==0){
       nc = xmlNewNode(ns, BAD_CAST "ProcessOutputs");
     }
-    //dumpMaps(outputs);
     maps* mcursor=outputs;
     elements* scursor=serv->outputs;
     map* testResponse=getMap(request,"RawDataOutput");	
@@ -2900,8 +2899,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 			   request_outputs);
     else{
       maps* tmpMaps=getMaps(m,"lenv");
-      dumpMap(tmpMaps->content);
-#ifdef USE_HPC
+#ifdef USE_CALLBACK
       invokeCallback(m,NULL,NULL,7,0);
 #endif
       printExceptionReportResponse(m,tmpMaps->content);

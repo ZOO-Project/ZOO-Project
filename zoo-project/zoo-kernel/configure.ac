@@ -64,10 +64,14 @@ AC_SUBST([UUID_LDFLAGS])
 # Detect if json-c is available
 #============================================================================
 
+AC_ARG_WITH([callback],
+    [AS_HELP_STRING([--with-callback=yes], [Activate callback invocation during HPC execution])],
+    [CALLBACK_ACTIVATED="$withval"], [CALLBACK_ACTIVATED="no"])
+    
 AC_ARG_WITH([json],
     [AS_HELP_STRING([--with-json=PATH], [Specifies an alternative location for the json-c library])],
     [JSON_DIR="$withval"], [JSON_DIR="/usr/"])
-if test "x$JSON_DIR" != "x"
+if test "x$JSON_DIR" != "x" && test "x$CALLBACK_ACTIVATED" == "xyes"
 then
 	JSON_CPPFLAGS="-I$JSON_DIR/include/json-c/"
 	JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
@@ -82,11 +86,15 @@ then
 	CPPFLAGS="$CPPFLAGS_SAVE"
 	JSON_FILE="service_json.o"
 	JSON_ENABLED="-DJSON"
+	CALLBACK_FILE="service_callback.o"
+	CALLBACK_USE="-DUSE_CALLBACK"
 fi
 AC_SUBST([JSON_CPPFLAGS])
 AC_SUBST([JSON_LDFLAGS])
 AC_SUBST([JSON_FILE])
 AC_SUBST([JSON_ENABLED])
+AC_SUBST([CALLBACK_FILE])
+AC_SUBST([CALLBACK_USE])
 
 #============================================================================
 # Detect if openssl is available

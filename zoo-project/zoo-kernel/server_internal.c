@@ -25,7 +25,7 @@
 #include "server_internal.h"
 #include "service_internal.h"
 #include "response_print.h"
-#include "service_callback.h"
+//#include "service_callback.h"
 #include "mimetypes.h"
 #ifndef WIN32
 #include <dlfcn.h>
