@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright (c) 2017 GeoLabs SARL. All rights reserved.
+ *  Copyright (c) 2017-2019 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -95,7 +95,7 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 		      fields[0],values[1]->value);
 	    if(values[2]!=NULL)
 	      fprintf(f,"UPDATE CollectionDB.LiteralDataDomain \n"
-		      "set uom = (SELECT id from CollectionDB.PrimitiveDatatypes WHERE name=$q$%s$q$ \n WHERE id = \n"
+		      "set uom = (SELECT id from CollectionDB.PrimitiveUOM WHERE uom=$q$%s$q$) \n WHERE id = \n"
 		      "  (SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq);\n ",
 		      values[2]->value);
 	    if(values[3]!=NULL){
@@ -298,19 +298,35 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 	      getMap(tmpio->content,"uom"),
 	      getMap(tmpio->content,"AllowedValues")
 	    };
+	    map* values0[4]={
+	      getMap(tmp->defaults->content,"dataType"),
+	      getMap(tmp->defaults->content,"value"),
+	      getMap(tmp->defaults->content,"uom"),
+	      getMap(tmp->defaults->content,"AllowedValues")
+	    };
 	    char *fields[20]={
 	      "default_value",
 	      "def"
 	    };
 	    fprintf(f,"INSERT INTO CollectionDB.LiteralDataDomain"
 		    " (def,data_type_id) VALUES \n(false,");
-	    fprintf(f,"(SELECT id from CollectionDB.PrimitiveDatatypes"
-		    " where name = '%s'));\n",values[0]->value);
+	    if(values[0]!=NULL)
+	      fprintf(f,"(SELECT id from CollectionDB.PrimitiveDatatypes"
+		      " where name = '%s'));\n",values[0]->value);
+	    else
+	      fprintf(f,"(SELECT id from CollectionDB.PrimitiveDatatypes"
+		      " where name = '%s'));\n",values0[0]->value);
 	    if(values[1]!=NULL)
 	      fprintf(f,"UPDATE CollectionDB.LiteralDataDomain \n"
 		      "set %s = $q$%s$q$ \n WHERE id = \n"
 		      "  ((SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));\n ",
 		      fields[0],values[1]->value);
+	    if(values[2]!=NULL)
+	      fprintf(f,"UPDATE CollectionDB.LiteralDataDomain \n"
+		      "set uom = (SELECT id from CollectionDB.PrimitiveUOM WHERE uom=$q$%s$q$) \n WHERE id = \n"
+		      "  (SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq);\n ",
+		      values[2]->value);
+	    if(type!=NULL)
 	    fprintf(f,"INSERT INTO CollectionDB.%sDataDescriptionAssignment"
 		    " (%s_id,data_description_id) VALUES "
 		    "((select last_value "
