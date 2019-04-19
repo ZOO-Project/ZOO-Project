@@ -72,13 +72,13 @@ Prerequisites
    * latest `ZOO-Kernel <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel>`__ trunk version
    * `MapServer <http://mapserver/org>`__ version >= 6.0.1
 
-First download the lastest zoo-kernel by checking out the svn. Use the following command from do the directory where your previously checked out (in this example we will use ``<PREV_SVN_CO>`` to design this directory).
+First download the lastest zoo-kernel by checking out the svn. Use the following command from do the directory where your previously checked out (in this example we will use ``$PREV_SVN_CO`` to design this directory).
 
 .. code-block:: guess
 
-    cd <PREV_SVN_CO>
-    svn checkout http://svn.zoo-project.org/svn/trunk/zoo-kernel zoo-kernel-ms
-
+    svn checkout http://svn.zoo-project.org/svn/trunk/ $PREV_SVN_CO
+    cd $PREV_SVN_CO
+    
 Then uncompress the MapServer archive (ie. ``mapserver-6.0.1.tar.bz2``) into ``/tmp/zoo-ms-src``, and compile it using the following command:
 
 .. code-block:: guess
@@ -91,20 +91,15 @@ Then uncompress the MapServer archive (ie. ``mapserver-6.0.1.tar.bz2``) into ``/
      make
      cp mapserv /usr/lib/cgi-bin
 
-Once done, compile ZOO-Kernel with MapServer support from the ``<PREV_SVN_CO>`` directory, using the following command:
+Once done, compile ZOO-Kernel with MapServer support from the ``$PREV_SVN_CO`` directory, using the following command:
 
 .. code-block:: guess
 
-     cd zoo-kernel-ms
+     cd zoo-kernel
      autoconf
      ./configure --with-python --with-mapserver=/tmp/zoo-ms-src/mapserver-6.0.1
      make
-
-You can then copy the new ZOO-Kernel to ``/usr/lib/cgi-bin`` directory, as follow:
-
-.. code-block:: guess
-
-     cp zoo_loader.cgi /usr/lib/cgi-bin
+     sudo make install
 
 
 .. _kernel-mapserver-main.cfg:
@@ -118,6 +113,16 @@ Open and edit the ``/usr/lib/cgi-bin/main.cfg`` file, by adding the following co
 
       dataPath = /var/www/temp/
       mapserverAddress=http://localhost/cgi-bin/mapserv
+
+You can also add the following lines to the ``[main]`` section, in case
+you want to use a default style for Polygon, Lines and Points vector
+layer.
+
+.. code-block:: guess
+
+      msStylePoly=STYLE COLOR 202 109 19 OUTLINECOLOR 105 105 105 WIDTH 3 END
+      msStyleLine=STYLE OUTLINECOLOR 202 109 19 WIDTH 3 END
+      msStylePoint=STYLE COLOR 202 109 19 OUTLINECOLOR 105 105 105 SYMBOL 0 SIZE 14 END
 
 The ``dataPath`` directory is mandatory and must belong to the Apache user.
 
@@ -174,17 +179,102 @@ You get the same optional parameter ``msOgcVersion`` as for the ``main.cfg``. Th
 Styling
 *************
 
+You have different options to define the style of the layer created
+using the data returned by your service.
+
+msStyle
++++++++
+
 The optional ``msStyle`` parameter can also be used to define a custom MapServer style block (used for vector datasource only), as follow:
 
 .. code-block:: guess
 
      msStyle = STYLE COLOR 125 0 105 OUTLINECOLOR 0 0 0 WIDTH 3 END
 
-If a WPS service outputs a one band raster file, then it is possible to add a ``msClassify`` parameter and set it to ``true`` in the output ComplexData ``<Default>`` or ``<Supported>`` nodes of its ``zcfg`` file. This allows ZOO-Kernel to use its own default style definitions in order to classify the raster using equivalent intervals. 
+msClassify
+++++++++++
+
+If a WPS service outputs a one band raster file, then it is possible
+to add a ``msClassify`` parameter and set it to ``true`` in the output
+ComplexData ``<Default>`` or ``<Supported>`` nodes of its zcfg
+file. This allows ZOO-Kernel to use its own default style definitions
+in order to classify the raster using equivalent intervals.  
 
 .. code-block:: guess
 
-     msClassify = ....
+     msClassify = true
+
+
+msInclude
++++++++++
+
+In case you want to use another layer which use the result of your
+service, for instance to produce a `heatmap
+<https://mapserver.org/output/kerneldensity.html>`_, then you can use
+the 
+``msInclude`` and ``msLayer`` options in the output ``ComplexData``
+``<Default>`` or ``<Supported>`` nodes of its zcfg file. You can see below an
+example of use of this two options with the associated mapfile.
+
+.. code-block:: guess
+
+     msInclude = /var/data/template.map
+     msLayer = heatmap
+
+You can find below a sample ``/var/data/template.map``:
+
+.. code-block:: guess
+
+     MAP
+       SIZE 1000 500
+       EXTENT -180 -90 180 90
+       NAME "test heat"
+       IMAGETYPE "png"
+
+       WEB
+         METADATA
+           "ows_srs" "epsg:4326  epsg:3857 epsg:900913"
+           "ows_enable_request" "*"
+	 END # METADATA
+       END # WEB
+       
+       PROJECTION
+         "+init=epsg:4326"
+       END # PROJECTION
+
+       LAYER
+         NAME "heatmap" # Corresponding to the msLayer defined
+	 TYPE raster
+	 CONNECTIONTYPE kerneldensity
+	 CONNECTION "Result"
+	 STATUS on
+	 PROCESSING "RANGE_COLORSPACE=HSL"
+	 PROCESSING "KERNELDENSITY_RADIUS=20"
+	 PROCESSING "KERNELDENSITY_COMPUTE_BORDERS=ON"
+	 PROCESSING "KERNELDENSITY_NORMALIZATION=AUTO"
+	 OFFSITE 0 0 0
+	 CLASS
+	   STYLE
+	     COLORRANGE  "#0000ff00"  "#0000ffff"
+	     DATARANGE 0 32
+	   END # STYLE
+	   STYLE
+	     COLORRANGE  "#0000ffff"  "#ff0000ff"
+	     DATARANGE 32 255
+	   END # STYLE
+	 END # CLASS
+       END # LAYER
+       
+       LAYER
+         NAME "points"
+	 STATUS on
+	 TYPE POINT
+	 #DATA "/Library/WebServer/cache//ef76ee6642c1ea704e847e28120ba1ca.zca"
+       END # LAYER
+     END # MAPFILE
+
+
+
 
 Example
 **************
@@ -215,7 +305,7 @@ An example :ref:`services-zcfg` file configured for the optional MapServer suppo
      mimeType = image/tif
      useMapserver = true
      asReference = true
-     msClassify = ....
+     msClassify = true
     </Supported>
 
 In this example, the default output ``mimeType`` is ``image/png``, so a WMS GetMap request will be returned, or the resulting ``image/tiff`` will be returned as WCS GetCoverage request.
