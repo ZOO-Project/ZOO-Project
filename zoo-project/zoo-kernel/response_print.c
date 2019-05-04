@@ -671,6 +671,7 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
       limit=7;
     }
     nc3=NULL;
+    map* sType=getMap(serv->content,"serviceType");
     for(;i<limit;i+=2){
       if(capabilities[vid][i]==NULL)
 	break;
@@ -686,8 +687,12 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
 	  else
 	    xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST tmp1->value);
 	}
-	else
-	  xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+	else{
+	  if(i==3 && vid==1 && sType!=NULL && strstr(sType->value,"HPC")!=NULL)
+	    xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST "async-execute dismiss");
+	  else
+	    xmlNewNsProp(nc1,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+	}
       }
     }
     map* tmp3=getMapFromMaps(m,"lenv","level");
@@ -717,8 +722,9 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
  * @param ns the XML namespace to create the attributes
  * @param content the servive main content created from the zcfg file
  * @param vid the version identifier (0 for 1.0.0 and 1 for 2.0.0)
+ * @param serviceType string containing the current service type
  */
-void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
+void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid,map* serviceType){
   int limit=7;
   for(int i=1;i<limit;i+=2){
     map* tmp1=getMap(content,capabilities[vid][i]);
@@ -737,10 +743,13 @@ void attachAttributes(xmlNodePtr n,xmlNsPtr ns,map* content,int vid){
       }
     }
     else{
-      if(vid==0 && i>=2)
-	xmlNewProp(n,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+      if(i==3 && vid==1 && serviceType!=NULL && strstr(serviceType->value,"HPC")!=NULL)
+	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST "async-execute dismiss");
       else
-	xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+	if(vid==0 && i>=2)
+	  xmlNewProp(n,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
+	else
+	  xmlNewNsProp(n,ns,BAD_CAST capabilities[vid][i],BAD_CAST capabilities[vid][i+1]);
     }
   }
 }
@@ -1023,7 +1032,7 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
 
   if(vid==0){
     nc = xmlNewNode(NULL, BAD_CAST "ProcessDescription");
-    attachAttributes(nc,ns,serv->content,vid);
+    attachAttributes(nc,ns,serv->content,vid,NULL);
   }
   else{
     nc2 = xmlNewNode(ns, BAD_CAST "ProcessOffering");
@@ -1040,7 +1049,7 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
 	addToMap(serv->content,capabilities[vid][3],toReplace);
       }
     }
-    attachAttributes(nc2,NULL,serv->content,vid);
+    attachAttributes(nc2,NULL,serv->content,vid,serviceType);
     map* level=getMap(serv->content,"level");
     if(level!=NULL && strcasecmp(level->value,"generic")==0)
       nc = xmlNewNode(ns, BAD_CAST "GenericProcess");

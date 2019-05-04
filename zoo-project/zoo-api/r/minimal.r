@@ -3,5 +3,5 @@ ZOOTranslate <- function(a) {
 }
 
 ZOOUpdateStatus <- function(a,b) {
-    .Call("ZOOUpdateStatus",a,b)
+    .Call("ZOOUpdateStatus",a,as.numeric(b))
 }
