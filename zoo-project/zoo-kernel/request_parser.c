@@ -27,6 +27,7 @@
 #include "server_internal.h"
 #include "response_print.h"
 #include "caching.h"
+#include "cgic.h"
 
 /**
  * Apply XPath Expression on XML document.

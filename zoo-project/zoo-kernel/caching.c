@@ -28,7 +28,10 @@
 #include "service.h"
 #include "service_internal.h"
 #include "response_print.h"
-
+#ifdef MS_FORCE_LOCAL_FILE_USE
+#include "ogr_api.h"
+#include "mapserver.h"
+#endif
 /**
  * Compute md5
  * 
@@ -676,7 +679,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   char* cached=isInCache(*m,url);
   char *mimeType=NULL;
   char *origin=NULL;
-  int fsize=0;
+  long long fsize=0;
   map* memUse=getMapFromMaps(*m,"main","memory");
 
   map* t=getMap(*content,"xlink:href");
@@ -755,7 +758,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
   
   char ltmp1[256];
-  sprintf(ltmp1,"%d",fsize);
+  sprintf(ltmp1,"%ld",fsize);
   addToMap(*content,"size",ltmp1);
   if(cached==NULL){
     if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
@@ -781,8 +784,11 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       }
     }
   }
-  free(fcontent);
-  free(mimeType);
-  free(cached);
+  if(fcontent!=NULL)
+    free(fcontent);
+  if(mimeType!=NULL)
+    free(mimeType);
+  if(cahced!:NULL)
+    free(cached);
   return 0;
 }

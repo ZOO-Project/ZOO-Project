@@ -27,14 +27,13 @@
 
 #pragma once 
 
+#include <Python.h>
 #include "service_internal.h"
 #include "response_print.h"
-#include <Python.h>
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>
 #endif
-#include "cgic.h"
 
 PyDictObject* PyDict_FromMaps(maps* t);
 PyDictObject* PyDict_FromMap(map* t);

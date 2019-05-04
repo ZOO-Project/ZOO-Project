@@ -1,0 +1,9 @@
+!INCLUDE ../../zoo-kernel/nmake.opt
+
+all: ZMaps.dll
+
+ZMaps.dll: ZMaps.cs
+	$(MONO_DIR)\bin\mcs /target:library ZMaps.cs
+
+clean:
+	erase ZMaps.dll

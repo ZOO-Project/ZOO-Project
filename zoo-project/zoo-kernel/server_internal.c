@@ -373,8 +373,9 @@ void readGeneratedFile(maps* m,map* content,char* filename){
     return ;
   }
   fseek(file, 0, SEEK_END);
-  long count = ftell(file);
-  sprintf(rsize,"%lld",ftell(file));
+  zStatStruct f_status;
+  int s=zStat(filename, &f_status);
+  sprintf(rsize,"%lld",file_status.st_size);
   rewind(file);
   if(getMap(content,"storage")==NULL){
     map* tmpMap1=getMap(content,"value");
