@@ -67,7 +67,6 @@ extern "C" int crlex ();
 #include "sqlapi.h"
 #ifdef WIN32
 #include "caching.h"
-extern wchar_t**_wenviron;
 #endif
 
 #ifdef META_DB
@@ -1313,7 +1312,9 @@ runRequest (map ** inputs)
     if(createRegistry (m,&zooRegistry,reg->value)<0){
       map *message=getMapFromMaps(m,"lenv","message");
       map *type=getMapFromMaps(m,"lenv","type");
+#ifndef WIN32
       zDup2 (saved_stdout, fileno (stdout));
+#endif
       errorException (m, message->value,
 		      type->value, NULL);
       return 0;
