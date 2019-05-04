@@ -788,7 +788,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     free(fcontent);
   if(mimeType!=NULL)
     free(mimeType);
-  if(cahced!:NULL)
+  if(cached!=NULL)
     free(cached);
   return 0;
 }
