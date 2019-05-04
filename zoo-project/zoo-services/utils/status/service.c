@@ -71,7 +71,7 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }
-    map* tmpMap1=getMapFromMaps(conf,"lenv","semaphore")
+    map* tmpMap1=getMapFromMaps(conf,"lenv","semaphore");
     if(tmpMap1!=NULL && strcasecmp(tmpMap1->value,"Created")==0)
       removeShmLock(conf,1);
     sprintf(xslFileName,"%s/updateStatus.xsl",tmpMmap->value);
