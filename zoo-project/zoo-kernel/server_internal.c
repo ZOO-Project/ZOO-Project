@@ -375,7 +375,7 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   fseek(file, 0, SEEK_END);
   zStatStruct f_status;
   int s=zStat(filename, &f_status);
-  sprintf(rsize,"%lld",file_status.st_size);
+  sprintf(rsize,"%lld",f_status.st_size);
   rewind(file);
   if(getMap(content,"storage")==NULL){
     map* tmpMap1=getMap(content,"value");
@@ -1110,7 +1110,7 @@ void runDismiss(maps* conf,char* pid){
 #endif
 	if(strstr(dp->d_name,pid)!=0){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
-	  if(unlink(fileName)!=0){
+	  if(zUnlink(fileName)!=0){
 	    errorException (conf, 
 			    _("The job cannot be removed, a file cannot be removed"),
 			    "NoApplicableCode", NULL);
