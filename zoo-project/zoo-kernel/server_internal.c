@@ -378,18 +378,21 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   sprintf(rsize,"%lld",f_status.st_size);
   rewind(file);
   if(getMap(content,"storage")==NULL){
-    map* tmpMap1=getMap(content,"value");
-    if(tmpMap1==NULL){
-      addToMap(content,"value","");
-      tmpMap1=getMap(content,"value");
+    map* memUse=getMapFromMaps(m,"main","memory");
+    if(memUse==NULL || strncmp(memUse->value,"load",4)==0){
+      map* tmpMap1=getMap(content,"value");
+      if(tmpMap1==NULL){
+	addToMap(content,"value","");
+	tmpMap1=getMap(content,"value");
+      }
+      free(tmpMap1->value);
+      tmpMap1->value=(char*) malloc((f_status.st_size+1)*sizeof(char));
+      if(tmpMap1->value==NULL){
+	setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
+      }
+      fread(&tmpMap1->value,1,f_status.st_size,file);
+      tmpMap1->value[f_status.st_size]=0;
     }
-    free(tmpMap1->value);
-    tmpMap1->value=(char*) malloc((count+1)*sizeof(char));
-    if(tmpMap1->value==NULL){
-      setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
-    }
-    fread(tmpMap1->value,1,count,file);
-    tmpMap1->value[count]=0;
   }
   fclose(file);  
   addToMap(content,"size",rsize);
