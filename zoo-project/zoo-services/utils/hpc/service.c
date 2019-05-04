@@ -268,7 +268,7 @@ extern "C" {
       return SERVICE_FAILED;
     }
     free(logPath);
-    // Run scontrol to check if the service execution ended.
+    // Run sacct to check if the service execution ended.
     // Store all the informations returned by scontrol command as a cfg file to
     // be parsed back by the ZOO-Kernel waiting for the execution of the remote
     // service
@@ -276,10 +276,10 @@ extern "C" {
     
     map* tmpMap=getMapFromMaps(conf,configId->value,"remote_command_opt");
     char* command=(char*)malloc((126+strlen(tmpMap->value))*sizeof(char));
-    sprintf(command,"sacct --format=%s -p | grep \"%s\" | sed \"s:||:|None|:g;s:||:|:g\"",tmpMap->value,jobid->value);    
+    sprintf(command,"sacct --format=%s -p | grep \"%s\" | sed \"s:||:|None|:g;s:||:|None|:g\"",tmpMap->value,jobid->value);    
     if(ssh_exec(conf,command,ssh_get_cnt(conf))==0){
       free(command);
-      setMapInMaps(conf,"lenv","message",_("Failed to run scontrol remotely"));
+      setMapInMaps(conf,"lenv","message",_("Failed to run sacct remotely"));
       // TODO: check status in db and if available continue in other case return SERVICE_FAILED
       return SERVICE_FAILED;
     }else{
@@ -314,9 +314,17 @@ extern "C" {
 	  token1 = strtok_r (NULL, "|", &saveptr1);
 	}
       }else{
+	free(logPath);
 	setMapInMaps(conf,"lenv","message",_("Unable to access the downloaded execution log file"));
 	return SERVICE_FAILED;
       }
+    }
+    tmpMap=getMapFromMaps(tmpMaps,"henv","JobId");
+    if(tmpMap!=NULL){
+      char* tmpStr=(char*)malloc((32)*sizeof(char));
+      sprintf(tmpStr,"slurm-%s.out",tmpMap->value);
+      addToMap(tmpMaps->content,"StdErr",tmpStr); 
+      free(tmpStr);
     }
     logPath=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+15)*sizeof(char));
     sprintf(logPath,"%s/exec_status_%s",tmpPath->value,jobid->value);
