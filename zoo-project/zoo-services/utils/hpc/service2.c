@@ -132,7 +132,7 @@ extern "C" {
       fullpath=zStrdup(storage);
     if(unlink(fullpath)==0){
       // TODO store the filename_full in the deletedfiles
-      fprintf(stderr,"#### DeleteData #### %s %d %s has been successfully deleted\n",__FILE__,__LINE__,(strlen(filename)>0?filename:fullpath));
+      fprintf(stderr,"#### DeleteData #### %s %d %s has been successfully deleted\n",__FILE__,__LINE__,(filename!=NULL && strlen(filename)>0?filename:fullpath));
     }else{
       fprintf(stderr,"#### DeleteData #### unable to delete %s %s \n",fullpath,fetchErrno(errno));
     }
@@ -154,7 +154,7 @@ extern "C" {
     map* filename=getMapFromMaps(inputs,"filename","value");
     map* ioname=getMapFromMaps(inputs,"ioname","value");
     char tmp0[4];
-    sprintf(tmp0,"%c%c%c",filename->value[strlen(filename->value)-4],filename->value[strlen(filename->value)-3],filename->value[strlen(filename->value)-2]);
+    sprintf(tmp0,"%c%c%c",filename->value[strlen(filename->value)-3],filename->value[strlen(filename->value)-2],filename->value[strlen(filename->value)-1]);
     char *cfilename=NULL;
     if(strcasecmp(tmp0,"zca")==0){
       cfilename=(char*) malloc((strlen(filename->value)+strlen(cacheDir->value)+2)*sizeof(char));
@@ -207,8 +207,8 @@ extern "C" {
       }else{
 	char tmp1[8];
 	snprintf(tmp1,7,"%s",filename->value);
-	if(strcasecmp(tmp1,"output")==0 || strcasecmp(tmp1,"input_")==0){
-	  trydeletedatafile(tmppath->value,filename->value);
+	if(strcasecmp(tmp1,"output")==0 || strstr(filename->value,".zca")!=NULL || strcasecmp(tmp1,"input_")==0){
+	  tryDeleteDataFile(tmpPath->value,filename->value);
           char *tmp=zStrdup(filename->value);
 	  tmp[strlen(tmp)-strlen(strrchr(tmp,'.'))]=0;
 	  char *mapsfile=(char*)malloc((strlen(tmp)+6)*sizeof(char));
@@ -253,7 +253,7 @@ extern "C" {
 	  }
 	  setMapInMaps(outputs,"Result","value",_ss("The output data has been correclty removed"));
 	}else{
-	  setMapInMaps(conf,"lenv","message",_ss("The file you try to delete is nor an input, nor and output."));
+	  setMapInMaps(conf,"lenv","message",_ss("The file you try to delete is nor an input, nor an output."));
 	  unlockFile(conf,lck);
 	  return SERVICE_FAILED;
 	}

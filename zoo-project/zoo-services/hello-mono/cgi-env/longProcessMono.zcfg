@@ -1,6 +1,6 @@
 [longProcessMono]
- Title = Create a welcome message string.
- Abstract = Create a welcome string.
+ Title = Demo long process.
+ Abstract = This service doesn't do anything except taking its time, it demonstrates how to use the updateStatus function from your ZOO Service.
  processVersion = 2
  storeSupported = true
  statusSupported = true
@@ -12,24 +12,11 @@
   [a]
    Title = Input string
    Abstract = The name to display in the welcome message.
-   minOccurs = 1
+   minOccurs = 0
    maxOccurs = 1
    <LiteralData>
     dataType = int
-    <Default>
-    AllowedValues = 101,202,303,404
-    rangeMin = -100
-    rangeMax = 100
-    rangeSpacing = 1
-    rangeClosure = co
-      value = 11
-    </Default>
-    <Supported>
-    	AllowedValues = 405,502,503,504
-    </Supported>
-    <Supported>
-    	AllowedValues = 540,502,603,604
-    </Supported>
+    <Default />
    </LiteralData>
  </DataInputs>
  <DataOutputs>

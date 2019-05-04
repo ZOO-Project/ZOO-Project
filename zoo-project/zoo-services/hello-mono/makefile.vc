@@ -1,0 +1,9 @@
+!INCLUDE ../../zoo-kernel/nmake.opt
+	
+all: cgi-env/TestService.dll
+
+cgi-env/TestService.dll: test.cs
+	$(MONO_DIR)\bin\mcs /target:library -r:../../zoo-api/mono/ZMaps.dll -out:cgi-env/TestService.dll test.cs
+
+clean:
+	rm -rf cgi-env/*dll
