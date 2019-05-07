@@ -30,8 +30,8 @@
 -------------------------------------------------------------------------------- 
 -- Create a dedicated schema to store all tables
 -- Uncomment the following 2 lines to activate the schema use
--- CREATE SCHEMA zoo;
--- SET search_path TO zoo;
+-- CREATE SCHEMA processdb;
+-- SET search_path TO processdb;
 --------------------------------------------------------------------------------
 -- Services table
 -- Used to store information about services running asynchronously

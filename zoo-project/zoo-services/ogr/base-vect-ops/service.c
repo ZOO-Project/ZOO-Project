@@ -472,13 +472,13 @@ int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry:
 	     iDriver++ )
 	  {
 
-	    if( EQUAL(
+	    if( 
 #if GDAL_VERSION_MAJOR >=2
-		      poR->GetDriver(iDriver)->GetDescription()
+		EQUAL(poR->GetDriver(iDriver)->GetDescription(),oDriver1)
 #else
-		      poR->GetDriver(iDriver)->GetName()
+		EQUAL(poR->GetDriver(iDriver)->GetName(),oDriver1)
 #endif
-		      ,oDriver1) )
+		)
 	      {
 		poDriver = poR->GetDriver(iDriver);
 	      }

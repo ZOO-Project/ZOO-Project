@@ -27,6 +27,7 @@
 #include "server_internal.h"
 #include "response_print.h"
 #include "caching.h"
+#include "cgic.h"
 
 /**
  * Apply XPath Expression on XML document.
@@ -153,7 +154,7 @@ void ensureDecodedBase64(maps **in){
       readBase64(&tmp);
       addToMap(cursor->content,"base64_value",tmp->value);
       int size=0;
-      char *s=strdup(tmp->value);
+      char *s=zStrdup(tmp->value);
       free(tmp->value);
       tmp->value=base64d(s,strlen(s),&size);
       free(s);
@@ -173,7 +174,7 @@ void ensureDecodedBase64(maps **in){
 	  readBase64(&tmp);
 	  addToMap(cursor->content,key,tmp->value);
 	  int size=0;
-	  char *s=strdup(tmp->value);
+	  char *s=zStrdup(tmp->value);
 	  free(tmp->value);
 	  tmp->value=base64d(s,strlen(s),&size);
 	  free(s);
@@ -520,6 +521,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
   int k = 0;
   int l = 0;
   map* version=getMapFromMaps(*main_conf,"main","rversion");
+  map* memory=getMapFromMaps(*main_conf,"main","memory");
   int vid=getVersionId(version->value);
   for (k=0; k < nodes->nodeNr; k++)
     {
@@ -532,6 +534,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 	  if(vid==1){
 	    xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
 	    tmpmaps = createMaps((char *) val);
+	    xmlFree(val);
 	  }
 
 	  xmlNodePtr cur2 = cur->children;
@@ -623,12 +626,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  else
 			    tmpmaps->content =
 			      createMap (refs[l], (char *) val);
-
 			  map *ltmp = getMap (tmpmaps->content, "method");
 			  if (l == 4 )
 			    {
-			      if ((ltmp==NULL || strncasecmp (ltmp->value, "POST",4) != 0)) // 
-			      //if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
+			      if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
 				{
 				  if (loadRemoteFile
 				      (main_conf, &tmpmaps->content, hInternet,
@@ -750,6 +751,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					  
 				      map *btmp =
 					getMap (tmpmaps->content, "Reference");
+				      addToMap (tmpmaps->content, "Body", tmp);
 				      if (btmp != NULL)
 					{
 					  addRequestToQueue(main_conf,hInternet,(char *) btmp->value,false);
@@ -758,7 +760,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							   tmp,
 							   xmlStrlen(btmps),
 							   INTERNET_FLAG_NO_CACHE_WRITE,
-							   0);
+							   0,
+							   *main_conf);
 					  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 					}
 				      xmlFree (btmps);
@@ -777,6 +780,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				xmlChar *val =
 				  xmlGetProp (cur3, BAD_CAST "href");
 				HINTERNET bInternet, res1, res;
+				maps *tmpConf=createMaps("main");
+				tmpConf->content=createMap("memory","load");
 				bInternet = InternetOpen (
 #ifndef WIN32
 							  (LPCTSTR)
@@ -784,18 +789,23 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							  "ZooWPSClient\0",
 							  INTERNET_OPEN_TYPE_PRECONFIG,
 							  NULL, NULL, 0);
+#ifndef WIN32
 				if (!CHECK_INET_HANDLE (bInternet))
 				  fprintf (stderr,
 					   "WARNING : bInternet handle failed to initialize");
+#endif
 				bInternet.waitingRequests[0] =
-				  strdup ((char *) val);
+				  zStrdup ((char *) val);
 				res1 =
 				  InternetOpenUrl (&bInternet,
 						   bInternet.waitingRequests
 						   [0], NULL, 0,
 						   INTERNET_FLAG_NO_CACHE_WRITE,
-						   0);
+						   0,
+						   tmpConf);
 				processDownloads (&bInternet);
+				freeMaps(&tmpConf);
+				free(tmpConf);
 				char *tmp =
 				  (char *)
 				  malloc ((bInternet.ihandle[0].nDataLen +
@@ -815,7 +825,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						  ihandle[0].nDataLen,
 						  &bRead);
 				tmp[bInternet.ihandle[0].nDataLen] = 0;
-				InternetCloseHandle (&bInternet);
+				InternetCloseHandle(&bInternet);
+				addToMap (tmpmaps->content, "Body", tmp);
 				map *btmp =
 				  getMap (tmpmaps->content, "href");
 				if (btmp != NULL)
@@ -828,10 +839,12 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						       tmp,
 						       strlen(tmp),
 						       INTERNET_FLAG_NO_CACHE_WRITE,
-						       0);
+						       0,
+						       *main_conf);
 				    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				  }
 				free (tmp);
+				xmlFree (val);
 			      }
 			}
 		      cur3 = cur3->next;
@@ -894,7 +907,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		      }
 		    }
 		  }
-
 
 		  while (cur4 != NULL)
 		    {
@@ -966,9 +978,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  }
 
 		      map *test = getMap (tmpmaps->content, "encoding");
-
 		      if (test == NULL)
-			{ 
+			{
 			  if (tmpmaps->content != NULL)
 			    addToMap (tmpmaps->content, "encoding",
 				      "utf-8");
@@ -978,15 +989,17 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			  test = getMap (tmpmaps->content, "encoding");
 			}
 
-		      if (getMap(tmpmaps->content,"dataType")==NULL && strcasecmp (test->value, "base64") != 0)
-			{ 
-			  xmlChar *mv = xmlNodeListGetString (doc,
-							      cur4->xmlChildrenNode,
-							      1);
+		      if (getMap(tmpmaps->content,"dataType")==NULL && test!=NULL && strcasecmp (test->value, "base64") != 0)
+			{
+			  xmlChar *mv = NULL;
+			  /*if(cur4!=NULL && cur4->xmlChildrenNode!=NULL)
+			    xmlChar *mv = xmlNodeListGetString (doc,
+								cur4->xmlChildrenNode,
+								1);*/
 			  map *ltmp =
 			    getMap (tmpmaps->content, "mimeType");
-			  if (mv == NULL
-			      ||
+			  if (/*mv == NULL
+			      ||*/
 			      (xmlStrcasecmp
 			       (cur4->name, BAD_CAST "ComplexData") == 0
 			       && (ltmp == NULL
@@ -1024,6 +1037,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      addIntToMap (tmpmaps->content, "size",
 					   buffersize);
 			    }else{
+
 			    if(xmlStrcasecmp
 			       (cur4->name, BAD_CAST "BoundingBoxData") == 0){
 			      xmlDocPtr doc1 = xmlNewDoc(BAD_CAST "1.0");
@@ -1038,13 +1052,29 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			    }else{
 			      xmlNodePtr cur5 = cur4->children;
 			      while (cur5 != NULL
+				     && cur5->type != XML_ELEMENT_NODE
+				     && cur5->type != XML_TEXT_NODE
 				     && cur5->type != XML_CDATA_SECTION_NODE)
 				cur5 = cur5->next;
 			      if (cur5 != NULL
-				  && cur5->type == XML_CDATA_SECTION_NODE){
-				if(mv!=NULL)
-				  xmlFree(mv);
-				mv=xmlStrdup(cur5->content);
+				  && cur5->type != XML_CDATA_SECTION_NODE
+				  && cur5->type != XML_TEXT_NODE)
+				{
+				  xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
+				  int buffersize;
+				  xmlDocSetRootElement (doc1, cur5);
+				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
+							     &buffersize,
+							     "utf-8", 0);
+				  addIntToMap (tmpmaps->content, "size",
+					       buffersize);
+				}
+			      else if (cur5 != NULL)/*
+				     && cur5->type == XML_CDATA_SECTION_NODE)*/{
+				xmlFree(mv);
+				if(cur5->content!=NULL){
+				  mv=xmlStrdup(cur5->content);
+				}
 			      }
 			    }
 			  }
@@ -1088,6 +1118,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		cur2 = cur2->next;
 	      }
 	    }
+	  if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
+	    if(getMap(tmpmaps->content,"to_load")==NULL){
+	      addToMap(tmpmaps->content,"to_load","false");
+	    }
 	  {
 	    map* test=getMap(tmpmaps->content,"value");
 	    if(test==NULL && tmpmaps->child==NULL)
@@ -1122,8 +1156,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		      }
 		  }
 	      }
-	    else
+	    else{
 	      addMapsToMaps (request_output, tmpmaps);
+	    }
 	  }
 	  freeMaps (&tmpmaps);
 	  free (tmpmaps);
@@ -1197,6 +1232,7 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	tmpmaps = createMaps("unknownIdentifier");
       const char ress[4][13] =
 	{ "mimeType", "encoding", "schema", "transmission" };
+      xmlFree (val);
       for (l = 0; l < 4; l++){
 	val = xmlGetProp (cur, BAD_CAST ress[l]);
 	if (val != NULL && strlen ((char *) val) > 0)
@@ -1216,11 +1252,13 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	xmlNodePtr ccur = cur->children;
 	while (ccur != NULL){
 	  if(ccur->type == XML_ELEMENT_NODE){
-	    char *xpathExpr=(char*)malloc(65+strlen(tmpmaps->name));
-	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);
+	    char *xpathExpr=(char*)malloc(66+strlen(tmpmaps->name));
+	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);	    
 	    xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
 	    xmlNodeSet* cnodes = tmpsptr->nodesetval;
 	    xmlParseOutputs2(main_conf,request_inputs,&tmpmaps->child,doc,cnodes);
+	    xmlXPathFreeObject (tmpsptr);
+	    free(xpathExpr);
 	    break;
 	  }
 	  ccur = ccur->next;
@@ -1469,8 +1507,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
   int vid=getVersionId(version->value);
 
   xmlInitParser ();
-  //xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER);
-  xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER | XML_PARSE_HUGE); // 
+  xmlDocPtr doc = xmlReadMemory (post, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER);
 
   /**
    * Extract Input nodes from the XML Request.
@@ -1502,6 +1539,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 	    addToMap(*request_inputs,"mode",(char*)val);
 	  else
 	    addToMap(*request_inputs,"mode","auto");
+	  xmlFree(val);
 	  val = xmlGetProp (cur, BAD_CAST "response");
 	  if(val!=NULL){
 	    addToMap(*request_inputs,"response",(char*)val);
@@ -1514,6 +1552,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 	    addToMap(*request_inputs,"response","document");
 	    addToMap(*request_inputs,"ResponseDocument","");
 	  }
+	  xmlFree(val);
 	}
       }
     }
@@ -1767,7 +1806,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                            fileNameOnServer);
 #endif
                   targetFile =
-                    open (storageNameOnServer, O_RDWR | O_CREAT | O_TRUNC,
+                    zOpen (storageNameOnServer, O_RDWR | O_CREAT | O_TRUNC,
                           S_IRWXU | S_IRGRP | S_IROTH);
                   if (targetFile < 0)
                     {
@@ -1787,7 +1826,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                     }
                   addToMap (tmpReqI->content, "lref", storageNameOnServer);
                   cgiFormFileClose (file);
-                  close (targetFile);
+                  zClose (targetFile);
 		  free(fileNameOnServer);
 		  free(storageNameOnServer);
 #ifdef DEBUG
@@ -1819,7 +1858,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
   map* r_inputs = getMap (request,toCheck);
   if (r_inputs == NULL){
     if(mandatory>0){
-      const char *replace=_("Mandatory parameter <%s> was not specified");
+      char *replace=_("Mandatory parameter <%s> was not specified");
       char *message=(char*)malloc((strlen(replace)+strlen(toCheck)+1)*sizeof(char));
       sprintf(message,replace,toCheck);
       if(lres==NULL){
@@ -1868,10 +1907,10 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       }
     }
     if(hasValidValue<0){
-      const char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
+      char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
       nb=0;
       char *vvalues=NULL;
-      const char* num=_("is");
+      char* num=_("is");
       while(avalues[nb]!=NULL){
 	char *tvalues;
 	if(vvalues==NULL){
@@ -1918,4 +1957,45 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
   if(lres!=NULL){
     *res=lres;
   }
+}
+
+/**
+ * Parse cookie contained in request headers.
+ *
+ * @param conf the conf maps containinfg the main.cfg
+ * @param cookie the 
+ */
+void parseCookie(maps** conf,const char* cookie){
+  char* tcook=zStrdup(cookie);
+  char *token, *saveptr;
+  token = strtok_r (tcook, "; ", &saveptr);
+  maps* res=createMaps("cookies");
+  while (token != NULL){
+    char *token1, *saveptr1, *name;
+    int i=0;
+    token1 = strtok_r (token, "=", &saveptr1);
+    while (token1 != NULL){
+      if(i==0){
+	name=zStrdup(token1);
+	i++;
+      }
+      else{
+	if(res->content==NULL)
+	  res->content=createMap(name,token1);
+	else
+	  addToMap(res->content,name,token1);
+	free(name);
+	name=NULL;
+	i=0;
+      }
+      token1 = strtok_r (NULL, "=", &saveptr1);
+    }
+    if(name!=NULL)
+      free(name);
+    token = strtok_r (NULL, "; ", &saveptr);
+  }
+  addMapsToMaps(conf,res);
+  freeMaps(&res);
+  free(res);
+  free(tcook);
 }

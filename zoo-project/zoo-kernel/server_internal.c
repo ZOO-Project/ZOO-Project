@@ -25,6 +25,7 @@
 #include "server_internal.h"
 #include "service_internal.h"
 #include "response_print.h"
+//#include "service_callback.h"
 #include "mimetypes.h"
 #ifndef WIN32
 #include <dlfcn.h>
@@ -365,29 +366,35 @@ char* getVersion(maps* m){
  * @param filename the file to read
  */
 void readGeneratedFile(maps* m,map* content,char* filename){
+  char rsize[1024];
   FILE * file=fopen(filename,"rb");
   if(file==NULL){
-    fprintf(stderr,"Failed to open file %s for reading purpose.\n",filename);
     setMapInMaps(m,"lenv","message","Unable to read produced file. Please try again later");
     return ;
   }
   fseek(file, 0, SEEK_END);
-  long count = ftell(file);
+  zStatStruct f_status;
+  int s=zStat(filename, &f_status);
+  sprintf(rsize,"%lld",f_status.st_size);
   rewind(file);
-  struct stat file_status; 
-  stat(filename, &file_status);
-  map* tmpMap1=getMap(content,"value");
-  if(tmpMap1==NULL){
-    addToMap(content,"value","");
-    tmpMap1=getMap(content,"value");
+  if(getMap(content,"storage")==NULL){
+    map* memUse=getMapFromMaps(m,"main","memory");
+    if(memUse==NULL || strncmp(memUse->value,"load",4)==0){
+      map* tmpMap1=getMap(content,"value");
+      if(tmpMap1==NULL){
+	addToMap(content,"value","");
+	tmpMap1=getMap(content,"value");
+      }
+      free(tmpMap1->value);
+      tmpMap1->value=(char*) malloc((f_status.st_size+1)*sizeof(char));
+      if(tmpMap1->value==NULL){
+	setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
+      }
+      fread(&tmpMap1->value,1,f_status.st_size,file);
+      tmpMap1->value[f_status.st_size]=0;
+    }
   }
-  free(tmpMap1->value);
-  tmpMap1->value=(char*) malloc((count+1)*sizeof(char));  
-  fread(tmpMap1->value,1,count,file);
-  tmpMap1->value[count]=0;
-  fclose(file);
-  char rsize[1000];
-  sprintf(rsize,"%ld",count);
+  fclose(file);  
   addToMap(content,"size",rsize);
 }
 
@@ -422,6 +429,7 @@ int writeFile(char* fname,char* val,int length){
  */
 void dumpMapsValuesToFiles(maps** main_conf,maps** in){
   map* tmpPath=getMapFromMaps(*main_conf,"main","tmpPath");
+  map* tmpUrl=getMapFromMaps(*main_conf,"main","tmpUrl");
   map* tmpSid=getMapFromMaps(*main_conf,"lenv","usid");
   maps* inputs=*in;
   int length=0;
@@ -444,9 +452,15 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	  length=0;
 	  if(cSize!=NULL){
 	    length=atoi(cSize->value);
-	  }
+	  }else
+	    length=strlen(cValue->value);
 	  writeFile(val,cValue->value,length);
 	  setMapArray(cMap,"cache_file",k,val);
+	  free(val);
+	  val=(char*)malloc((strlen(tmpUrl->value)+strlen(inputs->name)+strlen(tmpSid->value)+strlen(file_ext)+16)*sizeof(char));
+	  sprintf(val,"%s/Input_%s_%s_%d.%s",tmpUrl->value,inputs->name,tmpSid->value,k,file_ext);
+	  setMapArray(cMap,"cache_url",k,val);
+	  setMapArray(cMap,"byValue",k,"true");
 	  free(val);
 	}
       }else{
@@ -460,9 +474,15 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
 	sprintf(val,"%s/Input_%s_%s_%d.%s",tmpPath->value,inputs->name,tmpSid->value,0,file_ext);
 	if(cSize!=NULL){
 	  length=atoi(cSize->value);
-	}
+	}else
+	  length=strlen(cValue->value);
 	writeFile(val,cValue->value,length);
 	addToMap(cMap,"cache_file",val);
+	free(val);
+	val=(char*)malloc((strlen(tmpUrl->value)+strlen(inputs->name)+strlen(tmpSid->value)+strlen(file_ext)+16)*sizeof(char));
+	sprintf(val,"%s/Input_%s_%s_%d.%s",tmpUrl->value,inputs->name,tmpSid->value,0,file_ext);
+	addToMap(cMap,"cache_url",val);
+	addToMap(cMap,"byValue",val);
 	free(val);
       }
     }
@@ -637,6 +657,13 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	  }
 	}
 	if(res==NULL){
+	  map* tmpMaxO0=getMap(tmpInputs->content,"useMapserver");
+	  if(tmpMaxO0!=NULL){
+	    if(tmpMaps2->content==NULL)
+	      tmpMaps2->content=createMap("useMapserver",tmpMaxO0->value);
+	    else
+	      addToMap(tmpMaps2->content,"useMapserver",tmpMaxO0->value);
+	  }
 	  map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
 	  if(tmpMaxO!=NULL){
 	    if(tmpMaps2->content==NULL)
@@ -700,7 +727,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	tmpMaps2=NULL;
       }
     }
-    else { 
+    else /*toto*/{ 
       iotype* tmpIoType=NULL;
       if(tmpMaps->content!=NULL){
 	tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,
@@ -710,26 +737,18 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	   * In case of an Input maps, then add the minOccurs and maxOccurs to the
 	   * content map.
 	   */
-	  map* tmpMap1=getMap(tmpInputs->content,"minOccurs");
-	  if(tmpMap1!=NULL){
-	    if(tmpMaps->content==NULL)
-	      tmpMaps->content=createMap("minOccurs",tmpMap1->value);
-	    else
-	      addToMap(tmpMaps->content,"minOccurs",tmpMap1->value);
-	  }
-	  map* tmpMaxO=getMap(tmpInputs->content,"maxOccurs");
-	  if(tmpMaxO!=NULL){
-	    if(tmpMaps->content==NULL)
-	      tmpMaps->content=createMap("maxOccurs",tmpMaxO->value);
-	    else
-	      addToMap(tmpMaps->content,"maxOccurs",tmpMaxO->value);
-	  }
-	  map* tmpMaxMB=getMap(tmpInputs->content,"maximumMegabytes");
-	  if(tmpMaxMB!=NULL){
-	    if(tmpMaps->content==NULL)
-	      tmpMaps->content=createMap("maximumMegabytes",tmpMaxMB->value);
-	    else
-	      addToMap(tmpMaps->content,"maximumMegabytes",tmpMaxMB->value);
+	  char* keys[4]={
+	    "minOccurs",
+	    "maxOccurs",
+	    "maximumMegabytes",
+	    "useMapserver"
+	  };
+	  int i=0;
+	  for(i=0;i<4;i++){
+	    map* tmpMap1=getMap(tmpInputs->content,keys[i]);
+	    if(tmpMap1!=NULL){
+	      addToMap(tmpMaps->content,keys[i],tmpMap1->value);
+	    }
 	  }
 	  /**
 	   * Parsing BoundingBoxData, fill the following map and then add it to
@@ -742,7 +761,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	    if(tmpI!=NULL){
 	      map* tmpV=getMap(tmpI->content,"value");
 	      if(tmpV!=NULL){
-		char *tmpVS=strdup(tmpV->value);
+		char *tmpVS=zStrdup(tmpV->value);
 		map* tmp=parseBoundingBox(tmpVS);
 		free(tmpVS);
 		map* tmpC=tmp;
@@ -779,7 +798,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	    if(hasPassed<0 && type==0 && getMap(tmpMaps->content,"isArray")!=NULL){
 	      map* length=getMap(tmpMaps->content,"length");
 	      int i;
-	      char *tcn=strdup(tmpContent->name);
+	      char *tcn=zStrdup(tmpContent->name);
 	      for(i=1;i<atoi(length->value);i++){
 #ifdef DEBUG
 		dumpMap(tmpMaps->content);
@@ -805,9 +824,10 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	 * check for useMapServer presence
 	 */
 	if(tmpIoType!=NULL){
-	  map* tmpCheck=getMap(tmpIoType->content,"useMapServer");
-	  if(tmpCheck!=NULL){
+	  map* tmpCheck=getMap(tmpIoType->content,"useMapserver");
+	  if(tmpCheck!=NULL && strncasecmp(tmpCheck->value,"true",4)==0){
 	    // Get the default value
+	    addToMap(tmpMaps->content,"useMapserver","true");
 	    tmpIoType=getIoTypeFromElement(tmpInputs,tmpInputs->name,NULL);
 	    tmpCheck=getMap(tmpMaps->content,"mimeType");
 	    addToMap(tmpMaps->content,"requestedMimeType",tmpCheck->value);
@@ -833,11 +853,19 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
       else
 	addToMap(tmpMaps->content,"inRequest","true");
       elements* tmpElements=getElements(in,tmpMaps->name);
-      if(tmpElements!=NULL && tmpElements->child!=NULL){
+      if(/*tmpMaps->child!=NULL && */tmpElements!=NULL && tmpElements->child!=NULL){
 	char *res=addDefaultValues(&tmpMaps->child,tmpElements->child,m,type,err);
 	if(strlen(res)>0){
 	  return res;
 	}
+      }
+    }
+    if(tmpInputs->child!=NULL){
+      tmpInputss=tmpInputs->next;
+      tmpInputs=tmpInputs->child;
+      if(tmpMaps!=NULL){
+	out1=tmpMaps->child;
+	out1s=tmpMaps;
       }
     }
     tmpInputs=tmpInputs->next;
@@ -971,7 +999,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
     map* statusInfo=createMap("JobID",pid);
     if(isRunning(conf,pid)>0){		
       if(strncasecmp(req,"GetResult",strlen(req))==0){
-	errorException (conf, _("The result for the requested JobID has not yet been generated. "),
+	errorException (conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
 			"ResultNotReady", pid);
 	return;
       }
@@ -980,8 +1008,8 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  addToMap(statusInfo,"Status","Running");
 	  char* tmpStr=_getStatus(conf,pid);
 	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	    char *tmpStr1=strdup(tmpStr);
-	    char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	    char *tmpStr1=zStrdup(tmpStr);
+	    char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
 	    free(tmpStr);
 	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
@@ -999,11 +1027,13 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
 	  printf("%s",result);
 	  fflush(stdout);
+	  free(sid);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
+	  free(result);
 	  return;
 	}else{
-	  errorException (conf, _("The result for the requested JobID has not yet been generated. "),
+	  errorException (conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
 			  "ResultNotReady", pid);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
@@ -1014,8 +1044,8 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  readFinalRes(conf,pid,statusInfo);
 	  char* tmpStr=_getStatus(conf,pid);
 	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	    char *tmpStr1=strdup(tmpStr);
-	    char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
+	    char *tmpStr1=zStrdup(tmpStr);
+	    char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
 	    free(tmpStr);
 	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
@@ -1025,6 +1055,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  }
 	}
     }
+    free(sid);
     printStatusInfo(conf,statusInfo,req);
     freeMap(&statusInfo);
     free(statusInfo);
@@ -1082,7 +1113,7 @@ void runDismiss(maps* conf,char* pid){
 #endif
 	if(strstr(dp->d_name,pid)!=0){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
-	  if(unlink(fileName)!=0){
+	  if(zUnlink(fileName)!=0){
 	    errorException (conf, 
 			    _("The job cannot be removed, a file cannot be removed"),
 			    "NoApplicableCode", NULL);
@@ -1094,6 +1125,11 @@ void runDismiss(maps* conf,char* pid){
 #ifdef RELY_ON_DB
     removeService(conf,pid);
 #endif
+    /* No need to call 7_1 when an execution is dismissed.
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      invokeCallback(conf,NULL,NULL,7,1);
+      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+    */
     map* statusInfo=createMap("JobID",pid);
     addToMap(statusInfo,"Status","Dismissed");
     printStatusInfo(conf,statusInfo,"Dismiss");

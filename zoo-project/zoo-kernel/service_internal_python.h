@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2010 GeoLabs SARL
+ * Copyright (c) 2009-2019 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,9 @@
 
 #pragma once 
 
+#include <Python.h>
 #include "service_internal.h"
 #include "response_print.h"
-#include <Python.h>
-#include "cgic.h"
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>

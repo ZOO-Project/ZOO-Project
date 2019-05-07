@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2015 GeoLabs SARL
+ * Copyright (c) 2009-2019 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,43 +33,35 @@
 #define ZOO_DLL_EXPORT 
 #endif
 
-#ifdef WIN32
-#ifndef USE_MS
-ZOO_DLL_EXPORT char *strcasestr (char const *,char const *);
-#endif
-#endif
-
-// knut: add bool if necessary
+ // knut: add bool if necessary
 #ifndef __cplusplus
-  #ifndef WIN32
-    #include <stdbool.h>
-  #else
-    typedef int bool;
-    #define false 0
-    #define true 1	
-  #endif
+#ifndef WIN32
+#include <stdbool.h>
+#else
+typedef int bool;
+#define false 0
+#define true 1	
+#endif
 #endif
 #ifndef __bool_true_false_are_defined
-  #define __bool_true_false_are_defined 1
+#define __bool_true_false_are_defined 1
 #endif
 
 #ifdef WIN32
+#define strtok_r strtok_s
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
-#define strtok_r strtok_s
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define snprintf _snprintf
 #endif
-/* knut: see new definition of bool above
-#if defined(_MSC_VER) && _MSC_VER < 1800
-#define false 0
-#define true 1
-#define bool int
-#endif
-*/
 #define zStrdup _strdup
 #define zMkdir _mkdir
+#define zGetpid _getpid
 #define zOpen _open
+#define zClose _close
+#define zUnlink _unlink
+#define zDup _dup
+#define zDup2 _dup2
 #define zWrite _write
 #define zSleep Sleep
 #include <sys/timeb.h>
@@ -79,17 +71,20 @@ struct ztimeval {
 };
 static int zGettimeofday(struct ztimeval* tp, void* tzp)
 {
-  struct _timeb theTime;	
   if (tp == 0) {
     return -1;
   }
   
+  struct _timeb theTime;
   _ftime(&theTime);
   tp->tv_sec = theTime.time;
   tp->tv_usec = theTime.millitm * 1000;
   
   return 0; // The gettimeofday() function shall return 0 on success
 }
+
+#define zStatStruct struct _stati64
+#define zStat _stati64
 
 #else
 /**
@@ -105,13 +100,32 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
  */
 #define zOpen open
 /**
+ * The crossplatform close alias
+ */
+#define zClose close
+/**
+ * The crossplatform unlink alias
+ */
+#define zUnlink unlink
+/**
+ * The crossplatform dup alias
+ */
+#define zDup dup
+/**
+ * The crossplatform dup2 alias
+ */
+#define zDup2 dup2
+/**
  * The crossplatform write alias
  */
 #define zWrite write
+#include "unistd.h"
 /**
  * The crossplatform sleep alias
  */
-#define zSleep sleep
+static int zSleep(const long millisecond){
+  return usleep(millisecond*1000);
+}
 /**
  * The crossplatform gettimeofday alias
  */
@@ -120,6 +134,14 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
  * The crossplatform timeval alias
  */
 #define ztimeval timeval
+/**
+ * The crossplatform getpid alias
+ */
+#define zGetpid getpid
+
+#define zStatStruct struct stat64
+#define zStat stat64
+
 #endif 
 
 #ifdef __cplusplus
@@ -139,7 +161,7 @@ extern "C" {
 #include <string.h>
 #ifndef WIN32
 #include <ctype.h>
-//#include <stdbool.h> // knut: see new definition of bool above
+#include <stdbool.h>
 #endif
 
 /**
@@ -166,7 +188,7 @@ extern "C" {
 /**
  * The memory size to create an elements
  */
-#define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*2)+sizeof(char*)+(((2*sizeof(char*))+sizeof(iotype*))*2)+(2*sizeof(elements*)))
+#define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*3)+sizeof(char*)+((sizeof(map*) + sizeof(iotype*))*2)+(2*sizeof(elements*)))
 /**
  * The memory size to create a map
  */
@@ -186,7 +208,7 @@ extern "C" {
  * The memory size to create a service
  */
 //#define SERVICE_SIZE (ELEMENTS_SIZE*2)+(MAP_SIZE*2)+sizeof(char*)
-#define SERVICE_SIZE sizeof(char*) + 2*sizeof(map*) + 2*sizeof(elements*)
+#define SERVICE_SIZE sizeof(char*) + 3*sizeof(map*) + 2*sizeof(elements*)
 /**
  * The memory size to create a services
  */
@@ -220,6 +242,10 @@ extern "C" {
 
 #ifdef WIN32
 #define NULLMAP ((map*) 0)
+// knut: see new definition above
+//#define bool int
+//#define true 1
+//#define false 0
 #else
 #define NULLMAP NULL
 #endif
@@ -255,6 +281,7 @@ extern "C" {
     char* name; //!< the name
     struct map* content; //!< the content map
     struct map* metadata; //!< the metadata map
+    struct map* additional_parameters; //!< the additional parameters map
     char* format; //!< the format: LiteralData or ComplexData or BoundingBoxData
     struct iotype* defaults; //!< the default iotype 
     struct iotype* supported; //!< the supported iotype 
@@ -269,6 +296,7 @@ extern "C" {
     char* name; //!< the name
     struct map* content; //!< the content map
     struct map* metadata; //!< the metadata map
+    struct map* additional_parameters; //!< the additional parameters map
     struct elements* inputs; //!< the inputs elements
     struct elements* outputs; //!< the outputs elements
   } service;
@@ -289,91 +317,91 @@ extern "C" {
     struct services* content; //!< the content services pointer
     struct registry* next; //!< the next registry pointer
   } registry;
-  
+
   // knut
   enum WPSException {
-    /*
-    * StatusOK is not a WPS exception, it is added
-    * here for convenience.
-    */      
-    StatusOK,                 
-    /*
-    * See WPS 1.0 specification, Table 38 and Table 62.
-    */
-    MissingParameterValue,    
-    InvalidParameterValue,
-    NoApplicableCode,
-    NotEnoughStorage,
-    ServerBusy,
-    FileSizeExceeded,
-    StorageNotSupported,
-    VersionNegotiationFailed,
-    /*
-    * See WPS 2.0 specification, Tables 41, 46, 48, and 50.
-    */
-    NoSuchProcess,
-    NoSuchMode,
-    NoSuchInput,
-    NoSuchOutput,
-    DataNotAccessible,
-    SizeExceeded,
-    TooManyInputs,
-    TooManyOutputs,
-    NoSuchFormat,
-    WrongInputData,
-    InternalServerError,
-    NoSuchJob,
-    ResultNotReady
-  }; 
-  
+	  /*
+	  * StatusOK is not a WPS exception, it is added
+	  * here for convenience.
+	  */
+	  StatusOK,
+	  /*
+	  * See WPS 1.0 specification, Table 38 and Table 62.
+	  */
+	  MissingParameterValue,
+	  InvalidParameterValue,
+	  NoApplicableCode,
+	  NotEnoughStorage,
+	  ServerBusy,
+	  FileSizeExceeded,
+	  StorageNotSupported,
+	  VersionNegotiationFailed,
+	  /*
+	  * See WPS 2.0 specification, Tables 41, 46, 48, and 50.
+	  */
+	  NoSuchProcess,
+	  NoSuchMode,
+	  NoSuchInput,
+	  NoSuchOutput,
+	  DataNotAccessible,
+	  SizeExceeded,
+	  TooManyInputs,
+	  TooManyOutputs,
+	  NoSuchFormat,
+	  WrongInputData,
+	  InternalServerError,
+	  NoSuchJob,
+	  ResultNotReady
+  };
+
   static const char* const WPSExceptionCode[] = {
-    "StatusOK",
-    "MissingParameterValue", 
-    "InvalidParameterValue",
-    "NoApplicableCode",
-    "NotEnoughStorage",
-    "ServerBusy",
-    "FileSizeExceeded",
-    "StorageNotSupported",
-    "VersionNegotiationFailed",
-    "NoSuchProcess",
-    "NoSuchMode",
-    "NoSuchInput",
-    "NoSuchOutput",
-    "DataNotAccessible",
-    "SizeExceeded",
-    "TooManyInputs",
-    "TooManyOutputs",
-    "NoSuchFormat",
-    "WrongInputData",
-    "InternalServerError",
-    "NoSuchJob",
-    "ResultNotReady"    
-  };      
+	"StatusOK",
+	"MissingParameterValue",
+	"InvalidParameterValue",
+	"NoApplicableCode",
+	"NotEnoughStorage",
+	"ServerBusy",
+	"FileSizeExceeded",
+	"StorageNotSupported",
+	"VersionNegotiationFailed",
+	"NoSuchProcess",
+	"NoSuchMode",
+	"NoSuchInput",
+	"NoSuchOutput",
+	"DataNotAccessible",
+	"SizeExceeded",
+	"TooManyInputs",
+	"TooManyOutputs",
+	"NoSuchFormat",
+	"WrongInputData",
+	"InternalServerError",
+	"NoSuchJob",
+	"ResultNotReady"
+  };
 
   static const char* const WPSExceptionText[] = {
-    "No problem detected",
-    "Operation request does not include a parameter value, and this server did not declare a default value for that parameter.", 
-    "Operation request contains an invalid parameter value.",
-    "No other exceptionCode specified by this service and server applies to this exception.",
-    "The server does not have enough space available to store the inputs and outputs associated with the request.",
-    "The server is too busy to accept and queue the request at this time.",
-    "The file size of one of the input parameters was too large for this process to handle.",
-    "Execute operation request included transmission=”reference” for one of the outputs, but storage is not offered by this server.",
-    "Service version for a ComplexData xlink:href input was not supported by the referenced server, and version negotiation failed.",
-    "One of the identifiers passed does not match with any of the processes offered by this server.",
-    "The process does not permit the desired execution mode.",
-    "One or more of the input identifiers passed does not match with any of the input identifiers of this process.",
-    "One or more of the output identifiers passed does not match with any of the input identifiers of this process.",
-    "One of the referenced input data sets was inaccessible.",
-    "The size of one of the input parameters was too large for this process to handle.",
-    "Too many input items have been specified.",
-    "Too many output items have been specified.",
-    "One or more of the input or output formats specified in the request did not match with any of the formats defined for that particular input or output.",
-    "One or more of inputs for which the service was able to retrieve the data but could not read it.",
-    "",
-    "The JobID from the request does not match any of the Jobs running on this server.",
-    "The result for the requested JobID has not yet been generated."
+	"No problem detected",
+	"Operation request does not include a parameter value, and this server did not declare a default value for that parameter.",
+	"Operation request contains an invalid parameter value.",
+	"No other exceptionCode specified by this service and server applies to this exception.",
+	"The server does not have enough space available to store the inputs and outputs associated with the request.",
+	"The server is too busy to accept and queue the request at this time.",
+	"The file size of one of the input parameters was too large for this process to handle.",
+	"Execute operation request included transmission=”reference” for one of the outputs, but storage is not offered by this server.",
+	"Service version for a ComplexData xlink:href input was not supported by the referenced server, and version negotiation failed.",
+	"One of the identifiers passed does not match with any of the processes offered by this server.",
+	"The process does not permit the desired execution mode.",
+	"One or more of the input identifiers passed does not match with any of the input identifiers of this process.",
+	"One or more of the output identifiers passed does not match with any of the input identifiers of this process.",
+	"One of the referenced input data sets was inaccessible.",
+	"The size of one of the input parameters was too large for this process to handle.",
+	"Too many input items have been specified.",
+	"Too many output items have been specified.",
+	"One or more of the input or output formats specified in the request did not match with any of the formats defined for that particular input or output.",
+	"One or more of inputs for which the service was able to retrieve the data but could not read it.",
+	"",
+	"The JobID from the request does not match any of the Jobs running on this server.",
+	"The result for the requested JobID has not yet been generated."
   };
 
   ZOO_DLL_EXPORT void _dumpMap(map*);
@@ -391,19 +419,20 @@ extern "C" {
   ZOO_DLL_EXPORT map* getMapFromMaps(maps*,const char*,const char*);
   ZOO_DLL_EXPORT void freeMap(map**);
   ZOO_DLL_EXPORT void freeMaps(maps** mo);
-  
-
+  ZOO_DLL_EXPORT iotype* createIoType();
   ZOO_DLL_EXPORT elements* createEmptyElements();
-  ZOO_DLL_EXPORT elements* createElements(char*);
+  ZOO_DLL_EXPORT elements* createElements(const char*);
   ZOO_DLL_EXPORT void setElementsName(elements**,char*);
   ZOO_DLL_EXPORT bool hasElement(elements*,const char*);
   ZOO_DLL_EXPORT elements* getElements(elements*,char*);
   ZOO_DLL_EXPORT void freeIOType(iotype**);
   ZOO_DLL_EXPORT void freeElements(elements**);
   ZOO_DLL_EXPORT void setServiceName(service**,char*);
+  ZOO_DLL_EXPORT service* createService();
   ZOO_DLL_EXPORT void freeService(service**);
   ZOO_DLL_EXPORT void addToMap(map*,const char*,const char*);
   ZOO_DLL_EXPORT void addIntToMap(map*,const char*,const int);
+  ZOO_DLL_EXPORT void addIntToMapArray(map*,const char*,int,const int);
   ZOO_DLL_EXPORT map* addToMapWithSize(map*,const char*,const char*,int);
   ZOO_DLL_EXPORT void addMapToMap(map**,map*);
   ZOO_DLL_EXPORT void addMapToIoType(iotype**,map*);
@@ -445,11 +474,13 @@ extern "C" {
   // knut: some new utility functions; logMessage is primarily intended for debugging 	
   ZOO_DLL_EXPORT bool nonempty(map* map);
   ZOO_DLL_EXPORT bool hasvalue(maps* source, const char* node, const char* key, map** kvp);
+#ifdef __cplusplus
   ZOO_DLL_EXPORT void setErrorMessage(maps*& conf, const char* service, WPSException exc, const char* message = NULL);
-  ZOO_DLL_EXPORT void logMessage(const char* source, const char* function, int line, const char* file = NULL, const char* message = NULL);  
+  ZOO_DLL_EXPORT void logMessage(const char* source, const char* function, int line, const char* file = NULL, const char* message = NULL);
+#endif
   #define zooLogMsg(file,message) logMessage(__FILE__, __func__, __LINE__, (file), (message)) 
   #define zooLog logMessage(__FILE__, __func__, __LINE__)  
-  
+
 #ifdef __cplusplus
 }
 #endif

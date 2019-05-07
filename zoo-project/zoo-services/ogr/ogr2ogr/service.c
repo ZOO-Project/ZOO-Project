@@ -95,6 +95,7 @@ int Ogr2Ogr(maps*& conf,maps*& inputs,maps*& outputs)
 int main( int nArgc, char ** papszArgv )
 #endif
 {
+    char  *pszDialect = NULL;
     const char  *pszFormat = "ESRI Shapefile";
     const char  *pszDataSource = NULL;
     const char  *pszDestDataSource = NULL;
@@ -154,7 +155,7 @@ int main( int nArgc, char ** papszArgv )
     if(tmpMap!=NULL){
       sprintf(serverAddress,"%s",tmpMap->value);
     }
-    
+
     tmpMap=NULL;
     char tmpurl[1024];
     tmpMap=getMapFromMaps(conf,"main","tmpurl");
@@ -222,6 +223,11 @@ int main( int nArgc, char ** papszArgv )
     tmpMap=getMapFromMaps(inputs,"sql","value");
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
       pszSQLStatement = tmpMap->value;
+    }
+
+    tmpMap=getMapFromMaps(inputs,"dialect","value");
+    if(tmpMap!=NULL){
+      pszDialect=strdup(tmpMap->value);
     }
 
     tmpMap=NULL;
@@ -359,13 +365,7 @@ int main( int nArgc, char ** papszArgv )
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  dfMaxSegmentLength = atof(tmpMap->value);
     }
-
-    /*tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"segmentize","value");
-    if(tmpMap!=NULL){
-	  dfMaxSegmentLength = atof(tmpMap->value);
-    }*/
-
+   
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"InputDSN","value");
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
@@ -824,7 +824,7 @@ int main( int nArgc, char ** papszArgv )
 	  fprintf( stderr,  "layer names ignored in combination with -sql. (%s)\n", pszSQLStatement);
         
         poResultSet = poDS->ExecuteSQL( pszSQLStatement, poSpatialFilter, 
-                                        NULL );
+                                        pszDialect );
 
         if( poResultSet != NULL )
         {
@@ -840,8 +840,15 @@ int main( int nArgc, char ** papszArgv )
                 exit( 1 );
             }
             poDS->ReleaseResultSet( poResultSet );
-        }
+        }else{
+	  setMapInMaps(conf,"lenv","message","There was an error when running yoru SQL query.");
+	  if(pszDialect!=NULL)
+	    free(pszDialect);
+	  return SERVICE_FAILED;
+	}
     }
+    if(pszDialect!=NULL)
+      free(pszDialect);
 
 /* -------------------------------------------------------------------- */
 /*      Process each data source layer.                                 */
@@ -900,7 +907,8 @@ int main( int nArgc, char ** papszArgv )
     }
 
 #ifdef ZOO_SERVICE
-    outputs->content=createMap("value",(char*)pszwebDestData);
+    setMapInMaps(outputs,"OutputedDataSourceName","value",(char*)pszwebDestData);
+    //outputs->content=createMap("value",(char*)pszwebDestData);
 #endif
 
 /* -------------------------------------------------------------------- */
@@ -929,7 +937,7 @@ int main( int nArgc, char ** papszArgv )
 #endif
     fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
-    OGRCleanupAll();
+    //OGRCleanupAll();
     fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
 
 #ifdef DBMALLOC
@@ -938,6 +946,7 @@ int main( int nArgc, char ** papszArgv )
     fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
     
 #ifdef ZOO_SERVICE
+    //sleep(10);
     return SERVICE_SUCCEEDED;
 #else
     return 0;

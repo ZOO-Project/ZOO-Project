@@ -56,7 +56,7 @@ static PyObject* ZooError;
  * Define the following functions available from a service loaded and running
  * from the ZOO-Kernel Python environment:
  *  - "_" corresponding to the PythonTranslate function
- *  - "updte_status" corresponding to the PythonUpdateStatus function
+ *  - "update_status" corresponding to the PythonUpdateStatus function
  * @see PythonTranslate, PythonUpdateStatus
  */
 PyMethodDef zooMethods[] = {
@@ -145,16 +145,34 @@ PyMODINIT_FUNC init_zoo(){
  * @param real_outputs the maps containing the outputs
  */
 int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inputs,maps **real_outputs){
+
   char *pythonpath;
   char *python_path;
+
+#ifdef WIN32
+  char* os_pathsep = ";";
+#else
+  char* os_pathsep = ":";
+#endif
+
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
   maps* outputs=*real_outputs;
   map* tmp0=getMapFromMaps(*main_conf,"lenv","cwd");
-  char *ntmp=tmp0->value;
+  char *ntmp=tmp0->value;  
   map* tmp=NULL;
   int hasToClean=0;
-  tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH");
+  tmp=getMapFromMaps(*main_conf,"env","PYTHONPATH"); 
+
+  map* kvp = NULL;
+  char* libPath = NULL;
+  if (hasvalue(*main_conf, "main", "libPath", &kvp)) {
+	  libPath = kvp->value;
+  }
+  else {
+	  libPath = "";
+  }
+
 #ifdef DEBUG
   fprintf(stderr,"PYTHON SUPPORT \n");
 #endif
@@ -162,7 +180,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #ifdef DEBUG
     fprintf(stderr,"PYTHON SUPPORT (%i)\n",strlen(tmp->value));
 #endif
-    python_path=(char*)malloc((strlen(tmp->value))*sizeof(char));
+    python_path=(char*)malloc((strlen(tmp->value)+1)*sizeof(char));
     sprintf(python_path,"%s",tmp->value);
     hasToClean=1;
   }
@@ -171,55 +189,71 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     if(cwdMap!=NULL)
       python_path=cwdMap->value;
     else
-      python_path=(char*)".";
+      python_path=(char*)".";	
   }
   tmp=NULL;
   tmp=getMap(request,"metapath");
   if(tmp!=NULL && strcmp(tmp->value,"")!=0){
-    pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
+    //pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
+	  pythonpath = (char*)malloc((5 + strlen(python_path) + strlen(ntmp) + strlen(tmp->value) + strlen(libPath)) * sizeof(char));
 #ifdef WIN32
-  sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+  //sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
+	sprintf(pythonpath, "%s/%s/;%s;%s", ntmp, tmp->value, python_path, libPath);
 #else
-  sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  //sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
+  sprintf(pythonpath, "%s/%s/:%s:%s", ntmp, tmp->value, python_path, libPath);  
 #endif
   }
   else{
-    pythonpath=(char*)malloc((2+strlen(python_path)+strlen(ntmp))*sizeof(char));
+    //pythonpath=(char*)malloc((2+strlen(python_path)+strlen(ntmp))*sizeof(char));
+	  pythonpath = (char*)malloc((3 + strlen(python_path) + strlen(ntmp) + strlen(libPath)) * sizeof(char));
 #ifdef WIN32
-    sprintf(pythonpath,"%s;%s",ntmp,python_path);
+    //sprintf(pythonpath,"%s;%s",ntmp,python_path);
+	sprintf(pythonpath, "%s;%s;%s", ntmp, python_path, libPath);
 #else
-    sprintf(pythonpath,"%s:%s",ntmp,python_path);
-#endif
+    //sprintf(pythonpath,"%s:%s",ntmp,python_path);
+	sprintf(pythonpath, "%s:%s:%s", ntmp, python_path, libPath);
+#endif	
   }
 #ifdef DEBUG
     fprintf(stderr,"PYTHONPATH=%s\n",pythonpath);
 #endif
-#ifndef WIN32
-  setenv("PYTHONPATH",pythonpath,1);
-#else
+	map* home = NULL;
+// knut: also set PYTHONHOME environment variable so that Python can load standard modules
+#ifndef WIN32	
+  setenv("PYTHONPATH",pythonpath,1);  
+  //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
+  if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
+	  setenv("PYTHONHOME", home->value, 1); // overwrite
+  }
+#else	
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
-  putenv(toto);
+  _putenv(toto);
   free(toto);
-#endif
+  if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) { 
+	  SetEnvironmentVariable("PYTHONHOME", home->value);
+  }
+  char buffer[128];        
+#endif  
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
 
   PyThreadState *mainstate;
-#if PY_MAJOR_VERSION >= 3
-  PyImport_AppendInittab("zoo", init_zoo);
+#if PY_MAJOR_VERSION >= 3  
+  PyImport_AppendInittab("zoo", init_zoo);  
 #else
   PyEval_InitThreads();
-#endif
-  Py_Initialize();
-#if PY_MAJOR_VERSION >= 3
+#endif  
+  Py_Initialize();  
+#if PY_MAJOR_VERSION >= 3  
   PyEval_InitThreads();
-  PyImport_ImportModule("zoo");
+  PyImport_ImportModule("zoo");  
 #else
   init_zoo();
-#endif
+#endif  
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
   PyGILState_STATE gstate;
@@ -239,7 +273,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       }
       char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
       sprintf(mn,"%s.%s",mps,tmp->value);
-      pName = PyString_FromString(mn);
+      pName = PyString_FromString(mn);	  
       free(mn);
       free(mps);
     }
@@ -250,8 +284,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   else{
     errorException (m, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
     exit(-1);
-  }
-  pModule = PyImport_Import(pName);
+  }  
+  pModule = PyImport_Import(pName);    
   int res=SERVICE_FAILED;
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
@@ -266,7 +300,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
       PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
       PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
-      pValue = PyObject_CallObject(pFunc, pArgs);
+      pValue = PyObject_CallObject(pFunc, pArgs);	  
       if (pValue != NULL) {
 	res=PyInt_AsLong(pValue);
 	freeMaps(real_outputs);
@@ -274,13 +308,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	freeMaps(main_conf);
 	free(*main_conf);
 	*main_conf=mapsFromPyDict(arg1);
-	*real_outputs=mapsFromPyDict(arg3);
+	*real_outputs=mapsFromPyDict(arg3);	
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
 	dumpMaps(inputs);
 	dumpMaps(*real_outputs);
 #endif
-      }else{	  
+      }else{
 	PythonZooReport(m,tmp->value,0);
 	res=-1;
       }
@@ -300,7 +334,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyEval_AcquireLock();
 #endif
   PyThreadState_Swap(mainstate);
-  Py_Finalize();
+  Py_Finalize();  
   return res;
 }
 
@@ -322,12 +356,12 @@ void PythonZooReport(maps* m,const char* module,int load){
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
   if(PyString_Check(trace)){
-    pbt=(char*)malloc((7+strlen(PyString_AsString(trace))+1)*sizeof(char));
+    pbt=(char*)malloc((8+strlen(PyString_AsString(trace)))*sizeof(char));
     sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
   }
   else
     fprintf(stderr,"EMPTY TRACE ?");
-  
+
   trace=NULL;
   
   trace=PyObject_Str(ptype);
@@ -424,6 +458,8 @@ PyDictObject* PyDict_FromMap(map* t){
   int hasSize=0;
   map* isArray=getMap(tmp,"isArray");
   map* size=getMap(tmp,"size");
+  map* useFile=getMap(tmp,"use_file");
+  map* cacheFile=getMap(tmp,"cache_file");
   map* tmap=getMapType(tmp);
   while(tmp!=NULL){
     PyObject* name=PyString_FromString(tmp->name);
@@ -434,25 +470,36 @@ PyDictObject* PyDict_FromMap(map* t){
 	PyObject* value=PyList_New(cnt);
 	PyObject* mvalue=PyList_New(cnt);
 	PyObject* svalue=PyList_New(cnt);
+	PyObject* cvalue=PyList_New(cnt);
 
 	for(int i=0;i<cnt;i++){
 	  
-	  map* vMap=getMapArray(tmp,"value",i);	    
-	  map* sMap=getMapArray(tmp,"size",i);
+	  map* vMap=getMapArray(t,"value",i);
+	  map* uMap=getMapArray(t,"use_file",i);
+	  map* sMap=getMapArray(t,"size",i);
+	  map* cMap=getMapArray(t,"cache_file",i);
 
 	  if(vMap!=NULL){
 	    
 	    PyObject* lvalue;
 	    PyObject* lsvalue;
-	    if(sMap==NULL){
+	    PyObject* lcvalue;
+	    if(sMap==NULL || uMap!=NULL){
 	      lvalue=PyString_FromString(vMap->value);
-	      lsvalue=Py_None;
 	    }
 	    else{    
 	      lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
+	    }
+	    if(sMap!=NULL){
 	      lsvalue=PyString_FromString(sMap->value);
 	      hasSize=1;
 	    }
+	    else
+	      lsvalue=Py_None;
+	    if(uMap!=NULL){
+	      lcvalue=PyString_FromString(cMap->value);;
+	    }else
+	      lcvalue=Py_None;
 
 	    if(PyList_SetItem(value,i,lvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
@@ -462,10 +509,14 @@ PyDictObject* PyDict_FromMap(map* t){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
 	    } 
+	    if(PyList_SetItem(cvalue,i,lcvalue)<0){
+	      fprintf(stderr,"Unable to set key value pair...");
+	      return NULL;
+	    }
 	  }
 	  
-	  map* mMap=getMapArray(tmp,tmap->name,i);
 	  PyObject* lmvalue;
+	  map* mMap=getMapArray(tmp,tmap->name,i);
 	  if(mMap!=NULL){
 	    lmvalue=PyString_FromString(mMap->value);
 	  }else
@@ -486,13 +537,17 @@ PyDictObject* PyDict_FromMap(map* t){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
+	if(PyDict_SetItem(res,PyString_FromString("cache_file"),cvalue)<0){
+	  fprintf(stderr,"Unable to set key value pair...");
+	  return NULL;
+	}
 	if(hasSize>0)
 	  if(PyDict_SetItem(res,PyString_FromString("size"),svalue)<0){
 	    fprintf(stderr,"Unable to set key value pair...");
 	    return NULL;
 	  }
       }
-      else if(size!=NULL){
+      else if(size!=NULL && useFile==NULL){
 	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);

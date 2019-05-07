@@ -96,25 +96,60 @@ void printVector(){
   std::cout << "     encoding = utf-8" << std::endl;
   std::cout << "    </Supported>" << std::endl;
   std::cout << "    <Supported>" << std::endl;
+  std::cout << "     mimeType = application/json" << std::endl;
+  std::cout << "     encoding = utf-8" << std::endl;
+  std::cout << "    </Supported>" << std::endl;
+  std::cout << "    <Supported>" << std::endl;
   std::cout << "     mimeType = application/zip" << std::endl;
   std::cout << "    </Supported>" << std::endl;
 }
 
-void printOutputImage(){
+void printOutputImage(ImagePixelType pt){
   std::cout << "   <LiteralData>" << std::endl;
   std::cout << "    dataType = string" << std::endl;
   std::cout << "    <Default>" << std::endl;
-  std::cout << "     value = float" << std::endl;
-  std::cout << "     AllowedValues = uint8,uint16,int16n,int32,int32,float,double" << std::endl;
+  // Check for the default pixel type
+  switch(pt){
+  case ImagePixelType_uint8:
+    std::cout << "     value = uint8" << std::endl;
+    break;
+  case ImagePixelType_int16:
+    std::cout << "     value = int16" << std::endl;
+    break;
+  case ImagePixelType_uint16:
+    std::cout << "     value = uint16" << std::endl;
+    break;
+  case ImagePixelType_int32:
+    std::cout << "     value = int32" << std::endl;
+    break;
+  case ImagePixelType_uint32:
+    std::cout << "     value = uint8" << std::endl;
+    break;
+  case ImagePixelType_double:
+    std::cout << "     value = uint8" << std::endl;
+    break;
+  default:
+    std::cout << "     value = float" << std::endl;
+    break;
+  }
+  std::cout << "     AllowedValues = uint8,uint16,int16,int32,int32,float,double" << std::endl;
   std::cout << "    </Default>" << std::endl;
   std::cout << "   </LiteralData>" << std::endl;
 }
 
-void printOutputComplexImage(){
+void printOutputComplexImage(ComplexImagePixelType pt){
   std::cout << "   <LiteralData>" << std::endl;
   std::cout << "    dataType = string" << std::endl;
   std::cout << "    <Default>" << std::endl;
-  std::cout << "     value = cfloat" << std::endl;
+  // Check for the default pixel type
+  switch(pt){
+  case ComplexImagePixelType_double:
+    std::cout << "     value = cdouble" << std::endl;
+    break;
+  default:
+    std::cout << "     value = cfloat" << std::endl;
+    break;
+  }
   std::cout << "     AllowedValues = cfloat,cdouble" << std::endl;
   std::cout << "    </Default>" << std::endl;
   std::cout << "   </LiteralData>" << std::endl;
@@ -241,11 +276,12 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	    std::cout << "   </LiteralData>" << std::endl;
 	  }
 	  else{
-	    if(type == ParameterType_OutputImage)
-	      printOutputImage();
+	    if(type == ParameterType_OutputImage){
+	      printOutputImage(m_Application->GetParameterOutputImagePixelType(paramKey));
+	    }
 	    else{
 	      if(type == ParameterType_ComplexOutputImage){
-		printOutputComplexImage();
+		printOutputComplexImage(m_Application->GetParameterComplexOutputImagePixelType(paramKey));
 	      }else{
 		std::cout << "   <ComplexData>" << std::endl;
 		if(type == ParameterType_InputImage || type == ParameterType_InputImageList || type == ParameterType_ComplexInputImage){
@@ -311,6 +347,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	  std::cout << "  [" << paramKey << "]" << std::endl;
 	  std::string s=m_Application->GetParameterDescription(paramKey);
 	  if(s.length()>0){
+	    s=ReplaceAll(ReplaceAll(s,std::string("\n"),std::string("")),std::string("\t"),std::string(""));
 	    std::cout << "   Title = " << s << std::endl;
 	    std::cout << "   Abstract = " << s << std::endl;
 	  }else{

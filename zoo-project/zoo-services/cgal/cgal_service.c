@@ -23,19 +23,34 @@
  */
 #include "cgal_service.h"
 
-int parseInput(maps* conf,maps* inputs, std::vector<Point>* points,char* filename){
+int parseInput(maps* conf,maps* inputs, std::vector<Pointz>* points,char* filename){
   map* tmpm=NULL;
-  tmpm=getMapFromMaps(inputs,"InputPoints","value");
-  VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmpm->value,strlen(tmpm->value),FALSE);
-  VSIFCloseL(ifile);
+  tmpm=getMapFromMaps(inputs,"InputPoints","cache_file");
 #if GDAL_VERSION_MAJOR >= 2
-  GDALDataset *ipoDS =
-    (GDALDataset*) GDALOpenEx( filename,
-			       GDAL_OF_READONLY | GDAL_OF_VECTOR,
-			       NULL, NULL, NULL );
+  GDALDataset *ipoDS;
 #else
-  OGRDataSource* ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+  OGRDataSource* ipoDS;
 #endif
+  if(tmpm==NULL){
+    tmpm=getMapFromMaps(inputs,"InputPoints","value");
+    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmpm->value,strlen(tmpm->value),FALSE);
+    VSIFCloseL(ifile);
+#if GDAL_VERSION_MAJOR >= 2
+  ipoDS = (GDALDataset*) GDALOpenEx( filename,
+				     GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				     NULL, NULL, NULL );
+#else
+  ipoDS = OGRSFDriverRegistrar::Open(filename,FALSE);
+#endif
+  }else
+#if GDAL_VERSION_MAJOR >= 2
+    ipoDS = (GDALDataset*) GDALOpenEx( tmpm->value,
+				       GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				       NULL, NULL, NULL );
+#else
+    ipoDS = OGRSFDriverRegistrar::Open(tmpm->value,FALSE);
+#endif
+    
   if( ipoDS == NULL )
     {
 #if GDAL_VERSION_MAJOR >= 2
@@ -86,7 +101,7 @@ int parseInput(maps* conf,maps* inputs, std::vector<Point>* points,char* filenam
 	if( poFeature == NULL )
 	  break;
 	if(poFeature->GetGeometryRef() != NULL){
-	  points->push_back(Point(OGR_G_GetX(poFeature->GetGeometryRef(),0),OGR_G_GetY(poFeature->GetGeometryRef(),0)));
+	  points->push_back(Pointz(OGR_G_GetX(poFeature->GetGeometryRef(),0),OGR_G_GetY(poFeature->GetGeometryRef(),0)));
 	}
       }
     }

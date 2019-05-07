@@ -38,6 +38,7 @@
 
 #include <libintl.h>
 #include <locale.h>
+
 /**
  * ZOO-Kernel internal messages translation function
  */
@@ -62,7 +63,6 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -79,7 +79,8 @@
 #endif
 #endif
 #ifndef WIN32
-#include <xlocale.h>
+//#include <locale.h>
+#include <locale.h> // knut: this appears to be a non-standard header file that has been removed in newer versions of glibc; it may be sufficient to include <locale.h> (see above) 
 #endif
 #include "ulinet.h"
 
@@ -93,6 +94,8 @@
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+
+#include "cgic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -208,9 +211,9 @@ extern "C" {
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*,const char*);
-  void printGetCapabilitiesForProcess(registry*,maps*,xmlNodePtr,service*);
-  void printDescribeProcessForProcess(registry*,maps*,xmlNodePtr,service*);
-  void printFullDescription(int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int);
+  void printGetCapabilitiesForProcess(registry*,maps*,xmlDocPtr,xmlNodePtr,service*);
+  void printDescribeProcessForProcess(registry*,maps*,xmlDocPtr,xmlNodePtr,service*);
+  void printFullDescription(xmlDocPtr,int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int,int,const map*);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
@@ -219,6 +222,8 @@ extern "C" {
   void printBoundingBoxDocument(maps*,maps*,FILE*);
   void printOutputDefinitions(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*);
   void printStatusInfo(maps*,map*,char*);
+  void addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
+  void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
 
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 

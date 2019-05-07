@@ -39,7 +39,7 @@ extern "C" {
     map* tmpm=NULL;
     OGRRegisterAll();
 
-    std::vector<Point> points;
+    std::vector<Pointz> points;
     if(int res=parseInput(conf,inputs,&points,"/vsimem/tmp")!=SERVICE_SUCCEEDED)
       return res;
 

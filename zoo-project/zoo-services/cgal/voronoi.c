@@ -23,9 +23,9 @@
  */
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Triangulation_euclidean_traits_xy_3.h>
+//#include <CGAL/Triangulation_euclidean_traits_2.h>
 #include <CGAL/Delaunay_triangulation_2.h>
-#include <CGAL/Constrained_Delaunay_triangulation_2.h>
+//#include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_conformer_2.h>
 #include <CGAL/Triangulation_face_base_2.h>
 
@@ -38,31 +38,41 @@
 #include "cgal_service.h"
 
 typedef CGAL::Delaunay_triangulation_2<Kernel>  Triangulation;
+typedef Triangulation::Face_iterator  Face_iterator;
 typedef Triangulation::Edge_iterator  Edge_iterator;
 typedef Triangulation::Vertex_circulator Vertex_circulator;
 
 extern "C" {
 
   int Voronoi(maps*& conf,maps*& inputs,maps*& outputs){
-#ifdef DEBUG
+    //#ifdef DEBUG
     fprintf(stderr,"\nService internal print\nStarting\n");
-#endif
+    //#endif
+    //return SERVICE_FAILED;
     maps* cursor=inputs;
     OGRGeometryH geometry,res;
     int bufferDistance;
     map* tmpm=NULL;
     tmpm=getMapFromMaps(inputs,"InputPoints","value");
 
+    fprintf(stderr," **** %s %d\n",__FILE__,__LINE__);
+    fflush(stderr);
+
     OGRRegisterAll();
 
-    std::vector<Point> points;
-    if(int res=parseInput(conf,inputs,&points,"/vsimem/tmp")!=SERVICE_SUCCEEDED)
-      return res;
+    std::vector<Pointz> points;
+    if(int res=parseInput(conf,inputs,&points,"/vsimem/tmp")!=SERVICE_SUCCEEDED){
+      fprintf(stderr," **** %s %d\n",__FILE__,__LINE__);
+      fflush(stderr);
+      return SERVICE_FAILED;
+    }
+    fprintf(stderr," **** %s %d\n",__FILE__,__LINE__);
+    fflush(stderr);
     
     Triangulation T;
     T.insert(points.begin(), points.end());
 
-    OGRRegisterAll();
+    //OGRRegisterAll();
     /* -------------------------------------------------------------------- */
     /*      Try opening the output datasource as an existing, writable      */
     /* -------------------------------------------------------------------- */
@@ -186,12 +196,23 @@ extern "C" {
 
     int ns = 0;
     int nr = 0;
+    int nf = 0;
+    Face_iterator fit =T.faces_begin();
+    FILE* f=fopen("/tmp/toto.log","w+");
+    for ( ; fit !=T.faces_end(); ++fit) {
+      fprintf(stderr," *** %s %d %d %d\n",__FILE__,__LINE__,nf,fit.info());
+      fflush(stderr);
+      
+      nf++;
+    }
+    fclose(f);
     Edge_iterator eit =T.edges_begin();
     for ( ; eit !=T.edges_end(); ++eit) {
       CGAL::Object o = T.dual(eit);
       if (const Kernel::Segment_2 *tmp=CGAL::object_cast<Kernel::Segment_2>(&o)) {
-	const Point p1=tmp->source();
-	const Point p2=tmp->target();
+	const Pointz p1=tmp->source();
+	const Pointz p2=tmp->target();
+	fprintf(stderr,"P1 %d %d | P2 %d %d\n",p1.x(),p1.y(),p2.x(),p2.y());
 #ifdef DEBUG
 	fprintf(stderr,"P1 %d %d | P2 %d %d\n",p1.x(),p1.y(),p2.x(),p2.y());
 #endif
@@ -209,8 +230,8 @@ extern "C" {
 	++ns ;
       }
       else if (const Kernel::Ray_2 *tmp=CGAL::object_cast<Kernel::Ray_2>(&o)) { 
-	const Point p1=tmp->source();
-	const Point p2=tmp->point(2);
+	const Pointz p1=tmp->source();
+	const Pointz p2=tmp->point(2);
 	OGRFeatureH hFeature = OGR_F_Create( OGR_L_GetLayerDefn( poDstLayer ) );
 	OGRGeometryH currLine=OGR_G_CreateGeometry(wkbLineString);
 	OGR_G_AddPoint_2D(currLine,p1.x(),p1.y());
@@ -249,7 +270,7 @@ extern "C" {
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print\n===\n");
 #endif
-    OGRCleanupAll();
+    //OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
 

@@ -24,16 +24,43 @@
 
 #ifndef ZOO_SQLAPI_H
 #define ZOO_SQLAPI_H 1
-#ifdef RELY_ON_DB
+
+#ifdef META_DB
+#include "ogrsf_frmts.h"
+#include "ogr_p.h"
+#if GDAL_VERSION_MAJOR >= 2
+#include <gdal_priv.h>
+#endif
+#endif
+
 #include "service.h"
 #include "service_internal.h"
+
+#ifdef META_DB
+extern "C" 
+#if GDAL_VERSION_MAJOR >=2
+  GDALDataset
+#else
+  OGRDataSource 
+#endif
+  **zoo_DS;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-  ZOO_DLL_EXPORT void init_sql(maps*);
-  ZOO_DLL_EXPORT void close_sql(maps*);
-  ZOO_DLL_EXPORT int execSql(maps*,const char*);
+
+  
+#ifdef META_DB
+  ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
+  ZOO_DLL_EXPORT int _init_sql(maps*,const char*);
+  ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,int,const char*);
+  ZOO_DLL_EXPORT void cleanFetchSql(maps*,int,OGRLayer*);
+#endif
+#ifdef RELY_ON_DB
+  ZOO_DLL_EXPORT int init_sql(maps*);
+  ZOO_DLL_EXPORT void close_sql(maps*,int);
+  ZOO_DLL_EXPORT int execSql(maps*,int,const char*);
   ZOO_DLL_EXPORT void recordStoredFile(maps*,const char*,const char*,const char*);
   ZOO_DLL_EXPORT void recordServiceStatus(maps*);
   ZOO_DLL_EXPORT void recordResponse(maps*,char*);
@@ -41,10 +68,11 @@ extern "C" {
   ZOO_DLL_EXPORT int isRunning(maps*,char*);
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
   ZOO_DLL_EXPORT void removeService(maps*,char*);
+  ZOO_DLL_EXPORT void end_sql();
+#endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
 #endif

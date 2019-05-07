@@ -44,12 +44,14 @@ extern "C" {
   int xmlParseBoundingBox(maps**,map**,xmlDocPtr);
   int kvpParseOutputs(maps**,map *,maps**);
   int xmlParseInputs(maps**,service*,maps**,xmlDocPtr,xmlNodeSet*,HINTERNET*);
+  int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc);
   int xmlParseOutputs(maps**,map**,maps**,xmlDocPtr,xmlNodePtr,bool);
   int xmlParseRequest(maps**,const char*,map**,service*,maps**,maps**,HINTERNET*);
   int parseRequest(maps**,map**,service*,maps**,maps**,HINTERNET*);
   void checkValidValue(map*,map**,const char*,const char**,int);
   int validateRequest(maps**,service*,map*,maps**,maps**,HINTERNET*);
-
+  void parseCookie(maps**,const char*);
+  
 #ifdef __cplusplus
 }
 #endif

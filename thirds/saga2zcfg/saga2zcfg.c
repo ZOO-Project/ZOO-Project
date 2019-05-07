@@ -4,7 +4,7 @@
 #include <wx/utils.h>
 
 #include <api_core.h>
-#include <module_library.h>
+#include <saga_api.h>
 
 int Callback(TSG_UI_Callback_ID ID, CSG_UI_Parameter &Param_1, CSG_UI_Parameter &Param_2){
   return( 1 );
@@ -143,24 +143,43 @@ int main(int argc, char *argv[]) {
   setlocale(LC_NUMERIC, "C");
   static bool g_bShow_Messages = false;
   SG_Set_UI_Callback(Get_Callback());
+#if SAGA_MAJOR_VERSION == 2
   int n = SG_Get_Module_Library_Manager().Add_Directory(wxT(MODULE_LIBRARY_PATH),false);
-  if( SG_Get_Module_Library_Manager().Get_Count() <= 0 ){
+  if( SG_Get_Module_Library_Manager().Get_Count() <= 0 )
+#else
+  int n = SG_Get_Tool_Library_Manager().Add_Directory(wxT(MODULE_LIBRARY_PATH),false);
+  if( SG_Get_Tool_Library_Manager().Get_Count() <= 0 )
+#endif
+  {
     fprintf(stderr,"could not load any tool library");
     return -2;
   }
 
-  for(int i=0;i<SG_Get_Module_Library_Manager().Get_Count();i++){
+#if SAGA_MAJOR_VERSION == 2
+  for(int i=0;i<SG_Get_Module_Library_Manager().Get_Count();i++)
+#else
+  for(int i=0;i<SG_Get_Tool_Library_Manager().Get_Count();i++)
+#endif
+    {
     
+#if SAGA_MAJOR_VERSION == 2
     CSG_Module_Library * library=SG_Get_Module_Library_Manager().Get_Library(i);
+#else
+    CSG_Tool_Library * library=SG_Get_Tool_Library_Manager().Get_Library(i);
+#endif
     int lc=library->Get_Count();
     if(!library->Get_Library_Name().Contains("io_")) {
 
       for(int j=0;j<lc;j++){
+#if SAGA_MAJOR_VERSION == 2
 	CSG_Module * module=library->Get_Module(j);
+#else
+	CSG_Tool * module=library->Get_Tool(j);
+#endif
 	if(module!=NULL && !module->needs_GUI() /*&& !module->is_Interactive()*/ ){
 
 	  mkdir(library->Get_Library_Name().b_str(),0755);
-
+	  
 	  FILE *stdout1=fopen((library->Get_Library_Name()+"/"+module->Get_ID()+".zcfg").b_str(),"w+");
 	  fprintf(stdout1,"[%d]\n",j);
 	  fprintf(stdout1," Title = %s\n",module->Get_Name().b_str());
@@ -202,6 +221,14 @@ int main(int argc, char *argv[]) {
 	    if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("color"))){
 	      
 	    }
+	    else if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("date"),true)){
+	      printBasicMetadata(stdout1,param,false,true,true);
+	      fprintf(stdout1,"  <LiteralData>\n");
+	      fprintf(stdout1,"   dataType = date\n");
+	      fprintf(stdout1,"   <Default/>\n");
+	      fprintf(stdout1,"  </LiteralData>\n");
+	      
+	    }
 	    else if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("range"),true)){
 
 	      param->Restore_Default();
@@ -211,7 +238,11 @@ int main(int argc, char *argv[]) {
 	      fprintf(stdout1,"   dataType = float\n");
 	      CSG_Parameter_Range *range=param->asRange();
 	      fprintf(stdout1,"   <Default>\n");
+#if SAGA_MAJOR_VERSION == 2
 	      fprintf(stdout1,"    value = %f\n",((CSG_Parameter_Range*)param->Get_Data())->Get_LoVal());
+#else
+	      //fprintf(stdout1,"    value = %f\n",((CSG_Parameter_Range*)param->asDataObject())->Get_Min());	      
+#endif
 	      fprintf(stdout1,"   </Default>\n");
 	      fprintf(stdout1,"  </LiteralData>\n");
 
@@ -219,7 +250,11 @@ int main(int argc, char *argv[]) {
 	      fprintf(stdout1,"  <LiteralData>\n");
 	      fprintf(stdout1,"   dataType = float\n");
 	      fprintf(stdout1,"   <Default>\n");
+#if SAGA_MAJOR_VERSION == 2
 	      fprintf(stdout1,"    value = %f\n",((CSG_Parameter_Range*)param->Get_Data())->Get_HiVal());
+#else
+	      //fprintf(stdout1,"    value = %f\n",((CSG_Parameter_Range*)param->asDataObject())->Get_Max());	      
+#endif
 	      fprintf(stdout1,"   </Default>\n");
 	      fprintf(stdout1,"  </LiteralData>\n");
 
@@ -279,9 +314,15 @@ int main(int argc, char *argv[]) {
 		fprintf(stdout1,"  <LiteralData>\n");
 		fprintf(stdout1,"   dataType = string\n");
 		fprintf(stdout1,"   <Default>\n");
+#if SAGA_MAJOR_VERSION == 2
 		if( !param->Get_Data()->Get_Default().is_Empty() ){
 		  fprintf(stdout1,"    value = %s\n",param->Get_Data()->Get_Default().b_str());
 		}
+#else
+		if( !param->Get_Default().is_Empty() ){
+		  fprintf(stdout1,"    value = %s\n",param->Get_Default().b_str());
+		}
+#endif
 		fprintf(stdout1,"   </Default>\n");
 		fprintf(stdout1,"  </LiteralData>\n");
 	      }
@@ -298,9 +339,15 @@ int main(int argc, char *argv[]) {
 		  fprintf(stdout1,"   dataType = integer\n");
 
 		fprintf(stdout1,"   <Default>\n");
+#if SAGA_MAJOR_VERSION == 2
 		if( !param->Get_Data()->Get_Default().is_Empty() ){
 		  fprintf(stdout1,"    value = %s\n",param->Get_Data()->Get_Default().b_str());
 		}
+#else
+		if( !param->Get_Default().is_Empty() ){
+		  fprintf(stdout1,"    value = %s\n",param->Get_Default().b_str());
+		}
+#endif
 		if(param->asValue()->has_Minimum() && param->asValue()->has_Maximum()){
 		  fprintf(stdout1,"    rangeMin = %f\n",param->asValue()->Get_Minimum());
 		  fprintf(stdout1,"    rangeMax = %f\n",param->asValue()->Get_Maximum());
@@ -313,9 +360,15 @@ int main(int argc, char *argv[]) {
 		fprintf(stdout1,"  <LiteralData>\n");
 		fprintf(stdout1,"   dataType = bool\n");
 		fprintf(stdout1,"   <Default>\n");
+#if SAGA_MAJOR_VERSION == 2
 		if( !param->Get_Data()->Get_Default().is_Empty() ){
 		  fprintf(stdout1,"    value = %s\n",(param->Get_Data()->Get_Default().Contains("0")?"false":"true"));
 		}
+#else
+		if( !param->Get_Default().is_Empty() ){
+		  fprintf(stdout1,"    value = %s\n",(param->Get_Default().Contains("0")?"false":"true"));
+		}
+#endif
 		fprintf(stdout1,"   </Default>\n");
 		fprintf(stdout1,"  </LiteralData>\n");	
 	      }
@@ -336,9 +389,15 @@ int main(int argc, char *argv[]) {
 		    fprintf(stdout1,"\n");
 		  }
 		  fprintf(stdout1,"   <Default>\n");
+#if SAGA_MAJOR_VERSION == 2
 		  if( !param->Get_Data()->Get_Default().is_Empty() ){
 		    fprintf(stdout1,"    value = %s\n",CSG_String(choice->Get_Item(atoi(param->Get_Data()->Get_Default()))).b_str());
 		  }
+#else
+		  if( !param->Get_Default().is_Empty() ){
+		    fprintf(stdout1,"    value = %s\n",CSG_String(choice->Get_Item(atoi(param->Get_Default()))).b_str());
+		  }		  
+#endif
 		  fprintf(stdout1,"   </Default>\n");
 		  fprintf(stdout1,"  </LiteralData>\n");
 		}
