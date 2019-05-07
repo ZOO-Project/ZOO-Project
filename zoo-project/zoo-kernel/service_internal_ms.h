@@ -55,6 +55,8 @@ extern "C" {
   
   int tryGdal(maps* conf,maps* output,mapObj* m);
   void outputMapfile(maps* conf,maps* outputs);
+  void saveMapNames(maps*,maps*,char*);
+
 #ifdef __cplusplus
 }
 #endif

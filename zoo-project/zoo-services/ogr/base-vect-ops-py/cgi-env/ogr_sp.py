@@ -94,6 +94,18 @@ def createLayerFromJson(conf,obj):
         return buildFeatureFromGeomtry(conf,geom,"GeoJSON","json")
 
 def extractInputs(conf,obj):
+    if obj.keys().count("cache_file"):
+        print >> sys.stderr,obj
+        geometry=[]
+        ds = osgeo.ogr.Open(obj["cache_file"])
+        lyr = ds.GetLayer(0)
+        feat = lyr.GetNextFeature()
+        while feat is not None:
+            geometry+=[feat.Clone()]
+            feat.Destroy()
+            feat = lyr.GetNextFeature()
+        ds.Destroy()
+        return geometry    
     if obj["mimeType"]=="application/json":
         return createLayerFromJson(conf,obj["value"])
     else:

@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2009 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2019 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +25,10 @@
 #ifndef _ULINET_H
 #define _ULINET_H
 
-#include "fcgi_stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
+#include <curl/curlver.h>
 #include "service.h"
 #ifndef WIN32
 #include <unistd.h>
@@ -43,15 +43,16 @@
 #endif
 #include "jsapi.h"
 #endif
-/* knut: see new definition of bool in service.h
-#ifndef bool
-#define bool int
+#ifndef __cplusplus
+// knut: see new def of bool in service.h
+//#ifndef bool
+//#define bool int
+//#endif
+//#ifndef true
+//#define true 1
+//#define false 0
+//#endif
 #endif
-#ifndef true
-#define true 1
-#define false 0
-#endif
-*/
 
 #define MAX_REQ 50
 
@@ -101,6 +102,8 @@ extern "C" {
 
   size_t write_data_into(void*,size_t,size_t,void*);
 
+  size_t write_data_into_file(void*,size_t,size_t,void*);
+
   size_t header_write_data(void*,size_t,size_t,void*);
 
   void setProxy(CURL*,char*,long);
@@ -129,6 +132,7 @@ typedef char* LPCTSTR;
 #endif
   HINTERNET InternetOpen(char*,int,char*,char*,int);
 
+  char* getProvenance(maps*,const char*);
   int isProtectedHost(const char*,const char*);
   int AddMissingHeaderEntry(_HINTERNET*,const char*,const char*);
   void AddHeaderEntries(HINTERNET*,maps*);
@@ -152,15 +156,14 @@ typedef char* LPCTSTR;
   typedef void* LPTSTR;
   typedef size_t* LPDWORD;
 #endif
-/* knut: see new definition of bool in service.h
-#ifndef bool
-#define bool int
-#endif
-*/
+// knut: see new definition of bool in service.h
+//#ifndef bool
+//#define bool int
+//#endif
 
 #  define CHECK_INET_HANDLE(h) (h.handle != 0)
 
-  HINTERNET InternetOpenUrl(HINTERNET*,LPCTSTR,LPCTSTR,size_t,size_t,size_t);
+  HINTERNET InternetOpenUrl(HINTERNET*,LPCTSTR,LPCTSTR,size_t,size_t,size_t,const maps*);
 
   int processDownloads(HINTERNET*);
 

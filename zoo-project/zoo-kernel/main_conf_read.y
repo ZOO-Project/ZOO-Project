@@ -86,7 +86,7 @@ contentetoile
  | {/* Epsilon */}
  ;
 
-pair: PAIR {curr_key=zStrdup($1);}
+pair: PAIR {if(curr_key!=NULL) free(curr_key);curr_key=zStrdup($1);}
 | EPAIR {
   if(current_content==NULL) 
     current_content=createMap(curr_key,$1);
@@ -98,8 +98,9 @@ pair: PAIR {curr_key=zStrdup($1);}
     printf("[%s=>%s]\n",curr_key,$1);
   }
   free(curr_key);
+  curr_key=NULL;
   }
-| SPAIR  {curr_key=zStrdup($1);if(debug) printf("SPAIR FOUND !!\n"); }
+| SPAIR  {if(curr_key!=NULL) free(curr_key);curr_key=zStrdup($1);if(debug) printf("SPAIR FOUND !!\n"); }
  ;
 
 
@@ -160,6 +161,9 @@ int conf_read(const char* file,maps* my_map){
     current_maps->next=NULL;
     freeMap(&current_content);
     free(current_content);
+  }
+  if(curr_key!=NULL){
+    free(curr_key);
   }
 
   fclose(crin);

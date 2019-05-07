@@ -1,5 +1,7 @@
 AC_INIT([ZOO Kernel], [1.7.0], [bugs@zoo-project.org])
 
+AC_CONFIG_MACRO_DIR([macros])
+
 # Checks for programs.
 AC_PROG_YACC
 AC_PROG_CC
@@ -11,7 +13,6 @@ AC_PROG_SED
 AC_CHECK_LIB([curl], [curl_easy_init,curl_easy_setopt,curl_easy_cleanup,curl_easy_perform])
 AC_CHECK_LIB([dl], [dlopen,dlsym,dlerror,dlclose])
 AC_CHECK_LIB([crypto], [EVP_DigestInit,EVP_md5,EVP_DigestUpdate,BIO_f_base64,BIO_new])
-AC_CHECK_LIB([uuid], [uuid_generate_time])
 
 DEFAULT_LIBS="$LIBS"
 AC_SUBST([DEFAULT_LIBS])
@@ -19,7 +20,7 @@ AC_SUBST([DEFAULT_LIBS])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h inttypes.h malloc.h stddef.h stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -39,6 +40,63 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([dup2 getcwd memset setenv strdup strstr])
 
 #============================================================================
+# Detect if uuid is available
+#============================================================================
+
+AC_ARG_WITH([uuid],
+    [AS_HELP_STRING([--with-uuid=PATH], [Specifies an alternative location for the ossp-uuid library])],
+    [UUID_DIR="$withval"], [UUID_DIR="/usr/"])
+UUID_CFLAGS="-I$UUID_DIR/include"
+UUID_LDFLAGS="-L$UUID_DIR/lib -luuid"
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$UUID_CFLAGS"
+LIBS_SAVE="$LIBS"
+LIBS="$UUID_LDFLAGS"
+AC_CHECK_HEADERS([uuid/uuid.h],
+			[], [AC_MSG_ERROR([could not find header file uuid.h])])
+AC_CHECK_LIB([uuid], [uuid_generate_time],
+			[], [AC_MSG_ERROR([could not find function in uuid library])])
+CPPFLAGS="$CPPFLAGS_SAVE"
+AC_SUBST([UUID_CFLAGS])
+AC_SUBST([UUID_LDFLAGS])
+
+#============================================================================
+# Detect if json-c is available
+#============================================================================
+
+AC_ARG_WITH([callback],
+    [AS_HELP_STRING([--with-callback=yes], [Activate callback invocation during HPC execution])],
+    [CALLBACK_ACTIVATED="$withval"], [CALLBACK_ACTIVATED="no"])
+    
+AC_ARG_WITH([json],
+    [AS_HELP_STRING([--with-json=PATH], [Specifies an alternative location for the json-c library])],
+    [JSON_DIR="$withval"], [JSON_DIR="/usr/"])
+if test "x$JSON_DIR" != "x" && test "x$CALLBACK_ACTIVATED" == "xyes"
+then
+	JSON_CPPFLAGS="-I$JSON_DIR/include/json-c/"
+	JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$JSON_CPPFLAGS"
+	LIBS_SAVE="$LIBS"
+	LIBS="$JSON_LDFLAGS"
+	AC_CHECK_HEADERS([json_object.h],
+		[], [AC_MSG_ERROR([could not find header file json_object.h])])
+	AC_CHECK_LIB([json-c], [json_object_new_object],
+		[], [AC_MSG_ERROR([could not find function in json-c library])])
+	CPPFLAGS="$CPPFLAGS_SAVE"
+	JSON_FILE="service_json.o"
+	JSON_ENABLED="-DJSON"
+	CALLBACK_FILE="service_callback.o"
+	CALLBACK_USE="-DUSE_CALLBACK"
+fi
+AC_SUBST([JSON_CPPFLAGS])
+AC_SUBST([JSON_LDFLAGS])
+AC_SUBST([JSON_FILE])
+AC_SUBST([JSON_ENABLED])
+AC_SUBST([CALLBACK_FILE])
+AC_SUBST([CALLBACK_USE])
+
+#============================================================================
 # Detect if openssl is available
 #============================================================================
 
@@ -55,8 +113,29 @@ AC_CHECK_HEADERS([openssl/md5.h openssl/hmac.h openssl/evp.h openssl/bio.h opens
 			[], [AC_MSG_ERROR([could not find header file $i related to openssl])])
 AC_CHECK_LIB(crypto, BIO_f_base64,
 			[], [AC_MSG_ERROR([could not find $i function in openssl library])])
+CPPFLAGS="$CPPFLAGS_SAVE"
 AC_SUBST([OPENSSL_CFLAGS])
 AC_SUBST([OPENSSL_LDFLAGS])
+
+#============================================================================
+# Detect if gettext is available
+#============================================================================
+
+#AC_ARG_WITH([gettext],
+#    [AS_HELP_STRING([--with-gettext=PATH], [Specifies an alternative location for the openssl library])],
+#    [GETTEXT_DIR="$withval"], [GETTEXT_DIR="/usr/"])
+
+#GETTEXT_CFLAGS="-I$GETTEXT_DIR/include"
+#GETTEXT_LDFLAGS="-L$GETTEXT_DIR/lib -lintl"
+#CFLAGS_SAVE="$CFLAGS"
+#CFLAGS="$GETTEXT_CFLAGS"
+#LIBS_SAVE="$LIBS"
+#LIBS="$GETTEXT_LDFLAGS"
+#AM_GNU_GETTEXT([external], [], [])
+#AC_CHECK_LIB(intl,
+#			[dgettext], [] , [AC_MSG_ERROR([could not find $i function in gettext library])])
+#AC_SUBST([GETTEXT_CFLAGS])
+#AC_SUBST([GETTEXT_LDFLAGS])
 
 #============================================================================
 # Detect if run on debian / ubuntu
@@ -143,6 +222,59 @@ AC_CHECK_HEADERS([fcgi_stdio.h],
 LIBS="$LIBS_SAVE"
 AC_SUBST([FCGI_CPPFLAGS])
 AC_SUBST([FCGI_LDFLAGS])
+
+AC_ARG_WITH([metadb],
+        [AS_HELP_STRING([--with-metadb=yes], [Activates the metadata database support])],
+        [WITHMETADB="$withval"], [WITHMETADB=""])
+
+if test "x$WITHMETADB" = "xyes"; then
+   	METADB="-DMETA_DB"
+	METADB_FILE="meta_sql.o sqlapi.o"
+else
+	METADB=""
+	METADB_FILE=""
+fi
+
+AC_SUBST([METADB])
+AC_SUBST([METADB_FILE])
+
+AC_ARG_WITH([hpc],
+        [AS_HELP_STRING([--with-hpc=yes], [Specifies if you need to activate HPC support])],
+        [HPCWITH="$withval"], [HPCWITH="no"])
+
+
+AC_ARG_WITH([ssh2],
+        [AS_HELP_STRING([--with-ssh2=PATH], [Specifies an alternative location for the ssh2 library])],
+        [SSH2PATH="$withval"], [SSH2PATH="/usr"])
+
+if test "x$HPCWITH" = "xyes"; then
+   	HPC_FILES="service_internal_hpc.o sshapi.o"
+	HPC_ENABLED="-DUSE_HPC"
+	HPC_CPPFLAGS=""
+	HPC_LDFLAGS=""
+	# Extract the linker and include flags
+	SSH2_LDFLAGS="-L$SSH2PATH/lib -lssh2"
+	SSH2_CPPFLAGS="-I$SSH2PATH/include"
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$SSH2_CPPFLAGS"
+	LIBS_SAVE="$LIBS"
+	LIBS="$SSH2_LDFLAGS"
+	
+	AC_CHECK_HEADERS([libssh2.h],
+                 [], [AC_MSG_ERROR([could not find headers related to libssh2])])
+	AC_CHECK_LIB([ssh2], [libssh2_session_init])
+
+	LIBS="$LIBS_SAVE"
+fi
+
+AC_SUBST([HPC_CPPFLAGS])
+AC_SUBST([HPC_LDFLAGS])
+AC_SUBST([HPC_ENABLED])
+AC_SUBST([HPC_FILES])
+
+AC_SUBST([SSH2_CPPFLAGS])
+AC_SUBST([SSH2_LDFLAGS])
 
 # ===========================================================================
 # Detect if libxml2 is installed
@@ -399,6 +531,43 @@ MS_LIBS="$MS_LDFLAGS"
 AC_SUBST([MS_CFLAGS])
 AC_SUBST([MS_LIBS])
 AC_SUBST([MS_FILE])
+AC_SUBST([MS_VERSION])
+
+# ===========================================================================
+# Detect if R is installed
+# ===========================================================================
+
+AC_ARG_WITH([r], 
+	[AS_HELP_STRING([--with-r=PATH], [To enable python support or Specifies an alternative directory for R installation,  disabled by default])], 
+	[R_PATH="$withval"; R_ENABLED="-DUSE_R"], [R_ENABLED=""])
+
+if test -z "$R_ENABLED"
+then
+	R_FILE=""
+else
+	R_FILE="service_internal_r.o"
+	# Extract the linker and include flags 
+	R_LDFLAGS="-L$R_PATH/lib/ -lR"
+	R_CPPFLAGS="-I$R_PATH/include/"
+
+	# Check headers file
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	CPPFLAGS="$R_CPPFLAGS"
+	AC_CHECK_HEADERS([RInternals.h],
+		 [], [AC_MSG_ERROR([could not find headers include related to R])])
+
+	# Ensure we can link against libphp
+	#LIBS_SAVE="$LIBS"
+	#LIBS="$R_LDFLAGS"
+	#AC_CHECK_LIB([$LIBS], [R_tryEval], [], [AC_MSG_ERROR([could not find libR])], [])
+	#LIBS="$LIBS_SAVE"
+fi
+
+AC_SUBST([R_CPPFLAGS])
+AC_SUBST([R_LDFLAGS])
+AC_SUBST([R_ENABLED])
+AC_SUBST([R_FILE])
+
 
 # ===========================================================================
 # Detect if python is installed
@@ -645,7 +814,7 @@ else
 	fi
 
 	AC_LANG([C++])
-	echo $JAVA_CPPFLAGS
+	#echo $JAVA_CPPFLAGS
 	# Check headers file (second time we check that in fact)
 	CPPFLAGS_SAVE="$CPPFLAGS"
 	CPPFLAGS="$JAVA_CPPFLAGS"
@@ -695,7 +864,7 @@ else
 	MONO_LDFLAGS=`$MONOHOME/bin/pkg-config --libs mono-2`
 
 	AC_LANG([C++])
-	echo $JAVA_CPPFLAGS
+	#echo $JAVA_CPPFLAGS
 	# Check headers file (second time we check that in fact)
 	CPPFLAGS_SAVE="$CFLAGS"
 	CPPFLAGS="$MONO_CFLAGS"
@@ -887,6 +1056,10 @@ AC_ARG_WITH([saga],
         [AS_HELP_STRING([--with-saga=PATH], [Specifies an alternative location for the SAGA-GIS library])],
         [SAGAPATH="$withval"], [SAGAPATH=""])
 
+AC_ARG_WITH([saga-version],
+        [AS_HELP_STRING([--with-saga-version=VERSION], [Specifies the SAGA-GIS version number])],
+        [SAGAVERS="$withval"], [SAGAVERS="2"])
+
 if test -z "$SAGAPATH"
 then
 	SAGA_LDFLAGS=""
@@ -902,7 +1075,7 @@ else
 	fi
 	WX_ISSUE="-D_WX_WXCRTVARARG_H_"
 	SAGA_DEFS="-D_SAGA_LINUX -D_TYPEDEF_BYTE -D_TYPEDEF_WORD -DMODULE_LIBRARY_PATH=\\\"$SAGAPATH/lib/saga\\\""
-	SAGA_CPPFLAGS=" -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
+	SAGA_CPPFLAGS="-DSAGA_VERSION=${SAGAVERS} -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
 	SAGA_LDFLAGS="-fPIC `$WXCFG --unicode=yes --static=no --libs` -lsaga_api"
 	SAGA_ENABLED="-DUSE_SAGA"
 	SAGA_FILE="service_internal_saga.o"
@@ -913,10 +1086,18 @@ else
 	CPPFLAGS="$SAGA_CPPFLAGS"
 	LIBS_SAVE="$LIBS"
 	LIBS="$SAGA_LDFLAGS"
-	AC_CHECK_HEADERS([module_library.h],
-			[], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "module_library.h"],[SG_Get_Module_Library_Manager();]])],
-		[AC_MSG_RESULT([checking for SG_Get_Module_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Module_Library_Manager... failed])])
+        if test "$SAGAVERS" == "2"; then
+        AC_CHECK_HEADERS([module_library.h],
+                        [], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "module_library.h"],[SG_Get_Module_Library_Manager();]])],
+                [AC_MSG_RESULT([checking for SG_Get_Module_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Module_Library_Manager... failed])])
+        else
+        AC_CHECK_HEADERS([tool_library.h],
+                        [], [AC_MSG_ERROR([could not find header file $i related to SAGA-GIS])])
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "tool_library.h"],[SG_Get_Tool_Library_Manager();]])],
+                [AC_MSG_RESULT([checking for SG_Get_Tool_Library_Manager... yes])],[AC_MSG_ERROR([checking for SG_Get_Tool_Library_Manager... failed])])
+        fi
+	
 	LIBS="$LIBS_SAVE"
 	AC_LANG_POP([C++])
 fi

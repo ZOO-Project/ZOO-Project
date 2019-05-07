@@ -49,6 +49,9 @@ server_internal.obj: server_internal.c server_internal.h
 caching.obj: caching.c caching.h
 	$(CPP) $(CFLAGS) /c caching.c
 
+service_json.obj: service_json.c service_json.h
+	$(CPP) $(CFLAGS) /c service_json.c
+
 request_parser.obj: request_parser.c request_parser.h
 	$(CPP) $(CFLAGS) /c request_parser.c
 
@@ -70,6 +73,9 @@ service_internal_java.obj: service_internal_java.c service.h
 service_internal_ruby.obj: service_internal_ruby.c service_internal_ruby.h service.h
 	$(CPP) /c $(CFLAGS) service_internal_ruby.c
 
+service_internal_mono.obj: service_internal_mono.c service_internal_mono.h service.h
+        $(CPP) /c $(MONO_CLAGS) $(CFLAGS) service_internal_mono.c
+
 service_internal_python.obj: service_internal_python.c service.h
 	$(CPP) /c $(CFLAGS) service_internal_python.c
 
@@ -88,20 +94,23 @@ zoo_loader.obj: zoo_loader.c service.h
 service_internal_php.obj: service_internal_php.c service_internal_php.h service.h
 	$(CPP) /c $(CFLAGS) $(PHP_CFLAGS) service_internal_php.c
     
+service_callback.obj: service_callback.c service_callback.h service.h
+	$(CPP) /c $(CFLAGS) service_callback.c
+    
 service_internal_php7.obj: service_internal_php7.c service_internal_php.h service.h
 	$(CPP) /c $(CFLAGS) $(PHP_CFLAGS) service_internal_php7.c    
 
 $(LIBZOO_SERVICE): service_internal.obj service.obj sqlapi.obj
 	link /dll /out:$(LIBZOO_SERVICE) ./service.obj ./service_internal.obj ./sqlapi.obj $(LDFLAGS) /FORCE:MULTIPLE
 
-$(PROGRAMNAME): version.h $(LIBZOO_SERVICE) zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) $(PHP_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj request_parser.obj response_print.obj server_internal.obj caching.obj
-	link zoo_loader.obj request_parser.obj response_print.obj server_internal.obj caching.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) $(PHP_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj ./libzoo_service.lib /out:$(PROGRAMNAME) $(LDFLAGS) $(LDFLAGSCGI) 
+$(PROGRAMNAME): version.h $(LIBZOO_SERVICE) zoo_loader.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(MONO_FILE) $(RUBY_FILE) $(PHP_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj request_parser.obj response_print.obj server_internal.obj caching.obj service_json.obj service_callback.obj
+	link zoo_loader.obj request_parser.obj response_print.obj server_internal.obj caching.obj service_json.obj service_callback.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(MONO_FILE) $(RUBY_FILE) $(PHP_FILE) ulinet.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj  zoo_service_loader.obj ./libzoo_service.lib /out:$(PROGRAMNAME) $(LDFLAGS) $(LDFLAGSCGI) $(JSONC_LIB) $(PTHREADS_LIB) $(XSLT_LIB)
 
-zcfg2yaml: version.h zcfg2yaml.obj zoo_service_loader.obj service_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
-	link zcfg2yaml.obj server_internal.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(RUBY_FILE) $(PHP_FILE) ulinet.obj response_print.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj ./libzoo_service.lib /out:zcfg2yaml.exe $(LDFLAGS) $(LDFLAGSCGI)
+zcfg2yaml: version.h zcfg2yaml.obj zoo_service_loader.obj service_internal.obj caching.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(MONO_FILE) $(RUBY_FILE) ulinet.obj lex.cr.obj lex.sr.obj service_conf.tab.obj main_conf_read.tab.obj
+	link zcfg2yaml.obj server_internal.obj caching.obj $(PY_FILE) $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(MONO_FILE) $(RUBY_FILE) $(PHP_FILE) ulinet.obj response_print.obj main_conf_read.tab.obj lex.cr.obj service_conf.tab.obj lex.sr.obj ./libzoo_service.lib /out:zcfg2yaml.exe $(LDFLAGS) $(LDFLAGSCGI)
 
 clean:
 	erase -f *.cgi *.obj *.tab.c* *.tab.h *.sr.c* lex.* *.lreg *.sibling *.lib *.dll
 
 embed-manifest: zoo_loader.cgi
-	mt.exe -manifest zoo_loader.cgi.manifest -outputresource:zoo_loader.cgi;1
+	mt.exe -manifest zoo_loader.cgi.manifest -outputresource:zoo_loader.cgi;

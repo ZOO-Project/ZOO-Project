@@ -32,7 +32,9 @@ static int tmp_count=1;
 static int defaultsc=0;
 static bool wait_maincontent=true;
 static bool wait_mainmetadata=false;
+static bool wait_mainap=false;
 static bool wait_metadata=false;
+static bool wait_ap=false;
 static bool wait_nested=false;
 static bool wait_inputs=false;
 static bool wait_defaults=false;
@@ -155,17 +157,18 @@ STag
     free(current_content);
     current_content=NULL;
     my_service->metadata=NULL;
+    my_service->additional_parameters=NULL;
     wait_maincontent=false;
   }
   if(strncasecmp($2,"EndNested",9)==0){
 #ifdef DEBUG_SERVICE_CONF
-      fprintf(stderr,"(ENDNESTED - %d) \n",__LINE__);
-      fflush(stderr);
+    fprintf(stderr,"(ENDNESTED - %d) \n",__LINE__);
+    fflush(stderr);
 #endif
-      nested_level-=1;
-      if(nested_level==0){
-	wait_nested=false;
-      }
+    nested_level-=1;
+    if(nested_level==0){
+      wait_nested=false;
+    }
   }
 
   if(strncasecmp($2,"DataInputs",10)==0){
@@ -228,27 +231,58 @@ STag
       previous_data=2;
     }
     else
-      if(strncasecmp($2,"MetaData",8)==0){
-	previous_data=current_data;
-	current_data=3;
-	if(current_element!=NULL){
+      if(strncasecmp($2,"MetaData",8)==0 ||
+	 strncasecmp($2,"AdditionalParameters",8)==0){
+	if(strncasecmp($2,"AdditionalParameters",8)==0){
+	  previous_data=current_data;
+	  current_data=4;
+	  if(current_element!=NULL){
 #ifdef DEBUG_SERVICE_CONF
-	  fprintf(stderr,"add current_content to current_element->content\n");
-	  fprintf(stderr,"LINE %d",__LINE__);
+	    fprintf(stderr,"add current_content to current_element->content\n");
+	    fprintf(stderr,"LINE %d",__LINE__);
 #endif
-	  addMapToMap(&current_element->content,current_content);
-	  freeMap(&current_content);
-	  free(current_content);
-	  if(previous_data==1 || previous_data==2)
-	    wait_metadata=true;
-	  else
-	    wait_mainmetadata=true;
-	}
-	else{
-	  if(previous_data==1 || previous_data==2)
-	    wait_metadata=true;
-	  else
-	    wait_mainmetadata=true;
+	    if(wait_mainmetadata)
+	      addMapToMap(&my_service->metadata,current_content);
+	    else
+	      if(wait_metadata)
+		addMapToMap(&current_element->metadata,current_content);
+	      else
+		addMapToMap(&current_element->content,current_content);		
+	    freeMap(&current_content);
+	    free(current_content);
+	    if(previous_data==1 || previous_data==2)
+	      wait_ap=true;
+	    else
+	      wait_mainap=true;
+	  }
+	  else{
+	    if(previous_data==1 || previous_data==2)
+	      wait_ap=true;
+	    else
+	      wait_mainap=true;
+	  }
+	}else{
+	  previous_data=current_data;
+	  current_data=3;
+	  if(current_element!=NULL){
+#ifdef DEBUG_SERVICE_CONF
+	    fprintf(stderr,"add current_content to current_element->content\n");
+	    fprintf(stderr,"LINE %d",__LINE__);
+#endif
+	    addMapToMap(&current_element->content,current_content);
+	    freeMap(&current_content);
+	    free(current_content);
+	    if(previous_data==1 || previous_data==2)
+	      wait_metadata=true;
+	    else
+	      wait_mainmetadata=true;
+	  }
+	  else{
+	    if(previous_data==1 || previous_data==2)
+	      wait_metadata=true;
+	    else
+	      wait_mainmetadata=true;
+	  }
 	}
 	current_content=NULL;
       }
@@ -424,6 +458,33 @@ ETag
   }
   if(strcmp($3,"DataOutputs")==0){
     current_data=2;
+  }  
+  if(strcmp($3,"AdditionalParameters")==0){
+    if(current_content!=NULL){
+#ifdef DEBUG_SERVICE_CONF
+      fprintf(stderr,"add current_content to current_element->content\n");
+      fprintf(stderr,"LINE %d",__LINE__);
+#endif
+      if(wait_ap){
+	current_element->additional_parameters=NULL;
+	addMapToMap(&current_element->additional_parameters,current_content);
+	current_element->next=NULL;
+	current_element->defaults=NULL;
+	current_element->supported=NULL;
+	current_element->child=NULL;
+      }else{
+	if(wait_mainap){
+	  addMapToMap(&my_service->additional_parameters,current_content);
+	}
+      }
+
+      freeMap(&current_content);
+      free(current_content);
+      current_content=NULL;
+    }
+    current_data=previous_data;
+    wait_mainap=false;
+    wait_ap=false;
   }
   if(strcmp($3,"MetaData")==0){
     if(current_content!=NULL){
@@ -865,6 +926,8 @@ int getServiceFromFile(maps* conf,const char* file,service** service){
   wait_maincontent=true;
   wait_mainmetadata=false;
   wait_metadata=false;
+  wait_mainap=false;
+  wait_ap=false;
   wait_inputs=false;
   wait_defaults=false;
   wait_supporteds=false;

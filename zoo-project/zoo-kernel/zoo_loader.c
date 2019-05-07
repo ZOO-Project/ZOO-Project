@@ -64,6 +64,12 @@ using namespace std;
 #define FALSE -1
 #endif
 
+int cgiInit(){
+  fprintf(FCGI_stderr,"ZOO-Kernel initialization %s %d ... \n",__FILE__,__LINE__);
+  fflush(FCGI_stderr);
+  return 0;
+}
+
 /**
  * Main entry point for cgic.
  * @return 0 on sucess.
@@ -116,7 +122,7 @@ int cgiMain(){
 	 tmpMap=createMap("request",res);
        if(res!=NULL)
 	 free(res);
-    }else{
+    }else{		
       char *buffer=new char[cgiContentLength+1];
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>0){
 	buffer[cgiContentLength]=0;
@@ -156,7 +162,7 @@ int cgiMain(){
       delete[]buffer;
     }	
   }
-  else{
+  else{	  
 #ifdef DEBUG
     dumpMap(tmpMap);
 #endif
@@ -180,11 +186,11 @@ int cgiMain(){
     }
     cgiStringArrayFree(array);
   }
-
+ 
 #ifdef WIN32
-  map *tmpReq=getMap(tmpMap,"rfile");
-  if(tmpReq!=NULL){
-    FILE *lf=fopen(tmpReq->value,"r");
+  map *tmpReq=getMap(tmpMap,"rfile");  
+  if(tmpReq!=NULL){	  	  
+    FILE *lf=fopen(tmpReq->value,"r");	
     fseek(lf,0,SEEK_END);
     long flen=ftell(lf);
     fseek(lf,0,SEEK_SET);
@@ -388,7 +394,7 @@ int cgiMain(){
       token=strtok_r(NULL,"&",&saveptr);
     }
   }
-
+  
   if(strncasecmp(cgiContentType,"multipart/form-data",19)==0){
     map* tmp=getMap(tmpMap,"dataInputs");
     if(tmp!=NULL){
@@ -401,7 +407,7 @@ int cgiMain(){
 
   if(strQuery!=NULL)
     free(strQuery);
-
+  
   runRequest(&tmpMap);
 
   if(tmpMap!=NULL){

@@ -207,14 +207,14 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
   }
 #endif
 #ifdef JAVA7
-  cls_gr = (*env)NewGlobalRef(cls);
+  cls_gr = (*env).NewGlobalRef(cls);
 #else
   cls_gr = (*env)->NewGlobalRef(env, cls);
 #endif
 
   if (cls != NULL) {
 #ifdef JAVA7
-@    (*env).ExceptionClear();
+    (*env).ExceptionClear();
     pmid=(*env).GetStaticMethodID(cls, s->name, "(Ljava/util/HashMap;Ljava/util/HashMap;Ljava/util/HashMap;)I");
 #else
     (*env)->ExceptionClear(env);
@@ -283,7 +283,7 @@ int zoo_java_support(maps** main_conf,map* request,service* s,maps **real_inputs
     }
   }
 #ifdef JAVA7
-      (*jvm).DestroyJavaVM();
+  (*jvm).DestroyJavaVM();
 #else
   (*jvm)->DestroyJavaVM(jvm);
 #endif
@@ -426,16 +426,18 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
       scObject1 = (*env)->NewObject(env, scHashMap_class, scHashMap_constructor);
 #endif
       map* sizeV=getMap(tmp1,"size");
+      map* useFile=getMap(tmp1,"use_file");
+      map* cacheFile=getMap(tmp1,"cache_file");
       map* isArray=getMap(tmp1,"isArray");
       map* alen=getMap(tmp1,"length");
       while(tmp1!=NULL){
 	if(strcmp(tmp1->name,"value")==0){
 	  if(isArray==NULL){
-	    if(sizeV!=NULL && strcmp(tmp1->name,"value")==0){
+	    if(sizeV!=NULL && strcmp(tmp1->name,"value")==0 && useFile==NULL){
 #ifdef JAVA7
 	      jbyteArray tmpData=(*env).NewByteArray(atoi(sizeV->value));
 	      (*env).SetByteArrayRegion(tmpData,0,atoi(sizeV->value),(const jbyte *)tmp1->value);
-	      (*env).CallObjectMethod(env,scObject1, put_mid, (*env).NewStringUTF(env,tmp1->name), tmpData);
+	      (*env).CallObjectMethod(scObject1, put_mid, (*env).NewStringUTF(tmp1->name), tmpData);
 #else
 	      jbyteArray tmpData=(*env)->NewByteArray(env,atoi(sizeV->value));
 	      (*env)->SetByteArrayRegion(env,tmpData,0,atoi(sizeV->value),(jbyte*) tmp1->value);
@@ -447,6 +449,13 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 #else
 	      (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), (*env)->NewStringUTF(env,tmp1->value));
 #endif
+	      if(useFile!=NULL)
+#ifdef JAVA7
+		(*env).CallObjectMethod(scObject1, put_mid, (*env).NewStringUTF("cache_file"), (*env).NewStringUTF(cacheFile->value));
+#else
+	        (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,"cache_file"), (*env)->NewStringUTF(env,cacheFile->value));
+#endif
+	      
 	  }
 	  else{
 	    int alen1=atoi(alen->value);
@@ -454,13 +463,14 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 	    
 	    jclass scArrayListClass,scArrayList_class;
 	    jmethodID scArrayList_constructor;
-	    jobject scObject2;
+	    jobject scObject2,scObject3;
 #ifdef JAVA7
 	    scArrayListClass = (*env).FindClass("java/util/ArrayList");
 	    scArrayList_class = (jclass)(*env).NewGlobalRef(scArrayListClass);
 	    scArrayList_constructor = (*env).GetMethodID(scArrayList_class, "<init>", "()V");
 	    jmethodID add_mid = 0;
 	    scObject2 = (*env).NewObject(scArrayList_class, scArrayList_constructor);
+	    scObject3 = (*env).NewObject(scArrayList_class, scArrayList_constructor);
 
 	    add_mid = (*env).GetMethodID(scArrayListClass,
 					  "add","(Ljava/lang/Object;)Z");
@@ -470,6 +480,7 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 	    scArrayList_constructor = (*env)->GetMethodID(env, scArrayList_class, "<init>", "()V");
 	    jmethodID add_mid = 0;
 	    scObject2 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
+	    scObject3 = (*env)->NewObject(env, scArrayList_class, scArrayList_constructor);
 
 	    add_mid = (*env)->GetMethodID(env,scArrayListClass,
 					  "add","(Ljava/lang/Object;)Z");
@@ -477,11 +488,13 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 	    int i;
 	    
 	    for(i=0;i<alen1;i++){
+	      map* cMap=getMapArray(tmp->content,"cache_file",i);
+	      map* uMap=getMapArray(tmp->content,"use_file",i);
 	      map* vMap=getMapArray(tmp->content,"value",i);
 	      map* sMap=getMapArray(tmp->content,"size",i);
 	      map* mMap=getMapArray(tmp->content,tmap->value,i);
 	      
-	      if(sMap!=NULL && vMap!=NULL && strncmp(vMap->name,"value",5)==0){
+	      if(sMap!=NULL && vMap!=NULL && strncmp(vMap->name,"value",5)==0 && uMap==NULL){
 #ifdef JAVA7
 		jbyteArray tmpData=(*env).NewByteArray(atoi(sMap->value));
 		(*env).SetByteArrayRegion(tmpData,0,atoi(sMap->value),(const jbyte *)vMap->value);
@@ -500,13 +513,25 @@ jobject HashMap_FromMaps(JNIEnv *env,maps* t,jclass scHashMapClass,jclass scHash
 		(*env)->CallObjectMethod(env,scObject2, add_mid, tmpData);
 #endif
 	      }
-	      
+
+	      if(cMap!=NULL){
+#ifdef JAVA7
+		jobject tmpData=(*env).NewStringUTF(cMap->value);
+		(*env).CallObjectMethod(scObject3, add_mid, tmpData);
+#else
+		jobject tmpData=(*env)->NewStringUTF(env,cMap->value);
+		(*env)->CallObjectMethod(env,scObject3, add_mid, tmpData);
+#endif
+
+	      }
 	    }
 
 #ifdef JAVA7
 	    (*env).CallObjectMethod(scObject1, put_mid, (*env).NewStringUTF(tmp1->name), scObject2);
+	    (*env).CallObjectMethod(scObject1, put_mid, (*env).NewStringUTF("cache_file"), scObject3);
 #else	    
 	    (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,tmp1->name), scObject2);
+	    (*env)->CallObjectMethod(env,scObject1, put_mid, (*env)->NewStringUTF(env,"cache_file"), scObject3);
 #endif
 
 	  }

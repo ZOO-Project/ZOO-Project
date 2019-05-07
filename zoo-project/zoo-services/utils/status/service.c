@@ -71,6 +71,9 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",tmp);
       return SERVICE_FAILED;
     }
+    map* tmpMap1=getMapFromMaps(conf,"lenv","semaphore");
+    if(tmpMap1!=NULL && strcasecmp(tmpMap1->value,"Created")==0)
+      removeShmLock(conf,1);
     sprintf(xslFileName,"%s/updateStatus.xsl",tmpMmap->value);
     xmlSubstituteEntitiesDefault(1);
     xmlLoadExtDtdDefaultValue = 0;
@@ -84,9 +87,9 @@ extern "C" {
        * Parse Status to extract Status / Message
        */
       char *tmpStr=_getStatus(conf,tmpMap->value);
-#ifdef DEBUG
+      //#ifdef DEBUG
       fprintf(stderr,"DEBUG: %s \n",tmpStr);
-#endif
+      //#endif
       if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	char *tmpStr1=strdup(tmpStr);
 	char *tmpStr0=strdup(strstr(tmpStr,"|")+1);
@@ -139,6 +142,8 @@ extern "C" {
     while(i<100){
       char message[10];
       sprintf(message,"Step %d",i);
+      fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
+      fflush(stderr);
       updateStatus(conf,i,message);
 #ifndef WIN32
       sleep(1);

@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2015 GeoLabs SARL
+ * Copyright (c) 2015-2019 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,9 @@
 // knut: time utilities required for new log function (logMessage)
 #include <ctime>
 #include <chrono>
+#ifdef WIN32
 #include <process.h>
+#endif
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #include <stdarg.h>
@@ -101,8 +103,11 @@ void dumpMaps(maps* m){
     fprintf(stderr,"MAP => [%s] \n",tmp->name);
     fprintf(stderr," * CONTENT [%s] \n",tmp->name);
     dumpMap(tmp->content);
-    fprintf(stderr," * CHILD [%s] \n",tmp->name);
-    dumpMaps(tmp->child);
+    if(tmp->child!=NULL){
+      fprintf(stderr," * CHILD [%s] \n",tmp->name);
+      dumpMaps(tmp->child);
+      fprintf(stderr," * /CHILD [%s] \n",tmp->name);
+    }
     tmp=tmp->next;
   }
 }
@@ -124,9 +129,9 @@ void _dumpMapsToFile(maps* m,FILE* file,int limit){
       dumpMapToFile(tmp->content,file);
     fflush(file);
     tmp=tmp->next;
-    cnt++;
     if(limit>=0 && cnt==limit)
       tmp=NULL;
+    cnt++;
   }
   fflush(file);
 }
@@ -143,6 +148,18 @@ void dumpMapsToFile(maps* m,char* file_path,int limit){
   _dumpMapsToFile(m,file,limit);
   fflush(file);
   fclose(file);
+}
+
+/**
+ * Create a new iotype*
+ *
+ * @return a pointer to the allocated iotype 
+ */
+iotype* createIoType(){
+  iotype* io=(iotype*)malloc(IOTYPE_SIZE);
+  io->content=NULL;
+  io->next=NULL;
+  return io;
 }
 
 /**
@@ -178,11 +195,27 @@ maps* createMaps(const char* name){
 /**
  * Count number of map in a map
  *
- * @param m the maps to count
+ * @param m the map to count
  * @return number of map in a map
  */
 int count(map* m){
   map* tmp=m;
+  int c=0;
+  while(tmp!=NULL){
+    c++;
+    tmp=tmp->next;
+  }
+  return c;
+}
+
+/**
+ * Count number of maps in a maps
+ *
+ * @param m the maps to count
+ * @return number of maps in a maps
+ */
+int maps_length(maps* m){
+  maps* tmp=m;
   int c=0;
   while(tmp!=NULL){
     c++;
@@ -400,28 +433,51 @@ void freeElements(elements** e){
     freeMap(&tmp->metadata);
     if(tmp->metadata!=NULL)
       free(tmp->metadata);
+    freeMap(&tmp->additional_parameters);
+    if(tmp->additional_parameters!=NULL)
+      free(tmp->additional_parameters);
     if(tmp->format!=NULL)
       free(tmp->format);
+    freeElements(&tmp->child);
     if(tmp->child!=NULL){
-      freeElements(&tmp->child);
       free(tmp->child);
     }
-    freeIOType(&tmp->defaults);
-    if(tmp->defaults!=NULL)
+    if(tmp->defaults!=NULL){
+      freeIOType(&tmp->defaults);
       free(tmp->defaults);
-    freeIOType(&tmp->supported);
+    }
     if(tmp->supported!=NULL){
+      freeIOType(&tmp->supported);
       free(tmp->supported);
     }
-    freeElements(&tmp->next);
-    if(tmp->next!=NULL)
+    if(tmp->next!=NULL){
+      freeElements(&tmp->next);
       free(tmp->next);
+    }
   }
+}
+
+
+/**
+ * Allocate memory for a service.
+ * Require to call free after calling this function.
+ *
+ * @return the service
+ */
+service* createService(){
+  service *s1 = (service *) malloc (SERVICE_SIZE);
+  s1->name=NULL;
+  s1->content=NULL;
+  s1->metadata=NULL;
+  s1->additional_parameters=NULL;
+  s1->inputs=NULL;
+  s1->outputs=NULL;
+  return s1;
 }
 
 /**
  * Free allocated memory of a service.
- * Require to call free on e after calling this function.
+ * Require to be invoked for every createService call.
  *
  * @param s the service to free
  */
@@ -436,6 +492,9 @@ void freeService(service** s){
     freeMap(&tmp->metadata);
     if(tmp->metadata!=NULL)
       free(tmp->metadata);
+    freeMap(&tmp->additional_parameters);
+    if(tmp->additional_parameters!=NULL)
+      free(tmp->additional_parameters);
     freeElements(&tmp->inputs);
     if(tmp->inputs!=NULL)
       free(tmp->inputs);
@@ -453,21 +512,21 @@ void freeService(service** s){
  * @param v the corresponding value to add
  */
 void addToMap(map* m,const char* n,const char* v){
-  if (m != NULL) { // knut: add NULL-pointer check
-    if(hasKey(m,n)==false){
-      map* _cursor=m;
-      while(_cursor->next!=NULL){
-        _cursor=_cursor->next;
-      }
-      _cursor->next=createMap(n,v);
+    if (m != NULL) { // knut: add NULL-pointer check
+        if (hasKey(m, n) == false) {
+            map* _cursor = m;
+            while (_cursor->next != NULL) {
+                _cursor = _cursor->next;
+            }
+            _cursor->next = createMap(n, v);
+        }
+        else {
+            map *tmp = getMap(m, n);
+            if (tmp->value != NULL)
+                free(tmp->value);
+            tmp->value = zStrdup(v);
+        }
     }
-    else{
-      map *tmp=getMap(m,n);
-      if(tmp->value!=NULL)
-        free(tmp->value);
-      tmp->value=zStrdup(v);
-    }
-  }
 }
 
 /**
@@ -505,6 +564,9 @@ void addIntToMap(map* m,const char* n,const int v){
  * @return a pointer to the updated map m
  */
 map* addToMapWithSize(map* m,const char* n,const char* v,int size){
+  char sin[128];
+  char sname[10]="size";
+  map *tmp;
   if(hasKey(m,n)==false){
     map* _cursor=m;
     if(_cursor!=NULL){
@@ -513,17 +575,15 @@ map* addToMapWithSize(map* m,const char* n,const char* v,int size){
       m=createMap(n,"");
     }
   }
-  char sname[10]="size";
   if(strlen(n)>5)
     sprintf(sname,"size_%s",n+6);
-  map *tmp=getMap(m,n);
+  tmp=getMap(m,n);
   if(tmp->value!=NULL)
     free(tmp->value);
   tmp->value=(char*)malloc((size+1)*sizeof(char));
   if(v!=NULL)
     memmove(tmp->value,v,size*sizeof(char));
   tmp->value[size]=0;
-  char sin[128];
   sprintf(sin,"%d",size);
   addToMap(m,sname,sin);
   return m;
@@ -544,14 +604,10 @@ void addMapToMap(map** mo,map* mi){
       (*mo)->next=NULL;
     }
     else{
-#ifdef DEBUG
-      fprintf(stderr,"_CURSOR\n");
-      dumpMap(_cursor);
-#endif
-      while(_cursor->next!=NULL)
-	_cursor=_cursor->next;
       map* tmp1=getMap(*mo,tmp->name);
       if(tmp1==NULL){
+	while(_cursor->next!=NULL)
+	  _cursor=_cursor->next;
 	_cursor->next=createMap(tmp->name,tmp->value);
       }
       else{
@@ -560,10 +616,6 @@ void addMapToMap(map** mo,map* mi){
     }
     _cursor=*mo;
     tmp=tmp->next;
-#ifdef DEBUG
-    fprintf(stderr,"MO\n");
-    dumpMap(*mo);
-#endif
   }
 }
 
@@ -677,21 +729,22 @@ iotype* getIoTypeFromElement(elements* e,char *name, map* values){
 void loadMapBinary(map** out,map* in,int pos){
   map* size=getMap(in,"size");
   map *lout=*out;
+  map *tmpVin,*tmpVout;
   if(size!=NULL && pos>0){
     char tmp[11];
     sprintf(tmp,"size_%d",pos);
     size=getMap(in,tmp);
     sprintf(tmp,"value_%d",pos);
-    map* tmpVin=getMap(in,tmp);
-    map* tmpVout=getMap(lout,tmp);
+    tmpVin=getMap(in,tmp);
+    tmpVout=getMap(lout,tmp);
     free(tmpVout->value);
     tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
     memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
     tmpVout->value[atoi(size->value)]=0;
   }else{
     if(size!=NULL){
-      map* tmpVin=getMap(in,"value");
-      map* tmpVout=getMap(lout,"value");
+      tmpVin=getMap(in,"value");
+      tmpVout=getMap(lout,"value");
       free(tmpVout->value);
       tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
       memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
@@ -711,6 +764,13 @@ void loadMapBinary(map** out,map* in,int pos){
 void loadMapBinaries(map** out,map* in){
   map* size=getMap(in,"size");
   map* length=getMap(in,"length");
+  map* toload=getMap(in,"to_load");
+  if(toload!=NULL && strcasecmp(toload->value,"false")==0){
+#ifdef DEBUG
+    fprintf(stderr,"NO LOAD %s %d \n",__FILE__,__LINE__);
+#endif
+    return ;
+  }
   if(length!=NULL){
     int len=atoi(length->value);
     int i=0;
@@ -733,13 +793,13 @@ maps* dupMaps(maps** mo){
   maps* _cursor=*mo;
   maps* res=NULL;
   if(_cursor!=NULL){
-    res=createMaps(_cursor->name);
     map* mc=_cursor->content;
+    maps* mcs=_cursor->child;
+    res=createMaps(_cursor->name);
     if(mc!=NULL){
       addMapToMap(&res->content,mc);
       loadMapBinaries(&res->content,mc);
     }
-    maps* mcs=_cursor->child;
     if(mcs!=NULL){
       res->child=dupMaps(&mcs);
     }
@@ -763,9 +823,9 @@ void addMapsToMaps(maps** mo,maps* mi){
       *mo=dupMaps(&mi);
     }
     else{
+      maps* tmp1=getMaps(*mo,tmp->name);
       while(_cursor->next!=NULL)
 	_cursor=_cursor->next;
-      maps* tmp1=getMaps(*mo,tmp->name);
       if(tmp1==NULL){
 	_cursor->next=dupMaps(&tmp);
 	if(tmp->child!=NULL)
@@ -796,6 +856,7 @@ void addMapsToMaps(maps** mo,maps* mi){
  */
 map* getMapArray(map* m,const char* key,int index){
   char tmp[1024];
+  map* tmpMap;
   if(index>0)
     sprintf(tmp,"%s_%d",key,index);
   else
@@ -803,7 +864,7 @@ map* getMapArray(map* m,const char* key,int index){
 #ifdef DEBUG
   fprintf(stderr,"** KEY %s\n",tmp);
 #endif
-  map* tmpMap=getMap(m,tmp);
+  tmpMap=getMap(m,tmp);
 #ifdef DEBUG
   if(tmpMap!=NULL)
     dumpMap(tmpMap);
@@ -822,29 +883,46 @@ map* getMapArray(map* m,const char* key,int index){
  */
 void setMapArray(map* m,const char* key,int index,const char* value){
   char tmp[1024];
+  map* tmpSize;
   if(index>0){
-    sprintf(tmp,"%s_%d",key,index);
     map* len=getMap(m,"length");
+    sprintf(tmp,"%s_%d",key,index);
     if((len!=NULL && atoi(len->value)<index+1) || len==NULL){
       char tmp0[5];
       sprintf(tmp0,"%d",index+1);
       addToMap(m,"length",tmp0);
     }
   }
-  else
+  else{
     sprintf(tmp,"%s",key);
-  map* tmpSize=getMapArray(m,"size",index);
+    addToMap(m,"length","1");
+  }
+  tmpSize=getMapArray(m,"size",index);
   if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
+    map* ptr=getMapOrFill(&m,tmp,(char *)"");
 #ifdef DEBUG
     fprintf(stderr,"%s\n",tmpSize->value);
 #endif
-    map* ptr=getMapOrFill(&m,tmp,(char *)"");
     free(ptr->value);
     ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
     memcpy(ptr->value,value,atoi(tmpSize->value)); 
   }
   else
     addToMap(m,tmp,value);
+}
+
+/**
+ * Add a key and an integer value to an existing map array.
+ *
+ * @param m the map to add the KVP
+ * @param n the key to add
+ * @param index the index of the MapArray 
+ * @param v the corresponding value to add
+ */
+void addIntToMapArray(map* m,const char* n,int index,const int v){
+  char svalue[10];
+  sprintf(svalue,"%d",v);
+  setMapArray(m,n,index,svalue);
 }
 
 /**
@@ -880,17 +958,8 @@ map* getMapType(map* mt){
 int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
   maps* tmp=mi;    
   maps* _cursor=getMaps(*mo,tmp->name);
-
-  if(_cursor==NULL)
-    return -1;
-
-  map* tmpLength=getMap(_cursor->content,"length");
   char tmpLen[10];
   int len=1;
-  if(tmpLength!=NULL){
-    len=atoi(tmpLength->value);
-  }
-
   char *tmpV[14]={
     (char*)"size",
     (char*)"value",
@@ -905,11 +974,21 @@ int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
     (char*)"encoding",
     (char*)"isCached",
     (char*)"LowerCorner",
-    (char*)"UpperCorner"    
+    (char*)"UpperCorner"
   };
+  int i=0;
+  map* tmpLength;
+  
+  if(_cursor==NULL)
+    return -1;
+
+  tmpLength=getMap(_cursor->content,"length");
+  if(tmpLength!=NULL){
+    len=atoi(tmpLength->value);
+  }
+
   sprintf(tmpLen,"%d",len+1);
   addToMap(_cursor->content,"length",tmpLen);
-  int i=0;
   for(i=0;i<14;i++){
     map* tmpVI=getMap(tmp->content,tmpV[i]);
     if(tmpVI!=NULL){
@@ -966,6 +1045,7 @@ elements* createEmptyElements(){
   res->name=NULL;
   res->content=NULL;
   res->metadata=NULL;
+  res->additional_parameters=NULL;  
   res->format=NULL;
   res->defaults=NULL;
   res->supported=NULL;
@@ -980,11 +1060,12 @@ elements* createEmptyElements(){
  * @param name the elements name
  * @return a pointer to the allocated elements
  */
-elements* createElements(char* name){
+elements* createElements(const char* name){
   elements* res=(elements*)malloc(ELEMENTS_SIZE);
   res->name=zStrdup(name);
   res->content=NULL;
   res->metadata=NULL;
+  res->additional_parameters=NULL;
   res->format=NULL;
   res->defaults=NULL;
   res->supported=NULL;
@@ -1019,14 +1100,16 @@ void setElementsName(elements** elem,char* name){
 void dumpElements(elements* e){
   elements* tmp=e;
   while(tmp!=NULL){
+    iotype* tmpio=tmp->defaults;
+    int ioc=0;
     fprintf(stderr,"ELEMENT [%s]\n",tmp->name);
     fprintf(stderr," > CONTENT [%s]\n",tmp->name);
     dumpMap(tmp->content);
     fprintf(stderr," > METADATA [%s]\n",tmp->name);
     dumpMap(tmp->metadata);
+    fprintf(stderr," > ADDITIONAL PARAMETERS [%s]\n",tmp->name);
+    dumpMap(tmp->additional_parameters);
     fprintf(stderr," > FORMAT [%s]\n",tmp->format);
-    iotype* tmpio=tmp->defaults;
-    int ioc=0;
     while(tmpio!=NULL){
       fprintf(stderr," > DEFAULTS [%s] (%i)\n",tmp->name,ioc);
       dumpMap(tmpio->content);
@@ -1059,10 +1142,12 @@ void dumpElementsAsYAML(elements* e,int level){
   elements* tmp=e;
   int i;
   while(tmp!=NULL){
+    map* mcurs=tmp->content;
+    int ioc=0;
+    iotype* tmpio;
     for(i=0;i<2+(4*level);i++)
       fprintf(stderr," ");
     fprintf(stderr,"%s:\n",tmp->name);
-    map* mcurs=tmp->content;
     while(mcurs!=NULL){
       for(i=0;i<4+(4*level);i++)
 	fprintf(stderr," ");
@@ -1090,8 +1175,7 @@ void dumpElementsAsYAML(elements* e,int level){
       if(tmp->child!=NULL)
 	dumpElementsAsYAML(tmp->child,level+1);
     }
-    iotype* tmpio=tmp->defaults;
-    int ioc=0;
+    tmpio=tmp->defaults;
     while(tmpio!=NULL){
       for(i=0;i<6+(4*level);i++)
 	fprintf(stderr," ");
@@ -1141,26 +1225,28 @@ void dumpElementsAsYAML(elements* e,int level){
 elements* dupElements(elements* e){
   elements* cursor=e;
   elements* tmp=NULL;
-  if(cursor!=NULL){
+  if(cursor!=NULL && cursor->name!=NULL){
 #ifdef DEBUG
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
     dumpElements(e);
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
     tmp=(elements*)malloc(ELEMENTS_SIZE);
-    tmp->name=zStrdup(e->name);
+    tmp->name=zStrdup(cursor->name);
     tmp->content=NULL;
-    addMapToMap(&tmp->content,e->content);
+    addMapToMap(&tmp->content,cursor->content);
     tmp->metadata=NULL;
-    addMapToMap(&tmp->metadata,e->metadata);
-    if(e->format!=NULL)
-      tmp->format=zStrdup(e->format);
+    addMapToMap(&tmp->metadata,cursor->metadata);
+    tmp->additional_parameters=NULL;
+    addMapToMap(&tmp->additional_parameters,cursor->additional_parameters);
+    if(cursor->format!=NULL)
+      tmp->format=zStrdup(cursor->format);
     else
       tmp->format=NULL;
-    if(e->defaults!=NULL){
+    if(cursor->defaults!=NULL){
       tmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
       tmp->defaults->content=NULL;
-      addMapToMap(&tmp->defaults->content,e->defaults->content);
+      addMapToMap(&tmp->defaults->content,cursor->defaults->content);
       tmp->defaults->next=NULL;
 #ifdef DEBUG
       fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
@@ -1168,13 +1254,13 @@ elements* dupElements(elements* e){
 #endif
     }else
       tmp->defaults=NULL;
-    if(e->supported!=NULL){
+    if(cursor->supported!=NULL && cursor->supported->content!=NULL){
+      iotype *tmp2=cursor->supported->next;
       tmp->supported=(iotype*)malloc(IOTYPE_SIZE);
       tmp->supported->content=NULL;
-      addMapToMap(&tmp->supported->content,e->supported->content);
+      addMapToMap(&tmp->supported->content,cursor->supported->content);
       tmp->supported->next=NULL;
-      iotype *tmp2=e->supported->next;
-      while(tmp2!=NULL){
+            while(tmp2!=NULL){
 	addMapToIoType(&tmp->supported,tmp2->content);
 #ifdef DEBUG
 	fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
@@ -1189,7 +1275,10 @@ elements* dupElements(elements* e){
       tmp->child=dupElements(cursor->child);
     else
       tmp->child=NULL;
-    tmp->next=dupElements(cursor->next);
+    if(cursor->next!=NULL)
+      tmp->next=dupElements(cursor->next);
+    else
+      tmp->next=NULL;
   }
   return tmp;
 }
@@ -1204,7 +1293,7 @@ elements* dupElements(elements* e){
 void addToElements(elements** m,elements* e){
   elements* tmp=e;
   if(*m==NULL){
-    *m=dupElements(tmp);
+    (*m)=dupElements(tmp);
   }else{
     addToElements(&(*m)->next,tmp);
   }
@@ -1236,8 +1325,12 @@ void dumpService(service* s){
   if(s->content!=NULL){
     fprintf(stderr,"CONTENT MAP\n");
     dumpMap(s->content);
-    fprintf(stderr,"CONTENT METADATA\n");
+    if(s->metadata!=NULL)
+      fprintf(stderr,"CONTENT METADATA\n");
     dumpMap(s->metadata);
+    if(s->additional_parameters!=NULL)
+      fprintf(stderr,"CONTENT AdditionalParameters\n");
+    dumpMap(s->additional_parameters);
   }
   if(s->inputs!=NULL){
     fprintf(stderr,"INPUT ELEMENTS [%s]\n------------------\n",s->name);
@@ -1295,6 +1388,8 @@ service* dupService(service* s){
   addMapToMap(&res->content,s->content);
   res->metadata=NULL;
   addMapToMap(&res->metadata,s->metadata);
+  res->additional_parameters=NULL;
+  addMapToMap(&res->additional_parameters,s->additional_parameters);
   res->inputs=dupElements(s->inputs);
   res->outputs=dupElements(s->outputs);
   return res;
@@ -1308,8 +1403,8 @@ service* dupService(service* s){
 void dumpRegistry(registry* r){
   registry* p=r;
   while(p!=NULL){
-    fprintf(stderr,"%s \n",p->name);
     services* s=p->content;
+    fprintf(stderr,"%s \n",p->name);
     s=p->content;
     while(s!=NULL){
       dumpService(s->content);
@@ -1508,13 +1603,14 @@ void inheritElements(elements** out,elements* in){
  * @param s the service to update depending on its inheritance
  */
 void inheritance(registry *r,service** s){
+  service* ls=*s;
+  map *profile,*level;
   if(r==NULL)
     return;
-  service* ls=*s;
-  if(ls->content==NULL)
+  if(ls==NULL || ls->content==NULL)
     return;
-  map* profile=getMap(ls->content,"extend");
-  map* level=getMap(ls->content,"level");
+  profile=getMap(ls->content,"extend");
+  level=getMap(ls->content,"level");
   if(profile!=NULL&&level!=NULL){
     service* s1;
     if(strncasecmp(level->value,"profile",7)==0)
@@ -1549,13 +1645,13 @@ void mapsToCharXXX(maps* m,char*** c){
   char tmp[10][30][1024];
   memset(tmp,0,1024*10*10);
   while(tm!=NULL){
+    map* tc=tm->content;
     if(i>=10)
       break;
     strcpy(tmp[i][j],"name");
     j++;
     strcpy(tmp[i][j],tm->name);
     j++;
-    map* tc=tm->content;
     while(tc!=NULL){
       if(j>=30)
 	break;
@@ -1608,125 +1704,107 @@ void charxxxToMaps(char*** c,maps**m){
  * @param map pointer to map that should be checked
  * @return true if map has a value or false if value is missing/empty/NULL
  */
-bool nonempty( map* map ) {
-    return ( map != NULL && map->value != NULL && strlen(map->value) > 0 && strcmp(map->value, "NULL") != 0 );
+bool nonempty(map* map) {
+	return (map != NULL && map->value != NULL && strlen(map->value) > 0 && strcmp(map->value, "NULL") != 0);
 }
 
 /**
- * Verify that a particular map value exists in a maps 
+ * Verify that a particular map value exists in a maps
  * data structure, and obtain that value
  *
  * @param source pointer to maps structure
  * @param node name of maps node to search
  * @param key name of map node to find
- * @param address to the map* if it exists, otherwise NULL
+ * @param kvp address to the map* if it exists, otherwise NULL
  * @return true if map has a value or false if value is missing/NULL
+ *
+ * @note The map assigned to kvp is owned by the source maps
  */
-bool hasvalue( maps* source, const char* node, const char* key, map** kvp ) {
-    *kvp = getMapFromMaps(source, node, key);
-    return ( *kvp != NULL && (*kvp)->value != NULL && 
-             strlen((*kvp)->value) > 0 && strcmp((*kvp)->value, "NULL") != 0 );
+bool hasvalue(maps* source, const char* node, const char* key, map** kvp) {
+	*kvp = getMapFromMaps(source, node, key);
+	return (*kvp != NULL && (*kvp)->value != NULL &&
+		strlen((*kvp)->value) > 0 && strcmp((*kvp)->value, "NULL") != 0);
 }
 
 /*
  * Set error message in configuration maps
  *
  * @param conf reference to configuration maps
- * @param service name of service 
+ * @param service name of service
  * @param exc WPSException code
  * @param message exception text (default: exception text in WPS specification)
  */
-void setErrorMessage( maps*& conf, const char* service, WPSException exc, const char* message ) {
-  
-  if (message == NULL) {
-    message = WPSExceptionText[exc];
-  } 
+void setErrorMessage(maps*& conf, const char* service, WPSException exc, const char* message) {
 
-	size_t len = strlen( service ) + strlen(": ") + strlen( message ) + strlen(": ") + strlen(WPSExceptionCode[exc]) + 16;
-	char* msg = (char*) malloc( len * sizeof(char) );
+	if (message == NULL) {
+		message = WPSExceptionText[exc];
+	}
+
+	size_t len = strlen(service) + strlen(": ") + strlen(message) + strlen(": ") + strlen(WPSExceptionCode[exc]) + 16;
+	char* msg = (char*)malloc(len * sizeof(char));
 
 	if (msg != NULL) {
-		snprintf( msg, len*sizeof(char), "\n%s: %s: %s\n", service, message, WPSExceptionCode[exc] );
-		setMapInMaps( conf, "lenv", "message", msg );
-		free( msg );
-	}	
+		snprintf(msg, len * sizeof(char), "\n%s: %s: %s\n", service, message, WPSExceptionCode[exc]);
+		setMapInMaps(conf, "lenv", "message", msg);
+		free(msg);
+	}
 }
 
 void logMessage(const char* source, const char* function, int line, const char* file, const char* message) { //, const char* source, const char* function, int line) {
-  
-  size_t msglen = 512;
-  const char empty[] = "";
-  
-  FILE* log;
-  
-  // system time, process time [nanoseconds]   
-  unsigned long long sys_t, proc_t;
-  
-  // processor time consumed by the program:
-  clock_t t = clock();
-    
-  // system time:
-  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-  
-  std::time_t now_t = std::chrono::system_clock::to_time_t( now );
-  std::tm* tm = localtime( &now_t );
+
+	size_t msglen = 512;
+	const char empty[] = "";
+
+	FILE* log;
+
+	// system time, process time [nanoseconds]   
+	unsigned long long sys_t, proc_t;
+
+	// processor time consumed by the program:
+	clock_t t = clock();
+
+	// system time:
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+	std::time_t now_t = std::chrono::system_clock::to_time_t(now);
+	std::tm* tm = localtime(&now_t);
 	char* str = asctime(tm);
-  str[strlen(str)-1] = '\0'; // remove newline
-  
-  sys_t = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-  //proc_t = (unsigned long long)(1.0e9*t/CLOCKS_PER_SEC);
-  proc_t = t;
-  
-  if ( message != NULL ) {
-     msglen += strlen(message);
-  }  
-  else {
-    message = empty;
-  }
-  //getLastErrorMessage(); // cgiScriptName  
-  char* text = (char*) malloc( sizeof(char)*msglen );
-  
-  snprintf( text, msglen, "pid: %d %s line %d %s() %s systime: %lld ns ticks: %lld %s\n", 
-    _getpid(), source, line, function, str, sys_t, proc_t, message ); // __FILE__ __LINE__ __func__ //
-  
-  if ( file != NULL && (log = fopen( file, "a+" )) != NULL ) {
-    fputs( text, log );
-    fclose( log );
-  }
-  else {
-    #ifdef MSG_LOG_FILE
-    if ( (log = fopen( MSG_LOG_FILE, "a+" )) != NULL ) {
-      fputs( text, log );
-      fclose( log );
-    }      
-    #endif
-  }
-  
-  if ( text != NULL ) free( text );
+	str[strlen(str) - 1] = '\0'; // remove newline
+
+	sys_t = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+	//proc_t = (unsigned long long)(1.0e9*t/CLOCKS_PER_SEC);
+	proc_t = t;
+
+	if (message != NULL) {
+		msglen += strlen(message);
+	}
+	else {
+		message = empty;
+	}
+	//getLastErrorMessage(); // cgiScriptName  
+	char* text = (char*)malloc(sizeof(char)*msglen);
+
+	snprintf(text, msglen, "pid: %d %s line %d %s() %s systime: %lld ns ticks: %lld %s\n",
+		zGetpid(), source, line, function, str, sys_t, proc_t, message); // __FILE__ __LINE__ __func__ //
+
+	if (file != NULL && (log = fopen(file, "a+")) != NULL) {
+		fputs(text, log);
+		fclose(log);
+	}
+	else {
+#ifdef MSG_LOG_FILE
+		if ((log = fopen(MSG_LOG_FILE, "a+")) != NULL) {
+			fputs(text, log);
+			fclose(log);
+		}
+#endif
+	}
+
+	if (text != NULL) free(text);
 }
 
 // knut:
 // Example:
 // zooLog;
 // zooLogMsg(NULL, getLastErrorMessage()); 
-// zooLogMsg(log.txt, getLastErrorMessage()); 
-
-#ifdef WIN32
-#ifndef USE_MS
-char *strcasestr (char const *a, char const *b)
-  {
-    char *x = zStrdup (a);
-    char *y = zStrdup (b);
- 
-      x = _strlwr (x);
-      y = _strlwr (y);
-    char *pos = strstr (x, y);
-    char *ret = pos == NULL ? NULL : (char *) (a + (pos - x));
-      free (x);
-      free (y);
-      return ret;
-  };
-#else
-   ;
-#endif
-#endif
+// zooLogMsg("log.txt", getLastErrorMessage()); 

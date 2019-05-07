@@ -62,11 +62,10 @@
 /**
  * Number of time the ZOO-Kernel will try to acquire lock
  */
-#define ZOO_LOCK_MAX_RETRY 10
+#define ZOO_LOCK_MAX_RETRY 180
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -81,9 +80,11 @@
 #include <unistd.h>
 #endif
 #ifndef WIN32
-#include <xlocale.h>
+#include <locale.h>
 #endif
 
+#include <fcntl.h>
+  
 #include "service.h"
 
 #if defined(macintosh) || (defined(__MACH__) && defined(__APPLE__))
@@ -93,13 +94,48 @@
 
 #endif
 
+#ifdef WIN32
+// fcntl flock definitions
+#define F_SETLK  8   // Non-Blocking set or clear a lock
+#define F_SETLKW 9   // Blocking set or clear a lock
+#define F_GETLK 10
+#define F_RDLCK  1   // read lock
+#define F_WRLCK  2   // write lock
+#define F_UNLCK  3   // remove lock
+struct flock {
+    short l_type;   // F_RDLCK, F_WRLCK, or F_UNLCK
+    short l_whence; // flag to choose starting offset, must be SEEK_SET
+    long  l_start;  // relative offset, in bytes, must be 0
+    long  l_len;    // length, in bytes; 0 means lock to EOF, must be 0
+    short l_pid;    // unused (returned with the unsupported F_GETLK)
+    short l_xxx;    // reserved for future use
+};
+#endif
+
+/**
+ * The lock structure used by the ZOO-Kernel to ensure atomicity of operations
+ *
+ */ 
+typedef struct zooLock{
+  struct flock lock; //!< The lock
+  FILE* lockfile;    //!< The pointer to the lock file
+  char* filename;    //!< The filename to lock
+} zooLock;
+
+static zooLock** zoo_file_locks=NULL;
+static int zoo_file_locks_cnt=0;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+  
   ZOO_DLL_EXPORT char *readVSIFile(maps*,const char*);
   ZOO_DLL_EXPORT int  setOutputValue( maps*, const char*, char*, size_t);
   ZOO_DLL_EXPORT char* getInputValue( maps*,const char*,size_t*);
+
+  ZOO_DLL_EXPORT struct zooLock* lockFile(maps*,const char*,const char);
+  ZOO_DLL_EXPORT int unlockFile(maps*,struct zooLock*);
 
   ZOO_DLL_EXPORT void unhandleStatus(maps*);
   ZOO_DLL_EXPORT int _updateStatus(maps*);
@@ -123,6 +159,8 @@ extern "C" {
   ZOO_DLL_EXPORT semid getShmLockId(maps*,int);
   ZOO_DLL_EXPORT int lockShm(semid);
   ZOO_DLL_EXPORT int unlockShm(semid);
+
+  ZOO_DLL_EXPORT char* file_exists(const char* dir, const char* name); 
 
 #ifdef __cplusplus
 }

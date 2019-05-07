@@ -44,9 +44,10 @@ extern "C" {
   maps* mapsFromZMaps(MonoDomain*,MonoClass**,MonoMethod**,MonoObject*);
   map* mapFromZMap(MonoDomain*,MonoClass**,MonoMethod**,MonoObject*);
   static MonoString* MonoTranslate(MonoString*);
-  static void MonoUpdateStatus(MonoObject*,MonoString*,int*);
-  MonoClass *iclasses[4];
-  MonoMethod *imethods[10];
+  //static void MonoUpdateStatus(MonoObject*,MonoString*,int*);
+  static void MonoUpdateStatus(MonoObject*, MonoString*, int);
+  //MonoClass *iclasses[4]; // knut: move declarations to service_internal_mono.c
+  //MonoMethod *imethods[10];
 
 #ifdef __cplusplus
 }

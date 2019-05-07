@@ -8,7 +8,7 @@ version.h: Makefile
 	echo "#define LOCALEDIR \"@localedir@\"" >>  version.h
 
 service.o: service.c service.h
-	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service.c
+	g++ ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service.c
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
@@ -37,26 +37,38 @@ lex.sr.o: lex.sr.c service.h
 ulinet.o: ulinet.c
 	gcc -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c ulinet.c
 
+sshapi.o: sshapi.c
+	g++ -fPIC ${CFLAGS} -c sshapi.c
+
+service_json.o: service_json.c
+	g++ -fPIC ${JSON_CFLAGS} ${CFLAGS} -c service_json.c
+
+service_callback.o: service_callback.c
+	g++ -fPIC ${XML2CFLAGS} ${GDAL_CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c
+
 request_parser.o: request_parser.c request_parser.h
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c
 
 sqlapi.o: sqlapi.c sqlapi.h
-	g++ -fPIC ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c sqlapi.c
+	g++ -fPIC ${METADB_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c sqlapi.c
 
 caching.o: caching.c
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c caching.c
 
 response_print.o: response_print.c response_print.h
-	g++ -fPIC ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c response_print.c
+	g++ -fPIC ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} ${HPC_ENABLED} -c response_print.c
 
 server_internal.o: server_internal.c server_internal.h service.h mimetypes.h
-	g++ ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
+	g++ ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
 
 service_internal.o: service_internal.c service_internal.h service.h
-	gcc ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
+	gcc ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
 service_yaml.o: service_yaml.c service.h
 	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
+
+meta_sql.o: meta_sql.c meta_sql.h service.h
+	g++  ${METADB_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -c meta_sql.c
 
 service_internal_ms.o: service_internal_ms.c
 	gcc ${JS_ENABLED} ${GDAL_CFLAGS}  ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
@@ -65,8 +77,14 @@ service_internal_ms.o: service_internal_ms.c
 service_internal_python.o: service_internal_python.c service.h
 	g++ ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c service_internal_python.c
 
+service_internal_r.o: service_internal_r.c service.h
+	g++ ${XML2CFLAGS} ${RCFLAGS} ${CFLAGS} -c service_internal_r.c
+
 service_internal_otb.o: service_internal_otb.c service_internal_otb.h service.h
 	g++ ${XML2CFLAGS} ${OTBCFLAGS} ${CFLAGS} -c service_internal_otb.c
+
+service_internal_hpc.o: service_internal_hpc.c service_internal_hpc.h service.h
+	g++  ${JSON_CFLAGS} ${XML2CFLAGS} ${HPCCFLAGS} ${CFLAGS} -c service_internal_hpc.c
 
 service_internal_saga.o: service_internal_saga.c service_internal_saga.h service.h
 	g++ ${XML2CFLAGS} ${SAGA_CFLAGS} ${CFLAGS} -c service_internal_saga.c
@@ -98,19 +116,19 @@ service_internal_ruby.o: service_internal_ruby.c service_internal_ruby.h
 service_loader.o: service_loader.c service.h
 	g++ -c ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} service_loader.c
 
-zoo_service_loader.o: zoo_service_loader.c service.h version.h ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE}
-	g++ -g -O2 ${XML2CFLAGS} ${CFLAGS} ${MONO_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${SAGA_ENABLED} ${OTB_ENABLED} ${PYTHON_ENABLED} ${JS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} ${MONO_ENABLED}  -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
+zoo_service_loader.o: zoo_service_loader.c service.h version.h ${MS_FILE} ${R_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} ${HPC_FILES} ${METADB_FILE}
+	g++ -g -O2 ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${MONO_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${RCFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${SAGA_ENABLED} ${OTB_ENABLED} ${HPC_ENABLED} ${PYTHON_ENABLED} ${R_ENABLED} ${JS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} ${MONO_ENABLED} ${METADB_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
 libzoo_service.${EXT}: version.h service_internal.o service.o sqlapi.o
-	gcc -shared  ${GDAL_CFLAGS} ${DEFAULT_OPTS} -fpic -o libzoo_service.${EXT} ${CFLAGS}  service_internal.o service.o sqlapi.o ${FCGI_LDFLAGS} ${GDAL_LIBS}
+	g++ -shared  ${GDAL_CFLAGS} ${DEFAULT_OPTS} -fpic -o libzoo_service.${EXT} ${CFLAGS}  service_internal.o service.o sqlapi.o ${FCGI_LDFLAGS} ${GDAL_LIBS} ${ZOO_LDFLAGS} ${MACOS_LD_FLAGS}
 
-zoo_loader.cgi: version.h libzoo_service.${EXT} zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o request_parser.o response_print.o server_internal.o caching.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE}
-	g++ -g -O2 ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
-	g++  ${JSCFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} response_print.o server_internal.o caching.o request_parser.o ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -L. ${LDFLAGS}
+zoo_loader.cgi: version.h libzoo_service.${EXT} zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o request_parser.o response_print.o server_internal.o caching.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${R_FILE} ${SAGA_FILE} ${HPC_FILES} ${METADB_FILE} ${JSON_FILE} ${CALLBACK_FILE}
+	g++ -g -O2 ${JSON_CFLAGS} ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o
+	g++  ${JSON_CFLAGS} ${JSCFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader.o zoo_service_loader.o ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${JAVA_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} ${HPC_FILES} ${METADB_FILE} ${JSON_FILE} ${R_FILE} ${CALLBACK_FILE} response_print.o server_internal.o caching.o request_parser.o ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader.cgi -L. ${LDFLAGS}
 
-zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main_conf_read.tab.o lex.cr.o response_print.o server_internal.o service_internal.o ${MS_FILE} ${YAML_FILE}
+zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main_conf_read.tab.o lex.cr.o response_print.o server_internal.o service_internal.o ${MS_FILE} ${YAML_FILE} ${CALLBACK_FILE}
 	g++ -g -O2 ${JSCFLAGS} ${RUBYCFLAGS} ${XML2CFLAGS} ${CFLAGS} -c zcfg2yaml.c  -fno-common -DPIC -o zcfg2yaml.o
-	g++  ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o server_internal.o service_internal.o ${MS_FILE} response_print.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml -L. ${LDFLAGS}
+	g++  ${XML2CFLAGS} ${CFLAGS} zcfg2yaml.o caching.o ulinet.o ${CALLBACK_FILE} server_internal.o service_internal.o ${MS_FILE} response_print.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o  ${YAML_FILE} -o zcfg2yaml -L. ${LDFLAGS}
 
 install: zoo_loader.cgi
 	install -d ${DESTDIR}${CGI_DIR}

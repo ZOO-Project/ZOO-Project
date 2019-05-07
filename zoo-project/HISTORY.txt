@@ -1,4 +1,49 @@
 Version 1.7.0-dev
+  * Fix issue with UOM definitions in zcfg2sql
+  * Make callback and HPC support independent from each other
+  * Update SAGA-GIS support to version 7.2.0
+  * Add support for custom MapServer style definition for raster output
+  * Fix returned bbox definition #170 
+  * Store semaphore status in lenv section for future deletion 
+  * Update Windows support to newer compiler
+  * Fix issue with UpdateStatus function from the Mono ZOO-API
+  * Add logging functionality and other utility functions to the C-API
+  * Return an exception for every output for which nb_pixel or
+  nb_features is 0 
+  * Add a shared key to the security section to differentiate the
+  referenced data 
+  * Add MapServer output style definition depending on the geometry
+  type 
+  * Add ogr.tindex service
+  * Add support for literaldata input arrays and to call services
+  asyncrhonously from the JavaScript ZOO-API   
+  * Expose a sleep function to the JavaScript ZOO-API
+  * Provide FinalizeHPC and FinalizeHPC1 services using scontrol and
+  sacct respectively  
+  * Store md5sum of the cached file (so, local to the WPS server) to
+  compare before uploading (if different md5sum) on the HPC server 
+  * Add support for R language
+  * Add support for using "file://"  for referenced data input
+  * Add an optional ecookie key for returning third-party cookies
+  * Fix issue when parsing BoundingBox input #163 
+  * Add memory key to the main section to force the ZOO-Kernel to load
+  data into memory or use local file 
+  * Add the dialect input to the ogr2ogr service
+  * Store the list of generated mapfiles in a file (cf DeleteData service)
+  * Define the correct MS_IMAGEMODE in the generated mapfile 
+  * Option to use MapServer support to publish heatmap
+  * Add status_code key to the lenv for setting Status HTTP response header 
+  * Add the Creation Option inputs to the Gdal_Dem service
+  * Add prohibited key in the callback section to define a list of
+  services not requiring any invocation
+  * Produce zcfg for OTB applications using the correct default pixel type
+  * Add asynchronous callback invocation to send information about
+  the ongoing services to a third-party software
+  * Add mapsToJson, mapsToJson, and elementsToJson to the API 
+  * Provide a zcfg2sql tool to convert a zcfg metadata file to SQL script
+  * Add support to store service metadata information into a database
+  * Add HPC Support for remote execution of SBATCH scripts through Slurm
+  * Add cookie reference to _HINTERNET
   * Support headers for GET requests from the js ZOO-API 
   * Pass all headers listed in the attributes parameter from the
   [security] section to the hosts listed in the hosts parameter of the

@@ -93,11 +93,20 @@ The main.cfg ``[main]`` section parameters are explained bellow.
  * ``libPath``: (Optional) Path to a directory where the ZOO-kernel should search for
    service providers, e.g., shared libraries with service implementations 
    (the ``serviceProvider`` parameter in the service configuration (.zcfg) file).   
+ * ``memory``: (Optional) can take the value ``load`` to ensure that
+   the value field of the inputs data will be filled by the ZOO-Kernel
+   or ``protected`` to have only the ``cache_file`` filled.
+
 
 .. warning:: 
   The ``libPath`` parameter is currently only recognized by services implemented
   in C/C++ or PHP, and may be moved to another section in future versions.
-  
+
+
+.. warning:: 
+  Depending on the ``memory`` parameter the WPS Service will receive
+  different fields (``value`` or ``cache_file``).
+   
 In case you have activated the MapServer support, please refer to
 :ref:`this specific section <kernel-mapserver-main.cfg>`. 
 
@@ -263,6 +272,22 @@ the following definition:
     attributes=Authorization,Cookie,User-Agent
     hosts=localhost,127.0.0.1
 
+Optionaly, you can also define the shared url(s), meaning that even if
+the ressource requires authentication to be accessed, this
+authentifcation won't be used to define the name for storing the
+file. Hence, two user with different authentication will use the same
+file as it is considerated as shared. You can find bellow a sample
+security section containing the shared parameter. In this example,
+every requests to access the coverage using the url defined in the
+shared parameter (``myHost/cgi-bin/WCS_Server``) will be shared
+between users.
+
+.. code::
+
+    [security]
+    attributes=Authorization,Cookie,User-Agent
+    hosts=localhost,127.0.0.1
+    shared=myHost/cgi-bin/WCS_Server
 
 .. _zoo_activate_db_backend:
 
@@ -297,6 +322,40 @@ With the previous database section, it will give the following:
     PG:"dbname=zoo_project host=127.0.0.1 port=5432 user=username"
 
 Please refer to this `section <zoo_create_db_backend>`_ to learn how
+to setup the database.
+
+
+Database section
+...............................
+
+The database section allows to configure the ZOO-Kernel to access the
+metadata information about WPS Services by using a PostgreSQL database
+in addition to the zcfg files.
+
+.. code-block:: guess
+
+	[metadb]
+	dbname=zoo_metadb
+	port=5432
+	user=username
+	host=127.0.0.1
+	type=PG
+
+This will generate strings to be passed to GDAL to connect the
+database server:
+
+.. code-block:: guess
+   
+    <type>:host=<host> port=<port>  user=<user> dbname=<dbname>
+
+
+With the previous database section, it will give the following:
+
+.. code-block:: guess
+
+    PG:"dbname=zoo_metadb host=127.0.0.1 port=5432 user=username"
+
+Please refer to this `section <zoo_create_metadb>`_ to learn how
 to setup the database.
 
 Include section

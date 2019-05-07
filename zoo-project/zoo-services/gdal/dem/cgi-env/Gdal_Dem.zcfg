@@ -43,6 +43,15 @@
     DataType = string
     <Default />
    </LiteralData>
+  [co]
+   Title = Creation Option
+   Abstract = string representing options (NAME=VALUE)
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
  </DataInputs>
  <DataOutputs>
   [Result]

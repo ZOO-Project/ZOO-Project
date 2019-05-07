@@ -33,6 +33,7 @@
 #include "service_internal_ms.h"
 #include "server_internal.h"
 #include "response_print.h"
+#include "caching.h"
 
 /**
  * Get a list of configuration keys having a corresponding mandatory ows_*.
@@ -75,6 +76,21 @@ map* getCorrespondance(){
 }
 
 /**
+ * Return the current publish_id value
+ * @param elem and maps pointer on which the search occur
+ * @return the integer value of the publish_id field, if any, 0 otherwise
+ */ 
+int getPublishedId(maps* elem){
+  if(elem!=NULL && elem->content!=NULL){
+    map* myIndex=getMap(elem->content,"published_id");
+    if(myIndex!=NULL){
+      return atoi(myIndex->value);
+    }
+  }
+  return 0;
+}
+
+/**
  * Add width and height keys to an output maps containing the maximum width
  * and height for displaying the full data extent.
  * Restriction to an image having a size of 640x480 (width * height)
@@ -86,6 +102,7 @@ map* getCorrespondance(){
  * @param maxy the upper right y coordinate
  */
 void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
+  int imyIndex=getPublishedId(output);
   double maxWidth=640;
   double maxHeight=480;
   double deltaX=maxx-minx;
@@ -117,8 +134,8 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
   fprintf(stderr,"sWidth : %.15f \nsHeight : %.15f\n",sWidth,sHeight);
 #endif
   if(output!=NULL){
-    addToMap(output->content,"width",sWidth);
-    addToMap(output->content,"height",sHeight);
+    setMapArray(output->content,"width",imyIndex,sWidth);
+    setMapArray(output->content,"height",imyIndex,sHeight);
   }
 }
 
@@ -130,6 +147,9 @@ void setMapSize(maps* output,double minx,double miny,double maxx,double maxy){
  * @param tmpI the specific output maps to add the Reference key
  */
 void setReferenceUrl(maps* m,maps* tmpI){
+  int imyIndex=getPublishedId(tmpI);
+  if(getMapArray(tmpI->content,"ref_wms_link",imyIndex)!=NULL)
+    return;
   outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   if(msUrl==NULL){
@@ -137,36 +157,78 @@ void setReferenceUrl(maps* m,maps* tmpI){
 		    "InternalError", NULL);
     exit(-1);
   }
+  if(getMapArray(tmpI->content,"ref_wms_link",imyIndex)!=NULL)
+    return;
+  int finalProto=-1;
   map *msOgcVersion=getMapFromMaps(m,"main","msOgcVersion");
   map *dataPath=getMapFromMaps(m,"main","dataPath");
   map *sid=getMapFromMaps(m,"lenv","usid");
-  map* format=getMap(tmpI->content,"mimeType");
-  map* rformat=getMap(tmpI->content,"requestedMimeType");
-  map* width=getMap(tmpI->content,"width");
-  map* height=getMap(tmpI->content,"height");
-  map* protoMap=getMap(tmpI->content,"msOgc");
-  map* versionMap=getMap(tmpI->content,"msOgcVersion");
-  char options[3][5][25]={
+  map* format=getMapArray(tmpI->content,"mimeType",imyIndex);
+  map* rformat=getMapArray(tmpI->content,"requestedMimeType",imyIndex);
+  map* width=getMapArray(tmpI->content,"width",imyIndex);
+  map* height=getMapArray(tmpI->content,"height",imyIndex);
+  map* protoMap=getMapArray(tmpI->content,"msOgc",imyIndex);
+  map* versionMap=getMapArray(tmpI->content,"msOgcVersion",imyIndex);
+  map* datatype=getMapArray(tmpI->content,"geodatatype",imyIndex);
+  map* layerName=getMapArray(tmpI->content,"msLayer",imyIndex);
+  char options[4][5][25]={
     {"WMS","1.3.0","GetMap","layers=%s","wms_extent"},
-    {"WFS","1.1.0","GetFeature","typename=%s","wcs_extent"},
-    {"WCS","1.1.0","GetCoverage","coverage=%s","wcs_extent"}
+    {"WFS","1.0.0","GetFeature","typename=%s","wcs_extent"},
+    {"WCS","2.0.0","GetCoverage","coverageid=%s","wcs_extent"},
+    {"WCS","1.0.0","GetCoverage","coverage=%s","wcs_extent"}
   };
+  map *nbElements=getMapArray(tmpI->content,"nb_features",imyIndex);
+  if(nbElements==NULL)
+    nbElements=getMapArray(tmpI->content,"nb_pixels",imyIndex);
+  if(datatype==NULL || strncmp(datatype->value,"other",5)==0 || (nbElements!=NULL && atoi(nbElements->value)==0)){
+    map* minNb=getMap(tmpI->content,"minoccurs");
+    map* useMs=getMap(tmpI->content,"useMapserver");
+    if((minNb==NULL || atoi(minNb->value)>=1) && useMs!=NULL && strncasecmp(useMs->value,"true",4)==0){
+      int lIndex=0;
+      maps* lenv=getMaps(m,"lenv");
+      if(getMapFromMaps(m,"lenv","mapErrorNb")==NULL)
+	setMapInMaps(m,"lenv","mapErrorNb","0");
+      else{
+	map* tmpV=getMapFromMaps(m,"lenv","mapErrorNb");
+	lIndex=atoi(tmpV->value)+1;
+	addIntToMap(lenv->content,"mapErrorNb",lIndex);
+      }
+      setMapInMaps(m,"lenv","mapError","true");
+      setMapArray(lenv->content,"locator",lIndex,tmpI->name);
+      if(nbElements==NULL)
+	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
+      else
+	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
+      if(getMapFromMaps(m,"lenv","state")==NULL)
+	errorException (m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
+    }
+    return;
+  }
   int proto=0;
   if(rformat==NULL){
-    rformat=getMap(tmpI->content,"mimeType");
+    rformat=getMapArray(tmpI->content,"mimeType",imyIndex);
   }
   if(strncasecmp(rformat->value,"text/xml",8)==0)
     proto=1;
-  if(strncasecmp(rformat->value,"image/tiff",10)==0)
+  if(strncasecmp(rformat->value,"image/tiff",10)==0 ||
+     strncasecmp(rformat->value,"image/geotiff",10)==0)
     proto=2;
+  int hasFormat=-1;
   if(protoMap!=NULL){
-    if(strncasecmp(protoMap->value,"WMS",3)==0)
+    hasFormat=1;
+    if(strncasecmp(protoMap->value,"WMS",3)==0){
       proto=0;
+      rformat=createMap("value","image/png");
+    }
     else{
-      if(strncasecmp(protoMap->value,"WFS",3)==0)
+      if(strncasecmp(protoMap->value,"WFS",3)==0){
 	proto=1;
-      else 
+	rformat=createMap("value","text/xml");
+      }
+      else {
 	proto=2;
+	rformat=createMap("value","image/tiff");
+      }
     }
   }
   char *protoVersion=options[proto][1];
@@ -177,8 +239,9 @@ void setReferenceUrl(maps* m,maps* tmpI){
       protoVersion=versionMap->value;
   }
 
-  map* extent=getMap(tmpI->content,options[proto][4]);
-  map* crs=getMap(tmpI->content,"crs");
+
+  map* extent=getMapArray(tmpI->content,options[proto][4],imyIndex);
+  map* crs=getMapArray(tmpI->content,"crs",imyIndex);
   int hasCRS=1;
   if(crs==NULL){
     crs=getMapFromMaps(m,"main","crs");
@@ -188,16 +251,48 @@ void setReferenceUrl(maps* m,maps* tmpI){
     }
   }
   char layers[128];
-  sprintf(layers,options[proto][3],tmpI->name);
+  if(layerName==NULL)
+    sprintf(layers,options[proto][3],tmpI->name);
+  else
+    sprintf(layers,options[proto][3],layerName->value);
 
-  char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(format->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
+  if(format==NULL || width==NULL || height==NULL || extent==NULL){
+    char tmpStr[1024];
+    sprintf(tmpStr,_("Unable to create the mapfile for %s because of missing values."),tmpI->name);
+    errorException (m, tmpStr,
+		    "InternalError", NULL);
+    exit(-1);
+    return;
+  }
+
+  if(proto==0){
+    hasFormat=1;
+    rformat=createMap("mimeType","image/png");
+  }else{
+    if(proto==1){
+      rformat=createMap("mimeType","text/xml");
+      hasFormat=1;
+    }
+    else
+      if(proto==2){
+        rformat=createMap("mimeType","image/tiff");
+	hasFormat=1;
+	finalProto=1;
+      }
+  }
+  
+  char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(rformat->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
+
 
   if(proto>0){
+    if(proto==2)
+      finalProto=1;
     sprintf(webService_url,
-	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
 	    msUrl->value,
 	    dataPath->value,
 	    tmpI->name,
+	    imyIndex,
 	    sid->value,
 	    options[proto][2],
 	    options[proto][0],
@@ -207,13 +302,24 @@ void setReferenceUrl(maps* m,maps* tmpI){
 	    extent->value,
 	    crs->value
 	    );
+    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+      setMapArray(tmpI->content,"ref_wcs_link",imyIndex,webService_url);
+    }
+    else{
+      setMapArray(tmpI->content,"ref_wfs_link",imyIndex,webService_url);
+    }
+    proto=0;
+    freeMap(&rformat);
+    free(rformat);
+    rformat=createMap("mimeType","image/png");
   }
   else{
     sprintf(webService_url,
-	    "%s?map=%s/%s_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
+	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
 	    msUrl->value,
 	    dataPath->value,
 	    tmpI->name,
+	    imyIndex,
 	    sid->value,
 	    options[proto][2],
 	    options[proto][0],
@@ -225,12 +331,103 @@ void setReferenceUrl(maps* m,maps* tmpI){
 	    extent->value,
 	    crs->value
 	    );
+    setMapArray(tmpI->content,"ref_wms_link",imyIndex,webService_url);
+    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+      proto=2;
+      freeMap(&rformat);
+      free(rformat);
+      rformat=createMap("mimeType","image/tiff");
+    }
+    else{
+      proto=1;
+      freeMap(&rformat);
+      free(rformat);
+      rformat=createMap("mimeType","text/xml");
+    }
+  }
+  setMapArray(tmpI->content,"Reference",imyIndex,webService_url);
+  memset(layers,0,128);
+  sprintf(layers,options[proto][3],tmpI->name);
+  protoVersion=options[proto][1];
+  extent=getMapArray(tmpI->content,options[proto][4],imyIndex);
+  memset(webService_url,0,strlen(webService_url));
+  if(proto>0){
+    if(proto==2)
+      finalProto=1;
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    imyIndex,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+      setMapArray(tmpI->content,"ref_wcs_link",imyIndex,webService_url);
+    }
+    else{
+      setMapArray(tmpI->content,"ref_wfs_link",imyIndex,webService_url);
+    }
+  }else{
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&width=%s&height=%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    imyIndex,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    width->value,
+	    height->value,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    setMapArray(tmpI->content,"ref_wms_link",imyIndex,webService_url);
+  }
+  if(finalProto>0){
+    proto=3;
+    memset(layers,0,128);
+    sprintf(layers,options[proto][3],tmpI->name);
+    protoVersion=options[proto][1];
+    extent=getMapArray(tmpI->content,options[proto][4],imyIndex);
+    memset(webService_url,0,strlen(webService_url));
+     freeMap(&rformat);
+    free(rformat);
+    rformat=createMap("value","image/tiff");
+    sprintf(webService_url,
+	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	    msUrl->value,
+	    dataPath->value,
+	    tmpI->name,
+	    imyIndex,
+	    sid->value,
+	    options[proto][2],
+	    options[proto][0],
+	    protoVersion,
+	    layers,
+	    rformat->value,
+	    extent->value,
+	    crs->value
+	    );
+    setMapArray(tmpI->content,"ref_wcs_preview_link",imyIndex,webService_url);
   }
   if(hasCRS==0){
     freeMap(&crs);
     free(crs);
   }
-  addToMap(tmpI->content,"Reference",webService_url);
+  freeMap(&rformat);
+  free(rformat);
   free(webService_url);
 }
 
@@ -248,6 +445,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 			char* pszProjection){
   OGRSpatialReferenceH  hSRS;
   map* msSrs=NULL;
+  int imyIndex=getPublishedId(output);
   hSRS = OSRNewSpatialReference(NULL);
   if( pszProjection!=NULL && strlen(pszProjection)>1){
     if(OSRImportFromWkt( hSRS, &pszProjection ) == CE_None ){
@@ -271,10 +469,10 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 #endif
 	if(output!=NULL){
 	  if(OSRIsGeographic(hSRS)==TRUE)
-	    addToMap(output->content,"crs_isGeographic","true");
+	    setMapArray(output->content,"crs_isGeographic",imyIndex,"true");
 	  else
-	    addToMap(output->content,"crs_isGeographic","false");
-	  addToMap(output->content,"crs",tmpSrs);
+	    setMapArray(output->content,"crs_isGeographic",imyIndex,"false");
+	  setMapArray(output->content,"crs",imyIndex,tmpSrs);
 	}
       }
       else{
@@ -287,9 +485,9 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	  msLoadProjectionString(&(myLayer->projection),proj4Str);
 	  if(output!=NULL){ 
 	    if(OSRIsGeographic(hSRS)==TRUE)
-	      addToMap(output->content,"crs_isGeographic","true");
+	      setMapArray(output->content,"crs_isGeographic",imyIndex,"true");
 	    else
-	      addToMap(output->content,"crs_isGeographic","false");
+	      setMapArray(output->content,"crs_isGeographic",imyIndex,"false");
 	  }
 	  free(proj4Str);
 	}
@@ -297,12 +495,12 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
 	  msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
 	  msLoadProjectionStringEPSG(&myLayer->projection,"EPSG:4326");
 	  if(output!=NULL){
-	    addToMap(output->content,"crs_isGeographic","true");
+	    setMapArray(output->content,"crs_isGeographic",imyIndex,"true");
 	  }
 	}
 	if(output!=NULL){
-	  addToMap(output->content,"crs","EPSG:4326");
-	  addToMap(output->content,"real_extent","true");
+	  setMapArray(output->content,"crs",imyIndex,"EPSG:4326");
+	  setMapArray(output->content,"real_extent",imyIndex,"true");
 	}
 	msInsertHashTable(&(m->web.metadata),"ows_srs", "EPSG:4326 EPSG:900913 EPSG:3857");
 	msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913 EPSG:3857");
@@ -311,7 +509,7 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
   }
   else{
     if(output!=NULL){
-      msSrs=getMap(output->content,"msSrs");
+      msSrs=getMapArray(output->content,"msSrs",imyIndex);
     }
     if(msSrs!=NULL){
       msLoadProjectionStringEPSG(&m->projection,msSrs->value);
@@ -327,8 +525,8 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
       msInsertHashTable(&(myLayer->metadata),"ows_srs","EPSG:4326 EPSG:900913 EPSG:3857");
     }
     if(output!=NULL){
-      addToMap(output->content,"crs",msSrs->value);
-      addToMap(output->content,"crs_isGeographic","true");
+      setMapArray(output->content,"crs",imyIndex,msSrs->value);
+      setMapArray(output->content,"crs_isGeographic",imyIndex,"true");
     }
   }
 
@@ -350,7 +548,9 @@ void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer,
  */
 void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
 		 double minX,double minY,double maxX,double maxY){
+  int imyIndex=getPublishedId(output);
   msMapSetExtent(m,minX,minY,maxX,maxY);
+  //m->maxsize=4096;
 #ifdef DEBUGMS
   fprintf(stderr,"Extent %.15f %.15f %.15f %.15f\n",minX,minY,maxX,maxY);
 #endif
@@ -362,44 +562,52 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
   msInsertHashTable(&(myLayer->metadata), "ows_extent", tmpExtent);
   
   if(output!=NULL){
-    map* test=getMap(output->content,"real_extent");
-    if(test!=NULL){
-      pointObj min, max;
-      projectionObj tempSrs;
-      min.x = m->extent.minx;
-      min.y = m->extent.miny;
-      max.x = m->extent.maxx;
-      max.y = m->extent.maxy;
-      char tmpSrsStr[1024];
-      msInitProjection(&tempSrs);
-      msLoadProjectionStringEPSG(&tempSrs,"EPSG:4326");
+    map* test=getMapArray(output->content,"real_extent",imyIndex);
+    pointObj min, max;
+    projectionObj tempSrs;
+    min.x = m->extent.minx;
+    min.y = m->extent.miny;
+    max.x = m->extent.maxx;
+    max.y = m->extent.maxy;
+    char tmpSrsStr[1024];
+    msInitProjection(&tempSrs);
+    msLoadProjectionStringEPSG(&tempSrs,"EPSG:4326");
 
-      msProjectPoint(&(m->projection),&tempSrs,&min);
-      msProjectPoint(&m->projection,&tempSrs,&max);
-      
-      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",min.y,min.x,max.y,max.x);
-      map* isGeo=getMap(output->content,"crs_isGeographic");
+    msProjectPoint(&(myLayer->projection),&tempSrs,&min);
+    msProjectPoint(&myLayer->projection,&tempSrs,&max);
+  
+    if(test!=NULL){
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.y,min.x,max.y,max.x);
+      map* isGeo=getMapArray(output->content,"crs_isGeographic",imyIndex);
 #ifdef DEBUGMS
       fprintf(stderr,"isGeo = %s\n",isGeo->value);
 #endif
-      if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
-        sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
-      addToMap(output->content,"wms_extent",tmpExtent);
-      sprintf(tmpSrsStr,"%.3f,%.3f,%.3f,%.3f",min.x,min.y,max.x,max.y);
-      addToMap(output->content,"wcs_extent",tmpExtent);
+      if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0){
+	sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.y,min.x,max.y,max.x);
+	setMapArray(output->content,"wgs84_extent",imyIndex,tmpExtent);
+        sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f", minY,minX, maxY, maxX);
+      }else{
+	sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.x,min.y,max.x,max.y);
+	setMapArray(output->content,"wgs84_extent",imyIndex,tmpExtent);
+      }
+      setMapArray(output->content,"wms_extent",imyIndex,tmpExtent);
+      sprintf(tmpSrsStr,"%.15f,%.15f,%.15f,%.15f",min.x,min.y,max.x,max.y);
+      setMapArray(output->content,"wcs_extent",imyIndex,tmpExtent);
     }else{
-      sprintf(tmpExtent,"%f,%f,%f,%f",minX, minY, maxX, maxY);
-      map* isGeo=getMap(output->content,"crs_isGeographic");
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",min.x,min.y,max.x,max.y);
+      setMapArray(output->content,"wgs84_extent",imyIndex,tmpExtent);
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",minX, minY, maxX, maxY);
+      map* isGeo=getMapArray(output->content,"crs_isGeographic",imyIndex);
       if(isGeo!=NULL){
 #ifdef DEBUGMS
 	fprintf(stderr,"isGeo = %s\n",isGeo->value);
 #endif
 	if(isGeo!=NULL && strcasecmp("true",isGeo->value)==0)
-	  sprintf(tmpExtent,"%f,%f,%f,%f", minY,minX, maxY, maxX);
+	  sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f", minY,minX, maxY, maxX);
       }
-      addToMap(output->content,"wms_extent",tmpExtent); 
-      sprintf(tmpExtent,"%.3f,%.3f,%.3f,%.3f",minX,minY,maxX,maxY);
-      addToMap(output->content,"wcs_extent",tmpExtent);
+      setMapArray(output->content,"wms_extent",imyIndex,tmpExtent); 
+      sprintf(tmpExtent,"%.15f,%.15f,%.15f,%.15f",minX,minY,maxX,maxY);
+      setMapArray(output->content,"wcs_extent",imyIndex,tmpExtent);
     }
   }
 
@@ -414,8 +622,8 @@ void setMsExtent(maps* output,mapObj* m,layerObj* myLayer,
  * @param m the mapObj
  */
 int tryOgr(maps* conf,maps* output,mapObj* m){
-
-  map* tmpMap=getMap(output->content,"storage");
+  int imyIndex=getPublishedId(output);
+  map* tmpMap=getMapArray(output->content,"storage",imyIndex);
   char *pszDataSource=tmpMap->value;
 
   /**
@@ -424,8 +632,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   OGRRegisterAll();
   /**
    * Try to load the file as ZIP
-   */
-
+   *
   OGRDataSourceH poDS1 = NULL;
   OGRSFDriverH *poDriver1 = NULL;
   char *dsName=(char*)malloc((8+strlen(pszDataSource)+1)*sizeof(char));
@@ -466,7 +673,9 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
   if( poDS1 == NULL ){
     fprintf(stderr,"Unable to access the DataSource as ZIP File\n");
     setMapInMaps(conf,"lenv","message","Unable to open datasource in read only mode");
-    OGR_DS_Destroy(poDS1);
+    fprintf(stderr,"Remove ZIP File!\n");
+    unlink(odsName);
+    //OGR_DS_Destroy(poDS1);
   }else{
 #ifdef DEBUGMS
     fprintf(stderr,"The DataSource is a  ZIP File\n");
@@ -525,10 +734,11 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       VSIFCloseL(vsif);
       i++;
     }
-  }
+    OGR_DS_Destroy(poDS1);
+    }
   free(sdsName);
-  free(dsName);
-
+  free(dsName);*/
+  
   OGRDataSourceH poDS = NULL;
   OGRSFDriverH *poDriver = NULL;
   poDS = OGROpen( pszDataSource, FALSE, poDriver );
@@ -537,14 +747,14 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     fprintf(stderr,"Unable to access the DataSource %s\n",pszDataSource);
 #endif
     setMapInMaps(conf,"lenv","message","Unable to open datasource in read only mode");
-    OGR_DS_Destroy(poDS);
-    OGRCleanupAll();
 #ifdef DEBUGMS
     fprintf(stderr,"Unable to access the DataSource, exit! \n"); 
 #endif
     return -1;
   }
 
+  setMapArray(output->content,"gdalType",imyIndex,OGR_Dr_GetName(OGR_DS_GetDriver(poDS)));  
+  setMapArray(output->content,"geodatatype",imyIndex,"vector");
   int iLayer = 0;
   for( iLayer=0; iLayer < OGR_DS_GetLayerCount(poDS); iLayer++ ){
     OGRLayerH poLayer = OGR_DS_GetLayer(poDS,iLayer);
@@ -560,14 +770,19 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     /**
      * Add a new layer set name, data
      */
-    if(msGrowMapLayers(m)==NULL){
-      return -1;
+    layerObj* myLayer=NULL;
+    if(getMapArray(output->content,"msInclude",imyIndex)==NULL){
+      if(msGrowMapLayers(m)==NULL){
+	return -1;
+      }
+      if(initLayer((m->layers[m->numlayers]), m) == -1){
+	return -1;
+      }
+      myLayer=m->layers[m->numlayers];
+    }else{
+      myLayer=m->layers[m->numlayers-1];
     }
-    if(initLayer((m->layers[m->numlayers]), m) == -1){
-      return -1;
-    }
-
-    layerObj* myLayer=m->layers[m->numlayers];
+    
 #ifdef DEBUGMS
     dumpMaps(output);
 #endif
@@ -579,6 +794,8 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     myLayer->dump = MS_TRUE;
     myLayer->status = MS_ON;
     msConnectLayer(myLayer,MS_OGR,pszDataSource);
+
+    addIntToMapArray(output->content,"nb_features",imyIndex,OGR_L_GetFeatureCount(poLayer,1));
 
     /**
      * Detect the Geometry Type or use Polygon
@@ -630,8 +847,8 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       free(wkt);
     }
     else{
-      addToMap(output->content,"crs","EPSG:4326");
-      addToMap(output->content,"crs_isGeographic","true");
+      setMapArray(output->content,"crs",imyIndex,"EPSG:4326");
+      setMapArray(output->content,"crs_isGeographic",imyIndex,"true");
       msLoadProjectionStringEPSG(&m->projection,"EPSG:4326");
       msInsertHashTable(&(m->web.metadata), "ows_srs", "EPSG:4326 EPSG:900913 EPSG:3857");
       msInsertHashTable(&(myLayer->metadata), "ows_srs", "EPSG:4326 EPSG:900913 EPSG:3857");
@@ -640,6 +857,10 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     OGREnvelope oExt;
     if (OGR_L_GetExtent(poLayer,&oExt, TRUE) == OGRERR_NONE){
       setMsExtent(output,m,myLayer,oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
+      char extent[1024];
+      memset(&extent,0,1024);
+      sprintf(extent,"%d,%d,%d,%d",oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
+      setMapArray(output->content,"boundingbox",imyIndex,extent);
     }
   
     /**
@@ -658,62 +879,76 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     msInsertHashTable(&(myLayer->metadata), "gml_featureid", fid);
     msInsertHashTable(&(myLayer->metadata), "gml_include_items", "all");
     msInsertHashTable(&(myLayer->metadata), "ows_name", output->name);
-    map* tmpMap=getMap(output->content,"title");
+    map* tmpMap=getMapArray(output->content,"title",imyIndex);
     if(tmpMap!=NULL)
       msInsertHashTable(&(myLayer->metadata), "ows_title", tmpMap->value);
     else
       msInsertHashTable(&(myLayer->metadata), "ows_title", "Default Title");
+
+    if(getMapArray(output->content,"msInclude",imyIndex)==NULL){
+      if(msGrowLayerClasses(myLayer) == NULL)
+	return -1;
+      if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
+	return -1;
+      if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
+	return -1;
+      if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
+	return -1;
+      /**
+       * Apply msStyle else fallback to the default style
+       */
+      tmpMap=getMap(output->content,"msStyle");
+      if(tmpMap==NULL){
+        switch(myLayer->type){
+	case MS_LAYER_POLYGON:
+	  tmpMap=getMapFromMaps(conf,"main","msStylePoly");
+	  break;
+	case MS_LAYER_LINE:
+	  tmpMap=getMapFromMaps(conf,"main","msStyleLine");
+	  break;
+	default:
+	  tmpMap=getMapFromMaps(conf,"main","msStylePoint");
+	  break;
+        }
+      }
+      if(tmpMap!=NULL)
+	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
+      else{
+	/**
+	 * Set style
+	 */
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=125;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=125;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=255;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
+	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
+	
+	/**
+	 * Set specific style depending on type
+	 */
+	if(myLayer->type == MS_LAYER_POLYGON)
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
+	if(myLayer->type == MS_LAYER_LINE){
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
+	}
+	if(myLayer->type == MS_LAYER_POINT){
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->symbol=1;
+	  myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->size=15;
+	}
+	
+      }
+      myLayer->CLASS[myLayer->numclasses]->numstyles++;
+      myLayer->numclasses++;
     
-    if(msGrowLayerClasses(myLayer) == NULL)
-      return -1;
-    if(initClass((myLayer->CLASS[myLayer->numclasses])) == -1)
-      return -1;
-    if(msGrowClassStyles(myLayer->CLASS[myLayer->numclasses]) == NULL)
-      return -1;
-    if(initStyle(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]) == -1)
-      return -1;
-    /**
-     * Apply msStyle else fallback to the default style
-     */
-    tmpMap=getMap(output->content,"msStyle");
-    if(tmpMap!=NULL)
-      msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
-    else{
-      /**
-       * Set style
-       */
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.red=125;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.green=125;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->color.blue=255;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.red=80;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.green=80;
-      myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinecolor.blue=80;
-      
-      /**
-       * Set specific style depending on type
-       */
-      if(myLayer->type == MS_LAYER_POLYGON)
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
-      if(myLayer->type == MS_LAYER_LINE){
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->width=3;
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->outlinewidth=1.5;
-      }
-      if(myLayer->type == MS_LAYER_POINT){
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->symbol=1;
-	myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles]->size=15;
-      }
-      
+      m->layerorder[m->numlayers] = m->numlayers;
+      m->numlayers++;
+
     }
-    myLayer->CLASS[myLayer->numclasses]->numstyles++;
-    myLayer->numclasses++;
-    
-    m->layerorder[m->numlayers] = m->numlayers;
-    m->numlayers++;
-
   }
-
   OGR_DS_Destroy(poDS);
-  OGRCleanupAll();
+  //OGRCleanupAll();
 
   return 1;
 }
@@ -726,7 +961,9 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
  * @param m the mapObj
  */
 int tryGdal(maps* conf,maps* output,mapObj* m){
-  map* tmpMap=getMap(output->content,"storage");
+  int imyIndex=getPublishedId(output);
+  map* tmpMap=getMapArray(output->content,"storage",imyIndex);
+  map* styleMap=getMap(output->content,"msStyle");
   char *pszFilename=tmpMap->value;
   GDALDatasetH hDataset;
   GDALRasterBandH hBand;
@@ -737,11 +974,12 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * Try to open the DataSource using GDAL
    */
   GDALAllRegister();
-  hDataset = GDALOpen( pszFilename, GA_ReadOnly );
+  hDataset = GDALOpen( pszFilename, GA_Update ); /*GA_ReadOnly*/
   if( hDataset == NULL ){
 #ifdef DEBUGMS
     fprintf(stderr,"Unable to access the DataSource %s \n",pszFilename);
 #endif
+    setMapArray(output->content,"geodatatype",imyIndex,"other");
     setMapInMaps(conf,"lenv","message","gdalinfo failed - unable to open");
     GDALDestroyDriverManager();
     return -1;
@@ -750,6 +988,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   fprintf(stderr,"Accessing the DataSource %s %d\n",pszFilename,__LINE__);
 #endif
 
+  setMapArray(output->content,"geodatatype",imyIndex,"raster");
   /**
    * Add a new layer set name, data
    */
@@ -771,11 +1010,11 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   myLayer->type = MS_LAYER_RASTER;
 
   char *title=output->name;
-  tmpMap=getMap(output->content,"title");
+  tmpMap=getMapArray(output->content,"title",imyIndex);
   if(tmpMap!=NULL)
     title=tmpMap->value;
   char *abstract=output->name;
-  tmpMap=getMap(output->content,"abstract");
+  tmpMap=getMapArray(output->content,"abstract",imyIndex);
   if(tmpMap!=NULL)
     abstract=tmpMap->value;
 
@@ -790,7 +1029,26 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    */
   m->width=GDALGetRasterXSize( hDataset );
   m->height=GDALGetRasterYSize( hDataset );
-  
+  if(m->width>4096 || m->height>4096){
+    if(m->width>m->height)
+      m->maxsize=m->width;
+    else  
+      m->maxsize=m->height;
+  }else
+    m->maxsize=4096;
+  addIntToMapArray(output->content,"nb_pixels",imyIndex,GDALGetRasterXSize( hDataset )*GDALGetRasterYSize( hDataset ));
+  int pixel_type=GDALGetRasterDataType( hDataset );
+  addIntToMapArray(output->content,"pixel_data_type",imyIndex,pixel_type);
+
+  int outputIndex=msGetOutputFormatIndex(m,"tiff");
+  if(outputIndex>=0){
+    m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));
+    outputIndex=msGetOutputFormatIndex(m,"geotiff");
+    if(outputIndex>=0)
+      m->outputformatlist[outputIndex]->imagemode=((pixel_type==GDT_Byte)?MS_IMAGEMODE_BYTE:((pixel_type==GDT_Int16 || pixel_type==GDT_UInt16)?MS_IMAGEMODE_INT16:((pixel_type!=GDT_Float32)?MS_IMAGEMODE_FLOAT32:MS_IMAGEMODE_BYTE)));
+  }
+  //
+    
   /**
    * Set projection using Authority Code and Name if available or fallback to 
    * proj4 definition if available or fallback to default EPSG:4326
@@ -804,9 +1062,13 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 #endif
     setSrsInformations(output,m,myLayer,pszProjection);
   }else{
-    fprintf(stderr,"NO SRS FOUND ! %s\n",GDALGetProjectionRef( hDataset ));    
+    fprintf(stderr,"NO SRS FOUND %s %d ! %s\n",__FILE__,__LINE__,GDALGetProjectionRef( hDataset ));
+    fflush(stderr);
+    CPLErr sp=GDALSetProjection( hDataset , "+init=epsg:4326" );
+    if(sp!=CE_None){
+      fprintf(stderr,"NO SRS SET ! %s\n",CPLGetLastErrorMsg());
+    }
   }
-
 
   /**
    * Set extent
@@ -824,9 +1086,20 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       double maxY = adfGeoTransform[3]
 	+ adfGeoTransform[4] * GDALGetRasterXSize(hDataset);
 
-       setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
-
+      setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
+      char extent[1024];
+      memset(&extent,0,1024);
+      sprintf(extent,"%d,%d,%d,%d",minX,minY,maxX,maxY);
+      setMapArray(output->content,"boundingbox",imyIndex,extent);
     }
+  }else{
+    int scale=1;
+    if(m->width>2048){
+      addIntToMapArray(output->content,"width",imyIndex,2048);
+      scale=2048/m->width;
+    }else
+      addIntToMapArray(output->content,"width",imyIndex,m->width);
+    addIntToMapArray(output->content,"height",imyIndex,m->height*scale);
   }
 
   /**
@@ -834,15 +1107,23 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
    * processing directive
    */
   char nBands[3];
+  memset(&nBands,0,3);
   int nBandsI=GDALGetRasterCount( hDataset );
-  sprintf(nBands,"%d",GDALGetRasterCount( hDataset ));
-  msInsertHashTable(&(myLayer->metadata), "ows_bandcount", nBands);
-  if(nBandsI>=3)
-    msLayerAddProcessing(myLayer,"BANDS=1,2,3");
-  else if(nBandsI>=2)
-    msLayerAddProcessing(myLayer,"BANDS=1,2");
-  else
-    msLayerAddProcessing(myLayer,"BANDS=1");
+  if(nBandsI<100){
+    sprintf(nBands,"%d",GDALGetRasterCount( hDataset ));
+    msInsertHashTable(&(myLayer->metadata), "ows_bandcount", nBands);
+  }
+  if(styleMap==NULL || strstr(styleMap->value,"BANDS=")==NULL){
+    if(nBandsI>=3)
+      if(nBandsI==4)
+	msLayerAddProcessing(myLayer,"BANDS=1,2,3,4");
+      else
+	msLayerAddProcessing(myLayer,"BANDS=1,2,3");
+    else if(nBandsI>=2)
+      msLayerAddProcessing(myLayer,"BANDS=1,2");
+    else
+      msLayerAddProcessing(myLayer,"BANDS=1");
+  }
 
   /**
    * Name available Bands
@@ -850,42 +1131,52 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   char lBands[7];
   char *nameBands=NULL;
   for( iBand = 0; iBand < nBandsI; iBand++ ){
-    sprintf(lBands,"Band%d",iBand+1);
+    memset(&lBands,0,7);
+    sprintf(lBands,"Band%d",iBand+1);    
     if(nameBands==NULL){
       nameBands=(char*)malloc((strlen(lBands)+1)*sizeof(char));
       sprintf(nameBands,"%s",lBands);
     }else{
-      if(iBand<4){
+      /*if(iBand<4)*/{
 	char *tmpS=zStrdup(nameBands);
-	nameBands=(char*)realloc(nameBands,(strlen(nameBands)+strlen(lBands)+1)*sizeof(char));
+	nameBands=(char*)realloc(nameBands,(strlen(tmpS)+strlen(lBands)+2)*sizeof(char));
 	sprintf(nameBands,"%s %s",tmpS,lBands);
 	free(tmpS);
       }
     }
   }
-  msInsertHashTable(&(myLayer->metadata), "ows_bandnames", nameBands);
-  
+  if(nameBands!=NULL){
+    msInsertHashTable(&(myLayer->metadata), "ows_bandnames", nameBands);
+    free(nameBands);
+  }
+
   /**
    * Loops over metadata information to setup specific information
    */
   for( iBand = 0; iBand < nBandsI; iBand++ ){
-    //int         bGotNodata;//, bSuccess;
-    double      adfCMinMax[2]/*, dfNoData*/;
-    //int         nBlockXSize, nBlockYSize, nMaskFlags;
-    //double      /*dfMean, dfStdDev*/;
+    double      pdfMin, pdfMax, pdfMean, pdfStdDev;
     hBand = GDALGetRasterBand( hDataset, iBand+1 );
 
     CPLErrorReset();
-    GDALComputeRasterMinMax( hBand, FALSE, adfCMinMax );
+    GDALGetRasterStatistics( hBand, TRUE, TRUE, &pdfMin, &pdfMax, &pdfMean, &pdfStdDev);
     char tmpN[21];
     sprintf(tmpN,"Band%d",iBand+1);
     if (CPLGetLastErrorType() == CE_None){
-      char tmpMm[100];
-      sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
-      char tmpI[21];
+      char tmpMm[100],tmpMp[100],tmpNb[3];
+      sprintf(tmpMm,"%.3f %.3f",pdfMin,pdfMax);
+      if(pdfMin!=pdfMax && (styleMap==NULL || strstr(styleMap->value,"SCALE_")==NULL)){
+        sprintf(tmpNb,"%d",iBand+1);
+        if(styleMap==NULL || strstr(styleMap->value,"BANDS=")==NULL || strstr(strstr(styleMap->value,"BANDS="),tmpNb)!=NULL){ 
+	  if(pdfMean-(2*pdfStdDev)<0)
+	    sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,0.0,pdfMean+(2*pdfStdDev));
+	  else
+	    sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
+	  msLayerAddProcessing(myLayer,tmpMp);
+        }
+      }
+      char tmpI[31];      
       sprintf(tmpI,"%s_interval",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpI, tmpMm);
-
       map* test=getMap(output->content,"msClassify");
       if(test!=NULL && strncasecmp(test->value,"true",4)==0){
 	/**
@@ -905,9 +1196,9 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	};
 	  
 	if(nBandsI==1){
-	  double delta=adfCMinMax[1]-adfCMinMax[0];
+	  double delta=pdfMax-pdfMin;
 	  double interval=delta/10;
-	  double cstep=adfCMinMax[0];
+	  double cstep=pdfMin;
 	  for(i=0;i<10;i++){
 	    /**
 	     * Create a new class
@@ -951,7 +1242,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	  }
 	  
 	  char tmpMm[100];
-	  sprintf(tmpMm,"%.3f %.3f",adfCMinMax[0],adfCMinMax[1]);
+	  sprintf(tmpMm,"%.3f %.3f",pdfMin,pdfMax);
 	  
 	}
       }
@@ -961,22 +1252,28 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
 	  myLayer->offsite.green=0;
 	  myLayer->offsite.blue=0;
 	}
-	msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
       }
     }
     if( strlen(GDALGetRasterUnitType(hBand)) > 0 ){
-      char tmpU[21];
+      char tmpU[31];
       sprintf(tmpU,"%s_band_uom",tmpN);
       msInsertHashTable(&(myLayer->metadata), tmpU, GDALGetRasterUnitType(hBand));
     }
 
   }
-
+  if(styleMap==NULL || strstr(styleMap->value,"RESAMPLE")==NULL)
+    msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
+  
+  if(styleMap!=NULL && strlen(styleMap->value)>9){
+    msUpdateLayerFromString(myLayer,styleMap->value,MS_FALSE);
+  }
+  
   m->layerorder[m->numlayers] = m->numlayers;
   m->numlayers++;
   GDALClose( hDataset );
   GDALDestroyDriverManager();
   CPLCleanupTLS();
+  storeMd5(pszFilename);
   return 1;
 }
 
@@ -987,41 +1284,61 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
  * @param outputs a specific output maps
  */
 void outputMapfile(maps* conf,maps* outputs){
-
   /**
    * First store the value on disk
    */
-  map* mime=getMap(outputs->content,"mimeType");
+  int imyIndex=getPublishedId(outputs);
+  map* mime=getMapArray(outputs->content,"mimeType",imyIndex);
+  map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
+  map* dataPath=getMapFromMaps(conf,"main","dataPath");
   char *ext="data";
   if(mime!=NULL)
     if(strncasecmp(mime->value,"application/json",16)==0)
       ext="json";
 
-  map* tmpMap=getMapFromMaps(conf,"main","dataPath");
-  map* sidMap=getMapFromMaps(conf,"lenv","usid");
-  char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
-  sprintf(pszDataSource,"%s/ZOO_DATA_%s_%s.%s",tmpMap->value,outputs->name,sidMap->value,ext); 
-  int f=zOpen(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-  map *gfile=getMap(outputs->content,"generated_file");
-  if(gfile!=NULL){
-    readGeneratedFile(conf,outputs->content,gfile->value);	    
+  map* storage=getMapArray(outputs->content,"storage",imyIndex);
+  if(storage==NULL){
+    map* tmpMap=getMapFromMaps(conf,"main","dataPath");
+    map* sidMap=getMapFromMaps(conf,"lenv","usid");
+    char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
+    sprintf(pszDataSource,"%s/ZOO_DATA_%d_%s_%s.%s",tmpMap->value,imyIndex,outputs->name,sidMap->value,ext);
+    int f=zOpen(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+    map *gfile=getMapArray(outputs->content,"generated_file",imyIndex);
+    if(gfile!=NULL){
+      readGeneratedFile(conf,outputs->content,gfile->value);	    
+    }
+    map* sizeMap=getMapArray(outputs->content,"size",imyIndex);
+    map* vData=getMapArray(outputs->content,"value",imyIndex);
+    if(sizeMap!=NULL){
+      zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char));
+    }
+    else{
+      zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char));
+    }
+    close(f);
+    setMapArray(outputs->content,"storage",imyIndex,pszDataSource);
+    free(pszDataSource);
   }
-  map* sizeMap=getMap(outputs->content,"size");
-  map* vData=getMap(outputs->content,"value");
-  if(sizeMap!=NULL){
-    zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char));
-  }
-  else{
-    zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char));
-  }
-  close(f);
-  addToMap(outputs->content,"storage",pszDataSource);
-  free(pszDataSource);
 
   /*
    * Create an empty map, set name, default size and extent
    */
-  mapObj *myMap=msNewMapObj();
+  map* mapfileTemplate=getMapArray(outputs->content,"msInclude",imyIndex);
+  mapObj *myMap=NULL;
+  if(mapfileTemplate==NULL){
+    myMap=msNewMapObj();
+  }
+  else{
+    map* dataPath=getMapFromMaps(conf,"main","dataPath");
+    map* sid=getMapFromMaps(conf,"lenv","sid");
+    char *mapfileTemplatePath=(char*)malloc(((strlen(dataPath->value)+strlen(sid->value)+strlen(outputs->name)+10)*sizeof(char)));
+    sprintf(mapfileTemplatePath,"%s/%s_%s.map",dataPath->value,outputs->name,sid->value);
+    myMap=msLoadMap(mapfileTemplate->value,mapfileTemplatePath);
+    if(myMap==NULL){
+      setMapInMaps(conf,"lenv","message",_("Unable to open your template mapfile!"));
+      return ;
+    }
+  }
   free(myMap->name);
   myMap->name=zStrdup("ZOO-Project_WXS_Server");
   msMapSetSize(myMap,2048,2048);
@@ -1047,16 +1364,21 @@ void outputMapfile(maps* conf,maps* outputs){
 
 #ifdef USE_KML
   outputFormatObj *o2=msCreateDefaultOutputFormat(NULL,"KML","kml");
-  o2->inmapfile=MS_TRUE;  
-  msAppendOutputFormat(myMap,msCloneOutputFormat(o2));
-  msFreeOutputFormat(o2);
+  if(!o2){
+    perror("Unable to initialize KML driver");
+    fprintf(stderr,"Unable to initialize KML driver !\n");
+  }else{
+    o2->inmapfile=MS_TRUE;  
+    msAppendOutputFormat(myMap,msCloneOutputFormat(o2));
+    msFreeOutputFormat(o2);
+  }
 #endif
 
   outputFormatObj *o3=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","tiff");
   if(!o3)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
-    o3->imagemode=MS_IMAGEMODE_BYTE;
+    o3->imagemode=MS_IMAGEMODE_INT16;
     o3->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o3));
     msFreeOutputFormat(o3);
@@ -1066,7 +1388,7 @@ void outputMapfile(maps* conf,maps* outputs){
   if(!o4)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
-    o4->imagemode=MS_IMAGEMODE_INT16;
+    o4->imagemode=MS_IMAGEMODE_BYTE;
     o4->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o4));
     msFreeOutputFormat(o4);
@@ -1085,35 +1407,24 @@ void outputMapfile(maps* conf,maps* outputs){
   }
 #endif
 
+  
+  outputFormatObj *o6=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","geotiff");
+  if(!o6)
+    fprintf(stderr,"Unable to initialize GDAL driver !\n");
+  else{
+    o6->imagemode=MS_IMAGEMODE_BYTE;
+    o6->mimetype=strdup("image/geotiff");
+    o6->inmapfile=MS_TRUE;
+    msAppendOutputFormat(myMap,msCloneOutputFormat(o6));
+    msFreeOutputFormat(o6);
+  }
+
+  
   /*
    * Set default projection to EPSG:4326
    */
   msLoadProjectionStringEPSG(&myMap->projection,"EPSG:4326");
   myMap->transparent=1;
-
-  /**
-   * Set metadata extracted from main.cfg file maps
-   */
-  maps* cursor=conf;
-  map* correspondance=getCorrespondance();
-  while(cursor!=NULL){
-    map* _cursor=cursor->content;
-    map* vMap;
-    while(_cursor!=NULL){
-      if((vMap=getMap(correspondance,_cursor->name))!=NULL){
-	if (msInsertHashTable(&(myMap->web.metadata), vMap->value, _cursor->value) == NULL){
-#ifdef DEBUGMS
-	  fprintf(stderr,"Unable to add metadata");
-#endif
-	  return;
-	}
-      }
-      _cursor=_cursor->next;
-    }
-    cursor=cursor->next;
-  }
-  freeMap(&correspondance);
-  free(correspondance);
 
   /*
    * Set mapserver PROJ_LIB/GDAL_DATA or any other config parameter from 
@@ -1156,24 +1467,86 @@ void outputMapfile(maps* conf,maps* outputs){
   }
   msInsertHashTable(&(myMap->web.metadata), "ows_srs", "EPSG:4326");
 
+  /**
+   * Set metadata extracted from main.cfg file maps
+   */
+  maps* cursor=conf;
+  map* correspondance=getCorrespondance();
+  while(cursor!=NULL){
+    if(strstr(cursor->name,"_help")==NULL){
+      map* _cursor=cursor->content;
+      map* vMap;
+      while(_cursor!=NULL){
+	if((vMap=getMap(correspondance,_cursor->name))!=NULL){
+	  if (msInsertHashTable(&(myMap->web.metadata), vMap->value, _cursor->value) == NULL){
+#ifdef DEBUGMS
+	    fprintf(stderr,"Unable to add metadata");
+#endif
+	    freeMap(&correspondance);
+	    free(correspondance);
+	    return;
+	  }
+	}
+	_cursor=_cursor->next;
+      }
+    }
+    cursor=cursor->next;
+  }
+  freeMap(&correspondance);
+  free(correspondance);
+
+  map* sid=getMapFromMaps(conf,"lenv","usid");
+  char *mapPath=
+    (char*)malloc((14+strlen(sid->value)+strlen(outputs->name)+strlen(dataPath->value))*sizeof(char));
+  sprintf(mapPath,"%s/%s_%d_%s.map",dataPath->value,outputs->name,imyIndex,sid->value);
+  char *mapUrl=
+    (char*)malloc((6+strlen(mapPath)+strlen(msUrl->value))*sizeof(char));
+  sprintf(mapUrl,"%s?map=%s",msUrl->value,mapPath);
+
+  if (msInsertHashTable(&(myMap->web.metadata), "ows_onlineresource", mapUrl) == NULL){
+#ifdef DEBUGMS
+    fprintf(stderr,"Unable to add metadata");
+#endif
+    return;
+  }
+
   if(tryOgr(conf,outputs,myMap)<0)
     if(tryGdal(conf,outputs,myMap)<0)
       return ;
 
-  tmp1=getMapFromMaps(conf,"main","dataPath");
-  char *tmpPath=(char*)malloc((13+strlen(tmp1->value))*sizeof(char));
-  sprintf(tmpPath,"%s/symbols.sym",tmp1->value);
+  char *tmpPath=(char*)malloc((13+strlen(dataPath->value))*sizeof(char));
+  sprintf(tmpPath,"%s/symbols.sym",dataPath->value);
   msInitSymbolSet(&myMap->symbolset);
   myMap->symbolset.filename=zStrdup(tmpPath);
   free(tmpPath);
 
-  map* sid=getMapFromMaps(conf,"lenv","usid");
-  char *mapPath=
-    (char*)malloc((7+strlen(sid->value)+strlen(outputs->name)+strlen(tmp1->value))*sizeof(char));
-  sprintf(mapPath,"%s/%s_%s.map",tmp1->value,outputs->name,sid->value);
   msSaveMap(myMap,mapPath);
+  saveMapNames(conf,outputs,mapPath);
   free(mapPath);
-  msGDALCleanup();
+  //free(myMap->symbolset.filename);
+  //msFreeSymbolSet(&myMap->symbolset);
   msFreeMap(myMap);
+  //msFree(myMap);
+  msGDALCleanup();
 }
 
+/**
+ * Save the map fullpath in a text file (.maps)
+ * @param conf the main configuration map pointer
+ * @param output the current output for which a mapfile has been generated
+ * @param mapfile the mapfile saved to store in the text file
+ */
+void saveMapNames(maps* conf,maps* output,char* mapfile){
+  map* storage=getMap(output->content,"storage");
+  char *tmp=zStrdup(storage->value);
+  tmp[strlen(tmp)-strlen(strrchr(tmp,'.'))]=0;
+  char* mapName=(char*)malloc((strlen(tmp)+6)*sizeof(char*));
+  sprintf(mapName,"%s.maps",tmp);
+  FILE* myMaps=fopen(mapName,"a");
+  if(myMaps!=NULL){
+    fprintf(myMaps,"%s\n",mapfile);
+    fclose(myMaps);
+  }
+  free(mapName);
+  free(tmp);
+}

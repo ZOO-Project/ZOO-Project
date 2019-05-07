@@ -179,7 +179,7 @@ const char* const MIME[NUM_MIME_TYPES][2] = {
 	{ "application/vnd.dece.ttml+xml", "uvt" },
 	{ "application/vnd.dece.unspecified", "uvx" },
 	{ "application/vnd.dece.zip", "uvz" },
-	{ "application/vnd.denovo.fcselayout-link", "fe_launch" },
+	{ "application/vnd.denovo.fcselayout-link", "fe_launch" },	
 	{ "application/vnd.dna", "dna" },
 	{ "application/vnd.dolby.mlp", "mlp" },
 	{ "application/vnd.dpgraph", "dpg" },
@@ -817,21 +817,49 @@ static bool getFileExtension(const char* mimeType, char* extension, size_t lengt
 * @return a map with name "extension" and value set to file extension, e.g. "png"; if not found the default value is "txt" 
 */
 static map* getFileExtensionMap(const char* mimeType, bool* hasExt) {
-
-	map* ext = createMap("extension", "txt");
-	*hasExt = false;
+  map* ext = createMap("extension", "txt");
+  *hasExt = false;
 	
-	if (mimeType != NULL) { 	
-		for (int i = 0; i < NUM_MIME_TYPES; i++) {			
-			if 	(strncmp(mimeType, MIME[i][M_Type], strlen(MIME[i][M_Type])) == 0) {
-				ext->value = zStrdup(MIME[i][M_Extension]);
-				*hasExt = true;
-				break;				
-			}		
-		}
-		if (*hasExt == false && strncmp(mimeType, "image/", 6) == 0) {
-			ext->value = zStrdup(strstr(mimeType, "/") + 1);
-		}			
-	}	
-	return ext;
+  if (mimeType != NULL) { 	
+    for (int i = 0; i < NUM_MIME_TYPES; i++) {			
+      if(strncmp(mimeType, MIME[i][M_Type], strlen(MIME[i][M_Type])) == 0) {
+	free(ext->value);
+	ext->value = zStrdup(MIME[i][M_Extension]);
+	*hasExt = true;
+	break;				
+      }	
+    }
+    if (*hasExt == false && strncmp(mimeType, "image/", 6) == 0) {
+      free(ext->value);
+      ext->value = zStrdup(strstr(mimeType, "/") + 1);
+    }
+  }	
+  return ext;
+}
+
+static int isGeographic(const char* mimeType){
+  char* imageMimeType[4]={
+    "image/tiff",
+    "image/png",
+    "image/jpeg",
+    "application/vnd.google-earth.kmz"
+  };
+  char* vectorMimeType[5]={
+    "text/xml",
+    "application/json",
+    "application/gml+xml",
+    "application/zip",
+    "application/vnd.google-earth.kml+xml"
+  };
+  int i=0;
+  for(;i<4;i++){
+    if(strncmp(imageMimeType[i],mimeType,strlen(imageMimeType[i]))==0)
+      return 1;
+  }
+  i=0;
+  for(;i<5;i++){
+    if(strncmp(vectorMimeType[i],mimeType,strlen(vectorMimeType[i]))==0)
+      return 2;
+  }
+  return -1;
 }

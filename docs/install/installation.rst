@@ -146,6 +146,39 @@ file. For instance, you may run the following:
     and `34
     <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql#L34>`_.
 
+Metadata Database (Optional)
+*****************************
+
+.. _zoo_create_metadb:
+
+It is possible to use a PostgreSQL database to store metadata
+information about WPS Services. This support is optional and require
+to be activated by using the ``--with-metadb=yes`` option.
+
+To create the database for storing the metadata informations about the
+WPS Services, you may use the following command:
+
+.. code::
+
+    createdb zoo_metadb
+    psql zoo_metadb -f zoo-project/zoo-kernel/sql/zoo_collectiondb.sql
+
+In case you want to convert an existing zcfg file then, you can use
+the ``zcfg2sql`` tool from the command line. It can be found in
+``thirds/zcfg2sql`` and can be build simply by running the ``make``
+command. After compilation you only need to give it the path of the
+zcfg file you want to obtain the SQL queries required to store the
+metadata informations in the database rather than in zcfg file.
+
+For instance you may use the following command:
+
+.. code::
+
+    #Direct import in the zoo_metadb database
+    ./zcfg2sql /Path/To/MyZCFGs/myService.zcfg | psql zoo_metadb
+    #Create a SQL file for a futur import
+    ./zcfg2sql /Path/To/MyZCFGs/myService.zcfg > myService.sql
+
 
 
 YAML Support (Optional) 
@@ -153,7 +186,7 @@ YAML Support (Optional)
 
 If ``yaml.h`` file is not found in your ``/usr/include`` directory and
 ``libyaml.so`` is not found in ``/usr/lib``, a ``--with-yaml`` option
-can be used to specify its location. For instance, if the headeer file
+can be used to specify its location. For instance, if the header file
 lies in ``/usr/local/include`` and the shared library is located in
 ``/usr/local/lib``, you may use the following command:
 

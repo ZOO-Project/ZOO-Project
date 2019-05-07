@@ -1,0 +1,30 @@
+[FinalizeHPC1]
+ Title = Start phase 3 of HPC execution
+ Abstract = Unblock the ZOO-Kernel awaiting for a remote job execution 
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = wps_hpc.zo
+ serviceType = C
+ <DataInputs>
+  [JobId]
+   Title = the image
+   Abstract = The image to process
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting string
+   Abstract = The message returned by the service execution as a string.
+   <LiteralOutput>
+    DataType = string
+    <Default>
+    </Default>
+   </LiteralOutput>
+ </DataOutputs>  

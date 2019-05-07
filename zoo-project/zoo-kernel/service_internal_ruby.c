@@ -259,6 +259,7 @@ VALUE RubyHash_FromMap(map* t){
   map* tmp=t;
   int hasSize=0;
   map* isArray=getMap(tmp,"isArray");
+  map* useFile=getMap(tmp,"use_file");
   map* size=getMap(tmp,"size");
   map* tmap=getMapType(tmp);
   while(tmp!=NULL){
@@ -270,28 +271,40 @@ VALUE RubyHash_FromMap(map* t){
 	VALUE value=rb_ary_new2(cnt);
 	VALUE mvalue=rb_ary_new2(cnt);
 	VALUE svalue=rb_ary_new2(cnt);
+	VALUE cvalue=rb_ary_new2(cnt);
 
 	for(int i=0;i<cnt;i++){
 	  
 	  map* vMap=getMapArray(tmp,"value",i);	    
 	  map* sMap=getMapArray(tmp,"size",i);
+	  map* uMap=getMapArray(tmp,"use_file",i);
+	  map* cMap=getMapArray(tmp,"cache_file",i);
 
 	  if(vMap!=NULL){
 	    
 	    VALUE lvalue;
 	    VALUE lsvalue;
-	    if(sMap==NULL){
+	    VALUE lcvalue;
+	    if(sMap==NULL || uMap==NULL){
 	      lvalue=rb_str_new2(vMap->value);
-	      lsvalue=Qnil;
+	      if(sMap==NULL)
+		lsvalue=Qnil;
+	      else
+		lsvalue=rb_str_new2(sMap->value);
 	    }
 	    else{
 	      lvalue=rb_str_new(vMap->value,atoi(sMap->value));
 	      lsvalue=rb_str_new2(sMap->value);
 	      hasSize=1;
 	    }
+	    if(uMap!=NULL)
+	      lcvalue=rb_str_new2(cMap->value);
+	    else
+	      lcvalue=Qnil;
 
 	    rb_ary_push(value,lvalue);
 	    rb_ary_push(svalue,lsvalue);
+	    rb_ary_push(cvalue,lcvalue);
 	  }
 	  
 	  map* mMap=getMapArray(tmp,tmap->name,i);
@@ -307,6 +320,8 @@ VALUE RubyHash_FromMap(map* t){
 
 	rb_hash_aset(res, name, mvalue);
 	rb_hash_aset(res, rb_str_new2(tmap->name), mvalue);
+	VALUE lname0=rb_str_new2("cache_size");
+	rb_hash_aset(res, lname0, value);
       
 	if(hasSize>0){
 	  VALUE lname=rb_str_new2("size");
