@@ -146,10 +146,11 @@ file. For instance, you may run the following:
     and `34
     <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel/sql/schema.sql#L34>`_.
 
+.. _zoo_create_metadb:
+
 Metadata Database (Optional)
 *****************************
 
-.. _zoo_create_metadb:
 
 It is possible to use a PostgreSQL database to store metadata
 information about WPS Services. This support is optional and require

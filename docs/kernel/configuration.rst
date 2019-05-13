@@ -324,13 +324,14 @@ With the previous database section, it will give the following:
 Please refer to this `section <zoo_create_db_backend>`_ to learn how
 to setup the database.
 
+.. _zoo_activate_metadb:
 
-Database section
+Metadb section
 ...............................
 
-The database section allows to configure the ZOO-Kernel to access the
-metadata information about WPS Services by using a PostgreSQL database
-in addition to the zcfg files.
+The metadb section allows to configure the ZOO-Kernel to access :ref:`the
+metadata information about WPS Services <zoo_create_metadb>` by using
+a PostgreSQL database in addition to the zcfg files.
 
 .. code-block:: guess
 
