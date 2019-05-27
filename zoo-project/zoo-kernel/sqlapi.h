@@ -52,7 +52,7 @@ extern "C" {
 
   
 #ifdef META_DB
-  ZOO_DLL_EXPORT const char* _createInitString(maps*,const char*);
+  ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
   ZOO_DLL_EXPORT int _init_sql(maps*,const char*);
   ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,int,const char*);
   ZOO_DLL_EXPORT void cleanFetchSql(maps*,int,OGRLayer*);
