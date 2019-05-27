@@ -63,7 +63,6 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-//#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>

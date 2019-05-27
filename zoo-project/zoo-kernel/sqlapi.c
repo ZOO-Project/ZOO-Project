@@ -57,7 +57,7 @@ OGRLayer *zoo_ResultSet = NULL;
  * @param key the name of the section containing the connection setting
  * @return the OGR connection string
  */
-const char* _createInitString(maps* conf,const char* key){
+char* _createInitString(maps* conf,const char* key){
   char* res=NULL;
   char keywords[6][14]={
     "dbname",
@@ -108,7 +108,7 @@ const char* _createInitString(maps* conf,const char* key){
  * @param conf the maps containing the setting of the main.cfg file
  * @return the OGR connection string
  */
-const char* createInitString(maps* conf){
+char* createInitString(maps* conf){
   return _createInitString(conf,"database");
 }
 
@@ -119,7 +119,7 @@ const char* createInitString(maps* conf){
  * @see createInitString
  */
 int _init_sql(maps* conf,const char* key){
-  const char* sqlInitString=_createInitString(conf,key);
+  char* sqlInitString=_createInitString(conf,key);
 #ifdef SQL_DEBUG
   fprintf(stderr,"Try to connect to: %s %s !\n",key,sqlInitString);
   fflush(stderr);  
