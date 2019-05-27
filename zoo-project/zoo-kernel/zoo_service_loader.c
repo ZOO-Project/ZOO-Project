@@ -44,6 +44,10 @@ extern "C" int crlex ();
 #include "service_internal_hpc.h"
 #endif
 
+#ifdef USE_PYTHON
+#include "service_internal_python.h"
+#endif
+
 #include "cgic.h"
 
 #include <libxml/tree.h>
@@ -71,10 +75,6 @@ extern "C" int crlex ();
 
 #ifdef META_DB
 #include "meta_sql.h"
-#endif
-
-#ifdef USE_PYTHON
-#include "service_internal_python.h"
 #endif
 
 #ifdef USE_SAGA

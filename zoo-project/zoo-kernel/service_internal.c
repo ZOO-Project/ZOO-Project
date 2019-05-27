@@ -873,10 +873,10 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
 char *readVSIFile(maps* conf,const char* dataSource){
     VSILFILE * fichier=VSIFOpenL(dataSource,"rb");
     VSIStatBufL file_status;
-    VSIStatL(dataSource, &file_status);
-    if(fichier==NULL){
+    int res=VSIStatL(dataSource, &file_status);
+    if(fichier==NULL || res<0){
       char tmp[1024];
-      sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %lld.",
+      sprintf(tmp,"Failed to open file %s for reading purpose. File seems empty %ld.",
 	      dataSource,file_status.st_size);
       setMapInMaps(conf,"lenv","message",tmp);
       return NULL;

@@ -57,7 +57,7 @@ OGRLayer *zoo_ResultSet = NULL;
  * @param key the name of the section containing the connection setting
  * @return the OGR connection string
  */
-char* _createInitString(maps* conf,const char* key){
+const char* _createInitString(maps* conf,const char* key){
   char* res=NULL;
   char keywords[6][14]={
     "dbname",

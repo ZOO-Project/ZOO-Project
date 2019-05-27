@@ -737,7 +737,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	   * In case of an Input maps, then add the minOccurs and maxOccurs to the
 	   * content map.
 	   */
-	  char* keys[4]={
+	  const char* keys[4]={
 	    "minOccurs",
 	    "maxOccurs",
 	    "maximumMegabytes",
