@@ -553,7 +553,7 @@ else
 	# Check headers file
 	CPPFLAGS_SAVE="$CPPFLAGS"
 	CPPFLAGS="$R_CPPFLAGS"
-	AC_CHECK_HEADERS([RInternals.h],
+	AC_CHECK_HEADERS([Rinternals.h],
 		 [], [AC_MSG_ERROR([could not find headers include related to R])])
 
 	# Ensure we can link against libphp
