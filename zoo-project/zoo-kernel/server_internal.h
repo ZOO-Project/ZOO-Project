@@ -28,9 +28,7 @@
 
 #ifndef IMPORTSERVICE
 #define IMPORTSERVICE "include" // default name of [include] block in main.cfg
-#endif
 
-#include "ulinet.h"
 #include "service.h"
 #include <openssl/sha.h>
 #include <openssl/md5.h>
@@ -77,4 +75,6 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

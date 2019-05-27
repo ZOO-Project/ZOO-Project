@@ -838,13 +838,13 @@ static map* getFileExtensionMap(const char* mimeType, bool* hasExt) {
 }
 
 static int isGeographic(const char* mimeType){
-  char* imageMimeType[4]={
+  const char* imageMimeType[4]={
     "image/tiff",
     "image/png",
     "image/jpeg",
     "application/vnd.google-earth.kmz"
   };
-  char* vectorMimeType[5]={
+  const char* vectorMimeType[5]={
     "text/xml",
     "application/json",
     "application/gml+xml",

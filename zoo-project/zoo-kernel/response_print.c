@@ -23,10 +23,9 @@
  */
 
 #include "service.h"
-#include "response_print.h"
-#include "request_parser.h"
-#include "server_internal.h"
 #include "service_internal.h"
+#include "server_internal.h"
+#include "response_print.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
 #else
@@ -34,13 +33,6 @@
 #endif
 #ifdef USE_CALLBACK
 #include "service_callback.h"
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE -1
 #endif
 
 #ifndef WIN32

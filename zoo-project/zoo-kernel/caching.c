@@ -758,7 +758,7 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
   
   char ltmp1[256];
-  sprintf(ltmp1,"%ld",fsize);
+  sprintf(ltmp1,"%lld",fsize);
   addToMap(*content,"size",ltmp1);
   if(cached==NULL){
     if(memUse==NULL || strcasecmp(memUse->value,"load")==0)

@@ -63,6 +63,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+//#include "cgic.h"
 #ifndef WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -82,7 +83,6 @@
 //#include <locale.h>
 #include <locale.h> // knut: this appears to be a non-standard header file that has been removed in newer versions of glibc; it may be sufficient to include <locale.h> (see above) 
 #endif
-#include "ulinet.h"
 
 #include "service.h"
 #include <openssl/sha.h>
@@ -94,8 +94,6 @@
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-
-#include "cgic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -172,7 +170,7 @@ extern "C" {
   /**
    * Definitions of root node for response depending on the request and the WPS version
    */
-  static const char root_nodes[2][4][20]={
+  static const char* root_nodes[2][4]={
     {"ProcessOfferings","ProcessDescriptions","ExecuteResponse",NULL},
     {"Contents","ProcessOfferings","Result",NULL}
   };

@@ -859,7 +859,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       setMsExtent(output,m,myLayer,oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
       char extent[1024];
       memset(&extent,0,1024);
-      sprintf(extent,"%d,%d,%d,%d",oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
+      sprintf(extent,"%f,%f,%f,%f",oExt.MinX, oExt.MinY, oExt.MaxX, oExt.MaxY);
       setMapArray(output->content,"boundingbox",imyIndex,extent);
     }
   
@@ -1089,7 +1089,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
       setMsExtent(output,m,myLayer,minX,minY,maxX,maxY);
       char extent[1024];
       memset(&extent,0,1024);
-      sprintf(extent,"%d,%d,%d,%d",minX,minY,maxX,maxY);
+      sprintf(extent,"%f,%f,%f,%f",minX,minY,maxX,maxY);
       setMapArray(output->content,"boundingbox",imyIndex,extent);
     }
   }else{

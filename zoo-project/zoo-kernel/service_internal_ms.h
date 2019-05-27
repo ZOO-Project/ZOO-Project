@@ -25,14 +25,12 @@
 #define ZOO_SERVICE_INTERNAL_MS_H 1
 
 #include <sys/stat.h>
-#include "service_internal.h"
 #include "service.h"
 #include "cpl_conv.h"
 #include "cpl_multiproc.h"
 #include "ogr_api.h"
 #include "gdal.h"
 #include "ogr_srs_api.h"
-#include "ulinet.h"
 #ifdef WIN32
 #include <unistd.h>
 #endif
