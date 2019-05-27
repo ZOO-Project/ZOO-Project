@@ -548,7 +548,7 @@ else
 	R_FILE="service_internal_r.o"
 	# Extract the linker and include flags 
 	R_LDFLAGS="-L$R_PATH/lib/ -lR"
-	R_CPPFLAGS="-I$R_PATH/include/"
+	R_CPPFLAGS="-I$R_PATH/include/ -I$R_PATH/share/R/include/"
 
 	# Check headers file
 	CPPFLAGS_SAVE="$CPPFLAGS"
