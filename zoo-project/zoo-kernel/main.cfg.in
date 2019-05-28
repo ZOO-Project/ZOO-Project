@@ -10,14 +10,14 @@ dataPath = @sharedstatedir@/zoo-project
 cacheDir = /tmp/
 
 [identification]
-title = The Zoo WPS Development Server
-abstract = Development version of ZooWPS. See http://www.zoo-project.org
+title = The ZOO-Project OGC WPS Development Server
+abstract = Development version of ZOO-Project OGC WPS. See http://www.zoo-project.org
 fees = None
 accessConstraints = none
 keywords = WPS,GIS,buffer
 
 [provider]
-providerName=ZOO Project
+providerName=ZOO-Project
 providerSite=http://www.zoo-project.org
 individualName=Gerald FENOY
 positionName=Developer
@@ -27,7 +27,7 @@ addressCity=Lattes
 addressAdministrativeArea=False
 addressPostalCode=34970
 addressCountry=fr
-addressElectronicMailAddress=gerald@geolabs.fr
+addressElectronicMailAddress=gerald.fenoy@geolabs.fr
 phoneVoice=False
 phoneFacsimile=False
 
