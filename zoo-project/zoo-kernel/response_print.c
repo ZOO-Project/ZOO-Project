@@ -1121,7 +1121,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
   if(vid==1)
     ns1=ns;
 
-  xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9;
+  xmlNodePtr nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc55=NULL,nc56;
   elements* e=elem;
   nc9=NULL;
   map* tmp1=NULL;
@@ -1208,6 +1208,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    xmlNewProp(nc4,BAD_CAST "default",BAD_CAST "true");
 	    xmlAddChild(nc3,nc4);
 	    nc5 = xmlNewNode(NULL, BAD_CAST "LiteralDataDomain");
+	    nc55 = xmlNewNode(NULL, BAD_CAST "LiteralDataDomain");
 	    xmlNewProp(nc5,BAD_CAST "default",BAD_CAST "true");
 	  }
 	  else{
@@ -1415,8 +1416,10 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    xmlAddChild(nc6,nc8);
 	    if(vid==0)
 	      xmlAddChild(nc3,nc6);
-	    else
+	    else{
 	      xmlAddChild(nc5,nc6);
+	      xmlAddChild(nc55,nc6);
+	    }
 	    isAnyValue=-1;
 	  }
 	
@@ -1459,9 +1462,6 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		    else
 		      xmlAddChild(nc5,nc9);
 		  }
-		  if(oI==4 && vid==1){
-		    xmlNewProp(nc9,BAD_CAST "default",BAD_CAST "true");
-		  }
 		}
 		else{
 		  xmlFreeNode(nc9);
@@ -1472,7 +1472,6 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	      }
 	    }
 	}
-    
 	if(datatype!=2){
 	  if(hasUOM==true){
 	    if(vid==0){
@@ -1527,14 +1526,18 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    xmlAddChild(nc6,nc7);
 	    if(vid==0)
 	      xmlAddChild(nc3,nc6);
-	    else
+	    else{
 	      xmlAddChild(nc5,nc6);
+	      xmlAddChild(nc55,nc6);
+	    }
 	  }
 	  else
 	    if(vid==0)
 	      xmlAddChild(nc3,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
-	    else
+	    else{
 	      xmlAddChild(nc5,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	      xmlAddChild(nc55,xmlNewNode(ns_ows, BAD_CAST "AnyValue"));
+	    }
 	}
 
 	if(vid==1){
@@ -1546,17 +1549,15 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    xmlNewNsProp(nc8,ns_ows,BAD_CAST "reference",BAD_CAST tmp);
 	    if(vid==0)
 	      xmlAddChild(nc3,nc8);
-	    else
+	    else{
 	      xmlAddChild(nc5,nc8);
+	      xmlAddChild(nc55,nc8);
+	    }
 	    datatype=1;
 	  }
 	  if(hasUOM==true){
 	    tmp1=getMap(_tmp->content,"uom");
 	    if(tmp1!=NULL){
-	      char *tmp2=zCapitalize(tmp1->name);
-	      nc9 = xmlNewNode(ns_ows, BAD_CAST tmp2);
-	      free(tmp2);
-	      xmlAddChild(nc9,xmlNewText(BAD_CAST tmp1->value));
 	      xmlAddChild(nc5,nc9);
 	    }
 	  }
@@ -1564,6 +1565,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	    nc7 = xmlNewNode(ns_ows, BAD_CAST "DefaultValue");
 	    xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
 	    xmlAddChild(nc5,nc7);
+	    xmlAddChild(nc55,nc7);
 	  }
 	}
 
@@ -1585,6 +1587,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
       int hasSupported=-1;
 
       while(_tmp!=NULL){
+	
 	if(hasSupported<0){
 	  if(datatype==0){
 	    if(vid==0)
@@ -1663,7 +1666,13 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		    xmlAddChild(nc5,nc6);
 		}
 		else{
-		  xmlFreeNode(nc6);
+		  if(oI!=4)
+		    xmlFreeNode(nc6);
+		  else{
+		    nc56=xmlCopyNode(nc55,1);
+		    xmlReplaceNode(xmlGetLastChild(nc56),nc6);
+		    xmlAddChild(nc3,nc56);
+		  }
 		}
 	      }
 	      else{
@@ -1679,8 +1688,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	      xmlAddChild(nc3,nc4);
 	    }
 	    else{
-	      if(datatype!=2)
-		xmlAddChild(nc3,nc5);
+	      xmlAddChild(nc3,nc5);
 	    }
 
 	  }else{
@@ -1722,7 +1730,6 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	  xmlAddChild(nc3,nc4);
 	}
 	else{
-	  xmlFreeNode(nc4);
 	  xmlAddChild(nc3,nc5);
 	}
       }
@@ -1732,7 +1739,6 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	xmlAddChild(nc7,xmlNewText(BAD_CAST tmp1->value));
 	xmlAddChild(nc3,nc7);
       }
-    
       xmlAddChild(nc2,nc3);
     }else{
       if(e->child!=NULL && vid!=0){
