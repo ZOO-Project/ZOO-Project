@@ -22,10 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include "service.h"
-#include "service_internal.h"
-#include "server_internal.h"
-#include "response_print.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
 #else
@@ -34,13 +30,16 @@
 #ifdef USE_CALLBACK
 #include "service_callback.h"
 #endif
+#include "service.h"
+#include "service_internal.h"
+#include "server_internal.h"
+#include "response_print.h"
 
 #ifndef WIN32
 #include <dlfcn.h>
 #endif
 
 #include "mimetypes.h"
-
 
 /**
  * Add prefix to the service name.
@@ -1013,7 +1012,6 @@ void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNode
     fromDb=1;
 
   n=nc;
-  
   int wpsId=zooXmlAddNs(NULL,schemas[vid][3],"wps");
   ns=usedNs[wpsId];
   int owsId=zooXmlAddNs(NULL,schemas[vid][1],"ows");
@@ -1426,7 +1424,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
       
 	int oI=0;
 	/*if(vid==0)*/ {
-	  for(oI=0;oI<13;oI++)
+	  for(oI=0;oI<12;oI++)
 	    if((tmp1=getMap(_tmp->content,orderedFields[oI]))!=NULL){
 #ifdef DEBUG
 	      printf("DATATYPE DEFAULT ? %s\n",tmp1->name);
@@ -2100,7 +2098,6 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
     printHeaders(m);
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
   }
-  fflush(stdout);
   xmlChar *xmlbuff;
   int buffersize;
   /*

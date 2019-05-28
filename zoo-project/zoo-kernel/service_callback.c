@@ -434,7 +434,7 @@ extern "C" {
       // Fetching data inputs
       maps* curs=inputs;
       dumpMaps(curs);
-      char *keys[11][2]={
+      const char *keys[11][2]={
 	{
 	  "xlink:href",
 	  "ref_download_link"
@@ -613,7 +613,7 @@ extern "C" {
       // Downloading process outputs from cluster
       maps* curs=outputs;
       dumpMaps(curs);
-      char *keys[10][2]={
+      const char *keys[10][2]={
 	{
 	  "Reference",
 	  "ref"
@@ -655,7 +655,7 @@ extern "C" {
 	  "ref_wfs_link"
 	}	
       };
-      char* specifics[5][2]={
+      const char* specifics[5][2]={
 	{
 	  "download_link",
 	  "ref_download_link"
@@ -766,7 +766,7 @@ extern "C" {
       
     case 6: {
       // Finalize HPC
-      char *keys[6][2]={
+      const char *keys[6][2]={
 	{
 	  //"SubmitTime",
 	  "Submit",
