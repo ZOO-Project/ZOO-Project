@@ -350,7 +350,10 @@ void PythonZooReport(maps* m,const char* module,int load){
   PyObject *pName, *pModule, *pFunc;
   PyObject *ptype, *pvalue, *ptraceback,*pValue,*pArgs;
   PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-  const char *pStrErrorMessage = PyString_AsString(pvalue);
+#if PY_MAJOR_VERSION >= 3  
+  const
+#endif
+    char *pStrErrorMessage = PyString_AsString(pvalue);
   char *tmp0=_("Python module %s cannot be loaded. Message: %s\n");
   
   PyObject *trace=PyObject_Str(pvalue);
@@ -697,7 +700,10 @@ map* mapFromPyDict(PyDictObject* t){
 #endif
     if(strncmp(PyString_AsString(key),"child",5)!=0){
       if(strncmp(PyString_AsString(key),"value",5)==0){
-	const char *buffer=NULL;
+#if PY_MAJOR_VERSION >= 3  
+	const
+#endif
+	  char *buffer=NULL;
 	Py_ssize_t size;
 #if PY_MAJOR_VERSION >= 3
 	if(PyBytes_Check(value)){
@@ -719,8 +725,14 @@ map* mapFromPyDict(PyDictObject* t){
 #endif      
 	res = addToMapWithSize(res,PyString_AsString(key),buffer,size);
       }else{
-	const char* lkey=PyString_AsString(key);
-	const char* lvalue=PyString_AsString(value);
+#if PY_MAJOR_VERSION >= 3  
+	const
+#endif
+	  char* lkey=PyString_AsString(key);
+#if PY_MAJOR_VERSION >= 3  
+	const
+#endif
+	  char* lvalue=PyString_AsString(value);
 	if(res!=NULL){
 	  if(PyString_Size(value)>0)
 	    addToMap(res,lkey,lvalue);
