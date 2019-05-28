@@ -50,7 +50,6 @@ extern "C"
 extern "C" {
 #endif
 
-  
 #ifdef META_DB
   ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
   ZOO_DLL_EXPORT int _init_sql(maps*,const char*);

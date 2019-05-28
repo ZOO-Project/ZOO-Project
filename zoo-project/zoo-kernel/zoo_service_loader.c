@@ -1239,6 +1239,14 @@ runRequest (map ** inputs)
     }
   }else{
     checkValidValue(request_inputs,&err,"AcceptVersions",(const char**)vvv,-1);
+    map* tmpMap=getMapFromMaps(m,"main","version");
+    if(tmpMap!=NULL){
+      setMapInMaps(m,"main","rversion",tmpMap->value);
+      addToMap(request_inputs,"version",tmpMap->value);
+    }else{
+      setMapInMaps(m,"main","rversion","1.0.0");
+      addToMap(request_inputs,"version","1.0.0");
+    }
     map* version1=getMap(request_inputs,"AcceptVersions");
     if(version1!=NULL){
       if(strstr(version1->value,schemas[1][0])!=NULL)
@@ -1246,8 +1254,6 @@ runRequest (map ** inputs)
       else
 	addToMap(request_inputs,"version",version1->value);
       version=getMap(request_inputs,"version");
-      setMapInMaps(m,"main","rversion",version->value);
-      vid=getVersionId(version->value);
     }
   }
   if(err!=NULL){
