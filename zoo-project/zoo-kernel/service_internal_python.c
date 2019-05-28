@@ -757,68 +757,71 @@ map* mapFromPyDict(PyDictObject* t){
  */
 map* _mapFromPyDict(PyDictObject* t) {
 	
-	PyObject* list = PyDict_Keys((PyObject*) t); // new ref
-	int nb = PyList_Size(list);
+  PyObject* list = PyDict_Keys((PyObject*) t); // new ref
+  int nb = PyList_Size(list);
 	
-	if (nb < 1) {
-		Py_DECREF(list);
-		return NULL;
-	}	
+  if (nb < 1) {
+    Py_DECREF(list);
+    return NULL;
+  }	
 	
-	map* ptr = (map*) malloc(MAP_SIZE);
-	map* res = ptr;
+  map* ptr = (map*) malloc(MAP_SIZE);
+  map* res = ptr;
 	
-	PyObject* key;
-	PyObject* value;
-	const char *buffer = NULL;
-	Py_ssize_t size;
-	for(int i = 0; i < nb; i++) {
+  PyObject* key;
+  PyObject* value;
+#if PY_MAJOR_VERSION >= 3  
+  const
+#endif
+    char *buffer = NULL;
+  Py_ssize_t size;
+  for(int i = 0; i < nb; i++) {
 		
-		key = PyList_GetItem(list, i); // borrowed ref
-		value = PyDict_GetItem((PyObject*) t, key); // borrowed ref		
+    key = PyList_GetItem(list, i); // borrowed ref
+    value = PyDict_GetItem((PyObject*) t, key); // borrowed ref		
 				
-		ptr->name = zStrdup(PyString_AsString(key));		
-		map* msize = NULL;
+    ptr->name = zStrdup(PyString_AsString(key));		
+    map* msize = NULL;
 		
-	#if PY_MAJOR_VERSION >= 3
-		if (PyBytes_Check(value)) {
-		// value is byte array
-			size = PyBytes_Size(value);				
-			buffer = PyBytes_AsString(value); // pointer to internal buffer
-			char sz[32];
-			sprintf(sz, "%d", (int) size);	
-			msize = createMap("size", sz);			
-		}
-		else if (PyUnicode_Check(value) && PyUnicode_READY(value) == 0) {
-		// value is string object		
-			buffer = PyUnicode_AsUTF8AndSize(value, &size);
-			size++;
-		}
-		else {
-			printf("Type not recognized\n");
-			// error handling
-			// ...
-		}
-	#else	
-		PyString_AsStringAndSize(value, &buffer, &size);
-		size++;
-		// to do: handle byte arrays
-	#endif
+#if PY_MAJOR_VERSION >= 3
+    if (PyBytes_Check(value)) {
+      // value is byte array
+      size = PyBytes_Size(value);				
+      buffer = PyBytes_AsString(value); // pointer to internal buffer
+      char sz[32];
+      sprintf(sz, "%d", (int) size);	
+      msize = createMap("size", sz);			
+    }
+    else if (PyUnicode_Check(value) && PyUnicode_READY(value) == 0) {
+      // value is string object		
+      buffer = PyUnicode_AsUTF8AndSize(value, &size);
+      size++;
+    }
+    else {
+      printf("Type not recognized\n");
+      // error handling
+      // ...
+    }
+#else	
+    PyString_AsStringAndSize(value, &buffer, &size);
+    size++;
+    // to do: handle byte arrays
+#endif
 		
-		ptr->value = (char*) malloc(size); // check for NULL pointer
-		memmove(ptr->value, buffer, size);
+    ptr->value = (char*) malloc(size); // check for NULL pointer
+    memmove(ptr->value, buffer, size);
 			
-		if (msize != NULL) {
-			ptr->next = msize;
-			ptr = ptr->next;
-		}						
+    if (msize != NULL) {
+      ptr->next = msize;
+      ptr = ptr->next;
+    }						
 		
-		ptr->next = i < nb - 1 ? (map*) malloc(MAP_SIZE) : NULL;
-		ptr = ptr->next;
-	}	
-	Py_DECREF(list);
+    ptr->next = i < nb - 1 ? (map*) malloc(MAP_SIZE) : NULL;
+    ptr = ptr->next;
+  }	
+  Py_DECREF(list);
 			
-	return res;
+  return res;
 } // mapFromPyDict
 
 /**
