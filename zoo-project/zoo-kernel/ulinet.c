@@ -31,7 +31,6 @@
 #include "server_internal.h"
 #include <assert.h>
 #include <ctype.h>
-#include "fcgi_stdio.h"
 
 /**
  * Write the downloaded content to a _HINTERNET structure
@@ -269,8 +268,11 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
  */
 char* getProvenance(maps* conf,const char* url){
   map* sharedCache=getMapFromMaps(conf,"security","shared");
-  char *res="OTHER";
-  char *paths[2]={
+  //char *res="OTHER"; 
+  static char OTHER[] = "OTHER"; 
+  static char SHARED[] = "SHARED";
+  static char LOCAL[] = "LOCAL";
+  const char *paths[2]={ 
     "mapserverAddress",
     "tmpUrl"
   };
@@ -279,7 +281,7 @@ char* getProvenance(maps* conf,const char* url){
     char *curs=strtok(hosts,",");
     while(curs!=NULL){
       if(strstr(url,curs)==NULL){
-	return "SHARED";
+        return SHARED;
       }
       curs=strtok(NULL,",");
     }
@@ -288,11 +290,12 @@ char* getProvenance(maps* conf,const char* url){
     sharedCache=getMapFromMaps(conf,"main",paths[i]);
     if(sharedCache!=NULL){
       if(strstr(url,sharedCache->value)!=NULL){
-	return "LOCAL";
+        return LOCAL;
       }
     }
   }
-  return res;
+  //return res;
+  return OTHER;
 }
 
 /**

@@ -150,10 +150,11 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   char *python_path;
 
 #ifdef WIN32
-  char* os_pathsep = ";";
+  const char* os_pathsep = ";";
 #else
-  char* os_pathsep = ":";
+  const char* os_pathsep = ":";
 #endif
+  static char EMPTY[] = "";
 
   maps* m=*main_conf;
   maps* inputs=*real_inputs;
@@ -170,7 +171,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  libPath = kvp->value;
   }
   else {
-	  libPath = "";
+	  //libPath = "";
+    libPath = EMPTY;
   }
 
 #ifdef DEBUG

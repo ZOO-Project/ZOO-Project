@@ -98,7 +98,7 @@ struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
   int s;
   struct zooLock* myLock=(struct zooLock*)malloc(sizeof(struct flock)+sizeof(FILE*)+sizeof(char*));
   int len=6;
-  char *myTemplate="%s.lock";
+  static const char myTemplate[] = "%s.lock";
   int res=-1;
  retryLockFile:
   myLock->filename=(char*)malloc((strlen(filename)+len)*sizeof(char));
@@ -171,14 +171,14 @@ struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
 	   break;
     }
     if(res<0){
-      char *tmp;
-      if(errno==EBADF)
-	tmp="Either: the filedes argument is invalid; you requested a read lock but the filedes is not open for read access; or, you requested a write lock but the filedes is not open for write access.";
+      char tmp[512];
+      if (errno == EBADF)
+        strncpy(tmp, "Either: the filedes argument is invalid; you requested a read lock but the filedes is not open for read access; or, you requested a write lock but the filedes is not open for write access.", 512);
       else
-	if(errno==EINVAL)
-	  tmp="Either the lockp argument doesn’t specify valid lock information, or the file associated with filedes doesn’t support locks.";
-	else
-	  tmp="The system has run out of file lock resources; there are already too many file locks in place.";
+        if (errno == EINVAL)
+          strncpy(tmp, "Either the lockp argument doesn’t specify valid lock information, or the file associated with filedes doesn’t support locks.", 512);
+        else
+          strncpy(tmp, "The system has run out of file lock resources; there are already too many file locks in place.", 512);
 #ifdef DEBUG
       fprintf(stderr,"Unable to get the lock on %s due to the following error: %s\n",myLock->filename,tmp);
 #endif
@@ -316,7 +316,7 @@ char* _getStatusFile(maps* conf,char* pid){
     }
   }
   if(hasFile>0){
-    semid lockid;
+    semid lockid = NULL; // knut: add initialization
     char* stat=getStatusId(conf,pid);
     if(stat!=NULL){
       setMapInMaps(conf,"lenv","lid",stat);
@@ -504,11 +504,12 @@ size_t getKeyValue(maps* conf, char* key, size_t length){
 
 
 semid getShmLockId(maps* conf, int nsems){
-  semid sem_id;
+  semid sem_id; 
   char key[MAX_PATH];
   getKeyValue(conf, key, MAX_PATH);
   
-  sem_id = CreateSemaphore( NULL, nsems, nsems+1, key);
+  //sem_id = CreateSemaphore( NULL, nsems, nsems+1, key); knut: CreateSemaphore may alias to wide-character version CreateSemaphoreW
+  sem_id = CreateSemaphoreA( NULL, nsems, nsems+1, key);
   if(sem_id==NULL){
 #ifdef DEBUG
     fprintf(stderr,"Semaphore failed to create: %s\n", getLastErrorMessage());
@@ -563,6 +564,8 @@ static HANDLE hMapObjectG = NULL;  // handle to file mapping
 
 
 char* getStatus(int pid){
+  static char err[] = "-1";
+
   char *lpszBuf=(char*) malloc(SHMEMSIZE*sizeof(char));
   int i=0;
   LPWSTR lpszTmp=NULL;
@@ -583,7 +586,8 @@ char* getStatus(int pid){
 #ifdef DEBUG
     fprintf(stderr,"ERROR on line %d\n",__LINE__);
 #endif
-    return "-1";
+    //return "-1";
+    return err;
   }
   if((GetLastError() != ERROR_ALREADY_EXISTS)){
 #ifdef DEBUG
@@ -592,7 +596,8 @@ char* getStatus(int pid){
 #endif
     fIgnore = UnmapViewOfFile(lpvMem); 
     fIgnore = CloseHandle(hMapObject);
-    return "-1";
+    //return "-1";
+    return err;
   }
   fInit=TRUE;
   if(lpvMem==NULL)
@@ -607,7 +612,8 @@ char* getStatus(int pid){
     fprintf(stderr,"READING STRING S %d\n",__LINE__);
     fprintf(stderr,"READING STRING S %s\n", getLastErrorMessage());
 #endif
-    return "-1"; 
+    //return "-1"; 
+    return err;
   }
   lpszTmp = (LPWSTR) lpvMem;
   while (*lpszTmp){

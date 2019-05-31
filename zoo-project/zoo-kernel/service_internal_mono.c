@@ -54,8 +54,11 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
   MonoAssembly* assembly;
   MonoImage* monoImage;
 
-  char* libPath="/usr/lib";
-  char* etcPath="/etc";
+  static char LIB[] = "/usr/lib";
+  static char ETC[] = "/etc";
+ 
+  char* libPath = LIB;
+  char* etcPath = ETC;
   map* libPathMap=getMapFromMaps(*main_conf,"mono","lib");
   map* etcPathMap=getMapFromMaps(*main_conf,"mono","etc");
   if(libPathMap!=NULL)
@@ -83,7 +86,7 @@ int zoo_mono_support(maps** main_conf,map* request,service* s,maps **real_inputs
   //MonoDomain* monoDomain = mono_jit_init_version("ZOO_Embedded_Domain", "v4.0.30319"); 
   //MonoDomain* monoDomain = mono_jit_init("ZOO_Embedded_Domain");  
 
-  char* ZMapsLib = "ZMaps.dll";
+  const char* ZMapsLib = "ZMaps.dll";
   char *zooAssembly = NULL;
   
   map* config = NULL, *basedir = NULL;

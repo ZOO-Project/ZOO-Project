@@ -70,8 +70,9 @@ char* _createInitString(maps* conf,const char* key){
   int i=0;
   maps* cconf=getMaps(conf,key);
   if(cconf==NULL){
-    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
-    return "-1";
+    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);    
+    static char err[] = "-1";
+    return err;
   }
   int len=0;
   for(i=0;i<6;i++){

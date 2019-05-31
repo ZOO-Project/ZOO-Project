@@ -25,6 +25,8 @@
 #ifndef _ULINET_H
 #define _ULINET_H
 
+#include "fcgi_stdio.h"
+
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>
@@ -76,7 +78,7 @@ extern "C" {
     CURL *handle; //!< the CURL handler
     struct curl_slist *header; //!< the headers to send
     char* filename; //!< the cached file name
-    FILE* file; //!< the file pointer
+    FILE* file; //!< the file pointer    
     unsigned char *pabyData; //!< the downloaded content
     char *url; //!< the url used to access the server
     char *mimeType; //!< the mimeType returned by the server
