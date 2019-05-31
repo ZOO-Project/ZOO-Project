@@ -782,11 +782,12 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				HINTERNET bInternet, res1, res;
 				maps *tmpConf=createMaps("main");
 				tmpConf->content=createMap("memory","load");
+        static char PROC_NAME[] = "ZooWPSClient";
 				bInternet = InternetOpen (
 #ifndef WIN32
 							  (LPCTSTR)
 #endif
-							  "ZooWPSClient\0",
+							  PROC_NAME,
 							  INTERNET_OPEN_TYPE_PRECONFIG,
 							  NULL, NULL, 0);
 #ifndef WIN32

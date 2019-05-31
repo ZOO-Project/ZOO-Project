@@ -1287,14 +1287,16 @@ void outputMapfile(maps* conf,maps* outputs){
   /**
    * First store the value on disk
    */
+  static char DATA[] = "data";
+  static char JSON[] = "json";
   int imyIndex=getPublishedId(outputs);
   map* mime=getMapArray(outputs->content,"mimeType",imyIndex);
   map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
   map* dataPath=getMapFromMaps(conf,"main","dataPath");
-  char *ext="data";
-  if(mime!=NULL)
-    if(strncasecmp(mime->value,"application/json",16)==0)
-      ext="json";
+  char *ext = DATA;
+  if (mime != NULL)
+    if (strncasecmp(mime->value, "application/json", 16) == 0)
+      ext = JSON;
 
   map* storage=getMapArray(outputs->content,"storage",imyIndex);
   if(storage==NULL){

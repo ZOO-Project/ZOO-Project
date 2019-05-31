@@ -853,7 +853,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
     char* kvp = (char*) malloc((FILENAME_MAX + strlen(key))*sizeof(char));
     char* filepath = kvp + strlen(key);
     strncpy(kvp, key, strlen(key));
-    addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value), 
+    addToCache(m, tmpReq->value, tmpReq->value, (char*) "text/xml", strlen(tmpReq->value), 
 	       filepath, FILENAME_MAX);
     if (filepath == NULL) {
       errorException( m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);  
@@ -2000,6 +2000,8 @@ runRequest (map ** inputs)
   hInternet = InternetOpen (
 #ifndef WIN32
 			    (LPCTSTR)
+#else
+          (char*)
 #endif
 			    "ZooWPSClient\0",
 			    INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);

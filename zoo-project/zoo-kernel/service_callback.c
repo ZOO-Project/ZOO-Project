@@ -126,7 +126,8 @@ extern "C" {
     map *tmpStatus;
     maps* tmpConf=createMaps("main");
     tmpConf->content=createMap("memory","load");
-    hInternet=InternetOpen("ZooWPSClient\0",
+    static char PROC_NAME[] = "ZooWPSClient";
+    hInternet=InternetOpen(PROC_NAME,
 			   INTERNET_OPEN_TYPE_PRECONFIG,
 			   NULL,NULL, 0);
     if(!CHECK_INET_HANDLE(hInternet)){
@@ -434,7 +435,7 @@ extern "C" {
       // Fetching data inputs
       maps* curs=inputs;
       dumpMaps(curs);
-      char *keys[11][2]={
+      const char *keys[11][2]={
 	{
 	  "xlink:href",
 	  "ref_download_link"
@@ -613,7 +614,7 @@ extern "C" {
       // Downloading process outputs from cluster
       maps* curs=outputs;
       dumpMaps(curs);
-      char *keys[10][2]={
+      const char *keys[10][2]={
 	{
 	  "Reference",
 	  "ref"
@@ -655,7 +656,7 @@ extern "C" {
 	  "ref_wfs_link"
 	}	
       };
-      char* specifics[5][2]={
+      const char* specifics[5][2]={
 	{
 	  "download_link",
 	  "ref_download_link"
@@ -766,7 +767,7 @@ extern "C" {
       
     case 6: {
       // Finalize HPC
-      char *keys[6][2]={
+      const char *keys[6][2]={
 	{
 	  //"SubmitTime",
 	  "Submit",

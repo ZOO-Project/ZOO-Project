@@ -600,6 +600,7 @@ void readBase64(map **in){
  *  an error.
  */
 char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
+  static char EMPTY[] = "";
   map *res=*err;
   elements* tmpInputs=in;
   elements* tmpInputss=NULL;
@@ -737,7 +738,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	   * In case of an Input maps, then add the minOccurs and maxOccurs to the
 	   * content map.
 	   */
-	  char* keys[4]={
+	  const char* keys[4]={
 	    "minOccurs",
 	    "maxOccurs",
 	    "maximumMegabytes",
@@ -881,7 +882,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
     *err=res;
     return result;
   }
-  return "";
+  return EMPTY;
 }
 
 /**
@@ -1132,7 +1133,7 @@ void runDismiss(maps* conf,char* pid){
     */
     map* statusInfo=createMap("JobID",pid);
     addToMap(statusInfo,"Status","Dismissed");
-    printStatusInfo(conf,statusInfo,"Dismiss");
+    printStatusInfo(conf,statusInfo, (char*) "Dismiss");
     free(statusInfo);
   }
   return;
