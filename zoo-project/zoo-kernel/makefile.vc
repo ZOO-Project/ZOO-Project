@@ -11,7 +11,7 @@ all:  $(PROGRAMNAME) zcfg2yaml
 
 version.h:
 	echo #define LOCALEDIR "c:/" > version.h
-	echo #define ZOO_VERSION "1.6.0" >> version.h
+	echo #define ZOO_VERSION "1.7.0" >> version.h
 
 main_conf_read.tab.c: main_conf_read.y service.h
 	bison -p cr -d main_conf_read.y
