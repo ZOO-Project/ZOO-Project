@@ -3,7 +3,7 @@ include ZOOMakefile.opts
 all: version.h zoo_loader.cgi ${YAML_FILE1}
 
 version.h: Makefile
-	echo "#define ZOO_VERSION \"1.6.0 `svnversion`\"" > version.h
+	echo "#define ZOO_VERSION \"1.7.0 `svnversion`\"" > version.h
 	echo "@ETC_DEF@" >> version.h
 	echo "#define LOCALEDIR \"@localedir@\"" >>  version.h
 
