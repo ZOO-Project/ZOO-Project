@@ -999,15 +999,15 @@ else
 	if test "$IVERS" == "$ITKVERS"; then
 	   ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS"
 	else
-		ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_lsqr-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS"
+		ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS"
 	fi
 
 	if test -a "${OTBPATH}/include/OTB-${OTBVERS}" ; then 
 		OTB_RPATH="$OTBPATH/include/OTB-${OTBVERS}/"
-		OTB_CPPFLAGS="-I${OTB_RPATH}ApplicationEngine -I$OTB_RPATH/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTB_RPATH/Utilities/ITK -I$OTB_RPATH/ -I$OTB_RPATH/IO -I$OTB_RPATH/UtilitiesAdapters/OssimAdapters -I$OTB_RPATH/UtilitiesAdapters/CurlAdapters -I$OTB_RPATH/Utilities/BGL -I$OTB_RPATH/UtilitiesAdapters/ITKPendingPatches -I$OTB_RPATH/Utilities/otbconfigfile $GDAL_CFLAGS"
+		OTB_CPPFLAGS="-I${OTB_RPATH} -I${OTB_RPATH}ApplicationEngine -I$OTB_RPATH/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTB_RPATH/Utilities/ITK -I$OTB_RPATH/ -I$OTB_RPATH/IO -I$OTB_RPATH/UtilitiesAdapters/OssimAdapters -I$OTB_RPATH/UtilitiesAdapters/CurlAdapters -I$OTB_RPATH/Utilities/BGL -I$OTB_RPATH/UtilitiesAdapters/ITKPendingPatches -I$OTB_RPATH/Utilities/otbconfigfile $GDAL_CFLAGS"
 		OTB_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ -lOTBImageIO-$OTBVERS -lOTBCommon-$OTBVERS -lOTBApplicationEngine-$OTBVERS -L$ITKPATH/lib $ITK_LDFLAGS"
 	else
-		OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
+		OTB_CPPFLAGS="-I${OTB_RPATH} -I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
 		OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib $ITK_LDFLAGS"
 
 	fi
