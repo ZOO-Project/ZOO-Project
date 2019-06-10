@@ -15,6 +15,7 @@
 
 =========================================================================*/
 #include "otbZooWatcher.h"
+#include "otbConfigure.h"
 #include "service_internal.h"
 
 ZooWatcher
@@ -51,13 +52,16 @@ void
 ZooWatcher
 ::StartFilter()
 {
+#if OTB_VERSION_MAJOR < 6 
   m_TimeProbe.Start();
+#endif
 }
 
 void
 ZooWatcher
 ::EndFilter()
 {
+#if OTB_VERSION_MAJOR < 6 
   m_TimeProbe.Stop();
   std::ostringstream elapsedTime;
   elapsedTime.precision(1);
@@ -67,4 +71,5 @@ ZooWatcher
             << elapsedTime.str()
             << " seconds)"
             << std::endl;
+#endif
 }
