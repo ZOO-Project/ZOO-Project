@@ -729,7 +729,7 @@ bool runUpload(maps** conf){
 	/**/zooLock* lck;
 	if((lck=lockFile(*conf,argv[1]->value,'w'))!=NULL){/**/
 	  if(ssh_copy(*conf,argv[1]->value,argv[2]->value,ssh_get_cnt(*conf))!=true){
-	    char* templateStr=_("Unable to copy over SSH the file requested for setting the value of %s.");
+	    const char* templateStr=_("Unable to copy over SSH the file requested for setting the value of %s.");
 	    char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv[0]->value)+1)*sizeof(char));
 	    sprintf(tmpMessage,templateStr,argv[0]->value);
 	    setMapInMaps(*conf,"lenv","message",tmpMessage);
