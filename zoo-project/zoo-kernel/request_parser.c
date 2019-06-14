@@ -1069,14 +1069,22 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  addIntToMap (tmpmaps->content, "size",
 					       buffersize);
 				}
-			      else if (cur5 != NULL)/*
-				     && cur5->type == XML_CDATA_SECTION_NODE)*/{
-				while(cur5!=NULL && cur5->type != XML_CDATA_SECTION_NODE)
-				  cur5=cur5->next;
-				xmlFree(mv);
-				if(cur5!=NULL && cur5->content!=NULL){
-				  mv=xmlStrdup(cur5->content);
-				}
+			      else if (cur5 != NULL){
+				if(ltmp!= NULL && strstr(ltmp->value,"text/")!=NULL){
+				  xmlChar *tmp = xmlNodeListGetRawString (doc,
+									  cur4->xmlChildrenNode,
+									  0);
+				  addToMap (tmpmaps->content, "value",
+					    (char *) tmp);
+				  xmlFree (tmp);
+				}else{
+				  while(cur5!=NULL && cur5->type != XML_CDATA_SECTION_NODE)
+				    cur5=cur5->next;
+				  xmlFree(mv);
+				  if(cur5!=NULL && cur5->content!=NULL){
+				    mv=xmlStrdup(cur5->content);
+				  }
+			 	}
 			      }
 			    }
 			  }
@@ -1860,7 +1868,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
   map* r_inputs = getMap (request,toCheck);
   if (r_inputs == NULL){
     if(mandatory>0){
-      char *replace=_("Mandatory parameter <%s> was not specified");
+      const char *replace=_("Mandatory parameter <%s> was not specified");
       char *message=(char*)malloc((strlen(replace)+strlen(toCheck)+1)*sizeof(char));
       sprintf(message,replace,toCheck);
       if(lres==NULL){
@@ -1909,7 +1917,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       }
     }
     if(hasValidValue<0){
-      char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
+      const char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
       nb=0;
       char *vvalues=NULL;
       char* num=_("is");
