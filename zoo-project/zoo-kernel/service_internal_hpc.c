@@ -68,7 +68,7 @@ void addNestedOutputs(service** s){
 	  dupElements(cur),
 	  dupElements(cur)
 	};
-	char *geoLink="wcs_link";
+	const char *geoLink="wcs_link";
 	if(geo==2){
 	  geoLink="wfs_link";
 	}
@@ -212,7 +212,7 @@ int addReadLocks(maps** conf){
       };
       zooLock* lck;
       if((lck=lockFile(*conf,argv[1]->value,'r'))==NULL){
-	char* templateStr=_("Unable to lock the file for %s in read mode.");
+	const char* templateStr=_("Unable to lock the file for %s in read mode.");
 	char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv[0]->value)+1)*sizeof(char));
 	sprintf(tmpMessage,templateStr,argv[0]->value);
 	setMapInMaps(*conf,"lenv","message",tmpMessage);
@@ -250,7 +250,7 @@ int removeReadLocks(maps** conf){
     for(i=0;i<cnt;i++){
       if(unlockFile(*conf,zoo_file_locks[i])<1){
 	map* argv=getMapArray(queueMaps->content,"input",i);
-	char* templateStr=_("Unable to unlock the file for %s after execution.");
+	const char* templateStr=_("Unable to unlock the file for %s after execution.");
 	char *tmpMessage=(char*)malloc((strlen(templateStr)+strlen(argv->value)+1)*sizeof(char));
 	sprintf(tmpMessage,templateStr,argv->value);
 	maps* lenv=getMaps(*conf,"lenv");

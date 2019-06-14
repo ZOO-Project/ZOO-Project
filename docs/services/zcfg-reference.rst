@@ -222,17 +222,17 @@ instance, the following is supported:
        value = 11
        AllowedValues = -10,-8,-7,-5,-1
        rangeMin = 0
-       rangeMin = 100
+       rangeMax = 100
        rangeClosure = co
      </Default>
      <Supported>
        rangeMin = 200
-       rangeMin = 600
+       rangeMax = 600
        rangeClosure = co
      </Supported>
      <Supported>
        rangeMin = 750
-       rangeMin = 990
+       rangeMax = 990
        rangeClosure = co
        rangeSpacing = 10
      </Supported>
