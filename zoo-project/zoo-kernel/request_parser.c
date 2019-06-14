@@ -1071,8 +1071,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				}
 			      else if (cur5 != NULL)/*
 				     && cur5->type == XML_CDATA_SECTION_NODE)*/{
+				while(cur5!=NULL && cur5->type != XML_CDATA_SECTION_NODE)
+				  cur5=cur5->next;
 				xmlFree(mv);
-				if(cur5->content!=NULL){
+				if(cur5!=NULL && cur5->content!=NULL){
 				  mv=xmlStrdup(cur5->content);
 				}
 			      }
