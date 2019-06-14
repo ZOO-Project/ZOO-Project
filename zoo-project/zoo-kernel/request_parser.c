@@ -1920,7 +1920,7 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       const char *replace=_("The value <%s> was not recognized, %s %s the only acceptable value.");
       nb=0;
       char *vvalues=NULL;
-      char* num=_("is");
+      const char* num=_("is");
       while(avalues[nb]!=NULL){
 	char *tvalues;
 	if(vvalues==NULL){
