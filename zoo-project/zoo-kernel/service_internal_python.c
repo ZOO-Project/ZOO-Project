@@ -354,7 +354,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   const
 #endif
     char *pStrErrorMessage = PyString_AsString(pvalue);
-  char *tmp0=_("Python module %s cannot be loaded. Message: %s\n");
+  const char *tmp0=_("Python module %s cannot be loaded. Message: %s\n");
   
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
@@ -392,14 +392,14 @@ void PythonZooReport(maps* m,const char* module,int load){
     if(PyString_Check(trace)){
       if(pbt!=NULL)
 	free(pbt);
-      char* format=_("%s\nUnable to run your python process properly. Please check the following messages : %s");
+      const char* format=_("%s\nUnable to run your python process properly. Please check the following messages : %s");
       pbt=(char*)malloc((strlen(format)+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
       sprintf(pbt,format,tpbt,PyString_AsString(trace));
     }
     else{
       if(pbt!=NULL)
 	free(pbt);
-      char* format=_("%s \n Unable to run your python process properly. Unable to provide any further information.");
+      const char* format=_("%s \n Unable to run your python process properly. Unable to provide any further information.");
       pbt=(char*)malloc((strlen(format)+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
       sprintf(pbt,format,tpbt);
     }
