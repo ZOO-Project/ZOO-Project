@@ -87,11 +87,13 @@ it. The supported programming languages are listed bellow:
 ------------ ------------------- ------------------------- ------------
 C / C++      Shared Library      maps* M 	           integer
 Java 	     Class File 	 `HashMap`_ 	           integer
+C# 	     Class File 	 `ZMaps`_	           integer
 Python 	     Module File 	 `Dictionary`_ 	           integer
 PHP 	     Script File 	 `Array`_ 	           integer
 Perl 	     Script File 	  	                   integer
 Ruby 	     Script File 	 `Hash`_	           integer
 Fortran      Shared Library      CHARACTER*(1024) M(10,30) integer
+R	     Script file 	 `R List`_	           integer
 JavaScript   Script file 	 `Object`_ or Array	   Object/Array
 ============ =================== ========================= ============
 
@@ -100,4 +102,6 @@ JavaScript   Script file 	 `Object`_ or Array	   Object/Array
 .. _`Array`: http://php.net/manual/language.types.array.php
 .. _`Object`: http://www.json.org/
 .. _`Hash`: http://ruby-doc.org/core-2.2.0/Hash.html
+.. _`ZMaps`: https://docs.microsoft.com/fr-fr/dotnet/api/system.collections.generic.dictionary-2?view=netframework-4.8
+.. _`R List`: https://cran.r-project.org/doc/manuals/r-release/R-lang.html#List-objects
 
