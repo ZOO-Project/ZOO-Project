@@ -1000,7 +1000,7 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
 void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNodePtr nc,service* serv){
-  xmlNsPtr ns,ns_ows,ns_xlink;
+  xmlNsPtr ns,ns_ows,ns_xlink; 
   xmlNodePtr n,nc1;
   xmlNodePtr nc2 = NULL;
   map* version=getMapFromMaps(m,"main","rversion");
