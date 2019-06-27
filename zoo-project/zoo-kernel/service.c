@@ -1808,3 +1808,23 @@ void logMessage(const char* source, const char* function, int line, const char* 
 // zooLog;
 // zooLogMsg(NULL, getLastErrorMessage()); 
 // zooLogMsg("log.txt", getLastErrorMessage()); 
+
+#ifdef WIN32
+#ifndef USE_MS
+char *strcasestr (char const *a, char const *b)
+  {
+    char *x = zStrdup (a);
+    char *y = zStrdup (b);
+ 
+      x = _strlwr (x);
+      y = _strlwr (y);
+    char *pos = strstr (x, y);
+    char *ret = pos == NULL ? NULL : (char *) (a + (pos - x));
+      free (x);
+      free (y);
+      return ret;
+  };
+#else
+   ;
+#endif
+#endif

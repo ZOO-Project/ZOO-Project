@@ -235,7 +235,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) { 
 	  SetEnvironmentVariable("PYTHONHOME", home->value);
   }
-  char buffer[128];        
+  char buffer[128];
 #endif  
   if(hasToClean>0)
     free(python_path);
@@ -253,7 +253,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyImport_ImportModule("zoo");  
 #else
   init_zoo();
-#endif  
+#endif 
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
   PyGILState_STATE gstate;
@@ -284,8 +284,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   else{
     errorException (m, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
     exit(-1);
-  }  
-  pModule = PyImport_Import(pName);    
+  } 
+
+  pModule = PyImport_Import(pName);
   int res=SERVICE_FAILED;
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
@@ -300,7 +301,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
       PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
       PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
-      pValue = PyObject_CallObject(pFunc, pArgs);	  
+      pValue = PyObject_CallObject(pFunc, pArgs);
       if (pValue != NULL) {
 	res=PyInt_AsLong(pValue);
 	freeMaps(real_outputs);
@@ -334,7 +335,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyEval_AcquireLock();
 #endif
   PyThreadState_Swap(mainstate);
-  Py_Finalize();  
+  Py_Finalize();
   return res;
 }
 

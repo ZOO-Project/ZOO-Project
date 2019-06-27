@@ -508,7 +508,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 #ifdef WIN32
       HINSTANCE so =
-        LoadLibraryEx (tmps1, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+        LoadLibraryEx (tmps1, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);						
 #else
       void *so = dlopen (tmps1, RTLD_LAZY);
 #endif
@@ -973,7 +973,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 int
 runRequest (map ** inputs)
 {
- 
+	
 #ifndef USE_GDB
 #ifndef WIN32
   signal (SIGCHLD, SIG_IGN);
@@ -1281,7 +1281,6 @@ runRequest (map ** inputs)
     SERVICE_URL = zStrdup (DEFAULT_SERVICE_URL);
 
 
-
   service *s1;
   int scount = 0;
 #ifdef DEBUG
@@ -1326,9 +1325,9 @@ runRequest (map ** inputs)
     zClose(saved_stdout);
 #endif
   }
-
+  
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
-    {
+    {	
 #ifdef DEBUG
       dumpMap (r_inputs);
 #endif
@@ -1396,7 +1395,7 @@ runRequest (map ** inputs)
       return 0;
     }
   else
-    {
+    {	  
       r_inputs = getMap (request_inputs, "JobId");
       if(reqId>nbReqIdentifier){
 	if (strncasecmp (REQUEST, "GetStatus", 9) == 0 ||
@@ -1532,7 +1531,7 @@ runRequest (map ** inputs)
 #endif
 			  s1 = createService();
 			  t = readServiceFile (m, import->value, &s1, import->name);
-                
+
 			  if (t < 0) // failure reading zcfg
 			    {
 			      map *tmp00 = getMapFromMaps (m, "lenv", "message");
@@ -1588,10 +1587,10 @@ runRequest (map ** inputs)
 			map *tmpMapI = getMapFromMaps (m, "lenv", "Identifier");
 			/**
 			 * No support for dot in service name stored in metadb!?
-			 #ifdef META_DB
+		//	 #ifdef META_DB
 			 service* s2=extractServiceFromDb(m,tmpMapI->value,0);
 			 if(s2==NULL){
-			 #endif
+		//	 #endif
 			*/
 			s1 = createService();
 			t = readServiceFile (m, buff1, &s1, tmpMapI->value);
@@ -1810,7 +1809,7 @@ runRequest (map ** inputs)
 	    return 0;
 	  }
 	else if (strncasecmp (REQUEST, "Execute", strlen (REQUEST)) != 0)
-	  {
+	  {	  
 	    map* version=getMapFromMaps(m,"main","rversion");
 	    int vid=getVersionId(version->value);	    
 	    int len = 0;
@@ -1867,7 +1866,7 @@ runRequest (map ** inputs)
 	closedir (dirp);
       }
     }
-
+	
   map *postRequest = NULL;
   postRequest = getMap (request_inputs, "xrequest");
   
@@ -1950,7 +1949,7 @@ runRequest (map ** inputs)
 	return errorException (m, _("Unable to allocate memory"),
 			       "InternalError", NULL);
       }
-
+  
     int saved_stdout = zDup (fileno (stdout));
     zDup2 (fileno (stderr), fileno (stdout));
     t = readServiceFile (m, tmps1, &s1, r_inputs->value);
@@ -2083,7 +2082,7 @@ runRequest (map ** inputs)
 #ifdef DEBUG
   dumpMap (request_inputs);
 #endif
-
+  
   map *status = getMap (request_inputs, "status");
   if(vid==0){
     // Need to check if we need to fork to load a status enabled 
@@ -2164,7 +2163,7 @@ runRequest (map ** inputs)
 
   int eres = SERVICE_STARTED;
   int cpid = zGetpid ();
-
+  
   // Create a map containing a copy of the request map
   maps *_tmpMaps = createMaps("request");
   addMapToMap(&_tmpMaps->content,request_inputs);
@@ -2218,7 +2217,7 @@ runRequest (map ** inputs)
     addToMap (_tmpMaps->content, "soap", ltmp->value);
   else
     addToMap (_tmpMaps->content, "soap", "false");
-
+  
   // Parse the session file and add it to the main maps
   char* originalCookie=NULL;
   if (cgiCookie != NULL && strlen (cgiCookie) > 0)
@@ -2269,25 +2268,37 @@ runRequest (map ** inputs)
   dumpMap (request_inputs);
 #endif
   int ei = 1;
-  
+ 
+  _tmpMaps = createMaps("renv");	
+
 #ifdef WIN32
   LPVOID orig = GetEnvironmentStrings();
   LPTSTR s = (LPTSTR) orig;
+  
+  while (*s != NULL) {
+    char* env = strdup(s);
+    char* delim = strchr(env,'=');
+    if (delim != NULL) {
+      char* val = delim+1;
+      *delim = '\0';		
+      if(_tmpMaps->content == NULL) {
+        _tmpMaps->content = createMap(env,val);
+      }
+      else {
+        addToMap(_tmpMaps->content,env,val);
+      }			
+    }
+    s += strlen(s)+1;
+  } 
+  FreeEnvironmentStrings((LPCH)orig);	
 #else
   char **orig = environ;
   char *s=*orig;
-#endif
-
-  _tmpMaps = createMaps("renv");
-if(orig!=NULL)
-  for (; 
-#ifdef WIN32
-       *s;
-       s++
-#else
+  
+  if(orig!=NULL)
+    for (; 
        s;
        ei++
-#endif
        ) {
     if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
       int len=strlen(s);
@@ -2302,19 +2313,17 @@ if(orig!=NULL)
       free(tmpName1);
       free(tmpName);
     }
-#ifndef WIN32
     s = *(orig+ei);
+  }  
 #endif
-  }
+ 
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
     addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
   }
   addMapsToMaps (&m, _tmpMaps);
   freeMaps (&_tmpMaps);
   free (_tmpMaps);
-#ifdef WIN32
-  FreeEnvironmentStrings((LPCH)orig);
-#endif
+
   if(postRequest!=NULL)
     setMapInMaps (m, "renv", "xrequest", postRequest->value);
   //dumpMaps(m);
@@ -2350,6 +2359,7 @@ if(orig!=NULL)
       status = NULLMAP;
   if (status == NULLMAP)
     {
+	  
       if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	freeService (&s1);
 	free (s1);
