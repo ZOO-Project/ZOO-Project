@@ -1,4 +1,6 @@
-Version 1.7.0-dev
+Version 1.8.0-dev
+  * Fix #172
+Version 1.7.0
   * Fix issue with UOM definitions in zcfg2sql
   * Make callback and HPC support independent from each other
   * Update SAGA-GIS support to version 7.2.0
