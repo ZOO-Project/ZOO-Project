@@ -1,3 +1,4 @@
+
 .. _kernel_config:
 
 ZOO-Kernel configuration
@@ -157,6 +158,21 @@ parameters in this section:
     Access-Control-Allow-Methods=POST
     Access-Control-Allow-Headers=content-type
 
+curl section
+...............................
+
+The `[curl]` section is used on windows platform to specify, using the
+`cainfo` parameter, where is located the
+`cacert.pem <https://curl.haxx.se/docs/caextract.html>`__ file on your
+machine. An example bellow is provided to illustrate sur a setting. 
+
+.. code-block:: guess
+    :linenos:
+    
+    [curl]
+    cainfo=./cacert.pem
+
+
 
 env section
 ...............................
@@ -175,7 +191,7 @@ variable, as follow:
     DISPLAY=:1
 
 In case you have activated the OTB support, please refer to :ref:`this
-specific section <kernel-orfeotoolbox-main.cfg>`. 
+specific section <kernel-orfeotoolbox-main.cfg>`.
 
 lenv section
 ...............................

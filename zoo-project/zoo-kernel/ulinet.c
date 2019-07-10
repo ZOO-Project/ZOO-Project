@@ -81,7 +81,7 @@ size_t write_data_into(void *buffer, size_t size, size_t nmemb, void *data){
 size_t write_data_into_file(void *buffer, size_t size, size_t nmemb, void *data) 
 { 
    size_t realsize = size * nmemb;
-   int writen=0;
+   size_t writen=0;
    _HINTERNET *psInternet;
    if(buffer==NULL){
      buffer=NULL;
@@ -305,7 +305,7 @@ char* getProvenance(maps* conf,const char* url){
  * @return 0 if the operation succeeded, -1 in other case.
  */
 int AddMissingHeaderEntry(_HINTERNET* handle,const char* key,const char* value){
-  int length=strlen(key)+strlen(value)+3;
+  size_t length=strlen(key)+strlen(value)+3;
   char *entry=(char*)malloc((length)*sizeof(char));
   if(entry==NULL)
     return -1;
@@ -325,7 +325,6 @@ int AddMissingHeaderEntry(_HINTERNET* handle,const char* key,const char* value){
 int isProtectedHost(const char* protectedHosts, const char* url) {
 	char *token, *saveptr;
 	int cnt;
-	char* host;
 
 	// knut: make a copy of url since strtok family modifies first argument and cannot be used on constant strings  
 	char* urlcpy = (char*)malloc(sizeof(char)*(strlen(url) + 1));
@@ -373,7 +372,7 @@ void AddHeaderEntries(HINTERNET* handle,maps* conf){
 	char *token, *saveptr;
 	token = strtok_r (tmp, ",", &saveptr);
 	while (token != NULL){
-	  int length=strlen(token)+6;
+	  size_t length=strlen(token)+6;
 	  char* tmp1=(char*)malloc(length*sizeof(char));
 	  map* tmpMap;
 	  snprintf(tmp1,6,"HTTP_");
@@ -413,7 +412,7 @@ void InternetCloseHandle(HINTERNET* handle0){
       _HINTERNET handle=handle0->ihandle[i];
       if(handle.hasCacheFile>0){
 	fclose(handle.file);
-	unlink(handle.filename);
+	zUnlink(handle.filename);
 	free(handle.filename);
       }
       else{
@@ -482,9 +481,13 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   hInternet->ihandle[hInternet->nb].nDataLen = 0;
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
+  hInternet->ihandle[hInternet->nb].code = -1;
   hInternet->ihandle[hInternet->nb].pabyData = NULL;
   hInternet->ihandle[hInternet->nb].post = NULL;
-  
+
+  map* caBundle=getMapFromMaps((maps*) conf,"curl","cainfo");
+  if(caBundle!=NULL)
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_CAINFO,caBundle->value);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIEFILE, "ALL");
 #ifndef TIGER
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_COOKIELIST, "ALL");
@@ -625,7 +628,7 @@ int processDownloads(HINTERNET* hInternet){
     curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_CONTENT_TYPE,&tmp);
     if(tmp!=NULL)
       hInternet->ihandle[i].mimeType=zStrdup(tmp);
-    curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_RESPONSE_CODE,&hInternet->ihandle[i].code);
+    curl_easy_getinfo(hInternet->ihandle[i].handle,CURLINFO_RESPONSE_CODE,&(hInternet->ihandle[i].code));
     curl_multi_remove_handle(hInternet->handle, hInternet->ihandle[i].handle);
     curl_easy_cleanup(hInternet->ihandle[i].handle);
   }
@@ -657,7 +660,7 @@ int freeCookieList(HINTERNET hInternet){
  * @return 1 on success, 0 if failure
  */
 int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToRead, size_t *lpdwNumberOfBytesRead){
-  int dwDataSize;
+  size_t dwDataSize;
 
   if(hInternet.hasCacheFile>0){
     fseek (hInternet.file , 0 , SEEK_END);
@@ -683,7 +686,7 @@ int InternetReadFile(_HINTERNET hInternet,LPVOID lpBuffer,int dwNumberOfBytesToR
 #endif
 
   if(hInternet.hasCacheFile>0){
-    int freadRes = fread(lpBuffer,dwDataSize+1,1,hInternet.file); 
+    size_t freadRes = fread(lpBuffer,dwDataSize+1,1,hInternet.file); 
     *lpdwNumberOfBytesRead = hInternet.nDataLen;
   }
   else{

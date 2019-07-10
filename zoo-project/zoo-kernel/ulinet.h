@@ -74,6 +74,11 @@ extern "C" {
    * Individual CURL handler
    */
   typedef struct {
+    long code; //!< the last received response code
+    int hasCacheFile; //!< 1 if we used a cache file
+    int id; //!< The position of the element in the queue
+    size_t nDataLen; //!< the length of the downloaded content
+    size_t nDataAlloc; //!< 
     CURL *handle; //!< the CURL handler
     struct curl_slist *header; //!< the headers to send
     char* filename; //!< the cached file name
@@ -83,22 +88,17 @@ extern "C" {
     char *mimeType; //!< the mimeType returned by the server
     char *post; //!< the potential POST XML content
     char* cookie; //!< The potential Cookie returned by the server
-    int hasCacheFile; //!< 1 if we used a cache file
-    int nDataLen; //!< the length of the downloaded content
-    int nDataAlloc; //!< 
-    long code; //!< the last received response code
-    int id; //!< The position of the element in the queue
   } _HINTERNET;
 
   /**
    * Multiple CURL handlers
    */
   typedef struct {
+    int nb; //!< number of element in the queue 
     CURLM *handle; //!< the CURLM handler
     _HINTERNET ihandle[MAX_REQ]; //!< individual handlers in the queue 
     char *waitingRequests[MAX_REQ]; //!< request in the queue
     char *agent; //!< The User-Agent to use for HTTP request
-    int nb; //!< number of element in the queue 
   } HINTERNET;
 
   size_t write_data_into(void*,size_t,size_t,void*);
