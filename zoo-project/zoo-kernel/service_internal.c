@@ -197,16 +197,18 @@ struct zooLock* lockFile(maps* conf,const char* filename,const char mode){
 int unlockFile(maps* conf,struct zooLock* s){
   int res=-1;
   if(s!=NULL){
+    int fcntlRes;
     s->lock.l_type = F_UNLCK;
     res=fcntl(fileno(s->lockfile), F_SETLK, &s->lock);
     if(res==-1)
       return res;
-    fclose(s->lockfile);
 #ifndef WIN32
     // Check if there is any process locking a file and delete the lock if not.
     s->lock.l_type = F_WRLCK;
-    if(fcntl(fileno(s->lockfile), F_GETLK, &s->lock)!=-1 && s->lock.l_type == F_UNLCK){
+    fcntlRes=fcntl(fileno(s->lockfile), F_GETLK, &s->lock);
+    if(fcntlRes!=1 && s->lock.l_type == F_UNLCK){
 #endif
+      fclose(s->lockfile);
       zUnlink(s->filename);
 #ifndef WIN32
     }

@@ -25,6 +25,14 @@
 #ifndef _ULINET_H
 #define _ULINET_H 1
 
+#ifdef USE_JS
+#ifdef WIN32
+#define XP_WIN 1
+#else
+#define XP_UNIX 0
+#endif
+#include "jsapi.h"
+#endif
 #include "fcgi_stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
@@ -36,14 +44,6 @@
 #endif
 #include <string.h>
 #include "time.h"
-#ifdef USE_JS
-#ifdef WIN32
-#define XP_WIN 1
-#else
-#define XP_UNIX 0
-#endif
-#include "jsapi.h"
-#endif
 #ifndef __cplusplus
 // knut: see new def of bool in service.h
 //#ifndef bool
