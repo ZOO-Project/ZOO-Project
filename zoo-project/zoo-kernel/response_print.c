@@ -1000,7 +1000,7 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
 void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNodePtr nc,service* serv){
-  xmlNsPtr ns,ns_ows,ns_xlink; 
+  xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc1;
   xmlNodePtr nc2 = NULL;
   map* version=getMapFromMaps(m,"main","rversion");
@@ -1145,7 +1145,8 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
       }else
 	xmlNewProp(nc2,BAD_CAST "maxOccurs",BAD_CAST "1");
       if((tmp1=getMap(e->content,"maximumMegabytes"))!=NULL){
-	xmlNewProp(nc2,BAD_CAST "maximumMegabytes",BAD_CAST tmp1->value);
+	if(vid==0)
+	  xmlNewProp(nc2,BAD_CAST "maximumMegabytes",BAD_CAST tmp1->value);
       }
     }
 
@@ -1242,7 +1243,13 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 	      }
 	  }
 	}
-      
+
+	if((tmp1=getMap(e->content,"maximumMegabytes"))!=NULL){
+	  if(vid==1)
+	    xmlNewProp(nc5,BAD_CAST "maximumMegabytes",BAD_CAST tmp1->value);
+	}
+
+
 	tmp1=_tmp->content;
 
 	if(vid==0)
@@ -1616,6 +1623,12 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 		}
 	    }
 	  }
+
+	if((tmp1=getMap(e->content,"maximumMegabytes"))!=NULL){
+	  if(vid==1)
+	    xmlNewProp(nc5,BAD_CAST "maximumMegabytes",BAD_CAST tmp1->value);
+	}
+
 	tmp1=_tmp->content;
 	int oI=0;
 	for(oI=0;oI<6;oI++)

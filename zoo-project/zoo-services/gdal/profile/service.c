@@ -181,8 +181,8 @@ int main(int argc,char** argv)
     printf("Unable to load your raster file %s !\n",argv[1]);
 #endif
   }
-  OGRCleanupAll();
   GDALClose(hDataset);
+  OGRCleanupAll();
   GDALDestroyDriverManager();
 #ifdef ZOO_SERVICE
   return SERVICE_SUCCEEDED;

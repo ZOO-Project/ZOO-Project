@@ -1,5 +1,7 @@
 Version 1.8.0-dev
-  * Fix #172
+  * Fix issue in case JavaScript support is activated
+  * Fix issue with GDAL profile service
+  * Fix #172 for https support 
 Version 1.7.0
   * Fix issue with UOM definitions in zcfg2sql
   * Make callback and HPC support independent from each other
