@@ -1070,7 +1070,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					       buffersize);
 				}
 			      else if (cur5 != NULL){
-				if(ltmp!= NULL && strstr(ltmp->value,"text/")!=NULL){
+				map* handleText=getMapFromMaps(*main_conf,"main","handleText");
+				if(handleText!=NULL && strcasecmp(handleText->value,"true")==0 && ltmp!= NULL && strstr(ltmp->value,"text/")!=NULL){
 				  xmlChar *tmp = xmlNodeListGetRawString (doc,
 									  cur4->xmlChildrenNode,
 									  0);

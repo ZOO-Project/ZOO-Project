@@ -97,7 +97,13 @@ The main.cfg ``[main]`` section parameters are explained bellow.
  * ``memory``: (Optional) can take the value ``load`` to ensure that
    the value field of the inputs data will be filled by the ZOO-Kernel
    or ``protected`` to have only the ``cache_file`` filled.
-
+ * ``handleText``: (Optional) set it to ``true`` to get your Complex data
+   nodes containing text not requiring a single CDATA node. Be aware
+   that in case you use any HTML or XML there, you will then need to
+   rebuild the string to get the original format of the text from your
+   service code. In case you do not add handleText or set its value to
+   true, you will simply need to use the value as it was provided in
+   a single CDATA node provided in the Execute request.
 
 .. warning:: 
   The ``libPath`` parameter is currently only recognized by services implemented
