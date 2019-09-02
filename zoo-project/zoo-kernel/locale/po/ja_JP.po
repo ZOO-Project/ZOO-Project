@@ -5,14 +5,14 @@
 # Translators:
 # Nicolas Bozon <nicolas.bozon@gmail.com>, 2015
 # 林博文 <pica.hayashi@gmail.com>, 2015
-# 林博文 <pica.hayashi@gmail.com>, 2016
+# 林博文 <pica.hayashi@gmail.com>, 2016,2018
 msgid ""
 msgstr ""
 "Project-Id-Version: ZOO-Kernel Internationalization\n"
 "Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
 "POT-Creation-Date: 2015-07-02 18:06+0200\n"
-"PO-Revision-Date: 2017-09-22 11:15+0000\n"
-"Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>\n"
+"PO-Revision-Date: 2018-11-20 07:22+0000\n"
+"Last-Translator: 林博文 <pica.hayashi@gmail.com>\n"
 "Language-Team: Japanese (Japan) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/ja_JP/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -278,7 +278,7 @@ msgstr "main.cfg ファイルをロードできません。"
 
 #: zoo_service_loader.c:895
 msgid "%s The following file: %s cannot be found."
-msgstr ""
+msgstr "%s 次のファイルが見つかりません: %s ."
 
 #: zoo_service_loader.c:940
 #, c-format
