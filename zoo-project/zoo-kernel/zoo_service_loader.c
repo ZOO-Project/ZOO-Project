@@ -69,7 +69,7 @@ extern "C" int crlex ();
 #include "response_print.h"
 #include "request_parser.h"
 #include "sqlapi.h"
-#ifdef WIN32
+#ifdef USE_JSON
 #include "caching.h"
 #endif
 
@@ -106,8 +106,12 @@ extern "C" int crlex ();
 #endif
 
 #ifdef USE_CALLBACK
-#include "service_json.h"
 #include "service_callback.h"
+#endif
+
+#ifdef USE_JSON
+#include "service_json.h"
+#include "json_tokener.h"
 #endif
 
 #include <dirent.h>
@@ -257,12 +261,16 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
  * @see inheritance, readServiceFile
  */
 int
-recursReaddirF ( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_dir, 
-		 char *prefix, int saved_stdout, int level, 
-		 void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr, service *) )
+recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
+		 //( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_dir,
+		 char *prefix, int saved_stdout, int level,
+		 void (func) (registry *, maps *, void*, void*, service *) )
+		 //void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr, service *) )
 {
   struct dirent *dp;
   int scount = 0;
+  xmlDocPtr doc=(xmlDocPtr) doc1;
+  xmlNodePtr n=(xmlNodePtr) n1;
 
   if (conf_dir == NULL)
     return 1;
@@ -384,6 +392,603 @@ recursReaddirF ( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_
 }
 
 /**
+ * When th zcfg file is not found, print error message and cleanup memory
+ * @param zooRegistry the populated registry
+ * @param m the maps pointer to the content of main.cfg file
+ * @param zcfg the zcfg file name
+ * @param code the string determining the nature of the error
+ * @param locator the string determining which parameter the error refer to
+ * @param orig the service name
+ * @param corig the current service name (in case multiple services was parsed)
+ * @param funcError the function used to print the error back
+ */
+void exitAndCleanUp(registry* zooRegistry, maps* m,
+		    const char* zcfg,const char* code,const char* locator,
+		    char* orig,char* corig,
+		    void (funcError) (maps*, map*)){
+  map *tmp00 = getMapFromMaps (m, "lenv", "message");
+  char tmp01[1024];
+  if (tmp00 != NULL)
+    sprintf (tmp01,
+	     _("Unable to parse the ZCFG file: %s (%s)"),
+	     zcfg, tmp00->value);
+  else
+    sprintf (tmp01,
+	     _("Unable to parse the ZCFG file: %s."),
+	     zcfg);
+  map* errormap = createMap("text", tmp01);
+  addToMap(errormap,"code", code);
+  addToMap(errormap,"locator", locator);
+  funcError(m,errormap);
+  freeMaps (&m);
+  free (m);
+  if(zooRegistry!=NULL){
+    freeRegistry(&zooRegistry);
+    free(zooRegistry);
+  }
+  free (orig);
+  if (corig != NULL)
+    free (corig);
+  //xmlFreeDoc (doc);
+  xmlCleanupParser ();
+  zooXmlCleanupNs ();
+  freeMap(&errormap);
+  free(errormap);
+}
+
+
+/**
+ * Search services from various possible sources 
+ *
+ * @param zopRegistry the populated registry
+ * @param m the maps pointer to the content of main.cfg file
+ * @param r_inputs the service(s) name(s)
+ * @param func the function used to print the result back
+ * @param doc the xml document or NULL (for json)
+ * @param n the xmlNode of JSON object pointer to the current element
+ * @param conf_dir the directory where the main.cfg has been found
+ * @param request_inputs the map pointer to the request KVP if any
+ * @param funcError the function used to print the error back
+ * @return 0 in case of success, 1 otherwise
+ */
+int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
+				void (func) (registry *, maps *, void*, void*, service *),
+				void* doc, void* n, char* conf_dir, map* request_inputs,
+				void (funcError) (maps*, map*) ){
+  char *orig = zStrdup (r_inputs);
+  service* s1=NULL;
+  int saved_stdout = zDup (fileno (stdout));
+  int t;
+  int scount = 0;
+  struct dirent *dp;
+
+  zDup2 (fileno (stderr), fileno (stdout));  
+  if (strcasecmp ("all", orig) == 0)
+    {
+      maps* imports = getMaps(m, IMPORTSERVICE); 
+      if (imports != NULL) {       
+	map* zcfg = imports->content;
+            
+	while (zcfg != NULL) {
+	  if (zcfg->value != NULL) {
+	    service* svc = (service*) malloc(SERVICE_SIZE);
+	    if (svc == NULL || readServiceFile(m, zcfg->value, &svc, zcfg->name) < 0) {
+	      // pass over silently
+	      zcfg = zcfg->next;
+	      continue;
+	    }
+	    inheritance(zooRegistry, &svc);
+#ifdef USE_HPC
+	    addNestedOutputs(&svc);
+#endif
+
+	    func(zooRegistry, m, doc, n, svc);
+	    freeService(&svc);
+	    free(svc);                             
+	  }
+	  zcfg = zcfg->next;
+	}            
+      }
+      if (int res =
+	  recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
+			  func) < 0)
+	return res;
+#ifdef META_DB
+      fetchServicesFromDb(zooRegistry,m,doc,n,func,0);
+      close_sql(m,0);
+#endif
+    }
+  else
+    {
+      DIR *dirp = opendir (conf_dir);
+      char *saveptr;
+      char *tmps = strtok_r (orig, ",", &saveptr);
+
+      char buff[256];
+      char buff1[1024];
+      while (tmps != NULL)
+	{
+	  int hasVal = -1;
+	  char *corig = zStrdup (tmps);
+	  map* import = getMapFromMaps (m, IMPORTSERVICE, corig);   
+	  if (import != NULL && import->value != NULL) 
+	    {
+#ifdef META_DB			
+	      service* s2=extractServiceFromDb(m,import->name,0);
+	      if(s2==NULL){
+#endif
+		s1 = createService();
+		t = readServiceFile (m, import->value, &s1, import->name);
+
+		if (t < 0) // failure reading zcfg
+		  {
+		    zDup2 (saved_stdout, fileno (stdout));
+		    exitAndCleanUp(zooRegistry, m,
+				   tmps,"InvalidParameterValue","identifier",
+				   orig,corig,
+				   funcError);
+                    return 1;
+		  }
+#ifdef DEBUG
+		dumpService (s1);
+#endif
+		inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+		addNestedOutputs(&s1);
+#endif
+		func (zooRegistry, m, doc, n, s1);
+		freeService (&s1);
+		free (s1);
+		s1 = NULL;
+		scount++;
+		hasVal = 1;                
+#ifdef META_DB
+	      }
+#endif
+	    }
+	  else if (strstr (corig, ".") != NULL)
+	    {
+	      parseIdentifier (m, conf_dir, corig, buff1);
+	      map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
+	      if (tmpMap != NULL)
+		addToMap (request_inputs, "metapath", tmpMap->value);
+	      map *tmpMapI = getMapFromMaps (m, "lenv", "Identifier");
+	      /**
+	       * No support for dot in service name stored in metadb!?
+	       #ifdef META_DB
+	       service* s2=extractServiceFromDb(m,tmpMapI->value,0);
+	       if(s2==NULL){
+	       #endif
+	      */
+	      s1 = createService();
+	      t = readServiceFile (m, buff1, &s1, tmpMapI->value);
+	      if (t < 0)
+		{
+		  zDup2 (saved_stdout, fileno (stdout));
+		  exitAndCleanUp(zooRegistry, m,
+				 tmps,"InvalidParameterValue","identifier",
+				 orig,corig,
+				 funcError);
+		  return 1;
+		}
+#ifdef DEBUG
+	      dumpService (s1);
+#endif
+	      inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+	      addNestedOutputs(&s1);
+#endif
+	      func (zooRegistry, m, doc, n, s1);
+	      freeService (&s1);
+	      free (s1);
+	      s1 = NULL;
+	      scount++;
+	      hasVal = 1;
+	      setMapInMaps (m, "lenv", "level", "0");
+	    }
+	  else
+	    {
+#ifdef META_DB
+	      _init_sql(m,"metadb");
+	      //FAILED CONNECTING DB
+	      if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
+		fprintf(stderr,"ERROR CONNECTING METADB");
+	      }
+	      service* s2=extractServiceFromDb(m,corig,0);
+	      if(s2!=NULL){
+		inheritance(zooRegistry,&s2);
+#ifdef USE_HPC
+		addNestedOutputs(&s2);
+#endif
+		func (zooRegistry,m, doc, n, s2);
+		freeService (&s2);
+		free (s2);
+		s2 = NULL;
+		hasVal = 1;
+	      }else /*TOTO*/{
+#endif
+		memset (buff, 0, 256);
+		snprintf (buff, 256, "%s.zcfg", corig);
+		memset (buff1, 0, 1024);
+#ifdef DEBUG
+		printf ("\n#######%s\n########\n", buff);
+#endif
+		while ((dp = readdir (dirp)) != NULL)
+		  {
+		    if (strcasecmp (dp->d_name, buff) == 0)
+		      {
+			memset (buff1, 0, 1024);
+			snprintf (buff1, 1024, "%s/%s", conf_dir,
+				  dp->d_name);
+			s1 = createService();
+			if (s1 == NULL)
+			  {
+			    zDup2 (saved_stdout, fileno (stdout));
+			    map* errormap = createMap("text", _("Unable to allocate memory"));
+			    addToMap(errormap,"code", "InternalError");
+			    addToMap(errormap,"locator", "NULL");
+			    funcError(m,errormap);
+			    return -1;
+			  }
+#ifdef DEBUG_SERVICE_CONF
+			fprintf
+			  (stderr,"#################\n(%s) %s\n#################\n",
+			   r_inputs->value, buff1);
+#endif
+			char *tmp0 = zStrdup (dp->d_name);
+			tmp0[strlen (tmp0) - 5] = 0;
+			t = readServiceFile (m, buff1, &s1, tmp0);
+			free (tmp0);
+			if (t < 0)
+			  {
+			    zDup2 (saved_stdout, fileno (stdout));
+			    exitAndCleanUp(zooRegistry, m,
+					   buff,"InternalError","NULL",
+					   orig,corig,
+					   funcError);
+			    return 1;
+			  }
+#ifdef DEBUG
+			dumpService (s1);
+#endif
+			inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+			addNestedOutputs(&s1);
+#endif
+			func (zooRegistry,m, doc, n, s1);
+			freeService (&s1);
+			free (s1);
+			s1 = NULL;
+			scount++;
+			hasVal = 1;
+		      }
+		  }
+#ifdef META_DB
+	      }
+#endif
+	    }		      
+	  if (hasVal < 0)
+	    {
+	      zDup2 (saved_stdout, fileno (stdout));
+	      exitAndCleanUp(zooRegistry, m,
+			     buff,"InvalidParameterValue","Identifier",
+			     orig,corig,
+			     funcError);
+	      return 1;
+	    }
+	  rewinddir (dirp);
+	  tmps = strtok_r (NULL, ",", &saveptr);
+	  if (corig != NULL)
+	    free (corig);
+	}		  
+    }
+  fflush (stdout);
+  zDup2 (saved_stdout, fileno (stdout));
+  free (orig);
+  return 0;
+}
+
+/**
+ * Run every HTTP request to download inputs passed as reference
+ *
+ * @param conf the maps pointing to the main.cfg file content
+ * @param inputs the maps pointing to the inputs provided in the request
+ */
+int loadHttpRequests(maps* conf,maps* inputs){
+  // Resolve reference
+  // TODO: add erro gesture
+  int eres;
+  maps* tmpMaps=getMaps(conf,"http_requests");
+  if(tmpMaps!=NULL){
+    map* lenMap=getMap(tmpMaps->content,"length");
+    int len=0;
+    if(lenMap!=NULL){
+      len=atoi(lenMap->value);
+    }
+    HINTERNET hInternet;
+    HINTERNET res;
+    if(len>0)
+      hInternet = InternetOpen (
+#ifndef WIN32
+				(LPCTSTR)
+#endif
+				"ZOO-Project WPS Client\0",
+				INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+    for(int j=0;j<len;j++){
+      map* tmpUrl=getMapArray(tmpMaps->content,"url",j);
+      map* tmpInput=getMapArray(tmpMaps->content,"input",j);
+      maps* currentMaps=getMaps(inputs,tmpInput->value);
+      loadRemoteFile(&conf,&currentMaps->content,&hInternet,tmpUrl->value);
+      addIntToMap(currentMaps->content,"Order",hInternet.nb);
+      addToMap(currentMaps->content,"Reference",tmpUrl->value);
+    }
+    if(len>0){
+      map* error=NULL;
+      runHttpRequests(&conf,&inputs,&hInternet,&error);
+      InternetCloseHandle(&hInternet);
+    }
+  }
+  return 0;
+}
+
+/**
+ * Initialize environment sections, load env, and populate lenv and renv.
+ *
+ * @param conf the maps pointing to the main.cfg file content
+ * @param request_inputs the map pointing to the request KVP 
+ * @param cPath a string pointing to the cwd
+ * @param request a string pointing to the request key (xrequest or jrequest)
+ */
+void initAllEnvironment(maps* conf,map* request_inputs,
+			const char* cPath,const char* request){
+  // Define each env variable in runing environment
+  maps *curs = getMaps (conf, "env");
+  if (curs != NULL) {
+    map *mapcs = curs->content;
+    while (mapcs != NULLMAP)
+      {
+#ifndef WIN32
+	setenv (mapcs->name, mapcs->value, 1);
+#ifdef DEBUG
+	fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
+		 mapcs->value);
+#endif
+#else
+	if (mapcs->value[strlen (mapcs->value) - 2] == '\r')
+	  {
+#ifdef DEBUG
+	    fprintf (stderr, "[ZOO: Env var finish with \r]\n");
+#endif
+	    mapcs->value[strlen (mapcs->value) - 1] = 0;
+	  }
+#ifdef DEBUG
+	if (SetEnvironmentVariable (mapcs->name, mapcs->value) == 0)
+	  {
+	    fflush (stderr);
+	    fprintf (stderr, "setting variable... %s\n", "OK");
+	  }
+	else
+	  {
+	    fflush (stderr);
+	    fprintf (stderr, "setting variable... %s\n", "OK");
+	  }
+#else
+	SetEnvironmentVariable (mapcs->name, mapcs->value);
+#endif
+	char *toto =
+	  (char *)
+	  malloc ((strlen (mapcs->name) + strlen (mapcs->value) +
+		   2) * sizeof (char));
+	sprintf (toto, "%s=%s", mapcs->name, mapcs->value);
+	_putenv (toto);
+#ifdef DEBUG
+	fflush (stderr);
+#endif
+#endif
+
+#ifdef DEBUG
+	fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
+		 mapcs->value);
+	fflush (stderr);
+#endif
+	mapcs = mapcs->next;
+      }
+  }
+
+	    
+
+  int eres = SERVICE_STARTED;
+  int cpid = zGetpid ();
+
+  // Create a map containing a copy of the request map
+  maps *_tmpMaps = createMaps("request");
+  addMapToMap(&_tmpMaps->content,request_inputs);
+  addMapsToMaps (&conf, _tmpMaps);
+  freeMaps (&_tmpMaps);
+  free (_tmpMaps);
+  /**
+   * Initialize the specific [lenv] section which contains runtime variables:
+   * 
+   *  - usid : it is an universally unique identifier  
+   *  - osid : it is an idenfitication number 
+   *  - sid : it is the process idenfitication number (OS)
+   *  - uusid : it is an universally unique identifier 
+   *  - status : value between 0 and 100 to express the  completude of 
+   * the operations of the running service 
+   *  - message : is a string where you can store error messages, in case 
+   * service is failing, or o provide details on the ongoing operation.
+   *  - cwd : the current working directory or servicePath if defined
+   *  - soap : is a boolean value, true if the request was contained in a SOAP 
+   * Envelop 
+   *  - sessid : string storing the session identifier (only when cookie is 
+   * used)
+   *  - cgiSid : only defined on Window platforms (for being able to identify 
+   * the created process)
+   *
+   */
+  _tmpMaps = createMaps("lenv");
+  char tmpBuff[100];
+  struct ztimeval tp;
+  if (zGettimeofday (&tp, NULL) == 0)
+    sprintf (tmpBuff, "%i", (cpid + ((int) tp.tv_sec + (int) tp.tv_usec)));
+  else
+    sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
+  _tmpMaps->content = createMap ("osid", tmpBuff);
+  sprintf (tmpBuff, "%i", cpid);
+  addToMap (_tmpMaps->content, "sid", tmpBuff);
+  char* tmpUuid=get_uuid();
+  addToMap (_tmpMaps->content, "uusid", tmpUuid);
+  addToMap (_tmpMaps->content, "usid", tmpUuid);
+  free(tmpUuid);
+  addToMap (_tmpMaps->content, "status", "0");
+  map* cwdMap0=getMapFromMaps(conf,"main","servicePath");
+  if(cwdMap0!=NULL){
+    addToMap (_tmpMaps->content, "cwd", cwdMap0->value);
+    addToMap (_tmpMaps->content, "rcwd", cPath);
+  }
+  else
+    addToMap (_tmpMaps->content, "cwd", cPath);
+  addToMap (_tmpMaps->content, "message", _("No message provided"));
+  map *ltmp = getMap (request_inputs, "soap");
+  if (ltmp != NULL)
+    addToMap (_tmpMaps->content, "soap", ltmp->value);
+  else
+    addToMap (_tmpMaps->content, "soap", "false");
+
+  // Parse the session file and add it to the main maps
+  char* originalCookie=NULL;
+  if (cgiCookie != NULL && strlen (cgiCookie) > 0)
+    {
+      int hasValidCookie = -1;
+      char *tcook = originalCookie = zStrdup (cgiCookie);
+      map *testing = getMapFromMaps (conf, "main", "cookiePrefix");
+      parseCookie(&conf,originalCookie);
+      map *sessId=getMapFromMaps(conf,"cookies",
+				 (testing==NULL?"ID":testing->value));
+      if (sessId!=NULL)
+	{
+	  addToMap (_tmpMaps->content, "sessid", sessId->value);
+	  char session_file_path[1024];
+	  map *tmpPath = getMapFromMaps (conf, "main", "sessPath");
+	  if (tmpPath == NULL)
+	    tmpPath = getMapFromMaps (conf, "main", "tmpPath");
+	  char *tmp1 = strtok (tcook, ";");
+	  if (tmp1 != NULL)
+	    sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
+		     sessId->value);
+	  else
+	    sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
+		     sessId->value);
+	  free (tcook);
+	  maps *tmpSess = (maps *) malloc (MAPS_SIZE);
+	  tmpSess->child=NULL;
+	  struct stat file_status;
+	  int istat = stat (session_file_path, &file_status);
+	  if (istat == 0 && file_status.st_size > 0)
+	    {
+	      int saved_stdout = zDup (fileno (stdout));
+	      zDup2 (fileno (stderr), fileno (stdout));
+	      conf_read (session_file_path, tmpSess);
+	      addMapsToMaps (&conf, tmpSess);
+	      freeMaps (&tmpSess);
+	      fflush(stdout);
+	      zDup2 (saved_stdout, fileno (stdout));
+	      zClose(saved_stdout);
+	    }
+	  free (tmpSess);
+	}
+    }
+  addMapsToMaps (&conf, _tmpMaps);
+  freeMaps (&_tmpMaps);
+  free (_tmpMaps);
+  maps* bmap=NULL;
+#ifdef DEBUG
+  dumpMap (request_inputs);
+#endif
+  int ei = 1;
+  
+  _tmpMaps = createMaps("renv");
+
+#ifdef WIN32
+  LPVOID orig = GetEnvironmentStrings();
+  LPTSTR s = (LPTSTR) orig;
+  
+  while (*s != NULL) {
+    char* env = strdup(s);
+    char* delim = strchr(env,'=');
+    if (delim != NULL) {
+      char* val = delim+1;
+      *delim = '\0';		
+      if(_tmpMaps->content == NULL) {
+        _tmpMaps->content = createMap(env,val);
+      }
+      else {
+        addToMap(_tmpMaps->content,env,val);
+      }			
+    }
+    s += strlen(s)+1;
+  } 
+  FreeEnvironmentStrings((LPCH)orig);	
+#else
+  char **orig = environ;
+  char *s=*orig;
+  
+  if(orig!=NULL)
+    for (; s; ei++ ) {
+      if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
+	int len=strlen(s);
+	char* tmpName=zStrdup(s);
+	char* tmpValue=strstr(s,"=")+1;
+	char* tmpName1=(char*)malloc((1+(len-(strlen(tmpValue)+1)))*sizeof(char));
+	snprintf(tmpName1,(len-strlen(tmpValue)),"%s",tmpName);
+	if(_tmpMaps->content == NULL)
+	  _tmpMaps->content = createMap (tmpName1,tmpValue);
+	else
+	  addToMap (_tmpMaps->content,tmpName1,tmpValue);
+	free(tmpName1);
+	free(tmpName);
+      }
+      s = *(orig+ei);
+    }  
+#endif
+  
+  if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
+    addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
+  }
+  addMapsToMaps (&conf, _tmpMaps);
+  freeMaps (&_tmpMaps);
+  free (_tmpMaps);
+  map* postRequest=getMap(request_inputs,request);
+  if(postRequest!=NULL)
+    setMapInMaps (conf, "renv", request, postRequest->value);
+#ifdef WIN32
+  char *cgiSidL = NULL;
+  if (getenv ("CGISID") != NULL)
+    addToMap (request_inputs, "cgiSid", getenv ("CGISID"));
+
+  char* usidp;
+  if ( (usidp = getenv("USID")) != NULL ) {
+    setMapInMaps (conf, "lenv", "usid", usidp);
+  }
+
+  map *test1 = getMap (request_inputs, "cgiSid");
+  if (test1 != NULL){
+    cgiSid = zStrdup(test1->value);
+    addToMap (request_inputs, "storeExecuteResponse", "true");
+    addToMap (request_inputs, "status", "true");
+    setMapInMaps (conf, "lenv", "osid", test1->value);
+    status = getMap (request_inputs, "status");
+  }
+  test1 = getMap (request_inputs, "usid");
+  if (test1 != NULL){
+    setMapInMaps (conf, "lenv", "usid", test1->value);
+    setMapInMaps (conf, "lenv", "uusid", test1->value);
+  }
+#endif
+  
+}
+
+/**
  * Signal handling function which simply call exit(0).
  *
  * @param sig the signal number
@@ -443,6 +1048,58 @@ sig_handler (int sig)
 #endif
   exit (0);
 }
+
+#ifdef USE_JSON
+  /**
+   * Signal handling function which create an ExceptionReport node containing the
+   * information message corresponding to the signal number.
+   *
+   * @param sig the signal number
+   */
+void json_sig_handler (int sig){
+  char tmp[100];
+  const char *ssig;
+  switch (sig)
+    {
+    case SIGSEGV:
+      ssig = "SIGSEGV";
+      break;
+    case SIGTERM:
+      ssig = "SIGTERM";
+      break;
+    case SIGINT:
+      ssig = "SIGINT";
+      break;
+    case SIGILL:
+      ssig = "SIGILL";
+      break;
+    case SIGFPE:
+      ssig = "SIGFPE";
+      break;
+    case SIGABRT:
+      ssig = "SIGABRT";
+      break;
+    default:
+      ssig = "UNKNOWN";
+      break;
+    }
+  sprintf (tmp,
+	   _
+	   ("ZOO Kernel failed to process your request, receiving signal %d = %s "),
+	   sig, ssig);
+  map* tmpMap=createMap("decode","suze");
+  maps* tmpMaps=createMaps("lenv");
+  setMapInMaps(tmpMaps,"lenv","message",tmp);
+  setMapInMaps(tmpMaps,"lenv","status","failed");
+  printExceptionReportResponseJ(tmpMaps,tmpMap);
+  //errorException (NULL, tmp, "InternalError", NULL);
+#ifdef DEBUG
+  fprintf (stderr, "Not this time!\n");
+#endif
+  exit (0);
+}
+  
+#endif
 
 /**
  * Load a service provider and run the service function.
@@ -508,7 +1165,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 #ifdef WIN32
       HINSTANCE so =
-        LoadLibraryEx (tmps1, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);						
+        LoadLibraryEx (tmps1, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
       void *so = dlopen (tmps1, RTLD_LAZY);
 #endif
@@ -973,7 +1630,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 int
 runRequest (map ** inputs)
 {
-	
+ 
 #ifndef USE_GDB
 #ifndef WIN32
   signal (SIGCHLD, SIG_IGN);
@@ -989,8 +1646,6 @@ runRequest (map ** inputs)
   
   map *r_inputs = NULL;
   map *request_inputs = *inputs;
-  //fprintf(stderr,"%s \n",json_object_to_json_string_ext(mapToJson(request_inputs),JSON_C_TO_STRING_PLAIN));
-  
 #ifdef IGNORE_METAPATH
   addToMap(request_inputs, "metapath", "");
 #endif  
@@ -1020,14 +1675,6 @@ runRequest (map ** inputs)
 
   char conf_file[10240];
   snprintf (conf_file, 10240, "%s/%s/main.cfg", ntmp, r_inputs->value);
-#ifdef ETC_DIR
-#ifndef WIN32
-  getcwd (ntmp, 1024);
-#else
-  _getcwd (ntmp, 1024);
-#endif
-#endif
-
   if (conf_read (conf_file, m) == 2)
     {
       errorException (NULL, _("Unable to load the main.cfg file."),
@@ -1063,6 +1710,9 @@ runRequest (map ** inputs)
   if (fstdem != NULL)
     fstde = freopen (fstdem->value, "a+", stderr);
 
+  /**
+   * Language gesture
+   */
   r_inputs = getMap (request_inputs, "language");
   if (r_inputs == NULL)
     r_inputs = getMap (request_inputs, "AcceptLanguages");
@@ -1159,7 +1809,10 @@ runRequest (map ** inputs)
 #ifdef DEBUG
       fprintf(stderr,"*** %s ***\n",tmpUrl);
 #endif
-      setMapInMaps(m,"main","serverAddress",tmpUrl);
+      if(getMapFromMaps(m,"main","proxied")==NULL)
+	setMapInMaps(m,"main","serverAddress",tmpUrl);
+      else
+	setMapInMaps(m,"lenv","serverAddress",tmpUrl);
     }
 
   // CORS Support
@@ -1177,6 +1830,540 @@ runRequest (map ** inputs)
     }
   }
 
+  // Populate the Registry
+  char conf_dir[1024];
+  int t;
+  char tmps1[1024];
+  r_inputs = NULL;
+  r_inputs = getMap (request_inputs, "metapath");
+  map* cwdMap0=getMapFromMaps(m,"main","servicePath");
+  if (r_inputs != NULL)
+    if(cwdMap0!=NULL)
+      snprintf (conf_dir, 1024, "%s/%s", cwdMap0->value, r_inputs->value);
+    else
+      snprintf (conf_dir, 1024, "%s/%s", ntmp, r_inputs->value);
+  else
+    if(cwdMap0!=NULL)
+      snprintf (conf_dir, 1024, "%s", cwdMap0->value);
+    else
+      snprintf (conf_dir, 1024, "%s", ntmp);
+  map* reg = getMapFromMaps (m, "main", "registry");
+  registry* zooRegistry=NULL;
+  if(reg!=NULL){
+#ifndef WIN32
+    int saved_stdout = zDup (fileno (stdout));
+    zDup2 (fileno (stderr), fileno (stdout));
+#endif
+    if(createRegistry (m,&zooRegistry,reg->value)<0){
+      map *message=getMapFromMaps(m,"lenv","message");
+      map *type=getMapFromMaps(m,"lenv","type");
+#ifndef WIN32
+      zDup2 (saved_stdout, fileno (stdout));
+#endif
+      errorException (m, message->value,
+		      type->value, NULL);
+      return 0;
+    }
+#ifndef WIN32
+    zDup2 (saved_stdout, fileno (stdout));
+    zClose(saved_stdout);
+#endif
+  }
+  
+  setMapInMaps(m,"lenv","executionType","xml");
+  if((strlen(cgiQueryString)>0 && cgiQueryString[0]=='/') || strstr(cgiAccept,"json")!=NULL){
+  //
+  // OGC API - Processing starts here
+  //
+#ifndef USE_JSON
+    errorException (m, _("OGC API - Processing is not supported by this ZOO-Kernel."), "InternalError", NULL);
+    return 1;
+#else
+#ifndef USE_GDB
+#ifndef WIN32
+    signal (SIGCHLD, SIG_IGN);
+#endif  
+    signal (SIGSEGV, json_sig_handler);
+    signal (SIGTERM, json_sig_handler);
+    signal (SIGINT, json_sig_handler);
+    signal (SIGILL, json_sig_handler);
+    signal (SIGFPE, json_sig_handler);
+    signal (SIGABRT, json_sig_handler);
+#endif
+    r_inputs = getMapOrFill (&request_inputs, "metapath", "");
+    char conf_file1[10240];
+    maps* m1 = (maps *) malloc (MAPS_SIZE);
+    snprintf (conf_file1, 10240, "%s/%s/oas.cfg", ntmp, r_inputs->value);
+    if (conf_read (conf_file1, m1) == 2)
+      {
+	errorException (NULL, _("Unable to load the oas.cfg file."),
+			"InternalError", NULL);
+	free (m);
+	return 1;
+      }
+    addMapsToMaps(&m,m1);
+    setMapInMaps(m,"lenv","executionType","json");
+
+    json_object *res=json_object_new_object();
+    setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
+    /* - Root url */
+    if(cgiContentLength==1){
+      map* tmpMap=getMapFromMaps(m,"main","serverAddress");
+      json_object *res1=json_object_new_array();
+      const char* urls[4]={
+	"/","/api","/conformance","/processes"
+      };
+      map* tmpUrl=getMapFromMaps(m,"main","serverAddress");
+      for(int kk=0;kk<4;kk++){
+	maps* tmpMaps=getMaps(m,urls[kk]);
+	json_object *res2;
+	if(tmpMaps!=NULL){
+	  res2=mapToJson(tmpMaps->content);
+	  char* tmpStr=(char*) malloc((strlen(tmpUrl->value)+strlen(urls[kk])+2)*sizeof(char));
+	  sprintf(tmpStr,"%s%s",tmpUrl->value,urls[kk]);
+	  json_object_object_add(res2,"href",json_object_new_string(tmpStr));
+	  json_object_array_add(res1,res2);
+	}
+      }
+      json_object_object_add(res,"links",res1);
+    }else if(strcmp(cgiQueryString,"/conformance")==0){
+      /* - /conformance url */
+      map* rootUrl=getMapFromMaps(m,"conformTo","rootUrl");
+      json_object *res1=json_object_new_array();
+      map* length=getMapFromMaps(m,"conformTo","length");
+      maps* tmpMaps=getMaps(m,"conformTo");
+      for(int kk=0;kk<atoi(length->value);kk++){
+	map* tmpMap1=getMapArray(tmpMaps->content,"link",kk);
+	json_object *res2;
+	if(tmpMap1!=NULL){
+	  char* tmpStr=(char*) malloc((strlen(rootUrl->value)+strlen(tmpMap1->value)+1)*sizeof(char));
+	  sprintf(tmpStr,"%s%s",rootUrl->value,tmpMap1->value);
+	  json_object_array_add(res1,json_object_new_string(tmpStr));
+	}
+      }
+      json_object_object_add(res,"conformTo",res1);
+    }else if(strcmp(cgiQueryString,"/api")==0){
+      /* - /api url */
+      produceApi(m,res);
+    }else if(strcmp(cgiQueryString,"/processes")==0 || strcmp(cgiQueryString,"/processes/")==0){
+      /* - /processes */
+      json_object *res3=json_object_new_array();
+      int saved_stdout = zDup (fileno (stdout));
+      zDup2 (fileno (stderr), fileno (stdout));
+
+      if (int res =		  
+          recursReaddirF (m, NULL, res3, NULL, ntmp, NULL, saved_stdout, 0,
+			  printGetCapabilitiesForProcessJ) < 0)
+        {
+	}      
+      zDup2 (saved_stdout, fileno (stdout));
+      zClose(saved_stdout);
+      
+      json_object_object_add(res,"processes",res3);
+    }else{
+      service* s1=NULL;
+      int t=0;
+      if(strstr(cgiQueryString,"/processes/")==NULL){
+	map* error=createMap("code","BadRequest");
+	addToMap(error,"message",_("The ressource is not available"));
+	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
+	printExceptionReportResponseJ(m,error);
+	freeMaps (&m);
+	free (m);
+	free (REQUEST);
+	xmlCleanupParser ();
+	zooXmlCleanupNs ();			
+	return 1;
+      } else
+	if(strstr(cgiQueryString,"/jobs")==NULL && strstr(cgiQueryString,"/jobs/")==NULL){
+	  /* - /processes/{id}/ */
+	  DIR *dirp = opendir (ntmp);
+	  json_object *res3=json_object_new_object();
+	  char *orig = zStrdup (strstr(cgiQueryString,"/processes/")+11);
+	  if(orig[strlen(orig)-1]=='/')
+	    orig[strlen(orig)-1]=0;
+	  json_object* res1=json_object_new_object();
+	  int t=fetchServicesForDescription(NULL, m, orig,
+					    printGetCapabilitiesForProcessJ,
+					    NULL, (void*) res3, ntmp,
+					    request_inputs,
+					    printExceptionReportResponseJ);
+	  if(t==1){
+	    /*map* error=createMap("code","BadRequest");
+	    addToMap(error,"message",_("Failed to acces the requested service"));
+	    printExceptionReportResponseJ(m,error);*/
+	    return 1;
+	  }
+	  res=json_object_get(res3);
+	}else{	
+	  char* queryString=zStrdup(cgiQueryString);
+	  int len0=strlen(strstr(cgiQueryString,"/processes/")+11);
+	  int len1=strlen(cgiQueryString)-strlen(strstr(cgiQueryString,"/job"));
+	  char* cIdentifier=(char*)malloc((len1-10)*sizeof(char));
+	  int cnt=0;
+	  for(int j=11;j<len1;j++){
+	    fprintf(stderr,"%s %c\n",cIdentifier,cgiQueryString[j]);
+	    cIdentifier[cnt]=cgiQueryString[j];
+	    cIdentifier[cnt+1]=0;
+	    cnt++;
+	  }
+	  char tmps1[1024];
+
+	  map* import = getMapFromMaps (m, IMPORTSERVICE, cIdentifier); 
+	  if (import != NULL && import->value != NULL) { 
+	    strncpy(tmps1, import->value, 1024);
+	    setMapInMaps (m, "lenv", "Identifier", cIdentifier);
+	    setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
+	  } 
+	  else {
+	    snprintf (tmps1, 1024, "%s/%s.zcfg", ntmp, cIdentifier);
+#ifdef DEBUG
+	    fprintf (stderr, "Trying to load %s\n", tmps1);
+#endif
+	    if (strstr (cIdentifier, ".") != NULL)
+	      {
+		char *identifier = zStrdup (cIdentifier);
+		parseIdentifier (m, ntmp, identifier, tmps1);
+		map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
+		if (tmpMap != NULL)
+		  addToMap (request_inputs, "metapath", tmpMap->value);
+		free (identifier);
+	      }
+	    else
+	      {
+		setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
+		setMapInMaps (m, "lenv", "Identifier", cIdentifier);
+	      }
+	  }
+
+	  r_inputs = getMapFromMaps (m, "lenv", "Identifier");
+
+#ifdef META_DB
+	  int metadb_id=_init_sql(m,"metadb");
+	  //FAILED CONNECTING DB
+	  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<0){
+	    fprintf(stderr,"ERROR CONNECTING METADB\n");
+	  }
+	  if(metadb_id>=0)
+	    s1=extractServiceFromDb(m,cIdentifier,0);
+	  if(s1!=NULL){
+	    inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+	    addNestedOutputs(&s1);
+#endif
+	    if(zooRegistry!=NULL){
+	      freeRegistry(&zooRegistry);
+	      free(zooRegistry);
+	    }
+	  }else /* Not found in MetaDB */{
+#endif
+	    s1 = createService();
+	    if (s1 == NULL)
+	      {
+		freeMaps (&m);
+		free (m);
+		if(zooRegistry!=NULL){
+		  freeRegistry(&zooRegistry);
+		  free(zooRegistry);
+		}
+		free (REQUEST);
+		free (SERVICE_URL);
+		map* error=createMap("code","InternalError");
+		addToMap(error,"message",_("Unable to allocate memory"));
+		//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
+		printExceptionReportResponseJ(m,error);
+
+		return 1; /*errorException (m, _("Unable to allocate memory"),
+			    "InternalError", NULL);*/
+	      }
+
+	    int saved_stdout = zDup (fileno (stdout));
+	    zDup2 (fileno (stderr), fileno (stdout));
+	    t = readServiceFile (m, tmps1, &s1, cIdentifier);
+	    if(t>=0){
+	      inheritance(zooRegistry,&s1);
+#ifdef USE_HPC
+	      addNestedOutputs(&s1);
+#endif
+	    }
+	    if(zooRegistry!=NULL){
+	      freeRegistry(&zooRegistry);
+	      free(zooRegistry);
+	    }
+	    fflush (stdout);
+	    zDup2 (saved_stdout, fileno (stdout));
+	    if (t < 0)
+	      {
+		char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
+		sprintf (tmpMsg,
+			 _
+			 ("The value for <identifier> seems to be wrong (%s). Please specify one of the processes in the list returned by a GetCapabilities request."),
+			 r_inputs->value);
+		map* error=createMap("code","InvalidParameterValue");
+		addToMap(error,"message",tmpMsg);
+		//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
+		printExceptionReportResponseJ(m,error);
+
+		//errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
+		free (tmpMsg);
+		free (s1);
+		freeMaps (&m);
+		free (m);
+		free (REQUEST);
+		free (SERVICE_URL);
+		return 0;
+	      }
+	    zClose (saved_stdout);
+	  
+#ifdef META_DB
+	  }
+#endif
+	  if(strstr(cgiQueryString,"/jobs/")!=NULL && strlen(strstr(cgiQueryString,"/jobs/"))>6){
+	    /* - /jobs/{jobID} and /jobs/{jobID}/result urls */
+	    if(strstr(cgiQueryString,"/result")!=NULL && strlen(strstr(cgiQueryString,"/result"))>=7){
+	      fprintf(stderr,"For GetResult %s %d \n",__FILE__,__LINE__);
+	    }else{
+	      char* tmpUrl=strstr(cgiQueryString,"/jobs/");
+	      if(tmpUrl!=NULL && strlen(tmpUrl)>6){
+		char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
+		setMapInMaps(m,"lenv","gs_usid",jobId);
+		json_getStatusFile(m);
+		free(jobId);
+		return 1;	      
+	      }
+	    }
+	  }else{
+	    /* - /jobs url */
+	    fprintf(stderr,"For Execute or Job list %s %d \n",__FILE__,__LINE__);
+	    if(strcasecmp(cgiRequestMethod,"get")==0){
+	      /* - /jobs List (GET) */
+	      res=printJobList(m);
+	    }else if(strcasecmp(cgiRequestMethod,"post")==0){
+	      /* - /jobs Execution (POST) */
+	      int eres = SERVICE_STARTED;
+
+	      initAllEnvironment(m,request_inputs,ntmp,"jrequest");
+	      map* req=getMapFromMaps(m,"renv","jrequest");
+	      json_object *jobj = NULL;
+	      const char *mystring = NULL;
+	      int slen = 0;
+	      enum json_tokener_error jerr;
+	      struct json_tokener* tok=json_tokener_new();
+	      do {
+		mystring = req->value;  // get JSON string, e.g. read from file, etc...
+		slen = strlen(mystring);
+		jobj = json_tokener_parse_ex(tok, mystring, slen);
+	      } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
+	      if (jerr != json_tokener_success) {
+		fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+		return 1;
+	      }
+	      if (tok->char_offset < slen){
+		return 1;
+	      }
+	      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+	      // Success, use jobj here.
+	      maps* inputs_real_format=NULL, *outputs_real_format= NULL;
+	      parseJRequest(m,s1,jobj,&inputs_real_format,&outputs_real_format);
+	      map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
+	      if(preference!=NULL && strcasecmp(preference->value,"respond-async")==0){
+		fprintf(stderr,"Asynchronous call!\n");
+		char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
+		FILE *f0, *f1;
+		int pid;
+#ifdef DEBUG
+		fprintf (stderr, "\nPID : %d\n", cpid);
+#endif
+#ifndef WIN32
+		pid = fork ();
+#else
+		if (cgiSid == NULL)
+		  {
+		    createProcess (m, request_inputs, s1, NULL, cpid,
+				   request_input_real_format,
+				   request_output_real_format);
+		    pid = cpid;
+		  }
+		else
+		  {
+		    pid = 0;
+		    cpid = atoi (cgiSid);
+		    updateStatus(m,0,_("Initializing"));
+		  }
+#endif
+		if (pid > 0)
+		  {
+		    //
+		    // dady :
+		    // set status to SERVICE_ACCEPTED
+		    //
+#ifdef DEBUG
+		    fprintf (stderr, "father pid continue (origin %d) %d ...\n", cpid,
+			     zGetpid ());
+#endif
+		    eres = SERVICE_ACCEPTED;
+		    createStatusFile(m,eres);
+		    printHeaders(m);
+		    printf("Status: 201 Created \r\n\r\n");
+		    return 1;
+		  }
+		else if (pid == 0)
+		  {
+		    eres = SERVICE_STARTED;
+		    //
+		    // son : have to close the stdout, stdin and stderr to let the parent
+		    // process answer to http client.
+		    //
+		    map* usid = getMapFromMaps (m, "lenv", "uusid");
+		    map* tmpm = getMapFromMaps (m, "lenv", "osid");
+		    int cpid = atoi (tmpm->value);
+		    pid=cpid;
+		    r_inputs = getMapFromMaps (m, "main", "tmpPath");
+		    setMapInMaps (m, "lenv", "async","true");
+		    map* r_inputs1 = createMap("ServiceName", s1->name);
+		    // Create the filename for the result file (.res)
+		    fbkpres =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) +
+			       strlen (usid->value) + 7) * sizeof (char));                    
+		    sprintf (fbkpres, "%s/%s.res", r_inputs->value, usid->value);
+		    maps* bmap = createMaps("status");
+		    bmap->content=createMap("usid",usid->value);
+		    addToMap(bmap->content,"sid",tmpm->value);
+		    addIntToMap(bmap->content,"pid",zGetpid());
+	  
+		    // Create PID file referencing the OS process identifier
+		    fbkpid =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) +
+			       strlen (usid->value) + 7) * sizeof (char));
+		    sprintf (fbkpid, "%s/%s.pid", r_inputs->value, usid->value);
+		    setMapInMaps (m, "lenv", "file.pid", fbkpid);
+
+		    f0 = freopen (fbkpid, "w+",stdout);
+		    printf("%d",zGetpid());
+		    fflush(stdout);
+
+		    // Create SID file referencing the semaphore name
+		    fbkp =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+			       strlen (usid->value) + 7) * sizeof (char));
+		    sprintf (fbkp, "%s/%s.sid", r_inputs->value, usid->value);
+		    setMapInMaps (m, "lenv", "file.sid", fbkp);
+		    FILE* f2 = freopen (fbkp, "w+",stdout);
+		    printf("%s",tmpm->value);
+		    fflush(f2);
+		    free(fbkp);
+
+		    fbkp =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+			       strlen (usid->value) + 7) * sizeof (char));
+		    sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
+			     usid->value);
+		    setMapInMaps (m, "lenv", "file.responseInit", fbkp);
+		    flog =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+			       strlen (usid->value) + 13) * sizeof (char));
+		    sprintf (flog, "%s/%s_%s_error.log", r_inputs->value,
+			     r_inputs1->value, usid->value);
+		    setMapInMaps (m, "lenv", "file.log", flog);
+#ifdef DEBUG
+		    fprintf (stderr, "RUN IN BACKGROUND MODE \n");
+		    fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
+			     zGetpid ());
+		    fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
+#endif
+		    freopen (flog, "w+", stderr);
+		    fflush (stderr);
+		    f0 = freopen (fbkp, "w+", stdout);
+		    rewind (stdout);
+#ifndef WIN32
+		    fclose (stdin);
+#endif
+#ifdef RELY_ON_DB
+		    init_sql(m);
+		    recordServiceStatus(m);
+#endif
+#ifdef USE_CALLBACK
+		    invokeCallback(m,NULL,NULL,0,0);
+#endif
+		    fprintf(stderr,"%s %d\n",__FILE__,__LINE__);
+		    fflush(stderr);
+		    
+		    createStatusFile(m,eres);
+		    	  
+		  
+		    fbkp1 =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+			       strlen (usid->value) + 15) * sizeof (char));
+		    sprintf (fbkp1, "%s/%s_final_%s.json", r_inputs->value,
+			     r_inputs1->value, usid->value);
+		    setMapInMaps (m, "lenv", "file.responseFinal", fbkp1);
+
+		    f1 = freopen (fbkp1, "w+", stdout);
+
+		    map* serviceTypeMap=getMap(s1->content,"serviceType");
+		    if(serviceTypeMap!=NULL)
+		      setMapInMaps (m, "lenv", "serviceType", serviceTypeMap->value);
+
+		    char *flenv =
+		      (char *)
+		      malloc ((strlen (r_inputs->value) + 
+			       strlen (usid->value) + 12) * sizeof (char));
+		    sprintf (flenv, "%s/%s_lenv.cfg", r_inputs->value, usid->value);
+		    maps* lenvMaps=getMaps(m,"lenv");
+		    dumpMapsToFile(lenvMaps,flenv,0);
+		    free(flenv);
+
+		    map* testMap=getMapFromMaps(m,"main","memory");
+		    loadHttpRequests(m,inputs_real_format);
+		    loadServiceAndRun (&m, s1, request_inputs,
+				       &inputs_real_format,
+				       &outputs_real_format, &eres);
+		    createStatusFile(m,eres);
+		    res=printJResult(m,s1,outputs_real_format,eres);
+		    char tmpUrl0[1024];
+		    const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+		    printf(jsonStr);
+		    printf("\n");
+		    return 1;
+
+		  }
+	      }else{
+		loadHttpRequests(m,inputs_real_format);
+		loadServiceAndRun (&m,s1,request_inputs,&inputs_real_format,&outputs_real_format,&eres);
+		res=printJResult(m,s1,outputs_real_format,eres);
+	      
+		printHeaders(m);
+		printf("Status: 201 Created \r\n\r\n");
+		const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+		printf(jsonStr);
+		printf("\n");
+		return 1;
+	      }
+
+	    
+	    }//else error
+	    
+	  }
+	}
+    }
+    printHeaders(m);
+    printf("Status: 200 OK \r\n\r\n");
+    const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+    printf(jsonStr);
+    printf("\n");
+    return 1;
+#endif
+  }
+
+  //
+  // WPS 1.0.0 and 2.0.0 starts here
+  //
   //Check for minimum inputs
   map* version=getMap(request_inputs,"version");
   if(version==NULL)
@@ -1281,53 +2468,15 @@ runRequest (map ** inputs)
     SERVICE_URL = zStrdup (DEFAULT_SERVICE_URL);
 
 
+
   service *s1;
   int scount = 0;
 #ifdef DEBUG
   dumpMap (r_inputs);
 #endif
-  char conf_dir[1024];
-  int t;
-  char tmps1[1024];
 
-  r_inputs = NULL;
-  r_inputs = getMap (request_inputs, "metapath");
-  map* cwdMap0=getMapFromMaps(m,"main","servicePath");
-  if (r_inputs != NULL)
-    if(cwdMap0!=NULL)
-      snprintf (conf_dir, 1024, "%s/%s", cwdMap0->value, r_inputs->value);
-    else
-      snprintf (conf_dir, 1024, "%s/%s", ntmp, r_inputs->value);
-  else
-    if(cwdMap0!=NULL)
-      snprintf (conf_dir, 1024, "%s", cwdMap0->value);
-    else
-      snprintf (conf_dir, 1024, "%s", ntmp);
-  map* reg = getMapFromMaps (m, "main", "registry");
-  registry* zooRegistry=NULL;
-  if(reg!=NULL){
-#ifndef WIN32
-    int saved_stdout = zDup (fileno (stdout));
-    zDup2 (fileno (stderr), fileno (stdout));
-#endif
-    if(createRegistry (m,&zooRegistry,reg->value)<0){
-      map *message=getMapFromMaps(m,"lenv","message");
-      map *type=getMapFromMaps(m,"lenv","type");
-#ifndef WIN32
-      zDup2 (saved_stdout, fileno (stdout));
-#endif
-      errorException (m, message->value,
-		      type->value, NULL);
-      return 0;
-    }
-#ifndef WIN32
-    zDup2 (saved_stdout, fileno (stdout));
-    zClose(saved_stdout);
-#endif
-  }
-  
   if (strncasecmp (REQUEST, "GetCapabilities", 15) == 0)
-    {	
+    {
 #ifdef DEBUG
       dumpMap (r_inputs);
 #endif
@@ -1395,7 +2544,7 @@ runRequest (map ** inputs)
       return 0;
     }
   else
-    {	  
+    {
       r_inputs = getMap (request_inputs, "JobId");
       if(reqId>nbReqIdentifier){
 	if (strncasecmp (REQUEST, "GetStatus", 9) == 0 ||
@@ -1470,328 +2619,11 @@ runRequest (map ** inputs)
 
 	    r_inputs = getMap (request_inputs, "Identifier");
 
-	    char *orig = zStrdup (r_inputs->value);
+	    fetchServicesForDescription(zooRegistry, m, r_inputs->value,
+					printDescribeProcessForProcess,
+					(void*) doc, (void*) n, conf_dir,
+					request_inputs,printExceptionReportResponse);
 
-	    int saved_stdout = zDup (fileno (stdout));
-	    zDup2 (fileno (stderr), fileno (stdout));
-	    if (strcasecmp ("all", orig) == 0)
-	      {
-		maps* imports = getMaps(m, IMPORTSERVICE); 
-		if (imports != NULL) {       
-		  map* zcfg = imports->content;
-            
-		  while (zcfg != NULL) {
-		    if (zcfg->value != NULL) {
-		      service* svc = (service*) malloc(SERVICE_SIZE);
-		      if (svc == NULL || readServiceFile(m, zcfg->value, &svc, zcfg->name) < 0) {
-                        // pass over silently
-                        zcfg = zcfg->next;
-                        continue;
-		      }
-		      inheritance(zooRegistry, &svc);
-#ifdef USE_HPC
-		      addNestedOutputs(&svc);
-#endif
-
-		      printDescribeProcessForProcess(zooRegistry, m, doc, n, svc);
-		      freeService(&svc);
-		      free(svc);                             
-		    }
-		    zcfg = zcfg->next;
-		  }            
-		}
-  
-		if (int res =
-		    recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
-				    printDescribeProcessForProcess) < 0)
-		  return res;
-#ifdef META_DB
-		fetchServicesFromDb(zooRegistry,m,doc,n,printDescribeProcessForProcess,0);
-		close_sql(m,0);
-#endif      
-
-	      }
-	    else
-	      {
-		char *saveptr;
-		char *tmps = strtok_r (orig, ",", &saveptr);
-
-		char buff[256];
-		char buff1[1024];
-		while (tmps != NULL)
-		  {
-		    int hasVal = -1;
-		    char *corig = zStrdup (tmps);
-		    map* import = getMapFromMaps (m, IMPORTSERVICE, corig);   
-		    if (import != NULL && import->value != NULL) 
-		      {
-#ifdef META_DB			
-			service* s2=extractServiceFromDb(m,import->name,0);
-			if(s2==NULL){
-#endif
-			  s1 = createService();
-			  t = readServiceFile (m, import->value, &s1, import->name);
-
-			  if (t < 0) // failure reading zcfg
-			    {
-			      map *tmp00 = getMapFromMaps (m, "lenv", "message");
-			      char tmp01[1024];
-			      if (tmp00 != NULL)
-				sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"), import->value, tmp00->value);
-			      else
-				sprintf (tmp01, _("Unable to parse the ZCFG file: %s."), import->value);
-			      
-			      zDup2 (saved_stdout, fileno (stdout));
-			      errorException (m, tmp01, "InternalError", NULL);
-			      
-			      freeMaps (&m);
-			      free (m);
-
-			      if(zooRegistry!=NULL){
-				freeRegistry(&zooRegistry);
-				free(zooRegistry);
-			      }
-			      free (orig);
-			      free (REQUEST);
-			      closedir (dirp);
-			      //xmlFreeDoc (doc);
-			      xmlCleanupParser ();
-			      zooXmlCleanupNs ();
-                    
-			      return 1;
-			    }
-#ifdef DEBUG
-			  dumpService (s1);
-#endif
-			  inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
-			  addNestedOutputs(&s1);
-#endif
-			  printDescribeProcessForProcess (zooRegistry, m, doc, n, s1);
-			  freeService (&s1);
-			  free (s1);
-			  s1 = NULL;
-			  scount++;
-			  hasVal = 1;                
-#ifdef META_DB
-			}
-#endif
-		      }
-		    else if (strstr (corig, ".") != NULL)
-		      {
-
-			parseIdentifier (m, conf_dir, corig, buff1);
-			map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
-			if (tmpMap != NULL)
-			  addToMap (request_inputs, "metapath", tmpMap->value);
-			map *tmpMapI = getMapFromMaps (m, "lenv", "Identifier");
-			/**
-			 * No support for dot in service name stored in metadb!?
-		//	 #ifdef META_DB
-			 service* s2=extractServiceFromDb(m,tmpMapI->value,0);
-			 if(s2==NULL){
-		//	 #endif
-			*/
-			s1 = createService();
-			t = readServiceFile (m, buff1, &s1, tmpMapI->value);
-			if (t < 0)
-			  {
-			    map *tmp00 = getMapFromMaps (m, "lenv", "message");
-			    char tmp01[1024];
-			    if (tmp00 != NULL)
-			      sprintf (tmp01,
-				       _
-				       ("Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"),
-				       tmps, tmp00->value);
-			    else
-			      sprintf (tmp01,
-				       _
-				       ("Unable to parse the ZCFG file for the following ZOO-Service: %s."),
-				       tmps);
-			    zDup2 (saved_stdout, fileno (stdout));
-			    errorException (m, tmp01, "InvalidParameterValue",
-					    "identifier");
-			    freeMaps (&m);
-			    free (m);
-			    if(zooRegistry!=NULL){
-			      freeRegistry(&zooRegistry);
-			      free(zooRegistry);
-			    }
-			    free (REQUEST);
-			    free (corig);
-			    free (orig);
-			    free (SERVICE_URL);
-			    free (s1);
-			    closedir (dirp);
-			    //xmlFreeDoc (doc);
-			    xmlCleanupParser ();
-			    zooXmlCleanupNs ();
-			    return 1;
-			  }
-#ifdef DEBUG
-			dumpService (s1);
-#endif
-			inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
-			addNestedOutputs(&s1);
-#endif
-			printDescribeProcessForProcess (zooRegistry, m, doc, n, s1);
-			freeService (&s1);
-			free (s1);
-			s1 = NULL;
-			scount++;
-			hasVal = 1;
-			setMapInMaps (m, "lenv", "level", "0");
-		      }
-		    else
-		      {
-#ifdef META_DB
-			_init_sql(m,"metadb");
-			//FAILED CONNECTING DB
-			if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
-			  fprintf(stderr,"ERROR CONNECTING METADB");
-			}
-			service* s2=extractServiceFromDb(m,corig,0);
-			if(s2!=NULL){
-			  inheritance(zooRegistry,&s2);
-#ifdef USE_HPC
-			  addNestedOutputs(&s2);
-#endif
-			  printDescribeProcessForProcess (zooRegistry,m, doc, n, s2);
-			  freeService (&s2);
-			  free (s2);
-			  s2 = NULL;
-			  hasVal = 1;
-			}else /*TOTO*/{
-#endif
-			  memset (buff, 0, 256);
-			  snprintf (buff, 256, "%s.zcfg", corig);
-			  memset (buff1, 0, 1024);
-#ifdef DEBUG
-			  printf ("\n#######%s\n########\n", buff);
-#endif
-			  while ((dp = readdir (dirp)) != NULL)
-			    {
-			      if (strcasecmp (dp->d_name, buff) == 0)
-				{
-				  memset (buff1, 0, 1024);
-				  snprintf (buff1, 1024, "%s/%s", conf_dir,
-					    dp->d_name);
-				  s1 = createService();
-				  if (s1 == NULL)
-				    {
-				      zDup2 (saved_stdout, fileno (stdout));
-				      return errorException (m,
-							     _
-							     ("Unable to allocate memory"),
-							     "InternalError",
-							     NULL);
-				    }
-#ifdef DEBUG_SERVICE_CONF
-				  fprintf
-				    (stderr,"#################\n(%s) %s\n#################\n",
-				     r_inputs->value, buff1);
-#endif
-				  char *tmp0 = zStrdup (dp->d_name);
-				  tmp0[strlen (tmp0) - 5] = 0;
-				  t = readServiceFile (m, buff1, &s1, tmp0);
-				  free (tmp0);
-				  if (t < 0)
-				    {
-				      map *tmp00 =
-					getMapFromMaps (m, "lenv", "message");
-				      char tmp01[1024];
-				      if (tmp00 != NULL)
-					sprintf (tmp01,
-						 _
-						 ("Unable to parse the ZCFG file: %s (%s)"),
-						 dp->d_name, tmp00->value);
-				      else
-					sprintf (tmp01,
-						 _
-						 ("Unable to parse the ZCFG file: %s."),
-						 dp->d_name);
-				      zDup2 (saved_stdout, fileno (stdout));
-				      errorException (m, tmp01, "InternalError",
-						      NULL);
-				      freeMaps (&m);
-				      free (m);
-				      if(zooRegistry!=NULL){
-					freeRegistry(&zooRegistry);
-					free(zooRegistry);
-				      }
-				      free (orig);
-				      free (REQUEST);
-				      closedir (dirp);
-				      //xmlFreeDoc (doc);
-				      xmlCleanupParser ();
-				      zooXmlCleanupNs ();
-				      return 1;
-				    }
-#ifdef DEBUG
-				  dumpService (s1);
-#endif
-				  inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
-				  addNestedOutputs(&s1);
-#endif
-				  /*json_object* jobj=serviceToJson(s1);
-				  const char* jsonStr=json_object_to_json_string_ext(jobj,JSON_C_TO_STRING_PLAIN);
-				  fprintf(stderr,"*** %s %d %s \n",__FILE__,__LINE__,jsonStr);*/
-
-				  printDescribeProcessForProcess (zooRegistry,m, doc, n, s1);
-				  freeService (&s1);
-				  free (s1);
-				  s1 = NULL;
-				  scount++;
-				  hasVal = 1;
-				}
-			    }
-#ifdef META_DB
-			}
-#endif
-		      }		      
-		    if (hasVal < 0)
-		      {
-			map *tmp00 = getMapFromMaps (m, "lenv", "message");
-			char tmp01[1024];
-			if (tmp00 != NULL)
-			  sprintf (tmp01,
-				   _("Unable to parse the ZCFG file: %s (%s)"),
-				   buff, tmp00->value);
-			else
-			  sprintf (tmp01,
-				   _("Unable to parse the ZCFG file: %s."),
-				   buff);
-			zDup2 (saved_stdout, fileno (stdout));
-			errorException (m, tmp01, "InvalidParameterValue",
-					"Identifier");
-			freeMaps (&m);
-			free (m);
-			if(zooRegistry!=NULL){
-			  freeRegistry(&zooRegistry);
-			  free(zooRegistry);
-			}
-			free (orig);
-			free (REQUEST);
-			closedir (dirp);
-			if (corig != NULL)
-			  free (corig);
-			xmlFreeDoc (doc);
-			xmlCleanupParser ();
-			zooXmlCleanupNs ();
-			return 1;
-		      }
-		    rewinddir (dirp);
-		    tmps = strtok_r (NULL, ",", &saveptr);
-		    if (corig != NULL)
-		      free (corig);
-		  }		  
-	      }
-	    closedir (dirp);
-	    fflush (stdout);
-	    zDup2 (saved_stdout, fileno (stdout));
-	    free (orig);
 	    printDocument (m, doc, zGetpid ());
 	    freeMaps (&m);
 	    free (m);
@@ -1809,7 +2641,7 @@ runRequest (map ** inputs)
 	    return 0;
 	  }
 	else if (strncasecmp (REQUEST, "Execute", strlen (REQUEST)) != 0)
-	  {	  
+	  {
 	    map* version=getMapFromMaps(m,"main","rversion");
 	    int vid=getVersionId(version->value);	    
 	    int len = 0;
@@ -1866,7 +2698,7 @@ runRequest (map ** inputs)
 	closedir (dirp);
       }
     }
-	
+
   map *postRequest = NULL;
   postRequest = getMap (request_inputs, "xrequest");
   
@@ -1949,7 +2781,7 @@ runRequest (map ** inputs)
 	return errorException (m, _("Unable to allocate memory"),
 			       "InternalError", NULL);
       }
-  
+
     int saved_stdout = zDup (fileno (stdout));
     zDup2 (fileno (stderr), fileno (stdout));
     t = readServiceFile (m, tmps1, &s1, r_inputs->value);
@@ -2023,66 +2855,14 @@ runRequest (map ** inputs)
     return 0;
   }
   //InternetCloseHandle (&hInternet);
-  
-  // Define each env variable in runing environment
-  maps *curs = getMaps (m, "env");
-  if (curs != NULL)
-    {
-      map *mapcs = curs->content;
-      while (mapcs != NULLMAP)
-        {
-#ifndef WIN32
-          setenv (mapcs->name, mapcs->value, 1);
-#ifdef DEBUG
-          fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
-                   mapcs->value);
-#endif
-#else
-          if (mapcs->value[strlen (mapcs->value) - 2] == '\r')
-            {
-#ifdef DEBUG
-              fprintf (stderr, "[ZOO: Env var finish with \r]\n");
-#endif
-              mapcs->value[strlen (mapcs->value) - 1] = 0;
-            }
-#ifdef DEBUG
-          if (SetEnvironmentVariable (mapcs->name, mapcs->value) == 0)
-            {
-              fflush (stderr);
-              fprintf (stderr, "setting variable... %s\n", "OK");
-            }
-          else
-            {
-              fflush (stderr);
-              fprintf (stderr, "setting variable... %s\n", "OK");
-            }
-#else
-          SetEnvironmentVariable (mapcs->name, mapcs->value);
-#endif
-          char *toto =
-            (char *)
-            malloc ((strlen (mapcs->name) + strlen (mapcs->value) +
-                     2) * sizeof (char));
-          sprintf (toto, "%s=%s", mapcs->name, mapcs->value);
-          _putenv (toto);
-#ifdef DEBUG
-          fflush (stderr);
-#endif
-#endif
 
-#ifdef DEBUG
-          fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
-                   mapcs->value);
-          fflush (stderr);
-#endif
-          mapcs = mapcs->next;
-        }
-    }
+  initAllEnvironment(m,request_inputs,ntmp,"xrequest");
+
 
 #ifdef DEBUG
   dumpMap (request_inputs);
 #endif
-  
+
   map *status = getMap (request_inputs, "status");
   if(vid==0){
     // Need to check if we need to fork to load a status enabled 
@@ -2163,195 +2943,8 @@ runRequest (map ** inputs)
 
   int eres = SERVICE_STARTED;
   int cpid = zGetpid ();
-  
-  // Create a map containing a copy of the request map
-  maps *_tmpMaps = createMaps("request");
-  addMapToMap(&_tmpMaps->content,request_inputs);
-  addMapsToMaps (&m, _tmpMaps);
-  freeMaps (&_tmpMaps);
-  free (_tmpMaps);
-  /**
-   * Initialize the specific [lenv] section which contains runtime variables:
-   * 
-   *  - usid : it is an universally unique identifier  
-   *  - osid : it is an idenfitication number 
-   *  - sid : it is the process idenfitication number (OS)
-   *  - uusid : it is an universally unique identifier 
-   *  - status : value between 0 and 100 to express the  completude of 
-   * the operations of the running service 
-   *  - message : is a string where you can store error messages, in case 
-   * service is failing, or o provide details on the ongoing operation.
-   *  - cwd : the current working directory or servicePath if defined
-   *  - soap : is a boolean value, true if the request was contained in a SOAP 
-   * Envelop 
-   *  - sessid : string storing the session identifier (only when cookie is 
-   * used)
-   *  - cgiSid : only defined on Window platforms (for being able to identify 
-   * the created process)
-   *
-   */
-  _tmpMaps = createMaps("lenv");
-  char tmpBuff[100];
-  struct ztimeval tp;
-  if (zGettimeofday (&tp, NULL) == 0)
-    sprintf (tmpBuff, "%i", (cpid + ((int) tp.tv_sec + (int) tp.tv_usec)));
-  else
-    sprintf (tmpBuff, "%i", (cpid + (int) time (NULL)));
-  _tmpMaps->content = createMap ("osid", tmpBuff);
-  sprintf (tmpBuff, "%i", cpid);
-  addToMap (_tmpMaps->content, "sid", tmpBuff);
-  char* tmpUuid=get_uuid();
-  addToMap (_tmpMaps->content, "uusid", tmpUuid);
-  addToMap (_tmpMaps->content, "usid", tmpUuid);
-  free(tmpUuid);
-  addToMap (_tmpMaps->content, "status", "0");
-  if(cwdMap0!=NULL){
-    addToMap (_tmpMaps->content, "cwd", cwdMap0->value);
-    addToMap (_tmpMaps->content, "rcwd", ntmp);
-  }
-  else
-    addToMap (_tmpMaps->content, "cwd", ntmp);
-  addToMap (_tmpMaps->content, "message", _("No message provided"));
-  map *ltmp = getMap (request_inputs, "soap");
-  if (ltmp != NULL)
-    addToMap (_tmpMaps->content, "soap", ltmp->value);
-  else
-    addToMap (_tmpMaps->content, "soap", "false");
-  
-  // Parse the session file and add it to the main maps
-  char* originalCookie=NULL;
-  if (cgiCookie != NULL && strlen (cgiCookie) > 0)
-    {
-      int hasValidCookie = -1;
-      char *tcook = originalCookie = zStrdup (cgiCookie);
-      map *testing = getMapFromMaps (m, "main", "cookiePrefix");
-      parseCookie(&m,originalCookie);
-      map *sessId=getMapFromMaps(m,"cookies",(testing==NULL?"ID":testing->value));
-      if (sessId!=NULL)
-        {
-	  addToMap (_tmpMaps->content, "sessid", sessId->value);
-          char session_file_path[1024];
-          map *tmpPath = getMapFromMaps (m, "main", "sessPath");
-          if (tmpPath == NULL)
-            tmpPath = getMapFromMaps (m, "main", "tmpPath");
-          char *tmp1 = strtok (tcook, ";");
-          if (tmp1 != NULL)
-            sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     sessId->value);
-          else
-            sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     sessId->value);
-          free (tcook);
-          maps *tmpSess = (maps *) malloc (MAPS_SIZE);
-	  tmpSess->child=NULL;
-          struct stat file_status;
-          int istat = stat (session_file_path, &file_status);
-          if (istat == 0 && file_status.st_size > 0)
-            {
-	      int saved_stdout = zDup (fileno (stdout));
-	      zDup2 (fileno (stderr), fileno (stdout));
-              conf_read (session_file_path, tmpSess);
-              addMapsToMaps (&m, tmpSess);
-              freeMaps (&tmpSess);
-	      fflush(stdout);
-	      zDup2 (saved_stdout, fileno (stdout));
-	      zClose(saved_stdout);
-            }
-	  free (tmpSess);
-        }
-    }
-  addMapsToMaps (&m, _tmpMaps);
-  freeMaps (&_tmpMaps);
-  free (_tmpMaps);
+
   maps* bmap=NULL;
-#ifdef DEBUG
-  dumpMap (request_inputs);
-#endif
-  int ei = 1;
- 
-  _tmpMaps = createMaps("renv");	
-
-#ifdef WIN32
-  LPVOID orig = GetEnvironmentStrings();
-  LPTSTR s = (LPTSTR) orig;
-  
-  while (*s != NULL) {
-    char* env = strdup(s);
-    char* delim = strchr(env,'=');
-    if (delim != NULL) {
-      char* val = delim+1;
-      *delim = '\0';		
-      if(_tmpMaps->content == NULL) {
-        _tmpMaps->content = createMap(env,val);
-      }
-      else {
-        addToMap(_tmpMaps->content,env,val);
-      }			
-    }
-    s += strlen(s)+1;
-  } 
-  FreeEnvironmentStrings((LPCH)orig);	
-#else
-  char **orig = environ;
-  char *s=*orig;
-  
-  if(orig!=NULL)
-    for (; 
-       s;
-       ei++
-       ) {
-    if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
-      int len=strlen(s);
-      char* tmpName=zStrdup(s);
-      char* tmpValue=strstr(s,"=")+1;
-      char* tmpName1=(char*)malloc((1+(len-(strlen(tmpValue)+1)))*sizeof(char));
-      snprintf(tmpName1,(len-strlen(tmpValue)),"%s",tmpName);
-      if(_tmpMaps->content == NULL)
-	_tmpMaps->content = createMap (tmpName1,tmpValue);
-      else
-	addToMap (_tmpMaps->content,tmpName1,tmpValue);
-      free(tmpName1);
-      free(tmpName);
-    }
-    s = *(orig+ei);
-  }  
-#endif
- 
-  if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
-    addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
-  }
-  addMapsToMaps (&m, _tmpMaps);
-  freeMaps (&_tmpMaps);
-  free (_tmpMaps);
-
-  if(postRequest!=NULL)
-    setMapInMaps (m, "renv", "xrequest", postRequest->value);
-  //dumpMaps(m);
-#ifdef WIN32
-  char *cgiSidL = NULL;
-  if (getenv ("CGISID") != NULL)
-    addToMap (request_inputs, "cgiSid", getenv ("CGISID"));
-
-  char* usidp;
-  if ( (usidp = getenv("USID")) != NULL ) {
-    setMapInMaps (m, "lenv", "usid", usidp);
-  }
-
-  map *test1 = getMap (request_inputs, "cgiSid");
-  if (test1 != NULL){
-    cgiSid = zStrdup(test1->value);
-    addToMap (request_inputs, "storeExecuteResponse", "true");
-    addToMap (request_inputs, "status", "true");
-    setMapInMaps (m, "lenv", "osid", test1->value);
-    status = getMap (request_inputs, "status");
-  }
-  test1 = getMap (request_inputs, "usid");
-  if (test1 != NULL){
-    setMapInMaps (m, "lenv", "usid", test1->value);
-    setMapInMaps (m, "lenv", "uusid", test1->value);
-  }
-#endif
-
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
   if (status != NULL)
@@ -2359,7 +2952,6 @@ runRequest (map ** inputs)
       status = NULLMAP;
   if (status == NULLMAP)
     {
-	  
       if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,&hInternet)<0){
 	freeService (&s1);
 	free (s1);
@@ -2698,7 +3290,7 @@ runRequest (map ** inputs)
       free (fbkp1);
       if(cgiSid!=NULL)
 	free(cgiSid);
-      //InternetCloseHandle (&hInternet);
+      InternetCloseHandle (&hInternet);
       fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
       fflush(stderr);
       fclose (stderr);

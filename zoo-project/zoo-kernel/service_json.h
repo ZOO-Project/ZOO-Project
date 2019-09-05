@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "response_print.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <service.h>
@@ -35,9 +36,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+  /**
+   * Name and corresponding attributes depending on the WPS version
+   */
+  static const char* jcapabilities[4]={
+    "jobControlOptions","sync-execute async-execute dismiss",
+    "outputTransmission","value reference"
+  };
+
   json_object* mapToJson(map*);
   json_object* mapsToJson(maps*);
   json_object* serviceToJson(service*);
+  void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
+  void printExceptionReportResponseJ(maps*,map*);
+  void parseJRequest(maps*,service* s,json_object*,maps**,maps**);
+  json_object*  printJResult(maps*,service*,maps*,int);
+  json_object* printJobList(maps*);
+  int createStatusFile(maps*,int);
+  int json_getStatusFile(maps*);
+  void produceApi(maps*,json_object*);
+  //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);
 #ifdef __cplusplus
 }
 #endif

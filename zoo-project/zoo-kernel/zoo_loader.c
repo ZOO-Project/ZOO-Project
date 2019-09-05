@@ -97,7 +97,30 @@ int cgiMain(){
     strQuery=zStrdup(cgiQueryString);
   map* tmpMap=NULL;
 
-  if(strncmp(cgiContentType,"text/xml",8)==0 || 
+  if(strncmp(cgiContentType,"application/json",16)==0 &&
+     strncasecmp(cgiRequestMethod,"post",4)==0){
+       char *buffer=new char[2];
+       char *res=NULL;
+       int r=0;
+       int len=0;
+       while((r=fread(buffer,sizeof(char),1,cgiIn))>0){
+	 fprintf(stderr,"%s",buffer);
+	 buffer[1]=0;
+	 if(res==NULL){
+	   res=(char*)malloc(2*sizeof(char));
+	   sprintf(res,"%s",buffer);
+	 }
+	 else{
+	   res=(char*)realloc(res,(len+2)*sizeof(char));
+	   memcpy(res + len, buffer, sizeof(char));
+	   res[len+1]=0;
+	 }
+	 len+=1;
+       }
+       delete[] buffer;
+       tmpMap=createMap("jrequest",res);
+       free(res);
+  }else if(strncmp(cgiContentType,"text/xml",8)==0 ||
      strncasecmp(cgiRequestMethod,"post",4)==0){
     if(cgiContentLength==0){
 
@@ -122,7 +145,7 @@ int cgiMain(){
 	 tmpMap=createMap("request",res);
        if(res!=NULL)
 	 free(res);
-    }else{		
+    }else{  
       char *buffer=new char[cgiContentLength+1];
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>0){
 	buffer[cgiContentLength]=0;
@@ -362,9 +385,14 @@ int cgiMain(){
       xmlFreeDoc(doc);
       xmlCleanupParser();
     }else{
-      freeMap(&tmpMap);
-      free(tmpMap);
-      tmpMap=createMap("not_valid","true");
+      if(tmpMap!=NULL){	
+	if(getMap(tmpMap,"jrequest")==NULL){
+	  freeMap(&tmpMap);
+	  free(tmpMap);
+	  tmpMap=createMap("not_valid","true");
+	}
+      }else
+	tmpMap=createMap("not_valid","true");
     }
 
     char *token,*saveptr;
@@ -407,7 +435,7 @@ int cgiMain(){
 
   if(strQuery!=NULL)
     free(strQuery);
-  
+
   runRequest(&tmpMap);
 
   if(tmpMap!=NULL){

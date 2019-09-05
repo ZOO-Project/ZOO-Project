@@ -388,7 +388,7 @@ bool hasElement(elements* e,const char* key){
  * @param key the elements name to search
  * @return a pointer to the specific element if found, NULL in other case.
  */ 
-elements* getElements(elements* m,char *key){
+elements* getElements(elements* m,const char *key){
   elements* tmp=m;
   while(tmp!=NULL){
     if(strcasecmp(tmp->name,key)==0)

@@ -40,9 +40,9 @@
 extern "C" {
 #endif
 
-  ZOO_DLL_EXPORT int fetchServicesFromDb(registry*,maps*, xmlDocPtr, xmlNodePtr,
-					 void (func) (registry *, maps *, xmlDocPtr,
-						      xmlNodePtr,service *),int);
+  ZOO_DLL_EXPORT int fetchServicesFromDb(registry*,maps*, void*, void*,
+					 void (func) (registry *, maps *, void*,
+						      void*,service *),int);
   ZOO_DLL_EXPORT service* extractServiceFromDb(maps*,const char*,int);
 
 #ifdef __cplusplus

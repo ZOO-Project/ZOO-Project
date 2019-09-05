@@ -449,10 +449,12 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
  * @param minimal 1 for minimal metadata extraction (GetCapabilities), 0 in other cases.
  * @return the number of services found, -1 in case of failure
  */
-int fetchServicesFromDb(registry* reg,maps* conf, xmlDocPtr doc, xmlNodePtr n,
-			void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr,
+int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
+			void (func) (registry *, maps *, void*, void*,
 				     service *), int minimal ){
   int result=0;
+  xmlDocPtr doc=(xmlDocPtr) doc0;
+  xmlNodePtr n=(xmlNodePtr) n0;
   result=_init_sql(conf,"metadb");
   if(getMapFromMaps(conf,"lenv","dbIssue")!=NULL || result < 0)
     return -1;

@@ -209,8 +209,8 @@ extern "C" {
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*,const char*);
-  void printGetCapabilitiesForProcess(registry*,maps*,xmlDocPtr,xmlNodePtr,service*);
-  void printDescribeProcessForProcess(registry*,maps*,xmlDocPtr,xmlNodePtr,service*);
+  void printGetCapabilitiesForProcess(registry*,maps*,void*,void*,service*);
+  void printDescribeProcessForProcess(registry*,maps*,void*,void*,service*);
   void printFullDescription(xmlDocPtr,int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int,int,const map*);
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
