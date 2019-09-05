@@ -638,8 +638,10 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
  * @param serv the service structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printGetCapabilitiesForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNodePtr nc,service* serv){
+void printGetCapabilitiesForProcess(registry *reg, maps* m,void* doc0,void* nc0,service* serv){
   xmlNsPtr ns,ns_ows,ns_xml,ns_xlink;
+  xmlDocPtr doc=(xmlDocPtr) doc0;
+  xmlNodePtr nc=(xmlNodePtr) nc0;
   xmlNodePtr n=NULL,nc1,nc2,nc3;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
@@ -999,9 +1001,11 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
  * @param serv the servive structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printDescribeProcessForProcess(registry *reg, maps* m,xmlDocPtr doc,xmlNodePtr nc,service* serv){
+void printDescribeProcessForProcess(registry *reg, maps* m,void* doc0,void* nc0,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc1;
+  xmlDocPtr doc=(xmlDocPtr) doc0;
+  xmlNodePtr nc=(xmlNodePtr) nc0;
   xmlNodePtr nc2 = NULL;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);

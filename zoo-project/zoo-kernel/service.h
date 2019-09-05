@@ -424,7 +424,7 @@ extern "C" {
   ZOO_DLL_EXPORT elements* createElements(const char*);
   ZOO_DLL_EXPORT void setElementsName(elements**,char*);
   ZOO_DLL_EXPORT bool hasElement(elements*,const char*);
-  ZOO_DLL_EXPORT elements* getElements(elements*,char*);
+  ZOO_DLL_EXPORT elements* getElements(elements*,const char*);
   ZOO_DLL_EXPORT void freeIOType(iotype**);
   ZOO_DLL_EXPORT void freeElements(elements**);
   ZOO_DLL_EXPORT void setServiceName(service**,char*);

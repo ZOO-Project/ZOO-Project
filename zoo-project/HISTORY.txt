@@ -1,4 +1,6 @@
 Version 1.8.0-dev
+  * Start simplification of the runRequest function
+  * Integrate optional support for OGC API - Processing implementation
   * Add the optional handleText parameter to provide pure text for
   complex data node with mimetype="text/*"
   * Fix issue in case JavaScript support is activated
