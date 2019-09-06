@@ -71,7 +71,7 @@ AC_ARG_WITH([callback],
 AC_ARG_WITH([json],
     [AS_HELP_STRING([--with-json=PATH], [Specifies an alternative location for the json-c library])],
     [JSON_DIR="$withval"], [JSON_DIR="/usr/"])
-if test "x$JSON_DIR" != "x" && test "x$CALLBACK_ACTIVATED" == "xyes"
+if test "x$JSON_DIR" != "x"
 then
 	JSON_CPPFLAGS="-DUSE_JSON -I$JSON_DIR/include/json-c/"
 	JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
