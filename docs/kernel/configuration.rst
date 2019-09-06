@@ -428,7 +428,77 @@ with two different zcfg files.
   As currently implemented, the ZOO-Kernel searches the CWD for the library files of 
   included services if the ``libPath`` parameter is not set.
 
-      
+
+OpenAPI Specification configuration file
+-----------------------------------------
+
+Since revision 949 of the ZOO-Kernel, you can now activate the OGC
+API - Processing support. In such a case you will need to have an
+``oas.cfg`` file located in tne same directory where the ``main.cfg`` is.
+
+This ``oas.cfg`` file gets the same syntactic rules than the
+``main.cfg``. The ZOO-Kernel uses this file to produce information
+about the open API specification it is referring to. 
+
+The first section to be found in the ``oas.cfg`` file should be the
+``[openapi]``. It contains the following parameters:
+
+ * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API - Processing
+ * ``links``: the links provided from the root
+ * ``paths``: the full paths list
+ * ``parameters``: the parameters list defined in paths
+ * ``header_parameters``: the parameters list client applications can send as header
+ * ``version``: the Open API Specification version
+   
+For any links and paths ``/A`` defined, you will have a corresponding
+``[/A]`` and ``[A]`` sections. In the ``[/A]`` section you will define
+the rel, type and title used from the root URL to produce the `links
+<https://github.com/opengeospatial/wps-rest-binding/blob/master/core/openapi/schemas/link.yaml>`__
+list and the `paths object
+<https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#pathsObject>`__
+from. In the corresponding ``[A]`` section, you will define the
+following parameters:
+
+ * ``method``: the HTTP method to use to access this resource
+ * ``title``: resource title
+ * ``abstract``: resource description 
+ * ``tags``: tags to classify this resource
+ * ``tags_description``: the tag description
+ * ``schema``: the schema specifying the resource
+
+In case you want to define multiple methods to access a resource,  you
+can then use the length parameter to define the number of parameters
+group to parse, then use ``method_1``, ``title_1``, ``abstract_1``,
+``tags_1``, ``tags_description_1`` and ``schema_1`` and so on to add
+one or more access method (and other attributes) to this resource.
+
+When declaring resource access you may want to add a parameter to your
+request. In such a case, you can add a parameter named "parameters"
+which contain the supported parameters list. All parameters defined
+should be rooted in the components field. Parameters which can be used
+in the path will be identified by ``{NAME}`` and will get a specific
+section for its definition:
+
+ * ``type``: nature of the parameter (i.e. string)
+ * ``title``: parameter title
+ * ``abstract``: parameter description
+ * ``in``: where the parameter can be used (ie. path, header, query)
+ * ``required``: define if the parameter is optional (false) or not (true)
+ * ``example``: (optional) provide an example value / URL
+   
+In addition to the sections defined previously, there are three other
+sections that we did not cover yet. Theses sections are:
+
+ * ``[requestBody]``: defining the request body abstract (description), type (application/json) and schema (reference).
+ * ``[exception]``: defining the exception bastract (description), type (application/json) and schema (reference).
+ * ``[conformTo]``: referring to links list of the requirements classes the server implements and conforms to
+
+For more information on how to interact with this WPS REST Binding, please refer
+to this `page
+<https://github.com/opengeospatial/wps-rest-binding#overview>`__ or use
+the `Swagger UI <https://swagger.io/tools/swagger-ui/>`__. A live
+instance is available `here <https://demo.mapmint.com/swagger-ui/dist/>`__.
+  
 .. rubric:: Footnotes
 
 .. [#f1] If GET requests are passed through ``xlink:href`` to the ZOO-Kernel , the latter will execute the request the first time and store the result  on disk. The next time the same request is executed, the cached file will be used and this will make your process run much faster. If ``cachedir`` was not specified in the ``main.cfg`` then the ``tmpPath`` value will be used.
