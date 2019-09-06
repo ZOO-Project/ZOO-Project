@@ -1,0 +1,332 @@
+# ZOO-Kernel Internationalization.
+# Copyright (C) 2015 GeoLabs SARL
+# This file is distributed under the same license as the PACKAGE package.
+# 
+# Translators:
+# Kari Salovaara <kari.salovaara@pp1.inet.fi>, 2019
+msgid ""
+msgstr ""
+"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
+"POT-Creation-Date: 2015-07-02 18:06+0200\n"
+"PO-Revision-Date: 2019-09-05 10:23+0000\n"
+"Last-Translator: Kari Salovaara <kari.salovaara@pp1.inet.fi>\n"
+"Language-Team: Finnish (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/fi/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fi\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: caching.c:217 caching.c:235 caching.c:356 request_parser.c:214
+#: request_parser.c:225 request_parser.c:262 request_parser.c:403
+#: request_parser.c:414 request_parser.c:441 request_parser.c:537
+#: request_parser.c:562 request_parser.c:665 request_parser.c:782
+#: request_parser.c:1112 request_parser.c:1204 zcfg2yaml.c:38
+#: zoo_service_loader.c:259 zoo_service_loader.c:880 zoo_service_loader.c:1363
+#: zoo_service_loader.c:1559
+msgid "Unable to allocate memory"
+msgstr "Muistia ei voida allokoida"
+
+#: caching.c:344
+msgid "Unable to download the file."
+msgstr "Tiedoston lataaminen ei onnistu"
+
+#: request_parser.c:92
+#, c-format
+msgid "The maximum allowed occurrences for <%s> (%i) was exceeded."
+msgstr "Suurin sallittu tapahtumien määrä <%s> (%i) ylitettiin."
+
+#: request_parser.c:113
+#, c-format
+msgid "ZOO-Kernel was unable to load your data for %s position %s."
+msgstr "ZOO-Kernel ei onnistunut lataamaan tietoja kohteelle %s sijainnissa %s."
+
+#: request_parser.c:124
+#, c-format
+msgid "The maximum allowed occurrences for <%s> is one."
+msgstr "Suurin sallittu tapahtumien määrä <%s> on yksi."
+
+#: request_parser.c:315
+#, c-format
+msgid "Unable to find a valid protocol to download the remote file %s"
+msgstr "Oikean protokollan valinta ladata etätiedostoa %s ei onnistu"
+
+#: request_parser.c:613
+msgid "Unable to add a request in the queue."
+msgstr "Pyynnön lisääminen jonoon ei onnistu."
+
+#: request_parser.c:1021
+msgid "Unable to append maps to maps."
+msgstr "Karttojen lisääminen karttoihin ei onnistu."
+
+#: request_parser.c:1291
+msgid "Duplicate <Output> elements in WPS Execute request"
+msgstr "Duplikaatteja <Output> elementtejä WPS Execute pyynnössä"
+
+#: request_parser.c:1487
+#, c-format
+msgid ""
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
+msgstr "<%s> parametrilla on kokorajoitus (%s MB) joka on määritelty ZOO ServicesProvider konfiguratio tiedostossa, mutta antamasi mainita ylittää tämän rajoituksen (%f MB)."
+
+#: request_parser.c:1519
+#, c-format
+msgid ""
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
+msgstr "<%s> argumenttia ei ole määritetty DataInputs tiedossa mutta se on pakollinen ZOO ServicesProvider konfiguratiotiedoston mukaan."
+
+#: request_parser.c:1545
+#, c-format
+msgid ""
+"The <%s> argument specified as %s identifier was not recognized (not defined"
+" in the ZOO Configuration File)."
+msgstr "<%s> argumenttia määriteltynä %s itunnisteeksi ei tunnistettu (ei määritelty ZOO Konfiguratiotiedostossa)."
+
+#: request_parser.c:1663
+#, c-format
+msgid "Mandatory parameter <%s> was not specified"
+msgstr "Pakollista parameteria <%s> ei ole määritelty"
+
+#: request_parser.c:1712
+#, c-format
+msgid "The value <%s> was not recognized, %s %s the only acceptable value."
+msgstr "Arvoa <%s> ei tunnistettu, %s %s ovat ainoat hyväksytyt arvot."
+
+#: request_parser.c:1715
+msgid "is"
+msgstr "on"
+
+#: request_parser.c:1727
+msgid "are"
+msgstr "ovat"
+
+#: response_print.c:1630
+#, c-format
+msgid "The service \"%s\" ran successfully."
+msgstr "Palvelu \"%s\" suoritettiin onnistuneesti."
+
+#: response_print.c:1638
+#, c-format
+msgid ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
+msgstr "ZOO palvelua \"%s\" suoritetuksessa. Ole hyvä ja lataa uudelleen tämä dokumentti saadaksesi päivitetyn tilaraportin palvelusta."
+
+#: response_print.c:1644
+#, c-format
+msgid ""
+"The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
+msgstr "ZOO-Kernel hyväksyi palvelun \"%s\" ja sitä suoritetaan taustatoimintona. Ole hyvä ja käytä URLia statusLocation attribuutissa tässä dokumentissa saadaksesi päivitetyn tilaraportin ja tulokset."
+
+#: response_print.c:1661
+msgid "No more information available"
+msgstr "Lisätietoja ei saatavilla"
+
+#: response_print.c:1668
+#, c-format
+msgid "error code not know : %i\n"
+msgstr "virhekoodi tuntematon : %i\n"
+
+#: response_print.c:1760
+msgid "Lock failed."
+msgstr "Lukitus epäonnistui."
+
+#: response_print.c:1773
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
+msgstr "Ei voida luoda tiedostoa \"%s\" ExecuteResponse tallentamiseksi."
+
+#: response_print.c:2290
+msgid "No debug message available"
+msgstr "Testiviestiä ei käytettävissä"
+
+#: response_print.c:2378
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "Ei voida luoda tiedostoa \"%s\" istunnon karttojen tallentamiseksi."
+
+#: response_print.c:2394
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
+msgstr "Ei voida suorittaa palvelua.  Palvelun palauttama viesti on:"
+
+#: response_print.c:2395
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
+msgstr "Ei voida suorittaa palvelua. Palvelun palauttama viesti on: %s"
+
+#: response_print.c:2398 response_print.c:2399
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr "Ei voida suorittaa palvelua. Palvelu ei palauttannut lisäinformaatiota."
+
+#: response_print.c:2486
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the %s final result."
+msgstr "Ei voida luoda tiedostoa \"%s\" lopullisen tuloksen %s tallentamiseksi."
+
+#: response_print.c:2572
+#, c-format
+msgid ""
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+msgstr "Virheellinen RawDataOutput parametri: ei voida hakea tulosta annetulle parametrin nimelle: \"%s\"."
+
+#: server_internal.c:869 server_internal.c:946
+msgid ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+msgstr "Pyynnön JobID ei kohdistu mihinkään palvelimella suoritettavaan työhön."
+
+#: server_internal.c:875 server_internal.c:907
+msgid "The result for the requested JobID has not yet been generated. "
+msgstr "Pyydettyä JobID tulosta ei ole vielä generoitu."
+
+#: server_internal.c:988
+msgid "The job cannot be removed, a file cannot be removed"
+msgstr "Työtä ei  voida poistaa, tiedostoa ei voida poistaa"
+
+#: server_internal.c:1063
+msgid "Unable to open the registry directory."
+msgstr "Rekisterihakemistoa ei voida avata."
+
+#: server_internal.c:1082
+msgid "Unable to allocate memory."
+msgstr "Ei voida allokoida muistia."
+
+#: server_internal.c:1093 zoo_service_loader.c:276 zoo_service_loader.c:1384
+#: zoo_service_loader.c:1427
+#, c-format
+msgid "Unable to parse the ZCFG file: %s (%s)"
+msgstr "Ei voida jäsentää ZCFG tiedostoa: %s (%s)"
+
+#: server_internal.c:1096 zoo_service_loader.c:279 zoo_service_loader.c:1389
+#: zoo_service_loader.c:1431
+#, c-format
+msgid "Unable to parse the ZCFG file: %s."
+msgstr "Ei voida jäsentää ZCFG tiedostoa: %s."
+
+#: service_internal_ms.c:136
+msgid "Unable to find any mapserverAddress defined in the main.cfg file"
+msgstr "Ei löydetä ainuttakaan mapserverAddress määriteltyinä main.cfg tiedostossa"
+
+#: service_internal_php.c:227
+#, c-format
+msgid "Unable to load the PHP file %s"
+msgstr "Ei voida ladata PHP tiedostoa %s"
+
+#: service_internal_python.c:316
+#, c-format
+msgid "Python module %s cannot be loaded. Message: %s\n"
+msgstr "Python modulia %s ei voida ladata. Ilmoitus: %s\n"
+
+#: service_internal_python.c:355
+#, c-format
+msgid ""
+"%s\n"
+"Unable to run your python process properly. Please check the following messages : %s"
+msgstr "%s\nEi voida suorittaa python prosessiasi onnistuneesti. Ole hyvä ja tarkista seuraavat viestit : %s"
+
+#: service_internal_python.c:361
+#, c-format
+msgid ""
+"%s \n"
+" Unable to run your python process properly. Unable to provide any further information."
+msgstr "%s\nEi voida suorittaa python prosessiasi onnistuneesti. Ei voida antaa lisäinformatiota."
+
+#: zoo_service_loader.c:352
+#, c-format
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s"
+msgstr "ZOO Kernel epäonnistui suorittamaan antamasi pyynnön, vastaanotti signaalin %d = %s"
+
+#: zoo_service_loader.c:527
+#, c-format
+msgid "Error occurred while running the %s function: %s"
+msgstr "Virhe suoritettaessa %s funktiota: %s"
+
+#: zoo_service_loader.c:578
+#, c-format
+msgid "Unable to load C Library %s"
+msgstr "Ei voida ladata C Kirjastoa %s"
+
+#: zoo_service_loader.c:672
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
+" Kernel.\n"
+msgstr "Ohjelmointikieli (%s) asetettu ZCFG tiedostossa  ei ole tuettu nykyisin ZOO Kernel sovellutuksessa.\n"
+
+#: zoo_service_loader.c:737
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "Ei voida tallentaa HTTP POST Execute pyyntöä välimuistiin."
+
+#: zoo_service_loader.c:895
+msgid "Unable to load the main.cfg file."
+msgstr "Ei voida ladata main.cfg tiedostoa."
+
+#: zoo_service_loader.c:895
+msgid "%s The following file: %s cannot be found."
+msgstr "%s Seuraava tiedosto: %s ei löydetä."
+
+#: zoo_service_loader.c:940
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "Arvoa %s ei tueta <language> parameteriin"
+
+#: zoo_service_loader.c:1238
+msgid "The specified path does not exist."
+msgstr "Määritettyä polkua ei olemassa."
+
+#: zoo_service_loader.c:1303
+#, c-format
+msgid ""
+"Unable to parse the ZCFG file for the following ZOO-Service: %s. Message: %s"
+msgstr "Ei voida jäsentää ZCFG tiedostoa seuraavalle ZOO-palvelulle: %s. Viesti: %s"
+
+#: zoo_service_loader.c:1308
+#, c-format
+msgid "Unable to parse the ZCFG file for the following ZOO-Service: %s."
+msgstr "Ei voida jäsentää ZCFG tiedostoa seuraavalle ZOO-palvelulle: %s."
+
+#: zoo_service_loader.c:1534
+msgid "Unable to run Execute request using the GET HTTP method"
+msgstr "Ei voida suorittaa pyyntöä käyttäen GET HTTP metoodia"
+
+#: zoo_service_loader.c:1606
+#, c-format
+msgid ""
+"The value for <identifier> seems to be wrong (%s). Please specify one of the"
+" processes in the list returned by a GetCapabilities request."
+msgstr "<identifier> arvo on virheellinen (%s). Ole hyvä ja määrittele yksi GetCapabilities pyynnön palauttama prosessi. "
+
+#: zoo_service_loader.c:1733
+msgid ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to"
+" false. Please modify your request parameters."
+msgstr "Tila parametria ei voida asettaa arvoon true jos storeExecuteResponse on false. Ole hyvä ja korjaa pyyntösi parametrit."
+
+#: zoo_service_loader.c:1761
+msgid "The process does not permit the desired execution mode."
+msgstr "Prosessi ei salli toivottua suoritustapaa."
+
+#: zoo_service_loader.c:1837
+msgid "No message provided"
+msgstr "Viestiä ei ole annettu"
+
+#: zoo_service_loader.c:1995
+msgid "Initializing"
+msgstr "Alustetaan"
+
+#: zoo_service_loader.c:2142
+msgid "Unable to run the child process properly"
+msgstr "Ei voida suorittaa lapsiprosessia kunnolla"
