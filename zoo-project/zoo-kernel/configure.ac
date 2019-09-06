@@ -73,7 +73,7 @@ AC_ARG_WITH([json],
     [JSON_DIR="$withval"], [JSON_DIR="/usr/"])
 if test "x$JSON_DIR" != "x" && test "x$CALLBACK_ACTIVATED" == "xyes"
 then
-	JSON_CPPFLAGS="-I$JSON_DIR/include/json-c/"
+	JSON_CPPFLAGS="-DUSE_JSON -I$JSON_DIR/include/json-c/"
 	JSON_LDFLAGS="-L$JSON_DIR/lib -ljson-c"
 	CPPFLAGS_SAVE="$CPPFLAGS"
 	CPPFLAGS="$JSON_CPPFLAGS"
@@ -86,8 +86,11 @@ then
 	CPPFLAGS="$CPPFLAGS_SAVE"
 	JSON_FILE="service_json.o"
 	JSON_ENABLED="-DJSON"
-	CALLBACK_FILE="service_callback.o"
-	CALLBACK_USE="-DUSE_CALLBACK"
+	if test "x$CALLBACK_ACTIVATED" == "xyes"
+	then
+		CALLBACK_FILE="service_callback.o"
+		CALLBACK_USE="-DUSE_CALLBACK"
+	fi
 fi
 AC_SUBST([JSON_CPPFLAGS])
 AC_SUBST([JSON_LDFLAGS])
