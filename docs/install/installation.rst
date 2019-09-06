@@ -276,6 +276,19 @@ If xml2-config program is not found in PATH, a *--with-xml2config* option can be
 
   $ ./configure --with-xml2config=/usr/local/bin/xml2-config
 
+OGC API - Processing Support (Optional) 
+****************************************
+
+In case you want to activate the support for `OGC API - Processing
+<https://github.com/opengeospatial/wps-rest-binding>`__, you 
+can do so by using the *--with-json*: You will then need to coy the 
+``oas.cfg`` file in the same directory as your ``main.cfg``. For
+instance, one may use the following command:
+
+::
+
+  $ ./configure --with-json=/usr/
+  
 Python Support (Optional) 
 **************************
 
