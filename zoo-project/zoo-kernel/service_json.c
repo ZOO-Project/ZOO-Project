@@ -519,7 +519,7 @@ extern "C" {
       json_object_object_add(res2,"rel",json_object_new_string("canonical"));
       json_object_object_add(res2,"type",json_object_new_string("application/json"));
       json_object_object_add(res2,"title",json_object_new_string("Process Description"));
-      map* tmpUrl=getMapFromMaps(m,"main","serverAddress");
+      map* tmpUrl=getMapFromMaps(m,"openapi","rootUrl");
       char* tmpStr=(char*) malloc((strlen(tmpUrl->value)+strlen(rUrl)+13)*sizeof(char));
       sprintf(tmpStr,"%s/processes/%s/",tmpUrl->value,rUrl);
       if(doc==NULL){
@@ -1140,7 +1140,7 @@ extern "C" {
    */
   int createStatusLinks(maps* conf,int result,json_object* obj){
     json_object* res=json_object_new_array();
-    map *tmpPath = getMapFromMaps (conf, "main", "serverAddress");
+    map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
     map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
     char *Url0=(char*) malloc((strlen(tmpPath->value)+
@@ -1340,7 +1340,7 @@ extern "C" {
     if(tmpMap!=NULL){
       json_object_object_add(res1,"description",json_object_new_string(tmpMap->value));
       json_object_object_add(res5,"description",json_object_new_string(tmpMap->value));
-      tmpMap=getMapFromMaps(conf,"main","serverAddress");
+      tmpMap=getMapFromMaps(conf,"openapi","rootUrl");
       json_object_object_add(res5,"url",json_object_new_string(tmpMap->value));
     }
     tmpMap=getMapFromMaps(conf,"identification","title");
