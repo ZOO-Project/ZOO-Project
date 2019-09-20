@@ -268,6 +268,7 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
  * shared key, "OTHER" in other cases.
  */
 char* getProvenance(maps* conf,const char* url){
+  int i=0;
   map* sharedCache=getMapFromMaps(conf,"security","shared");
   char *res="OTHER";
   char *paths[2]={
@@ -284,7 +285,7 @@ char* getProvenance(maps* conf,const char* url){
       curs=strtok(NULL,",");
     }
   }
-  for(int i=0;i<2;i++){
+  for(i=0;i<2;i++){
     sharedCache=getMapFromMaps(conf,"main",paths[i]);
     if(sharedCache!=NULL){
       if(strstr(url,sharedCache->value)!=NULL){

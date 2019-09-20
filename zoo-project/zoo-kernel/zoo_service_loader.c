@@ -68,10 +68,10 @@ extern "C" int crlex ();
 #include "server_internal.h"
 #include "response_print.h"
 #include "request_parser.h"
-#include "sqlapi.h"
 #ifdef USE_JSON
 #include "caching.h"
 #endif
+#include "sqlapi.h"
 
 #ifdef META_DB
 #include "meta_sql.h"
@@ -1871,7 +1871,7 @@ runRequest (map ** inputs)
   }
   
   setMapInMaps(m,"lenv","executionType","xml");
-  if((strlen(cgiQueryString)>0 && cgiQueryString[0]=='/') || strstr(cgiAccept,"json")!=NULL){
+  if((strlen(cgiQueryString)>0 && cgiQueryString[0]=='/') && strstr(cgiAccept,"json")!=NULL){
   //
   // OGC API - Processing starts here
   //

@@ -26,7 +26,6 @@
  * THE SOFTWARE.
  */
 
-#include "service_callback.h"
 #include "service_json.h"
 #include "service_internal_ms.h"
 #include "sqlapi.h"
@@ -40,6 +39,8 @@
 #include <libxslt/xsltInternals.h>
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
+
+#include "service_callback.h"
 
 #ifdef __cplusplus
 extern "C" {

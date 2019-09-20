@@ -129,9 +129,9 @@ void _dumpMapsToFile(maps* m,FILE* file,int limit){
       dumpMapToFile(tmp->content,file);
     fflush(file);
     tmp=tmp->next;
+    cnt++;
     if(limit>=0 && cnt==limit)
       tmp=NULL;
-    cnt++;
   }
   fflush(file);
 }

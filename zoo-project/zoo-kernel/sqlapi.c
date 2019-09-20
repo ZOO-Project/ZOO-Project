@@ -30,9 +30,8 @@
 #include <gdal_priv.h>
 #endif
 
-#include "sqlapi.h"
 #include <fcgi_stdio.h>
-#include <stdlib.h>
+#include "sqlapi.h"
 
 /**
  * Global GDALDataset pointer

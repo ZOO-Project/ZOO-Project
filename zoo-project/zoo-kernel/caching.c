@@ -24,10 +24,10 @@
 
 #include <openssl/md5.h>
 #include <openssl/evp.h>
-#include "caching.h"
 #include "service.h"
 #include "service_internal.h"
 #include "response_print.h"
+#include "caching.h"
 #ifdef MS_FORCE_LOCAL_FILE_USE
 #include "ogr_api.h"
 #include "mapserver.h"

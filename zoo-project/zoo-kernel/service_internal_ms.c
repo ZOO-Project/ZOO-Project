@@ -1527,7 +1527,7 @@ void outputMapfile(maps* conf,maps* outputs){
   //msFreeSymbolSet(&myMap->symbolset);
   msFreeMap(myMap);
   //msFree(myMap);
-  msGDALCleanup();
+  //msGDALCleanup();
 }
 
 /**
