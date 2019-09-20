@@ -1055,9 +1055,6 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	      if(ssh_fetch(*main_conf,targetPath,generatedFile->value,ssh_get_cnt(m))==0){
 		maps* tmp=getMaps(*real_outputs,input->name);
 		char serviceName[9];
-		freeMap(&tmp->content);
-		free(tmp->content);
-		tmp->content=NULL;
 		maps* output=getMaps(*real_outputs,input->name);
 		setMapInMaps(output->child,"download_link","generated_file",targetPath);
 		setMapInMaps(output->child,"download_link","generated_url",generatedUrl->value);
@@ -1066,23 +1063,28 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		setMapInMaps(output->child,"download_link","replicateStorageNext","true");
 		setMapInMaps(output->child,"download_link","asReference","true");
 		setMapInMaps(output->child,"download_link","inRequest","true");
-		setMapInMaps(output->child,"wms_link","generated_file",targetPath);
-		setMapInMaps(output->child,"wms_link","storage",targetPath);
-		setMapInMaps(output->child,"wms_link","useMapserver","true");
-		setMapInMaps(output->child,"wms_link","msOgc","WMS");
-		setMapInMaps(output->child,"wms_link","requestedMimeType","image/png");
-		setMapInMaps(output->child,"wms_link","asReference","true");
-		if(getMaps(output->child,"wcs_link")!=NULL){
-		  sprintf(serviceName,"wcs_link");
-		  setMapInMaps(output->child,"wcs_link","msOgc","WCS");
-		}else{
-		  sprintf(serviceName,"wfs_link");
-		  setMapInMaps(output->child,"wfs_link","msOgc","WFS");
-                }
-		setMapInMaps(output->child,serviceName,"storage",targetPath);
-		setMapInMaps(output->child,serviceName,"generated_file",targetPath);
-		setMapInMaps(output->child,serviceName,"useMapserver","true");
-		setMapInMaps(output->child,serviceName,"asReference","true");
+		if(getMaps(output->child,"wms_link")!=NULL){
+		  setMapInMaps(output->child,"wms_link","generated_file",targetPath);
+		  setMapInMaps(output->child,"wms_link","storage",targetPath);
+		  setMapInMaps(output->child,"wms_link","useMapserver","true");
+		  setMapInMaps(output->child,"wms_link","msOgc","WMS");
+		  setMapInMaps(output->child,"wms_link","requestedMimeType","image/png");
+		  setMapInMaps(output->child,"wms_link","asReference","true");
+		  if(getMaps(output->child,"wcs_link")!=NULL){
+		    sprintf(serviceName,"wcs_link");
+		    setMapInMaps(output->child,"wcs_link","msOgc","WCS");
+		  }else{
+		    sprintf(serviceName,"wfs_link");
+		    setMapInMaps(output->child,"wfs_link","msOgc","WFS");
+		  }
+		  setMapInMaps(output->child,serviceName,"storage",targetPath);
+		  setMapInMaps(output->child,serviceName,"generated_file",targetPath);
+		  setMapInMaps(output->child,serviceName,"useMapserver","true");
+		  setMapInMaps(output->child,serviceName,"asReference","true");
+		}
+		freeMap(&tmp->content);
+		free(tmp->content);
+		tmp->content=NULL;
 	      }else{
 		map* hpcStdErr=getMapFromMaps(*main_conf,"henv","StdErr");
 		char *sourcePath=NULL;
