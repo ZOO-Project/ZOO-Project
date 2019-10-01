@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include "response_print.h"
 #ifdef USE_MS
 #include "service_internal_ms.h"
 #else
@@ -34,6 +33,7 @@
 #include "service.h"
 #include "service_internal.h"
 #include "server_internal.h"
+#include "response_print.h"
 
 #ifndef WIN32
 #include <dlfcn.h>
