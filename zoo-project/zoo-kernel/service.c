@@ -1828,3 +1828,27 @@ char *strcasestr (char const *a, char const *b)
    ;
 #endif
 #endif
+
+/*
+ * Dynamically allocate memory for a map value 
+ *
+ * @param node the map for which the value buffer should be allocated
+ * @param num_bytes the number of bytes to allocate
+ * @return pointer to the allocated memory buffer
+ *
+ * This function will free, and hence delete, any existing value in the map.
+ * The memory should be deallocated by calling freeMap.
+ */
+char* allocateMapValue(map* node, size_t num_bytes)
+{
+	if (node == NULL) {
+		return NULL;
+	}
+
+	if (node->value != NULL) {
+		free(node->value);
+	}
+	node->value = (char*) malloc(num_bytes);
+		
+	return node->value;
+}
