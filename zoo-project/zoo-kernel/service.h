@@ -480,7 +480,11 @@ extern "C" {
 #endif
   #define zooLogMsg(file,message) logMessage(__FILE__, __func__, __LINE__, (file), (message)) 
   #define zooLog logMessage(__FILE__, __func__, __LINE__)  
-
+  
+  // knut : function for pre-allocated memory for a map value;
+  // processing algorithms may be able to write directly to this space, thereby avoiding unneccesary copying of data
+  ZOO_DLL_EXPORT char* allocateMapValue(map* node, size_t num_bytes);  
+  
 #ifdef __cplusplus
 }
 #endif

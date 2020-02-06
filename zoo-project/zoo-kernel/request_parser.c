@@ -415,7 +415,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
       int i = 0;
       while (pToken != NULL)
 	{
-	  outputs_as_text[i] =
+/* 	  outputs_as_text[i] =
 	    (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
 	  if (outputs_as_text[i] == NULL)
 	    {
@@ -426,7 +426,27 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	  snprintf (outputs_as_text[i], strlen (pToken) + 1, "%s",
 		    pToken);
 	  pToken = strtok (NULL, ";");
-	  i++;
+	  i++; */
+	  
+	  // knut : rewrite above fragment to enable parsing of mimetype;subtype strings in key-value pairs:
+	  
+	  char* _token = zStrdup(pToken); 
+	  pToken = strtok (NULL, ";");
+	  
+	  if (pToken != NULL && strncmp(pToken, "subtype=", 8) == 0)
+	  {
+		 size_t _length = strlen(pToken) + strlen(_token) + 2; 
+		 outputs_as_text[i] = (char *) malloc(_length * sizeof (char));
+		 snprintf(outputs_as_text[i], _length, "%s;%s", _token, pToken);
+		 pToken = strtok (NULL, ";");
+	  }
+	  else
+	  {
+		 outputs_as_text[i] = (char *) malloc((strlen(_token) + 1) * sizeof (char));
+		 snprintf (outputs_as_text[i], strlen(_token) + 1, "%s", _token);		 
+	  }
+	  free(_token);
+	  i++;	  
 	}
       for (j = 0; j < i; j++)
 	{
@@ -861,7 +881,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		      { "mimeType", "encoding", "schema" };
 		    for (l = 0; l < 3; l++){
 		      xmlChar *val =
-			  xmlGetProp (cur4, BAD_CAST coms[l]);
+			  //xmlGetProp (cur4, BAD_CAST coms[l]);
+			  xmlGetProp (cur2, BAD_CAST coms[l]);   // knut : get attributes from the Data xml element, not it's children (the content)
 			if (val != NULL && strlen ((char *) val) > 0){
 			  if (tmpmaps->content != NULL)
 			    addToMap (tmpmaps->content,coms[l],(char *) val);
