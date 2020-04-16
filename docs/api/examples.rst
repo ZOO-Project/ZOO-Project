@@ -51,3 +51,28 @@ current status of your running process. This information will be really helpfull
 ZOO Kernel will run your JavaScript Service in background mode (if the user set to ``true`` 
 the ``storeExecuteResponse`` parameter in his request).
 
+Asynchronous ZOO.Process example
+--------------------------------
+
+::
+
+  function RunAsynchonous(conf,inputs,outputs){
+     var formatWPS=new ZOO.Format.WPS();
+     var myProcess = new ZOO.Process(conf["main"]["serverAddress"],'Demo',true);
+     var myExecuteResult  =myProcess.Execute(myInputs,myOutputs);
+     var response=formatWPS.read(myExecuteResult);
+     while(response.status){
+         sleep(1500);
+	 var response1 = ZOO.Request.Get(response.status.replace(/amp;/g,""),null);
+	 response=formatWPS.read(response1);
+     }
+     conf["lenv"]["message"]="Asyncrhonous Process ended";
+     ZOO.UpdateStatus(conf,90);
+     return {result: ZOO.SERVICE_SUCCEEDED, outputs: outputs};
+   }
+
+In this sample code, by creating the ZOO.Process, providing a third
+argument set to true, we ensure that the WPS service execution will be run
+asynchronously. Once the Execute WPS response is fetched, until the
+service execution ends, the statusLocation is polled every 1,5
+second.

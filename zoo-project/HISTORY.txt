@@ -1,4 +1,6 @@
 Version 1.8.0-dev
+  * Add documentation on how to use asyncrhonous execution using the Javascript
+  ZOO-API
   * Start simplification of the runRequest function
   * Integrate optional support for OGC API - Processing implementation
   * Add the optional handleText parameter to provide pure text for
