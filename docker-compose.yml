@@ -1,0 +1,35 @@
+version: '3'
+services:
+  zookernel:
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
+      - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
+      - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
+    depends_on:
+      - pgbouncer
+  pg:
+    image: postgres:9.6.18-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: zoo
+      POSTGRES_PASSWORD: zoo
+      POSTGRES_DB: zoo
+    volumes:
+      # Load the zoo kernel schema
+      - ./zoo-project/zoo-kernel/sql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+  pgbouncer:
+    image: edoburu/pgbouncer:1.8.1
+    environment:
+      DATABASE_URL: "postgres://zoo:zoo@pg/zoo"
+      MAX_CLIENT_CONN: 1000
+      MAX_DB_CONNECTIONS: 100
+      DEFAULT_POOL_SIZE: 100
+      POOL_MODE: transaction
+    ports:
+      - "5432:5432"
+    depends_on:
+      - pg
+

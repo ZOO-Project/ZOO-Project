@@ -36,8 +36,8 @@
 -- Services table
 -- Used to store information about services running asynchronously
 create table services (
-       osid TEXT unique,
-       sid TEXT unique,
+       osid TEXT,
+       sid TEXT,
        uuid TEXT unique,
        fstate varchar(25),
        status TEXT,
