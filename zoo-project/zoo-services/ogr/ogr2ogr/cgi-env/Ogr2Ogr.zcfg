@@ -47,6 +47,24 @@
     <Supported>
     </Supported>
    </LiteralData>
+  [LCO]
+   Title = Format of the output data
+   Abstract = Select the output format.
+   minOccurs = 0
+   maxOccurs = 1024
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [DSCO]
+   Title = Format of the output data
+   Abstract = Select the output format.
+   minOccurs = 0
+   maxOccurs = 1024
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
  </DataInputs>
  <DataOutputs>
   [OutputedDataSourceName]
