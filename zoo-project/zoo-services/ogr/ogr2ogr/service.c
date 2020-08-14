@@ -170,15 +170,33 @@ int main( int nArgc, char ** papszArgv )
     }
 
     tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"DSCO","value");
-    if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
-	  papszDSCO = CSLAddString(papszDSCO, tmpMap->value );
+    int length=1;
+    tmpMap=getMapFromMaps(inputs,"DSCO","length");
+    if(tmpMap!=NULL){
+	    length=atoi(tmpMap->value);
+    }
+    maps* tmpMaps=getMaps(inputs,"DSCO");
+    for(int i=0;i<length;i++){
+	tmpMap=getMapArray(tmpMaps->content,"value",i);
+    	//tmpMap=getMapFromMaps(inputs,"DSCO","value");
+    	if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
+	      papszDSCO = CSLAddString(papszDSCO, tmpMap->value );
+    	}
     }
 
     tmpMap=NULL;
-    tmpMap=getMapFromMaps(inputs,"LCO","value");
+    length=1;
+    tmpMap=getMapFromMaps(inputs,"LCO","length");
+    if(tmpMap!=NULL){
+	    length=atoi(tmpMap->value);
+    }
+    tmpMaps=getMaps(inputs,"LCO");
+    for(int i=0;i<length;i++){
+	tmpMap=getMapArray(tmpMaps->content,"value",i);
+    //tmpMap=getMapFromMaps(inputs,"LCO","value");
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
 	  papszLCO = CSLAddString(papszLCO, tmpMap->value );
+    }
     }
 
     tmpMap=NULL;
@@ -367,6 +385,10 @@ int main( int nArgc, char ** papszArgv )
     }
    
     tmpMap=NULL;
+    tmpMap=getMapFromMaps(inputs,"InputDS","cache_file");
+    if(tmpMap!=NULL){
+	    pszDataSource=strdup(tmpMap->value);
+    }else{
     tmpMap=getMapFromMaps(inputs,"InputDSN","value");
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0){
       if(strncasecmp(tmpMap->value,"PG",2)!=0 &&
@@ -383,6 +405,7 @@ int main( int nArgc, char ** papszArgv )
 	pszDataSource=(char*)malloc(sizeof(char)*(strlen(tmpMap->value)+1));
 	sprintf((char*)pszDataSource,"%s",tmpMap->value);	
       }
+    }
     }
 
     tmpMap=NULL;
@@ -843,12 +866,12 @@ int main( int nArgc, char ** papszArgv )
         }else{
 	  setMapInMaps(conf,"lenv","message","There was an error when running yoru SQL query.");
 	  if(pszDialect!=NULL)
-	    free(pszDialect);
+	    free((void*)pszDialect);
 	  return SERVICE_FAILED;
 	}
     }
     if(pszDialect!=NULL)
-      free(pszDialect);
+      free((void*)pszDialect);
 
 /* -------------------------------------------------------------------- */
 /*      Process each data source layer.                                 */
@@ -907,7 +930,25 @@ int main( int nArgc, char ** papszArgv )
     }
 
 #ifdef ZOO_SERVICE
+    tmpMap=getMapFromMaps(inputs,"InputDS","cache_file");
+    if(tmpMap==NULL)
     setMapInMaps(outputs,"OutputedDataSourceName","value",(char*)pszwebDestData);
+    else{
+	 tmpMap=getMapFromMaps(inputs,"OutputDSN","value");
+	 if(tmpMap!=NULL){ 
+		 map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
+	   pszDestDataSource=(char*)malloc(sizeof(char)*(strlen(tmpMap->value)+1));
+	   sprintf((char*)pszDestDataSource,"%s",tmpMap->value/*,ext*/);
+	   pszwebDestData=(char*)malloc(sizeof(char)*(strlen(tmpPath->value)+strlen(tmpMap->value)+4));
+	   sprintf((char*)pszwebDestData,"%s/%s",tmpPath->value,tmpMap->value/*,ext*/);
+	   setMapInMaps(outputs,"OutputedDataSourceName","generated_file",(char*)pszwebDestData);
+	   setMapInMaps(outputs,"OutputedDataSourceName","mimeType","application/json");
+	   setMapInMaps(outputs,"OutputedDataSourceName","value","none");
+	//setMapInMaps(outputs,"OutputedDataSourceName","storage",(char*)pszwebDestData);
+         }
+	    
+    }
+    
     //outputs->content=createMap("value",(char*)pszwebDestData);
 #endif
 
