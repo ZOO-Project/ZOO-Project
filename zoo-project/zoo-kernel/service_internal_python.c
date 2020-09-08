@@ -467,7 +467,7 @@ PyDictObject* PyDict_FromMap(map* t){
   map* tmap=getMapType(tmp);
   while(tmp!=NULL){
     PyObject* name=PyString_FromString(tmp->name);
-    if(strcasecmp(tmp->name,"value")==0) {
+    if(strcasecmp(tmp->name,"value")==0 && strlen(tmp->value)>0) {
       if(isArray!=NULL){
 	map* len=getMap(tmp,"length");
 	int cnt=atoi(len->value);

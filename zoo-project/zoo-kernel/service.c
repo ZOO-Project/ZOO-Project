@@ -327,11 +327,14 @@ void freeMap(map** mo){
 #ifdef DEBUG
     fprintf(stderr,"freeMap\n");
 #endif
-    free(_cursor->name);
-    free(_cursor->value);
+    if(_cursor->name!=NULL)
+      free(_cursor->name);
+    if(_cursor->value!=NULL)
+      free(_cursor->value);
     if(_cursor->next!=NULL){
       freeMap(&_cursor->next);
-      free(_cursor->next);
+      if(_cursor->next!=NULL)
+	free(_cursor->next);
     }
   }
 }
@@ -824,9 +827,9 @@ void addMapsToMaps(maps** mo,maps* mi){
     }
     else{
       maps* tmp1=getMaps(*mo,tmp->name);
-      while(_cursor->next!=NULL)
-	_cursor=_cursor->next;
       if(tmp1==NULL){
+	while(_cursor->next!=NULL)
+	  _cursor=_cursor->next;
 	_cursor->next=dupMaps(&tmp);
 	if(tmp->child!=NULL)
 	  _cursor->next->child=dupMaps(&tmp->child);

@@ -1,4 +1,7 @@
 Version 1.8.0-dev
+  * Produce value string only when memory=load for Python support.
+  * Make local files uris usable when cache is used
+  * Make GDAL/prilfe service usable in case memory=protect 
   * Add Dockerfile and docker-compose environment with pgbouncer, see #177
   * Add documentation on how to use asyncrhonous execution using the Javascript
   ZOO-API
