@@ -161,6 +161,8 @@ int conf_read(const char* file,maps* my_map){
     current_maps->next=NULL;
     freeMap(&current_content);
     free(current_content);
+  }else{
+    current_maps->next=NULL;
   }
   if(curr_key!=NULL){
     free(curr_key);

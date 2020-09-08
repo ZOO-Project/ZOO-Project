@@ -402,7 +402,7 @@ char* isInCache(maps* conf,char* request){
 #endif  
   if(strncasecmp(request,"file://",7)==0){
     char* tmpStr=zStrdup(request+7);
-    fprintf(stderr,"**** %s %d %s \n",__FILE__,__LINE__,tmpStr);
+    setMapInMaps(conf,"lenv",tmpStr,"local");
     return tmpStr;
   }
   else{
@@ -708,32 +708,35 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       addToMap(*content,"cache_file",cached);
       unlockFile(*m,lck);
     }
-    cached[strlen(cached)-1]='m';
-    s=zStat(cached, &f_status);
-    if(s==0){
-      zooLock* lck=lockFile(*m,cached,'r');
-      if(lck==NULL)
-	return -1;
-      mimeType=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-      FILE* f=fopen(cached,"rb");
-      fread(mimeType,f_status.st_size,1,f);
-      mimeType[f_status.st_size]=0;
-      fclose(f);
-      unlockFile(*m,lck);
-    }
-    cached[strlen(cached)-1]='p';
-    s=zStat(cached, &f_status);
-    if(s==0){
-      zooLock* lck=lockFile(*m,cached,'r');
-      if(lck==NULL)
-	return -1;
-      origin=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-      FILE* f=fopen(cached,"rb");
-      fread(origin,f_status.st_size,1,f);
-      mimeType[f_status.st_size]=0;
-      fclose(f);
-      unlockFile(*m,lck);
-    }
+    map* isLocalFile=getMapFromMaps(*m,"lenv",cached);
+    if(isLocalFile==NULL){
+      cached[strlen(cached)-1]='m';
+      s=zStat(cached, &f_status);
+      if(s==0){
+	zooLock* lck=lockFile(*m,cached,'r');
+	if(lck==NULL)
+	  return -1;
+	mimeType=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+	FILE* f=fopen(cached,"rb");
+	fread(mimeType,f_status.st_size,1,f);
+	mimeType[f_status.st_size]=0;
+	fclose(f);
+	unlockFile(*m,lck);
+      }
+      cached[strlen(cached)-1]='p';
+      s=zStat(cached, &f_status);
+      if(s==0){
+	zooLock* lck=lockFile(*m,cached,'r');
+	if(lck==NULL)
+	  return -1;
+	origin=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+	FILE* f=fopen(cached,"rb");
+	fread(origin,f_status.st_size,1,f);
+	mimeType[f_status.st_size]=0;
+	fclose(f);
+	unlockFile(*m,lck);
+      }
+    }    
   }else{    
     addRequestToQueue(m,hInternet,url,true);
     return 0;

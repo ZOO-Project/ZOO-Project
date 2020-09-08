@@ -34,6 +34,9 @@
 #include "gdal.h"
 #include "cpl_conv.h"
 #include "ogr_api.h"
+#if GDAL_VERSION_MAJOR >= 2
+#include <gdal_priv.h>
+#endif
 
 #ifdef ZOO_SERVICE
 extern "C" {
@@ -86,8 +89,51 @@ int main(int argc,char** argv)
         if( ! (bGotMin && bGotMax) )
 	  GDALComputeRasterMinMax( hBand, TRUE, adfMinMax );
 #ifdef ZOO_SERVICE
+	OGRGeometryH geometry=NULL;
+	// Verify if there is a cache file for this input, use it if available
+	tmp1=getMapFromMaps(inputs,"Geometry","cache_file");
+	if(tmp1!=NULL){
+#if GDAL_VERSION_MAJOR >= 2
+	  char* pszDataSource=strdup(tmp1->value);
+	  GDALDatasetH poDS
+	    = GDALOpenEx( pszDataSource,
+			  GDAL_OF_READONLY | GDAL_OF_VECTOR,
+			  NULL, NULL, NULL );
+#endif
+	  for( int iLayer = 0; iLayer < OGR_DS_GetLayerCount(poDS) ;
+	       iLayer++ )
+	    {
+	      OGRLayerH        poLayer = OGR_DS_GetLayer(poDS,iLayer);
+
+	      if( poLayer == NULL )
+		{
+		  fprintf( stderr, "FAILURE: Couldn't fetch advertised layer %d!\n",
+			   iLayer );
+		  char tmp[1024];
+		  sprintf(tmp,"Couldn't fetch advertised layer %d!",iLayer);
+		  setMapInMaps(conf,"lenv","message",tmp);
+		  return SERVICE_FAILED;
+		}
+	      OGRFeatureH  poFeature;
+	      int         nFeaturesInTransaction = 0;
+	      int fCount=0;
+	      OGR_L_ResetReading(poLayer);
+	      while( TRUE )
+		{
+		  poFeature = OGR_L_GetNextFeature(poLayer);
+		  if( poFeature == NULL ){
+	            break;
+		  }
+		  geometry=OGR_G_Clone(OGR_F_GetGeometryRef(poFeature));
+		  OGR_F_Destroy( poFeature );
+		}
+	      
+	    }
+	}
+	else{
 	  tmp1=getMapFromMaps(inputs,"Geometry","value");
-	  OGRGeometryH geometry=OGR_G_CreateGeometryFromJson(tmp1->value);
+	  geometry=OGR_G_CreateGeometryFromJson(tmp1->value);
+	}
 #else
 	  OGRGeometryH geometry=OGR_G_CreateGeometryFromJson(argv[2]);
 #endif

@@ -372,11 +372,9 @@ void readGeneratedFile(maps* m,map* content,char* filename){
     setMapInMaps(m,"lenv","message","Unable to read produced file. Please try again later");
     return ;
   }
-  fseek(file, 0, SEEK_END);
   zStatStruct f_status;
   int s=zStat(filename, &f_status);
   sprintf(rsize,"%lld",f_status.st_size);
-  rewind(file);
   if(getMap(content,"storage")==NULL){
     map* memUse=getMapFromMaps(m,"main","memory");
     if(memUse==NULL || strncmp(memUse->value,"load",4)==0){
@@ -389,13 +387,15 @@ void readGeneratedFile(maps* m,map* content,char* filename){
       tmpMap1->value=(char*) malloc((f_status.st_size+1)*sizeof(char));
       if(tmpMap1->value==NULL){
 	setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
+	return;
       }
       fread(&tmpMap1->value,1,f_status.st_size,file);
       tmpMap1->value[f_status.st_size]=0;
     }
   }
-  fclose(file);  
-  addToMap(content,"size",rsize);
+  fclose(file);
+  if(content!=NULL)
+    addToMap(content,"size",rsize);
 }
 
 
