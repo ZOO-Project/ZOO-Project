@@ -44,7 +44,7 @@ service_json.o: service_json.c
 	g++ -fPIC ${XML2CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_json.c
 
 service_callback.o: service_callback.c
-	g++ -fPIC ${XML2CFLAGS} ${GDAL_CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c
+	gcc -fPIC ${XML2CFLAGS} ${GDAL_CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c
 
 request_parser.o: request_parser.c request_parser.h
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c

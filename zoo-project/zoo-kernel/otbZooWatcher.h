@@ -86,6 +86,9 @@ private:
   /** Main conf maps */
   maps* m_Conf;
 
+  /** Counter */
+  int iCounter;
+
 };
 
 #endif

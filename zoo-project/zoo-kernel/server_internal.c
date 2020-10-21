@@ -951,8 +951,10 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
       freeMaps(&res);
       free(res);
     }
-  else
-    addToMap(statusInfo,"Status","Failed");  
+  else{
+    addToMap(statusInfo,"Status","Failed");
+    addToMap(statusInfo,"NotFound",pid);
+  }
   free(fbkpid);
 }
 
@@ -991,21 +993,35 @@ int isRunning(maps* conf,char* pid){
  */
 void runGetStatus(maps* conf,char* pid,char* req){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  map* e_type = getMapFromMaps (conf, "lenv", "executionType");
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
-    errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
-		    "NoSuchJob", pid);
+    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+      errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+		      "NoSuchJob", pid);
+    else{
+      setMapInMaps(conf,"lenv","error","true");
+      setMapInMaps(conf,"lenv","code","NoSuchJob");
+      setMapInMaps(conf,"lenv","message",_("The JobID from the request does not match any of the Jobs running on this server"));
+    }
   }else{
     map* statusInfo=createMap("JobID",pid);
-    if(isRunning(conf,pid)>0){		
+    if(isRunning(conf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
-	errorException (conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
-			"ResultNotReady", pid);
+	if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+	  errorException (conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
+			  "ResultNotReady", pid);
+	else{
+	  setMapInMaps(conf,"lenv","error","true");
+	  setMapInMaps(conf,"lenv","code","ResultNotReady");
+	  setMapInMaps(conf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service is currently running."));
+	}
 	return;
       }
-      else
+      else{
 	if(strncasecmp(req,"GetStatus",strlen(req))==0){
 	  addToMap(statusInfo,"Status","Running");
+	  setMapInMaps(conf,"lenv","status","Running");
 	  char* tmpStr=_getStatus(conf,pid);
 	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	    char *tmpStr1=zStrdup(tmpStr);
@@ -1014,10 +1030,13 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
 	    addToMap(statusInfo,"Message",tmpStr0);
+	    setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
+	    setMapInMaps(conf,"lenv","Message",tmpStr0);
 	    free(tmpStr0);
 	    free(tmpStr1);
 	  }
 	}
+      }
     }
     else{
       if(strncasecmp(req,"GetResult",strlen(req))==0){
@@ -1042,6 +1061,11 @@ void runGetStatus(maps* conf,char* pid,char* req){
       }else
 	if(strncasecmp(req,"GetStatus",strlen(req))==0){
 	  readFinalRes(conf,pid,statusInfo);
+	  if(e_type==NULL || strncasecmp(e_type->value,"json",4)==0){
+	    map* pmStatus=getMap(statusInfo,"status");	    
+	    if(pmStatus!=NULL)
+	      setMapInMaps(conf,"lenv","status",pmStatus->value);    
+	  }
 	  char* tmpStr=_getStatus(conf,pid);
 	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	    char *tmpStr1=zStrdup(tmpStr);
@@ -1050,13 +1074,18 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
 	    addToMap(statusInfo,"Message",tmpStr0);
+	    setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
+	    setMapInMaps(conf,"lenv","Message",tmpStr0);
 	    free(tmpStr0);
 	    free(tmpStr1);
 	  }
 	}
     }
     free(sid);
-    printStatusInfo(conf,statusInfo,req);
+    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+      printStatusInfo(conf,statusInfo,req);
+    else
+      setMapInMaps(conf,"lenv","error","false");
     freeMap(&statusInfo);
     free(statusInfo);
   }
@@ -1071,10 +1100,18 @@ void runGetStatus(maps* conf,char* pid,char* req){
  */
 void runDismiss(maps* conf,char* pid){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  map* e_type = getMapFromMaps (conf, "lenv", "executionType");
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
-    errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
-		    "NoSuchJob", pid);
+    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+      errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+		      "NoSuchJob", pid);
+    else{
+      setMapInMaps(conf,"lenv","error","true");
+      setMapInMaps(conf,"lenv","code","NoSuchJob");
+      setMapInMaps(conf,"lenv","message",_("The JobID from the request does not match any of the Jobs running on this server"));
+    }
+    return;
   }else{
     // We should send the Dismiss request to the target host if it differs
     char* fbkpid =
@@ -1114,26 +1151,50 @@ void runDismiss(maps* conf,char* pid){
 	if(strstr(dp->d_name,pid)!=0){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
 	  if(zUnlink(fileName)!=0){
-	    errorException (conf, 
-			    _("The job cannot be removed, a file cannot be removed"),
-			    "NoApplicableCode", NULL);
+	    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+	      errorException (conf, 
+			      _("The job cannot be removed, a file cannot be removed"),
+			      "NoApplicableCode", NULL);
+	    else{
+	            setMapInMaps(conf,"lenv","error","true");
+		    setMapInMaps(conf,"lenv","code","NoApplicableCode");
+		    setMapInMaps(conf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
+	    }
 	    return;
 	  }
+	  
 	}
       }
     }
+    map* pmStatusFile=getMapFromMaps(conf,"lenv","file.statusFile");
+    if(pmStatusFile!=NULL && zUnlink(pmStatusFile->value)!=0){
+	if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+	  errorException (conf, 
+			  _("The job cannot be removed, a file cannot be removed"),
+			  "NoApplicableCode", NULL);
+	else{
+	  setMapInMaps(conf,"lenv","error","true");
+		    setMapInMaps(conf,"lenv","code","NoApplicableCode");
+		    setMapInMaps(conf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
+	}
+	return;
+      }
 #ifdef RELY_ON_DB
     removeService(conf,pid);
 #endif
-    /* No need to call 7_1 when an execution is dismissed.
-      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-      invokeCallback(conf,NULL,NULL,7,1);
-      fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
-    */
-    map* statusInfo=createMap("JobID",pid);
-    addToMap(statusInfo,"Status","Dismissed");
-    printStatusInfo(conf,statusInfo,"Dismiss");
-    free(statusInfo);
+    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0){
+      /* No need to call 7_1 when an execution is dismissed.
+	 fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+	 invokeCallback(conf,NULL,NULL,7,1);
+	 fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
+      */
+      map* statusInfo=createMap("JobID",pid);
+      addToMap(statusInfo,"Status","Dismissed");
+      printStatusInfo(conf,statusInfo,"Dismiss");
+      free(statusInfo);
+    }else{
+      setMapInMaps(conf,"lenv","error","false");
+    }
   }
   return;
 }
@@ -1246,6 +1307,26 @@ int createRegistry (maps* m,registry ** r, char *reg_dir)
     (void) closedir (dirp1);
   }
   return 0;
+}
+
+/**
+ * Create a string containing the basic error message.
+ *
+ * @param pmConf the main configuration maps pointer
+ * @return a new char* containing the error message (ressource should be freed)
+ */
+char* produceErrorMessage(maps* pmConf){
+  char *pacTmp;
+  map *pmLenv=getMapFromMaps(pmConf,"lenv","message");
+  if(pmLenv!=NULL){
+    pacTmp=(char*)malloc((strlen(pmLenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "))+1)*sizeof(char));
+    sprintf(pacTmp,_("Unable to run the Service. The message returned back by the Service was the following: %s"),pmLenv->value);
+  }
+  else{
+    pacTmp=(char*)malloc((strlen(_("Unable to run the Service. No more information was returned back by the Service."))+1)*sizeof(char));
+    sprintf(pacTmp,"%s",_("Unable to run the Service. No more information was returned back by the Service."));
+  }
+  return pacTmp;
 }
 
 #ifdef WIN32

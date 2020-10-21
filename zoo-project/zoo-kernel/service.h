@@ -184,6 +184,10 @@ extern "C" {
  * The global failed status for a service
  */
 #define SERVICE_FAILED 4
+/**
+ * The global dismissed status for a service
+ */
+#define SERVICE_DISMISSED 5
 
 /**
  * The memory size to create an elements

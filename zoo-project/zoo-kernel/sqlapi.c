@@ -32,6 +32,7 @@
 
 #include <fcgi_stdio.h>
 #include "sqlapi.h"
+#include "service_callback.h"
 
 /**
  * Global GDALDataset pointer
@@ -374,15 +375,20 @@ int _updateStatus(maps* conf){
   map *p=getMapFromMaps(conf,"lenv","status");
   map *msg=getMapFromMaps(conf,"lenv","message");
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+64+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+62+1)*sizeof(char));
   sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$ where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
   if( zoo_DS == NULL || zoo_DS[zoo_ds_nb-1]==NULL ){
+    if(getMapFromMaps(conf,"lenv","file.log")==NULL){
+      free(sqlQuery);
+      return 1;
+    }
     init_sql(conf);
     zoo_ds_nb++;
   }
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
+  invokeBasicCallback(conf,SERVICE_STARTED);
   return 0;
 }
 
@@ -397,8 +403,8 @@ char* _getStatus(maps* conf,char* pid){
   int zoo_ds_nb=getCurrentId(conf);
   int created=-1;
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
-  sprintf(sqlQuery,"select status||'|'||message from %s.services where uuid=$$%s$$;",schema->value,pid);
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+104+1)*sizeof(char));  
+  sprintf(sqlQuery,"select CASE WHEN message is null THEN '-1' ELSE status||'|'||message END from %s.services where uuid=$$%s$$;",schema->value,pid);
   if( zoo_ds_nb==
 #ifdef META_DB
       1

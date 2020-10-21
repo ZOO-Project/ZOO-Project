@@ -84,11 +84,11 @@ then
 	AC_CHECK_LIB([json-c], [json_object_new_object],
 		[], [AC_MSG_ERROR([could not find function in json-c library])])
 	CPPFLAGS="$CPPFLAGS_SAVE"
-	JSON_FILE="service_json.o"
+	JSON_FILE="service_json.o service_callback.o"
 	JSON_ENABLED="-DJSON"
 	if test "x$CALLBACK_ACTIVATED" == "xyes"
 	then
-		CALLBACK_FILE="service_callback.o"
+		CALLBACK_FILE=""
 		CALLBACK_USE="-DUSE_CALLBACK"
 	fi
 fi

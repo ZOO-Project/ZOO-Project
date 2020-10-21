@@ -26,9 +26,7 @@
  * THE SOFTWARE.
  */
 
-#include "service_json.h"
 #include "service_internal_ms.h"
-#include "sqlapi.h"
 #include <pthread.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
@@ -41,6 +39,10 @@
 #include <libxslt/xsltutils.h>
 
 #include "service_callback.h"
+#include "service_json.h"
+#include "sqlapi.h"
+#include <ulinet.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +67,10 @@ extern "C" {
    * Current step
    */
   int cStep=0;
+  /**
+   * Maximum value of PercentCompleted
+   */
+  int maxProgress=0;
   /**
    * Is there any ongoing HTTP request
    */
@@ -111,7 +117,173 @@ extern "C" {
     }
     return false;
   }
+  /**
+   * Practically invoke the callback, meaning sending the HTTP POST request.
+   * 
+   * @param args local_params containing all the variables required
+   */
+  void* _invokeBasicCallback(void* args){
+#ifdef CALLBACK_DEBUG
+    fprintf(stderr,"************************* From thread %d %s %d: REQUEST CONFIGURE (%s)\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
+    fflush(stderr);
+#endif
+    local_params* arg=(local_params*)args;
+    if(arg->state<cStep){
+#ifdef CALLBACK_DEBUG
+      fprintf(stderr,"************************* From thread %d %s %d: REQUEST CANCELLED (%s) EXIT!\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
+      fflush(stderr);
+#endif
+      freeMaps(&arg->conf);
+      free(arg->conf);
+      freeMap(&arg->url);
+      free(arg->url);
+      pthread_exit(NULL);
+      return NULL;
+    }
+    HINTERNET hInternet,res1;
+    const struct tm *tm;
+    size_t len;
+    char *tmp1;
+    map *tmpStatus;
+    map* pmTmp=getMapFromMaps(arg->conf,"lenv","status");
+    hInternet=InternetOpen("ZooWPSClient\0",
+			   INTERNET_OPEN_TYPE_PRECONFIG,
+			   NULL,NULL, 0);
+    if(!CHECK_INET_HANDLE(hInternet)){
+      InternetCloseHandle (&hInternet);
+      return NULL;
+    }
+    const char* jsonStr=json_object_to_json_string_ext(arg->res,JSON_C_TO_STRING_PLAIN);
+    while( arg->state != SERVICE_SUCCEEDED && arg->state != SERVICE_FAILED && isOngoing>0 ){
+      zSleep(100);
+    }
+    if(arg->state==SERVICE_STARTED && pmTmp!=NULL){
+      if(maxProgress<=atoi(pmTmp->value)){
+	maxProgress=atoi(pmTmp->value);
+      }else{
+#ifdef CALLBACK_DEBUG
+	fprintf(stderr,"************************* From thread %d %s %d: REQUEST CANCELLED (%s) EXIT!\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
+	fflush(stderr);
+#endif
+	freeMaps(&arg->conf);
+	free(arg->conf);
+	freeMap(&arg->url);
+	free(arg->url);
+	pthread_exit(NULL);
+	return NULL;
+      }
+    }else
+      maxProgress=101;
+    isOngoing=1;
+    maps* tmpConf=createMaps("main");
+    tmpConf->content=createMap("memory","load");
 
+    hInternet.waitingRequests[0] = zStrdup(arg->url->value);
+    res1 = InternetOpenUrl (&hInternet,
+			    hInternet.waitingRequests[0], 
+			    (char*)jsonStr, strlen(jsonStr),
+			    INTERNET_FLAG_NO_CACHE_WRITE,
+			    0,tmpConf);
+    AddHeaderEntries(&hInternet,arg->conf);
+    AddMissingHeaderEntry(&hInternet.ihandle[hInternet.nb-1],"Content-Type","application/json");
+#ifdef CALLBACK_DEBUG
+    curl_easy_setopt(hInternet.ihandle[hInternet.nb-1].handle, CURLOPT_VERBOSE, 1);
+#endif
+    if(hInternet.ihandle[hInternet.nb-1].header!=NULL)
+      curl_easy_setopt(hInternet.ihandle[hInternet.nb-1].handle,CURLOPT_HTTPHEADER,hInternet.ihandle[hInternet.nb-1].header);
+    processDownloads(&hInternet);
+    freeMaps(&tmpConf);
+    free(tmpConf);
+#ifdef CALLBACK_DEBUG
+    char *tmp = (char *) malloc ((hInternet.ihandle[0].nDataLen + 1)
+				 * sizeof (char));
+    if (tmp == NULL)
+      {
+	setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
+	setMapInMaps(arg->conf,"lenv","code","InternalError");
+	return NULL;
+      }
+    size_t bRead;
+    InternetReadFile (hInternet.ihandle[0],
+		      (LPVOID) tmp,
+		      hInternet.
+		      ihandle[0].nDataLen,
+		      &bRead);
+    tmp[hInternet.ihandle[0].nDataLen] = 0;
+    fprintf(stderr,"************************* From thread %d %s %d: REQUEST END \n%s",pthread_self(),__FILE__,__LINE__,tmp);
+    fflush(stderr);
+    free(tmp);
+#endif
+    json_object_put(arg->res);
+    InternetCloseHandle(&hInternet);
+    isOngoing=0;
+    freeMaps(&arg->conf);
+    free(arg->conf);
+    freeMap(&arg->url);
+    if(arg->url!=NULL)
+      free(arg->url);
+    pthread_exit(NULL);
+  }
+
+  /**
+   * Invoke the callback in case there is a [subscriber] section containing one
+   * or more url parameter.
+   * 
+   * @param conf the maps containing the main configuration file definitions
+   * @param state the service state SERVICE_SUCCEEDED / STARTED / FAILED
+   * @return bool true in case of success, false in other cases
+   */
+  bool invokeBasicCallback(maps* conf,int state){
+    map* url=getMapFromMaps(conf,"subscriber","inProgressUri");
+    if(state==SERVICE_SUCCEEDED)
+      url=getMapFromMaps(conf,"subscriber","successUri");
+    else
+      if(state==SERVICE_FAILED)
+	url=getMapFromMaps(conf,"subscriber","failedUri");
+    if(url==NULL)
+      return false;
+    map* url0=createMap("url",url->value);
+    map* sname=getMapFromMaps(conf,"lenv","identifier");
+    if(sname!=NULL && isProhibited(conf,sname->value))
+      return false;
+    if(state<cStep)
+      return true;
+    if(cStep!=state || isOngoing==0){
+      json_object *res=NULL;
+      if(state==SERVICE_SUCCEEDED || state==SERVICE_FAILED){
+	maps* pmsTmp=getMaps(conf,"lenv");
+	setMapInMaps(conf,"lenv","no-write","true");
+	map* pmTmp=getMapFromMaps(conf,"lenv","usid");
+	if(pmTmp!=NULL){
+	  map* pmResponse=getMapFromMaps(conf,"lenv","jsonStr");
+	  res=parseJson(conf,pmResponse->value);
+	}
+      }else
+	res=createStatus(conf,state);
+      if(local_arguments==NULL)
+	local_arguments=(local_params**)malloc(sizeof(local_params*));
+      else
+	local_arguments=(local_params**)realloc(local_arguments,(nbThreads+1)*sizeof(local_params*));
+      local_arguments[nbThreads]=(local_params*)malloc(MAPS_SIZE+MAP_SIZE+sizeof(json_object*)+(2*sizeof(int)));	
+      local_arguments[nbThreads]->conf=dupMaps(&conf);
+      local_arguments[nbThreads]->url=url0;
+      local_arguments[nbThreads]->res=res;
+      local_arguments[nbThreads]->step=0;
+      local_arguments[nbThreads]->state=state;
+      cStep=state;
+      if(myThreads==NULL)
+	myThreads=(pthread_t*)malloc((nbThreads+1)*sizeof(pthread_t));
+      else
+	myThreads=(pthread_t*)realloc(myThreads,(nbThreads+1)*sizeof(pthread_t));
+      if(pthread_create(&myThreads[nbThreads], NULL, _invokeBasicCallback, (void*)local_arguments[nbThreads])==-1){
+	setMapInMaps(conf,"lenv","message",_("Unable to create a new thread"));
+	return false;
+      }
+      nbThreads++;
+    }
+    return true;
+  }
+  
   /**
    * Practically invoke the callback, meaning sending the HTTP POST request.
    * 
@@ -335,7 +507,7 @@ extern "C" {
 	    if(getMapArray(curs->content,"byValue",ii)!=NULL && getMapArray(curs->content,"mimeType",ii)!=NULL && useMS!=NULL && strncasecmp(useMS->value,"true",4)==0){
 	      map* tmpMap=getMapArray(curs->content,"value",ii);
 	      char tmpStr[100];
-	      sprintf(tmpStr,"%d",strlen(tmpMap->value));
+	      sprintf(tmpStr,"%ld",strlen(tmpMap->value));
 	      setMapArray(curs->content,"size",ii,tmpStr);
 	      tmpMap=getMapArray(curs->content,"mimeType",ii);
 	      setMapArray(curs->content,"fmimeType",ii,tmpMap->value);
@@ -569,18 +741,20 @@ extern "C" {
 	      json_object_object_add(res2,"local_path",jsStr);
 	      jsStr=json_object_new_string(tmp2->value);
 	      json_object_object_add(res2,"target_path",jsStr);
-	      json_object *res4=json_object_object_get(res1,tmp0->value);
-	      if(json_object_is_type(res4,json_type_null)){
-		json_object_object_add(res1,tmp0->value,res2);
-	      }else{
-		if(json_object_is_type(res4,json_type_object) && !json_object_is_type(res4, json_type_array)){
-		  json_object *res3=json_object_new_array();
-		  json_object_array_add(res3,json_object_get(res4));
-		  json_object_array_add(res3,res2);
-		  json_object_object_del(res1,tmp0->value);
-		  json_object_object_add(res1,tmp0->value,res3);
-		}else
-		  json_object_array_add(res4,res2);
+	      json_object *res4=NULL;
+	      if(json_object_object_get_ex(res1,tmp0->value,&res4)!=FALSE){
+		if(json_object_is_type(res4,json_type_null)){
+		  json_object_object_add(res1,tmp0->value,res2);
+		}else{
+		  if(json_object_is_type(res4,json_type_object) && !json_object_is_type(res4, json_type_array)){
+		    json_object *res3=json_object_new_array();
+		    json_object_array_add(res3,json_object_get(res4));
+		    json_object_array_add(res3,res2);
+		    json_object_object_del(res1,tmp0->value);
+		    json_object_object_add(res1,tmp0->value,res3);
+		  }else
+		    json_object_array_add(res4,res2);
+		}
 	      }
 	    }
 	  }
@@ -865,6 +1039,9 @@ extern "C" {
    * Wait for the threads to end then, clean used memory.
    */
   void cleanupCallbackThreads(){
+    while( isOngoing>0 ){
+      zSleep(100);
+    }
     int i=0;
     for(i=0;i<nbThreads;i++){
       pthread_join(myThreads[i],NULL);

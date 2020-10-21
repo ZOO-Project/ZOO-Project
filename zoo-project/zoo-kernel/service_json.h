@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2014 GeoLabs SARL. All rights reserved.
+ *  Copyright 2014-2020 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,10 +49,15 @@ extern "C" {
   json_object* serviceToJson(service*);
   void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
   void printExceptionReportResponseJ(maps*,map*);
-  void parseJRequest(maps*,service* s,json_object*,maps**,maps**);
+  void parseJRequest(maps*,service* s,json_object*,map*,maps**,maps**);
   json_object*  printJResult(maps*,service*,maps*,int);
   json_object* printJobList(maps*);
   int createStatusFile(maps*,int);
+  json_object* createStatus(maps*,int);
+  char* json_getStatusFilePath(maps*);
+  json_object* parseJson(maps*,char*);
+  json_object* json_readFile(maps*,char*);
+  char* getResultPath(maps*,char*);
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);

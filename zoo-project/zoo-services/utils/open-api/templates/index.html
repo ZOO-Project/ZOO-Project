@@ -1,0 +1,678 @@
+<!doctype html>
+#import zoo
+#import html,os
+#set removeCacheFile=False
+#set strUrl=$inputs["tmpl"]["xlink:href"]
+#set currentUrl=$strUrl.replace($openapi["openapi"]["rootUrl"],"")
+#if $currentUrl=="/"
+#set currentKey="root"
+#set $currentUrl="/index"
+#else
+#set currentKey=$currentUrl
+#end if
+#set urlCompnents=$currentUrl.split('/')
+#*
+* Load the JSON content from the API
+*#
+#try
+#import json
+#if "cache_file" in $inputs["tmpl"]
+#set values=json.load(open($inputs["tmpl"]["cache_file"]))
+#else
+#set values=$inputs["tmpl"]["value"]
+#end if
+#except Exception as e
+$e
+#end try
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+    <!-- Custom styles for this template -->
+    <link href="$openapi["openapi"]["rootUrl"]/../static/openapi.css" rel="stylesheet">
+
+    <title>#if "id" in $values#$values["id"]#else##if $currentKey in $openapi and "title" in $openapi[$currentKey]#$openapi[$currentKey]["title"]#else#Landing Page#end if##end if#</title>
+  </head>
+  <body itemscope itemtype="https://schema.org/DataCatalog">
+    <header>
+     <!-- Fixed navbar -->
+      <nav
+        class="navbar navbar-expand-md navbar-dark fixed-top bg-dark"
+        itemprop="creator"
+        itemscope itemtype="https://schema.org/Organization" >
+        <a class="navbar-brand" href="#">
+          <img itemprop="logo" src="http://zoo-project.org/img/zoo-sun-logo.png" width="55" height="30" class="d-inline-block align-top" alt="">
+           <span itemprop="name">$conf["provider"]["providerName"]</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+	  <ul class="navbar-nav mr-auto"
+	    itemscope itemtype="https://schema.org/BreadcrumbList">
+	    <li class="nav-item #if $currentKey=="root"# active#end if#"
+	      itemprop="itemListElement" itemscope
+	      itemtype="https://schema.org/ListItem">
+	      <a itemprop="item" class="nav-link"
+	        href="$openapi["openapi"]["rootUrl"]/index.html">
+	        <span itemprop="name">Home #if $currentKey=="root"# <span class="sr-only">(current)</span>#end if#</span>
+	        <meta itemprop="position" content="1" />
+	      </a>
+	    </li>
+	    #if $currentKey!="root"
+	    #for i in range(1,len($urlCompnents))
+	    <li
+	      itemprop="itemListElement" itemscope
+	      itemtype="https://schema.org/ListItem"
+	      class="nav-item #if $i+1==len($urlCompnents)#active#end if#">
+	    #set prefix=""
+	    #for j in range(1,$i)
+	    #set $prefix+="/"+$urlCompnents[$j]
+	    #end for
+	      <a itemprop="item" class="nav-link" href="$openapi["openapi"]["rootUrl"]$(prefix)/$(urlCompnents[$i]).html">
+	        <span itemprop="name">
+	    #if $i==2
+	    $(urlCompnents[$i])
+	    #else
+	    $(urlCompnents[$i].title())
+	    #end if
+	    #if $i+1==len($urlCompnents)
+	    <span class="sr-only">(current)</span>
+	    #end if
+	        <meta itemprop="position" content="$(i+1)" />
+	        </span>
+	      </a>
+	    </li>
+	    #end for
+	    #end if
+	  </ul>
+	</div>
+       </nav>
+    </header>
+	<script>
+	var System={};
+	</script>
+
+#def printRel($o,$v)
+#if $v in $o
+$o[$v]
+#else
+View default (no title found for $v).
+#end if
+#end def
+#*
+	
+*#
+#def printControl(obj)
+#if "type" not in $obj
+#set oType="format"
+#else
+#set oType=$obj["type"]
+#end if	
+	<div class="input-group">
+	  <div class="input-group-prepend">
+	    <div class="input-group-text">$obj["title"]</div>
+	  </div>
+	  #if "ph" in $obj  
+	  <input type="text"
+	    #if "value" in $obj#value="$obj["value"]""#end if#
+	    #if "id" in $obj#data-id="$obj["id"]"#end if#
+	    class="form-control" data-name="$obj["title"]" name="$(oType)_$obj["name"]" placeholder="$obj["ph"]" #if "required" in $obj#required#end if#/>
+	  #else
+	  <select name="$(oType)_$obj["name"]" class="form-control" #if "required" in $obj#required#end if#>
+	  #for i in range(len($obj["options"]))
+	    <option>$obj["options"][$i]</option>
+	  #end for
+	  </select>
+	  #end if
+	  #if "required" in $obj
+	  <div class="invalid-feedback">
+	    Please set a value for $obj["id"].
+	  </div>
+	  #end if
+	</div>
+#end def
+#def printCard(obj)
+      <div class="card" #if "attrs" in $obj#$obj["attrs"]#end if#>
+        <div class="card-header" id="heading$(obj["id"])">
+	  <h4 class="mb-0">
+	    <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapse$(obj["id"])" aria-expanded="true" aria-controls="collapse$(obj["id"])">
+	      $obj["title"]
+	    </button>
+	  </h4>
+	</div>
+	<div id="collapse$(obj["id"])" class="collapse #if "class" in $obj#$obj["class"]#end if#" aria-labelledby="heading$(obj["id"])">
+	  <div class="card-body">
+	    $obj["content"]
+	  </div>
+	</div>
+      </div>
+#end def
+#def printInputContent($obj)
+#set cName=$obj["id"].replace(".","_")
+#if "formats" in $obj["input"]
+ #set cFormats=[]
+  #for j in range(len($obj["input"]["formats"]))
+  #set $cFormats+=[$obj["input"]["formats"][$j]["mimeType"]]
+  #end for
+  $printControl({"title": "format","type": "input_format","name": $cName,"options":$cFormats})
+  #set largs={"id": $obj["id"],"title": "href","type": "input_value","name": $cName,"ph":"URL"}
+  #if $obj["minOccurs"]>0
+  #set $largs["required"]=True
+  #end if
+  $printControl($largs)
+#else
+ #if "literalDataDomains" in $obj["input"]
+  #set cDataDomain=$obj["input"]["literalDataDomains"][0]
+  #set largs={"id": $obj["id"],"title": $cDataDomain["dataType"]["name"],"type": "input_value", "name": $cName,}
+  #if $obj["minOccurs"]>0
+  #set $largs["required"]=True
+  #end if
+  #if "anyValue" in $cDataDomain["valueDefinition"]
+   #set $largs["ph"]="Value"
+      $printControl($largs)
+  #else
+   #if "allowedValues" in $cDataDomain["valueDefinition"]
+    #set $largs["options"]=$cDataDomain["valueDefinition"]["allowedValues"]
+    $printControl($largs)
+   #else
+    ELSE
+    $obj
+   #end if
+  #end if
+  #if "defaultValue" in $cDataDomain
+      <script>
+        System["function_$cName"]=function(){
+          try{
+            jQuery("input[name='input_value_$cName'],select[name='input_value_$cName]']").val($cDataDomain["defaultValue"]);
+          }catch(e){
+            jQuery("input[name='input_value_$cName'],select[name='input_value_$cName']").val("$cDataDomain["defaultValue"]");
+          }
+        }
+      </script>
+  #end if
+ #else
+  $obj 
+  ELSE
+ #end if
+#end if
+#end def
+#def printProvider(conf)
+#set provider=$conf["provider"]
+      <b itemprop="name">$provider["providerName"]</b>
+      <p><a itemprop="url" href="$provider["providerSite"]">$provider["providerSite"]</a></p>
+#end def
+#def printContact(conf)
+#set provider=$conf["provider"]
+#set alt=$openapi["provider_alt"]
+#set elements=list($alt.keys())
+      <b>Address</b>
+      #for i in ["addressDeliveryPoint","addressCity","addressAdministrativeArea","addressPostalCode","addressCountry","addressElectronicMailAddress","phoneVoice","phoneFacsimile"]
+      #if i!="addressElectronicMailAddress" and $provider[$i]!="False"
+      <p itemprop="$(alt[$i.lower()])">
+      #if i=="phoneVoice"
+      Phone
+      <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-telephone" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
+      </svg>
+      #end if
+      $provider[$i]
+      </p>
+      #else
+      #if i=="addressElectronicMailAddress"
+      <b>Email</b>
+      <p itemprop="$(alt[$i.lower()])">
+      $provider[$i]
+      </p>
+      #end if
+      #end if
+      #end for
+#end def      
+#def printIndentification(conf)
+#set provider=$conf["provider"]
+$printCard({"id": "provider","title": "Provider","content": $printProvider($conf),"class": "show"})
+$printCard({"id": "contact","title": "Contact","content": $printContact($conf),"class": "show","attrs":'itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"'})
+#end def
+      
+#if $currentKey=="root"
+  <div class="container-fluid">
+  <div class="row">
+      <div class="col-sm-8">
+#end if
+	<!-- $currentUrl -->
+      <!-- Begin page content -->      
+      <main #if $currentKey!="root"#class="container-fluid"#end if#>
+	<h1 itemprop="name">#if "id" in $values#$values["id"]: #end if##if "title" in $values#$html.escape($values["title"])#else##if len($urlCompnents)==2#$currentUrl[1:].title()#else#$currentUrl[1:]#end if##end if#</h1>
+	#if "description" in $values#<p itemprop="description">$html.escape($values["description"])</p>#end if#
+	#if $currentKey=="root"
+        <div class="keywords">
+	  #for i in $conf["identification"]["keywords"].split(',')
+	  <button type="button"
+	    class="btn btn-outline-info">$i</button>
+	  #end for
+	</div>
+	License: 
+	<a itemprop="license" href="$openapi["openapi"]["license_url"]">$openapi["openapi"]["license_name"]</a>
+	#end if
+    #if "inputs" in $values
+#set $cid="JOBSOCKET-"+$conf["lenv"]["usid"]
+	<form class="needs-validation" data-id="$cid" novalidate>
+    <h3>Inputs</h3>
+    <div class="accordion" id="accordionInputExample">
+      #for i in range(len(values["inputs"]))
+      #set cInput=$values["inputs"][$i]
+      #set cName=$cInput["id"].replace(".","_")
+      $printCard({"id": $cName, "title": $cInput["id"],"content":'<p>'+$cInput["description"]+'</p>'+$printInputContent($cInput)})
+      #end for    
+    </div>
+      
+    <h3>Outputs</h3>
+    <div class="accordion" id="accordionOutputExample">
+      #for i in range(len(values["outputs"]))
+      #set cOutput=$values["outputs"][$i]
+      #set cName=$cOutput["id"].replace(".","_")
+      #set cFormats=[]
+      #if "formats" in $cOutput["output"]
+      #for j in range(len($cOutput["output"]["formats"]))
+      #set cFormats+=[$cOutput["output"]["formats"][$j]["mimeType"]]
+      #end for
+      #end if
+      #set cTransmissions=[]
+      #for j in range(len($values["outputTransmission"]))
+      #set cTransmissions+=[$values["outputTransmission"][$j]]
+      #end for
+      #set cContent="<p>"+$cOutput["description"]+"</p>"
+      #if len(cFormats)>0
+      #set $cContent+=$printControl({"id": $cOutput["id"], "title": "format","type": "format","name": $cName,"options":$cFormats})
+      #end if
+      #if len(cTransmissions)>0
+      #set $cContent+=$printControl({"id": $cOutput["id"], "title": "transmission","type": "transmission","name": $cName,"options":$cTransmissions})
+      #end if
+      $printCard({"id": $cName+"_"+str($i),"title": $cOutput["id"],"content": $cContent})
+      #end for
+    </div>
+    
+    <h3>Execution options</h3>
+    <div class="accordion" id="accordionExampleExecutionMode">
+      #set cContent=""
+      #set cUrl=$openapi["openapi"]["publisherurl"]+cid+"&type="
+      #for a in ["successUri","inProgressUri","failedUri"]
+      #set $cContent+=$printControl({"title": $a,"type": "main_value","name": $a,"ph":"URL","value":$cUrl+$a.replace("Uri","")})
+      #end for
+      $printCard({"id":"ModeOne","title":"Subscribers","content": $cContent})
+      $printCard({"id":"ModeTwo","title":"Response","content": $printControl({"title":"format","type": "main_value","name": "format","options":["document","raw"]})})
+      $printCard({"id":"ModeThree","title":"Mode","content": $printControl({"title":"mode","type": "main_value","name": "mode","options":["async","sync"]})})
+    </div>
+    <button type="submit" class="btn btn-primary" >Submit</button>
+    </form>
+    <div class="modal" tabindex="-1" id="exampleModal">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+	  <div class="modal-header">
+	    <h5 class="modal-title">Your request</h5>
+	    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	      <span aria-hidden="true">&times;</span>
+	    </button>
+	  </div>
+	  <div class="modal-body">
+	    <textarea name="modalText" class="form-control" style="min-height:300px"></textarea>
+	    <pre id="result"></pre>
+	    <div id="progress_details" style="display:none">
+	      <p id="prgress_description"></p>
+	      <div class="progress">
+	        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+              </div>
+	    </div>
+	  </div>
+	  <div class="modal-footer">
+	    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+	    <button type="button" class="btn btn-primary">Submit Job</button>
+	  </div>
+	</div>
+      </div>
+    </div>
+    <script>
+      var socket;
+      function loadRequest(){
+        var requestObject={
+          "inputs":[],
+          "outputs":[],
+          "subscriber":{},
+          "mode": \$("select[name='main_value_mode']").val(),
+          "response": \$("select[name='main_value_format']").val()
+        }
+        for(var i=0;i < System["JSON_STR"]["inputs"].length;i++){
+          var cInput={"id": System["JSON_STR"]["inputs"][i]["id"]};
+          var cName=System["JSON_STR"]["inputs"][i]["id"].replace(".","_");
+          var selector="input[name='input_value_"+cName+"'],"+
+                       "select[name='input_value_"+cName+"']";
+          if(\$(selector).val()!=""){
+            cInput["input"]={};
+          if(System["JSON_STR"]["inputs"][i]["input"]["formats"]){
+            var selector1="input[name='input_format_"+cName+"'],"+
+              "select[name='input_format_"+cName+"']";
+            cInput["input"]["format"]={
+              "mimeType": \$(selector1).val()
+            };
+            cInput["input"]["value"]={
+              "href": \$(selector).val()
+            };
+          }
+          else{
+            if(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]){
+              console.log(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]);
+              cInput["input"]["dataType"]={
+                "name": System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"][0]["dataType"]["name"]
+              };
+              cInput["input"]["value"]=\$(selector).val();
+            }
+            }
+            requestObject["inputs"].push(cInput);
+          }
+        }
+        console.log(System["JSON_STR"]["outputs"]);
+        for(var i=0;i < System["JSON_STR"]["outputs"].length;i++){
+          var cOutput={"id": System["JSON_STR"]["outputs"][i]["id"]};
+          var cName=System["JSON_STR"]["outputs"][i]["id"].replace(/\./g,"_");
+          if(System["JSON_STR"]["outputs"][i]["output"]["formats"]){
+            var selector="select[name='format_"+cName+"']";
+            cOutput["format"]={
+              "mimeType": \$(selector).val()
+            };
+          }
+          else{
+            if(System["JSON_STR"]["outputs"][i]["output"]["literalDataDomains"]){
+              cOutput["dataType"]={
+                "name": System["JSON_STR"]["outputs"][i]["output"]["literalDataDomains"][0]["dataType"]["name"]
+              };
+            }
+          }
+          var selector1="select[name='transmission_"+cName+"']";
+          cOutput["transmissionMode"]=\$(selector1).val();
+          requestObject["outputs"].push(cOutput);
+        }
+        if(\$("input[name='main_value_successUri']").val()!="")
+          requestObject["subscriber"]["successUri"]=\$("input[name='main_value_successUri']").val();
+        if(\$("input[name='main_value_inProgressUri']").val()!="")
+          requestObject["subscriber"]["inProgressUri"]=\$("input[name='main_value_inProgressUri']").val();
+        if(\$("input[name='main_value_failedUri']").val()!="")
+          requestObject["subscriber"]["failedUri"]=\$("input[name='main_value_failedUri']").val();
+        \$(".modal").find("textarea").first().val(js_beautify(JSON.stringify(requestObject)));
+        \$("#exampleModal").modal('toggle');
+        \$('#result').html("");
+        \$("#exampleModal").find(".btn-primary").off('click');
+        \$("#exampleModal").find(".btn-primary").click(function(){
+          \$('#result').html("");
+          if(!socket && requestObject["mode"]!="sync")
+            socket = new WebSocket("$openapi["openapi"]["wsurl"]");
+          else
+              \$.ajax({
+                contentType: "application/json",
+                data: \$("textarea").val(),
+                type: "POST",
+                url: "$openapi["openapi"]["rootUrl"]$(currentUrl)/jobs",
+                success: function (msg) {
+                  console.log(msg);
+                  var cObj=msg;
+                  \$('#result').html(js_beautify(JSON.stringify(msg["outputs"])));
+                },
+                error: function(){
+                  console.log(arguments);
+                },
+              });
+          if(requestObject["mode"]=="sync"){
+           return;
+          }
+          socket.onopen = function () {
+            console.log('Connected!');
+            socket.send("SUB $cid");
+          };
+          socket.onmessage = function(event) {
+            console.log('MESSAGE: ' + event.data);
+            if(event.data=="1")
+              \$.ajax({
+                contentType: "application/json",
+                data: \$("textarea").val(),
+                type: "POST",
+                url: "$openapi["openapi"]["rootUrl"]$(currentUrl)/jobs",
+                success: function (msg) {
+                  console.log(msg);
+                },
+                error: function(){
+                  console.log(arguments);
+                },
+              });
+            else{
+              //progressBar
+              \$("#progress_details").show();
+              var cObj=JSON.parse(event.data);
+              if(cObj["jobID"]){
+                \$("#prgress_description").html(cObj["jobID"]+": "+cObj["message"]);
+                \$(".progress-bar").attr("aria-valuenow",cObj["progress"]);
+                \$(".progress-bar").css("width",cObj["progress"]+"%");
+              }else{
+                \$("#progress_details").hide();
+                if(cObj["outputs"])
+                  \$('#result').html(js_beautify(JSON.stringify(cObj["outputs"])));
+                else
+                  \$('#result').html(cObj["message"]);
+              }
+            }
+          };
+        });
+      }
+    </script>
+    #end if
+    
+    #try
+    #if "links" in $values
+    #for i in range(len($values["links"]))
+    #if $i%2==0    
+    <h2>$values["links"][$i]["title"]</h2>
+    <p>
+      <a href="$values["links"][$i]["href"]">$printRel($openapi["links_title"],$values["links"][$i]["rel"])</a>
+    </p>
+    #if $i+1<=len($values["links"]) and len($values["links"])>1 and not($values["links"][$i+1]["rel"]=="alternate" and $openapi["openapi"]["full_html_support"]=="true")
+    <p><a href="$values["links"][$i+1]["href"]">$printRel($openapi["links_title"],$values["links"][$i+1]["rel"])</a></p>
+    #end if
+    #end if
+    #end for
+    #end if
+    #except Exception as e
+    $e
+    #end try
+    #if "conformsTo" in $values
+    <ul>
+      #for i in range(len($values["conformsTo"]))
+      <li>
+      <a href="$values["conformsTo"][$i]">$values["conformsTo"][$i]</a>
+      </li>
+      #end for
+    </ul>
+    #end if
+    #if "jobs" in $urlCompnents
+    #set $removeCacheFile=True
+    #end if
+    #if hasattr($values, "__len__") and isinstance($values,list) and len($values)>0
+    <table class="table table-striped">
+      <thead>
+	<tr>
+	  #if "jobs" not in $urlCompnents
+	  #*
+	  * Processes list
+	  *#
+	  <th scope="col">#</th>
+	  <th scope="col">Title</th>
+	  <th scope="col">Version</th>
+	  #else
+	  #*
+	  * Jobs list
+	  *#
+	  <th scope="col">#</th>
+	  <th scope="col">Message</th>
+	  <th scope="col">Links</th>
+	  #end if
+	</tr>
+      </thead>
+      <tbody>	
+	#for i in range(len($values))
+	<tr>
+	  #if "jobs" not in $urlCompnents
+	  #*
+	  * Processes list
+	  *#
+	  <th scope="row">
+	    <a href="$(values[$i]["links"][0]["href"][:-1]).html">
+	      <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-link-45deg" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+	        <path d="M4.715 6.542L3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.001 1.001 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+	        <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 0 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 0 0-4.243-4.243L6.586 4.672z"/>
+	      </svg>
+	    $values[$i]["id"]
+	    </a>
+	  </th>
+	  <td>$values[$i]["title"]</td>
+	  <td>#if "version" in $values[$i]#$values[$i]["version"]#else#1.0.0#end if#</td>
+	  #else
+	  #*
+	  * Jobs list
+	  *#
+	  #set cValue=$values[$i]["infos"]
+	  <th scope="row">
+	    #if "status" in $cValue and $cValue["status"]=="successful"
+	    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle-fill text-success" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+	      <path fill-rule="evenodd" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+	    </svg>
+	    #else
+	    #if "status" in $cValue and $cValue["status"]=="failed"
+	    <svg width="1.0625em" height="1em" viewBox="0 0 17 16" class="bi bi-exclamation-triangle-fill text-error" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+	      <path fill-rule="evenodd" d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+	    </svg>
+	    #end if
+	    #end if
+	    $cValue["jobID"]
+	  </th>
+	  <td>$cValue["message"]</td>
+	  <td>
+	  <div class="dropdown">
+	    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+	    Action
+	    </button>
+	    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+	      #for j in range(len($cValue["links"]))
+	      #set $cValueLink=$cValue["links"][$j]
+	      #if $cValueLink["href"].count("result")==0
+	      <a class="dropdown-item delete"
+	        href="#"
+	        data-value="$(cValueLink["href"])">Delete</a>
+	      #end if
+	      <a class="dropdown-item" href="$(cValueLink["href"]).html">$cValueLink["title"]</a>
+	      #end for	      
+	    </div>
+	  </div>
+	  </td>
+	  #end if
+	</tr>	
+	#end for
+      </tbody>
+    </table>
+    <script>
+    System["jobListDelete"]=function(){
+      \$(".delete").each(function(){
+        \$(this).off("click");
+        \$(this).click(function(){
+          console.log("OK");
+          \$.ajax({
+            url: \$(this).data("value"),
+            type: "DELETE",
+            success: function(){
+              console.log(arguments);
+            }
+          });
+        });
+      });
+    }
+    </script>
+    #end if
+
+      <div class="microlight">$json.dumps(values)</div>
+      <textarea class="form-control" style="height: 300px;"></textarea>
+      <script>
+      window.onload = function(){
+        var jsContent=\$(".microlight").html();
+        var tmpStr=js_beautify(jsContent);
+        \$("textarea").last().val(tmpStr);
+        \$(".microlight").remove();
+        for(var i in System){
+          System[i]();
+        }
+         System["JSON_STR"]=JSON.parse(tmpStr);
+         var forms = document.getElementsByClassName('needs-validation');
+         // Loop over them and prevent submission
+         var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+             event.preventDefault();
+             event.stopPropagation();
+             if (form.checkValidity() === false) {
+               event.preventDefault();
+      event.stopPropagation();
+      alert('ok');
+             }else{
+               loadRequest();
+             }
+             form.classList.add('was-validated');
+           }, false);
+         });
+      
+      }
+      </script>
+      <hr>
+      <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
+      <!-- hhmts start -->Last modified: Wed Oct 21 17:23:48 CEST 2020 <!-- hhmts end -->
+    </main>
+#if $currentKey=="root"
+    </div>  
+    <div class="col-sm-4"
+      itemprop="provider"
+      itemscope itemtype="https://schema.org/Organization">
+      $printIndentification($conf)
+    </div>
+   </div>
+  </div>
+#end if
+      
+
+    <footer class="footer" itemscope itemtype="https://schema.org/SoftwareApplication">
+      <div class="container-fluid">
+	<span class="text-muted">
+	  Powered by
+	  <a target="_blank" itemprop="url"
+	    href="http://www.zoo-project.org/"><span itemprop="name">ZOO-Project</span></a>
+	  <span itemprop="version">$zoo.VERSION</span>.
+	  <meta itemprop="applicationCategory" content="WebService" />
+	#try
+	#set sysname=$os.uname()
+	#except Exception as e
+	#set sysname=["Unknown"]
+	#end try
+	  <meta itemprop="operatingSystem" content="$sysname[0]" />
+	</span>
+      </div>
+    </footer>
+
+    <!-- JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.13.0/beautify.min.js" integrity="sha512-84xqGKD+OW9ElGeIq5RkXhsKveQx+kAjahn9r7f/Vm9J0bDrwEabW3MQNgYdTzLBnwfrTGs0nuPx3pZxh6itNg==" crossorigin="anonymous"></script>
+  </body>
+</html>
+#if "cache_file" in $inputs["tmpl"] and $removeCacheFile
+<!-- REMOVED ! -->      
+#import os
+$(os.remove($inputs["tmpl"]["cache_file"]))
+#end if

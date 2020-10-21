@@ -31,15 +31,13 @@
 
 #pragma once
 
-#include <ulinet.h>
-#include <stdio.h>
-#include <ctype.h>
 #include <service.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+  bool invokeBasicCallback(maps*,int);
   bool invokeCallback(maps*,maps*,maps*,int,int);
   void cleanupCallbackThreads();
   
