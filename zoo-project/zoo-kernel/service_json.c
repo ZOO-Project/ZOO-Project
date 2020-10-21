@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2017-2019 GeoLabs SARL. All rights reserved.
+ *  Copyright 2017-2020 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -222,6 +222,10 @@ extern "C" {
       map* tmpMap1=getMap(in->defaults->content,"DataType");
       if(tmpMap1!=NULL){
 	json_object_object_add(prop2,"name",json_object_new_string(tmpMap1->value));
+	char *tmp=(char*)malloc((strlen(tmpMap1->value)+35)*sizeof(char));
+	sprintf(tmp,"http://www.w3.org/TR/xmlschema-2/#%s",tmpMap1->value);
+	json_object_object_add(prop2,"reference",json_object_new_string(tmp));
+	free(tmp);
 	json_object_object_add(prop1,"dataType",prop2);
       }
       tmpMap1=getMap(in->defaults->content,"value");
@@ -370,14 +374,18 @@ extern "C" {
 	json_object_object_add(input,"title",json_object_new_string(tmpMap->value));
       tmpMap=getMap(in->content,"abstract");
       if(tmpMap!=NULL)
-	json_object_object_add(input,"abstract",json_object_new_string(tmpMap->value));
+	json_object_object_add(input,"description",json_object_new_string(tmpMap->value));
       if(strcmp(io,"input")==0){
 	tmpMap=getMap(in->content,"minOccurs");
 	if(tmpMap!=NULL)
-	  json_object_object_add(input,"minOccurs",json_object_new_string(tmpMap->value));
+	  json_object_object_add(input,"minOccurs",json_object_new_int(atoi(tmpMap->value)));
 	tmpMap=getMap(in->content,"maxOccurs");
-	if(tmpMap!=NULL)
-	  json_object_object_add(input,"maxOccurs",json_object_new_string(tmpMap->value));
+	if(tmpMap!=NULL){
+	  if(strncasecmp(tmpMap->value,"unbounded",9)==0)
+	    json_object_object_add(input,"maxOccurs",json_object_new_string(tmpMap->value));
+	  else
+	    json_object_object_add(input,"maxOccurs",json_object_new_int(atoi(tmpMap->value)));
+	}
       }
       if(in->format!=NULL){
 	json_object* input1=json_object_new_object();
@@ -438,7 +446,12 @@ extern "C" {
   void printGetCapabilitiesForProcessJ(registry *reg, maps* m,void* doc0,void* nc0,service* serv){
     json_object* doc=(json_object*) doc0;
     json_object* nc=(json_object*) nc0;
-    json_object *res=json_object_new_object();
+    json_object *res;
+    if(doc!=NULL)
+      res=json_object_new_object();
+    else
+      res=(json_object*) nc0;
+      
     map* tmpMap0=getMapFromMaps(m,"lenv","level");
     char* rUrl=serv->name;
     if(tmpMap0!=NULL && atoi(tmpMap0->value)>0){
@@ -485,7 +498,7 @@ extern "C" {
       }
       tmpMap=getMap(serv->content,"abstract");
       if(tmpMap!=NULL){
-	json_object_object_add(res,"abstract",json_object_new_string(tmpMap->value));
+	json_object_object_add(res,"description",json_object_new_string(tmpMap->value));
       }
       tmpMap=getMap(serv->content,"processVersion");
       if(tmpMap!=NULL){
@@ -497,7 +510,8 @@ extern "C" {
 	}
 	else
 	  json_object_object_add(res,"version",json_object_new_string(tmpMap->value));
-      }
+      }else
+	json_object_object_add(res,"version",json_object_new_string("1.0.0"));
       int limit=4;
       int i=0;
       map* sType=getMap(serv->content,"serviceType");
@@ -516,7 +530,15 @@ extern "C" {
       }
       json_object *res1=json_object_new_array();
       json_object *res2=json_object_new_object();
-      json_object_object_add(res2,"rel",json_object_new_string("canonical"));
+      json_object *res3=json_object_new_object();
+      map* pmTmp=getMapFromMaps(m,"lenv","requestType");
+      if(pmTmp!=NULL && strncasecmp(pmTmp->value,"desc",4)==0)
+	json_object_object_add(res2,"rel",json_object_new_string("process-desc"));
+      else{
+	json_object_object_add(res2,"rel",json_object_new_string("execute"));
+	json_object_object_add(res3,"rel",json_object_new_string("alternate"));
+	json_object_object_add(res3,"type",json_object_new_string("text/html"));
+      }
       json_object_object_add(res2,"type",json_object_new_string("application/json"));
       json_object_object_add(res2,"title",json_object_new_string("Process Description"));
       map* tmpUrl=getMapFromMaps(m,"openapi","rootUrl");
@@ -524,14 +546,24 @@ extern "C" {
       sprintf(tmpStr,"%s/processes/%s/",tmpUrl->value,rUrl);
       if(doc==NULL){
 	json_object_object_add(res2,"title",json_object_new_string("Execute End Point"));
+	json_object_object_add(res3,"title",json_object_new_string("Execute End Point"));
 	char* tmpStr1=zStrdup(tmpStr);
 	tmpStr=(char*) realloc(tmpStr,(strlen(tmpStr)+6)*sizeof(char));
-	sprintf(tmpStr,"%sjobs/",tmpStr1);
+	sprintf(tmpStr,"%sjobs",tmpStr1);
 	free(tmpStr1);
+	char* tmpStr3=(char*) malloc((strlen(tmpStr)+6)*sizeof(char));
+	sprintf(tmpStr3,"%s.html",tmpStr);
+	json_object_object_add(res3,"href",json_object_new_string(tmpStr3));
+	free(tmpStr3);
       }
       json_object_object_add(res2,"href",json_object_new_string(tmpStr));
       free(tmpStr);
       json_object_array_add(res1,res2);
+      tmpUrl=getMapFromMaps(m,"openapi","partial_html_support");
+      if(tmpUrl!=NULL && strncasecmp(tmpUrl->value,"true",4)==0)
+	json_object_array_add(res1,res3);
+      else
+	json_object_put(res3);
       json_object_object_add(res,"links",res1);
     }
     if(doc==NULL){
@@ -550,9 +582,6 @@ extern "C" {
       free(rUrl);
     if(doc!=NULL)
       json_object_array_add(doc,res);
-    else
-      json_object_object_add(nc,"process",json_object_get(res));
-
   }
 
   /**
@@ -576,7 +605,7 @@ extern "C" {
     if(tmp!=NULL){
       if(strcmp(tmp->value,"OperationNotSupported")==0 ||
 	 strcmp(tmp->value,"NoApplicableCode")==0)
-	exceptionCode="501 Not Implemented";
+	exceptionCode="500 Not Implemented";
       else
 	if(strcmp(tmp->value,"MissingParameterValue")==0 ||
 	   strcmp(tmp->value,"InvalidUpdateSequence")==0 ||
@@ -585,31 +614,39 @@ extern "C" {
 	   strcmp(tmp->value,"InvalidParameterValue")==0)
 	  exceptionCode="400 Bad request";
 	else
-	  if(strcmp(tmp->value,"NotFound")==0)
+	  if(strcmp(tmp->value,"NotFound")==0 ||
+	     strcmp(tmp->value,"NoSuchProcess")==0 ||
+	     strcmp(tmp->value,"NoSuchJob")==0 ||
+	     strcmp(tmp->value,"ResultNotReady")==0)
 	    exceptionCode="404 Not Found";
 	  else
-	    exceptionCode="501 Internal Server Error";
+	    exceptionCode="500 Internal Server Error";
       json_object_object_add(res,"code",json_object_new_string(tmp->value));
     }
-    else
-      exceptionCode="501 Internal Server Error";
-    printHeaders(m);
+    else{
+      exceptionCode="500 Internal Server Error";
+      json_object_object_add(res,"code",json_object_new_string("NoApplicableCode"));
+    }
+    if(getMapFromMaps(m,"lenv","no-headers")==NULL)
+      printHeaders(m);
 
     tmp=getMapFromMaps(m,"lenv","status_code");
     if(tmp!=NULL)
       exceptionCode=tmp->value;
-    if(m!=NULL){
-      map *tmpSid=getMapFromMaps(m,"lenv","sid");
-      if(tmpSid!=NULL){
-	if( getpid()==atoi(tmpSid->value) ){
+    if(getMapFromMaps(m,"lenv","no-headers")==NULL){
+      if(m!=NULL){
+	map *tmpSid=getMapFromMaps(m,"lenv","sid");
+	if(tmpSid!=NULL){
+	  if( getpid()==atoi(tmpSid->value) ){
+	    printf("Status: %s\r\n\r\n",exceptionCode);
+	  }
+	}
+	else{
 	  printf("Status: %s\r\n\r\n",exceptionCode);
 	}
-      }
-      else{
+      }else{
 	printf("Status: %s\r\n\r\n",exceptionCode);
       }
-    }else{
-      printf("Status: %s\r\n\r\n",exceptionCode);
     }
     tmp=getMap(s,"text");
     if(tmp==NULL)
@@ -619,6 +656,9 @@ extern "C" {
     if(tmp!=NULL)
       json_object_object_add(res,"description",json_object_new_string(tmp->value));
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+    if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
+      setMapInMaps(m,"lenv","jsonStr",jsonStr);
+    maps* pmsTmp=getMaps(m,"lenv");
     printf(jsonStr);
     if(m!=NULL)
       setMapInMaps(m,"lenv","hasPrinted","true");
@@ -875,7 +915,7 @@ extern "C" {
    * @param inputs the produced maps
    * @param outputs the produced maps
    */
-  void parseJRequest(maps* conf, service* s,json_object* req,maps** inputs,maps** outputs){
+  void parseJRequest(maps* conf, service* s,json_object* req, map* request_inputs, maps** inputs,maps** outputs){
     elements* io=s->inputs;
 
     json_object* json_io=NULL;
@@ -889,7 +929,41 @@ extern "C" {
       if(json_object_object_get_ex(req,"outputs",&json_io)!=FALSE){
 	parseJIO(conf,req,s->outputs,outputs,"outputs");
       }
-    }      
+      json_io=NULL;
+      if(json_object_object_get_ex(req,"mode",&json_io)!=FALSE){
+	addToMap(request_inputs,"mode",json_object_get_string(json_io));
+	setMapInMaps(conf,"request","mode",json_object_get_string(json_io));
+      }
+      json_io=NULL;
+      if(json_object_object_get_ex(req,"response",&json_io)!=FALSE){
+	addToMap(request_inputs,"response",json_object_get_string(json_io));
+	setMapInMaps(conf,"request","response",json_object_get_string(json_io));
+      }
+      json_io=NULL;
+      if(json_object_object_get_ex(req,"subscriber",&json_io)!=FALSE){
+	maps* subscribers=createMaps("subscriber");
+	json_object* json_subscriber=NULL;
+	if(json_object_object_get_ex(json_io,"successUri",&json_subscriber)!=FALSE){
+	  subscribers->content=createMap("successUri",json_object_get_string(json_subscriber));
+	}
+	if(json_object_object_get_ex(json_io,"inProgressUri",&json_subscriber)!=FALSE){
+	  if(subscribers->content==NULL)
+	    subscribers->content=createMap("inProgressUri",json_object_get_string(json_subscriber));
+	  else
+	    addToMap(subscribers->content,"inProgressUri",json_object_get_string(json_subscriber));
+	}
+	if(json_object_object_get_ex(json_io,"failedUri",&json_subscriber)!=FALSE){
+	  if(subscribers->content==NULL)
+	    subscribers->content=createMap("failedUri",json_object_get_string(json_subscriber));
+	  else
+	    addToMap(subscribers->content,"failedUri",json_object_get_string(json_subscriber));
+	}
+	addMapsToMaps(&conf,subscribers);
+	freeMaps(&subscribers);
+	free(subscribers);
+      }
+    }
+    
   }
 
   /**
@@ -933,10 +1007,10 @@ extern "C" {
 	    } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
 	    if (jerr != json_tokener_success) {
 	      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
-	      return res;
+	      return NULL;
 	    }
 	    if (tok->char_offset < slen){
-	      return res;
+	      return NULL;
 	    }
 	    json_object_object_add(cjob,"infos",jobj);
 	    free(mystring);
@@ -950,26 +1024,42 @@ extern "C" {
     }
     return res;
   }
-
+  
   /**
    * Print the result of an execution
    *
    * @param conf the maps containing the settings of the main.cfg file
    * @param s service pointer to metadata
    * @param result outputs of the service
-   * @param res the status of executino SERVICE_FAILED/SERVICE_SUCCEEDED
+   * @param res the status of execution SERVICE_FAILED/SERVICE_SUCCEEDED
    * @return the JSON object pointer to the result
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
-    printHeaders(conf);
     json_object* eres1=json_object_new_object();
+    if(res==SERVICE_FAILED){
+      char* pacTmp=produceErrorMessage(conf);
+      map* pamTmp=createMap("message",pacTmp);
+      free(pacTmp);
+      map* pmTmp=getMapFromMaps(conf,"lenv","code");
+      if(pmTmp!=NULL)
+	addToMap(pamTmp,"code",pmTmp->value);
+      printExceptionReportResponseJ(conf,pamTmp);
+      freeMap(&pamTmp);
+      free(pamTmp);
+      return NULL;
+    }
+    if(getMapFromMaps(conf,"lenv","no-headers")==NULL)
+      printHeaders(conf);
     json_object* eres=json_object_new_array();
     maps* resu=result;
     int itn=0;
     while(resu!=NULL){
       json_object* res1=json_object_new_object();
       json_object_object_add(res1,"id",json_object_new_string(resu->name));
-      map* tmpMap=NULL;
+      map* tmpMap=getMap(resu->content,"mimeType");
+      json_object* res3=json_object_new_object();
+      if(tmpMap!=NULL)
+	json_object_object_add(res3,"mimeType",json_object_new_string(tmpMap->value));
       if((tmpMap=getMap(resu->content,"value"))!=NULL ||
 	 (getMap(resu->content,"generated_file"))!=NULL){
 	json_object* res2=json_object_new_object();
@@ -993,9 +1083,33 @@ extern "C" {
 	      if (tok->char_offset < slen){
 		return eres1;		
 	      }
+	      json_object_object_add(res3,"encoding",json_object_new_string("utf-8"));
 	      json_object_object_add(res2,"inlineValue",jobj);
-	    }else
-	      json_object_object_add(res2,"inlineValue",json_object_new_string(tmpMap->value));
+	    }else{
+	      map* tmp1=getMapFromMaps(conf,"main","tmpPath");
+	      map *gfile=getMap(resu->content,"generated_file");
+	      if(gfile!=NULL){
+		gfile=getMap(resu->content,"expected_generated_file");
+		if(gfile==NULL){
+		  gfile=getMap(resu->content,"generated_file");
+		}
+		FILE* pfData=fopen(gfile->value,"rb");
+		if(pfData!=NULL){
+		  zStatStruct f_status;
+		  int s=zStat(gfile->value, &f_status);
+		  char* pcaTmp=(char*)malloc((f_status.st_size+1)*sizeof(char));
+		  fread(pcaTmp,1,f_status.st_size,pfData);
+		  pcaTmp[f_status.st_size]=0;	    
+		  fclose(pfData);
+		  json_object_object_add(res2,"inlineValue",json_object_new_string(base64(pcaTmp,f_status.st_size)));
+		  json_object_object_add(res3,"encoding",json_object_new_string("base64"));
+		  free(pacTmp);
+		}
+	      }else{
+		json_object_object_add(res3,"encoding",json_object_new_string("utf-8"));
+		json_object_object_add(res2,"inlineValue",json_object_new_string(tmpMap->value));
+	      }
+	    }
 	  }
 	  else{
 	    // Create file for reference data if not existing
@@ -1097,6 +1211,7 @@ extern "C" {
 	  }
 	}
 	json_object_object_add(res1,"value",res2);	
+	json_object_object_add(res1,"format",res3);	
 	json_object_array_add(eres,res1);
       }
       resu=resu->next;
@@ -1107,25 +1222,31 @@ extern "C" {
     map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
     map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
-    char tmp[1024];
-    sprintf(tmp,"%s/%s_%s.json",
+    char *pacTmp=(char*)malloc((strlen(tmpPath->value)+strlen(cIdentifier->value)+strlen(sessId->value)+8)*sizeof(char));
+    sprintf(pacTmp,"%s/%s_%s.json",
 	    tmpPath->value,cIdentifier->value,sessId->value);
-    FILE* foutput=fopen(tmp,"w+");
-    if(foutput!=NULL){
-      fclose(foutput);
-      char tmpUrl[1024];
+    zStatStruct zsFStatus;
+    int iS=zStat(pacTmp, &zsFStatus);
+    if(iS==0 && zsFStatus.st_size>0){
       map* tmpPath1 = getMapFromMaps (conf, "main", "tmpUrl");
-      sprintf(tmpUrl,"%s/%s_%s.json",tmpPath1->value,
+      char* pacTmpUrl=(char*)malloc((strlen(tmpPath1->value)+strlen(cIdentifier->value)+strlen(sessId->value)+8)*sizeof(char));;
+      sprintf(pacTmpUrl,"%s/%s_%s.json",tmpPath1->value,
 	      cIdentifier->value,sessId->value);
-      setMapInMaps(conf,"headers","Location",tmpUrl);
+      if(getMapFromMaps(conf,"lenv","gs_location")==NULL)
+	setMapInMaps(conf,"headers","Location",pacTmpUrl);
+      free(pacTmpUrl);
     }
+    free(pacTmp);
     if(res==3){
-      setMapInMaps(conf,"headers","Status","201 Created");
+      map* mode=getMapFromMaps(conf,"request","mode");
+      if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
+	setMapInMaps(conf,"headers","Status","201 Created");
+      else
+	setMapInMaps(conf,"headers","Status","200 Ok");
     }
     else{
       setMapInMaps(conf,"headers","Status","500 Issue running your service");
     }
-
     return eres1;
   }
 
@@ -1143,6 +1264,9 @@ extern "C" {
     map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
     map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
+    if(sessId==NULL){
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+    }
     char *Url0=(char*) malloc((strlen(tmpPath->value)+
 			       strlen(cIdentifier->value)+
 			       strlen(sessId->value)+18)*sizeof(char));
@@ -1152,10 +1276,15 @@ extern "C" {
 	    tmpPath->value,
 	    cIdentifier->value,
 	    sessId->value);
-    setMapInMaps(conf,"headers","Location",Url0);
+    if(getMapFromMaps(conf,"lenv","gs_location")==NULL)
+      setMapInMaps(conf,"headers","Location",Url0);
     json_object* val=json_object_new_object();
-    json_object_object_add(val,"Title",
+    json_object_object_add(val,"title",
 			   json_object_new_string(_("Status location")));
+    json_object_object_add(val,"rel",
+			   json_object_new_string(_("status")));
+    json_object_object_add(val,"type",
+			   json_object_new_string(_("application/json")));
     json_object_object_add(val,"href",json_object_new_string(Url0));
     json_object_array_add(res,val);
     if(result>0){
@@ -1163,13 +1292,17 @@ extern "C" {
       Url0=(char*) malloc((strlen(tmpPath->value)+
 			   strlen(cIdentifier->value)+strlen(sessId->value)+
 			   25)*sizeof(char));
-      sprintf(Url0,"%s/processes/%s/jobs/%s/result",
+      sprintf(Url0,"%s/processes/%s/jobs/%s/results",
 	      tmpPath->value,
 	      cIdentifier->value,
 	      sessId->value);
       json_object* val1=json_object_new_object();
-      json_object_object_add(val1,"Title",
+      json_object_object_add(val1,"title",
 			     json_object_new_string(_("Result location")));
+      json_object_object_add(val1,"rel",
+			     json_object_new_string(_("results")));
+      json_object_object_add(val1,"type",
+			     json_object_new_string(_("application/json")));
       json_object_object_add(val1,"href",json_object_new_string(Url0));
       json_object_array_add(res,val1);
     }
@@ -1203,36 +1336,78 @@ extern "C" {
       fprintf(stderr,"Issue creating directory %s\n",tmp1);
       return NULL;
     }
-    free(tmp1);
-    tmp1=(char*) malloc((strlen(tmpPath->value)+
+    tmp1=(char*) realloc(tmp1,(strlen(tmpPath->value)+
 			 strlen(cIdentifier->value)+
-			 strlen(sessId->value)+20)*sizeof(char));
+			 strlen(sessId->value)+21)*sizeof(char));
     int needResult=0;
     char *message, *rstatus;
     sprintf(tmp1,"%s/statusInfos/%s/%s.json",
 	    tmpPath->value,
 	    cIdentifier->value,
 	    sessId->value);
-    
     return tmp1;
   }
+
+  char* getResultPath(maps* conf,char* jobId){
+    map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
+    map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
+    char *pacUrl=(char*) malloc((strlen(tmpPath->value)+
+				 strlen(cIdentifier->value)+
+				 strlen(jobId)+8)*sizeof(char));
+    sprintf(pacUrl,"%s/%s_%s.json",tmpPath->value,
+	    cIdentifier->value,jobId);
+    return pacUrl;
+  }
+
+  json_object* parseJson(maps* conf,char* myString){
+    json_object *pajObj = NULL;
+    enum json_tokener_error jerr;
+    struct json_tokener* tok=json_tokener_new();
+    int slen = 0;
+    do {
+      slen = strlen(myString);
+      pajObj = json_tokener_parse_ex(tok, myString, slen);
+    } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
+    if (jerr != json_tokener_success) {
+      setMapInMaps(conf,"lenv","message",json_tokener_error_desc(jerr));
+      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+      return NULL;
+    }
+    if (tok->char_offset < slen){
+      return NULL;
+    }
+    return pajObj;
+  }
   
-  /**
-   * Create the status file 
-   *
-   * @param conf the maps containing the settings of the main.cfg file
-   * @param status an integer (SERVICE_ACCEPTED,SERVICE_STARTED...)
-   * @return an integer (0 in case of success, 1 in case of failure)
-   */
-  int createStatusFile(maps* conf,int status){
+  json_object* json_readFile(maps* conf,char* filePath){
+    json_object *pajObj = NULL;
+    zStatStruct zsFStatus;
+    int iS=zStat(filePath, &zsFStatus);
+    if(iS==0 && zsFStatus.st_size>0){
+      FILE* cdat=fopen(filePath,"rb");
+      if(cdat!=NULL){
+	char* pacMyString=(char*)malloc((zsFStatus.st_size+1)*sizeof(char));
+	fread(pacMyString,1,zsFStatus.st_size,cdat);
+	pacMyString[zsFStatus.st_size]=0;
+	fclose(cdat);
+	pajObj=parseJson(conf,pacMyString);
+	free(pacMyString);
+      }
+      else
+	return NULL;
+    }else
+      return NULL;
+    return pajObj;
+  }
+  
+  json_object* createStatus(maps* conf,int status){
     int needResult=0;
-    const char *message, *rstatus;
-    char* tmp1=json_getStatusFilePath(conf);
+    const char *rstatus;
+    char *message;
     // Create statusInfo JSON object
     // cf. https://github.com/opengeospatial/wps-rest-binding/blob/master/core/
     //     openapi/schemas/statusInfo.yaml
     json_object* res=json_object_new_object();
-    json_object_object_add(res,"status",json_object_new_string("successful"));
     switch(status){
     case SERVICE_ACCEPTED:
       {
@@ -1243,6 +1418,12 @@ extern "C" {
     case SERVICE_STARTED:
       {
 	message=_("ZOO-Kernel is currently running your service!");
+	map* pmStatus=getMapFromMaps(conf,"lenv","status");
+	if(pmStatus!=NULL)
+	  setMapInMaps(conf,"lenv","PercentCompleted",pmStatus->value);
+	pmStatus=getMapFromMaps(conf,"lenv","message");
+	if(pmStatus!=NULL)
+	  setMapInMaps(conf,"lenv","gs_message",pmStatus->value);
 	rstatus="running";
 	break;
       }
@@ -1256,25 +1437,102 @@ extern "C" {
       {
 	message=_("ZOO-Kernel successfully run your service!");
 	rstatus="successful";
+	setMapInMaps(conf,"lenv","PercentCompleted","100");
+	needResult=1;
+	break;
+      }
+    case SERVICE_DISMISSED:
+      {
+	message=_("ZOO-Kernel successfully dismissed your service!");
+	rstatus="dismissed";
 	needResult=1;
 	break;
       }
     default:
       {
-	message=_("ZOO-Kernel failed to run your service!");
+	map* pmTmp=getMapFromMaps(conf,"lenv","force");
+	if(pmTmp==NULL || strncasecmp(pmTmp->value,"false",5)==0){
+	  char* pacTmp=json_getStatusFilePath(conf);
+	  json_object* pjoStatus=json_readFile(conf,pacTmp);
+	  free(pacTmp);
+	  if(pjoStatus!=NULL){
+	    json_object* pjoMessage=NULL;
+	    if(json_object_object_get_ex(pjoStatus,"message",&pjoMessage)!=FALSE){
+	      message=(char*)json_object_get_string(pjoMessage);
+	    }
+	  }
+	  // TODO: Error
+	}else{
+	  map* mMap=getMapFromMaps(conf,"lenv","gs_message");
+	  if(mMap!=NULL)
+	    setMapInMaps(conf,"lenv","message",mMap->value);
+	  message=produceErrorMessage(conf);
+	  needResult=-1;
+	}
 	rstatus="failed";
 	break;
       }
     }
     setMapInMaps(conf,"lenv","message",message);
     setMapInMaps(conf,"lenv","status",rstatus);
-	
-    map* mess=getMapFromMaps(conf,"lenv","message");
-    if(mess!=NULL)
-      json_object_object_add(res,"message",json_object_new_string(mess->value));
 
-    createStatusLinks(conf,needResult,res);
-    
+    map *sessId = getMapFromMaps (conf, "lenv", "usid");
+    if(sessId!=NULL){
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+      if(sessId==NULL)
+	sessId = getMapFromMaps (conf, "lenv", "usid");
+    }else
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+    if(sessId!=NULL)
+      json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
+    json_object_object_add(res,"status",json_object_new_string(rstatus));
+    map* mMap=getMapFromMaps(conf,"lenv","gs_message");
+    if(mMap==NULL)
+      json_object_object_add(res,"message",json_object_new_string(message));
+    else{
+      json_object_object_add(res,"message",json_object_new_string(mMap->value));
+      if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
+	json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
+    }
+    if(status!=SERVICE_DISMISSED)
+      createStatusLinks(conf,needResult,res);
+    else{
+      json_object* res1=json_object_new_array();
+      map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
+      map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
+      char *Url0=(char*) malloc((strlen(tmpPath->value)+
+				 strlen(cIdentifier->value)+
+				 17)*sizeof(char));
+      sprintf(Url0,"%s/processes/%s/jobs",	      
+	      tmpPath->value,
+	      cIdentifier->value);
+      json_object* val=json_object_new_object();
+      json_object_object_add(val,"title",
+			     json_object_new_string(_("The job list for the current process")));
+      json_object_object_add(val,"rel",
+			     json_object_new_string(_("parent")));
+      json_object_object_add(val,"type",
+			     json_object_new_string(_("application/json")));
+      json_object_object_add(val,"href",json_object_new_string(Url0));
+      json_object_array_add(res1,val);
+      free(Url0);
+      json_object_object_add(res,"links",res1);
+    }
+    if(needResult<0)
+      free(message);
+    return res;
+  }
+  
+  /**
+   * Create the status file 
+   *
+   * @param conf the maps containing the settings of the main.cfg file
+   * @param status an integer (SERVICE_ACCEPTED,SERVICE_STARTED...)
+   * @return an integer (0 in case of success, 1 in case of failure)
+   */
+  int createStatusFile(maps* conf,int status){
+    json_object* res=createStatus(conf,status);
+    char* tmp1=json_getStatusFilePath(conf);
     FILE* foutput1=fopen(tmp1,"w+");
     if(foutput1!=NULL){
       const char* jsonStr1=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
@@ -1302,18 +1560,21 @@ extern "C" {
 
     map* tmpMap=getMapFromMaps(conf,"lenv","gs_usid");
     if(tmpMap!=NULL){
-	char* tmpStr=_getStatus(conf,tmpMap->value);
-	if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	  char *tmpStr1=zStrdup(tmpStr);
-	  char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
-	  free(tmpStr);
-	  tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
-	  setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
-	  setMapInMaps(conf,"lenv","gs_message",tmpStr0);
-	  free(tmpStr0);
-	  free(tmpStr1);
-	}
+      char* tmpStr=_getStatus(conf,tmpMap->value);
+      if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+	char *tmpStr1=zStrdup(tmpStr);
+	char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
+	free(tmpStr);
+	tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+	setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
+	setMapInMaps(conf,"lenv","gs_message",tmpStr0);
+	free(tmpStr0);
+	free(tmpStr1);
+	return 0;
+      }else{
+	  
       }
+    }
   }
 
   /**
@@ -1370,10 +1631,10 @@ extern "C" {
     }
 
     json_object *res4=json_object_new_object();
-    tmpMap=getMapFromMaps(conf,"main","license_name");
+    tmpMap=getMapFromMaps(conf,"openapi","license_name");
     if(tmpMap!=NULL){
       json_object_object_add(res4,"name",json_object_new_string(tmpMap->value));
-      tmpMap=getMapFromMaps(conf,"main","license_url");
+      tmpMap=getMapFromMaps(conf,"openapi","license_url");
       if(tmpMap!=NULL){
 	json_object_object_add(res4,"url",json_object_new_string(tmpMap->value));      
       }
@@ -1383,6 +1644,66 @@ extern "C" {
     json_object_object_add(res,"info",res1);    
   }
 
+  // addResponse(pmUseContent,cc3,vMap,tMap,"200","successful operation");
+  void addResponse(const map* useContent,json_object* res,const map* pmSchema,const map* pmType,const char* code,const char* msg){
+    json_object *cc=json_object_new_object();
+    if(pmSchema!=NULL)
+      json_object_object_add(cc,"$ref",json_object_new_string(pmSchema->value));
+    if(useContent!=NULL && strncasecmp(useContent->value,"true",4)!=0){
+	json_object_object_add(res,code,cc);
+    }else{
+	json_object *cc0=json_object_new_object();
+	if(pmSchema!=NULL)
+	  json_object_object_add(cc0,"schema",cc);
+	json_object *cc1=json_object_new_object();
+	if(pmType!=NULL)
+	  json_object_object_add(cc1,pmType->value,cc0);
+	else
+	  json_object_object_add(cc1,"application/json",cc0);
+	json_object *cc2=json_object_new_object();
+	json_object_object_add(cc2,"content",cc1);
+	json_object_object_add(cc2,"description",json_object_new_string(msg));
+	json_object_object_add(res,code,cc2);
+    }
+  }
+
+  void addParameter(maps* conf,const char* oName,const char* fName,const char* in,json_object* res){
+    maps* tmpMaps1=getMaps(conf,oName);
+    json_object *res8=json_object_new_object();
+    if(tmpMaps1!=NULL){
+      map* tmpMap=getMap(tmpMaps1->content,"title");
+      if(tmpMap!=NULL)
+	json_object_object_add(res8,"x-internal-summary",json_object_new_string(tmpMap->value));
+      tmpMap=getMap(tmpMaps1->content,"abstract");
+      if(tmpMap!=NULL)
+	json_object_object_add(res8,"description",json_object_new_string(tmpMap->value));
+      tmpMap=getMap(tmpMaps1->content,"example");
+      if(tmpMap!=NULL)
+	json_object_object_add(res8,"example",json_object_new_string(tmpMap->value));
+      tmpMap=getMap(tmpMaps1->content,"required");
+      if(tmpMap!=NULL){
+	if(strcmp(tmpMap->value,"true")==0)
+	  json_object_object_add(res8,"required",json_object_new_boolean(TRUE));
+	else
+	  json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
+      }
+      else
+	json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
+      json_object_object_add(res8,"in",json_object_new_string(in));
+      json_object_object_add(res8,"name",json_object_new_string(fName));
+      json_object *res6=json_object_new_object();
+      tmpMap=getMap(tmpMaps1->content,"type");
+      if(tmpMap!=NULL)
+	json_object_object_add(res6,"type",json_object_new_string(tmpMap->value));
+      else
+	json_object_object_add(res6,"type",json_object_new_string("string"));
+	
+      json_object_object_add(res8,"schema",res6);
+	
+    }	
+    json_object_object_add(res,fName,res8);    
+  }
+  
   /**
    * Produce the JSON object for api parameter
    *
@@ -1396,106 +1717,40 @@ extern "C" {
     char *saveptr12;
     char *tmps12 = strtok_r (tmpMap2->value, ",", &saveptr12);
     while(tmps12!=NULL){
-      char* tmpId=(char*) malloc((strlen(tmps12)+3)*sizeof(char));
-      sprintf(tmpId,"{%s}",tmps12);
-      tmpMaps1=getMaps(conf,tmpId);
-      json_object *res8=json_object_new_object();
-      if(tmpMaps1!=NULL){
-	map* tmpMap=getMap(tmpMaps1->content,"title");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"x-internal-summary",json_object_new_string(tmpMap->value));
-	tmpMap=getMap(tmpMaps1->content,"abstract");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"description",json_object_new_string(tmpMap->value));
-	tmpMap=getMap(tmpMaps1->content,"example");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"example",json_object_new_string(tmpMap->value));
-	tmpMap=getMap(tmpMaps1->content,"required");
-	if(tmpMap!=NULL){
-	  if(strcmp(tmpMap->value,"true")==0)
-	    json_object_object_add(res8,"required",json_object_new_boolean(TRUE));
-	  else
-	    json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
-	}
-	else
-	  json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
-	json_object_object_add(res8,"in",json_object_new_string("path"));
-	json_object_object_add(res8,"name",json_object_new_string(tmps12));
-	json_object *res6=json_object_new_object();
-	json_object *res7=json_object_new_object();
-	tmpMap=getMap(tmpMaps1->content,"type");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res6,"type",json_object_new_string(tmpMap->value));
-	else
-	  json_object_object_add(res6,"type",json_object_new_string("string"));
-	
-	json_object_object_add(res8,"schema",res6);
-	
-      }
-	
-      json_object_object_add(res9,tmps12,res8);
+      char* pacId=(char*) malloc((strlen(tmps12)+3)*sizeof(char));
+      sprintf(pacId,"{%s}",tmps12);
+      addParameter(conf,pacId,tmps12,"path",res9);
+      free(pacId);
       tmps12 = strtok_r (NULL, ",", &saveptr12);
     }    
     tmpMap2=getMapFromMaps(conf,"openapi","header_parameters");
-    char *saveptr13;
-    char *tmps13 = strtok_r (tmpMap2->value, ",", &saveptr13);
-    while(tmps13!=NULL){
-      char* tmpId=zStrdup(tmps13);
-      maps *tmpMaps2=getMaps(conf,tmpId);
-      json_object *res8=json_object_new_object();
-      if(tmpMaps2!=NULL){
-	map* tmpMap=getMap(tmpMaps2->content,"title");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"x-internal-summary",json_object_new_string(tmpMap->value));
-	tmpMap=getMap(tmpMaps2->content,"abstract");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"description",json_object_new_string(tmpMap->value));
-	tmpMap=getMap(tmpMaps2->content,"example");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"example",json_object_new_string(tmpMap->value));
-	tmpMap=getMap(tmpMaps2->content,"required");
-	if(tmpMap!=NULL){
-	  if(strcmp(tmpMap->value,"true")==0)
-	    json_object_object_add(res8,"required",json_object_new_boolean(TRUE));
-	  else
-	    json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
-	}
-	else
-	  json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
-	json_object_object_add(res8,"in",json_object_new_string("header"));
-	tmpMap=getMap(tmpMaps2->content,"name");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res8,"name",json_object_new_string(tmpMap->value));
-	json_object *res6=json_object_new_object();
-	json_object *res7=json_object_new_object();
-	tmpMap=getMap(tmpMaps2->content,"type");
-	if(tmpMap!=NULL)
-	  json_object_object_add(res6,"type",json_object_new_string(tmpMap->value));
-	else
-	  json_object_object_add(res6,"type",json_object_new_string("string"));
-
-	{
-	  tmpMap=getMap(tmpMaps2->content,"enum");
-	  if(tmpMap!=NULL){
-	    char *saveptr11;
-	    char *tmps11 = strtok_r (tmpMap->value, ",", &saveptr11);
-	    json_object *res71=json_object_new_array();
-	    while(tmps11!=NULL){		
-	      json_object_array_add(res71,json_object_new_string(tmps11));
-	      tmps11 = strtok_r (NULL, ",", &saveptr11);
-	    }
-	    json_object_object_add(res6,"enum",res71);				  
-	  }
-	}
-	
-	json_object_object_add(res8,"schema",res6);
-	
+    if(tmpMap2!=NULL){
+      char *saveptr13;
+      char *tmps13 = strtok_r (tmpMap2->value, ",", &saveptr13);
+      while(tmps13!=NULL){
+	char* pacId=zStrdup(tmps13);
+	addParameter(conf,pacId,pacId,"header",res9);
+	free(pacId);
+	tmps13 = strtok_r (NULL, ",", &saveptr13);
       }
-	
-      json_object_object_add(res9,tmpId,res8);
-      tmps13 = strtok_r (NULL, ",", &saveptr13);
-    } 
-    json_object_object_add(res,"parameters",res9);    
+    }
+    json_object_object_add(res,"parameters",res9);
+    maps* pmResponses=getMaps(conf,"responses");
+    if(pmResponses!=NULL){
+      json_object *cc=json_object_new_object();
+      map* pmLen=getMap(pmResponses->content,"length");
+      int iLen=atoi(pmLen->value);
+      map* pmUseContent=getMapFromMaps(conf,"openapi","use_content");
+      for(int i=0;i<iLen;i++){
+	map* cMap=getMapArray(pmResponses->content,"code",i);
+	map* vMap=getMapArray(pmResponses->content,"schema",i);
+	map* tMap=getMapArray(pmResponses->content,"type",i);
+	map* tMap0=getMapArray(pmResponses->content,"title",i);
+	if(vMap!=NULL)
+	  addResponse(pmUseContent,cc,vMap,tMap,cMap->value,(tMap0==NULL)?"successful operation":tMap0->value);
+      }
+      json_object_object_add(res,"responses",cc);
+    }
   }
 
   void produceApiComponents(maps*conf,json_object* res){
@@ -1503,7 +1758,7 @@ extern "C" {
     produceApiParameters(conf,res1);
     json_object_object_add(res,"components",res1);
   }
-
+  
   /**
    * Produce the JSON object for /api
    *
@@ -1511,10 +1766,10 @@ extern "C" {
    * @param res the JSON object to populate
    */
   void produceApi(maps* conf,json_object* res){
+    // TODO: add 401 Gone for dismiss request
     json_object *res9=json_object_new_object();
     json_object *res10=json_object_new_object();
     maps* tmpMaps1=getMaps(conf,"{id}");
-
     produceApiComponents(conf,res);
     json_object *res4=json_object_new_object();
     setMapInMaps(conf,"headers","Content-Type","application/openapi+json; version=3.0;charset=UTF-8");
@@ -1561,64 +1816,42 @@ extern "C" {
 	    }
 	    json_object *responses=json_object_new_object();
 	    json_object *cc3=json_object_new_object();
+	    map* pmUseContent=getMapFromMaps(conf,"openapi","use_content");
 	    vMap=getMapArray(tmpMaps->content,"schema",i);
 	    if(vMap!=NULL){
-	      json_object *cc=json_object_new_object();
-	      json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
-	      json_object *cc0=json_object_new_object();
-	      json_object_object_add(cc0,"schema",cc);
-	      json_object *cc1=json_object_new_object();
-	      map* tmpMap3=getMapFromMaps(conf,tmps,"type");
-	      if(tmpMap3!=NULL)
-		json_object_object_add(cc1,tmpMap3->value,cc0);
-	      else
-		json_object_object_add(cc1,"application/json",cc0);
-	      json_object *cc2=json_object_new_object();
-	      json_object_object_add(cc2,"content",cc1);
-	      json_object_object_add(cc2,"description",json_object_new_string("successful operation"));
-	      if(i==1)
-		json_object_object_add(cc3,"201",cc2);
-	      else
-		json_object_object_add(cc3,"200",cc2);
+	      map* tMap=getMapArray(tmpMaps->content,"type",i);
+	      addResponse(pmUseContent,cc3,vMap,tMap,"200","successful operation");
+	      vMap=getMapArray(tmpMaps->content,"eschema",i);
+	      if(vMap!=NULL && cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
+		addResponse(pmUseContent,cc3,vMap,tMap,"201","successful operation");
 	    }else{
-	      json_object *cc1=json_object_new_object();
-	      map* tmpMap3=getMapFromMaps(conf,tmps,"type");
-	      if(tmpMap3!=NULL)
-		json_object_object_add(cc1,tmpMap3->value,json_object_new_object());
-	      else
-		json_object_object_add(cc1,"application/json",json_object_new_object());
-	      json_object *cc2=json_object_new_object();
-	      json_object_object_add(cc2,"content",cc1);
-	      json_object_object_add(cc2,"description",json_object_new_string("successful operation"));
-	      if(i==1)
-		json_object_object_add(cc3,"201",cc2);
-	      else
-		json_object_object_add(cc3,"200",cc2);
+	      map* tMap=getMapFromMaps(conf,tmps,"type");
+	      map* pMap=createMap("ok","true");
+	      addResponse(pMap,cc3,vMap,tMap,"200","successful operation");
+	      if(cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
+		addResponse(pmUseContent,cc3,vMap,tMap,"201","successful operation");
 	    }
-	    if(strstr(tmps,"{id}")!=NULL){
-	      vMap=getMapFromMaps(conf,"exception","schema");
-	      json_object *cc=json_object_new_object();
-	      json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
-	      json_object *cc01=json_object_new_array();
-	      json_object_array_add(cc01,cc);
-
-	      json_object *cc0=json_object_new_object();
-	      json_object_object_add(cc0,"schema",cc);
-	      json_object *cc1=json_object_new_object();
-	      map* tmpMap3=getMapFromMaps(conf,"exception","type");
-	      if(tmpMap3!=NULL)
-		json_object_object_add(cc1,tmpMap3->value,cc0);
-	      else
-		json_object_object_add(cc1,"application/json",cc0);
-
-	      json_object *cc2=json_object_new_object();
-	      json_object_object_add(cc2,"content",cc1);
-	      if(strstr(tmps,"{jobID}")==NULL)
-		json_object_object_add(cc2,"description",json_object_new_string("The process with id {id} does not exist."));
-	      else
-		json_object_object_add(cc2,"description",json_object_new_string("The process with id {id} or job with id {jobID} does not exist."));
-	      json_object_object_add(cc3,"404",cc2);
-	      json_object_object_add(cc3,"default",cc2);
+	    vMap=getMapArray(tmpMaps->content,"ecode",i);
+	    if(vMap!=NULL){
+	      char *saveptr0;
+	      char *tmps1 = strtok_r (vMap->value, ",", &saveptr0);
+	      while(tmps1!=NULL){
+		char* tmpStr=(char*)malloc((strlen(tmps1)+24)*sizeof(char));
+		sprintf(tmpStr,"#/components/responses/%s",tmps1);
+		vMap=createMap("ok",tmpStr);
+		map* pMap=createMap("ok","false");
+		//TODO: fix successful operation with correct value
+		addResponse(pMap,cc3,vMap,NULL,tmps1,"successful operation");
+		tmps1 = strtok_r (NULL, ",", &saveptr0);
+	      }
+	    }else{
+	      if(strstr(tmps,"{id}")!=NULL){
+		vMap=getMapFromMaps(conf,"exception","schema");
+		map* tMap=getMapFromMaps(conf,"exception","type");
+		if(vMap!=NULL)
+		  addResponse(pmUseContent,cc3,vMap,tMap,"404",
+			      (strstr(tmps,"{jobID}")==NULL)?"The process with id {id} does not exist.":"The process with id {id} or job with id {jobID} does not exist.");
+	      }
 	    }
 	    json_object_object_add(methodc,"responses",cc3);
 	    vMap=getMapArray(tmpMaps->content,"parameters",i);
@@ -1639,7 +1872,7 @@ extern "C" {
 	      }
 	      json_object_object_add(methodc,"parameters",cc2);
 	    }
-	    if(i==1){
+	    if(i==1 && cMap!=NULL && strncasecmp(cMap->value,"post",4)==0){
 	      maps* tmpMaps1=getMaps(conf,"requestBody");
 	      if(tmpMaps1!=NULL){
 		vMap=getMap(tmpMaps1->content,"schema");
@@ -1662,7 +1895,57 @@ extern "C" {
 		  json_object_object_add(cc2,"required",json_object_new_boolean(true));
 		  json_object_object_add(methodc,"requestBody",cc2);
 
+		}		
+	      }
+	      // TODO: callbacks
+	      tmpMaps1=getMaps(conf,"callbacks");
+	      if(tmpMaps1!=NULL){
+		map* pmTmp2=getMap(tmpMaps1->content,"length");
+		int iLen=atoi(pmTmp2->value);
+		json_object *pajRes=json_object_new_object();
+		for(int i=0;i<iLen;i++){
+		  map* pmState=getMapArray(tmpMaps1->content,"state",i);
+		  map* pmUri=getMapArray(tmpMaps1->content,"uri",i);
+		  map* pmSchema=getMapArray(tmpMaps1->content,"schema",i);
+		  map* pmType=getMapArray(tmpMaps1->content,"type",i);
+		  map* pmTitle=getMapArray(tmpMaps1->content,"title",i);
+		  json_object *pajSchema=json_object_new_object();
+		  if(pmSchema!=NULL)
+		    json_object_object_add(pajSchema,"$ref",json_object_new_string(pmSchema->value));
+		  json_object *pajType=json_object_new_object();
+		  json_object_object_add(pajType,"schema",pajSchema);
+		  json_object *pajContent=json_object_new_object();
+		  if(pmType!=NULL)
+		    json_object_object_add(pajContent,pmType->value,pajType);
+		  else		  
+		    json_object_object_add(pajContent,"application/json",pajType);
+		  json_object *pajRBody=json_object_new_object();
+		  json_object_object_add(pajRBody,"content",pajContent);
+		  
+		  json_object *pajDescription=json_object_new_object();
+		  if(pmTitle!=NULL)
+		    json_object_object_add(pajDescription,"description",json_object_new_string(pmTitle->value));
+		  json_object *pajResponse=json_object_new_object();
+		  json_object_object_add(pajResponse,"200",pajDescription);
+
+		  json_object *pajPost=json_object_new_object();
+		  json_object_object_add(pajPost,"requestBody",pajRBody);
+		  json_object_object_add(pajPost,"responses",pajResponse);
+
+		  json_object *pajMethod=json_object_new_object();
+		  json_object_object_add(pajMethod,"post",pajPost);
+
+		  
+		  char* pacUri=(char*) malloc((strlen(pmUri->value)+29)*sizeof(char));
+		  sprintf(pacUri,"{$request.body#/subscriber/%s}",pmUri->value);
+
+		  json_object *pajFinal=json_object_new_object();
+		  json_object_object_add(pajFinal,pacUri,pajMethod);
+
+		  json_object_object_add(pajRes,pmState->value,pajFinal);
+
 		}
+		json_object_object_add(methodc,"callbacks",pajRes);
 	      }
 	    }
 	    map* mMap=getMapArray(tmpMaps->content,"method",i);

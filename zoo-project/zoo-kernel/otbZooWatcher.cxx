@@ -44,7 +44,10 @@ ZooWatcher
   if (m_Process)
     {
       int progressPercent = static_cast<int>(m_Process->GetProgress() * 100);
-      updateStatus(m_Conf,progressPercent,m_Comment.c_str());
+      if(progressPercent>iCounter){
+	updateStatus(m_Conf,progressPercent,m_Comment.c_str());
+	iCounter=progressPercent;
+      }
     }
 }
 
@@ -55,6 +58,7 @@ ZooWatcher
 #if OTB_VERSION_MAJOR < 6 
   m_TimeProbe.Start();
 #endif
+  iCounter=-1;
 }
 
 void

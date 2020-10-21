@@ -1,7 +1,19 @@
 Version 1.8.0-dev
+  * Update OGC API - Processes documentation
+  * Add open-api directory in utils services containing a reddis
+  subscription example, the HTML UI and the display service using
+  Cheetah templating system
+  * Update the oas.cfg file to reflect new api definition
+  * Include basic microdata in the HTML home page 
+  * Add HTML support for basic interractions with OGC API - Processes
+  including execution of service from the service-desc link
+  * OGC API - Processes added support for syncrhonous Execute requests
+  * Reuse service_callback in OGC API - Processes when subscriber
+  object is provided in the JSON request
+  * OGC API - Processes implementation as available on 2020-10-19
   * Produce value string only when memory=load for Python support.
   * Make local files uris usable when cache is used
-  * Make GDAL/prilfe service usable in case memory=protect 
+  * Make GDAL/profile service usable in case memory=protect 
   * Add Dockerfile and docker-compose environment with pgbouncer, see #177
   * Add documentation on how to use asyncrhonous execution using the Javascript
   ZOO-API

@@ -121,10 +121,14 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   char *ntmp=tmp0->value;
   map* tmp=NULL;
   int res=-1;
+  int saved_stdout = zDup (fileno (stdout));
+  zDup2 (fileno (stderr), fileno (stdout));
   std::vector<std::string> list = ApplicationRegistry::GetAvailableApplications();
   if (list.size() == 0){
     map* tmps=createMap("text","No OTB Application found.");
     addToMap(tmps,"code","InternalError");
+    zDup2 (saved_stdout, fileno (stdout));
+    zClose(saved_stdout);
     printExceptionReportResponse(m,tmps);
     freeMap(&tmps);
     free(tmps);
@@ -141,6 +145,8 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  sprintf(tmpS, "The OTB Application %s cannot be loaded.", (*it).c_str());
 	  map* tmps=createMap("text",tmpS);
 	  addToMap(tmps,"code","InternalError");
+	  zDup2 (saved_stdout, fileno (stdout));
+	  zClose(saved_stdout);
 	  printExceptionReportResponse(m,tmps);
 	  freeMap(&tmps);
 	  free(tmps);
@@ -459,6 +465,8 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  }
 	  catch(std::exception& err){
 	    setMapInMaps(m,"lenv","message",err.what());
+	    zDup2 (saved_stdout, fileno (stdout));
+	    zClose(saved_stdout);
 	    return SERVICE_FAILED;
 	    
 	  }
@@ -478,6 +486,8 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     m_WatcherList[i] = NULL;
   }
   m_WatcherList.clear();
-
+  fflush(stdout);
+  zDup2 (saved_stdout, fileno (stdout));
+  zClose(saved_stdout);
   return res;
 }

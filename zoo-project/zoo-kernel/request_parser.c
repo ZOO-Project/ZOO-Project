@@ -316,7 +316,8 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		    char *tmpx2 = url_decode (tmpv1 + 1);
 		    if (strncasecmp (tmpx2, "http://", 7) != 0 &&
 			strncasecmp (tmpx2, "ftp://", 6) != 0 &&
-			strncasecmp (tmpx2, "https://", 8) != 0)
+			strncasecmp (tmpx2, "https://", 8) != 0 &&
+			strncasecmp (tmpx2, "file://", 7) != 0)
 		      {
 			char emsg[1024];
 			sprintf (emsg,

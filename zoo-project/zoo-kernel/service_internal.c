@@ -411,7 +411,8 @@ char* _getStatus(maps* conf,char* lid){
   }else{
     free(fbkpid);
     char* stat=getStatusId(conf,lid);
-    setMapInMaps(conf,"lenv","lid",stat);
+    if(stat!=NULL)
+      setMapInMaps(conf,"lenv","lid",stat);
     removeShmLock(conf,1);
     return NULL;
   }
@@ -469,6 +470,7 @@ int _updateStatus(maps *conf){
       fprintf(fstatus,"%s|%s",status->value,msg->value);
       fflush(fstatus);
       fclose(fstatus);
+      invokeBasicCallback(conf,SERVICE_STARTED);
     }
     if(stat!=NULL){
       unlockShm(lockid);

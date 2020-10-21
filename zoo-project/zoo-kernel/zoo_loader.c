@@ -104,7 +104,6 @@ int cgiMain(){
        int r=0;
        int len=0;
        while((r=fread(buffer,sizeof(char),1,cgiIn))>0){
-	 fprintf(stderr,"%s",buffer);
 	 buffer[1]=0;
 	 if(res==NULL){
 	   res=(char*)malloc(2*sizeof(char));

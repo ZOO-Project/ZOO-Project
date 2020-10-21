@@ -445,7 +445,7 @@ PyDictObject* PyDict_FromMaps(maps* t){
     }
     Py_DECREF(name);
     tmp=tmp->next;
-  }  
+  }
   return (PyDictObject*) res;
 }
 
@@ -571,7 +571,7 @@ PyDictObject* PyDict_FromMap(map* t){
       }
     }
     else{
-      if(PyDict_GetItem(res,name)==NULL){
+      if(PyDict_GetItem(res,name)==NULL && strlen(tmp->value)>0){
 	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);

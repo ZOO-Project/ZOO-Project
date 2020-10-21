@@ -59,13 +59,16 @@ extern "C" {
   void parseIdentifier(maps*,char*,char*,char*);
   void dumpMapsValuesToFiles(maps**,maps**);
   void runDismiss(maps*,char*);
+  int isRunning(maps*,char*);
   void runGetStatus(maps*,char*,char*);
+  void readFinalRes(maps*,char*,map*);
 
   int isValidLang(maps*,const char*);
   
   char* getLastErrorMessage();
   int readServiceFile (maps *, char *, service **, char *);
   int createRegistry (maps*,registry **,char *);
+  char* produceErrorMessage(maps*);
 
   int zoo_path_compare(char* path1, char* path2);
 

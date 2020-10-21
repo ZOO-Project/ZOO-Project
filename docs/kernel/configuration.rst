@@ -449,7 +449,18 @@ The first section to be found in the ``oas.cfg`` file should be the
  * ``parameters``: the parameters list defined in paths
  * ``header_parameters``: the parameters list client applications can send as header
  * ``version``: the Open API Specification version
-   
+ * ``license_name``: the license name for the service
+ * ``license_url``: the license URL
+ * ``full_html_support``: set it to true to activate support of the
+   Accept header to choose between text/html or application/json
+   format  
+ * ``partial_html_support``: set it to true in case you have the
+   display service from the `open-api directory
+   <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/utils/open-api/cgi-env//cgi-env>`__
+   and you want to aknowledge the text/html format in links
+ * ``wsUrl``: the WebSocket URL to subscribe client to redis
+ * ``publisherUrl``: the URL used to publish status updates
+
 For any links and paths ``/A`` defined, you will have a corresponding
 ``[/A]`` and ``[A]`` sections. In the ``[/A]`` section you will define
 the rel, type and title used from the root URL to produce the `links
@@ -492,6 +503,28 @@ sections that we did not cover yet. Theses sections are:
  * ``[requestBody]``: defining the request body abstract (description), type (application/json) and schema (reference).
  * ``[exception]``: defining the exception bastract (description), type (application/json) and schema (reference).
  * ``[conformTo]``: referring to links list of the requirements classes the server implements and conforms to
+
+
+In case you have set ``partial_html_support`` or
+``partial_html_support`` set to true, then you can add a corresponding
+``[A.html]`` section providing the link informations. Also, it means
+that you are willing to let the client choose in between
+application/json and text/html format by providing the corresponding
+Accept header in its request, when ``full_html_support`` is set to
+true or by using the ``.html`` extension in the URL, in case
+``partial_html_support`` was set true. Also, the user interface
+provided in the `open-api directory
+<http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/utils/open-api/cgi-env//cgi-env>`__ 
+will let the client goes untill the execution of a job. In case you
+want this functionality to be working correctly we invite you to use a
+``.htaccess`` equivalent to the one provided `here
+<http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/utils/open-api/server/.htacess>`__. Also
+the WebSocket can be started using websocketd in combinaison with the
+`subscriber.py
+<http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/utils/open-api/server/subscriber.py>`__
+script, finally you will need to add the `publish.py
+<http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/utils/open-api/server/publish.py>`__
+script in the cgi-bin directory of your web server.
 
 For more information on how to interact with this WPS REST Binding, please refer
 to this `page
