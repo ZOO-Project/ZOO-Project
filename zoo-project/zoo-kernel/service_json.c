@@ -1103,7 +1103,7 @@ extern "C" {
 		  fclose(pfData);
 		  json_object_object_add(res2,"inlineValue",json_object_new_string(base64(pcaTmp,f_status.st_size)));
 		  json_object_object_add(res3,"encoding",json_object_new_string("base64"));
-		  free(pacTmp);
+		  free(pcaTmp);
 		}
 	      }else{
 		json_object_object_add(res3,"encoding",json_object_new_string("utf-8"));
