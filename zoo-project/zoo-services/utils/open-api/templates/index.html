@@ -201,6 +201,12 @@ View default (no title found for $v).
   ELSE
  #end if
 #end if
+#if $obj["maxOccurs"]>1
+	<div class="btn-group" role="group" aria-label="Basic example">
+	  <button type="button" class="btn btn-secondary" onclick="addElementToList(\$(this));">Add</button>
+	  <button type="button" class="btn btn-secondary" onclick="delElementToList(\$(this));">Delete</button>
+	</div>
+#end if
 #end def
 #def printProvider(conf)
 #set provider=$conf["provider"]
@@ -338,6 +344,41 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     </div>
     <script>
       var socket;
+      function addElementToList(){
+        var lClosure=arguments[0];
+        var isOver=false;
+        var cnt=0;
+        lClosure.parent().parent().find("div").each(function(){
+          if(isOver) return;
+          if(\$(this).hasClass("btn-group")) isOver=true;
+          if(\$(this).hasClass("input-group")){
+            lClosure.parent().parent().append(\$(this)[0].outerHTML);
+            cnt++;
+          }
+        });
+        if(lClosure.parent().parent().find(".input-group").length>cnt)
+          lClosure.next().attr("disabled",false);
+        else
+          lClosure.next().attr("disabled",true);
+      }
+      function delElementToList(){
+        var lClosure=arguments[0];
+        var isOver=false;
+        var cnt=0;
+        lClosure.parent().parent().find("div").each(function(){
+          if(isOver) return;
+          if(\$(this).hasClass("btn-group")) isOver=true;
+          if(\$(this).hasClass("input-group")) cnt++;
+        });
+        if(lClosure.parent().parent().find(".input-group").length>cnt)
+        for(var i=0;i<cnt;i++)
+          lClosure.parent().parent().find(".input-group").last().remove();
+        if(lClosure.parent().parent().find(".input-group").length==cnt)
+          lClosure.attr("disabled",true);
+        else
+          lClosure.attr("disabled",false);
+      }
+      
       function loadRequest(){
         var requestObject={
           "inputs":[],
@@ -347,32 +388,34 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
           "response": \$("select[name='main_value_format']").val()
         }
         for(var i=0;i < System["JSON_STR"]["inputs"].length;i++){
-          var cInput={"id": System["JSON_STR"]["inputs"][i]["id"]};
           var cName=System["JSON_STR"]["inputs"][i]["id"].replace(".","_");
           var selector="input[name='input_value_"+cName+"'],"+
                        "select[name='input_value_"+cName+"']";
           if(\$(selector).val()!=""){
-            cInput["input"]={};
-          if(System["JSON_STR"]["inputs"][i]["input"]["formats"]){
-            var selector1="input[name='input_format_"+cName+"'],"+
-              "select[name='input_format_"+cName+"']";
-            cInput["input"]["format"]={
-              "mimeType": \$(selector1).val()
-            };
-            cInput["input"]["value"]={
-              "href": \$(selector).val()
-            };
-          }
-          else{
-            if(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]){
-              console.log(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]);
-              cInput["input"]["dataType"]={
-                "name": System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"][0]["dataType"]["name"]
+            \$(selector).each(function(){
+            var cInput={"id": System["JSON_STR"]["inputs"][i]["id"], "input": {}};
+            if(System["JSON_STR"]["inputs"][i]["input"]["formats"]){
+              var selector1="input[name='input_format_"+cName+"'],"+
+                "select[name='input_format_"+cName+"']";
+              console.log(\$(this).parent().prev().find("select").val());
+              cInput["input"]["format"]={
+                "mimeType": \$(this).parent().prev().find("select").val()
               };
-              cInput["input"]["value"]=\$(selector).val();
+              cInput["input"]["value"]={
+                "href": \$(this).val()
+              };
             }
-            }
+            else{
+              if(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]){
+                console.log(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]);
+                cInput["input"]["dataType"]={
+                  "name": System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"][0]["dataType"]["name"]
+                };
+                cInput["input"]["value"]=\$(this).val();
+              }
+            }console.log(cInput);
             requestObject["inputs"].push(cInput);
+            });
           }
         }
         console.log(System["JSON_STR"]["outputs"]);
@@ -627,9 +670,9 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
                   'select[name="input_value_'+cName+'"]:invalid';
                 if(\$(selector).length>0){
                   \$(selector).each(function(){
-                    \$(this).parent().parent().parent().parent().find(".btn").first().click();
+                    if(!\$(this).parent().parent().parent().hasClass("show"))
+                      \$(this).parent().parent().parent().parent().find(".btn").first().click();
                   });
-                  console.log(System["JSON_STR"]["inputs"][i]["id"]);
                 }
               }              
             }else{
@@ -643,7 +686,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Thu Oct 22 14:21:02 CEST 2020 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Fri Oct 23 18:25:03 CEST 2020 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
