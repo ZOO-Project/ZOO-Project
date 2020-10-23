@@ -610,29 +610,40 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
         for(var i in System){
           System[i]();
         }
-         System["JSON_STR"]=JSON.parse(tmpStr);
-         var forms = document.getElementsByClassName('needs-validation');
-         // Loop over them and prevent submission
-         var validation = Array.prototype.filter.call(forms, function(form) {
-      form.addEventListener('submit', function(event) {
-             event.preventDefault();
-             event.stopPropagation();
-             if (form.checkValidity() === false) {
-               event.preventDefault();
-      event.stopPropagation();
-      alert('ok');
-             }else{
-               loadRequest();
-             }
-             form.classList.add('was-validated');
-           }, false);
-         });
+        System["JSON_STR"]=JSON.parse(tmpStr);
+        var forms = document.getElementsByClassName('needs-validation');
+        // Loop over them and prevent submission
+        var validation = Array.prototype.filter.call(forms, function(form) {
+          form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (form.checkValidity() === false) {
+              event.preventDefault();
+              event.stopPropagation();
+              for(var i=0;i<System["JSON_STR"]["inputs"].length;i++){
+                var cName=System["JSON_STR"]["inputs"][i]["id"].replace(/\./g,"_");
+                var selector=
+                  'input[name="input_value_'+cName+'"]:invalid,'+
+                  'select[name="input_value_'+cName+'"]:invalid';
+                if(\$(selector).length>0){
+                  \$(selector).each(function(){
+                    \$(this).parent().parent().parent().parent().find(".btn").first().click();
+                  });
+                  console.log(System["JSON_STR"]["inputs"][i]["id"]);
+                }
+              }              
+            }else{
+              loadRequest();
+            }
+            form.classList.add('was-validated');
+          }, false);
+        });
       
       }
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Wed Oct 21 17:23:48 CEST 2020 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Thu Oct 22 14:21:02 CEST 2020 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
