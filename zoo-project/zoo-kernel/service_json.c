@@ -1374,6 +1374,7 @@ extern "C" {
       return NULL;
     }
     if (tok->char_offset < slen){
+      fprintf(stderr, "Error parsing json\n");
       return NULL;
     }
     return pajObj;
@@ -1813,6 +1814,8 @@ extern "C" {
 	      json_object *cc=json_object_new_array();
 	      json_object_array_add(cc,json_object_new_string(vMap->value));
 	      json_object_object_add(methodc,"tags",cc);
+	      json_object_object_add(methodc,"operationId",json_object_new_string(vMap->value));
+
 	    }
 	    json_object *responses=json_object_new_object();
 	    json_object *cc3=json_object_new_object();
@@ -1923,14 +1926,17 @@ extern "C" {
 		  json_object_object_add(pajRBody,"content",pajContent);
 		  
 		  json_object *pajDescription=json_object_new_object();
-		  if(pmTitle!=NULL)
+		  json_object *pajPost=json_object_new_object();
+		  if(pmTitle!=NULL){
 		    json_object_object_add(pajDescription,"description",json_object_new_string(pmTitle->value));
+		    json_object_object_add(pajPost,"summary",json_object_new_string(pmTitle->value));
+		  }
 		  json_object *pajResponse=json_object_new_object();
 		  json_object_object_add(pajResponse,"200",pajDescription);
 
-		  json_object *pajPost=json_object_new_object();
 		  json_object_object_add(pajPost,"requestBody",pajRBody);
 		  json_object_object_add(pajPost,"responses",pajResponse);
+		  json_object_object_add(pajPost,"operationId",json_object_new_string(pmState->value));
 
 		  json_object *pajMethod=json_object_new_object();
 		  json_object_object_add(pajMethod,"post",pajPost);
@@ -1941,7 +1947,6 @@ extern "C" {
 
 		  json_object *pajFinal=json_object_new_object();
 		  json_object_object_add(pajFinal,pacUri,pajMethod);
-
 		  json_object_object_add(pajRes,pmState->value,pajFinal);
 
 		}
