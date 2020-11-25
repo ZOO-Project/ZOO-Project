@@ -1,4 +1,6 @@
 Version 1.8.0-dev
+  * Fix issue in kvParseInput when memory!=load and handle session
+  from the OGC API - Processes
   * Update OGC API - Processes documentation
   * Add open-api directory in utils services containing a reddis
   subscription example, the HTML UI and the display service using

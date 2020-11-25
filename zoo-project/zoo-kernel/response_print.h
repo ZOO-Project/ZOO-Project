@@ -196,6 +196,7 @@ extern "C" {
   void addLangAttr(xmlNodePtr,maps*);
 
   void printHeaders(maps*);
+  void printSessionHeaders(maps*);
 
   int zooXmlSearchForNs(const char*);
   int zooXmlAddNs(xmlNodePtr,const char*,const char*);
