@@ -203,6 +203,7 @@ void ensureDecodedBase64(maps **in){
  */
 int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** request_output,HINTERNET* hInternet){
   // Parsing inputs provided as KVP
+  map* memory=getMapFromMaps(*main_conf,"main","memory");
   maps *tmpmaps = *request_output;
   map* r_inputs = getMap (request_inputs, "DataInputs");
   char* cursor_input;
@@ -341,6 +342,10 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		    addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
 		  }
 		tmpc = strtok (NULL, "@");
+	      }
+	    if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
+	      if(getMap(tmpmaps->content,"to_load")==NULL){
+		addToMap(tmpmaps->content,"to_load","false");
 	      }
 	    if (*request_output == NULL)
 	      *request_output = dupMaps (&tmpmaps);

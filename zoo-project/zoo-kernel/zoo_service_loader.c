@@ -1949,7 +1949,7 @@ runRequest (map ** inputs)
       const char* urls[4]={
 	"/","/api","/conformance","/processes"
       };
-      map* tmpUrl=getMapFromMaps(m,"main","serverAddress");
+      map* tmpUrl=getMapFromMaps(m,"openapi","rootUrl");
       for(int kk=0;kk<4;kk++){
 	maps* tmpMaps=getMaps(m,urls[kk]);
 	if(tmpMaps!=NULL){

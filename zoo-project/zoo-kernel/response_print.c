@@ -94,6 +94,71 @@ void printHeaders(maps* m){
       _tmp1=_tmp1->next;
     }
   }
+  printSessionHeaders(m);
+}
+
+/**
+ * Print the Set-Cookie header if necessary (conf["lenv"]["cookie"]) and save 
+ * the session file.
+ * 
+ * The session file (sess_<SESSID>_.cfg where <SESSID> is the cookie value) is
+ * stored in the conf["main"]["tmpPath"] directory.
+ * @param m the main configuration map
+ */
+void printSessionHeaders(maps* m){
+  maps* tmpSess=getMaps(m,"senv");
+  if(tmpSess!=NULL){
+    map *_tmp=getMapFromMaps(m,"lenv","cookie");
+    maps *tmps=getMaps(m,"senv");
+    char* sessId=NULL;
+    if(_tmp!=NULL){
+      printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
+      map *_tmp1=getMapFromMaps(m,"senv","ecookie_length");
+      if(_tmp1!=NULL){
+        int len=atoi(_tmp1->value);
+        int cnt=0;
+        for(cnt=0;cnt<len;cnt++){
+          map* _tmp2=getMapArray(tmps->content,"ecookie",cnt);
+          if(_tmp2!=NULL)
+            printf("Set-Cookie: %s; HttpOnly\r\n",_tmp2->value);
+        }
+      }
+      printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
+      char session_file_path[100];
+      char *tmp1=strtok(_tmp->value,";");
+      if(tmp1!=NULL)
+        sprintf(session_file_path,"%s",strstr(tmp1,"=")+1);
+      else
+        sprintf(session_file_path,"%s",strstr(_tmp->value,"=")+1);
+      sessId=zStrdup(session_file_path);
+    }else{
+      maps* t=getMaps(m,"senv");
+      map*p=t->content;
+      while(p!=NULL){
+        if(strstr(p->name,"ID")!=NULL){
+          sessId=zStrdup(p->value);
+          break;
+        }
+        p=p->next;
+      }
+    }
+    char session_file_path[1024];
+    map *tmpPath=getMapFromMaps(m,"main","sessPath");
+    if(tmpPath==NULL)
+      tmpPath=getMapFromMaps(m,"main","tmpPath");
+    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,sessId);
+    FILE* teste=fopen(session_file_path,"w");
+    if(teste==NULL){
+      char tmpMsg[1024];
+      sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
+      errorException(m,tmpMsg,"InternalError",NULL);
+      return;
+    }
+    else{
+      fclose(teste);
+      dumpMapsToFile(tmpSess,session_file_path,1);
+    }
+  }  
 }
 
 /**
@@ -2664,59 +2729,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     asRaw=1;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
-  maps* tmpSess=getMaps(m,"senv");
-  if(tmpSess!=NULL){
-    map *_tmp=getMapFromMaps(m,"lenv","cookie");
-    maps *tmps=getMaps(m,"senv");
-    char* sessId=NULL;
-    if(_tmp!=NULL){
-      printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
-      map *_tmp1=getMapFromMaps(m,"senv","ecookie_length");
-      if(_tmp1!=NULL){
-	int len=atoi(_tmp1->value);
-	int cnt=0;
-	for(cnt=0;cnt<len;cnt++){
-	  map* _tmp2=getMapArray(tmps->content,"ecookie",cnt);
-	  if(_tmp2!=NULL)
-	    printf("Set-Cookie: %s; HttpOnly\r\n",_tmp2->value);
-	}
-      }
-      printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
-      char session_file_path[100];
-      char *tmp1=strtok(_tmp->value,";");
-      if(tmp1!=NULL)
-	sprintf(session_file_path,"%s",strstr(tmp1,"=")+1);
-      else
-	sprintf(session_file_path,"%s",strstr(_tmp->value,"=")+1);
-      sessId=zStrdup(session_file_path);
-    }else{
-      maps* t=getMaps(m,"senv");
-      map*p=t->content;
-      while(p!=NULL){
-	if(strstr(p->name,"ID")!=NULL){
-	  sessId=zStrdup(p->value);
-	  break;
-	}
-	p=p->next;
-      }
-    }
-    char session_file_path[1024];
-    map *tmpPath=getMapFromMaps(m,"main","sessPath");
-    if(tmpPath==NULL)
-      tmpPath=getMapFromMaps(m,"main","tmpPath");
-    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,sessId);
-    FILE* teste=fopen(session_file_path,"w");
-    if(teste==NULL){
-      char tmpMsg[1024];
-      sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
-      errorException(m,tmpMsg,"InternalError",NULL);
-      return;
-    }
-    else{
-      fclose(teste);
-      dumpMapsToFile(tmpSess,session_file_path,1);
-    }
-  }
+  printSessionHeaders(m);
   if(res==SERVICE_FAILED){
     char* tmp0=produceErrorMessage(m);
     errorException(m,tmp0,"InternalError",NULL);
