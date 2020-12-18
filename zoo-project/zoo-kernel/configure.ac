@@ -541,7 +541,7 @@ AC_SUBST([MS_VERSION])
 # ===========================================================================
 
 AC_ARG_WITH([r], 
-	[AS_HELP_STRING([--with-r=PATH], [To enable python support or Specifies an alternative directory for R installation,  disabled by default])], 
+	[AS_HELP_STRING([--with-r=PATH], [To enable R support or Specifies an alternative directory for R installation,  disabled by default])], 
 	[R_PATH="$withval"; R_ENABLED="-DUSE_R"], [R_ENABLED=""])
 
 if test -z "$R_ENABLED"
@@ -604,6 +604,7 @@ else
 		PYTHONCONFIG="$PYTHON_PATH/bin/python${PYTHON_VERS}-config"
 	fi
 
+	echo $PYTHONCONFIG
 	# Extract the linker and include flags 
 	PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
 	PYTHON_CPPFLAGS=`$PYTHONCONFIG --includes`

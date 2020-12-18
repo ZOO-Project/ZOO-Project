@@ -27,7 +27,7 @@ import zoo
 
 def display(conf,inputs,outputs):
     config = configparser.ConfigParser()
-    config.read(conf["lenv"]["cwd"]+'/oas.cfg')
+    config.read(conf["lenv"]["cwd"]+'/oas.cfg',"utf-8")
     nameSpace = {'conf': conf,'inputs': inputs, 'outputs': outputs,"openapi": config}
     t = Template(file=conf["main"]["templatesPath"]+"/index.html",searchList=nameSpace)
     outputs["Result"]["value"]=t.__str__()

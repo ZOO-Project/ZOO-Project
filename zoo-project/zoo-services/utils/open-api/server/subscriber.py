@@ -10,9 +10,15 @@ import sys
 import threading
 import redis
 import json
+import os
 
 mThreads=[]
-r = redis.Redis(host='localhost', port=6379, db=0)
+r=None
+
+if "ZOO_REDIS_HOST" in os.environ:
+    r = redis.Redis(host=os.environ["ZOO_REDIS_HOST"], port=6379, db=0)
+else:
+    r = redis.Redis(host='redis', port=6379, db=0)
 
 def send(t):
     # send string to web page
@@ -58,5 +64,5 @@ t0 = threading.Thread(target=receive)
 t0.start()
 
 t0.join()
-for i in range(len(mThreads)):
-    mThreads[i].join()
+#for i in range(len(mThreads)):
+#    mThreads[i].join()

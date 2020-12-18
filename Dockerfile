@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 18.04 with updates and external packages
 #
-FROM ubuntu:bionic-20200713 AS base
+FROM ubuntu:bionic-20201119 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -14,11 +14,12 @@ ARG RUN_DEPS=" \
     libmapserver-dev \
     libmozjs185-dev \
     libpq5 \
-    libpython2.7 \
+    libpython3.6 \
     libxslt1.1 \
     gdal-bin \
-    python \
+    python3 \
     r-base \
+    python3-pip\
 "
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
@@ -53,7 +54,7 @@ ARG BUILD_DEPS=" \
     libssl-dev \
     libxml2-dev \
     libxslt1-dev \
-    python-dev \
+    python3-dev \
     uuid-dev \
     r-base-dev \
 "
@@ -67,7 +68,7 @@ RUN set -ex \
     \
     && cd ./zoo-project/zoo-kernel \
     && autoconf \
-    && ./configure --with-python --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-db-backend --prefix=/usr \
+    && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-db-backend --prefix=/usr \
     && make \
     && make install \
     \
@@ -76,6 +77,7 @@ RUN set -ex \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-js/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
+    && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-js/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
@@ -111,7 +113,7 @@ COPY ./zoo-project/zoo-services/utils/status ./zoo-project/zoo-services/utils/st
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
-COPY --from=builder1 /usr/lib/libzoo_service.so.1.5 /usr/lib/libzoo_service.so.1.5
+COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1.8
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
@@ -145,7 +147,7 @@ ARG RUN_DEPS=" \
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
-COPY --from=builder1 /usr/lib/libzoo_service.so.1.5 /usr/lib/libzoo_service.so.1.5
+COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1.8
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
@@ -158,7 +160,9 @@ RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS \
     \
     && rm -rf /var/lib/apt/lists/* \
-    && a2enmod cgi
+    && pip3 install Cheetah3 redis\
+    && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
+    && a2enmod cgi rewrite
 
 EXPOSE 80
 CMD /usr/sbin/apache2ctl -D FOREGROUND

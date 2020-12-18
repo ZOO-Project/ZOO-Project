@@ -107,8 +107,9 @@ function loadRequest(){
     console.log(System["JSON_STR"]["outputs"]);
     for(var i=0;i < System["JSON_STR"]["outputs"].length;i++){
         var cOutput={};
+	console.log($('input[name="oapi_ioAsArray"]').val()=="true");
 	if($('input[name="oapi_ioAsArray"]').val()=="true")
-	    cOutputs={"id": System["JSON_STR"]["outputs"][i]["id"]};
+	    cOutput={"id": System["JSON_STR"]["outputs"][i]["id"]};
         var cName=System["JSON_STR"]["outputs"][i]["id"].replace(/\./g,"_");
         if(System["JSON_STR"]["outputs"][i]["output"]["formats"]){
 	    var selector="select[name='format_"+cName+"']";
