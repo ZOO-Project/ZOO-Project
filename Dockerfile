@@ -162,6 +162,8 @@ RUN set -ex \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install Cheetah3 redis\
     && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
+    && mkdir -p /tmp/statusInfos \
+    && chown www-data:www-data -R /tmp/statusInfos \
     && a2enmod cgi rewrite
 
 EXPOSE 80
