@@ -51,6 +51,7 @@ extern "C" {
   void printExceptionReportResponseJ(maps*,map*);
   void parseJRequest(maps*,service* s,json_object*,map*,maps**,maps**);
   json_object*  printJResult(maps*,service*,maps*,int);
+  json_object* printJobStatus(maps*,char*);
   json_object* printJobList(maps*);
   int createStatusFile(maps*,int);
   json_object* createStatus(maps*,int);

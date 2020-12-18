@@ -1,4 +1,4 @@
-AC_INIT([ZOO Kernel], [1.7.0], [bugs@zoo-project.org])
+AC_INIT([ZOO Kernel], [1.8.0-rc1], [bugs@zoo-project.org])
 
 AC_CONFIG_MACRO_DIR([macros])
 
@@ -1078,7 +1078,7 @@ else
 	fi
 	WX_ISSUE="-D_WX_WXCRTVARARG_H_"
 	SAGA_DEFS="-D_SAGA_LINUX -D_TYPEDEF_BYTE -D_TYPEDEF_WORD -DMODULE_LIBRARY_PATH=\\\"$SAGAPATH/lib/saga\\\""
-	SAGA_CPPFLAGS="-DSAGA_VERSION=${SAGAVERS} -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
+	SAGA_CPPFLAGS="-DSAGA_VERSION=${SAGAVERS} -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ -I$SAGAPATH/include/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
 	SAGA_LDFLAGS="-fPIC `$WXCFG --unicode=yes --static=no --libs` -lsaga_api"
 	SAGA_ENABLED="-DUSE_SAGA"
 	SAGA_FILE="service_internal_saga.o"

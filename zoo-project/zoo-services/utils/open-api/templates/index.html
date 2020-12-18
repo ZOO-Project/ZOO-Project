@@ -268,54 +268,59 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     #if "inputs" in $values
 #set $cid="JOBSOCKET-"+$conf["lenv"]["usid"]
 	<form class="needs-validation" data-id="$cid" novalidate>
-    <h3>Inputs</h3>
-    <div class="accordion" id="accordionInputExample">
-      #for i in range(len(values["inputs"]))
-      #set cInput=$values["inputs"][$i]
-      #set cName=$cInput["id"].replace(".","_")
-      $printCard({"id": $cName, "title": $cInput["id"],"content":'<p>'+$cInput["description"]+'</p>'+$printInputContent($cInput)})
-      #end for    
-    </div>
+	  <input type="hidden" name="oapi_ioAsArray" value="#if "io_as_array" in $openapi["openapi"]#$openapi["openapi"]["io_as_array"]#else#false#end if#" />
+	  <input type="hidden" name="oapi_wsUrl" value="$openapi["openapi"]["wsurl"]" />
+	  <input type="hidden" name="oapi_jobUrl" value="$openapi["openapi"]["rootUrl"]$(currentUrl)/jobs" />
+	  <input type="hidden" name="oapi_reqID" value="$cid" />
+	  <h3>Inputs</h3>
+	  <div class="accordion" id="accordionInputExample">
+	    #for i in range(len(values["inputs"]))
+	    #set cInput=$values["inputs"][$i]
+	    #set cName=$cInput["id"].replace(".","_")
+	    $printCard({"id": $cName, "title": $cInput["id"],"content":'<p>'+$cInput["description"]+'</p>'+$printInputContent($cInput)})
+	    #end for    
+	  </div>
       
-    <h3>Outputs</h3>
-    <div class="accordion" id="accordionOutputExample">
-      #for i in range(len(values["outputs"]))
-      #set cOutput=$values["outputs"][$i]
-      #set cName=$cOutput["id"].replace(".","_")
-      #set cFormats=[]
-      #if "formats" in $cOutput["output"]
-      #for j in range(len($cOutput["output"]["formats"]))
-      #set cFormats+=[$cOutput["output"]["formats"][$j]["mimeType"]]
-      #end for
-      #end if
-      #set cTransmissions=[]
-      #for j in range(len($values["outputTransmission"]))
-      #set cTransmissions+=[$values["outputTransmission"][$j]]
-      #end for
-      #set cContent="<p>"+$cOutput["description"]+"</p>"
-      #if len(cFormats)>0
-      #set $cContent+=$printControl({"id": $cOutput["id"], "title": "format","type": "format","name": $cName,"options":$cFormats})
-      #end if
-      #if len(cTransmissions)>0
-      #set $cContent+=$printControl({"id": $cOutput["id"], "title": "transmission","type": "transmission","name": $cName,"options":$cTransmissions})
-      #end if
-      $printCard({"id": $cName+"_"+str($i),"title": $cOutput["id"],"content": $cContent})
-      #end for
-    </div>
+	  <h3>Outputs</h3>
+	  <div class="accordion" id="accordionOutputExample">
+	    #for i in range(len(values["outputs"]))
+	    #set cOutput=$values["outputs"][$i]
+	    #set cName=$cOutput["id"].replace(".","_")
+	    #set cFormats=[]
+	    #if "formats" in $cOutput["output"]
+	    #for j in range(len($cOutput["output"]["formats"]))
+	    #set cFormats+=[$cOutput["output"]["formats"][$j]["mimeType"]]
+	    #end for
+	    #end if
+	    #set cTransmissions=[]
+	    #for j in range(len($values["outputTransmission"]))
+	    #set cTransmissions+=[$values["outputTransmission"][$j]]
+	    #end for
+	    #set cContent="<p>"+$cOutput["description"]+"</p>"
+	    #if len(cFormats)>0
+	    #set $cContent+=$printControl({"id": $cOutput["id"], "title": "format","type": "format","name": $cName,"options":$cFormats})
+	    #end if
+	    #if len(cTransmissions)>0
+	    #set $cContent+=$printControl({"id": $cOutput["id"], "title": "transmission","type": "transmission","name": $cName,"options":$cTransmissions})
+	    #end if
+	    $printCard({"id": $cName+"_"+str($i),"title": $cOutput["id"],"content": $cContent})
+	    #end for
+	  </div>
     
-    <h3>Execution options</h3>
-    <div class="accordion" id="accordionExampleExecutionMode">
-      #set cContent=""
-      #set cUrl=$openapi["openapi"]["publisherurl"]+cid+"&type="
-      #for a in ["successUri","inProgressUri","failedUri"]
-      #set $cContent+=$printControl({"title": $a,"type": "main_value","name": $a,"ph":"URL","value":$cUrl+$a.replace("Uri","")})
-      #end for
-      $printCard({"id":"ModeOne","title":"Subscribers","content": $cContent})
-      $printCard({"id":"ModeTwo","title":"Response","content": $printControl({"title":"format","type": "main_value","name": "format","options":["document","raw"]})})
-      $printCard({"id":"ModeThree","title":"Mode","content": $printControl({"title":"mode","type": "main_value","name": "mode","options":["async","sync"]})})
-    </div>
-    <button type="submit" class="btn btn-primary" >Submit</button>
-    </form>
+	  <h3>Execution options</h3>
+	  <div class="accordion" id="accordionExampleExecutionMode">
+	    #set cContent=""
+	    #set cUrl=$openapi["openapi"]["publisherurl"]+cid+"&type="
+	    #for a in ["successUri","inProgressUri","failedUri"]
+	    #set $cContent+=$printControl({"title": $a,"type": "main_value","name": $a,"ph":"URL","value":$cUrl+$a.replace("Uri","")})
+	    #end for
+	    $printCard({"id":"ModeOne","title":"Subscribers","content": $cContent})
+	    $printCard({"id":"ModeTwo","title":"Response","content": $printControl({"title":"format","type": "main_value","name": "format","options":["document","raw"]})})
+	    $printCard({"id":"ModeThree","title":"Mode","content": $printControl({"title":"mode","type": "main_value","name": "mode","options":["async","sync"]})})
+	  </div>
+	  
+	  <button type="submit" class="btn btn-primary" >Submit</button>
+	</form>
     <div class="modal" tabindex="-1" id="exampleModal">
       <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -342,174 +347,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	</div>
       </div>
     </div>
-    <script>
-      var socket;
-      function addElementToList(){
-        var lClosure=arguments[0];
-        var isOver=false;
-        var cnt=0;
-        lClosure.parent().parent().find("div").each(function(){
-          if(isOver) return;
-          if(\$(this).hasClass("btn-group")) isOver=true;
-          if(\$(this).hasClass("input-group")){
-            lClosure.parent().parent().append(\$(this)[0].outerHTML);
-            cnt++;
-          }
-        });
-        if(lClosure.parent().parent().find(".input-group").length>cnt)
-          lClosure.next().attr("disabled",false);
-        else
-          lClosure.next().attr("disabled",true);
-      }
-      function delElementToList(){
-        var lClosure=arguments[0];
-        var isOver=false;
-        var cnt=0;
-        lClosure.parent().parent().find("div").each(function(){
-          if(isOver) return;
-          if(\$(this).hasClass("btn-group")) isOver=true;
-          if(\$(this).hasClass("input-group")) cnt++;
-        });
-        if(lClosure.parent().parent().find(".input-group").length>cnt)
-        for(var i=0;i<cnt;i++)
-          lClosure.parent().parent().find(".input-group").last().remove();
-        if(lClosure.parent().parent().find(".input-group").length==cnt)
-          lClosure.attr("disabled",true);
-        else
-          lClosure.attr("disabled",false);
-      }
-      
-      function loadRequest(){
-        var requestObject={
-          "inputs":[],
-          "outputs":[],
-          "subscriber":{},
-          "mode": \$("select[name='main_value_mode']").val(),
-          "response": \$("select[name='main_value_format']").val()
-        }
-        for(var i=0;i < System["JSON_STR"]["inputs"].length;i++){
-          var cName=System["JSON_STR"]["inputs"][i]["id"].replace(".","_");
-          var selector="input[name='input_value_"+cName+"'],"+
-                       "select[name='input_value_"+cName+"']";
-          if(\$(selector).val()!=""){
-            \$(selector).each(function(){
-            var cInput={"id": System["JSON_STR"]["inputs"][i]["id"], "input": {}};
-            if(System["JSON_STR"]["inputs"][i]["input"]["formats"]){
-              var selector1="input[name='input_format_"+cName+"'],"+
-                "select[name='input_format_"+cName+"']";
-              console.log(\$(this).parent().prev().find("select").val());
-              cInput["input"]["format"]={
-                "mimeType": \$(this).parent().prev().find("select").val()
-              };
-              cInput["input"]["value"]={
-                "href": \$(this).val()
-              };
-            }
-            else{
-              if(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]){
-                console.log(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]);
-                cInput["input"]["dataType"]={
-                  "name": System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"][0]["dataType"]["name"]
-                };
-                cInput["input"]["value"]=\$(this).val();
-              }
-            }console.log(cInput);
-            requestObject["inputs"].push(cInput);
-            });
-          }
-        }
-        console.log(System["JSON_STR"]["outputs"]);
-        for(var i=0;i < System["JSON_STR"]["outputs"].length;i++){
-          var cOutput={"id": System["JSON_STR"]["outputs"][i]["id"]};
-          var cName=System["JSON_STR"]["outputs"][i]["id"].replace(/\./g,"_");
-          if(System["JSON_STR"]["outputs"][i]["output"]["formats"]){
-            var selector="select[name='format_"+cName+"']";
-            cOutput["format"]={
-              "mimeType": \$(selector).val()
-            };
-          }
-          else{
-            if(System["JSON_STR"]["outputs"][i]["output"]["literalDataDomains"]){
-              cOutput["dataType"]={
-                "name": System["JSON_STR"]["outputs"][i]["output"]["literalDataDomains"][0]["dataType"]["name"]
-              };
-            }
-          }
-          var selector1="select[name='transmission_"+cName+"']";
-          cOutput["transmissionMode"]=\$(selector1).val();
-          requestObject["outputs"].push(cOutput);
-        }
-        if(\$("input[name='main_value_successUri']").val()!="")
-          requestObject["subscriber"]["successUri"]=\$("input[name='main_value_successUri']").val();
-        if(\$("input[name='main_value_inProgressUri']").val()!="")
-          requestObject["subscriber"]["inProgressUri"]=\$("input[name='main_value_inProgressUri']").val();
-        if(\$("input[name='main_value_failedUri']").val()!="")
-          requestObject["subscriber"]["failedUri"]=\$("input[name='main_value_failedUri']").val();
-        \$(".modal").find("textarea").first().val(js_beautify(JSON.stringify(requestObject)));
-        \$("#exampleModal").modal('toggle');
-        \$('#result').html("");
-        \$("#exampleModal").find(".btn-primary").off('click');
-        \$("#exampleModal").find(".btn-primary").click(function(){
-          \$('#result').html("");
-          if(!socket && requestObject["mode"]!="sync")
-            socket = new WebSocket("$openapi["openapi"]["wsurl"]");
-          else
-              \$.ajax({
-                contentType: "application/json",
-                data: \$("textarea").val(),
-                type: "POST",
-                url: "$openapi["openapi"]["rootUrl"]$(currentUrl)/jobs",
-                success: function (msg) {
-                  console.log(msg);
-                  var cObj=msg;
-                  \$('#result').html(js_beautify(JSON.stringify(msg["outputs"])));
-                },
-                error: function(){
-                  console.log(arguments);
-                },
-              });
-          if(requestObject["mode"]=="sync"){
-           return;
-          }
-          socket.onopen = function () {
-            console.log('Connected!');
-            socket.send("SUB $cid");
-          };
-          socket.onmessage = function(event) {
-            console.log('MESSAGE: ' + event.data);
-            if(event.data=="1")
-              \$.ajax({
-                contentType: "application/json",
-                data: \$("textarea").val(),
-                type: "POST",
-                url: "$openapi["openapi"]["rootUrl"]$(currentUrl)/jobs",
-                success: function (msg) {
-                  console.log(msg);
-                },
-                error: function(){
-                  console.log(arguments);
-                },
-              });
-            else{
-              //progressBar
-              \$("#progress_details").show();
-              var cObj=JSON.parse(event.data);
-              if(cObj["jobID"]){
-                \$("#prgress_description").html(cObj["jobID"]+": "+cObj["message"]);
-                \$(".progress-bar").attr("aria-valuenow",cObj["progress"]);
-                \$(".progress-bar").css("width",cObj["progress"]+"%");
-              }else{
-                \$("#progress_details").hide();
-                if(cObj["outputs"])
-                  \$('#result').html(js_beautify(JSON.stringify(cObj["outputs"])));
-                else
-                  \$('#result').html(cObj["message"]);
-              }
-            }
-          };
-        });
-      }
-    </script>
+    <script src="$openapi["openapi"]["rootUrl"]/../static/openapi.js"></script>
     #end if
     
     #try
@@ -686,7 +524,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Fri Oct 23 18:25:03 CEST 2020 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Wed Dec 16 16:06:56 CET 2020 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  

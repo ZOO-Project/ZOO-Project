@@ -418,7 +418,7 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
 	     zcfg);
   
   map* errormap = createMap("text", tmp01);
-  map* tmpMap=getMapFromMaps(m,"lenv","executionType");
+  map* tmpMap=getMapFromMaps(m,"main","executionType");
   char* errorCode=(char*)code;
   if(tmpMap!=NULL && strncasecmp(tmpMap->value,"json",4)==0)
     errorCode="NoSuchProcess";
@@ -1887,13 +1887,13 @@ runRequest (map ** inputs)
   maps *request_output_real_format = NULL;
   maps *request_input_real_format = NULL;
 
-  setMapInMaps(m,"lenv","executionType","xml");
+  setMapInMaps(m,"main","executionType","xml");
   if((strlen(cgiQueryString)>0 && cgiQueryString[0]=='/') /*&& strstr(cgiAccept,"json")!=NULL*/){
     //
-    // OGC API - Processing starts here
+    // OGC API - Processes starts here
     //
 #ifndef USE_JSON
-    errorException (m, _("OGC API - Processing is not supported by this ZOO-Kernel."), "InternalError", NULL);
+    errorException (m, _("OGC API - Processes is not supported by this ZOO-Kernel, please contact the service provider."), "InternalError", NULL);
     return 1;
 #else
 #ifndef USE_GDB
@@ -1907,6 +1907,7 @@ runRequest (map ** inputs)
     signal (SIGFPE, json_sig_handler);
     signal (SIGABRT, json_sig_handler);
 #endif
+    setMapInMaps(m,"main","executionType","json");
     r_inputs = getMapOrFill (&request_inputs, "metapath", "");
     char conf_file1[10240];
     maps* m1 = (maps *) malloc (MAPS_SIZE);
@@ -1919,9 +1920,7 @@ runRequest (map ** inputs)
 	return 1;
       }
     addMapsToMaps(&m,m1);
-    setMapInMaps(m,"lenv","executionType","json");
     map* pmTmp0=getMapFromMaps(m,"openapi","full_html_support");
-    dumpMap(pmTmp0);
     if(strstr(cgiQueryString,".html")==NULL && strstr(cgiAccept,"text/html")!=NULL && pmTmp0!=NULL && strncasecmp(pmTmp0->value,"true",4)==0){
       map* pmTmpUrl=getMapFromMaps(m,"openapi","rootUrl");
       char* pacTmpUrl=NULL;
@@ -2304,30 +2303,7 @@ runRequest (map ** inputs)
 		  }
 		}else{
 		  char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
-		  runGetStatus(m,jobId,"GetStatus");
-		  map* pmError=getMapFromMaps(m,"lenv","error");
-		  if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-		    printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
-		    return 1;
-		  }else{
-		    map* pmStatus=getMapFromMaps(m,"lenv","status");
-		    setMapInMaps(m,"lenv","gs_location","false");
-		    setMapInMaps(m,"lenv","gs_usid",jobId);
-		    if(pmStatus!=NULL && strncasecmp(pmStatus->value,"Failed",6)==0)
-		      res=createStatus(m,SERVICE_FAILED);
-		    else
-		      if(pmStatus!=NULL  && strncasecmp(pmStatus->value,"Succeeded",9)==0)
-			res=createStatus(m,SERVICE_SUCCEEDED);
-		      else
-			if(pmStatus!=NULL  && strncasecmp(pmStatus->value,"Running",7)==0){
-			  map* tmpMap=getMapFromMaps(m,"lenv","Message");
-			  if(tmpMap!=NULL)
-			    setMapInMaps(m,"lenv","gs_message",tmpMap->value);
-			  res=createStatus(m,SERVICE_STARTED);
-			}
-			else
-			  res=createStatus(m,SERVICE_FAILED);
-		  }
+		  res=printJobStatus(m,jobId);
 		  free(jobId);
 		}
 	      }
@@ -2529,7 +2505,9 @@ runRequest (map ** inputs)
 
 		    map* testMap=getMapFromMaps(m,"main","memory");
 		    loadHttpRequests(m,request_input_real_format);
-		    dumpMaps(request_input_real_format);
+
+		    if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
+		      return -1;
 		    loadServiceAndRun (&m, s1, request_inputs,
 				       &request_input_real_format,
 				       &request_output_real_format, &eres);
@@ -2547,6 +2525,8 @@ runRequest (map ** inputs)
 		  }
 	      }else{
 		loadHttpRequests(m,request_input_real_format);
+		if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
+		  return -1;
 		loadServiceAndRun (&m,s1,request_inputs,
 				   &request_input_real_format,
 				   &request_output_real_format,&eres);
@@ -2559,7 +2539,8 @@ runRequest (map ** inputs)
 	  }
 	}
     }
-    if(res!=NULL){
+    map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
+    if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
       if(getMapFromMaps(m,"lenv","no-headers")==NULL){
 	printHeaders(m);
 	printf("Status: 200 OK \r\n\r\n");
@@ -2572,10 +2553,10 @@ runRequest (map ** inputs)
     //return 1;
 #endif
   }else{
-
     //
     // WPS 1.0.0 and 2.0.0 starts here
     //
+    setMapInMaps(m,"main","executionType","xml");
     //Check for minimum inputs
     map* version=getMap(request_inputs,"version");
     if(version==NULL)
@@ -3434,9 +3415,13 @@ runRequest (map ** inputs)
   signal (SIGFPE, donothing);
   signal (SIGABRT, donothing);
 #endif
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
 
   if (((int) zGetpid ()) != cpid || cgiSid != NULL)
     {
+    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
       if (eres == SERVICE_SUCCEEDED)
 #ifdef USE_CALLBACK
 	invokeCallback(m,NULL,request_output_real_format,5,1);
@@ -3494,7 +3479,7 @@ runRequest (map ** inputs)
       free (fbkp1);
       if(cgiSid!=NULL)
 	free(cgiSid);
-      map* tMap=getMapFromMaps(m,"lenv","executionType");
+      map* tMap=getMapFromMaps(m,"main","executionType");
       if(tMap!=NULL && strncasecmp(tMap->value,"xml",3)==0)
 	InternetCloseHandle (&hInternet);
       fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
@@ -3523,6 +3508,7 @@ runRequest (map ** inputs)
 
   free (REQUEST);
   free (SERVICE_URL);
+
 #ifdef DEBUG
   fprintf (stderr, "Processed response \n");
   fflush (stdout);

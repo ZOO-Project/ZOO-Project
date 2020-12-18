@@ -27,6 +27,31 @@ Python
 
 You'll find here information needed to deploy your own Python Services Provider.
 
+ZOO-API
+*******
+
+From your python module where you define your services, you can access
+the ZOO-API by importing the ``zoo`` module. No need to install
+anything here, the module will be automatically created from the
+ZOO-Kernel code at runtime.
+
+The following attributes are available from the ZOO-API :
+
+SERVICE_SUCCEEDED
+    Value to return in case your service end successfully.
+SERVICE_FAILED
+    Value to retrun in case of failure.
+    
+
+The following functions are defined in the ZOO-API:
+
+_(strToTranslate)
+    return the translated string (using the "zoo-service" `textdomain
+    <http://www.gnu.org/software/libc/manual/html_node/Locating-gettext-catalog.html#index-textdomain>`__)
+
+update_status(dictConf,iPourcent)
+    update the status of the running service
+
 Python ZCFG requirements
 ************************
 
@@ -101,7 +126,7 @@ The inputs are somethings like this ::
 
   {
   'variable_name': {'minOccurs': '1',
-		    'DataType': 'string',
+		    'dataType': 'string',
 		    'value': 'this_is_the_value',
 		    'maxOccurs': '1',
 		    'inRequest': 'true'
@@ -117,7 +142,7 @@ Outputs
 The outputs data as a structure really similar to the inputs one ::
 
   {
-  'result': {'DataType': 'string',
+  'result': {'dataType': 'string',
 	     'inRequest': 'true',
 	    }
   }
@@ -156,7 +181,7 @@ ZOO-API
 *******
 
 The ZOO-API for the PHP language is automatically available from your
-service code. Tthe following functions are defined in the ZOO-API:
+service code. The following functions are defined in the ZOO-API:
 
 int zoo_SERVICE_SUCCEEDED()
     return the value of SERVICE_SUCCEEDED

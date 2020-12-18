@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2015 GeoLabs SARL
+ * Copyright (c) 2009-2020 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,42 +40,43 @@
 #endif
 
 #include "mimetypes.h"
+#include "service_json.h"
 
 /**
  * Add prefix to the service name.
  * 
- * @param conf the conf maps containing the main.cfg settings
- * @param level the map containing the level information
- * @param serv the service structure created from the zcfg file
+ * @param pmsConf the conf maps containing the main.cfg settings
+ * @param pmLevel the map containing the level information
+ * @param psService the service structure created from the zcfg file
  */
-void addPrefix(maps* conf,map* level,service* serv){
-  if(level!=NULL){
-    char key[25];
-    char* prefix=NULL;
-    int clevel=atoi(level->value);
-    int cl=0;
-    for(cl=0;cl<clevel;cl++){
-      sprintf(key,"sprefix_%d",cl);
-      map* tmp2=getMapFromMaps(conf,"lenv",key);
+void addPrefix(maps* pmsConf,map* pmLevel,service* psService){
+  if(pmLevel!=NULL){
+    char acKey[25];
+    char* pcaPrefix=NULL;
+    int iClevel=atoi(pmLevel->value);
+    int iCl=0;
+    for(iCl=0;iCl<iClevel;iCl++){
+      sprintf(acKey,"sprefix_%d",iCl);
+      map* tmp2=getMapFromMaps(pmsConf,"lenv",acKey);
       if(tmp2!=NULL){
-	if(prefix==NULL)
-	  prefix=zStrdup(tmp2->value);
+	if(pcaPrefix==NULL)
+	  pcaPrefix=zStrdup(tmp2->value);
 	else{
-	  int plen=strlen(prefix);
-	  prefix=(char*)realloc(prefix,(plen+strlen(tmp2->value)+2)*sizeof(char));
-	  memcpy(prefix+plen,tmp2->value,strlen(tmp2->value)*sizeof(char));
-	  prefix[plen+strlen(tmp2->value)]=0;
+	  int plen=strlen(pcaPrefix);
+	  pcaPrefix=(char*)realloc(pcaPrefix,(plen+strlen(tmp2->value)+2)*sizeof(char));
+	  memcpy(pcaPrefix+plen,tmp2->value,strlen(tmp2->value)*sizeof(char));
+	  pcaPrefix[plen+strlen(tmp2->value)]=0;
 	}
       }
     }
-    if(prefix!=NULL){
-      char* tmp0=zStrdup(serv->name);
-      free(serv->name);
-      serv->name=(char*)malloc((strlen(prefix)+strlen(tmp0)+1)*sizeof(char));
-      sprintf(serv->name,"%s%s",prefix,tmp0);
-      free(tmp0);
-      free(prefix);
-      prefix=NULL;
+    if(pcaPrefix!=NULL){
+      char* pcaTmp=zStrdup(psService->name);
+      free(psService->name);
+      psService->name=(char*)malloc((strlen(pcaPrefix)+strlen(pcaTmp)+1)*sizeof(char));
+      sprintf(psService->name,"%s%s",pcaPrefix,pcaTmp);
+      free(pcaTmp);
+      free(pcaPrefix);
+      pcaPrefix=NULL;
     }
   }
 }
@@ -83,18 +84,18 @@ void addPrefix(maps* conf,map* level,service* serv){
 /**
  * Print the HTTP headers based on a map.
  * 
- * @param m the map containing the headers information
+ * @param pmsConf the map containing the headers information
  */
-void printHeaders(maps* m){
-  maps *_tmp=getMaps(m,"headers");
-  if(_tmp!=NULL){
-    map* _tmp1=_tmp->content;
-    while(_tmp1!=NULL){
-      printf("%s: %s\r\n",_tmp1->name,_tmp1->value);
-      _tmp1=_tmp1->next;
+void printHeaders(maps* pmsConf){
+  maps *pmsTmp=getMaps(pmsConf,"headers");
+  if(pmsTmp!=NULL){
+    map* pmTmp=pmsTmp->content;
+    while(pmTmp!=NULL){
+      printf("%s: %s\r\n",pmTmp->name,pmTmp->value);
+      pmTmp=pmTmp->next;
     }
   }
-  printSessionHeaders(m);
+  printSessionHeaders(pmsConf);
 }
 
 /**
@@ -103,36 +104,35 @@ void printHeaders(maps* m){
  * 
  * The session file (sess_<SESSID>_.cfg where <SESSID> is the cookie value) is
  * stored in the conf["main"]["tmpPath"] directory.
- * @param m the main configuration map
+ * @param pmsConf the main configuration map
  */
-void printSessionHeaders(maps* m){
-  maps* tmpSess=getMaps(m,"senv");
-  if(tmpSess!=NULL){
-    map *_tmp=getMapFromMaps(m,"lenv","cookie");
-    maps *tmps=getMaps(m,"senv");
+void printSessionHeaders(maps* pmsConf){
+  maps* pmsSess=getMaps(pmsConf,"senv");
+  if(pmsSess!=NULL){
+    map *pmTmp=getMapFromMaps(pmsConf,"lenv","cookie");
     char* sessId=NULL;
-    if(_tmp!=NULL){
-      printf("Set-Cookie: %s; HttpOnly\r\n",_tmp->value);
-      map *_tmp1=getMapFromMaps(m,"senv","ecookie_length");
-      if(_tmp1!=NULL){
-        int len=atoi(_tmp1->value);
+    if(pmTmp!=NULL){
+      printf("Set-Cookie: %s; HttpOnly\r\n",pmTmp->value);
+      map *pmTmp1=getMapFromMaps(pmsConf,"senv","ecookie_length");
+      if(pmTmp1!=NULL){
+        int len=atoi(pmTmp1->value);
         int cnt=0;
         for(cnt=0;cnt<len;cnt++){
-          map* _tmp2=getMapArray(tmps->content,"ecookie",cnt);
-          if(_tmp2!=NULL)
-            printf("Set-Cookie: %s; HttpOnly\r\n",_tmp2->value);
+          map* pmTmp2=getMapArray(pmsSess->content,"ecookie",cnt);
+          if(pmTmp2!=NULL)
+            printf("Set-Cookie: %s; HttpOnly\r\n",pmTmp2->value);
         }
       }
       printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
       char session_file_path[100];
-      char *tmp1=strtok(_tmp->value,";");
+      char *tmp1=strtok(pmTmp->value,";");
       if(tmp1!=NULL)
         sprintf(session_file_path,"%s",strstr(tmp1,"=")+1);
       else
-        sprintf(session_file_path,"%s",strstr(_tmp->value,"=")+1);
+        sprintf(session_file_path,"%s",strstr(pmTmp->value,"=")+1);
       sessId=zStrdup(session_file_path);
     }else{
-      maps* t=getMaps(m,"senv");
+      maps* t=getMaps(pmsConf,"senv");
       map*p=t->content;
       while(p!=NULL){
         if(strstr(p->name,"ID")!=NULL){
@@ -143,20 +143,20 @@ void printSessionHeaders(maps* m){
       }
     }
     char session_file_path[1024];
-    map *tmpPath=getMapFromMaps(m,"main","sessPath");
+    map *tmpPath=getMapFromMaps(pmsConf,"main","sessPath");
     if(tmpPath==NULL)
-      tmpPath=getMapFromMaps(m,"main","tmpPath");
+      tmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
     sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,sessId);
     FILE* teste=fopen(session_file_path,"w");
     if(teste==NULL){
       char tmpMsg[1024];
       sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
-      errorException(m,tmpMsg,"InternalError",NULL);
+      errorException(pmsConf,tmpMsg,"InternalError",NULL);
       return;
     }
     else{
       fclose(teste);
-      dumpMapsToFile(tmpSess,session_file_path,1);
+      dumpMapsToFile(pmsSess,session_file_path,1);
     }
   }  
 }
@@ -2095,7 +2095,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	  if(tmp0!=NULL && strncmp(tmp0->value,"true",4)==0){		  
 	    if(vid==0)
 	      printIOType(doc,nc,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
-	    else
+	    else 
 	      printIOType(doc,n,ns,ns_ows,ns_xlink,scursor,mcursor,"Output",vid);
 	  }	
       }else
@@ -2534,6 +2534,32 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map
 }
 
 /**
+ * Produce the status string used in HTTP headers.
+ * 
+ * @param pmConf the maps containing the settings of the main.cfg file
+ * @param pmCode the map containing the error code (or a map array of the same keys)
+ */
+const char* produceStatusString(maps* pmConf,map* pmCode){
+  if(pmCode!=NULL){
+    int iI=0;
+    for(iI=0;iI<3;iI++){
+      int iJ=0;
+      for(iJ=0;;iJ++){
+	if(aapccStatusCodes[iI][iJ]==NULL)
+	  break;
+	else{
+	  if(strcmp(aapccStatusCodes[iI][iJ],pmCode->value)==0)
+	    return aapccStatusCodes[iI][0];
+	}
+      }
+    }
+  }
+  else{
+    return aapccStatusCodes[3][0];
+  }
+}
+
+/**
  * Print an OWS ExceptionReport Document and HTTP headers (when required) 
  * depending on the code.
  * Set hasPrinted value to true in the [lenv] section.
@@ -2541,9 +2567,7 @@ void printDescription(xmlNodePtr root,xmlNsPtr ns_ows,const char* identifier,map
  * @param m the maps containing the settings of the main.cfg file
  * @param s the map containing the text,code,locator keys (or a map array of the same keys)
  */
-void printExceptionReportResponse(maps* m,map* s){
-  if(getMapFromMaps(m,"lenv","hasPrinted")!=NULL)
-    return;
+void _printExceptionReportResponse(maps* m,map* s){
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
@@ -2556,22 +2580,7 @@ void printExceptionReportResponse(maps* m,map* s){
   const char *exceptionCode;
   
   map* tmp=getMap(s,"code");
-  if(tmp!=NULL){
-    if(strcmp(tmp->value,"OperationNotSupported")==0 ||
-       strcmp(tmp->value,"NoApplicableCode")==0)
-      exceptionCode="501 Not Implemented";
-    else
-      if(strcmp(tmp->value,"MissingParameterValue")==0 ||
-	 strcmp(tmp->value,"InvalidUpdateSequence")==0 ||
-	 strcmp(tmp->value,"OptionNotSupported")==0 ||
-	 strcmp(tmp->value,"VersionNegotiationFailed")==0 ||
-	 strcmp(tmp->value,"InvalidParameterValue")==0)
-	exceptionCode="400 Bad request";
-      else
-	exceptionCode="501 Internal Server Error";
-  }
-  else
-    exceptionCode="501 Internal Server Error";
+  exceptionCode=produceStatusString(m,tmp);
   tmp=getMapFromMaps(m,"lenv","status_code");
   if(tmp!=NULL)
     exceptionCode=tmp->value;
@@ -2600,7 +2609,24 @@ void printExceptionReportResponse(maps* m,map* s){
   xmlCleanupParser();
   zooXmlCleanupNs();
   if(m!=NULL)
-    setMapInMaps(m,"lenv","hasPrinted","true");
+    setMapInMaps(m,"lenv","hasPrinted","true");  
+}
+
+/**
+ * Print an OWS ExceptionReport or exception.yaml Document and HTTP headers
+ * (when required) depending on the code.
+ * 
+ * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param psService the service
+ */
+void printExceptionReportResponse(maps* pmsConf,map* psService){
+  if(getMapFromMaps(pmsConf,"lenv","hasPrinted")!=NULL)
+    return;
+  map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
+  if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
+    _printExceptionReportResponse(pmsConf,psService);
+  else
+    printExceptionReportResponseJ(pmsConf,psService);
 }
 
 /**
@@ -2693,16 +2719,121 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
  */
 int errorException(maps *m, const char *message, const char *errorcode, const char *locator) 
 {
+  map* pmExectionType=getMapFromMaps(m,"main","executionType");
   map* errormap = createMap("text", message);
   addToMap(errormap,"code", errorcode);
   if(locator!=NULL)
     addToMap(errormap,"locator", locator);
   else
     addToMap(errormap,"locator", "NULL");
-  printExceptionReportResponse(m,errormap);
+  if(pmExectionType!=NULL && strncasecmp(pmExectionType->value,"xml",3)==0)
+    printExceptionReportResponse(m,errormap);
+  else{
+    printExceptionReportResponseJ(m,errormap);
+    setMapInMaps(m,"lenv","no-headers","true");
+  }
   freeMap(&errormap);
   free(errormap);
   return -1;
+}
+
+/**
+ * Produce a copy file and the corresponding url in case it is required
+ * Please, free the returned ressource while used
+ *
+ * @param pmConf maps* pointing to the main configuration file
+ */
+char* produceFileUrl(service* psService,maps* pmsConf,maps* pmsOutputs,const char* pccFormat, int itn){
+  // Create file for reference data if not existing
+  map *pmGFile=getMap(pmsOutputs->content,"generated_file");
+  map *pmTmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
+  map *pmTmpUrl=getMapFromMaps(pmsConf,"main","tmpUrl");
+  char *pcaFileName=NULL;
+  char *pcaFilePath=NULL;
+  char *pcaFileUrl=NULL;
+  if(pmGFile!=NULL){
+    pmGFile=getMap(pmsOutputs->content,"expected_generated_file");
+    if(pmGFile==NULL){
+      pmGFile=getMap(pmsOutputs->content,"generated_file");
+    }
+    if(strstr(pmGFile->value,pmTmpPath->value)!=NULL)
+      pcaFileName=zStrdup(strstr(pmGFile->value,pmTmpPath->value)+strlen(pmTmpPath->value));
+  }
+  // Create file for reference data
+  map *pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
+  map *pmExt=getMap(pmsOutputs->content,"extension");
+  if(pmGFile==NULL){
+    char acFileExt[32];	    
+    if( pmExt != NULL && pmExt->value != NULL) {
+      strncpy(acFileExt, pmExt->value, 32);
+    }
+    else {
+      // Obtain default file extension (see mimetypes.h).	      
+      // If the MIME type is not recognized, txt is used as the default extension
+      map* pmType=getMap(pmsOutputs->content,"mimeType");
+      getFileExtension(pmType != NULL ? pmType->value : NULL, acFileExt, 32);
+    }
+    if(pcaFileName!=NULL)
+      free(pcaFileName);
+	      
+    pcaFileName=(char*)malloc((strlen(psService->name)+strlen(pmUsid->value)+strlen(acFileExt)+strlen(pmsOutputs->name)+45)*sizeof(char));
+    sprintf(pcaFileName,"ZOO_DATA_%s_%s_%s_%d.%s",psService->name,pmsOutputs->name,pmUsid->value,itn,acFileExt);
+
+    pcaFilePath=(char*)malloc((strlen(pmTmpPath->value)+strlen(pcaFileName)+2)*sizeof(char));
+    sprintf(pcaFilePath,"%s/%s",pmTmpPath->value,pcaFileName);
+  }else{
+    pcaFilePath=(char*)malloc((strlen(pmGFile->value)+1)*sizeof(char));
+    sprintf(pcaFilePath,"%s",pmGFile->value);
+  }
+  
+  pcaFileUrl=(char*)malloc((strlen(pmTmpUrl->value)+
+			  strlen(pcaFileName)+2)*sizeof(char));
+  sprintf(pcaFileUrl,"%s/%s",pmTmpUrl->value,pcaFileName);
+
+  if(pmGFile==NULL) {
+    FILE *pfOfile=fopen(pcaFilePath,"wb");
+    if(pfOfile==NULL){
+      char acTmpMsg[1024];
+      sprintf(acTmpMsg,
+	      _("Unable to create the file \"%s\" for storing the %s final result."),
+	      pcaFileName,pmsOutputs->name);
+      map* pmError=createMap("code","InternalError");
+      addToMap(pmError,"message",acTmpMsg);
+      printExceptionReportResponseJ(pmsConf,pmError);
+      free(pcaFileName);
+      free(pcaFilePath);
+      return NULL;
+    }
+
+    map* pmValue=getMap(pmsOutputs->content,"value");
+    if(pmValue==NULL){
+      char acTmpMsg[1024];
+      sprintf(acTmpMsg,
+	      _("No value found for the requested output %s."),
+	      pmsOutputs->name);
+      map* pmError=createMap("code","InternalError");
+      addToMap(pmError,"message",acTmpMsg);
+      printExceptionReportResponseJ(pmsConf,pmError);
+      fclose(pfOfile);
+      free(pcaFileName);
+      free(pcaFilePath);
+      return NULL;
+    }
+    if(pccFormat==NULL || strcasecmp(pccFormat,"BoundingBoxData")!=0){
+      map* size=getMap(pmsOutputs->content,"size");
+      if(size!=NULL && pmValue!=NULL)
+	fwrite(pmValue->value,1,(atoi(size->value))*sizeof(char),pfOfile);
+      else
+	if(pmValue!=NULL && pmValue->value!=NULL)
+	  fwrite(pmValue->value,1,
+		 strlen(pmValue->value)*sizeof(char),pfOfile);
+    }else
+      printBoundingBoxDocument(pmsConf,pmsOutputs,pfOfile);
+    fclose(pfOfile);
+  }
+  free(pcaFileName);
+  free(pcaFilePath);
+  return pcaFileUrl;
 }
 
 /**
@@ -2723,9 +2854,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   dumpMaps(request_outputs);
   fprintf(stderr,"printProcessResponse\n");
 #endif  
-  map* toto=getMap(request_inputs1,"RawDataOutput");
+  map* pmRawData=getMap(request_inputs1,"RawDataOutput");
   int asRaw=0;
-  if(toto!=NULL)
+  if(pmRawData!=NULL)
     asRaw=1;
   map* version=getMapFromMaps(m,"main","rversion");
   int vid=getVersionId(version->value);
@@ -2775,7 +2906,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #ifdef USE_MS
       map* testMap=getMap(tmpI->content,"useMapserver");	
 #endif
-      map *gfile=getMap(tmpI->content,"generated_file");
+      /*map *gfile=getMap(tmpI->content,"generated_file");
       char *file_name=NULL;	  
       if(gfile!=NULL){
 	gfile=getMap(tmpI->content,"expected_generated_file");
@@ -2784,16 +2915,17 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	}
 	readGeneratedFile(m,tmpI->content,gfile->value);
 	file_name=zStrdup((gfile->value)+strlen(tmp1->value));
-      }	  
-      toto=getMap(tmpI->content,"asReference");
+	}*/
+      char *pcaFileUrl=NULL;
+      pmRawData=getMap(tmpI->content,"asReference");
 #ifdef USE_MS
       map* geodatatype=getMap(tmpI->content,"geodatatype");
-      if(toto!=NULL && strcasecmp(toto->value,"true")==0 &&
+      if(pmRawData!=NULL && strcasecmp(pmRawData->value,"true")==0 &&
 	 (testMap==NULL ||
 	  strncasecmp(testMap->value,"true",4)!=0 ||
 	  (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0) ) ) 
 #else
-	if(toto!=NULL && strcasecmp(toto->value,"true")==0)
+	if(pmRawData!=NULL && strcasecmp(pmRawData->value,"true")==0)
 #endif
 	  {		
 	    elements* in=getElements(s->outputs,tmpI->name);
@@ -2810,79 +2942,12 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      addToMap(tmpI->content,"mimeType","text/xml");
 	      addToMap(tmpI->content,"encoding","UTF-8");
 	      addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
-	    }		
-	    char *file_path=NULL;
-	    if(gfile==NULL) {
-	      map *ext=getMap(tmpI->content,"extension");
-	      char file_ext[32];
-	    
-	      if( ext != NULL && ext->value != NULL) {
-		strncpy(file_ext, ext->value, 32);
-	      }
-	      else {
-		// Obtain default file extension (see mimetypes.h).	      
-		// If the MIME type is not recognized, txt is used as the default extension
-		map* mtype=getMap(tmpI->content,"mimeType");
-		getFileExtension(mtype != NULL ? mtype->value : NULL, file_ext, 32);
-	      }
-	      if(file_name!=NULL)
-		free(file_name);
-	      file_name=(char*)malloc((strlen(s->name)+strlen(usid->value)+strlen(file_ext)+strlen(tmpI->name)+45)*sizeof(char));
-	      sprintf(file_name,"ZOO_DATA_%s_%s_%s_%d.%s",s->name,tmpI->name,usid->value,itn,file_ext);
-	      itn++;
-	      file_path=(char*)malloc((strlen(tmp1->value)+strlen(file_name)+2)*sizeof(char));
-	      sprintf(file_path,"%s/%s",tmp1->value,file_name);
-
-	      FILE *ofile=fopen(file_path,"wb");
-	      if(ofile==NULL){
-		char tmpMsg[1024];
-		sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the %s final result."),file_name,tmpI->name);
-		errorException(m,tmpMsg,"InternalError",NULL);
-		free(file_name);
-		free(file_path);
-		return;
-	      }
-
-	      toto=getMap(tmpI->content,"value");
-	      if(toto==NULL){
-		char tmpMsg[1024];
-		sprintf(tmpMsg,_("No value found for the requested output %s."),tmpI->name);
-		errorException(m,tmpMsg,"InternalError",NULL);
-		fclose(ofile);
-		free(file_name);
-		free(file_path);
-		return;
-	      }
-	      if(strcasecmp(format,"BoundingBoxData")!=0){
-		map* size=getMap(tmpI->content,"size");
-		if(size!=NULL && toto!=NULL)
-		  fwrite(toto->value,1,(atoi(size->value))*sizeof(char),ofile);
-		else
-		  if(toto!=NULL && toto->value!=NULL)
-		    fwrite(toto->value,1,strlen(toto->value)*sizeof(char),ofile);
-	      }else{
-		printBoundingBoxDocument(m,tmpI,ofile);
-	      }
-	      fclose(ofile);
 	    }
-
-	    map *tmp2=getMapFromMaps(m,"main","tmpUrl");
-	    map *tmp3=getMapFromMaps(m,"main","serverAddress");
-	    char *file_url=NULL;
-	    if(strncasecmp(tmp2->value,"http://",7)==0 ||
-	       strncasecmp(tmp2->value,"https://",8)==0){
-	      file_url=(char*)malloc((strlen(tmp2->value)+strlen(file_name)+2)*sizeof(char));
-	      sprintf(file_url,"%s/%s",tmp2->value,file_name);
-	    }else{
-	      file_url=(char*)malloc((strlen(tmp3->value)+strlen(tmp2->value)+strlen(file_name)+3)*sizeof(char));
-	      sprintf(file_url,"%s/%s/%s",tmp3->value,tmp2->value,file_name);
-	    }
-	    addToMap(tmpI->content,"Reference",file_url);
-	    if(file_name!=NULL)
-	      free(file_name);
-	    if(file_url!=NULL)
-	      free(file_url);
-	    file_name=NULL;
+	    pcaFileUrl=produceFileUrl(s,m,tmpI,format,itn);
+	    itn++;
+	    if(pcaFileUrl==NULL)
+	      return;
+	    addToMap(tmpI->content,"Reference",pcaFileUrl);
 	  }
 #ifdef USE_MS
 	else{
@@ -2900,9 +2965,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	  }
 	}
 #endif	
-      if(file_name!=NULL){
-	free(file_name);
-	file_name=NULL;
+      if(pcaFileUrl!=NULL){
+	free(pcaFileUrl);
+	pcaFileUrl=NULL;
       }
       tmpI=tmpI->next;
     }
@@ -2946,57 +3011,65 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     if(e!=NULL && strcasecmp(e->format,"BoundingBoxData")==0){
       printBoundingBoxDocument(m,tmpI,NULL);
     }else{
-      map *gfile=getMap(tmpI->content,"generated_file");
-      if(gfile!=NULL){
-	gfile=getMap(tmpI->content,"expected_generated_file");	
-	if(gfile==NULL){
-	  gfile=getMap(tmpI->content,"generated_file");
-	}
-	readGeneratedFile(m,tmpI->content,gfile->value);
-      }
-      toto=getMap(tmpI->content,"value");	 
-      if(toto==NULL){
-	char tmpMsg[1024];
-	sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),tmpI->name);
-	errorException(m,tmpMsg,"InvalidParameterValue","RawDataOutput");
-	return;
-      }	  
-      map* fname=getMapFromMaps(tmpI,tmpI->name,"filename");	  	  
-      if(fname!=NULL)
-	printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
-      map* rs=getMapFromMaps(tmpI,tmpI->name,"size");
-      if(rs!=NULL)
-	printf("Content-Length: %s\r\n",rs->value);
-      printHeaders(m);
-      char mime[1024];
-      map* mi=getMap(tmpI->content,"mimeType");
-#ifdef DEBUG
-      fprintf(stderr,"SERVICE OUTPUTS\n");
-      dumpMaps(request_outputs);
-      fprintf(stderr,"SERVICE OUTPUTS\n");
-#endif
-      map* en=getMap(tmpI->content,"encoding");
-      if(mi!=NULL && en!=NULL)
-	sprintf(mime,
-		"Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
-		mi->value,en->value);
-      else
-	if(mi!=NULL)
-	  sprintf(mime,
-		  "Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
-		  mi->value);
-	else
-	  sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-      printf("%s",mime);
-      if(rs!=NULL)
-	fwrite(toto->value,1,atoi(rs->value),stdout);
-      else
-	fwrite(toto->value,1,strlen(toto->value),stdout);
-#ifdef DEBUG
-      dumpMap(toto);
-#endif
+      printRawdataOutput(m,tmpI);
     }
   }
+}
+
+/**
+ * Print one outputs as raw
+ * 
+ * @param conf the main configuration maps
+ * @param outputs the output to be print as raw
+ */
+void* printRawdataOutput(maps* conf,maps* outputs){
+  map *gfile=getMap(outputs->content,"generated_file");
+  if(gfile!=NULL){
+    gfile=getMap(outputs->content,"expected_generated_file");
+    if(gfile==NULL){
+      gfile=getMap(outputs->content,"generated_file");
+    }
+    readGeneratedFile(conf,outputs->content,gfile->value);
+  }
+  map* toto=getMap(outputs->content,"value");
+  if(toto==NULL){
+    char tmpMsg[1024];
+    sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
+    map* pmExecutionType=getMapFromMaps(conf,"main","executionType");
+    if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
+      errorException(conf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+    else{
+      setMapInMaps(conf,"lenv","error","true");
+      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
+      setMapInMaps(conf,"lenv","message",tmpMsg);
+    }
+    return NULL;
+  }
+  map* fname=getMapFromMaps(outputs,outputs->name,"filename");	  	  
+  if(fname!=NULL)
+    printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+  map* rs=getMapFromMaps(outputs,outputs->name,"size");
+  if(rs!=NULL)
+    printf("Content-Length: %s\r\n",rs->value);
+  char mime[1024];
+  map* mi=getMap(outputs->content,"mimeType");
+  map* en=getMap(outputs->content,"encoding");
+  if(mi!=NULL && en!=NULL)
+    sprintf(mime,
+	    "Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
+	    mi->value,en->value);
+  else
+    if(mi!=NULL)
+      sprintf(mime,
+	      "Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
+	      mi->value);
+    else
+      sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+  printf("%s",mime);
+  if(rs!=NULL)
+    fwrite(toto->value,1,atoi(rs->value),stdout);
+  else
+    fwrite(toto->value,1,strlen(toto->value),stdout);	
 }
 
 /**

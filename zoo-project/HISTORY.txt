@@ -1,4 +1,10 @@
 Version 1.8.0-dev
+  * Support raw response in OGC API - Processes
+  * Add a ZOO-API section to the howtos documentation
+  * OGC API - Processes support:
+  https://github.com/gfenoy/wps-rest-binding/tree/change-request/95
+  * Support two inputs/outputs syntaxes discussed (using json object
+  or array of json object) for ZOO-Kernel and the HTML client
   * Fix issue in kvParseInput when memory!=load and handle session
   from the OGC API - Processes
   * Update OGC API - Processes documentation

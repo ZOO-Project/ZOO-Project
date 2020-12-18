@@ -467,7 +467,7 @@ PyDictObject* PyDict_FromMap(map* t){
   map* tmap=getMapType(tmp);
   while(tmp!=NULL){
     PyObject* name=PyString_FromString(tmp->name);
-    if(strcasecmp(tmp->name,"value")==0 && strlen(tmp->value)>0) {
+    if(strcasecmp(tmp->name,"value")==0) {
       if(isArray!=NULL){
 	map* len=getMap(tmp,"length");
 	int cnt=atoi(len->value);
@@ -491,8 +491,11 @@ PyDictObject* PyDict_FromMap(map* t){
 	    if(sMap==NULL || uMap!=NULL){
 	      lvalue=PyString_FromString(vMap->value);
 	    }
-	    else{    
-	      lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
+	    else{
+	      if(strlen(vMap->value)>0)
+		lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
+	      else
+		lvalue=Py_None;
 	    }
 	    if(sMap!=NULL){
 	      lsvalue=PyString_FromString(sMap->value);
@@ -552,7 +555,11 @@ PyDictObject* PyDict_FromMap(map* t){
 	  }
       }
       else if(size!=NULL && useFile==NULL){
-	PyObject* value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
+	PyObject* value;
+	if(strlen(tmp->value)>0)
+	  value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
+	else
+	  value=Py_None;
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);
 	  fprintf(stderr,"Unable to set key value pair...");
@@ -571,7 +578,7 @@ PyDictObject* PyDict_FromMap(map* t){
       }
     }
     else{
-      if(PyDict_GetItem(res,name)==NULL && strlen(tmp->value)>0){
+      if(PyDict_GetItem(res,name)==NULL){
 	PyObject* value=PyString_FromString(tmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);

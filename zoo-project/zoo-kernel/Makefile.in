@@ -3,7 +3,7 @@ include ZOOMakefile.opts
 all: version.h zoo_loader.cgi ${YAML_FILE1}
 
 version.h: Makefile
-	echo "#define ZOO_VERSION \"1.7.0 `svnversion`\"" > version.h
+	echo "#define ZOO_VERSION \"1.8.0-rc1 `svnversion`\"" > version.h
 	echo "@ETC_DEF@" >> version.h
 	echo "#define LOCALEDIR \"@localedir@\"" >>  version.h
 
@@ -56,7 +56,7 @@ caching.o: caching.c
 	g++ -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c caching.c
 
 response_print.o: response_print.c response_print.h
-	g++ -fPIC ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} ${HPC_ENABLED} -c response_print.c
+	g++ -fPIC ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} ${HPC_ENABLED} -c response_print.c
 
 server_internal.o: server_internal.c server_internal.h service.h mimetypes.h
 	g++ ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
