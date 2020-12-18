@@ -8,8 +8,24 @@ services:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
       - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
+      - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/usr/lib/cgi-bin/subscriber.py
+      - ./docker/.htaccess:/var/www/html/.htaccess
+      - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
+      - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
     depends_on:
       - pgbouncer
+    environment:
+      - ZOO_REDIS_HOST=redis
+  websocketd:
+    build: ./docker/websocketd
+    ports:
+      - 8888:8888
+    environment:
+      - ZOO_REDIS_HOST=redis
+    volumes:
+      - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/shell.py
+    command: ["--port=8888", "/shell.py"]
   pg:
     image: postgres:9.6.18-alpine
     restart: always
@@ -32,4 +48,5 @@ services:
       - "5432:5432"
     depends_on:
       - pg
-
+  redis:
+    image: redis:6.0.9
