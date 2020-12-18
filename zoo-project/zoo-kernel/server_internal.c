@@ -376,22 +376,19 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   int s=zStat(filename, &f_status);
   sprintf(rsize,"%lld",f_status.st_size);
   if(getMap(content,"storage")==NULL){
-    map* memUse=getMapFromMaps(m,"main","memory");
-    if(memUse==NULL || strncmp(memUse->value,"load",4)==0){
-      map* tmpMap1=getMap(content,"value");
-      if(tmpMap1==NULL){
-	addToMap(content,"value","");
-	tmpMap1=getMap(content,"value");
-      }
-      free(tmpMap1->value);
-      tmpMap1->value=(char*) malloc((f_status.st_size+1)*sizeof(char));
-      if(tmpMap1->value==NULL){
-	setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
-	return;
-      }
-      fread(&tmpMap1->value,1,f_status.st_size,file);
-      tmpMap1->value[f_status.st_size]=0;
+    map* tmpMap1=getMap(content,"value");
+    if(tmpMap1==NULL){
+      addToMap(content,"value","");
+      tmpMap1=getMap(content,"value");
     }
+    free(tmpMap1->value);
+    tmpMap1->value=(char*) malloc((f_status.st_size+1)*sizeof(char));
+    if(tmpMap1->value==NULL){
+      setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
+      return;
+    }
+    fread(tmpMap1->value,1,f_status.st_size,file);
+    tmpMap1->value[f_status.st_size]=0;
   }
   fclose(file);
   if(content!=NULL)
@@ -993,7 +990,7 @@ int isRunning(maps* conf,char* pid){
  */
 void runGetStatus(maps* conf,char* pid,char* req){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  map* e_type = getMapFromMaps (conf, "lenv", "executionType");
+  map* e_type = getMapFromMaps (conf, "main", "executionType");
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
@@ -1100,7 +1097,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
  */
 void runDismiss(maps* conf,char* pid){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  map* e_type = getMapFromMaps (conf, "lenv", "executionType");
+  map* e_type = getMapFromMaps (conf, "main", "executionType");
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)

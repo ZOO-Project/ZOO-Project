@@ -193,6 +193,38 @@ extern "C" {
     }
   };
 
+
+  static const char* const aapccStatusCodes[][8] = {
+    {
+      "500 Not Implemented",
+      "OperationNotSupported",
+      "NoApplicableCode",
+      NULL
+    },
+    {
+      "400 Bad request",
+      "MissingParameterValue"
+      "InvalidParameterValue",
+      "InvalidUpdateSequence",
+      "OptionNotSupported",
+      "VersionNegotiationFailed",
+      "NoSuchMode",
+      NULL
+    },
+    {
+      "404 Not Found",
+      "NotFound",
+      "NoSuchProcess",
+      "NoSuchJob",
+      "ResultNotReady",
+      NULL
+    },
+    {
+      "500 Not Implemented",
+      NULL
+    }
+  };
+  
   void addLangAttr(xmlNodePtr,maps*);
 
   void printHeaders(maps*);
@@ -204,7 +236,8 @@ extern "C" {
 
   int zooXmlAddDoc(xmlNodePtr,const char*,const char*);
   void zooXmlCleanupDocs();
-  
+
+  const char* produceStatusString(maps*,map*);
   void printExceptionReportResponse(maps*,map*);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
@@ -216,6 +249,7 @@ extern "C" {
   void printDocument(maps*,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
+  void* printRawdataOutput(maps*,maps*);
   map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
   void printBoundingBoxDocument(maps*,maps*,FILE*);
@@ -224,6 +258,7 @@ extern "C" {
   void addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
   void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
 
+  char* produceFileUrl(service*,maps*,maps*,const char*, int);
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
   int errorException(maps *, const char *, const char *, const char*);

@@ -38,13 +38,13 @@
  *
  * See https://dxr.mozilla.org/mozilla-central/source/media/mtransport/third_party/nrappkit/src/util/util.c
  */
-int snprintf(char *buffer, size_t n, const char *format, ...)
+int snprintf(char *pcBuffer, size_t n, const char *pccFormat, ...)
 {
   va_list argp;
   int ret;
-  va_start(argp, format);
-  ret = _vscprintf(format, argp);
-  vsnprintf_s(buffer, n, _TRUNCATE, format, argp);
+  va_start(argp, pccFormat);
+  ret = _vscprintf(pccFormat, argp);
+  vsnprintf_s(pcBuffer, n, _TRUNCATE, pccFormat, argp);
   va_end(argp);
   return ret;
 }
@@ -53,11 +53,11 @@ int snprintf(char *buffer, size_t n, const char *format, ...)
 /**
  * Dump a map on stderr
  *
- * @param t the map to dump
+ * @param pmMap the map to dump
  */
-void _dumpMap(map* t){
-  if(t!=NULL){
-    fprintf(stderr,"%s: %s\n",t->name,t->value);
+void _dumpMap(map* pmMap){
+  if(pmMap!=NULL){
+    fprintf(stderr,"%s: %s\n",pmMap->name,pmMap->value);
     fflush(stderr);
   }else{
     fprintf(stderr,"NULL\n");
@@ -68,86 +68,87 @@ void _dumpMap(map* t){
 /**
  * Dump a map on stderr, see _dumpMap()
  *
- * @param t the map to dump
+ * @param pmMap the map to dump
  */
-void dumpMap(map* t){
-  map* tmp=t;
-  while(tmp!=NULL){
-    _dumpMap(tmp);
-    tmp=tmp->next;
+void dumpMap(map* pmMap){
+  map* pmTmp=pmMap;
+  while(pmTmp!=NULL){
+    _dumpMap(pmTmp);
+    pmTmp=pmTmp->next;
   }
 }
 
 /**
  * Dump a map to a file 
  *
- * @param t the map to dump to file
- * @param file the file pointer to store the map
+ * @param pmMap the map to dump to file
+ * @param pfFile the file pointer to store the map
  */
-void dumpMapToFile(map* t,FILE* file){
-  map* tmp=t;
-  while(tmp!=NULL){
-    fprintf(file,"%s = %s\n",tmp->name,tmp->value);
-    tmp=tmp->next;
+void dumpMapToFile(map* pmMap,FILE* pfFile){
+  map* pmTmp=pmMap;
+  while(pmTmp!=NULL){
+    fprintf(pfFile,"%s = %s\n",pmTmp->name,pmTmp->value);
+    pmTmp=pmTmp->next;
   }
 }
 
 /**
  * Dump a maps on stderr, see dumpMap().
  *
- * @param m the map to dump
+ * @param pmMap the map to dump
  */
-void dumpMaps(maps* m){
-  maps* tmp=m;
-  while(tmp!=NULL){
-    fprintf(stderr,"MAP => [%s] \n",tmp->name);
-    fprintf(stderr," * CONTENT [%s] \n",tmp->name);
-    dumpMap(tmp->content);
-    if(tmp->child!=NULL){
-      fprintf(stderr," * CHILD [%s] \n",tmp->name);
-      dumpMaps(tmp->child);
-      fprintf(stderr," * /CHILD [%s] \n",tmp->name);
+void dumpMaps(maps* pmMap){
+  maps* pmTmp=pmMap;
+  while(pmTmp!=NULL){
+    fprintf(stderr,"MAP => [%s] \n",pmTmp->name);
+    fprintf(stderr," * CONTENT [%s] \n",pmTmp->name);
+    dumpMap(pmTmp->content);
+    if(pmTmp->child!=NULL){
+      fprintf(stderr," * CHILD [%s] \n",pmTmp->name);
+      dumpMaps(pmTmp->child);
+      fprintf(stderr," * /CHILD [%s] \n",pmTmp->name);
     }
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
 }
 
 /**
  * Dump a maps to a file, see dumpMapToFile().
  *
- * @param m the map to dump
- * @param file the the file pointer to store the map
+ * @param pmsMaps the map to dump
+ * @param psFile the the file pointer to store the map
+ * @param iLimit the number of maps to print (0 for no limit)
  */
-void _dumpMapsToFile(maps* m,FILE* file,int limit){
-  maps* tmp=m;
+void _dumpMapsToFile(maps* pmsMaps,FILE* psFile,int iLimit){
+  maps* tmp=pmsMaps;
   int cnt=0;
   while(tmp!=NULL){
-    fprintf(file,"[%s]\n",tmp->name);
+    fprintf(psFile,"[%s]\n",tmp->name);
     if(tmp->child!=NULL){
-      _dumpMapsToFile(tmp->child,file,limit);
+      _dumpMapsToFile(tmp->child,psFile,iLimit);
     }else
-      dumpMapToFile(tmp->content,file);
-    fflush(file);
+      dumpMapToFile(tmp->content,psFile);
+    fflush(psFile);
     tmp=tmp->next;
     cnt++;
-    if(limit>=0 && cnt==limit)
+    if(iLimit>=0 && cnt==iLimit)
       tmp=NULL;
   }
-  fflush(file);
+  fflush(psFile);
 }
 
 /**
  * Dump a maps to a file, see _dumpMapsToFile().
  *
- * @param m the map to dump
- * @param file_path the full path to the file name to store the map
- * @param limit the number limiting the maps to be dumped
+ * @param pmsMaps the map to dump
+ * @param pcaFilePath the the file pointer to store the map
+ * @param iLimit the number of maps to print (0 for no limit)
  */
-void dumpMapsToFile(maps* m,char* file_path,int limit){
-  FILE* file=fopen(file_path,"w+");
-  _dumpMapsToFile(m,file,limit);
-  fflush(file);
-  fclose(file);
+void dumpMapsToFile(maps* pmsMaps,char* pcaFilePath,int iLimit){
+  FILE* psFile=fopen(pcaFilePath,"w+");
+  _dumpMapsToFile(pmsMaps,psFile,iLimit);
+  fflush(psFile);
+  fclose(psFile);
 }
 
 /**
@@ -156,54 +157,54 @@ void dumpMapsToFile(maps* m,char* file_path,int limit){
  * @return a pointer to the allocated iotype 
  */
 iotype* createIoType(){
-  iotype* io=(iotype*)malloc(IOTYPE_SIZE);
-  io->content=NULL;
-  io->next=NULL;
-  return io;
+  iotype* pioIO=(iotype*)malloc(IOTYPE_SIZE);
+  pioIO->content=NULL;
+  pioIO->next=NULL;
+  return pioIO;
 }
 
 /**
  * Create a new map
  *
- * @param name the key to add to the map
- * @param value the corresponding value to add to the map
+ * @param pccName the key to add to the map
+ * @param pccValue the corresponding value to add to the map
  * @return a pointer to the allocated map 
  */
-map* createMap(const char* name,const char* value){
-  map* tmp=(map *)malloc(MAP_SIZE);
-  tmp->name=zStrdup(name);
-  tmp->value=zStrdup(value);
-  tmp->next=NULL;
-  return tmp;
+map* createMap(const char* pccName,const char* pccValue){
+  map* pmTtmp=(map *)malloc(MAP_SIZE);
+  pmTtmp->name=zStrdup(pccName);
+  pmTtmp->value=zStrdup(pccValue);
+  pmTtmp->next=NULL;
+  return pmTtmp;
 }
 
 /**
  * Create a new maps with the given name
  *
- * @param name of the maps
+ * @param pccName of the maps
  * @return the allocated map
  */
-maps* createMaps(const char* name){
-  maps* tmp = (maps *) malloc (MAPS_SIZE);
-  tmp->name = zStrdup (name);
-  tmp->content = NULL;
-  tmp->child = NULL;
-  tmp->next = NULL;
-  return tmp;
+maps* createMaps(const char* pccName){
+  maps* pmTmp = (maps *) malloc (MAPS_SIZE);
+  pmTmp->name = zStrdup (pccName);
+  pmTmp->content = NULL;
+  pmTmp->child = NULL;
+  pmTmp->next = NULL;
+  return pmTmp;
 }
 
 /**
  * Count number of map in a map
  *
- * @param m the map to count
+ * @param pmMap the map to count
  * @return number of map in a map
  */
-int count(map* m){
-  map* tmp=m;
+int count(map* pmMap){
+  map* pmTmp=pmMap;
   int c=0;
-  while(tmp!=NULL){
+  while(pmTmp!=NULL){
     c++;
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
   return c;
 }
@@ -211,15 +212,15 @@ int count(map* m){
 /**
  * Count number of maps in a maps
  *
- * @param m the maps to count
+ * @param pmMap the maps to count
  * @return number of maps in a maps
  */
-int maps_length(maps* m){
-  maps* tmp=m;
+int maps_length(maps* pmMap){
+  maps* pmTmp=pmMap;
   int c=0;
-  while(tmp!=NULL){
+  while(pmTmp!=NULL){
     c++;
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
   return c;
 }
@@ -227,16 +228,16 @@ int maps_length(maps* m){
 /**
  * Verify if a key exist in a map
  *
- * @param m the map to search for the key
- * @param key the key to search in the map
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
  * @return true if the key wwas found, false in other case
  */
-bool hasKey(map* m,const char *key){
-  map* tmp=m;
-  while(tmp!=NULL){
-    if(strcasecmp(tmp->name,key)==0)
+bool hasKey(map* pmMap,const char *pccKey){
+  map* pmTmp=pmMap;
+  while(pmTmp!=NULL){
+    if(strcasecmp(pmTmp->name,pccKey)==0)
       return true;
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
 #ifdef DEBUG_MAP
   fprintf(stderr,"NOT FOUND \n");
@@ -247,17 +248,17 @@ bool hasKey(map* m,const char *key){
 /**
  * Access a specific maps
  *
- * @param m the maps to search for the key
- * @param key the key to search in the maps
+ * @param pmMap the maps to search for the key
+ * @param pccKey the key to search in the maps
  * @return a pointer on the maps found or NULL if not found
  */
-maps* getMaps(maps* m,const char *key){
-  maps* tmp=m;
-  while(tmp!=NULL){
-    if(strcasecmp(tmp->name,key)==0){
-      return tmp;
+maps* getMaps(maps* pmsMaps,const char *pccKey){
+  maps* pmTmp=pmsMaps;
+  while(pmTmp!=NULL){
+    if(strcasecmp(pmTmp->name,pccKey)==0){
+      return pmTmp;
     }
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
   return NULL;
 }
@@ -265,17 +266,17 @@ maps* getMaps(maps* m,const char *key){
 /**
  * Access a specific map
  *
- * @param m the map to search for the key
- * @param key the key to search in the map
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
  * @return a pointer on the map found or NULL if not found
  */
-map* getMap(map* m,const char *key){
-  map* tmp=m;
-  while(tmp!=NULL){
-    if(strcasecmp(tmp->name,key)==0){
-      return tmp;
+map* getMap(map* pmMap,const char *pccKey){
+  map* pmTmp=pmMap;
+  while(pmTmp!=NULL){
+    if(strcasecmp(pmTmp->name,pccKey)==0){
+      return pmTmp;
     }
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
   return NULL;
 }
@@ -284,16 +285,16 @@ map* getMap(map* m,const char *key){
 /**
  * Access the last map
  *
- * @param m the map to search for the lastest map
+ * @param pmMap the map to search for the lastest map
  * @return a pointer on the lastest map found or NULL if not found
  */
-map* getLastMap(map* m){
-  map* tmp=m;
-  while(tmp!=NULL){
-    if(tmp->next==NULL){
-      return tmp;
+map* getLastMap(map* pmMap){
+  map* pmTmp=pmMap;
+  while(pmTmp!=NULL){
+    if(pmTmp->next==NULL){
+      return pmTmp;
     }
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
   return NULL;
 }
@@ -301,16 +302,16 @@ map* getLastMap(map* m){
 /**
  * Access a specific map from a maps
  *
- * @param m the maps to search for the key
- * @param key the key to search in the maps
- * @param subkey the key to search in the map (found for the key, if any)
+ * @param pmMap the maps to search for the key
+ * @param pccKey the key to search in the maps
+ * @param pccSubkey the key to search in the map (found for the key, if any)
  * @return a pointer on the map found or NULL if not found
  */
-map* getMapFromMaps(maps* m,const char* key,const char* subkey){
-  maps* _tmpm=getMaps(m,key);
-  if(_tmpm!=NULL){
-    map* _ztmpm=getMap(_tmpm->content,subkey);
-    return _ztmpm;
+map* getMapFromMaps(maps* pmMap,const char* pccKey,const char* pccSubkey){
+  maps* pmTmp=getMaps(pmMap,pccKey);
+  if(pmTmp!=NULL){
+    map* pmTmp1=getMap(pmTmp->content,pccSubkey);
+    return pmTmp1;
   }
   else return NULL;
 }
@@ -319,22 +320,22 @@ map* getMapFromMaps(maps* m,const char* key,const char* subkey){
  * Free allocated memory of a map.
  * Require to call free on mo after calling this function.
  *
- * @param mo the map to free
+ * @param pmMap the map to free
  */
-void freeMap(map** mo){
-  map* _cursor=*mo;
-  if(_cursor!=NULL){
+void freeMap(map** pmMap){
+  map* pmCursor=*pmMap;
+  if(pmCursor!=NULL){
 #ifdef DEBUG
     fprintf(stderr,"freeMap\n");
 #endif
-    if(_cursor->name!=NULL)
-      free(_cursor->name);
-    if(_cursor->value!=NULL)
-      free(_cursor->value);
-    if(_cursor->next!=NULL){
-      freeMap(&_cursor->next);
-      if(_cursor->next!=NULL)
-	free(_cursor->next);
+    if(pmCursor->name!=NULL)
+      free(pmCursor->name);
+    if(pmCursor->value!=NULL)
+      free(pmCursor->value);
+    if(pmCursor->next!=NULL){
+      freeMap(&pmCursor->next);
+      if(pmCursor->next!=NULL)
+	free(pmCursor->next);
     }
   }
 }
@@ -343,26 +344,26 @@ void freeMap(map** mo){
  * Free allocated memory of a maps.
  * Require to call free on mo after calling this function.
  *
- * @param mo the maps to free
+ * @param pmMap the maps to free
  */
-void freeMaps(maps** mo){
-  maps* _cursor=*mo;
-  if(_cursor && _cursor!=NULL){
+void freeMaps(maps** pmMap){
+  maps* pmCursor=*pmMap;
+  if(pmCursor && pmCursor!=NULL){
 #ifdef DEBUG
     fprintf(stderr,"freeMaps\n");
 #endif
-    free(_cursor->name);
-    if(_cursor->content!=NULL){
-      freeMap(&_cursor->content);
-      free(_cursor->content);
+    free(pmCursor->name);
+    if(pmCursor->content!=NULL){
+      freeMap(&pmCursor->content);
+      free(pmCursor->content);
     }
-    if(_cursor->child!=NULL){
-      freeMaps(&_cursor->child);
-      free(_cursor->child);
+    if(pmCursor->child!=NULL){
+      freeMaps(&pmCursor->child);
+      free(pmCursor->child);
     }
-    if(_cursor->next!=NULL){
-      freeMaps(&_cursor->next);
-      free(_cursor->next);
+    if(pmCursor->next!=NULL){
+      freeMaps(&pmCursor->next);
+      free(pmCursor->next);
     }
   }
 }
@@ -370,16 +371,16 @@ void freeMaps(maps** mo){
 /**
  * Verify if an elements contains a name equal to the given key.
  *
- * @param e the elements to search for the key
- * @param key the elements name to search
+ * @param peElem the elements to search for the key
+ * @param pccKey the elements name to search
  * @return true if the elements contains the name, false in other cases.
  */ 
-bool hasElement(elements* e,const char* key){
-  elements* tmp=e;
-  while(tmp!=NULL){
-    if(strcasecmp(key,tmp->name)==0)
+bool hasElement(elements* peElem,const char* pccKey){
+  elements* peTmp=peElem;
+  while(peTmp!=NULL){
+    if(strcasecmp(pccKey,peTmp->name)==0)
       return true;
-    tmp=tmp->next;
+    peTmp=peTmp->next;
   }
   return false;
 }
@@ -387,16 +388,16 @@ bool hasElement(elements* e,const char* key){
 /**
  * Access a specific elements named key.
  *
- * @param m the elements to search
- * @param key the elements name to search
+ * @param peElem the elements to search
+ * @param pccKey the elements name to search
  * @return a pointer to the specific element if found, NULL in other case.
  */ 
-elements* getElements(elements* m,const char *key){
-  elements* tmp=m;
-  while(tmp!=NULL){
-    if(strcasecmp(tmp->name,key)==0)
-      return tmp;
-    tmp=tmp->next;
+elements* getElements(elements* peElem,const char *pccKey){
+  elements* peTmp=peElem;
+  while(peTmp!=NULL){
+    if(strcasecmp(peTmp->name,pccKey)==0)
+      return peTmp;
+    peTmp=peTmp->next;
   }
   return NULL;
 }
@@ -405,17 +406,17 @@ elements* getElements(elements* m,const char *key){
  * Free allocated memory of an iotype.
  * Require to call free on i after calling this function.
  *
- * @param i the iotype to free
+ * @param piotIO the iotype to free
  */
-void freeIOType(iotype** i){
-  iotype* _cursor=*i;
-  if(_cursor!=NULL){
-    if(_cursor->next!=NULL){
-      freeIOType(&_cursor->next);
-      free(_cursor->next);
+void freeIOType(iotype** piotIO){
+  iotype* piotCursor=*piotIO;
+  if(piotCursor!=NULL){
+    if(piotCursor->next!=NULL){
+      freeIOType(&piotCursor->next);
+      free(piotCursor->next);
     }
-    freeMap(&_cursor->content);
-    free(_cursor->content);
+    freeMap(&piotCursor->content);
+    free(piotCursor->content);
   }
 }
 
@@ -423,39 +424,39 @@ void freeIOType(iotype** i){
  * Free allocated memory of an elements.
  * Require to call free on e after calling this function.
  *
- * @param e the iotype to free
+ * @param peElem the iotype to free
  */
-void freeElements(elements** e){
-  elements* tmp=*e;
-  if(tmp!=NULL){
-    if(tmp->name!=NULL)
-      free(tmp->name);
-    freeMap(&tmp->content);
-    if(tmp->content!=NULL)
-      free(tmp->content);
-    freeMap(&tmp->metadata);
-    if(tmp->metadata!=NULL)
-      free(tmp->metadata);
-    freeMap(&tmp->additional_parameters);
-    if(tmp->additional_parameters!=NULL)
-      free(tmp->additional_parameters);
-    if(tmp->format!=NULL)
-      free(tmp->format);
-    freeElements(&tmp->child);
-    if(tmp->child!=NULL){
-      free(tmp->child);
+void freeElements(elements** peElem){
+  elements* peTmp=*peElem;
+  if(peTmp!=NULL){
+    if(peTmp->name!=NULL)
+      free(peTmp->name);
+    freeMap(&peTmp->content);
+    if(peTmp->content!=NULL)
+      free(peTmp->content);
+    freeMap(&peTmp->metadata);
+    if(peTmp->metadata!=NULL)
+      free(peTmp->metadata);
+    freeMap(&peTmp->additional_parameters);
+    if(peTmp->additional_parameters!=NULL)
+      free(peTmp->additional_parameters);
+    if(peTmp->format!=NULL)
+      free(peTmp->format);
+    freeElements(&peTmp->child);
+    if(peTmp->child!=NULL){
+      free(peTmp->child);
     }
-    if(tmp->defaults!=NULL){
-      freeIOType(&tmp->defaults);
-      free(tmp->defaults);
+    if(peTmp->defaults!=NULL){
+      freeIOType(&peTmp->defaults);
+      free(peTmp->defaults);
     }
-    if(tmp->supported!=NULL){
-      freeIOType(&tmp->supported);
-      free(tmp->supported);
+    if(peTmp->supported!=NULL){
+      freeIOType(&peTmp->supported);
+      free(peTmp->supported);
     }
-    if(tmp->next!=NULL){
-      freeElements(&tmp->next);
-      free(tmp->next);
+    if(peTmp->next!=NULL){
+      freeElements(&peTmp->next);
+      free(peTmp->next);
     }
   }
 }
@@ -468,218 +469,219 @@ void freeElements(elements** e){
  * @return the service
  */
 service* createService(){
-  service *s1 = (service *) malloc (SERVICE_SIZE);
-  s1->name=NULL;
-  s1->content=NULL;
-  s1->metadata=NULL;
-  s1->additional_parameters=NULL;
-  s1->inputs=NULL;
-  s1->outputs=NULL;
-  return s1;
+  service *psService = (service *) malloc (SERVICE_SIZE);
+  psService->name=NULL;
+  psService->content=NULL;
+  psService->metadata=NULL;
+  psService->additional_parameters=NULL;
+  psService->inputs=NULL;
+  psService->outputs=NULL;
+  return psService;
 }
 
 /**
  * Free allocated memory of a service.
  * Require to be invoked for every createService call.
  *
- * @param s the service to free
+ * @param psService the service to free
  */
-void freeService(service** s){
-  service* tmp=*s;
-  if(tmp!=NULL){
-    if(tmp->name!=NULL)
-      free(tmp->name);
-    freeMap(&tmp->content);
-    if(tmp->content!=NULL)
-      free(tmp->content);
-    freeMap(&tmp->metadata);
-    if(tmp->metadata!=NULL)
-      free(tmp->metadata);
-    freeMap(&tmp->additional_parameters);
-    if(tmp->additional_parameters!=NULL)
-      free(tmp->additional_parameters);
-    freeElements(&tmp->inputs);
-    if(tmp->inputs!=NULL)
-      free(tmp->inputs);
-    freeElements(&tmp->outputs);
-    if(tmp->outputs!=NULL)
-      free(tmp->outputs);
+void freeService(service** psService){
+  service* psTmp=*psService;
+  if(psTmp!=NULL){
+    if(psTmp->name!=NULL)
+      free(psTmp->name);
+    freeMap(&psTmp->content);
+    if(psTmp->content!=NULL)
+      free(psTmp->content);
+    freeMap(&psTmp->metadata);
+    if(psTmp->metadata!=NULL)
+      free(psTmp->metadata);
+    freeMap(&psTmp->additional_parameters);
+    if(psTmp->additional_parameters!=NULL)
+      free(psTmp->additional_parameters);
+    freeElements(&psTmp->inputs);
+    if(psTmp->inputs!=NULL)
+      free(psTmp->inputs);
+    freeElements(&psTmp->outputs);
+    if(psTmp->outputs!=NULL)
+      free(psTmp->outputs);
   }
 }
 
 /**
  * Add key value pair to an existing map.
  *
- * @param m the map to add the KVP
- * @param n the key to add
- * @param v the corresponding value to add
+ * @param pMap the map to add the KVP
+ * @param pccName the key to add
+ * @param pccValue the corresponding value to add
  */
-void addToMap(map* m,const char* n,const char* v){
-    if (m != NULL) { // knut: add NULL-pointer check
-        if (hasKey(m, n) == false) {
-            map* _cursor = m;
-            while (_cursor->next != NULL) {
-                _cursor = _cursor->next;
-            }
-            _cursor->next = createMap(n, v);
-        }
-        else {
-            map *tmp = getMap(m, n);
-            if (tmp->value != NULL)
-                free(tmp->value);
-            tmp->value = zStrdup(v);
-        }
+void addToMap(map* pMap,const char* pccName,const char* pccValue){
+  if (pMap != NULL) { // knut: add NULL-pointer check
+    if (hasKey(pMap, pccName) == false) {
+      map* pmCursor = pMap;
+      while (pmCursor->next != NULL) {
+	pmCursor = pmCursor->next;
+      }
+      pmCursor->next = createMap(pccName, pccValue);
     }
+    else {
+      map *tmp = getMap(pMap, pccName);
+      if (tmp->value != NULL)
+	free(tmp->value);
+      tmp->value = zStrdup(pccValue);
+    }
+  }
 }
 
 /**
  * Add a key and an integer value to an existing map.
  *
- * @param m the map to add the KVP
- * @param n the key to add
- * @param v the corresponding value to add
+ * @param pMap the map to add the KVP
+ * @param pccName the key to add
+ * @param iValue the corresponding value to add
  */
-void addIntToMap(map* m,const char* n,const int v){
-  char svalue[10];
-  sprintf(svalue,"%d",v);
-  if(hasKey(m,n)==false){
-    map* _cursor=m;
-    while(_cursor->next!=NULL){
-      _cursor=_cursor->next;
+void addIntToMap(map* pMap,const char* pccName,const int iValue){
+  char acValue[10];
+  sprintf(acValue,"%d",iValue);
+  if(hasKey(pMap,pccName)==false){
+    map* pmCursor=pMap;
+    while(pmCursor->next!=NULL){
+      pmCursor=pmCursor->next;
     }
-    _cursor->next=createMap(n,svalue);
+    pmCursor->next=createMap(pccName,acValue);
   }
   else{
-    map *tmp=getMap(m,n);
-    if(tmp->value!=NULL)
-      free(tmp->value);
-    tmp->value=zStrdup(svalue);
+    map *pmTmp=getMap(pMap,pccName);
+    if(pmTmp->value!=NULL)
+      free(pmTmp->value);
+    pmTmp->value=zStrdup(acValue);
   }
 }
 
 /**
  * Add a key and a binary value to an existing map.
  *
- * @param m the map to add the KVP
- * @param n the key to add
- * @param v the corresponding value to add
- * @param size the size of the given value
+ * @param pMap the map to add the KVP
+ * @param pccName the key to add
+ * @param pccValue the corresponding value to add
+ * @param iSize the size of the given value
  * @return a pointer to the updated map m
  */
-map* addToMapWithSize(map* m,const char* n,const char* v,int size){
-  char sin[128];
-  char sname[10]="size";
-  map *tmp;
-  if(hasKey(m,n)==false){
-    map* _cursor=m;
+map* addToMapWithSize(map* pMap,const char* pccName,const char* pccValue,int iSize){
+  char acIn[128];
+  char acName[10]="size";
+  map *pmTmp;
+  if(hasKey(pMap,pccName)==false){
+    map* _cursor=pMap;
     if(_cursor!=NULL){
-      addToMap(m,n,"");
+      addToMap(pMap,pccName,"");
     }else{
-      m=createMap(n,"");
+      pMap=createMap(pccName,"");
     }
   }
-  if(strlen(n)>5)
-    sprintf(sname,"size_%s",n+6);
-  tmp=getMap(m,n);
-  if(tmp->value!=NULL)
-    free(tmp->value);
-  tmp->value=(char*)malloc((size+1)*sizeof(char));
-  if(v!=NULL)
-    memmove(tmp->value,v,size*sizeof(char));
-  tmp->value[size]=0;
-  sprintf(sin,"%d",size);
-  addToMap(m,sname,sin);
-  return m;
+  if(strlen(pccName)>5)
+    sprintf(acName,"size_%s",pccName+6);
+  pmTmp=getMap(pMap,pccName);
+  if(pmTmp->value!=NULL)
+    free(pmTmp->value);
+  pmTmp->value=(char*)malloc((iSize+1)*sizeof(char));
+  if(pccValue!=NULL)
+    memmove(pmTmp->value,pccValue,iSize*sizeof(char));
+  pmTmp->value[iSize]=0;
+  sprintf(acIn,"%d",iSize);
+  addToMap(pMap,acName,acIn);
+  return pMap;
 }
 
 /**
  * Add a map at the end of another map.
  *
- * @param mo the map to add mi
- * @param mi the map to add to mo
+ * @param pmMapOut the map to add pmMapIn to
+ * @param pmMapIn the map to add to pmMapOut
  */
-void addMapToMap(map** mo,map* mi){
-  map* tmp=mi;
-  map* _cursor=*mo;
-  while(tmp!=NULL){
-    if(_cursor==NULL){
-      *mo=createMap(tmp->name,tmp->value);
-      (*mo)->next=NULL;
+void addMapToMap(map** pmMapOut,map* pmMapIn){
+  map* pmTmp=pmMapIn;
+  map* pmCursor=*pmMapOut;
+  while(pmTmp!=NULL){
+    if(pmCursor==NULL){
+      *pmMapOut=createMap(pmTmp->name,pmTmp->value);
+      (*pmMapOut)->next=NULL;
     }
     else{
-      map* tmp1=getMap(*mo,tmp->name);
-      if(tmp1==NULL){
-	while(_cursor->next!=NULL)
-	  _cursor=_cursor->next;
-	_cursor->next=createMap(tmp->name,tmp->value);
+      map* pmTmp1=getMap(*pmMapOut,pmTmp->name);
+      if(pmTmp1==NULL){
+	while(pmCursor->next!=NULL)
+	  pmCursor=pmCursor->next;
+	pmCursor->next=createMap(pmTmp->name,pmTmp->value);
       }
       else{
-	addToMap(*mo,tmp->name,tmp->value);
+	addToMap(*pmMapOut,pmTmp->name,pmTmp->value);
       }
     }
-    _cursor=*mo;
-    tmp=tmp->next;
+    pmCursor=*pmMapOut;
+    pmTmp=pmTmp->next;
   }
 }
 
 /**
  * Add a map to iotype.
  *
- * @param io the iotype to add the map
- * @param mi the map to add to io
+ * @param piotType the iotype to add the map
+ * @param pmMap the map to add to io
  */
-void addMapToIoType(iotype** io,map* mi){
-  iotype* tmp=*io;
-  while(tmp->next!=NULL){
-    tmp=tmp->next;
+void addMapToIoType(iotype** piotType,map* pmMap){
+  iotype* piotTmp=*piotType;
+  while(piotTmp->next!=NULL){
+    piotTmp=piotTmp->next;
   }
-  tmp->next=(iotype*)malloc(IOTYPE_SIZE);
-  tmp->next->content=NULL;
-  addMapToMap(&tmp->next->content,mi);
-  tmp->next->next=NULL;
+  piotTmp->next=(iotype*)malloc(IOTYPE_SIZE);
+  piotTmp->next->content=NULL;
+  addMapToMap(&piotTmp->next->content,pmMap);
+  piotTmp->next->next=NULL;
 }
 
 /**
  * Access a specific map or set its value.
  *
- * @param m the map to search for the key
- * @param key the key to search/add in the map
- * @param value the value to add if the key does not exist
+ * @param ppmMap the map to search for the key
+ * @param pccKey the key to search/add in the map
+ * @param pccValue the value to add if the key does not exist
  * @return a pointer on the map found or NULL if not found
  */
-map* getMapOrFill(map** m,const char *key,const char* value){
-  map* tmp=*m;
-  map* tmpMap=getMap(tmp,key);
-  if(tmpMap==NULL){
-    if(tmp!=NULL){
-      addToMap((*m),key,value);
+map* getMapOrFill(map** ppmMap,const char *pccKey,const char* pccValue){
+  map* pmTmp=*ppmMap;
+  map* pmTmp1=getMap(pmTmp,pccKey);
+  if(pmTmp1==NULL){
+    if(pmTmp!=NULL){
+      addToMap((*ppmMap),pccKey,pccValue);
     }
     else
-      (*m)=createMap(key,value);
-    tmpMap=getMap(*m,key);
+      (*ppmMap)=createMap(pccKey,pccValue);
+    pmTmp1=getMap(*ppmMap,pccKey);
   }
-  return tmpMap;
+  return pmTmp1;
 }
 
 /**
  * Verify if a map is contained in another map.
  *
- * @param m the map to search for i
- * @param i the map to search in m
+ * @param pmMap the map to search for i
+ * @param pmSearch the map to search in m
  * @return true if i was found in m, false in other case
  */
-bool contains(map* m,map* i){
-  while(i!=NULL){      
-    if(strcasecmp(i->name,"value")!=0 &&
-       strcasecmp(i->name,"xlink:href")!=0 &&
-       strcasecmp(i->name,"useMapServer")!=0 &&
-       strcasecmp(i->name,"asReference")!=0){
+bool contains(map* pmMap,map* pmSearch){
+  while(pmSearch!=NULL){      
+    if(strcasecmp(pmSearch->name,"value")!=0 &&
+       strcasecmp(pmSearch->name,"xlink:href")!=0 &&
+       strcasecmp(pmSearch->name,"useMapServer")!=0 &&
+       strcasecmp(pmSearch->name,"asReference")!=0){
       map *tmp;
-      if(hasKey(m,i->name) && (tmp=getMap(m,i->name))!=NULL && 
-	 strcasecmp(i->value,tmp->value)!=0)
+      if(hasKey(pmMap,pmSearch->name) &&
+	 (tmp=getMap(pmMap,pmSearch->name))!=NULL && 
+	 strcasecmp(pmSearch->value,tmp->value)!=0)
 	return false;
     }
-    i=i->next;
+    pmSearch=pmSearch->next;
   }
   return true;
 }
@@ -687,36 +689,36 @@ bool contains(map* m,map* i){
 /**
  * Access a specific iotype from an elements.
  *
- * @param e the elements to search for the name
- * @param name the name to search in the elements e
- * @param values the map to verify it was contained in the defaults or 
+ * @param peElem the elements to search for the name
+ * @param pcName the name to search in the elements e
+ * @param pcValues the map to verify it was contained in the defaults or 
  *  supported content of the elements e
  * @return a pointer on the iotype found or NULL if not found
  */
-iotype* getIoTypeFromElement(elements* e,char *name, map* values){
-  elements* cursor=e;
-  if(values!=NULL){
-    while(cursor!=NULL){
-      if(strcasecmp(cursor->name,name)==0 && (cursor->defaults!=NULL || cursor->supported!=NULL)){
-	if(contains(cursor->defaults->content,values)==true)
-	  return cursor->defaults;
+iotype* getIoTypeFromElement(elements* peElem,char *pcName, map* pcValues){
+  elements* peCursor=peElem;
+  if(pcValues!=NULL){
+    while(peCursor!=NULL){
+      if(strcasecmp(peCursor->name,pcName)==0 && (peCursor->defaults!=NULL || peCursor->supported!=NULL)){
+	if(contains(peCursor->defaults->content,pcValues)==true)
+	  return peCursor->defaults;
 	else{
-	  iotype* tmp=cursor->supported;
+	  iotype* tmp=peCursor->supported;
 	  while(tmp!=NULL){
-	    if(contains(tmp->content,values)==true)
+	    if(contains(tmp->content,pcValues)==true)
 	      return tmp;	    
 	    tmp=tmp->next;
 	  }
 	}
       }
-      cursor=cursor->next;
+      peCursor=peCursor->next;
     }
   }else{
-    while(cursor!=NULL){
-      if(strcasecmp(cursor->name,name)==0 && cursor->defaults!=NULL){
-	return cursor->defaults;
+    while(peCursor!=NULL){
+      if(strcasecmp(peCursor->name,pcName)==0 && peCursor->defaults!=NULL){
+	return peCursor->defaults;
       }
-      cursor=cursor->next;
+      peCursor=peCursor->next;
     }
   }
   return NULL;
@@ -725,245 +727,245 @@ iotype* getIoTypeFromElement(elements* e,char *name, map* values){
 /**
  * Load binary values from a map (in) and add them to another map (out)
  *
- * @param out the map to add binaries values
- * @param in the map containing the binary values to add ti out
- * @param pos index of the binary in an array (in case of "MapArray")
+ * @param pmOut the map to add binaries values
+ * @param pmIn the map containing the binary values to add ti out
+ * @param iPos index of the binary in an array (in case of "MapArray")
  */
-void loadMapBinary(map** out,map* in,int pos){
-  map* size=getMap(in,"size");
-  map *lout=*out;
-  map *tmpVin,*tmpVout;
-  if(size!=NULL && pos>0){
+void loadMapBinary(map** ppmOut,map* pmIn,int iPos){
+  map* pmSize=getMap(pmIn,"size");
+  map *pmOut=*ppmOut;
+  map *pmTmpVin,*pmTmpVout;
+  if(pmSize!=NULL && iPos>0){
     char tmp[11];
-    sprintf(tmp,"size_%d",pos);
-    size=getMap(in,tmp);
-    sprintf(tmp,"value_%d",pos);
-    tmpVin=getMap(in,tmp);
-    tmpVout=getMap(lout,tmp);
-    free(tmpVout->value);
-    tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
-    memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
-    tmpVout->value[atoi(size->value)]=0;
+    sprintf(tmp,"size_%d",iPos);
+    pmSize=getMap(pmIn,tmp);
+    sprintf(tmp,"value_%d",iPos);
+    pmTmpVin=getMap(pmIn,tmp);
+    pmTmpVout=getMap(pmOut,tmp);
+    free(pmTmpVout->value);
+    pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
+    memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
+    pmTmpVout->value[atoi(pmSize->value)]=0;
   }else{
-    if(size!=NULL){
-      tmpVin=getMap(in,"value");
-      tmpVout=getMap(lout,"value");
-      free(tmpVout->value);
-      tmpVout->value=(char*)malloc((atoi(size->value)+1)*sizeof(char));
-      memmove(tmpVout->value,tmpVin->value,atoi(size->value)*sizeof(char));
-      tmpVout->value[atoi(size->value)]=0;
+    if(pmSize!=NULL){
+      pmTmpVin=getMap(pmIn,"value");
+      pmTmpVout=getMap(pmOut,"value");
+      free(pmTmpVout->value);
+      pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
+      memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
+      pmTmpVout->value[atoi(pmSize->value)]=0;
     }
   }
 }
-  
+
 /**
  * Load binary values from a map (in) and add them to another map (out).
  * This function will take care of MapArray.
  * @see loadMapBinary
  *
- * @param out the map to add binaries values
- * @param in the map containing the binary values to add ti out
+ * @param ppmOut the map to add binaries values
+ * @param pmIn the map containing the binary values to add ti out
  */
-void loadMapBinaries(map** out,map* in){
-  map* size=getMap(in,"size");
-  map* length=getMap(in,"length");
-  map* toload=getMap(in,"to_load");
-  if(toload!=NULL && strcasecmp(toload->value,"false")==0){
+void loadMapBinaries(map** ppmOut,map* pmIn){
+  map* pmSize=getMap(pmIn,"size");
+  map* pmLength=getMap(pmIn,"length");
+  map* pmToload=getMap(pmIn,"to_load");
+  if(pmToload!=NULL && strcasecmp(pmToload->value,"false")==0){
 #ifdef DEBUG
     fprintf(stderr,"NO LOAD %s %d \n",__FILE__,__LINE__);
 #endif
     return ;
   }
-  if(length!=NULL){
-    int len=atoi(length->value);
+  if(pmLength!=NULL){
+    int len=atoi(pmLength->value);
     int i=0;
     for(i=0;i<len;i++){
-      loadMapBinary(out,in,i);
+      loadMapBinary(ppmOut,pmIn,i);
     }
   }
   else
-    if(size!=NULL)
-      loadMapBinary(out,in,-1);
+    if(pmSize!=NULL)
+      loadMapBinary(ppmOut,pmIn,-1);
 }
 
 /**
  * Duplicate a Maps
  * 
- * @param mo the maps to clone
+ * @param ppmsOut the maps to clone
  * @return the allocated maps containing a copy of the mo maps
  */
-maps* dupMaps(maps** mo){
-  maps* _cursor=*mo;
-  maps* res=NULL;
-  if(_cursor!=NULL){
-    map* mc=_cursor->content;
-    maps* mcs=_cursor->child;
-    res=createMaps(_cursor->name);
-    if(mc!=NULL){
-      addMapToMap(&res->content,mc);
-      loadMapBinaries(&res->content,mc);
+maps* dupMaps(maps** ppmsOut){
+  maps* pmsCursor=*ppmsOut;
+  maps* pmRes=NULL;
+  if(pmsCursor!=NULL){
+    map* pmContent=pmsCursor->content;
+    maps* pmsChild=pmsCursor->child;
+    pmRes=createMaps(pmsCursor->name);
+    if(pmContent!=NULL){
+      addMapToMap(&pmRes->content,pmContent);
+      loadMapBinaries(&pmRes->content,pmContent);
     }
-    if(mcs!=NULL){
-      res->child=dupMaps(&mcs);
+    if(pmsChild!=NULL){
+      pmRes->child=dupMaps(&pmsChild);
     }
-    res->next=dupMaps(&_cursor->next);
+    pmRes->next=dupMaps(&pmsCursor->next);
   }
-  return res;
+  return pmRes;
 }
 
 /**
  * Add a maps at the end of another maps.
  *
  * @see addMapToMap, dupMaps, getMaps
- * @param mo the maps to add mi
- * @param mi the maps to add to mo
+ * @param ppmsOut the maps to add mi
+ * @param pmIn the maps to add to mo
  */
-void addMapsToMaps(maps** mo,maps* mi){
-  maps* tmp=mi;
-  maps* _cursor=*mo;
-  while(tmp!=NULL){
-    if(_cursor==NULL){
-      *mo=dupMaps(&mi);
+void addMapsToMaps(maps** ppmsOut,maps* pmIn){
+  maps* pmsTmp=pmIn;
+  maps* pmsCursor=*ppmsOut;
+  while(pmsTmp!=NULL){
+    if(pmsCursor==NULL){
+      *ppmsOut=dupMaps(&pmIn);
     }
     else{
-      maps* tmp1=getMaps(*mo,tmp->name);
-      if(tmp1==NULL){
-	while(_cursor->next!=NULL)
-	  _cursor=_cursor->next;
-	_cursor->next=dupMaps(&tmp);
-	if(tmp->child!=NULL)
-	  _cursor->next->child=dupMaps(&tmp->child);
+      maps* pmsTmp1=getMaps(*ppmsOut,pmsTmp->name);
+      if(pmsTmp1==NULL){
+	while(pmsCursor->next!=NULL)
+	  pmsCursor=pmsCursor->next;
+	pmsCursor->next=dupMaps(&pmsTmp);
+	if(pmsTmp->child!=NULL)
+	  pmsCursor->next->child=dupMaps(&pmsTmp->child);
 	else
-	  _cursor->next->child=NULL;
+	  pmsCursor->next->child=NULL;
       }
       else{
-	addMapToMap(&tmp1->content,tmp->content);
-	if(tmp->child!=NULL)
-	  tmp1->child=dupMaps(&tmp->child);
+	addMapToMap(&pmsTmp1->content,pmsTmp->content);
+	if(pmsTmp->child!=NULL)
+	  pmsTmp1->child=dupMaps(&pmsTmp->child);
 	else
-	  tmp1->child=NULL;
+	  pmsTmp1->child=NULL;
       }
-      _cursor=*mo;
+      pmsCursor=*ppmsOut;
     }
-    tmp=tmp->next;
+    pmsTmp=pmsTmp->next;
   }
 }
 
 /**
  * Access a specific map array element
  *
- * @param m the map to search for the key
- * @param key the key to search in the map
- * @param index of the MapArray 
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
+ * @param iIndex of the MapArray 
  * @return a pointer on the map found or NULL if not found
  */
-map* getMapArray(map* m,const char* key,int index){
-  char tmp[1024];
-  map* tmpMap;
-  if(index>0)
-    sprintf(tmp,"%s_%d",key,index);
+map* getMapArray(map* pmMap,const char* pccKey,int iIndex){
+  char acTmp[1024];
+  map* pmTmp;
+  if(iIndex>0)
+    sprintf(acTmp,"%s_%d",pccKey,iIndex);
   else
-    sprintf(tmp,"%s",key);
+    sprintf(acTmp,"%s",pccKey);
 #ifdef DEBUG
-  fprintf(stderr,"** KEY %s\n",tmp);
+  fprintf(stderr,"** KEY %s\n",acTmp);
 #endif
-  tmpMap=getMap(m,tmp);
+  pmTmp=getMap(pmMap,acTmp);
 #ifdef DEBUG
-  if(tmpMap!=NULL)
-    dumpMap(tmpMap);
+  if(pmTmp!=NULL)
+    dumpMap(pmTmp);
 #endif
-  return tmpMap;
+  return pmTmp;
 }
 
 /**
  * Add a key value in a MapArray for a specific index
  *
- * @param m the map to search for the key
- * @param key the key to search in the map
- * @param index the index of the MapArray 
- * @param value the value to set in the MapArray 
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
+ * @param iIndex the index of the MapArray 
+ * @param pccValue the value to set in the MapArray 
  * @return a pointer on the map found or NULL if not found
  */
-void setMapArray(map* m,const char* key,int index,const char* value){
-  char tmp[1024];
-  map* tmpSize;
-  if(index>0){
-    map* len=getMap(m,"length");
-    sprintf(tmp,"%s_%d",key,index);
-    if((len!=NULL && atoi(len->value)<index+1) || len==NULL){
-      char tmp0[5];
-      sprintf(tmp0,"%d",index+1);
-      addToMap(m,"length",tmp0);
+void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
+  char acTmp[1024];
+  map* pmSize;
+  if(iIndex>0){
+    map* pmLen=getMap(pmMap,"length");
+    sprintf(acTmp,"%s_%d",pccKey,iIndex);
+    if((pmLen!=NULL && atoi(pmLen->value)<iIndex+1) || pmLen==NULL){
+      char acTmp0[5];
+      sprintf(acTmp0,"%d",iIndex+1);
+      addToMap(pmMap,"length",acTmp0);
     }
   }
   else{
-    sprintf(tmp,"%s",key);
-    addToMap(m,"length","1");
+    sprintf(acTmp,"%s",pccKey);
+    addToMap(pmMap,"length","1");
   }
-  tmpSize=getMapArray(m,"size",index);
-  if(tmpSize!=NULL && strncasecmp(key,"value",5)==0){
-    map* ptr=getMapOrFill(&m,tmp,(char *)"");
+  pmSize=getMapArray(pmMap,"size",iIndex);
+  if(pmSize!=NULL && strncasecmp(pccKey,"value",5)==0){
+    map* pmPtr=getMapOrFill(&pmMap,acTmp,(char *)"");
 #ifdef DEBUG
-    fprintf(stderr,"%s\n",tmpSize->value);
+    fprintf(stderr,"%s\n",pmSize->value);
 #endif
-    free(ptr->value);
-    ptr->value=(char*)malloc((atoi(tmpSize->value)+1)*sizeof(char));
-    memcpy(ptr->value,value,atoi(tmpSize->value)); 
+    free(pmPtr->value);
+    pmPtr->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
+    memcpy(pmPtr->value,pccValue,atoi(pmSize->value)); 
   }
   else
-    addToMap(m,tmp,value);
+    addToMap(pmMap,acTmp,pccValue);
 }
 
 /**
  * Add a key and an integer value to an existing map array.
  *
- * @param m the map to add the KVP
- * @param n the key to add
- * @param index the index of the MapArray 
- * @param v the corresponding value to add
+ * @param pmMap the map to add the KVP
+ * @param pccName the key to add
+ * @param iIndex the index of the MapArray 
+ * @param icValue the corresponding value to add
  */
-void addIntToMapArray(map* m,const char* n,int index,const int v){
-  char svalue[10];
-  sprintf(svalue,"%d",v);
-  setMapArray(m,n,index,svalue);
+void addIntToMapArray(map* pmMap,const char* pccName,int iIndex,const int icValue){
+  char acValue[10];
+  sprintf(acValue,"%d",icValue);
+  setMapArray(pmMap,pccName,iIndex,acValue);
 }
 
 /**
  * Access the map "type"
  *
- * @param mt the map
+ * @param pmMap the map
  * @return a pointer on the map for mimeType/dataType/CRS if found, NULL in
  *  other case
  */
-map* getMapType(map* mt){
-  map* tmap=getMap(mt,(char *)"mimeType");
-  if(tmap==NULL){
-    tmap=getMap(mt,"dataType");
-    if(tmap==NULL){
-      tmap=getMap(mt,"CRS");
+map* getMapType(map* pmMap){
+  map* pmMime=getMap(pmMap,(char *)"mimeType");
+  if(pmMime==NULL){
+    pmMime=getMap(pmMap,"dataType");
+    if(pmMime==NULL){
+      pmMime=getMap(pmMap,"CRS");
     }
   }
 #ifdef DEBUG
-  dumpMap(tmap);
+  dumpMap(pmMime);
 #endif
-  return tmap;
+  return pmMime;
 }
 
 /**
  * Add a Maps containing a MapArray to a Maps
  *
  * @see getMapType
- * @param mo the maps
- * @param mi the maps
- * @param typ the map "type"
+ * @param pmsOut the maps
+ * @param pmsIn the maps
+ * @param pcType the map "type"
  * @return 
  */
-int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
-  maps* tmp=mi;    
-  maps* _cursor=getMaps(*mo,tmp->name);
-  char tmpLen[10];
-  int len=1;
-  char *tmpV[14]={
+int addMapsArrayToMaps(maps** pmsOut,maps* pmsIn,char* pcType){
+  maps* pmsTmp=pmsIn;
+  maps* pmsCursor=getMaps(*pmsOut,pmsTmp->name);
+  char acLen[10];
+  int iLen=1;
+  char *acV[14]={
     (char*)"size",
     (char*)"value",
     (char*)"uom",
@@ -972,69 +974,69 @@ int addMapsArrayToMaps(maps** mo,maps* mi,char* typ){
     (char*)"cache_file",
     (char*)"fmimeType",
     (char*)"xlink:href",
-    typ,
+    pcType,
     (char*)"schema",
     (char*)"encoding",
     (char*)"isCached",
     (char*)"LowerCorner",
     (char*)"UpperCorner"
   };
-  int i=0;
-  map* tmpLength;
+  int iCounter=0;
+  map* pmLength;
   
-  if(_cursor==NULL)
+  if(pmsCursor==NULL)
     return -1;
 
-  tmpLength=getMap(_cursor->content,"length");
-  if(tmpLength!=NULL){
-    len=atoi(tmpLength->value);
+  pmLength=getMap(pmsCursor->content,"length");
+  if(pmLength!=NULL){
+    iLen=atoi(pmLength->value);
   }
 
-  sprintf(tmpLen,"%d",len+1);
-  addToMap(_cursor->content,"length",tmpLen);
-  for(i=0;i<14;i++){
-    map* tmpVI=getMap(tmp->content,tmpV[i]);
-    if(tmpVI!=NULL){
+  sprintf(acLen,"%d",iLen+1);
+  addToMap(pmsCursor->content,"length",acLen);
+  for(iCounter=0;iCounter<14;iCounter++){
+    map* pmTmp=getMap(pmsTmp->content,acV[iCounter]);
+    if(pmTmp!=NULL){
 #ifdef DEBUG
-      fprintf(stderr,"%s = %s\n",tmpV[i],tmpVI->value);
+      fprintf(stderr,"%s = %s\n",pmTmp[iCounter],pmTmp->value);
 #endif
-      setMapArray(_cursor->content,tmpV[i],len,tmpVI->value);
+      setMapArray(pmsCursor->content,acV[iCounter],iLen,pmTmp->value);
     }
   }
     
-  addToMap(_cursor->content,"isArray","true");
+  addToMap(pmsCursor->content,"isArray","true");
   return 0;
 }
 
 /**
  * Set a key value pair to a map contained in a Maps
  *
- * @param m the maps
- * @param key the maps name
- * @param subkey the map name included in the maps corresponding to key
- * @param value the corresponding value to add in the map
+ * @param pmsMaps the maps
+ * @param pccKey the maps name
+ * @param pccSubkey the map name included in the maps corresponding to key
+ * @param pccValue the corresponding value to add in the map
  */
-void setMapInMaps(maps* m,const char* key,const char* subkey,const char *value){
-  maps* _tmpm=getMaps(m,key);
-  if(_tmpm!=NULL){
-    map* _ztmpm=getMap(_tmpm->content,subkey);
-    if(_ztmpm!=NULL){
-      if(_ztmpm->value!=NULL)
-	free(_ztmpm->value);
-      _ztmpm->value=zStrdup(value);
+void setMapInMaps(maps* pmsMaps,const char* pccKey,const char* pccSubkey,const char *pccValue){
+  maps* pmsTmp=getMaps(pmsMaps,pccKey);
+  if(pmsTmp!=NULL){
+    map* pmTmpSub=getMap(pmsTmp->content,pccSubkey);
+    if(pmTmpSub!=NULL){
+      if(pmTmpSub->value!=NULL)
+	free(pmTmpSub->value);
+      pmTmpSub->value=zStrdup(pccValue);
     }else{
-      maps *tmp=createMaps(key);
-      tmp->content=createMap(subkey,value);
-      addMapsToMaps(&_tmpm,tmp);
-      freeMaps(&tmp);
-      free(tmp);
+      maps *pmsToAdd=createMaps(pccKey);
+      pmsToAdd->content=createMap(pccSubkey,pccValue);
+      addMapsToMaps(&pmsTmp,pmsToAdd);
+      freeMaps(&pmsToAdd);
+      free(pmsToAdd);
     }
   }else{
-    maps *tmp=createMaps(key);
-    tmp->content=createMap(subkey,value);
-    addMapsToMaps(&m,tmp);
-    freeMaps(&tmp);
-    free(tmp);
+    maps *pmsToAdd=createMaps(pccKey);
+    pmsToAdd->content=createMap(pccSubkey,pccValue);
+    addMapsToMaps(&pmsMaps,pmsToAdd);
+    freeMaps(&pmsToAdd);
+    free(pmsToAdd);
   }
 }
 
@@ -1044,304 +1046,307 @@ void setMapInMaps(maps* m,const char* key,const char* subkey,const char *value){
  * @return a pointer to the allocated elements
  */
 elements* createEmptyElements(){
-  elements* res=(elements*)malloc(ELEMENTS_SIZE);
-  res->name=NULL;
-  res->content=NULL;
-  res->metadata=NULL;
-  res->additional_parameters=NULL;  
-  res->format=NULL;
-  res->defaults=NULL;
-  res->supported=NULL;
-  res->child=NULL;
-  res->next=NULL;
-  return res;
+  elements* peRes=(elements*)malloc(ELEMENTS_SIZE);
+  peRes->name=NULL;
+  peRes->content=NULL;
+  peRes->metadata=NULL;
+  peRes->additional_parameters=NULL;  
+  peRes->format=NULL;
+  peRes->defaults=NULL;
+  peRes->supported=NULL;
+  peRes->child=NULL;
+  peRes->next=NULL;
+  return peRes;
 }
 
 /**
  * Create a named elements
  *
- * @param name the elements name
+ * @param pcName the elements name
  * @return a pointer to the allocated elements
  */
-elements* createElements(const char* name){
-  elements* res=(elements*)malloc(ELEMENTS_SIZE);
-  res->name=zStrdup(name);
-  res->content=NULL;
-  res->metadata=NULL;
-  res->additional_parameters=NULL;
-  res->format=NULL;
-  res->defaults=NULL;
-  res->supported=NULL;
-  res->child=NULL;
-  res->next=NULL;
-  return res;
+elements* createElements(const char* pcName){
+  elements* peRes=(elements*)malloc(ELEMENTS_SIZE);
+  peRes->name=zStrdup(pcName);
+  peRes->content=NULL;
+  peRes->metadata=NULL;
+  peRes->additional_parameters=NULL;
+  peRes->format=NULL;
+  peRes->defaults=NULL;
+  peRes->supported=NULL;
+  peRes->child=NULL;
+  peRes->next=NULL;
+  return peRes;
 }
 
 /**
  * Set the name of an elements
  *
- * @param name the elements name
+ * @param peElem the elements to modify
+ * @param pcName the elements name
  * @return a pointer to the allocated elements
  */
-void setElementsName(elements** elem,char* name){
-  elements* res=*elem;
-  res->name=zStrdup(name);
-  res->content=NULL;
-  res->metadata=NULL;
-  res->format=NULL;
-  res->defaults=NULL;
-  res->supported=NULL;
-  res->child=NULL;
-  res->next=NULL;
+void setElementsName(elements** ppeElem,char* pcName){
+  elements* peRes=*ppeElem;
+  peRes->name=zStrdup(pcName);
+  peRes->content=NULL;
+  peRes->metadata=NULL;
+  peRes->format=NULL;
+  peRes->defaults=NULL;
+  peRes->supported=NULL;
+  peRes->child=NULL;
+  peRes->next=NULL;
 }
 
 /**
  * Dump an elements on stderr
  *
- * @param e the elements to dump
+ * @param peElem the elements to dump
  */
-void dumpElements(elements* e){
-  elements* tmp=e;
-  while(tmp!=NULL){
-    iotype* tmpio=tmp->defaults;
+void dumpElements(elements* peElem){
+  elements* peTmp=peElem;
+  while(peTmp!=NULL){
+    iotype* piotTmp=peTmp->defaults;
     int ioc=0;
-    fprintf(stderr,"ELEMENT [%s]\n",tmp->name);
-    fprintf(stderr," > CONTENT [%s]\n",tmp->name);
-    dumpMap(tmp->content);
-    fprintf(stderr," > METADATA [%s]\n",tmp->name);
-    dumpMap(tmp->metadata);
-    fprintf(stderr," > ADDITIONAL PARAMETERS [%s]\n",tmp->name);
-    dumpMap(tmp->additional_parameters);
-    fprintf(stderr," > FORMAT [%s]\n",tmp->format);
-    while(tmpio!=NULL){
-      fprintf(stderr," > DEFAULTS [%s] (%i)\n",tmp->name,ioc);
-      dumpMap(tmpio->content);
-      tmpio=tmpio->next;
+    fprintf(stderr,"ELEMENT [%s]\n",peTmp->name);
+    fprintf(stderr," > CONTENT [%s]\n",peTmp->name);
+    dumpMap(peTmp->content);
+    fprintf(stderr," > METADATA [%s]\n",peTmp->name);
+    dumpMap(peTmp->metadata);
+    fprintf(stderr," > ADDITIONAL PARAMETERS [%s]\n",peTmp->name);
+    dumpMap(peTmp->additional_parameters);
+    fprintf(stderr," > FORMAT [%s]\n",peTmp->format);
+    while(piotTmp!=NULL){
+      fprintf(stderr," > DEFAULTS [%s] (%i)\n",peTmp->name,ioc);
+      dumpMap(piotTmp->content);
+      piotTmp=piotTmp->next;
       ioc++;
     }
-    tmpio=tmp->supported;
+    piotTmp=peTmp->supported;
     ioc=0;
-    while(tmpio!=NULL){
-      fprintf(stderr," > SUPPORTED [%s] (%i)\n",tmp->name,ioc);
-      dumpMap(tmpio->content);
-      tmpio=tmpio->next;
+    while(piotTmp!=NULL){
+      fprintf(stderr," > SUPPORTED [%s] (%i)\n",peTmp->name,ioc);
+      dumpMap(piotTmp->content);
+      piotTmp=piotTmp->next;
       ioc++;
     }
-    if(tmp->child!=NULL){
+    if(peTmp->child!=NULL){
       fprintf(stderr," > CHILD \n");
-      dumpElements(tmp->child);
+      dumpElements(peTmp->child);
     }
     fprintf(stderr,"------------------\n");
-    tmp=tmp->next;
+    peTmp=peTmp->next;
   }
 }
 
 /**
  * Dump an elements on stderr using the YAML syntaxe
  *
- * @param e the elements to dump
+ * @param peElem the elements to dump
+ * @param iLevel the current level
  */
-void dumpElementsAsYAML(elements* e,int level){
-  elements* tmp=e;
+void dumpElementsAsYAML(elements* peElem,int iLevel){
+  elements* peTmp=peElem;
   int i;
-  while(tmp!=NULL){
-    map* mcurs=tmp->content;
+  while(peTmp!=NULL){
+    map* pmCurs=peTmp->content;
     int ioc=0;
-    iotype* tmpio;
-    for(i=0;i<2+(4*level);i++)
+    iotype* piotTmp;
+    for(i=0;i<2+(4*iLevel);i++)
       fprintf(stderr," ");
-    fprintf(stderr,"%s:\n",tmp->name);
-    while(mcurs!=NULL){
-      for(i=0;i<4+(4*level);i++)
+    fprintf(stderr,"%s:\n",peTmp->name);
+    while(pmCurs!=NULL){
+      for(i=0;i<4+(4*iLevel);i++)
 	fprintf(stderr," ");
-      _dumpMap(mcurs);
-      mcurs=mcurs->next;
+      _dumpMap(pmCurs);
+      pmCurs=pmCurs->next;
     }
-    mcurs=tmp->metadata;
-    if(mcurs!=NULL){
-      for(i=0;i<4+(4*level);i++)
+    pmCurs=peTmp->metadata;
+    if(pmCurs!=NULL){
+      for(i=0;i<4+(4*iLevel);i++)
 	fprintf(stderr," ");
       fprintf(stderr,"MetaData:\n");
-      while(mcurs!=NULL){
-	for(i=0;i<6+(4*level);i++)
+      while(pmCurs!=NULL){
+	for(i=0;i<6+(4*iLevel);i++)
 	  fprintf(stderr," ");
-	_dumpMap(mcurs);
-	mcurs=mcurs->next;
+	_dumpMap(pmCurs);
+	pmCurs=pmCurs->next;
       }
     }
-    for(i=0;i<4+(4*level);i++)
+    for(i=0;i<4+(4*iLevel);i++)
       fprintf(stderr," ");
-    if(tmp->format!=NULL)
-      fprintf(stderr,"%s:\n",tmp->format);
+    if(peTmp->format!=NULL)
+      fprintf(stderr,"%s:\n",peTmp->format);
     else{
       fprintf(stderr,"Child:\n");
-      if(tmp->child!=NULL)
-	dumpElementsAsYAML(tmp->child,level+1);
+      if(peTmp->child!=NULL)
+	dumpElementsAsYAML(peTmp->child,iLevel+1);
     }
-    tmpio=tmp->defaults;
-    while(tmpio!=NULL){
-      for(i=0;i<6+(4*level);i++)
+    piotTmp=peTmp->defaults;
+    while(piotTmp!=NULL){
+      for(i=0;i<6+(4*iLevel);i++)
 	fprintf(stderr," ");
       fprintf(stderr,"default:\n");
-      mcurs=tmpio->content;
-      while(mcurs!=NULL){
-	for(i=0;i<8+(4*level);i++)
+      pmCurs=piotTmp->content;
+      while(pmCurs!=NULL){
+	for(i=0;i<8+(4*iLevel);i++)
 	  fprintf(stderr," ");
-	if(strcasecmp(mcurs->name,"range")==0){
-	  fprintf(stderr,"range: \"%s\"\n",mcurs->value);
+	if(strcasecmp(pmCurs->name,"range")==0){
+	  fprintf(stderr,"range: \"%s\"\n",pmCurs->value);
 	}else
-	  _dumpMap(mcurs);
-	mcurs=mcurs->next;
+	  _dumpMap(pmCurs);
+	pmCurs=pmCurs->next;
       }
-      tmpio=tmpio->next;
+      piotTmp=piotTmp->next;
       ioc++;
     }
-    tmpio=tmp->supported;
+    piotTmp=peTmp->supported;
     ioc=0;
-    while(tmpio!=NULL){
-      for(i=0;i<6+(4*level);i++)
+    while(piotTmp!=NULL){
+      for(i=0;i<6+(4*iLevel);i++)
 	fprintf(stderr," ");
       fprintf(stderr,"supported:\n");
-      mcurs=tmpio->content;
-      while(mcurs!=NULL){
-	for(i=0;i<8+(4*level);i++)
+      pmCurs=piotTmp->content;
+      while(pmCurs!=NULL){
+	for(i=0;i<8+(4*iLevel);i++)
 	  fprintf(stderr," ");
-	if(strcasecmp(mcurs->name,"range")==0){
-	  fprintf(stderr,"range: \"%s\"\n",mcurs->value);
+	if(strcasecmp(pmCurs->name,"range")==0){
+	  fprintf(stderr,"range: \"%s\"\n",pmCurs->value);
 	}else
-	  _dumpMap(mcurs);
-	mcurs=mcurs->next;
+	  _dumpMap(pmCurs);
+	pmCurs=pmCurs->next;
       }
-      tmpio=tmpio->next;
+      piotTmp=piotTmp->next;
       ioc++;
     }
-    tmp=tmp->next;
+    peTmp=peTmp->next;
   }
 }
 
 /**
  * Duplicate an elements
  * 
- * @param e the elements to clone
+ * @param peElem the elements to clone
  * @return the allocated elements containing a copy of the elements e
  */
-elements* dupElements(elements* e){
-  elements* cursor=e;
-  elements* tmp=NULL;
-  if(cursor!=NULL && cursor->name!=NULL){
+elements* dupElements(elements* peElem){
+  elements* peCursor=peElem;
+  elements* peTmp=NULL;
+  if(peCursor!=NULL && peCursor->name!=NULL){
 #ifdef DEBUG
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
     dumpElements(e);
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
-    tmp=(elements*)malloc(ELEMENTS_SIZE);
-    tmp->name=zStrdup(cursor->name);
-    tmp->content=NULL;
-    addMapToMap(&tmp->content,cursor->content);
-    tmp->metadata=NULL;
-    addMapToMap(&tmp->metadata,cursor->metadata);
-    tmp->additional_parameters=NULL;
-    addMapToMap(&tmp->additional_parameters,cursor->additional_parameters);
-    if(cursor->format!=NULL)
-      tmp->format=zStrdup(cursor->format);
+    peTmp=(elements*)malloc(ELEMENTS_SIZE);
+    peTmp->name=zStrdup(peCursor->name);
+    peTmp->content=NULL;
+    addMapToMap(&peTmp->content,peCursor->content);
+    peTmp->metadata=NULL;
+    addMapToMap(&peTmp->metadata,peCursor->metadata);
+    peTmp->additional_parameters=NULL;
+    addMapToMap(&peTmp->additional_parameters,peCursor->additional_parameters);
+    if(peCursor->format!=NULL)
+      peTmp->format=zStrdup(peCursor->format);
     else
-      tmp->format=NULL;
-    if(cursor->defaults!=NULL){
-      tmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
-      tmp->defaults->content=NULL;
-      addMapToMap(&tmp->defaults->content,cursor->defaults->content);
-      tmp->defaults->next=NULL;
+      peTmp->format=NULL;
+    if(peCursor->defaults!=NULL){
+      peTmp->defaults=(iotype*)malloc(IOTYPE_SIZE);
+      peTmp->defaults->content=NULL;
+      addMapToMap(&peTmp->defaults->content,peCursor->defaults->content);
+      peTmp->defaults->next=NULL;
 #ifdef DEBUG
       fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-      dumpMap(tmp->defaults->content);
+      dumpMap(peTmp->defaults->content);
 #endif
     }else
-      tmp->defaults=NULL;
-    if(cursor->supported!=NULL && cursor->supported->content!=NULL){
-      iotype *tmp2=cursor->supported->next;
-      tmp->supported=(iotype*)malloc(IOTYPE_SIZE);
-      tmp->supported->content=NULL;
-      addMapToMap(&tmp->supported->content,cursor->supported->content);
-      tmp->supported->next=NULL;
-            while(tmp2!=NULL){
-	addMapToIoType(&tmp->supported,tmp2->content);
+      peTmp->defaults=NULL;
+    if(peCursor->supported!=NULL && peCursor->supported->content!=NULL){
+      iotype *piotTmp=peCursor->supported->next;
+      peTmp->supported=(iotype*)malloc(IOTYPE_SIZE);
+      peTmp->supported->content=NULL;
+      addMapToMap(&peTmp->supported->content,peCursor->supported->content);
+      peTmp->supported->next=NULL;
+            while(piotTmp!=NULL){
+	addMapToIoType(&peTmp->supported,piotTmp->content);
 #ifdef DEBUG
 	fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-	dumpMap(tmp->defaults->content);
+	dumpMap(peTmp->defaults->content);
 #endif
-	tmp2=tmp2->next;
+	piotTmp=piotTmp->next;
       }
     }
     else
-      tmp->supported=NULL;
-    if(cursor->child!=NULL)
-      tmp->child=dupElements(cursor->child);
+      peTmp->supported=NULL;
+    if(peCursor->child!=NULL)
+      peTmp->child=dupElements(peCursor->child);
     else
-      tmp->child=NULL;
-    if(cursor->next!=NULL)
-      tmp->next=dupElements(cursor->next);
+      peTmp->child=NULL;
+    if(peCursor->next!=NULL)
+      peTmp->next=dupElements(peCursor->next);
     else
-      tmp->next=NULL;
+      peTmp->next=NULL;
   }
-  return tmp;
+  return peTmp;
 }
 
 /**
  * Add an elements to another elements.
  *
  * @see dupElements
- * @param m the elements to add the e
- * @param e the elements to be added to m
+ * @param ppeElem the elements to add the e
+ * @param peELem the elements to be added to m
  */
-void addToElements(elements** m,elements* e){
-  elements* tmp=e;
-  if(*m==NULL){
-    (*m)=dupElements(tmp);
+void addToElements(elements** ppeElem,elements* peELem){
+  elements* peTmp=peELem;
+  if(*ppeElem==NULL){
+    (*ppeElem)=dupElements(peTmp);
   }else{
-    addToElements(&(*m)->next,tmp);
+    addToElements(&(*ppeElem)->next,peTmp);
   }
 }
 
 /**
  * Set the name of a service
  *
- * @param name the service name
+ * @param ppsServ the service
+ * @param pcName the service name
  */
-void setServiceName(service** serv,char* name){
-  service* res=*serv;
-  res->name=zStrdup(name);
-  res->content=NULL;
-  res->metadata=NULL;
-  res->inputs=NULL;
-  res->outputs=NULL;
+void setServiceName(service** ppsServ,char* pcName){
+  service* psRes=*ppsServ;
+  psRes->name=zStrdup(pcName);
+  psRes->content=NULL;
+  psRes->metadata=NULL;
+  psRes->inputs=NULL;
+  psRes->outputs=NULL;
 }
 
 /**
  * Dump a service on stderr
  *
- * @param s the service to dump
+ * @param psServ the service to dump
  */
-void dumpService(service* s){
-  if(s==NULL)
+void dumpService(service* psServ){
+  if(psServ==NULL)
     return;
-  fprintf(stderr,"++++++++++++++++++\nSERVICE [%s]\n++++++++++++++++++\n",s->name);
-  if(s->content!=NULL){
+  fprintf(stderr,"++++++++++++++++++\nSERVICE [%s]\n++++++++++++++++++\n",psServ->name);
+  if(psServ->content!=NULL){
     fprintf(stderr,"CONTENT MAP\n");
-    dumpMap(s->content);
-    if(s->metadata!=NULL)
+    dumpMap(psServ->content);
+    if(psServ->metadata!=NULL)
       fprintf(stderr,"CONTENT METADATA\n");
-    dumpMap(s->metadata);
-    if(s->additional_parameters!=NULL)
+    dumpMap(psServ->metadata);
+    if(psServ->additional_parameters!=NULL)
       fprintf(stderr,"CONTENT AdditionalParameters\n");
-    dumpMap(s->additional_parameters);
+    dumpMap(psServ->additional_parameters);
   }
-  if(s->inputs!=NULL){
-    fprintf(stderr,"INPUT ELEMENTS [%s]\n------------------\n",s->name);
-    dumpElements(s->inputs);
+  if(psServ->inputs!=NULL){
+    fprintf(stderr,"INPUT ELEMENTS [%s]\n------------------\n",psServ->name);
+    dumpElements(psServ->inputs);
   }
-  if(s->outputs!=NULL){
-    fprintf(stderr,"OUTPUT ELEMENTS [%s]\n------------------\n",s->name);
-    dumpElements(s->outputs);
+  if(psServ->outputs!=NULL){
+    fprintf(stderr,"OUTPUT ELEMENTS [%s]\n------------------\n",psServ->name);
+    dumpElements(psServ->outputs);
   }
   fprintf(stderr,"++++++++++++++++++\n");
 }
@@ -1349,83 +1354,83 @@ void dumpService(service* s){
 /**
  * Dump a service on stderr using the YAML syntaxe
  *
- * @param s the service to dump
+ * @param psServ the service to dump
  */
-void dumpServiceAsYAML(service* s){
+void dumpServiceAsYAML(service* psServ){
   int i;
-  fprintf(stderr,"# %s\n\n",s->name);
-  if(s->content!=NULL){
-    map* mcurs=s->content;
-    dumpMap(mcurs);
-    mcurs=s->metadata;
-    if(mcurs!=NULL){
+  fprintf(stderr,"# %s\n\n",psServ->name);
+  if(psServ->content!=NULL){
+    map* pmCurs=psServ->content;
+    dumpMap(pmCurs);
+    pmCurs=psServ->metadata;
+    if(pmCurs!=NULL){
       fprintf(stderr,"MetaData:\n");
-      while(mcurs!=NULL){
+      while(pmCurs!=NULL){
 	for(i=0;i<2;i++)
 	  fprintf(stderr," ");
-	_dumpMap(mcurs);
-	mcurs=mcurs->next;
+	_dumpMap(pmCurs);
+	pmCurs=pmCurs->next;
       }
     }
   }
-  if(s->inputs!=NULL){
+  if(psServ->inputs!=NULL){
     fprintf(stderr,"\ninputs:\n");
-    dumpElementsAsYAML(s->inputs,0);
+    dumpElementsAsYAML(psServ->inputs,0);
   }
-  if(s->outputs!=NULL){
+  if(psServ->outputs!=NULL){
     fprintf(stderr,"\noutputs:\n");
-    dumpElementsAsYAML(s->outputs,0);
+    dumpElementsAsYAML(psServ->outputs,0);
   }
 }
 
 /**
  * Duplicate a service
  * 
- * @param s the service to clone
+ * @param psServ the service to clone
  * @return the allocated service containing a copy of the serfvice s
  */
-service* dupService(service* s){
-  service *res=(service*)malloc(SERVICE_SIZE);
-  res->name=zStrdup(s->name);
-  res->content=NULL;
-  addMapToMap(&res->content,s->content);
-  res->metadata=NULL;
-  addMapToMap(&res->metadata,s->metadata);
-  res->additional_parameters=NULL;
-  addMapToMap(&res->additional_parameters,s->additional_parameters);
-  res->inputs=dupElements(s->inputs);
-  res->outputs=dupElements(s->outputs);
-  return res;
+service* dupService(service* psServ){
+  service *psRes=(service*)malloc(SERVICE_SIZE);
+  psRes->name=zStrdup(psServ->name);
+  psRes->content=NULL;
+  addMapToMap(&psRes->content,psServ->content);
+  psRes->metadata=NULL;
+  addMapToMap(&psRes->metadata,psServ->metadata);
+  psRes->additional_parameters=NULL;
+  addMapToMap(&psRes->additional_parameters,psServ->additional_parameters);
+  psRes->inputs=dupElements(psServ->inputs);
+  psRes->outputs=dupElements(psServ->outputs);
+  return psRes;
 }
 
 /**
  * Print the registry on stderr.
  * 
- * @param r the registry
+ * @param prReg the registry
  */
-void dumpRegistry(registry* r){
-  registry* p=r;
-  while(p!=NULL){
-    services* s=p->content;
-    fprintf(stderr,"%s \n",p->name);
-    s=p->content;
-    while(s!=NULL){
-      dumpService(s->content);
-      s=s->next;
+void dumpRegistry(registry* prReg){
+  registry* prCurs=prReg;
+  while(prCurs!=NULL){
+    services* psServ=prCurs->content;
+    fprintf(stderr,"%s \n",prCurs->name);
+    psServ=prCurs->content;
+    while(psServ!=NULL){
+      dumpService(psServ->content);
+      psServ=psServ->next;
     }
-    p=p->next;
+    prCurs=prCurs->next;
   }
 }
 
 /**
  * Add a service to the registry
  *
- * @param reg the resgitry to add the service
- * @param name the registry name to update
- * @param content the service to add
+ * @param prReg the resgitry to add the service
+ * @param pcName the registry name to update
+ * @param psContent the service to add
  */
-bool addServiceToRegistry(registry** reg,char* name,service* content){
-  registry *l=*reg;
+bool addServiceToRegistry(registry** prReg,char* pcName,service* psContent){
+  registry *l=*prReg;
   int isInitial=-1;
   if(l==NULL){
     l=(registry*)malloc(REGISTRY_SIZE);
@@ -1434,7 +1439,7 @@ bool addServiceToRegistry(registry** reg,char* name,service* content){
   if(l!=NULL){
     int hasLevel=-1;
     while(isInitial<0 && l!=NULL){
-      if(l->name!=NULL && strcasecmp(name,l->name)==0){
+      if(l->name!=NULL && strcasecmp(pcName,l->name)==0){
 	hasLevel=1;
 	break;
       }
@@ -1443,32 +1448,32 @@ bool addServiceToRegistry(registry** reg,char* name,service* content){
     if(hasLevel<0){
       if(isInitial<0)
 	l=(registry*)malloc(REGISTRY_SIZE);
-      l->name=zStrdup(name);
+      l->name=zStrdup(pcName);
       l->content=NULL;
       l->next=NULL;
     }
     if(l->content==NULL){
       l->content=(services*)malloc(SERVICES_SIZE);
-      l->content->content=dupService(content);
+      l->content->content=dupService(psContent);
       l->content->next=NULL;
     }
     else{
-      services* s=l->content;
-      while(s->next!=NULL)
-	s=s->next;
-      s->next=(services*)malloc(SERVICES_SIZE);
-      s->next->content=dupService(content);
-      s->next->next=NULL;
+      services* psServ=l->content;
+      while(psServ->next!=NULL)
+	psServ=psServ->next;
+      psServ->next=(services*)malloc(SERVICES_SIZE);
+      psServ->next->content=dupService(psContent);
+      psServ->next->next=NULL;
     }
     l->next=NULL;
     if(isInitial>0)
-      *reg=l;
+      *prReg=l;
     else{
-      registry *r=*reg;
-      while(r->next!=NULL)
-	r=r->next;
-      r->next=l;
-      r->next->next=NULL;
+      registry *prCurs=*prReg;
+      while(prCurs->next!=NULL)
+	prCurs=prCurs->next;
+      prCurs->next=l;
+      prCurs->next->next=NULL;
     }
     return true;
   }
@@ -1479,47 +1484,47 @@ bool addServiceToRegistry(registry** reg,char* name,service* content){
 /**
  * Free memory allocated for the registry
  *
- * @param r the registry
+ * @param prReg the registry
  */
-void freeRegistry(registry** r){
-  registry* lr=*r;
-  while(lr!=NULL){
-    services* s=lr->content;
-    free(lr->name);
-    while(s!=NULL){
-      service* s1=s->content;
-      s=s->next;
-      if(s1!=NULL){
-	freeService(&s1);
-	free(s1);
-	s1=NULL;
+void freeRegistry(registry** prReg){
+  registry* prLocalRef=*prReg;
+  while(prLocalRef!=NULL){
+    services* psServ=prLocalRef->content;
+    free(prLocalRef->name);
+    while(psServ!=NULL){
+      service* psServ1=psServ->content;
+      psServ=psServ->next;
+      if(psServ1!=NULL){
+	freeService(&psServ1);
+	free(psServ1);
+	psServ1=NULL;
       }
     }
-    lr=lr->next;
+    prLocalRef=prLocalRef->next;
   }    
 }
 
 /**
  * Access a service in the registry
  *
- * @param r the registry
- * @param level the regitry to search ("concept", "generic" or "implementation")
- * @param sname the service name
+ * @param prReg the registry
+ * @param pcLevel the regitry to search ("concept", "generic" or "implementation")
+ * @param pcName the service name
  * @return the service pointer if a corresponding service was found or NULL
  */
-service* getServiceFromRegistry(registry* r,char  *level,char* sname){
-  registry *lr=r;
-  while(lr!=NULL){
-    if(strcasecmp(lr->name,level)==0){
-      services* s=lr->content;
-      while(s!=NULL){
-	if(s->content!=NULL && strcasecmp(s->content->name,sname)==0)
-	  return s->content;
-	s=s->next;
+service* getServiceFromRegistry(registry* prReg,char  *pcLevel,char* pcName){
+  registry *prLocalRef=prReg;
+  while(prLocalRef!=NULL){
+    if(strcasecmp(prLocalRef->name,pcLevel)==0){
+      services* psServ=prLocalRef->content;
+      while(psServ!=NULL){
+	if(psServ->content!=NULL && strcasecmp(psServ->content->name,pcName)==0)
+	  return psServ->content;
+	psServ=psServ->next;
       }
       break;
     }
-    lr=lr->next;
+    prLocalRef=prLocalRef->next;
   }
   return NULL;
 }
@@ -1527,42 +1532,42 @@ service* getServiceFromRegistry(registry* r,char  *level,char* sname){
 /**
  * Apply inheritance to an out map from a reference in map
  *
- * @param out the map to update
- * @param in the reference map (containing inherited properties)
+ * @param ppmOut the map to update
+ * @param pmIn the reference map (containing inherited properties)
  */
-void inheritMap(map** out,map* in){
-  map* content=in;
-  if((*out)==NULL){
-    addMapToMap(out,in);
+void inheritMap(map** ppmOut,map* pmIn){
+  map* pmContent=pmIn;
+  if((*ppmOut)==NULL){
+    addMapToMap(ppmOut,pmIn);
     return;
   }
-  while(content!=NULL){
-    map* cmap=getMap(*out,content->name);
-    if(cmap==NULL)
-      addToMap(*out,content->name,content->value);
-    content=content->next;
+  while(pmContent!=NULL){
+    map* pmCurrent=getMap(*ppmOut,pmContent->name);
+    if(pmCurrent==NULL)
+      addToMap(*ppmOut,pmCurrent->name,pmCurrent->value);
+    pmCurrent=pmCurrent->next;
   }
 }
 
 /**
  * Apply inheritance to an out iotype from a reference in iotype
  * 
- * @param out the iotype to update
- * @param in the reference iotype (containing inherited properties)
+ * @param ppiotOut the iotype to update
+ * @param piotIn the reference iotype (containing inherited properties)
  */
-void inheritIOType(iotype** out,iotype* in){
-  iotype* io=in;
-  iotype* oio=*out;
-  if(io!=NULL){
-    if(*out==NULL){
-      *out=(iotype*)malloc(IOTYPE_SIZE);
-      (*out)->content=NULL;
-      addMapToMap(&(*out)->content,io->content);
-      (*out)->next=NULL;
-      oio=*out;
-      inheritIOType(&oio->next,io->next);
+void inheritIOType(iotype** ppiotOut,iotype* piotIn){
+  iotype* piotInCurosor=piotIn;
+  iotype* ppiotOutCursor=*ppiotOut;
+  if(piotInCurosor!=NULL){
+    if(*ppiotOut==NULL){
+      *ppiotOut=(iotype*)malloc(IOTYPE_SIZE);
+      (*ppiotOut)->content=NULL;
+      addMapToMap(&(*ppiotOut)->content,piotInCurosor->content);
+      (*ppiotOut)->next=NULL;
+      ppiotOutCursor=*ppiotOut;
+      inheritIOType(&ppiotOutCursor->next,piotInCurosor->next);
     }else{
-      inheritIOType(&oio->next,io->next);
+      inheritIOType(&ppiotOutCursor->next,piotInCurosor->next);
     }
   }
 }
@@ -1570,240 +1575,246 @@ void inheritIOType(iotype** out,iotype* in){
 /**
  * Apply inheritance to an out elements from a reference in elements
  * 
- * @param out the elements to update
- * @param in the reference elements (containing inherited properties)
+ * @param ppeOut the elements to update
+ * @param peIn the reference elements (containing inherited properties)
  */
-void inheritElements(elements** out,elements* in){
-  elements* content=in;
-  while(content!=NULL && *out!=NULL){
-    elements* cmap=getElements(*out,content->name);
-    if(cmap==NULL)
-      addToElements(out,content);
+void inheritElements(elements** ppeOut,elements* peIn){
+  elements* peContent=peIn;
+  while(peContent!=NULL && *ppeOut!=NULL){
+    elements* peCurrent=getElements(*ppeOut,peContent->name);
+    if(peCurrent==NULL)
+      addToElements(ppeOut,peContent);
     else{
-      inheritMap(&cmap->content,content->content);
-      inheritMap(&cmap->metadata,content->metadata);
-      if(cmap->format==NULL && content->format!=NULL)
-	cmap->format=zStrdup(content->format);
-      inheritIOType(&cmap->defaults,content->defaults);
-      if(cmap->supported==NULL)
-	inheritIOType(&cmap->supported,content->supported);
+      inheritMap(&peCurrent->content,peContent->content);
+      inheritMap(&peCurrent->metadata,peContent->metadata);
+      if(peCurrent->format==NULL && peContent->format!=NULL)
+	peCurrent->format=zStrdup(peContent->format);
+      inheritIOType(&peCurrent->defaults,peContent->defaults);
+      if(peCurrent->supported==NULL)
+	inheritIOType(&peCurrent->supported,peContent->supported);
       else{
-	iotype* p=content->supported;
-	while(p!=NULL){
-	  addMapToIoType(&cmap->supported,p->content);
-	  p=p->next;
+	iotype* piotTmp=peContent->supported;
+	while(piotTmp!=NULL){
+	  addMapToIoType(&peCurrent->supported,piotTmp->content);
+	  piotTmp=piotTmp->next;
 	}
       }
     }
-    content=content->next;
+    peContent=peContent->next;
   }
 }
 
 /**
  * Apply inheritance to a service based on a registry
  * 
- * @param r the registry storing profiles hierarchy
- * @param s the service to update depending on its inheritance
+ * @param prReg the registry storing profiles hierarchy
+ * @param psServ the service to update depending on its inheritance
  */
-void inheritance(registry *r,service** s){
-  service* ls=*s;
+void inheritance(registry *prReg,service** psServ){
+  service* psCursor=*psServ;
   map *profile,*level;
-  if(r==NULL)
+  if(prReg==NULL)
     return;
-  if(ls==NULL || ls->content==NULL)
+  if(psCursor==NULL || psCursor->content==NULL)
     return;
-  profile=getMap(ls->content,"extend");
-  level=getMap(ls->content,"level");
+  profile=getMap(psCursor->content,"extend");
+  level=getMap(psCursor->content,"level");
   if(profile!=NULL&&level!=NULL){
     service* s1;
     if(strncasecmp(level->value,"profile",7)==0)
-      s1=getServiceFromRegistry(r,(char*)"generic",profile->value);
+      s1=getServiceFromRegistry(prReg,(char*)"generic",profile->value);
     else
-      s1=getServiceFromRegistry(r,level->value,profile->value);
+      s1=getServiceFromRegistry(prReg,level->value,profile->value);
       
-    inheritMap(&ls->content,s1->content);
-    inheritMap(&ls->metadata,s1->metadata);
-    if(ls->inputs==NULL && s1->inputs!=NULL){
-      ls->inputs=dupElements(s1->inputs);
+    inheritMap(&psCursor->content,s1->content);
+    inheritMap(&psCursor->metadata,s1->metadata);
+    if(psCursor->inputs==NULL && s1->inputs!=NULL){
+      psCursor->inputs=dupElements(s1->inputs);
     }else{
-      inheritElements(&ls->inputs,s1->inputs);
+      inheritElements(&psCursor->inputs,s1->inputs);
     }
-    if(ls->outputs==NULL && s1->outputs!=NULL){
-      ls->outputs=dupElements(s1->outputs);
+    if(psCursor->outputs==NULL && s1->outputs!=NULL){
+      psCursor->outputs=dupElements(s1->outputs);
     }else
-      inheritElements(&ls->outputs,s1->outputs);
+      inheritElements(&psCursor->outputs,s1->outputs);
   }
 }
 
 /**
  * Convert a maps to a char*** (only used for Fortran support)
  *
- * @param m the maps to convert
- * @param c the resulting array
+ * @param pmsMap the maps to convert
+ * @param pppcValues the resulting array
  */
-void mapsToCharXXX(maps* m,char*** c){
-  maps* tm=m;
+void mapsToCharXXX(maps* pmsMap,char*** pppcValues){
+  maps* pmsCursor=pmsMap;
   int i=0;
   int j=0;
-  char tmp[10][30][1024];
-  memset(tmp,0,1024*10*10);
-  while(tm!=NULL){
-    map* tc=tm->content;
+  char aaacTmp[10][30][1024];
+  memset(aaacTmp,0,1024*10*10);
+  while(pmsCursor!=NULL){
+    map* pmContent=pmsCursor->content;
     if(i>=10)
       break;
-    strcpy(tmp[i][j],"name");
+    strcpy(aaacTmp[i][j],"name");
     j++;
-    strcpy(tmp[i][j],tm->name);
+    strcpy(aaacTmp[i][j],pmsCursor->name);
     j++;
-    while(tc!=NULL){
+    while(pmContent!=NULL){
       if(j>=30)
 	break;
-      strcpy(tmp[i][j],tc->name);
+      strcpy(aaacTmp[i][j],pmContent->name);
       j++;
-      strcpy(tmp[i][j],tc->value);
+      strcpy(aaacTmp[i][j],pmContent->value);
       j++;
-      tc=tc->next;
+      pmContent=pmContent->next;
     }
-    tm=tm->next;
+    pmsCursor=pmsCursor->next;
     j=0;
     i++;
   }
-  memcpy(c,tmp,10*10*1024);
+  memcpy(pppcValues,aaacTmp,10*10*1024);
 }
 
 /**
  * Convert a char*** to a maps (only used for Fortran support)
  *
- * @param c the array to convert
- * @param m the resulting maps
+ * @param pppcValues the array to convert
+ * @param ppmsMaps the resulting maps
  */
-void charxxxToMaps(char*** c,maps**m){
-  maps* trorf=*m;
+void charxxxToMaps(char*** pppcValues,maps** ppmsMaps){
+  maps* pmsCursor=*ppmsMaps;
   int i,j;
-  char tmp[10][30][1024];
-  memcpy(tmp,c,10*30*1024);
+  char aaaTmp[10][30][1024];
+  memcpy(aaaTmp,pppcValues,10*30*1024);
   for(i=0;i<10;i++){
-    if(strlen(tmp[i][1])==0)
+    if(strlen(aaaTmp[i][1])==0)
       break;
-    trorf->name=tmp[i][1];
-    trorf->content=NULL;
-    trorf->next=NULL;
+    pmsCursor->name=aaaTmp[i][1];
+    pmsCursor->content=NULL;
+    pmsCursor->next=NULL;
     for(j=2;j<29;j+=2){
-      if(strlen(tmp[i][j+1])==0)
+      if(strlen(aaaTmp[i][j+1])==0)
 	break;
-      if(trorf->content==NULL)
-	trorf->content=createMap(tmp[i][j],tmp[i][j+1]);
+      if(pmsCursor->content==NULL)
+	pmsCursor->content=createMap(aaaTmp[i][j],aaaTmp[i][j+1]);
       else
-	addToMap(trorf->content,tmp[i][j],tmp[i][j+1]);
+	addToMap(pmsCursor->content,aaaTmp[i][j],aaaTmp[i][j+1]);
     }
-    trorf=trorf->next;
+    pmsCursor=pmsCursor->next;
   }
-  m=&trorf;
+  ppmsMaps=&pmsCursor;
 }
 
 /**
  * Verify that a map has a value
  *
- * @param map pointer to map that should be checked
+ * @param pmMap pointer to map that should be checked
  * @return true if map has a value or false if value is missing/empty/NULL
  */
-bool nonempty(map* map) {
-	return (map != NULL && map->value != NULL && strlen(map->value) > 0 && strcmp(map->value, "NULL") != 0);
+bool nonempty(map* pmMap) {
+  return (pmMap != NULL && pmMap->value != NULL && strlen(pmMap->value) > 0 && strcmp(pmMap->value, "NULL") != 0);
 }
 
 /**
  * Verify that a particular map value exists in a maps
  * data structure, and obtain that value
  *
- * @param source pointer to maps structure
- * @param node name of maps node to search
- * @param key name of map node to find
- * @param kvp address to the map* if it exists, otherwise NULL
+ * @param pmsSource pointer to maps structure
+ * @param pccNode name of maps node to search
+ * @param pccKey name of map node to find
+ * @param ppmKvp address to the map* if it exists, otherwise NULL
  * @return true if map has a value or false if value is missing/NULL
  *
  * @note The map assigned to kvp is owned by the source maps
  */
-bool hasvalue(maps* source, const char* node, const char* key, map** kvp) {
-	*kvp = getMapFromMaps(source, node, key);
-	return (*kvp != NULL && (*kvp)->value != NULL &&
-		strlen((*kvp)->value) > 0 && strcmp((*kvp)->value, "NULL") != 0);
+bool hasvalue(maps* pmsSource, const char* pccNode, const char* pccKey, map** ppmKvp) {
+  *ppmKvp = getMapFromMaps(pmsSource, pccNode, pccKey);
+  return (*ppmKvp != NULL && (*ppmKvp)->value != NULL &&
+	  strlen((*ppmKvp)->value) > 0 && strcmp((*ppmKvp)->value, "NULL") != 0);
 }
 
 /*
  * Set error message in configuration maps
  *
- * @param conf reference to configuration maps
- * @param service name of service
- * @param exc WPSException code
- * @param message exception text (default: exception text in WPS specification)
+ * @param pmsaConf reference to configuration maps
+ * @param pccService name of service
+ * @param weExc WPSException code
+ * @param pccMessage exception text (default: exception text in WPS specification)
  */
-void setErrorMessage(maps*& conf, const char* service, WPSException exc, const char* message) {
-
-	if (message == NULL) {
-		message = WPSExceptionText[exc];
-	}
-
-	size_t len = strlen(service) + strlen(": ") + strlen(message) + strlen(": ") + strlen(WPSExceptionCode[exc]) + 16;
-	char* msg = (char*)malloc(len * sizeof(char));
-
-	if (msg != NULL) {
-		snprintf(msg, len * sizeof(char), "\n%s: %s: %s\n", service, message, WPSExceptionCode[exc]);
-		setMapInMaps(conf, "lenv", "message", msg);
-		free(msg);
-	}
+void setErrorMessage(maps*& pmsaConf, const char* pccService, WPSException weExc, const char* pccMessage) {
+  if (pccMessage == NULL) {
+    pccMessage = WPSExceptionText[weExc];
+  }
+  size_t len = strlen(pccService) + strlen(": ") + strlen(pccMessage) + strlen(": ") + strlen(WPSExceptionCode[weExc]) + 16;
+  char* pcMsg = (char*)malloc(len * sizeof(char));
+  if (pcMsg != NULL) {
+    snprintf(pcMsg, len * sizeof(char), "\n%s: %s: %s\n", pccService, pccMessage, WPSExceptionCode[weExc]);
+    setMapInMaps(pmsaConf, "lenv", "message", pcMsg);
+    free(pcMsg);
+  }
 }
 
-void logMessage(const char* source, const char* function, int line, const char* file, const char* message) { //, const char* source, const char* function, int line) {
+/**
+ * Print debug message
+ *
+ * @param pccSource the file invoking the function
+ * @param pccFunction the function calling for logMessage
+ * @param iLine the line number
+ * @param pccFile the file to log informations
+ * @param pccMessage the message to be print
+ */
+void logMessage(const char* pccSource, const char* pccFunction, int iLne, const char* pccFile, const char* pccMessage) { //, const char* source, const char* function, int line) {
 
-	size_t msglen = 512;
-	const char empty[] = "";
+  size_t msglen = 512;
+  const char empty[] = "";
 
-	FILE* log;
+  FILE* pfLog;
 
-	// system time, process time [nanoseconds]   
-	unsigned long long sys_t, proc_t;
+  // system time, process time [nanoseconds]   
+  unsigned long long sys_t, proc_t;
 
-	// processor time consumed by the program:
-	clock_t t = clock();
+  // processor time consumed by the program:
+  clock_t t = clock();
 
-	// system time:
-	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  // system time:
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 
-	std::time_t now_t = std::chrono::system_clock::to_time_t(now);
-	std::tm* tm = localtime(&now_t);
-	char* str = asctime(tm);
-	str[strlen(str) - 1] = '\0'; // remove newline
+  std::time_t now_t = std::chrono::system_clock::to_time_t(now);
+  std::tm* tm = localtime(&now_t);
+  char* pcStr = asctime(tm);
+  pcStr[strlen(pcStr) - 1] = '\0'; // remove newline
 
-	sys_t = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-	//proc_t = (unsigned long long)(1.0e9*t/CLOCKS_PER_SEC);
-	proc_t = t;
+  sys_t = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+  //proc_t = (unsigned long long)(1.0e9*t/CLOCKS_PER_SEC);
+  proc_t = t;
 
-	if (message != NULL) {
-		msglen += strlen(message);
-	}
-	else {
-		message = empty;
-	}
-	//getLastErrorMessage(); // cgiScriptName  
-	char* text = (char*)malloc(sizeof(char)*msglen);
+  if (pccMessage != NULL) {
+    msglen += strlen(pccMessage);
+  }
+  else {
+    pccMessage = empty;
+  }
+  //getLastErrorMessage(); // cgiScriptName  
+  char* pcText = (char*)malloc(sizeof(char)*msglen);
 
-	snprintf(text, msglen, "pid: %d %s line %d %s() %s systime: %lld ns ticks: %lld %s\n",
-		zGetpid(), source, line, function, str, sys_t, proc_t, message); // __FILE__ __LINE__ __func__ //
+  snprintf(pcText, msglen, "pid: %d %s line %d %s() %s systime: %lld ns ticks: %lld %s\n",
+	   zGetpid(), pccSource, iLne, pccFunction, pcStr, sys_t, proc_t, pccMessage); // __FILE__ __LINE__ __func__ //
 
-	if (file != NULL && (log = fopen(file, "a+")) != NULL) {
-		fputs(text, log);
-		fclose(log);
-	}
-	else {
+  if (pccFile != NULL && (pfLog = fopen(pccFile, "a+")) != NULL) {
+    fputs(pcText, pfLog);
+    fclose(pfLog);
+  }
+  else {
 #ifdef MSG_LOG_FILE
-		if ((log = fopen(MSG_LOG_FILE, "a+")) != NULL) {
-			fputs(text, log);
-			fclose(log);
-		}
+    if ((pfLog = fopen(MSG_LOG_FILE, "a+")) != NULL) {
+      fputs(pcText, pfLog);
+      fclose(pfLog);
+    }
 #endif
-	}
+  }
 
-	if (text != NULL) free(text);
+  if (pcText != NULL) free(pcText);
 }
 
 // knut:
@@ -1814,17 +1825,17 @@ void logMessage(const char* source, const char* function, int line, const char* 
 
 #ifdef WIN32
 #ifndef USE_MS
-char *strcasestr (char const *a, char const *b)
+char *strcasestr (char const *pccA, char const *pccB)
   {
-    char *x = zStrdup (a);
-    char *y = zStrdup (b);
+    char *pcX = zStrdup (pccA);
+    char *pcY = zStrdup (pccB);
  
-      x = _strlwr (x);
-      y = _strlwr (y);
-    char *pos = strstr (x, y);
-    char *ret = pos == NULL ? NULL : (char *) (a + (pos - x));
-      free (x);
-      free (y);
+      pcX = _strlwr (pcX);
+      pcY = _strlwr (pcY);
+    char *pos = strstr (pcX, pcY);
+    char *ret = pos == NULL ? NULL : (char *) (pccA + (pos - pcX));
+      free (pcX);
+      free (pcY);
       return ret;
   };
 #else
@@ -1842,16 +1853,16 @@ char *strcasestr (char const *a, char const *b)
  * This function will free, and hence delete, any existing value in the map.
  * The memory should be deallocated by calling freeMap.
  */
-char* allocateMapValue(map* node, size_t num_bytes)
+char* allocateMapValue(map* pmNode, size_t sNumBytes)
 {
-	if (node == NULL) {
-		return NULL;
-	}
+  if (pmNode == NULL) {
+    return NULL;
+  }
 
-	if (node->value != NULL) {
-		free(node->value);
-	}
-	node->value = (char*) malloc(num_bytes);
+  if (pmNode->value != NULL) {
+    free(pmNode->value);
+  }
+  pmNode->value = (char*) malloc(sNumBytes);
 		
-	return node->value;
+  return pmNode->value;
 }

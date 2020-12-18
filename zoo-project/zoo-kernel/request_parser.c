@@ -1688,15 +1688,16 @@ int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,
  */
 int validateRequest(maps** main_conf,service* s,map* original_request, maps** request_inputs,maps** request_outputs,HINTERNET* hInternet){
 
-  map* errI0=NULL;
-  runHttpRequests (main_conf, request_inputs, hInternet,&errI0);
-  if(errI0!=NULL){
-    printExceptionReportResponse (*main_conf, errI0);
+  if(hInternet!=NULL){
+    map* errI0=NULL;
+    runHttpRequests (main_conf, request_inputs, hInternet,&errI0);
+    if(errI0!=NULL){
+      printExceptionReportResponse (*main_conf, errI0);
+      InternetCloseHandle (hInternet);
+      return -1;
+    }
     InternetCloseHandle (hInternet);
-    return -1;
   }
-  InternetCloseHandle (hInternet);
-
 
   map* errI=NULL;
   char *dfv = addDefaultValues (request_inputs, s->inputs, *main_conf, 0,&errI);
@@ -1719,7 +1720,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                         ptr->name, tmp1->value, i);
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
-              printExceptionReportResponse (*main_conf, tmpe);
+	      printExceptionReportResponse (*main_conf, tmpe);
               freeMap (&tmpe);
               free (tmpe);
 	      return -1;
