@@ -68,7 +68,7 @@ extern "C" int crlex ();
 #include "request_parser.h"
 #include "service.h"
 
-#ifdef defined(WIN32) || defined(USE_JSON)
+#if defined(WIN32) || defined(USE_JSON)
 #include "caching.h"
 #endif
 #include "sqlapi.h"
