@@ -1317,7 +1317,7 @@ extern "C" {
     sprintf(tmp1,"%s/statusInfos/%s",
 	    tmpPath->value,
 	    cIdentifier->value);
-    if(mkdir(tmp1,0777) != 0 && errno != EEXIST){
+    if(zMkdir(tmp1) != 0 && errno != EEXIST){
       fprintf(stderr,"Issue creating directory %s\n",tmp1);
       return NULL;
     }
