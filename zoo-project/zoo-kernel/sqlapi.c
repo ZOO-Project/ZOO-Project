@@ -388,7 +388,9 @@ int _updateStatus(maps* conf){
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   cleanUpResultSet(conf,zoo_ds_nb-1);
   free(sqlQuery);
+#ifdef USE_JSON  
   invokeBasicCallback(conf,SERVICE_STARTED);
+#endif
   return 0;
 }
 
