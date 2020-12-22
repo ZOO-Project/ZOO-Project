@@ -68,7 +68,7 @@ extern "C" int crlex ();
 #include "request_parser.h"
 #include "service.h"
 
-#ifdef USE_JSON
+#ifdef defined(WIN32) || defined(USE_JSON)
 #include "caching.h"
 #endif
 #include "sqlapi.h"
@@ -695,6 +695,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
   return 0;
 }
 
+#ifdef USE_JSON
 /**
  * Run every HTTP request to download inputs passed as reference
  *
@@ -737,6 +738,7 @@ int loadHttpRequests(maps* conf,maps* inputs){
   }
   return 0;
 }
+#endif
 
 /**
  * Initialize environment sections, load env, and populate lenv and renv.
@@ -984,7 +986,7 @@ void initAllEnvironment(maps* conf,map* request_inputs,
     addToMap (request_inputs, "storeExecuteResponse", "true");
     addToMap (request_inputs, "status", "true");
     setMapInMaps (conf, "lenv", "osid", test1->value);
-    status = getMap (request_inputs, "status");
+    //status = getMap (request_inputs, "status");
   }
   test1 = getMap (request_inputs, "usid");
   if (test1 != NULL){
