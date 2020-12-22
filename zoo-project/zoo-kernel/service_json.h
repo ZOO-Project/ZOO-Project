@@ -49,7 +49,7 @@ extern "C" {
   json_object* serviceToJson(service*);
   void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
   void printExceptionReportResponseJ(maps*,map*);
-  void parseJRequest(maps*,service* s,json_object*,map*,maps**,maps**);
+  void parseJRequest(maps*,service*,json_object*,map*,maps**,maps**);
   json_object*  printJResult(maps*,service*,maps*,int);
   json_object* printJobStatus(maps*,char*);
   json_object* printJobList(maps*);
