@@ -197,15 +197,6 @@ extern "C" {
     int ns = 0;
     int nr = 0;
     int nf = 0;
-    Face_iterator fit =T.faces_begin();
-    FILE* f=fopen("/tmp/toto.log","w+");
-    for ( ; fit !=T.faces_end(); ++fit) {
-      fprintf(stderr," *** %s %d %d %d\n",__FILE__,__LINE__,nf,fit.info());
-      fflush(stderr);
-      
-      nf++;
-    }
-    fclose(f);
     Edge_iterator eit =T.edges_begin();
     for ( ; eit !=T.edges_end(); ++eit) {
       CGAL::Object o = T.dual(eit);

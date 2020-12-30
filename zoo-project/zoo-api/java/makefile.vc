@@ -1,0 +1,37 @@
+# WIN32 Makefile tested using VC-9.0
+# Don't forget to set your PATH using the following command :
+# c:\Progam Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars32.bat
+# set PATH=%PATH%;$(TOOLS)
+# using value for TOOLS relative to your local installation
+#
+
+!INCLUDE ..\..\zoo-kernel\nmake.opt
+
+!IFDEF JAVA_FILE
+JAVA_FILE=..\..\zoo-kernel/$(JAVA_FILE)
+!ENDIF
+!IFDEF MS_FILE
+MS_FILE=..\..\zoo-kernel/$(MS_FILE)
+!ENDIF
+!IFDEF JS_FILE
+JS_FILE=..\..\zoo-kernel/$(JS_FILE)
+!ENDIF
+
+all:  libZOO.dll
+
+org/zoo_project/ZOO.class: org/zoo_project/ZOO.java
+	javac org/zoo_project/ZOO.java
+
+ZOO.h: org/zoo_project/ZOO.java org/zoo_project/ZOO.class
+	javah org.zoo_project.ZOO
+
+zoo-api.o: zoo-api.c ZOO.h
+	$(CPP) /c $(CFLAGS) zoo-api.c -I../../zoo-kernel/ -I../../../thirds/cgic206/ 
+
+libZOO.dll: zoo-api.o
+	link /dll /out:libZOO.dll zoo-api.obj ..\..\zoo-kernel\libzoo_service.lib ..\..\zoo-kernel\server_internal.obj ..\..\zoo-kernel\caching.obj ..\..\zoo-kernel\ulinet.obj ..\..\zoo-kernel\response_print.obj ..\..\zoo-kernel\service_json.obj ..\..\zoo-kernel\main_conf_read.tab.obj ..\..\zoo-kernel\service_conf.tab.obj ..\..\zoo-kernel\lex.cr.obj ..\..\zoo-kernel\lex.sr.obj $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(JSONC_LIB) $(LDFLAGS) /FORCE:MULTIPLE
+
+clean:
+	erase -f *dll *lib *o *.h *class
+
+
