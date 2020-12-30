@@ -1,4 +1,4 @@
-Version 1.8.0-dev
+Version 1.8.0
   * Support raw response in OGC API - Processes
   * Add a ZOO-API section to the howtos documentation
   * OGC API - Processes support:
