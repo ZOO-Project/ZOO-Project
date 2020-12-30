@@ -38,7 +38,9 @@ extern "C" {
 #endif
 
   bool invokeBasicCallback(maps*,int);
+#ifdef USE_CALLBACK
   bool invokeCallback(maps*,maps*,maps*,int,int);
+#endif
   void cleanupCallbackThreads();
   
 #ifdef __cplusplus
