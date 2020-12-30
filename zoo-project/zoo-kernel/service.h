@@ -87,6 +87,7 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
 #define zStat _stati64
 
 #else
+#include <sys/stat.h>
 /**
  * The crossplatform strdup alias
  */
@@ -94,7 +95,9 @@ static int zGettimeofday(struct ztimeval* tp, void* tzp)
 /**
  * The crossplatform mkdir alias
  */
-#define zMkdir mkdir
+static int zMkdir(const char* pccPath){
+  return mkdir(pccPath,0777);
+}
 /**
  * The crossplatform open alias
  */
