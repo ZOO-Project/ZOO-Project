@@ -34,9 +34,6 @@
 #include "gdal.h"
 #include "cpl_conv.h"
 #include "ogr_api.h"
-#if !defined(WIN32) && GDAL_VERSION_MAJOR >= 2
-#include <gdal_priv.h>
-#endif
 
 #ifdef ZOO_SERVICE
 extern "C" {
