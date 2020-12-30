@@ -13,12 +13,12 @@ FILES=$(FILES) $(ZOOK_DIR)$(JAVA_FILE)
 FILES=$(FILES) $(ZOOK_DIR)$(PY_FILE)
 !ENDIF
 !IFDEF MS_DIR
-FILES=$(FILES) $(ZOOK_DIR)$(MS_FILE)
+FILES=$(FILES) $(ZOOK_DIR)$(MS_FILE) $(ZOOK_DIR)/caching.obj $(ZOOK_DIR)/ulinet.obj
 !ENDIF
 
 cgi-env/wps_registry.zo: service.c
 	$(CPP) /D_CRT_NONSTDC_NO_DEPRECATE -DWIN32 -DZOO_SERVICE $(CFLAGS) /c service.c
-	link /dll /out:cgi-env/wps_registry.zo $(FILES) ./service.obj $(LDFLAGS) /FORCE:MULTIPLE
+	link /dll /out:cgi-env/wps_registry.zo $(FILES) ./service.obj $(ZOOK_DIR)/service_json.obj $(JSONC_LIB) $(LDFLAGS) /FORCE:MULTIPLE
 
 clean:
 	erase cgi-env\*_registry.*
