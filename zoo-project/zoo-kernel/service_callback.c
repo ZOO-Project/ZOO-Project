@@ -26,7 +26,9 @@
  * THE SOFTWARE.
  */
 
+#ifdef USE_CALLBACK
 #include "service_internal_ms.h"
+#endif
 #include <pthread.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
@@ -283,7 +285,8 @@ extern "C" {
     }
     return true;
   }
-  
+
+#ifdef USE_CALLBACK
   /**
    * Practically invoke the callback, meaning sending the HTTP POST request.
    * 
@@ -1034,7 +1037,8 @@ extern "C" {
     nbThreads++;
     return true;
   }
-
+#endif
+  
   /**
    * Wait for the threads to end then, clean used memory.
    */

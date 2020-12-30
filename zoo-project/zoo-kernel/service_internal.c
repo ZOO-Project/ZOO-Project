@@ -29,6 +29,7 @@
 #include "cpl_vsi.h"
 #endif
 #include "service_internal.h"
+#include "service_callback.h"
 
 #ifdef WIN32
 // ref. https://docs.microsoft.com/en-us/windows/desktop/fileio/locking-and-unlocking-byte-ranges-in-files
@@ -470,7 +471,9 @@ int _updateStatus(maps *conf){
       fprintf(fstatus,"%s|%s",status->value,msg->value);
       fflush(fstatus);
       fclose(fstatus);
+#ifdef USE_JSON
       invokeBasicCallback(conf,SERVICE_STARTED);
+#endif
     }
     if(stat!=NULL){
       unlockShm(lockid);
