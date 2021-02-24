@@ -13,8 +13,6 @@ services:
       - ./docker/.htaccess:/var/www/html/.htaccess
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
-      - ../zoo-demos/zoo-demos-202102/examples:/var/www/html/examples
-      - ../zoo-demos/zoo-demos-202102/data/topofr.tif:/usr/com/zoo-project/topofr.tif
     depends_on:
       - pgbouncer
     environment:
