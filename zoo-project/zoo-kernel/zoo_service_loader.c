@@ -3417,13 +3417,9 @@ runRequest (map ** inputs)
   signal (SIGFPE, donothing);
   signal (SIGABRT, donothing);
 #endif
-    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-    fflush(stderr);
 
   if (((int) zGetpid ()) != cpid || cgiSid != NULL)
     {
-    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-    fflush(stderr);
       if (eres == SERVICE_SUCCEEDED)
 #ifdef USE_CALLBACK
 	invokeCallback(m,NULL,request_output_real_format,5,1);

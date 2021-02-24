@@ -1,3 +1,6 @@
+Version 1.8.1
+  * Deploy demo HTML UI from github from the Dockerfile
+  * Add demo ZOO-Services build in the Dockerfile
 Version 1.8.0
   * Support raw response in OGC API - Processes
   * Add a ZOO-API section to the howtos documentation

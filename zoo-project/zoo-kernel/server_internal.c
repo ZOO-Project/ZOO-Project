@@ -374,7 +374,7 @@ void readGeneratedFile(maps* m,map* content,char* filename){
   }
   zStatStruct f_status;
   int s=zStat(filename, &f_status);
-  sprintf(rsize,"%lld",f_status.st_size);
+  sprintf(rsize,"%ld",f_status.st_size);
   if(getMap(content,"storage")==NULL){
     map* tmpMap1=getMap(content,"value");
     if(tmpMap1==NULL){
