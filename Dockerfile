@@ -17,6 +17,7 @@ ARG RUN_DEPS=" \
     libpython3.6 \
     libxslt1.1 \
     gdal-bin \
+    libcgal13 \
     python3 \
     r-base \
     python3-pip\
@@ -107,9 +108,10 @@ ARG BUILD_DEPS=" \
     libgdal-dev \
     libxml2-dev \
     libxslt1-dev \
+    libcgal-dev \
 "
 WORKDIR /zoo-project
-COPY ./zoo-project/zoo-services/utils/status ./zoo-project/zoo-services/utils/status
+COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -132,8 +134,36 @@ RUN set -ex \
     && make \
     && make install \
     \
+    && cd ../../cgal \
+    && make \
+    && cp cgi-env/* /usr/lib/cgi-bin/ \
+    \
+    && cd .. \
+    && cd ../zoo-services/ogr/base-vect-ops \
+    && make \
+    && cp cgi-env/* /usr/lib/cgi-bin/ \
+    && cd ../.. \
+    \
+    && cd ../zoo-services/gdal/ \
+    && for i in contour dem grid profile translate warp ; do cd $i ; make && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \
+    \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
+
+#
+# Optional zoo demos download.
+#
+FROM base AS demos
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_DEPS=" \
+    git \
+"
+WORKDIR /zoo-project
+
+RUN set -ex \
+    && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
+    \
+    && git clone https://github.com/ZOO-Project/examples.git 
 
 #
 # Runtime image with apache2.
@@ -155,6 +185,11 @@ COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
 COPY --from=builder2 /usr/com/zoo-project/ /usr/com/zoo-project/
+
+# From optional zoo demos
+COPY --from=demos /zoo-project/examples/data/ /usr/com/zoo-project/
+COPY --from=demos /zoo-project/examples/ /var/www/html/
+
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS \

@@ -45,9 +45,9 @@ typedef Triangulation::Vertex_circulator Vertex_circulator;
 extern "C" {
 
   int Voronoi(maps*& conf,maps*& inputs,maps*& outputs){
-    //#ifdef DEBUG
+#ifdef DEBUG
     fprintf(stderr,"\nService internal print\nStarting\n");
-    //#endif
+#endif
     //return SERVICE_FAILED;
     maps* cursor=inputs;
     OGRGeometryH geometry,res;
@@ -55,8 +55,10 @@ extern "C" {
     map* tmpm=NULL;
     tmpm=getMapFromMaps(inputs,"InputPoints","value");
 
+#ifdef DEBUG
     fprintf(stderr," **** %s %d\n",__FILE__,__LINE__);
     fflush(stderr);
+#endif
 
     OGRRegisterAll();
 
@@ -66,8 +68,10 @@ extern "C" {
       fflush(stderr);
       return SERVICE_FAILED;
     }
+#ifdef DEBUG
     fprintf(stderr," **** %s %d\n",__FILE__,__LINE__);
     fflush(stderr);
+#endif
     
     Triangulation T;
     T.insert(points.begin(), points.end());
@@ -203,7 +207,6 @@ extern "C" {
       if (const Kernel::Segment_2 *tmp=CGAL::object_cast<Kernel::Segment_2>(&o)) {
 	const Pointz p1=tmp->source();
 	const Pointz p2=tmp->target();
-	fprintf(stderr,"P1 %d %d | P2 %d %d\n",p1.x(),p1.y(),p2.x(),p2.y());
 #ifdef DEBUG
 	fprintf(stderr,"P1 %d %d | P2 %d %d\n",p1.x(),p1.y(),p2.x(),p2.y());
 #endif
