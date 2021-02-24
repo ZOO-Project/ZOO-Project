@@ -1,0 +1,5 @@
+RewriteEngine On
+RewriteRule ^ogc-api/api.html$ /cgi-bin/zoo_loader.cgi?/api.html [L,QSA]
+RewriteRule ^ogc-api/index.html$ /cgi-bin/zoo_loader.cgi?service=WPS&service=WPS&request=Execute&version=1.0.0&Identifier=display&RawDataOutput=Result&DataInputs=tmpl=@xlink:href=http://localhost/ogc-api/ [L,QSA]
+RewriteRule ^ogc-api(.*).html$ /cgi-bin/zoo_loader.cgi?service=WPS&service=WPS&request=Execute&version=1.0.0&Identifier=display&RawDataOutput=Result&DataInputs=tmpl=@xlink:href=http://localhost/ogc-api$1 [L,QSA]
+RewriteRule ^ogc-api(.*)$ /cgi-bin/zoo_loader.cgi?$1 [L,QSA]
