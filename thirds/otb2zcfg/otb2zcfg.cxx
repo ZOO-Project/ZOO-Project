@@ -221,7 +221,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	  
 	  if(type == ParameterType_StringList || type == ParameterType_String || type == ParameterType_Float
 	     || type == ParameterType_Int || type == ParameterType_Choice || type == ParameterType_ListView
-	     || type == ParameterType_RAM || type == ParameterType_Empty || type == ParameterType_Directory){
+	     || type == ParameterType_RAM || type == ParameterType_Directory){
 	    std::cout << "   <LiteralData>" << std::endl;
 	    std::string lt;
 	    if(type == ParameterType_Int || type == ParameterType_RAM)
@@ -232,8 +232,6 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	       || type == ParameterType_Choice || type == ParameterType_Directory
 	       || type == ParameterType_ListView)
 	      lt="string";
-	    if(type == ParameterType_Empty)
-	      lt="boolean";
 	    std::cout << "    dataType = " << lt << std::endl;
 	    if(type == ParameterType_Choice || type == ParameterType_ListView){
 	      const std::vector<std::string> nList = m_Application->GetChoiceNames(paramKey);
@@ -280,11 +278,9 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	      printOutputImage(m_Application->GetParameterOutputImagePixelType(paramKey));
 	    }
 	    else{
-	      if(type == ParameterType_ComplexOutputImage){
-		printOutputComplexImage(m_Application->GetParameterComplexOutputImagePixelType(paramKey));
-	      }else{
+	      {
 		std::cout << "   <ComplexData>" << std::endl;
-		if(type == ParameterType_InputImage || type == ParameterType_InputImageList || type == ParameterType_ComplexInputImage){
+		if(type == ParameterType_InputImage || type == ParameterType_InputImageList){
 		  printImages();
 		}
 		else
@@ -337,7 +333,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	
 	if(paramKey!="inxml" && paramKey!="outxml" &&
 	   ((type == ParameterType_OutputVectorData || type == ParameterType_OutputImage
-	     || type == ParameterType_OutputImage || type == ParameterType_ComplexOutputImage
+	     || type == ParameterType_OutputImage
 	     || type == ParameterType_OutputFilename) || role==1) && type != ParameterType_Group){
 	  hasOutput=1;
 	  std::vector<std::string> values;
@@ -355,7 +351,7 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	    std::cout << "   Abstract = " << paramKey << std::endl;
 	  }
 
-	  if(type == ParameterType_OutputImage || type == ParameterType_ComplexOutputImage){
+	  if(type == ParameterType_OutputImage){
 	    std::cout << "   <ComplexData>" << std::endl;
 	    printImages();
 	    std::cout << "   </ComplexData>" << std::endl;

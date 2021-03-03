@@ -1885,7 +1885,7 @@ runRequest (map ** inputs)
   char *fbkp, *fbkpid, *fbkpres, *fbkp1, *flog;
   FILE *f0, *f1;
   HINTERNET hInternet;
-  service *s1;
+  service *s1=NULL;
   maps *request_output_real_format = NULL;
   maps *request_input_real_format = NULL;
 
@@ -2551,6 +2551,7 @@ runRequest (map ** inputs)
       printf(jsonStr);
       printf("\n");
       fflush(stdout);
+      json_object_put(res);
     }
     //return 1;
 #endif
@@ -3452,8 +3453,8 @@ runRequest (map ** inputs)
       removeShmLock (m, 1);
 #else
       recordResponse(m,fbkp1);
-      if (eres == SERVICE_SUCCEEDED)
 #ifdef USE_CALLBACK
+      if (eres == SERVICE_SUCCEEDED)
 	invokeCallback(m,NULL,request_output_real_format,6,0);
 #endif
 #endif
@@ -3492,9 +3493,11 @@ runRequest (map ** inputs)
     close_sql(m,0);
 #endif
   }
-  
-  freeService (&s1);
-  free (s1);
+
+  if(s1!=NULL){
+    freeService (&s1);
+    free (s1);
+  }
   freeMaps (&m);
   free (m);
 

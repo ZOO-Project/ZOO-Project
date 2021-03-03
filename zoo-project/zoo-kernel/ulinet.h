@@ -33,7 +33,6 @@
 #endif
 #include "jsapi.h"
 #endif
-#include "fcgi_stdio.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <curl/curl.h>

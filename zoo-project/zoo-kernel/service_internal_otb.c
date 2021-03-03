@@ -210,7 +210,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		  } 
 		}else{
 		  if(type == ParameterType_OutputVectorData){
-		      char* ext="json";
+		      const char* ext="json";
 		      if(tmpVal!=NULL){
 			if(strncasecmp(tmpVal->value,"text/xml",8)==0)
 			ext="gml";
@@ -231,7 +231,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		  }
 		  else
 		    if(type == ParameterType_OutputFilename){
-		      char* ext="txt";
+		      const char* ext="txt";
 		      if(tmpVal!=NULL){
 			if(strncasecmp(tmpVal->value,"text/xml",8)==0)
 			  ext="xml";
@@ -307,7 +307,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		    map* tmpSid=getMapFromMaps(m,"lenv","sid");
 		    char tmp[1024];
 		    map* tmpVal=getMapFromMaps(inputs,paramKey.c_str(),"mimeType");
-		    char* ext="json";
+		    const char* ext="json";
 		    if(tmpVal!=NULL){
 		      if(strncasecmp(tmpVal->value,"application/zip",14)==0){
 			char *tmpName=(char*)malloc((strlen(test->value)+9)*sizeof(char));
@@ -361,7 +361,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		  }
 		  else
 		    if(type == ParameterType_InputImage
-		       || type == ParameterType_ComplexInputImage || type == ParameterType_InputVectorData
+		       || type == ParameterType_InputVectorData
 		       || type == ParameterType_InputFilename){
 		      m_Application->SetParameterString(paramKey, test->value);
 		  }
@@ -402,7 +402,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 			char tmpSName[1024];
 			long count;
 			
-			char *exts[4];
+			const char *exts[4];
 			exts[0]=".shp";
 			exts[1]=".shx";
 			exts[2]=".dbf";

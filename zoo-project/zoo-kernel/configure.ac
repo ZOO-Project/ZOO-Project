@@ -414,8 +414,6 @@ PROJ_CPPFLAGS="-I$PROJPATH/include"
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$PROJ_CPPFLAGS"
-AC_CHECK_HEADERS([proj_api.h],
-                 [], [AC_MSG_ERROR([could not find headers include related to PROJ4])])
 
 AC_SUBST([PROJ_CPPFLAGS])
 AC_SUBST([PROJ_LDFLAGS])
@@ -606,7 +604,8 @@ else
 
 	echo $PYTHONCONFIG
 	# Extract the linker and include flags 
-	PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
+	#PYTHON_LDFLAGS=`$PYTHONCONFIG --ldflags`
+	PYTHON_LDFLAGS=$($PYTHONCONFIG --ldflags | sed "s:python${PYTHON_VERS}/config-${PYTHON_VERS}-::g")
 	PYTHON_CPPFLAGS=`$PYTHONCONFIG --includes`
 
 	# Check headers file
@@ -617,10 +616,14 @@ else
 
 	# Ensure we can link against libphp
 	LIBS_SAVE="$LIBS"
-	LIBS="$PYTHON_LDFLAGS"
-	PY_LIB=`$PYTHONCONFIG --libs | sed \
-			      -e 's/.*\(python[[0-9]]\.[[0-9]]\).*/\1/'`
-	AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	#LIBS="$PYTHON_LDFLAGS"
+	#PY_LIB=`$PYTHONCONFIG --libs | sed \
+	#		      -e 's/.*\(python[[0-9]]\.[[0-9]]\).*/\1/'`
+	#AC_CHECK_LIB([$PY_LIB], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
+	LIBS="m $PYTHON_LDFLAGS -lpython${PYTHON_VERS}"
+	PYTHON_LDFLAGS="-l$LIBS"
+	LDFLAGS=$PYTHON_LDFLAGS
+	AC_CHECK_LIB([], [PyObject_CallObject], [], [AC_MSG_ERROR([could not find libpython])], [])
 	LIBS="$LIBS_SAVE"
 fi
 

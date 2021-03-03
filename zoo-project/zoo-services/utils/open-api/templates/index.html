@@ -17,12 +17,13 @@
 #try
 #import json
 #if "cache_file" in $inputs["tmpl"]
-#set values=json.load(open($inputs["tmpl"]["cache_file"]))
+#set values=json.load(open($inputs["tmpl"]["cache_file"], encoding='utf-8'))
 #else
-#set values=$inputs["tmpl"]["value"]
+#set values=json.loads($inputs["tmpl"]["value"])
 #end if
 #except Exception as e
 $e
+#set values={}
 #end try
 <html lang="en">
   <head>
@@ -201,7 +202,7 @@ View default (no title found for $v).
   ELSE
  #end if
 #end if
-#if $obj["maxOccurs"]>1
+#if $obj["maxOccurs"]=="unbounded" or $obj["maxOccurs"]>1
 	<div class="btn-group" role="group" aria-label="Basic example">
 	  <button type="button" class="btn btn-secondary" onclick="addElementToList(\$(this));">Add</button>
 	  <button type="button" class="btn btn-secondary" onclick="delElementToList(\$(this));">Delete</button>
@@ -524,7 +525,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Wed Dec 16 16:06:56 CET 2020 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Mon Mar  1 17:01:50 CET 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  

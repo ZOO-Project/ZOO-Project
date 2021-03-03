@@ -837,6 +837,7 @@ void addMapsToMaps(maps** ppmsOut,maps* pmIn){
 	  pmsCursor->next->child=dupMaps(&pmsTmp->child);
 	else
 	  pmsCursor->next->child=NULL;
+	return;
       }
       else{
 	addMapToMap(&pmsTmp1->content,pmsTmp->content);

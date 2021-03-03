@@ -37,18 +37,12 @@
 #include "service.h"
 #include "service_internal.h"
 
-extern "C" {
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
-/*#include <openssl/sha.h>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/buffer.h>
-*/
+extern "C" {
 
   void printExceptionReportResponse(maps*,map*);
   char *base64(const char *input, int length);
