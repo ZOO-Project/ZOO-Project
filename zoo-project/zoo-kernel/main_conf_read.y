@@ -153,6 +153,9 @@ int conf_read(const char* file,maps* my_map){
 
   my_maps=my_map;
   my_maps->name=NULL;
+  my_maps->content=NULL;
+  my_maps->child=NULL;
+  my_maps->next=NULL;
   current_maps=my_maps;
   
   int resultatYYParse = crparse() ;

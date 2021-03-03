@@ -1271,7 +1271,9 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   m->layerorder[m->numlayers] = m->numlayers;
   m->numlayers++;
   GDALClose( hDataset );
+#ifndef RELY_ON_DB
   GDALDestroyDriverManager();
+#endif
   CPLCleanupTLS();
   storeMd5(pszFilename);
   return 1;

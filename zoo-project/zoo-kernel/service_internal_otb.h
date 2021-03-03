@@ -35,13 +35,10 @@
 #include "otbZooWatcher.h"
 #include "service_internal.h"
 #include "service.h"
-#include "cgic.h"
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>
 #endif
-#include <vector>
-#include <string>
 
 /**
  * A vector to store the ZooWatcher
