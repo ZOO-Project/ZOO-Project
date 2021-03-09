@@ -36,7 +36,7 @@ function delElementToList(){
 
 function loadRequest(){
     var requestObject={
-	"id": System["JSON_STR"]["id"],
+	//"id": System["JSON_STR"]["id"],
         "inputs":{},
         "outputs":{},
         "subscriber":{},

@@ -2060,7 +2060,7 @@ runRequest (map ** inputs)
       {
 	errorException (NULL, _("Unable to load the oas.cfg file."),
 			"InternalError", NULL);
-	free (m);
+	free (m1);
 	return 1;
       }
     addMapsToMaps(&m,m1);
@@ -2088,7 +2088,21 @@ runRequest (map ** inputs)
     json_object *res=json_object_new_object();
     setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
     /* - Root url */
-    if(cgiContentLength==1){
+    if((strncasecmp(cgiRequestMethod,"post",4)==0 &&
+	(strstr(cgiQueryString,"/processes/")==NULL ||
+	 strlen(cgiQueryString)<=11))
+       ||
+       (strncasecmp(cgiRequestMethod,"DELETE",6)==0 &&
+	(strstr(cgiQueryString,"/jobs/")==NULL || strlen(cgiQueryString)<=6)) ){
+      setMapInMaps(m,"lenv","status_code","405");
+      map* error=createMap("code","InvalidMethod");
+      addToMap(error,"message",_("The request method used to access the current path is not supported."));
+      printExceptionReportResponseJ(m,error);
+      json_object_put(res);
+      // TODO: cleanup memory
+      return 1;
+    }
+    else if(cgiContentLength==1){
       if(strncasecmp(cgiRequestMethod,"GET",3)!=0){
 	setMapInMaps(m,"lenv","status_code","405");
 	map* pamError=createMap("code","InvalidMethod");
@@ -2204,19 +2218,11 @@ runRequest (map ** inputs)
     }
     else if(strstr(cgiQueryString,"/processes")==NULL && (strstr(cgiQueryString,"/jobs")!=NULL || strstr(cgiQueryString,"/jobs/")!=NULL)){
       /* - /jobs url */
-      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-      fflush(stderr);
       if(strncasecmp(cgiRequestMethod,"DELETE",6)==0) {
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
 	setMapInMaps(m,"lenv","gs_usid",jobId);
 	setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	runDismiss(m,jobId);
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
 	map* pmError=getMapFromMaps(m,"lenv","error");
 	if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
 	  printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
@@ -2226,8 +2232,6 @@ runRequest (map ** inputs)
 	  setMapInMaps(m,"lenv","gs_location","false");
 	  res=createStatus(m,SERVICE_DISMISSED);
 	}
-	fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-	fflush(stderr);
       }
       else if(strcasecmp(cgiRequestMethod,"get")==0){
 	/* - /jobs List (GET) */
@@ -2261,37 +2265,23 @@ runRequest (map ** inputs)
 		// In case the service has run, then forward request to target result file
 		//char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
 		jobId[strlen(jobId)-8]=0;
-		fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,jobId);
-		fflush(stderr);
 		char *sid=getStatusId(m,jobId);
 		if(sid==NULL){
-		  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,jobId);
-		  fflush(stderr);
 		  map* error=createMap("code","NoSuchJob");
 		  addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
 		  printExceptionReportResponseJ(m,error);
 		  return 1;
 		}else{
-		  fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,jobId);
-		  fflush(stderr);
 		  if(isRunning(m,jobId)>0){
 		    map* error=createMap("code","ResultNotReady");
 		    addToMap(error,"message",_("The job is still running."));
 		    printExceptionReportResponseJ(m,error);
 		    return 1;
 		  }else{
-		    fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,jobId);
-		    fflush(stderr);
 		    char *Url0=getResultPath(m,jobId);
-		    fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,Url0);
-		    fflush(stderr);
-		    //map *cIdentifier = getMapFromMaps (m, "lenv", "oIdentifier");
 		    zStatStruct f_status;
 		    int s=zStat(Url0, &f_status);
 		    if(s==0 && f_status.st_size>0){
-		      fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,Url0);
-		      fflush(stderr);
-		      
 		      if(f_status.st_size>15){
 			json_object* pjoTmp=json_readFile(m,Url0);
 			json_object* pjoCode=NULL;
@@ -2357,8 +2347,24 @@ runRequest (map ** inputs)
 	  }
 	}
 	  
-      }else if(strcasecmp(cgiRequestMethod,"post")==0 && (strcmp(cgiQueryString,"/jobs")==0 || strcmp(cgiQueryString,"/jobs/")==0)){
-	/* - /jobs Execution (POST) */
+      }    
+    }
+    else{
+      service* s1=NULL;
+      int t=0;
+      if(strstr(cgiQueryString,"/processes/")==NULL){
+	map* error=createMap("code","BadRequest");
+	addToMap(error,"message",_("The ressource is not available"));
+	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
+	printExceptionReportResponseJ(m,error);
+	freeMaps (&m);
+	free (m);
+	free (REQUEST);
+	xmlCleanupParser ();
+	zooXmlCleanupNs ();			
+	return 1;
+      }else if(strcasecmp(cgiRequestMethod,"post")==0){
+	/* - /processes/{processId} Execution (POST) */
 	eres = SERVICE_STARTED;
 	initAllEnvironment(m,request_inputs,ntmp,"jrequest");
 	map* req=getMapFromMaps(m,"renv","jrequest");
@@ -2399,16 +2405,12 @@ runRequest (map ** inputs)
 	char* cIdentifier=NULL;
 	if(json_object_object_get_ex(jobj,"id",&json_io)!=FALSE){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
+	}else{
+	  if(strstr(cgiQueryString,"/processes/")!=NULL && strlen(cgiQueryString)>11)
+	    cIdentifier=zStrdup(strstr(cgiQueryString,"/processes/")+11);	  
 	}
-	fprintf(stderr,"%s %d \n", __FILE__,__LINE__);
-	fflush(stderr);
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
-	fprintf(stderr,"%s %d \n", __FILE__,__LINE__);
-	fflush(stderr);	
-	//maps* inputs_real_format=NULL, *outputs_real_format= NULL;
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
-	fprintf(stderr,"%s %d \n", __FILE__,__LINE__);
-	fflush(stderr);	
 	map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
 	map* mode=getMap(request_inputs,"mode");
 	if((preference!=NULL && strcasecmp(preference->value,"respond-async")==0) ||
@@ -2592,23 +2594,7 @@ runRequest (map ** inputs)
 
 	    
       }//else error
-    
-    }
-    else{
-      service* s1=NULL;
-      int t=0;
-      if(strstr(cgiQueryString,"/processes/")==NULL){
-	map* error=createMap("code","BadRequest");
-	addToMap(error,"message",_("The ressource is not available"));
-	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
-	printExceptionReportResponseJ(m,error);
-	freeMaps (&m);
-	free (m);
-	free (REQUEST);
-	xmlCleanupParser ();
-	zooXmlCleanupNs ();			
-	return 1;
-      } else
+      else
 	if(strstr(cgiQueryString,"/jobs")==NULL && strstr(cgiQueryString,"/jobs/")==NULL){
 	  /* - /processes/{id}/ */
 	  //DIR *dirp = opendir (ntmp);
@@ -2646,11 +2632,7 @@ runRequest (map ** inputs)
 	      cnt++;
 	    }
 
-	    fprintf(stderr,"%s %d \n", __FILE__,__LINE__);
-	    fflush(stderr);
 	    fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
-	    fprintf(stderr,"%s %d \n", __FILE__,__LINE__);
-	    fflush(stderr);	
 
 
 	  }
@@ -3031,113 +3013,6 @@ runRequest (map ** inputs)
     r_inputs = getMap (request_inputs, "Identifier");
 
     fetchService(zooRegistry,m,&s1,request_inputs,ntmp,r_inputs->value,printExceptionReportResponse);
-    /*
-    //*****************
-    // Fetch S1
-    //*****************
-    map* import = getMapFromMaps (m, IMPORTSERVICE, r_inputs->value); 
-    if (import != NULL && import->value != NULL) { 
-      strncpy(tmps1, import->value, 1024);
-      setMapInMaps (m, "lenv", "Identifier", r_inputs->value);
-      setMapInMaps (m, "lenv", "oIdentifier", r_inputs->value);
-    } 
-    else {
-      snprintf (tmps1, 1024, "%s/%s.zcfg", conf_dir, r_inputs->value);
-#ifdef DEBUG
-      fprintf (stderr, "Trying to load %s\n", tmps1);
-#endif
-      if (strstr (r_inputs->value, ".") != NULL)
-	{
-	  char *identifier = zStrdup (r_inputs->value);
-	  parseIdentifier (m, conf_dir, identifier, tmps1);
-	  map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
-	  if (tmpMap != NULL)
-	    addToMap (request_inputs, "metapath", tmpMap->value);
-	  free (identifier);
-	}
-      else
-	{
-	  setMapInMaps (m, "lenv", "Identifier", r_inputs->value);
-	  setMapInMaps (m, "lenv", "oIdentifier", r_inputs->value);
-	}
-    }
-
-    r_inputs = getMapFromMaps (m, "lenv", "Identifier");
-  
-#ifdef META_DB
-    int metadb_id=_init_sql(m,"metadb");
-    //FAILED CONNECTING DB
-    if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<0){
-      fprintf(stderr,"ERROR CONNECTING METADB\n");
-    }
-    if(metadb_id>=0)
-      s1=extractServiceFromDb(m,r_inputs->value,0);
-    //close_sql(m,0);
-    if(s1!=NULL){
-      inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
-      addNestedOutputs(&s1);
-#endif
-      if(zooRegistry!=NULL){
-	freeRegistry(&zooRegistry);
-	free(zooRegistry);
-      }
-    }else /* Not found in MetaDB /{
-#endif
-      s1 = createService();
-      if (s1 == NULL)
-	{
-	  freeMaps (&m);
-	  free (m);
-	  if(zooRegistry!=NULL){
-	    freeRegistry(&zooRegistry);
-	    free(zooRegistry);
-	  }
-	  free (REQUEST);
-	  free (SERVICE_URL);
-	  return errorException (m, _("Unable to allocate memory"),
-				 "InternalError", NULL);
-	}
-
-      int saved_stdout = zDup (fileno (stdout));
-      zDup2 (fileno (stderr), fileno (stdout));
-      t = readServiceFile (m, tmps1, &s1, r_inputs->value);
-      if(t>=0){
-	inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
-	addNestedOutputs(&s1);
-#endif
-      }
-      if(zooRegistry!=NULL){
-	freeRegistry(&zooRegistry);
-	free(zooRegistry);
-      }
-      fflush (stdout);
-      zDup2 (saved_stdout, fileno (stdout));
-      if (t < 0)
-	{
-	  char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
-	  sprintf (tmpMsg,
-		   _
-		   ("The value for <identifier> seems to be wrong (%s). Please specify one of the processes in the list returned by a GetCapabilities request."),
-		   r_inputs->value);
-	  errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
-	  free (tmpMsg);
-	  free (s1);
-	  freeMaps (&m);
-	  free (m);
-	  free (REQUEST);
-	  free (SERVICE_URL);
-	  return 0;
-	}
-      zClose (saved_stdout);
-#ifdef META_DB
-    }
-#endif
-    //*****************
-    // End Fetch S1
-    //*****************
-*/
   
 #ifdef DEBUG
     dumpService (s1);
