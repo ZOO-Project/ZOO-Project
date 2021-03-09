@@ -564,7 +564,7 @@ char* getStatusId(maps* conf,char* pid){
   if(execSql(conf,zoo_ds_nb-1,sqlQuery)<0)
     return NULL;
   OGRFeature  *poFeature = NULL;
-  const char *tmp1;
+  char *tmp1;
   int hasRes=-1;
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
     for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){

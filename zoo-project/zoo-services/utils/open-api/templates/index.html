@@ -159,7 +159,7 @@ View default (no title found for $v).
 #if "formats" in $obj["input"]
  #set cFormats=[]
   #for j in range(len($obj["input"]["formats"]))
-  #set $cFormats+=[$obj["input"]["formats"][$j]["mimeType"]]
+  #set $cFormats+=[$obj["input"]["formats"][$j]["mediaType"]]
   #end for
   $printControl({"title": "format","type": "input_format","name": $cName,"options":$cFormats})
   #set largs={"id": $obj["id"],"title": "href","type": "input_value","name": $cName,"ph":"URL"}
@@ -271,7 +271,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	<form class="needs-validation" data-id="$cid" novalidate>
 	  <input type="hidden" name="oapi_ioAsArray" value="#if "io_as_array" in $openapi["openapi"]#$openapi["openapi"]["io_as_array"]#else#false#end if#" />
 	  <input type="hidden" name="oapi_wsUrl" value="$openapi["openapi"]["wsurl"]" />
-	  <input type="hidden" name="oapi_jobUrl" value="$openapi["openapi"]["rootUrl"]$(currentUrl)/jobs" />
+	  <input type="hidden" name="oapi_jobUrl" value="$openapi["openapi"]["rootUrl"]/jobs" />
 	  <input type="hidden" name="oapi_reqID" value="$cid" />
 	  <h3>Inputs</h3>
 	  <div class="accordion" id="accordionInputExample">
@@ -290,7 +290,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	    #set cFormats=[]
 	    #if "formats" in $cOutput["output"]
 	    #for j in range(len($cOutput["output"]["formats"]))
-	    #set cFormats+=[$cOutput["output"]["formats"][$j]["mimeType"]]
+	    #set cFormats+=[$cOutput["output"]["formats"][$j]["mediaType"]]
 	    #end for
 	    #end if
 	    #set cTransmissions=[]
@@ -423,7 +423,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	  #*
 	  * Jobs list
 	  *#
-	  #set cValue=$values[$i]["infos"]
+	  #set cValue=$values[$i]
 	  <th scope="row">
 	    #if "status" in $cValue and $cValue["status"]=="successful"
 	    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle-fill text-success" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -525,7 +525,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Mon Mar  1 17:01:50 CET 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Thu Mar  4 10:51:46 CET 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
