@@ -1,5 +1,6 @@
 Version 1.8.1
-  * Make all demos running within docker
+  * Move jobs to root and use /processes/{processID} as execute endpopint
+  * Make all demos running within docker (including SAGA and OTB)
   * Deploy demo HTML UI from github from the Dockerfile
   * Add demo ZOO-Services build in the Dockerfile
 Version 1.8.0

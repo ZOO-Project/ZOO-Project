@@ -532,30 +532,33 @@ extern "C" {
       json_object *res2=json_object_new_object();
       json_object *res3=json_object_new_object();
       map* pmTmp=getMapFromMaps(m,"lenv","requestType");
-      if(pmTmp!=NULL && strncasecmp(pmTmp->value,"desc",4)==0)
+      if(pmTmp!=NULL && strncasecmp(pmTmp->value,"desc",4)==0){
 	json_object_object_add(res2,"rel",json_object_new_string("process-desc"));
+      }
       else{
 	json_object_object_add(res2,"rel",json_object_new_string("execute"));
-	json_object_object_add(res3,"rel",json_object_new_string("alternate"));
-	json_object_object_add(res3,"type",json_object_new_string("text/html"));
       }
+      json_object_object_add(res3,"rel",json_object_new_string("alternate"));
+      json_object_object_add(res3,"type",json_object_new_string("text/html"));
       json_object_object_add(res2,"type",json_object_new_string("application/json"));
-      json_object_object_add(res2,"title",json_object_new_string("Process Description"));
       map* tmpUrl=getMapFromMaps(m,"openapi","rootUrl");
       char* tmpStr=(char*) malloc((strlen(tmpUrl->value)+strlen(rUrl)+13)*sizeof(char));
-      sprintf(tmpStr,"%s/processes/%s/",tmpUrl->value,rUrl);
-      if(doc==NULL){
+      sprintf(tmpStr,"%s/processes/%s",tmpUrl->value,rUrl);
+      if(pmTmp!=NULL && strncasecmp(pmTmp->value,"desc",4)!=0){
 	json_object_object_add(res2,"title",json_object_new_string("Execute End Point"));
 	json_object_object_add(res3,"title",json_object_new_string("Execute End Point"));
-	char* tmpStr1=zStrdup(tmpStr);
+	/*char* tmpStr1=zStrdup(tmpStr);
 	tmpStr=(char*) realloc(tmpStr,(strlen(tmpStr)+6)*sizeof(char));
 	sprintf(tmpStr,"%sjobs",tmpStr1);
-	free(tmpStr1);
-	char* tmpStr3=(char*) malloc((strlen(tmpStr)+6)*sizeof(char));
-	sprintf(tmpStr3,"%s.html",tmpStr);
-	json_object_object_add(res3,"href",json_object_new_string(tmpStr3));
-	free(tmpStr3);
+	free(tmpStr1);*/
+      }else{
+	json_object_object_add(res2,"title",json_object_new_string("Process Description"));
+	json_object_object_add(res3,"title",json_object_new_string("Process Description"));
       }
+      char* tmpStr3=(char*) malloc((strlen(tmpStr)+6)*sizeof(char));
+      sprintf(tmpStr3,"%s.html",tmpStr);
+      json_object_object_add(res3,"href",json_object_new_string(tmpStr3));
+      free(tmpStr3);
       json_object_object_add(res2,"href",json_object_new_string(tmpStr));
       free(tmpStr);
       json_object_array_add(res1,res2);

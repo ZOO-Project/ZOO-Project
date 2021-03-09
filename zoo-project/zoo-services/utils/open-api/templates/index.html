@@ -25,6 +25,18 @@
 $e
 #set values={}
 #end try
+#def findLink($val,$key)
+#if "links" in $val
+#for i in range(len($val["links"]))
+#if $val["links"][$i]["rel"]==$key
+#return $val["links"][$i]["href"]
+#end if
+#end for
+#return None
+#else
+#return None
+#end if
+#end def
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -271,7 +283,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	<form class="needs-validation" data-id="$cid" novalidate>
 	  <input type="hidden" name="oapi_ioAsArray" value="#if "io_as_array" in $openapi["openapi"]#$openapi["openapi"]["io_as_array"]#else#false#end if#" />
 	  <input type="hidden" name="oapi_wsUrl" value="$openapi["openapi"]["wsurl"]" />
-	  <input type="hidden" name="oapi_jobUrl" value="$openapi["openapi"]["rootUrl"]/jobs" />
+	  <input type="hidden" name="oapi_jobUrl" value="$findLink($values,"execute")" />
 	  <input type="hidden" name="oapi_reqID" value="$cid" />
 	  <h3>Inputs</h3>
 	  <div class="accordion" id="accordionInputExample">
@@ -359,7 +371,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     <p>
       <a href="$values["links"][$i]["href"]">$printRel($openapi["links_title"],$values["links"][$i]["rel"])</a>
     </p>
-    #if $i+1<=len($values["links"]) and len($values["links"])>1 and not($values["links"][$i+1]["rel"]=="alternate" and $openapi["openapi"]["full_html_support"]=="true")
+    #if $i+1<=len($values["links"]) and len($values["links"])>1 and ($values["links"][$i+1]["rel"]=="alternate" or $values["links"][$i+1]["rel"]=="service-doc")
     <p><a href="$values["links"][$i+1]["href"]">$printRel($openapi["links_title"],$values["links"][$i+1]["rel"])</a></p>
     #end if
     #end if
@@ -409,7 +421,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	  * Processes list
 	  *#
 	  <th scope="row">
-	    <a href="$(values[$i]["links"][0]["href"][:-1]).html">
+	    <a href="$(values[$i]["links"][0]["href"]).html">
 	      <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-link-45deg" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 	        <path d="M4.715 6.542L3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.001 1.001 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
 	        <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 0 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 0 0-4.243-4.243L6.586 4.672z"/>
@@ -525,7 +537,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Thu Mar  4 10:51:46 CET 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Tue Mar  9 16:33:11 CET 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
