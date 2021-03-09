@@ -36,6 +36,7 @@ function delElementToList(){
 
 function loadRequest(){
     var requestObject={
+	"id": System["JSON_STR"]["id"],
         "inputs":{},
         "outputs":{},
         "subscriber":{},
@@ -61,12 +62,12 @@ function loadRequest(){
 		    console.log($(this).parent().prev().find("select").val());
 		    if($('input[name="oapi_ioAsArray"]').val()=="true"){
 			cInput["input"]["format"]={
-			    "mimeType": $(this).parent().prev().find("select").val()
+			    "mediaType": $(this).parent().prev().find("select").val()
 			};
 			cInput["input"]["href"]=$(this).val();
 		    }else{
 			cInput["format"]={
-			    "mimeType": $(this).parent().prev().find("select").val()
+			    "mediaType": $(this).parent().prev().find("select").val()
 			};
 			cInput["href"]=$(this).val();
 		    }
@@ -114,7 +115,7 @@ function loadRequest(){
         if(System["JSON_STR"]["outputs"][i]["output"]["formats"]){
 	    var selector="select[name='format_"+cName+"']";
 	    cOutput["format"]={
-		"mimeType": $(selector).val()
+		"mediaType": $(selector).val()
 	    };
         }
         else{

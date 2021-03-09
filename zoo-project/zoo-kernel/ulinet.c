@@ -31,7 +31,6 @@
 #include "server_internal.h"
 #include <assert.h>
 #include <ctype.h>
-#include "fcgi_stdio.h"
 
 /**
  * Write the downloaded content to a _HINTERNET structure

@@ -286,7 +286,7 @@ extern "C" {
       map* tmpMap1=getMap(iot->content,"mimeType");
       json_object* prop1=json_object_new_object();
       json_object_object_add(prop1,"default",json_object_new_boolean(isDefault));
-      json_object_object_add(prop1,"mimeType",json_object_new_string(tmpMap1->value));
+      json_object_object_add(prop1,"mediaType",json_object_new_string(tmpMap1->value));
       tmpMap1=getMap(iot->content,"encoding");
       if(tmpMap1!=NULL)
 	json_object_object_add(prop1,"encoding",json_object_new_string(tmpMap1->value));
@@ -1045,23 +1045,15 @@ extern "C" {
   json_object* printJobList(maps* conf){
     json_object* res=json_object_new_array();
     map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
-    map* oIdentifier=getMapFromMaps(conf,"lenv","oIdentifier");
-    char* cpath=(char*)malloc((strlen(tmpPath->value)+strlen(oIdentifier->value)+14)*sizeof(char));
-    sprintf(cpath,"%s/statusInfos/%s",tmpPath->value,oIdentifier->value);
     struct dirent *dp;
-    DIR *dirp = opendir (cpath);
+    DIR *dirp = opendir (tmpPath->value);
     if(dirp!=NULL){
       while ((dp = readdir (dirp)) != NULL){
-	char* extn = strstr(dp->d_name, ".json");
+	char* extn = strstr(dp->d_name, "_status.json");
 	if(extn!=NULL){
 	  char* tmpStr=zStrdup(dp->d_name);
-	  tmpStr[strlen(dp->d_name)-5]=0;
-	  json_object* cjob=json_object_new_object();
-	  json_object_object_add(cjob,"id",json_object_new_string(tmpStr));
-	  json_object *jobj=printJobStatus(conf,tmpStr);
-	  if(jobj!=NULL)
-	    json_object_object_add(cjob,"infos",jobj);
-	  free(tmpStr);
+	  tmpStr[strlen(dp->d_name)-12]=0;
+	  json_object* cjob=printJobStatus(conf,tmpStr);
 	  json_object_array_add(res,cjob);
 	}
       }
@@ -1120,9 +1112,9 @@ extern "C" {
 	map* tmpMap=getMap(resu->content,"mimeType");
 	json_object* res3=json_object_new_object();
 	if(tmpMap!=NULL)
-	  json_object_object_add(res3,"mimeType",json_object_new_string(tmpMap->value));
+	  json_object_object_add(res3,"mediaType",json_object_new_string(tmpMap->value));
 	else{
-	  json_object_object_add(res3,"mimeType",json_object_new_string("text/plain"));
+	  json_object_object_add(res3,"mediaType",json_object_new_string("text/plain"));
 	  map* pmDataType=getMap(resu->content,"dataType");
 	  if(pmDataType!=NULL){
 	    json_object* pjoTmp3=json_object_new_object();
@@ -1247,19 +1239,16 @@ extern "C" {
   int createStatusLinks(maps* conf,int result,json_object* obj){
     json_object* res=json_object_new_array();
     map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
-    map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
     if(sessId==NULL){
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     }
     char *Url0=(char*) malloc((strlen(tmpPath->value)+
-			       strlen(cIdentifier->value)+
 			       strlen(sessId->value)+18)*sizeof(char));
     int needResult=-1;
     char *message, *status;
-    sprintf(Url0,"%s/processes/%s/jobs/%s",
+    sprintf(Url0,"%s/jobs/%s",
 	    tmpPath->value,
-	    cIdentifier->value,
 	    sessId->value);
     if(getMapFromMaps(conf,"lenv","gs_location")==NULL)
       setMapInMaps(conf,"headers","Location",Url0);
@@ -1275,11 +1264,10 @@ extern "C" {
     if(result>0){
       free(Url0);
       Url0=(char*) malloc((strlen(tmpPath->value)+
-			   strlen(cIdentifier->value)+strlen(sessId->value)+
+			   strlen(sessId->value)+
 			   25)*sizeof(char));
-      sprintf(Url0,"%s/processes/%s/jobs/%s/results",
+      sprintf(Url0,"%s/jobs/%s/results",
 	      tmpPath->value,
-	      cIdentifier->value,
 	      sessId->value);
       json_object* val1=json_object_new_object();
       json_object_object_add(val1,"title",
@@ -1304,7 +1292,6 @@ extern "C" {
    */
   char* json_getStatusFilePath(maps* conf){
     map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
-    map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
     if(sessId!=NULL){
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
@@ -1312,35 +1299,20 @@ extern "C" {
 	sessId = getMapFromMaps (conf, "lenv", "usid");
     }else
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+    
     char *tmp1=(char*) malloc((strlen(tmpPath->value)+
-			       strlen(cIdentifier->value)+14)*sizeof(char));
-    sprintf(tmp1,"%s/statusInfos/%s",
+			       strlen(sessId->value)+14)*sizeof(char));
+    sprintf(tmp1,"%s/%s_status.json",
 	    tmpPath->value,
-	    cIdentifier->value);
-    if(zMkdir(tmp1) != 0 && errno != EEXIST){
-      fprintf(stderr,"Issue creating directory %s\n",tmp1);
-      return NULL;
-    }
-    tmp1=(char*) realloc(tmp1,(strlen(tmpPath->value)+
-			       strlen(cIdentifier->value)+
-			       strlen(sessId->value)+21)*sizeof(char));
-    int needResult=0;
-    char *message, *rstatus;
-    sprintf(tmp1,"%s/statusInfos/%s/%s.json",
-	    tmpPath->value,
-	    cIdentifier->value,
 	    sessId->value);
     return tmp1;
   }
 
   char* getResultPath(maps* conf,char* jobId){
     map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
-    map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
     char *pacUrl=(char*) malloc((strlen(tmpPath->value)+
-				 strlen(cIdentifier->value)+
 				 strlen(jobId)+8)*sizeof(char));
-    sprintf(pacUrl,"%s/%s_%s.json",tmpPath->value,
-	    cIdentifier->value,jobId);
+    sprintf(pacUrl,"%s/%s.json",tmpPath->value,jobId);
     return pacUrl;
   }
 
@@ -1471,6 +1443,7 @@ extern "C" {
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     if(sessId!=NULL)
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
+
     json_object_object_add(res,"status",json_object_new_string(rstatus));
     map* mMap=getMapFromMaps(conf,"lenv","gs_message");
     if(mMap==NULL)
@@ -1485,13 +1458,8 @@ extern "C" {
     else{
       json_object* res1=json_object_new_array();
       map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
-      map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
-      char *Url0=(char*) malloc((strlen(tmpPath->value)+
-				 strlen(cIdentifier->value)+
-				 17)*sizeof(char));
-      sprintf(Url0,"%s/processes/%s/jobs",	      
-	      tmpPath->value,
-	      cIdentifier->value);
+      char *Url0=(char*) malloc((strlen(tmpPath->value)+17)*sizeof(char));
+      sprintf(Url0,"%s/jobs",tmpPath->value);
       json_object* val=json_object_new_object();
       json_object_object_add(val,"title",
 			     json_object_new_string(_("The job list for the current process")));
