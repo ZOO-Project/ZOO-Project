@@ -547,10 +547,10 @@ extern "C" {
       if(pmTmp!=NULL && strncasecmp(pmTmp->value,"desc",4)!=0){
 	json_object_object_add(res2,"title",json_object_new_string("Execute End Point"));
 	json_object_object_add(res3,"title",json_object_new_string("Execute End Point"));
-	/*char* tmpStr1=zStrdup(tmpStr);
-	tmpStr=(char*) realloc(tmpStr,(strlen(tmpStr)+6)*sizeof(char));
-	sprintf(tmpStr,"%sjobs",tmpStr1);
-	free(tmpStr1);*/
+	char* tmpStr1=zStrdup(tmpStr);
+	tmpStr=(char*) realloc(tmpStr,(strlen(tmpStr)+10)*sizeof(char));
+	sprintf(tmpStr,"%s/execution",tmpStr1);
+	free(tmpStr1);
       }else{
 	json_object_object_add(res2,"title",json_object_new_string("Process Description"));
 	json_object_object_add(res3,"title",json_object_new_string("Process Description"));
@@ -1172,7 +1172,46 @@ extern "C" {
 		  }
 		}else{
 		  json_object_object_add(res3,"encoding",json_object_new_string("utf-8"));
-		  json_object_object_add(res1,"value",json_object_new_string(tmpMap->value));
+		  map* tmpMap0=getMap(resu->content,"crs");
+		  if(tmpMap0!=NULL){
+		    map* tmpMap2=getMap(resu->content,"value");
+		    json_object *jobj = NULL;
+		    const char *mystring = NULL;
+		    int slen = 0;
+		    enum json_tokener_error jerr;
+		    struct json_tokener* tok=json_tokener_new();
+		    do {
+		      mystring = tmpMap2->value;  // get JSON string, e.g. read from file, etc...
+		      slen = strlen(mystring);
+		      jobj = json_tokener_parse_ex(tok, mystring, slen);
+		    } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
+		    if (jerr != json_tokener_success) {
+		      map* pamError=createMap("code","InvalidParameterValue");
+		      const char* pcTmpErr=json_tokener_error_desc(jerr);
+		      const char* pccErr=_("ZOO-Kernel cannot parse your POST data: %s");
+		      char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
+		      sprintf(pacMessage,pccErr,pcTmpErr);
+		      addToMap(pamError,"message",pacMessage);
+		      printExceptionReportResponseJ(conf,pamError);
+		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+		      return NULL;
+		    }
+		    if (tok->char_offset < slen){
+		      map* pamError=createMap("code","InvalidParameterValue");
+		      const char* pcTmpErr="None";
+		      const char* pccErr=_("ZOO-Kernel cannot parse your POST data: %s");
+		      char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
+		      sprintf(pacMessage,pccErr,pcTmpErr);
+		      addToMap(pamError,"message",pacMessage);
+		      printExceptionReportResponseJ(conf,pamError);
+		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+		      return NULL;
+		    }
+		    json_object_object_add(res1,"bbox",jobj);
+		    json_object_object_add(res1,"crs",json_object_new_string(tmpMap0->value));
+		  }
+		  else
+		    json_object_object_add(res1,"value",json_object_new_string(tmpMap->value));
 		}
 	      }
 	    }
@@ -1187,7 +1226,8 @@ extern "C" {
 	    }
 	  }
 	  //json_object_object_add(res1,"value",res2);
-	  json_object_object_add(res1,"format",res3);
+	  if(getMap(resu->content,"crs")==NULL)
+	    json_object_object_add(res1,"format",res3);
 	  if(pmIOAsArray!=NULL && strncasecmp(pmIOAsArray->value,"true",4)==0){
 	    json_object_array_add(eres,res1);
 	  }else
@@ -1789,6 +1829,8 @@ extern "C" {
 	      addResponse(pMap,cc3,vMap,tMap,"200","successful operation");
 	      if(cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
 		addResponse(pmUseContent,cc3,vMap,tMap,"201","successful operation");
+	      freeMap(&pMap);
+	      free(pMap);
 	    }
 	    vMap=getMapArray(tmpMaps->content,"ecode",i);
 	    if(vMap!=NULL){
@@ -1831,7 +1873,7 @@ extern "C" {
 	      }
 	      json_object_object_add(methodc,"parameters",cc2);
 	    }
-	    if(i==1 && cMap!=NULL && strncasecmp(cMap->value,"post",4)==0){
+	    if(/*i==1 && */cMap!=NULL && strncasecmp(cMap->value,"post",4)==0){
 	      maps* tmpMaps1=getMaps(conf,"requestBody");
 	      if(tmpMaps1!=NULL){
 		vMap=getMap(tmpMaps1->content,"schema");

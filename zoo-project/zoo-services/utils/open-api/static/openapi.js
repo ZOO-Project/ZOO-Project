@@ -86,6 +86,11 @@ function loadRequest(){
 			    };
 			    cInput["value"]=$(this).val();
 			}			    
+		    }else{
+			console.log($(this).attr("name"));
+			console.log("ok BB");
+			cInput["crs"]=$(this).val();
+			cInput["bbox"]=[parseFloat($("input[name="+$(this).attr("name")+"_minx]").val()),parseFloat($("input[name="+$(this).attr("name")+"_miny]").val()),parseFloat($("input[name="+$(this).attr("name")+"_maxx]").val()),parseFloat($("input[name="+$(this).attr("name")+"_maxy]").val())];
 		    }
 		}
 		console.log(cInput);

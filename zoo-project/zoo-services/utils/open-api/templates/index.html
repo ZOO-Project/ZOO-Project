@@ -121,6 +121,49 @@ View default (no title found for $v).
 #*
 	
 *#
+#def printBboxInput(obj)
+#if "type" not in $obj
+#set oType="input_value"
+#else
+#set oType=$obj["type"]
+#end if	
+	<div class="input-group">
+	  <div class="input-group-prepend">
+	    <div class="input-group-text">$obj["title"]</div>
+	  </div>
+	  #set placeholders=["minx","miny","maxx","maxy"]  
+	  #for i in range(4)  
+	  <input type="text"
+	    #if "value" in $obj#value="$obj["value"]""#end if#
+	    #if "id" in $obj#data-id="${obj["id"]}_$i"#end if#
+	    class="form-control"
+	    data-name="$obj["title"]"
+	    name="$(oType)_${obj["id"]}_$placeholders[$i]"
+	    placeholder="$placeholders[$i]"
+	    #if $obj["minOccurs"]>=1#required#end if#/>
+	  #end for
+	  <div class="invalid-feedback">
+	    Please set a value for $obj["id"].
+	  </div>
+	</div>	
+	<div class="input-group">
+	  <div class="input-group-prepend">
+	    <div class="input-group-text">crs</div>
+	  </div>
+	  <select name="$(oType)_$obj["id"]" class="form-control" #if $obj["minOccurs"]>=1#required#end if#>
+	  #for i in range(len($obj["input"]["supportedCRS"]))
+	    <option>$obj["input"]["supportedCRS"][$i]["crs"]</option>
+	  #end for
+	  </select>
+	  <div class="invalid-feedback">
+	    Please set a value for $obj["id"].
+	  </div>
+	</div>	
+#end def
+	
+#*
+	
+*#
 #def printControl(obj)
 #if "type" not in $obj
 #set oType="format"
@@ -210,8 +253,7 @@ View default (no title found for $v).
       </script>
   #end if
  #else
-  $obj 
-  ELSE
+ $printBboxInput($obj)      
  #end if
 #end if
 #if $obj["maxOccurs"]=="unbounded" or $obj["maxOccurs"]>1
@@ -518,6 +560,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
                 var cName=System["JSON_STR"]["inputs"][i]["id"].replace(/\./g,"_");
                 var selector=
                   'input[name="input_value_'+cName+'"]:invalid,'+
+                  'input[name="input_value_'+cName+'_minx"]:invalid,'+
                   'select[name="input_value_'+cName+'"]:invalid';
                 if(\$(selector).length>0){
                   \$(selector).each(function(){
@@ -537,7 +580,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Tue Mar  9 16:33:11 CET 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Thu Apr  8 18:31:44 CEST 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  

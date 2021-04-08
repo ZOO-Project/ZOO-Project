@@ -2364,7 +2364,7 @@ runRequest (map ** inputs)
 	zooXmlCleanupNs ();			
 	return 1;
       }else if(strcasecmp(cgiRequestMethod,"post")==0){
-	/* - /processes/{processId} Execution (POST) */
+	/* - /processes/{processId}/execution Execution (POST) */
 	eres = SERVICE_STARTED;
 	initAllEnvironment(m,request_inputs,ntmp,"jrequest");
 	map* req=getMapFromMaps(m,"renv","jrequest");
@@ -2406,8 +2406,11 @@ runRequest (map ** inputs)
 	if(json_object_object_get_ex(jobj,"id",&json_io)!=FALSE){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
 	}else{
-	  if(strstr(cgiQueryString,"/processes/")!=NULL && strlen(cgiQueryString)>11)
-	    cIdentifier=zStrdup(strstr(cgiQueryString,"/processes/")+11);	  
+	  if(strstr(cgiQueryString,"/processes/")!=NULL && strlen(cgiQueryString)>11){
+	    cIdentifier=zStrdup(strstr(cgiQueryString,"/processes/")+11);
+	    if(strstr(cIdentifier,"execution")!=NULL)
+	      cIdentifier[strlen(cIdentifier)-10]=0;
+	  }
 	}
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);

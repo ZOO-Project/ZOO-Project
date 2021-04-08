@@ -1,0 +1,83 @@
+[echo]
+ Title = Echo input
+ Abstract = Simply echo the value provided as input
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = echo_service
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [a]
+   Title = Literal Input (string-
+   Abstract = An input string
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [b]
+   Title = Complex Input
+   Abstract = A complex input 
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+      mimeType = text/xml
+      encoding = utf-8
+    </Default>
+    <Supported>
+      mimeType = application/json
+      encoding = utf-8
+    </Supported>
+   </ComplexData>
+  [c]
+   Title = BoundingBox Input 
+   Abstract = A boundingbox input 
+   minOccurs = 1
+   maxOccurs = 1
+   <BoundingBoxData>
+     <Default>
+      CRS = urn:ogc:def:crs:EPSG:6.6:4326
+     </Default>
+     <Supported>
+      CRS = urn:ogc:def:crs:EPSG:6.6:3785
+     </Supported>
+   </BoundingBoxData>
+ </DataInputs>
+ <DataOutputs>
+  [a]
+   Title = The input a
+   Abstract = The input a returned
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [b]
+   Title = The input b
+   Abstract = The input b returned
+   <ComplexData>
+    <Default>
+      mimeType = text/xml
+      encoding = utf-8
+    </Default>
+    <Supported>
+      mimeType = application/json
+      encoding = utf-8
+    </Supported>
+   </ComplexData>
+  [c]
+   Title = BoundingBox Input 
+   Abstract = A boundingbox input 
+   <BoundingBoxData>
+     <Default>
+      CRS = urn:ogc:def:crs:EPSG:6.6:4326
+     </Default>
+     <Supported>
+      CRS = urn:ogc:def:crs:EPSG:6.6:3785
+     </Supported>
+   </BoundingBoxData>
+ </DataOutputs>
