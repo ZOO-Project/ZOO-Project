@@ -1,0 +1,17 @@
+{
+  "inputs": {
+    "TYPE": "Lines",
+    "ANGLE": 58,
+    "MINSIZE": 2,
+    "METHOD": "Fixed angle"
+  },
+  "outputs": {
+    "RESULT": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "response": "document"
+}

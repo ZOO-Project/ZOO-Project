@@ -1,4 +1,24 @@
 Version 1.8.1
+  * Minor updates in docker-compose to target the right arch and
+  potentially cross compile in case you run from another arch
+  * Get back the MapServer automatic publication of outputs/results
+  through OGC Web Services (WMS, WFS, and WCS)
+  * Update the Basic HTML UI to use the Prefer header in case the
+  execution scenario requires to run the execute request
+  asyncrhonously
+  * Support the Prefer header for choosing between execution mode
+  scenarios which can be sync/async and raw/document
+  * Add support for multiple output requested as Raw for OGC API -
+  Processes (why not backport this in WPS?)
+  * Automatically add the old format of metadata informations to
+  the inputs and outputs to not require a single modification within
+  your existing services
+  * Update the Basic HTML UI to try to conform to version 1.0-draft.6
+  * Modify both the request parser and response printer functions
+  from the C-API to conform to version 1.0-draft.6
+  * Support both the old array of inputs / outputs syntax and the one
+  defined in the draft 1.0-draft.6 (array of inputs for the new syntax
+  may not work as expected)
   * Move jobs to root and use /processes/{processID} as execute endpopint
   * Make all demos running within docker (including SAGA and OTB)
   * Deploy demo HTML UI from github from the Dockerfile

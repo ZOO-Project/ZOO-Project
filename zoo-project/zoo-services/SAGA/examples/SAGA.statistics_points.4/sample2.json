@@ -1,0 +1,28 @@
+{
+  "inputs": {
+    "POINTS": {
+      "href": "https://demo.pygeoapi.io/stable/collections/ogr_gpkg_poi/items?f=json"
+    }
+  },
+  "outputs": {
+    "CENTRE": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "value"
+    },
+    "STDDIST": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "reference"
+    },
+    "BBOX": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "response": "raw"
+}

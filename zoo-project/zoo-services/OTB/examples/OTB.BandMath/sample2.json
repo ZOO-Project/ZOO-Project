@@ -1,0 +1,21 @@
+{
+  "inputs": {
+    "il": [
+      {
+        "href": "http://geolabs.fr/dl/Landsat8Extract1.tif"
+      }
+    ],
+    "out": "float",
+    "exp": "im1b3,im1b2,im1b1",
+    "ram": 256
+  },
+  "outputs": {
+    "out": {
+      "format": {
+        "mediaType": "image/jpeg"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "response": "raw"
+}

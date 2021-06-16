@@ -12,6 +12,9 @@
 #end if
 #set urlCompnents=$currentUrl.split('/')
 #*
+// TODO: don't set the "id" parameter within the response Object, in
+// other case it can be seen seen within the UI textarea (at the
+// bottom, that may be hidden too)
 * Load the JSON content from the API
 *#
 #try
@@ -45,10 +48,9 @@ $e
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
-
     <!-- Custom styles for this template -->
     <link href="$openapi["openapi"]["rootUrl"]/../static/openapi.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css" rel="stylesheet">
     <title>#if "id" in $values#$values["id"]#else##if $currentKey in $openapi and "title" in $openapi[$currentKey]#$openapi[$currentKey]["title"]#else#Landing Page#end if##end if#</title>
   </head>
   <body itemscope itemtype="https://schema.org/DataCatalog">
@@ -140,7 +142,7 @@ View default (no title found for $v).
 	    data-name="$obj["title"]"
 	    name="$(oType)_${obj["id"]}_$placeholders[$i]"
 	    placeholder="$placeholders[$i]"
-	    #if $obj["minOccurs"]>=1#required#end if#/>
+	    #if "nullable" not in $obj["schema"] and ("minOccurs" not in $obj or $obj["minOccurs"]>=1)#required#end if#/>
 	  #end for
 	  <div class="invalid-feedback">
 	    Please set a value for $obj["id"].
@@ -150,9 +152,9 @@ View default (no title found for $v).
 	  <div class="input-group-prepend">
 	    <div class="input-group-text">crs</div>
 	  </div>
-	  <select name="$(oType)_$obj["id"]" class="form-control" #if $obj["minOccurs"]>=1#required#end if#>
-	  #for i in range(len($obj["input"]["supportedCRS"]))
-	    <option>$obj["input"]["supportedCRS"][$i]["crs"]</option>
+	  <select name="$(oType)_$obj["id"]" class="form-control" #if "nullable" not in $obj["schema"] and ("minOccurs" not in $obj or $obj["minOccurs"]>=1)#required#end if#>
+	  #for i in range(len($obj["schema"]["properties"]["crs"]["enum"]))
+	    <option>$obj["schema"]["properties"]["crs"]["enum"][$i]</option>
 	  #end for
 	  </select>
 	  <div class="invalid-feedback">
@@ -174,12 +176,15 @@ View default (no title found for $v).
 	  <div class="input-group-prepend">
 	    <div class="input-group-text">$obj["title"]</div>
 	  </div>
-	  #if "ph" in $obj  
+	  #if "ph" in $obj  and $obj["title"]!="bool"
 	  <input type="text"
 	    #if "value" in $obj#value="$obj["value"]""#end if#
 	    #if "id" in $obj#data-id="$obj["id"]"#end if#
 	    class="form-control" data-name="$obj["title"]" name="$(oType)_$obj["name"]" placeholder="$obj["ph"]" #if "required" in $obj#required#end if#/>
 	  #else
+	  #if $obj["title"]=="bool"
+	  #set $obj["options"]=["true","false"];
+	  #end if
 	  <select name="$(oType)_$obj["name"]" class="form-control" #if "required" in $obj#required#end if#>
 	  #for i in range(len($obj["options"]))
 	    <option>$obj["options"][$i]</option>
@@ -211,43 +216,45 @@ View default (no title found for $v).
 #end def
 #def printInputContent($obj)
 #set cName=$obj["id"].replace(".","_")
-#if "formats" in $obj["input"]
+#if "oneOf" in $obj["schema"]
  #set cFormats=[]
-  #for j in range(len($obj["input"]["formats"]))
-  #set $cFormats+=[$obj["input"]["formats"][$j]["mediaType"]]
+  #for j in range(len($obj["schema"]["oneOf"]))
+    #if "contentMediaType" in $obj["schema"]["oneOf"][$j]
+      #set $cFormats+=[$obj["schema"]["oneOf"][$j]["contentMediaType"]]
+    #end if
   #end for
   $printControl({"title": "format","type": "input_format","name": $cName,"options":$cFormats})
   #set largs={"id": $obj["id"],"title": "href","type": "input_value","name": $cName,"ph":"URL"}
-  #if $obj["minOccurs"]>0
+  #if "nullable" not in $obj["schema"] and ("minOccurs" not in $obj or $obj["minOccurs"]>0)
   #set $largs["required"]=True
   #end if
   $printControl($largs)
 #else
- #if "literalDataDomains" in $obj["input"]
-  #set cDataDomain=$obj["input"]["literalDataDomains"][0]
-  #set largs={"id": $obj["id"],"title": $cDataDomain["dataType"]["name"],"type": "input_value", "name": $cName,}
-  #if $obj["minOccurs"]>0
+ #if "type" in $obj["schema"] and "properties" not in $obj["schema"]
+  #set cDataDomain=$obj["schema"]
+  #set largs={"id": $obj["id"],"title": $cDataDomain["type"],"type": "input_value", "name": $cName,}
+  #if "nullable" not in $obj["schema"] and ("minOccurs" not in $obj or $obj["minOccurs"]>0)
   #set $largs["required"]=True
   #end if
-  #if "anyValue" in $cDataDomain["valueDefinition"]
+  #if "valueDefinition" in $cDataDomain and "anyValue" in $cDataDomain["valueDefinition"]
    #set $largs["ph"]="Value"
       $printControl($largs)
   #else
-   #if "allowedValues" in $cDataDomain["valueDefinition"]
-    #set $largs["options"]=$cDataDomain["valueDefinition"]["allowedValues"]
+   #if "enum" in $cDataDomain
+    #set $largs["options"]=$cDataDomain["enum"]
     $printControl($largs)
    #else
-    ELSE
-    $obj
+      #set $largs["ph"]="Value"
+      $printControl($largs)
    #end if
   #end if
-  #if "defaultValue" in $cDataDomain
+  #if "default" in $obj["schema"]
       <script>
         System["function_$cName"]=function(){
           try{
-            jQuery("input[name='input_value_$cName'],select[name='input_value_$cName]']").val($cDataDomain["defaultValue"]);
+            jQuery("input[name='input_value_$cName'],select[name='input_value_$cName]']").val($obj["schema"]["default"]);
           }catch(e){
-            jQuery("input[name='input_value_$cName'],select[name='input_value_$cName']").val("$cDataDomain["defaultValue"]");
+            jQuery("input[name='input_value_$cName'],select[name='input_value_$cName']").val("$obj["schema"]["default"]");
           }
         }
       </script>
@@ -256,7 +263,7 @@ View default (no title found for $v).
  $printBboxInput($obj)      
  #end if
 #end if
-#if $obj["maxOccurs"]=="unbounded" or $obj["maxOccurs"]>1
+#if "maxOccurs" in $obj and ($obj["maxOccurs"]=="unbounded" or $obj["maxOccurs"]>1)
 	<div class="btn-group" role="group" aria-label="Basic example">
 	  <button type="button" class="btn btn-secondary" onclick="addElementToList(\$(this));">Add</button>
 	  <button type="button" class="btn btn-secondary" onclick="delElementToList(\$(this));">Delete</button>
@@ -320,7 +327,8 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	License: 
 	<a itemprop="license" href="$openapi["openapi"]["license_url"]">$openapi["openapi"]["license_name"]</a>
 	#end if
-    #if "inputs" in $values
+	#if "inputs" in $values
+	#try
 #set $cid="JOBSOCKET-"+$conf["lenv"]["usid"]
 	<form class="needs-validation" data-id="$cid" novalidate>
 	  <input type="hidden" name="oapi_ioAsArray" value="#if "io_as_array" in $openapi["openapi"]#$openapi["openapi"]["io_as_array"]#else#false#end if#" />
@@ -329,22 +337,32 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	  <input type="hidden" name="oapi_reqID" value="$cid" />
 	  <h3>Inputs</h3>
 	  <div class="accordion" id="accordionInputExample">
-	    #for i in range(len(values["inputs"]))
+	    #for i in values["inputs"]
 	    #set cInput=$values["inputs"][$i]
-	    #set cName=$cInput["id"].replace(".","_")
-	    $printCard({"id": $cName, "title": $cInput["id"],"content":'<p>'+$cInput["description"]+'</p>'+$printInputContent($cInput)})
+	    #set $cInput["id"]=$i
+	    #set cName=$i.replace(".","_")
+	    #try
+	    $printCard({"id": $cName, "title": $i,"content":'<p>'+$cInput["description"]+'</p>'+$printInputContent($cInput)})
+	    #except Exception as e
+	    $i $e
+	    #end try
 	    #end for    
 	  </div>
       
 	  <h3>Outputs</h3>
 	  <div class="accordion" id="accordionOutputExample">
-	    #for i in range(len(values["outputs"]))
+	    #for i in values["outputs"]
 	    #set cOutput=$values["outputs"][$i]
-	    #set cName=$cOutput["id"].replace(".","_")
+	    #set $cOutput["id"]=$i
+	    #set cName=$i.replace(".","_")
 	    #set cFormats=[]
-	    #if "formats" in $cOutput["output"]
-	    #for j in range(len($cOutput["output"]["formats"]))
-	    #set cFormats+=[$cOutput["output"]["formats"][$j]["mediaType"]]
+	    #if "oneOf" in $cOutput["schema"]
+	    #for j in range(len($cOutput["schema"]["oneOf"]))
+	    #if "contentMediaType" in $cOutput["schema"]["oneOf"][$j]
+	    #set cFormats+=[$cOutput["schema"]["oneOf"][$j]["contentMediaType"]]
+	    #else
+	    #set cFormats+=["application/json"]
+	    #end if
 	    #end for
 	    #end if
 	    #set cTransmissions=[]
@@ -403,6 +421,9 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </div>
     </div>
     <script src="$openapi["openapi"]["rootUrl"]/../static/openapi.js"></script>
+    #except Exception as e
+    $e
+    #end try
     #end if
     
     #try
@@ -539,6 +560,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       <textarea class="form-control" style="height: 300px;"></textarea>
       <script>
       window.onload = function(){
+        \$("main").find("table").DataTable();
         var jsContent=\$(".microlight").html();
         var tmpStr=js_beautify(jsContent);
         \$("textarea").last().val(tmpStr);
@@ -556,8 +578,8 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
             if (form.checkValidity() === false) {
               event.preventDefault();
               event.stopPropagation();
-              for(var i=0;i<System["JSON_STR"]["inputs"].length;i++){
-                var cName=System["JSON_STR"]["inputs"][i]["id"].replace(/\./g,"_");
+              for(var i in System["JSON_STR"]["inputs"]){
+                var cName=i.replace(/\./g,"_");
                 var selector=
                   'input[name="input_value_'+cName+'"]:invalid,'+
                   'input[name="input_value_'+cName+'_minx"]:invalid,'+
@@ -568,7 +590,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
                       \$(this).parent().parent().parent().parent().find(".btn").first().click();
                   });
                 }
-              }              
+              }
             }else{
               loadRequest();
             }
@@ -580,7 +602,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Thu Apr  8 18:31:44 CEST 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Sat Jun 12 02:34:23 CEST 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
@@ -617,7 +639,8 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.13.0/beautify.min.js" integrity="sha512-84xqGKD+OW9ElGeIq5RkXhsKveQx+kAjahn9r7f/Vm9J0bDrwEabW3MQNgYdTzLBnwfrTGs0nuPx3pZxh6itNg==" crossorigin="anonymous"></script>
-  </body>
+    <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js" ></script>
+      </body>
 </html>
 #if "cache_file" in $inputs["tmpl"] and $removeCacheFile
 <!-- REMOVED ! -->      

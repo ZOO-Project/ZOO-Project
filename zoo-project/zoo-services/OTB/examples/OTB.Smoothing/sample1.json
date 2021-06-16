@@ -1,0 +1,25 @@
+{
+  "inputs": {
+    "in": [
+      {
+        "href": "http://geolabs.fr/dl/Landsat8Extract1.tif"
+      }
+    ],
+    "out": "float",
+    "type": "mean",
+    "type.anidif.timestep": 0.125,
+    "type.mean.radius": 2,
+    "type.anidif.nbiter": 10,
+    "type.anidif.conductance": 1,
+    "ram": 256
+  },
+  "outputs": {
+    "out": {
+      "format": {
+        "mediaType": "image/tiff"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "response": "document"
+}

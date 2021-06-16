@@ -1,0 +1,29 @@
+{
+  "inputs": {
+    "INPUT": {
+      "href": "http://zoo-project.org/dl/topofr1.tif"
+    },
+    "LOD": 16
+  },
+  "outputs": {
+    "RESULT": {
+      "format": {
+        "mediaType": "image/tiff"
+      },
+      "transmissionMode": "reference"
+    },
+    "RESULT_LOD": {
+      "format": {
+        "mediaType": "image/tiff"
+      },
+      "transmissionMode": "reference"
+    },
+    "SEEDS": {
+      "format": {
+        "mediaType": "image/tiff"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "response": "document"
+}

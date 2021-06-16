@@ -3017,6 +3017,116 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 }
 
 /**
+ * Get the number of outputs provided in the execute request body.
+ *
+ * @param conf the main configuration
+ * @param outputs the outputs to count
+ */
+int getNumberOfOutputs(maps* conf,maps* outputs){
+  int res=0;
+  maps* pmsOut=outputs;
+  while(pmsOut!=NULL){
+    map* pmTmp=getMap(pmsOut->content,"inRequest");
+    if(pmTmp!=NULL && strcmp(pmTmp->value,"true")==0)
+      res++;
+    pmsOut=pmsOut->next;
+  }
+  return res;
+}
+
+/**
+ * Print all outputs as raw
+ *
+ * @param conf the main configuration maps
+ * @param outputs the output to be print as raw
+ */
+void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
+  maps* pmsOut=outputs;
+  if(pmsOut!= NULL && pmsOut->next!=NULL && getNumberOfOutputs(conf,outputs)>1){
+    map* pmUsid=getMapFromMaps(conf,"lenv","usid");
+    char* pcaBoundary=(char*)malloc(strlen(pmUsid->value)+2+1);
+    sprintf(pcaBoundary,"--%s",pmUsid->value);
+    map* mi=getMap(pmsOut->content,"mimeType");
+    if(mi!=NULL)
+      printf("Content-Type: Multipart/Related; boundary=\"%s\"; type=%s; start=%s\r\nStatus: 200 OK\r\n\r\n",pcaBoundary,mi->value,pmsOut->name);
+    else
+      printf("Content-Type: Multipart/Related; boundary=\"%s\"; type=text/plain; start=%s\r\nStatus: 200 OK\r\n\r\n",pcaBoundary,pmsOut->name);
+    int itn=0;
+    while(pmsOut!=NULL){
+      map* pmPresence=getMap(pmsOut->content,"inRequest");
+      if(pmPresence!=NULL && strcmp(pmPresence->value,"true")==0){
+	mi=getMap(pmsOut->content,"mimeType");
+	printf("--%s\r\n",pcaBoundary);
+	printf("Content-ID: %s\r\n",pmsOut->name);
+	map* pmDescription=getMap(pmsOut->content,"abstract");
+	if(pmDescription==NULL)
+	  pmDescription=getMap(pmsOut->content,"title");
+	if(pmDescription!=NULL)
+	  printf("Content-Description: %s\r\n",pmDescription->value);
+
+	char mime[1024];
+	map* en=getMap(outputs->content,"encoding");
+	if(mi!=NULL && en!=NULL)
+	  sprintf(mime,
+		  "Content-Type: %s; charset=%s\r\n",
+		  mi->value,en->value);
+	else
+	  if(mi!=NULL)
+	    sprintf(mime,
+		    "Content-Type: %s; charset=UTF-8\r\n",
+		    mi->value);
+	  else
+	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+	map* pmTransmissionMode=getMap(pmsOut->content,"transmissionMode");
+	if(pmTransmissionMode!=NULL && strcasecmp(pmTransmissionMode->value,"reference")==0){
+	  char *pcaFileUrl=produceFileUrl(s,conf,pmsOut,NULL,itn);
+	  printf("%s",mime);
+	  printf("Content-Location: %s\r\n",pcaFileUrl);
+	  itn++;
+	}else{
+	  map *gfile=getMap(pmsOut->content,"generated_file");
+	  if(gfile!=NULL){
+	    gfile=getMap(pmsOut->content,"expected_generated_file");
+	    if(gfile==NULL){
+	      gfile=getMap(pmsOut->content,"generated_file");
+	    }
+	    readGeneratedFile(conf,pmsOut->content,gfile->value);
+	  }
+	  map* pmValue=getMap(pmsOut->content,"value");
+	  if(pmValue==NULL){
+	    char tmpMsg[1024];
+	    sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
+	    map* pmExecutionType=getMapFromMaps(conf,"main","executionType");
+	    if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
+	      errorException(conf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+	    else{
+	      setMapInMaps(conf,"lenv","error","true");
+	      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
+	      setMapInMaps(conf,"lenv","message",tmpMsg);
+	    }
+	    return NULL;
+	  }
+	  printf("%s",mime);
+	  map* rs=getMap(pmsOut->content,"size");
+	  map* fname=getMap(pmsOut->content,"filename");
+	  if(fname!=NULL)
+	    printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+	  else
+	    printf("Content-Disposition: INLINE\r\n");
+	  if(rs!=NULL)
+	    fwrite(pmValue->value,1,atoi(rs->value),stdout);
+	  else
+	    fwrite(pmValue->value,1,strlen(pmValue->value),stdout);
+	}
+      }
+      pmsOut=pmsOut->next;
+    }
+    printf("--%s--\r\n",pcaBoundary);
+  }
+  else printRawdataOutput(conf,outputs);
+}
+
+/**
  * Print one outputs as raw
  * 
  * @param conf the main configuration maps

@@ -250,6 +250,7 @@ extern "C" {
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
   void* printRawdataOutput(maps*,maps*);
+  void* printRawdataOutputs(maps*,service*,maps*);
   map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
   void printBoundingBoxDocument(maps*,maps*,FILE*);

@@ -1,0 +1,18 @@
+{
+    "inputs": {
+	"SHAPES": {
+	    "href": "http://zoo-project.org:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&srsName=EPSG:4326&typename=sf:bugsites"
+	}
+    },
+    "outputs": {
+	"HULLS": {
+	    "format": { "mediaType": "application/json"},
+	    "transmissionMode": "value"
+	},
+	"BOXES": {
+	    "format": { "mediaType": "application/json"},
+	    "transmissionMode": "value"
+	}
+    },
+    "response": "document"
+}

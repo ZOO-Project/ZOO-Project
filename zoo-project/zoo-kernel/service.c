@@ -212,6 +212,66 @@ int count(map* pmMap){
 /**
  * Count number of maps in a maps
  *
+ * @param pmsMap the maps to count
+ * @return number of maps in a maps
+ */
+int countMaps(maps* pmsMap){
+  maps* pmsTmp=pmsMap;
+  int c=0;
+  while(pmsTmp!=NULL){
+    c++;
+    pmsTmp=pmsTmp->next;
+  }
+  return c;
+}
+
+/**
+ * Count number of a specific map in a map
+ *
+ * @param pmMap the map to count
+ * @return number of map in a map
+ */
+int countMapName(map* pmMap,const char* value){
+  map* pmTmp=pmMap;
+  int c=0;
+  while(pmTmp!=NULL){
+    if(strncasecmp(pmTmp->name,value,strlen(value))==0)
+      c++;
+    pmTmp=pmTmp->next;
+  }
+  return c;
+}
+
+/**
+ * Count number of a specific map value in a map
+ *
+ * @param pmMap the map to count
+ * @return number of map in a map
+ */
+int countMapNameValue(map* pmMap,const char* value){
+  map* pmTmp=pmMap;
+  int c=0;
+  map* tmpValues=NULL;
+  while(pmTmp!=NULL){
+    if(strncasecmp(pmTmp->name,value,strlen(value))==0){
+      if(tmpValues==NULL){
+	tmpValues=createMap(pmTmp->value,"");
+	c++;
+      }
+      else{
+	if(countMapName(tmpValues,pmTmp->value)==0)
+	  c++;
+      }
+    }
+    pmTmp=pmTmp->next;
+  }
+  return c;
+}
+
+
+/**
+ * Count number of maps in a maps
+ *
  * @param pmMap the maps to count
  * @return number of maps in a maps
  */

@@ -361,6 +361,10 @@ extern "C" {
 	  ResultNotReady
   };
 
+  /**
+   * Standard WPS exception codes
+   * @see WPSExceptionText
+   */
   static const char* const WPSExceptionCode[] = {
 	"StatusOK",
 	"MissingParameterValue",
@@ -386,6 +390,30 @@ extern "C" {
 	"ResultNotReady"
   };
 
+  /**
+   * WPS exception codes to OGC API - Processes ones
+   * @see WPSExceptionCode, OAPIPExceptionCode
+   */
+  static const int OAPIPCorrespondances[3][2] = {
+    {9,0},
+    {20,1},
+    {21,2}
+  };
+
+  /**
+   * OGC API - Processes exception codes
+   * @see WPSExceptionCode, OAPIPCorrespondances
+   */
+  static const char* const OAPIPExceptionCode[] = {
+	"no-such-process",
+	"no-such-job",
+	"result-not-ready"
+  };
+
+  /**
+   * WPS exception text (associated with the exception code)
+   * @see WPSExceptionCode
+   */
   static const char* const WPSExceptionText[] = {
 	"No problem detected",
 	"Operation request does not include a parameter value, and this server did not declare a default value for that parameter.",
@@ -419,6 +447,9 @@ extern "C" {
   ZOO_DLL_EXPORT map* createMap(const char*,const char*);
   ZOO_DLL_EXPORT maps* createMaps(const char*);
   ZOO_DLL_EXPORT int count(map*);
+  ZOO_DLL_EXPORT int countMaps(maps*);
+  ZOO_DLL_EXPORT int countMapName(map*,const char*);
+  ZOO_DLL_EXPORT int countMapNameValue(map*,const char*);
   ZOO_DLL_EXPORT bool hasKey(map*,const char*);
   ZOO_DLL_EXPORT maps* getMaps(maps*,const char*);
   ZOO_DLL_EXPORT map* getMap(map*,const char*);

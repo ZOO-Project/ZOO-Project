@@ -1,0 +1,16 @@
+{
+  "inputs": {
+    "POLYGONS": {
+      "href": "https://demo.pygeoapi.io/stable/collections/ogr_geojson_lakes/items?f=json"
+    }
+  },
+  "outputs": {
+    "CENTROIDS": {
+      "format": {
+        "mediaType": "text/xml"
+      },
+      "transmissionMode": "value"
+    }
+  },
+  "response": "document"
+}

@@ -35,20 +35,22 @@ function delElementToList(){
 }
 
 function loadRequest(){
+    var executionMode=$("select[name='main_value_mode']").val();
     var requestObject={
 	//"id": System["JSON_STR"]["id"],
         "inputs":{},
         "outputs":{},
-        "subscriber":{},
+        "subscriber":{}/*,
         "mode": $("select[name='main_value_mode']").val(),
-        "response": $("select[name='main_value_format']").val()
+        "response": $("select[name='main_value_format']").val()*/
     };
     if($('input[name="oapi_ioAsArray"]').val()=="true"){
 	requestObject["inputs"]=[];
 	requestObject["outputs"]=[];
     }
-    for(var i=0;i < System["JSON_STR"]["inputs"].length;i++){
-        var cName=System["JSON_STR"]["inputs"][i]["id"].replace(".","_");
+    for(var i in System["JSON_STR"]["inputs"]){
+    //for(var i=0;i < System["JSON_STR"]["inputs"].length;i++){
+        var cName=i.replace(".","_");
         var selector="input[name='input_value_"+cName+"'],"+
 	    "select[name='input_value_"+cName+"']";
         if($(selector).val()!=""){
@@ -56,7 +58,7 @@ function loadRequest(){
 		var cInput={};
 		if($('input[name="oapi_ioAsArray"]').val()=="true")
 		    cInput={"id": System["JSON_STR"]["inputs"][i]["id"], "input": {}};
-		if(System["JSON_STR"]["inputs"][i]["input"]["formats"]){
+		if(System["JSON_STR"]["inputs"][i]["schema"]["oneOf"]){
 		    var selector1="input[name='input_format_"+cName+"'],"+
 			"select[name='input_format_"+cName+"']";
 		    console.log($(this).parent().prev().find("select").val());
@@ -66,26 +68,14 @@ function loadRequest(){
 			};
 			cInput["input"]["href"]=$(this).val();
 		    }else{
-			cInput["format"]={
-			    "mediaType": $(this).parent().prev().find("select").val()
-			};
+			cInput["type"]=$(this).parent().prev().find("select").val();
 			cInput["href"]=$(this).val();
 		    }
 		}
 		else{
-		    if(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]){
-			console.log(System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"]);
-			if($('input[name="oapi_ioAsArray"]').val()=="true"){
-			    cInput["input"]["dataType"]={
-				"name": System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"][0]["dataType"]["name"]
-			    };
-			    cInput["input"]["value"]=$(this).val();
-			}else{
-			    cInput["dataType"]={
-				"name": System["JSON_STR"]["inputs"][i]["input"]["literalDataDomains"][0]["dataType"]["name"]
-			    };
-			    cInput["value"]=$(this).val();
-			}			    
+		    if(System["JSON_STR"]["inputs"][i]["schema"]["type"]!="object"){
+			console.log(System["JSON_STR"]["inputs"][i]["schema"]["type"]);
+			cInput=$(this).val();
 		    }else{
 			console.log($(this).attr("name"));
 			console.log("ok BB");
@@ -111,31 +101,32 @@ function loadRequest(){
         }
     }
     console.log(System["JSON_STR"]["outputs"]);
-    for(var i=0;i < System["JSON_STR"]["outputs"].length;i++){
+    for(var i in System["JSON_STR"]["outputs"]){
+    //for(var i=0;i < System["JSON_STR"]["outputs"].length;i++){
         var cOutput={};
 	console.log($('input[name="oapi_ioAsArray"]').val()=="true");
 	if($('input[name="oapi_ioAsArray"]').val()=="true")
-	    cOutput={"id": System["JSON_STR"]["outputs"][i]["id"]};
-        var cName=System["JSON_STR"]["outputs"][i]["id"].replace(/\./g,"_");
-        if(System["JSON_STR"]["outputs"][i]["output"]["formats"]){
+	    cOutput={"id": i};
+        var cName=i.replace(/\./g,"_");
+        if(System["JSON_STR"]["outputs"][i]["schema"]["oneOf"]){
 	    var selector="select[name='format_"+cName+"']";
 	    cOutput["format"]={
 		"mediaType": $(selector).val()
 	    };
         }
         else{
-	    if(System["JSON_STR"]["outputs"][i]["output"]["literalDataDomains"]){
+	    /*if(System["JSON_STR"]["outputs"][i]["schema"]["type"]!="object"){
 		cOutput["dataType"]={
-		    "name": System["JSON_STR"]["outputs"][i]["output"]["literalDataDomains"][0]["dataType"]["name"]
+		    "name": System["JSON_STR"]["outputs"][i]["schema"]["literalDataDomains"][0]["dataType"]["name"]
 		};
-	    }
+	    }*/
         }
         var selector1="select[name='transmission_"+cName+"']";
         cOutput["transmissionMode"]=$(selector1).val();
 	if($('input[name="oapi_ioAsArray"]').val()=="true")
             requestObject["outputs"].push(cOutput);
 	else
-	    requestObject["outputs"][System["JSON_STR"]["outputs"][i]["id"]]=cOutput;
+	    requestObject["outputs"][i]=cOutput;
     }
     
     if($("input[name='main_value_successUri']").val()!="")
@@ -150,25 +141,27 @@ function loadRequest(){
     $("#exampleModal").find(".btn-primary").off('click');
     $("#exampleModal").find(".btn-primary").click(function(){
         $('#result').html("");
-        if(!socket && requestObject["mode"]!="sync")
+        if(!socket && executionMode!="sync")
             socket = new WebSocket($('input[name="oapi_wsUrl"]').val());
         else
-            $.ajax({
-                contentType: "application/json",
-                data: $("textarea").val(),
-                type: "POST",
-                url: $('input[name="oapi_jobUrl"]').val(),
-                success: function (msg) {
-                    console.log(msg);
-                    var cObj=msg;
-                    $('#result').html(js_beautify(JSON.stringify(msg)));
-                },
-                error: function(){
-                    console.log(arguments);
-                    $('#result').html(js_beautify(JSON.stringify(arguments[0].responseJSON)));
-                },
-            });
-        if(requestObject["mode"]=="sync"){
+	    if(executionMode=="sync")
+		$.ajax({
+                    contentType: "application/json",
+		    data: $("textarea").val(),
+                    type: "POST",
+                    url: $('input[name="oapi_jobUrl"]').val(),
+		    success: function (msg) {
+			console.log(msg);
+			var cObj=msg;
+			$('#result').html(js_beautify(JSON.stringify(msg)));
+                    },
+                    error: function(){
+			console.log(arguments);
+			$('#result').html(js_beautify(JSON.stringify(arguments[0].responseJSON)));
+                    },
+		});
+	
+        if(executionMode=="sync"){
             return;
         }
         socket.onopen = function () {
@@ -177,9 +170,18 @@ function loadRequest(){
         };
         socket.onmessage = function(event) {
             console.log('MESSAGE: ' + event.data);
-            if(event.data=="1")
+            if(event.data=="1"){
+		var localHeaders={};
+		if(executionMode!="sync"){
+		    localHeaders={"Prefer": "respond-async;return="+($("select[name='main_value_format']").val()=="sync"?"minimal":"representation")};
+		}else{
+		    localHeaders={"Prefer": "return="+($("select[name='main_value_format']").val()=="sync"?"minimal":"representation")};
+		}
+		
+		
 		$.ajax({
                     contentType: "application/json",
+                    headers: localHeaders,
                     data: $("textarea").val(),
                     type: "POST",
                     url: $('input[name="oapi_jobUrl"]').val(),
@@ -190,8 +192,10 @@ function loadRequest(){
 			console.log(arguments);
                     },
 		});
+	    }
             else{
 		//progressBar
+		console.log('MESSAGE: ' + event.data);
 		$("#progress_details").show();
 		var cObj=JSON.parse(event.data);
 		if(cObj["jobID"]){
@@ -200,8 +204,8 @@ function loadRequest(){
                     $(".progress-bar").css("width",cObj["progress"]+"%");
 		}else{
                     $("#progress_details").hide();
-                    if(cObj["outputs"])
-			$('#result').html(js_beautify(JSON.stringify(cObj["outputs"])));
+                    if(cObj)
+			$('#result').html(js_beautify(JSON.stringify(cObj)));
                     else
 			$('#result').html(cObj["message"]);
 		}

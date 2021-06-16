@@ -100,13 +100,11 @@ RUN set -ex \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
     && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=7.0 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
-    && make \
+    && make -j4 \
     && make install \
     \
     # TODO: why not copied by 'make'?
     && cp zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
-    && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
-    && cp ../zoo-services/hello-js/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
@@ -229,7 +227,11 @@ RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && git clone https://github.com/ZOO-Project/examples.git \
-    && git clone https://github.com/swagger-api/swagger-ui.git
+    && git clone https://github.com/swagger-api/swagger-ui.git \
+    && git clone https://github.com/WPS-Benchmarking/cptesting.git /testing \
+    \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
+    && rm -rf /var/lib/apt/lists/*
 
 #
 # Runtime image with apache2.
@@ -241,6 +243,9 @@ ARG RUN_DEPS=" \
     curl \
     cgi-mapserver \
     mapserver-bin \
+    xsltproc \
+    libxml2-utils \
+    gnuplot \
     #Uncomment the line below to add vi editor \
     #vim \
     #Uncomment the lines below to add debuging \
@@ -254,15 +259,20 @@ COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/SAGA/examples/ /var/www/html/examples/
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/OTB/examples/ /var/www/html/examples/
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/cgal/examples/ /var/www/html/examples/
 
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
 COPY --from=builder2 /usr/com/zoo-project/ /usr/com/zoo-project/
 
 # From optional zoo demos
+COPY --from=demos /testing/ /testing/
 COPY --from=demos /zoo-project/examples/data/ /usr/com/zoo-project/
 COPY --from=demos /zoo-project/examples/ /var/www/html/
 COPY --from=demos /zoo-project/swagger-ui /var/www/html/swagger-ui
+
 
 
 RUN set -ex \
@@ -272,6 +282,7 @@ RUN set -ex \
     && mv  /var/www/html/swagger-ui/dist  /var/www/html/swagger-ui/oapip \
     && ln -s /tmp/ /var/www/html/temp \
     && ln -s /usr/lib/x86_64-linux-gnu/saga/ /usr/lib/saga \
+    && ln -s /testing /var/www/html/cptesting \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install Cheetah3 redis\
     && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \

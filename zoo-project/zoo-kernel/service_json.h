@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2014-2020 GeoLabs SARL. All rights reserved.
+ *  Copyright 2014-2021 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "service_internal_ms.h"
 #include "response_print.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -42,6 +43,42 @@ extern "C" {
   static const char* jcapabilities[4]={
     "jobControlOptions","sync-execute async-execute dismiss",
     "outputTransmission","value reference"
+  };
+
+  /**
+   * Possible field names corresponding to pccRFields
+   * @see pccRFields
+   */
+  static const char* pccFields[9]={
+    "type",
+    "encoding",
+    "schema",
+    "mediaType",
+    "mediaEncoding",
+    "mediaSchema",
+    "contentMediaType",
+    "contentEncoding",
+    "contentSchema"
+  };
+
+  /**
+   * Corresponding fields available in WPS for pccFields
+   * @see pccFields
+   */
+  static const char* pccRFields[3]={
+    "mimeType",
+    "encoding",
+    "schema"
+  };
+
+  /**
+   * Equivalent range keywords for WPS version 1 and 2
+   */
+  static const char* rangeCorrespondances[4][2]={
+    { "rangeMin", "minimum" },
+    { "rangeMax", "maximum"},
+    { "rangeSpacing", "spacing" }, 
+    { "rangeClosure", "rangeClosure" }
   };
 
   json_object* mapToJson(map*);

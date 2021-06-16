@@ -11,7 +11,7 @@
  </MetaData>
  <DataInputs>
   [a]
-   Title = Literal Input (string-
+   Title = Literal Input (string)
    Abstract = An input string
    minOccurs = 1
    maxOccurs = 1
@@ -50,15 +50,15 @@
  </DataInputs>
  <DataOutputs>
   [a]
-   Title = The input a
-   Abstract = The input a returned
+   Title = The output a
+   Abstract = The output a returned
    <LiteralData>
     DataType = string
     <Default />
    </LiteralData>
   [b]
-   Title = The input b
-   Abstract = The input b returned
+   Title = The output b
+   Abstract = The output b returned
    <ComplexData>
     <Default>
       mimeType = text/xml
@@ -70,8 +70,8 @@
     </Supported>
    </ComplexData>
   [c]
-   Title = BoundingBox Input 
-   Abstract = A boundingbox input 
+   Title = BoundingBox output 
+   Abstract = A boundingbox output 
    <BoundingBoxData>
      <Default>
       CRS = urn:ogc:def:crs:EPSG:6.6:4326

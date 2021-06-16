@@ -1,0 +1,22 @@
+{
+  "inputs": {
+    "SHAPES": {
+      "href": "https://demo.pygeoapi.io/stable/collections/ogr_gpkg_poi/items?f=json"
+    }
+  },
+  "outputs": {
+    "HULLS": {
+      "format": {
+        "mediaType": "text/xml"
+      },
+      "transmissionMode": "value"
+    },
+    "BOXES": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "response": "raw"
+}

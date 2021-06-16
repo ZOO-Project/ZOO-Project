@@ -1,0 +1,16 @@
+{
+  "inputs": {
+    "InputPoints": {
+      "href": "http://zoo-project.org/zoo-demo-2015/data/stations.gml"
+    }
+  },
+  "outputs": {
+    "Result": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "value"
+    }
+  },
+  "response": "raw"
+}

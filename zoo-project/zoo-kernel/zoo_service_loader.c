@@ -332,7 +332,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
     else
       {
         char* extn = strstr(dp->d_name, ".zcfg");
-        if(dp->d_name[0] != '.' && extn != NULL && strlen(extn) == 5 && strlen(dp->d_name)>6)
+        if(dp->d_name[0] != '.' && extn != NULL && strlen(extn) == 5 && strlen(dp->d_name)>5)
           {
             int t;
             char tmps1[1024];
@@ -2416,8 +2416,13 @@ runRequest (map ** inputs)
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
 	map* mode=getMap(request_inputs,"mode");
-	if((preference!=NULL && strcasecmp(preference->value,"respond-async")==0) ||
+	if((preference!=NULL && strstr(preference->value,"respond-async")!=NULL) ||
 	   (mode!=NULL && strncasecmp(mode->value,"async",5)==0)) {
+	  if(mode==NULL){
+	    setMapInMaps(m,"request","mode","async");
+	    addToMap(request_inputs,"mode","async");
+	    mode=getMap(request_inputs,"mode");
+	  }
 	  int pid;
 #ifdef DEBUG
 	  fprintf (stderr, "\nPID : %d\n", cpid);
@@ -2451,6 +2456,8 @@ runRequest (map ** inputs)
 #endif
 	      eres = SERVICE_ACCEPTED;
 	      createStatusFile(m,eres);
+	      if(preference!=NULL)
+		setMapInMaps(m,"headers","Preference-Applied",preference->value);
 	      //invokeBasicCallback(m,SERVICE_ACCEPTED);
 	      printHeaders(m);
 	      printf("Status: 201 Created \r\n\r\n");
