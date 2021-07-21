@@ -112,6 +112,7 @@ extern "C" int crlex ();
 #ifdef USE_JSON
 #include "service_json.h"
 #include "json_tokener.h"
+#include "json.h"
 #endif
 
 #include <dirent.h>
@@ -245,6 +246,73 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
 }
 
 /**
+ * Update the counter value (in conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to update (serviceCnt or serviceCounter)
+ * @param type char pointer can be "incr" for incrementing the value by 1, other
+ * will descrement the value by 1
+ */
+void updateCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv",field);
+  if(pmTmp!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    if(strncmp(type,"incr",4)==0)
+      iCnt++;
+    else
+      iCnt--;
+    char* pcaTmp=(char*) malloc((10+1)*sizeof(char));
+    sprintf(pcaTmp,"%d",iCnt);
+    setMapInMaps(conf,"lenv",field,pcaTmp);
+    free(pcaTmp);
+  }
+}
+
+/**
+ * Compare a value with conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to compare with (serviceCntLimit or serviceCntSkip)
+ * @param type comparison operator can be : elower, lower, eupper, upper, or
+ * equal
+ * @return boolean resulting of the comparison between the values
+ */
+bool compareCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv","serviceCnt");
+  map* pmTmp1=getMapFromMaps(conf,"lenv",field);
+
+  if(pmTmp!=NULL && pmTmp1!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    int iCntOther=atoi(pmTmp1->value);
+    if(strncmp(field,"serviceCntLimit",15)==0){
+      pmTmp1=getMapFromMaps(conf,"lenv","serviceCntSkip");
+      if(pmTmp1!=NULL)
+	iCntOther+=atoi(pmTmp1->value);
+    }
+    if(strncmp(type,"lower",5)==0)
+      return iCnt<iCntOther;
+    else{
+      if(strncmp(type,"elower",6)==0)
+	return iCnt<=iCntOther;
+      else{
+	if(strncmp(type,"eupper",6)==0)
+	  return iCnt>=iCntOther;
+	else{
+	  if(strncmp(type,"upper",5)==0)
+	    return iCnt>iCntOther;
+	  else
+	    return iCnt==iCntOther;
+	}
+      }
+    }
+  }else
+    if(strncmp(type,"equal",5)==0)
+      return false;
+    else
+      return true;
+}
+
+/**
  * Recursivelly parse zcfg starting from the ZOO-Kernel cwd.
  * Call the func function given in arguments after parsing the ZCFG file.
  *
@@ -344,46 +412,58 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 	    snprintf(tmpsn,strlen(dp->d_name)-4,"%s",dp->d_name);
             
             map* import = getMapFromMaps (m, IMPORTSERVICE, tmpsn);
-            if (import == NULL || import->value == NULL || zoo_path_compare(tmps1, import->value) != 0 ) { // service is not in [include] block 
-              service *s1 = createService();
-              if (s1 == NULL)
-                {
-                  zDup2 (saved_stdout, fileno (stdout));
-                  errorException (m, _("Unable to allocate memory"),
-                                  "InternalError", NULL);
-                  return -1;
-                }
-  #ifdef DEBUG
-              fprintf (stderr, "#################\n%s\n#################\n",
-                       tmps1);
-  #endif
-              t = readServiceFile (m, tmps1, &s1, tmpsn);
-              free (tmpsn);
-              if (t < 0)
-                {
-                  map *tmp00 = getMapFromMaps (m, "lenv", "message");
-                  char tmp01[1024];
-                  if (tmp00 != NULL)
-                    sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-                             dp->d_name, tmp00->value);
-                  else
-                    sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
-                             dp->d_name);
-                  zDup2 (saved_stdout, fileno (stdout));
-                  errorException (m, tmp01, "InternalError", NULL);
-                  return -1;
-                }
-  #ifdef DEBUG
-              dumpService (s1);
-              fflush (stdout);
-              fflush (stderr);
-  #endif
-	      if(s1!=NULL)
-		inheritance(r,&s1);
-              func (r, m, doc, n, s1);
-              freeService (&s1);
-              free (s1);
+            if (import == NULL || import->value == NULL || zoo_path_compare(tmps1, import->value) != 0 ) { // service is not in [include] block
+	      if(compareCnt(m,"serviceCntSkip","eupper") && compareCnt(m,"serviceCntLimit","lower")){
+		service *s1 = createService();
+		if (s1 == NULL)
+		  {
+		    zDup2 (saved_stdout, fileno (stdout));
+		    errorException (m, _("Unable to allocate memory"),
+				    "InternalError", NULL);
+		    return -1;
+		  }
+#ifdef DEBUG
+		fprintf (stderr, "#################\n%s\n#################\n",
+			 tmps1);
+#endif
+		t = readServiceFile (m, tmps1, &s1, tmpsn);
+		free (tmpsn);
+		if (t < 0)
+		  {
+		    map *tmp00 = getMapFromMaps (m, "lenv", "message");
+		    char tmp01[1024];
+		    if (tmp00 != NULL)
+		      sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+			       dp->d_name, tmp00->value);
+		    else
+		      sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+			       dp->d_name);
+		    zDup2 (saved_stdout, fileno (stdout));
+		    errorException (m, tmp01, "InternalError", NULL);
+		    return -1;
+		  }
+#ifdef DEBUG
+		dumpService (s1);
+		fflush (stdout);
+		fflush (stderr);
+#endif
+		if(s1!=NULL)
+		  inheritance(r,&s1);
+		func (r, m, doc, n, s1);
+		freeService (&s1);
+		free (s1);
+	      }
               scount++;
+	      updateCnt(m,"serviceCnt","incr");
+	      updateCnt(m,"serviceCounter","incr");
+	      if(compareCnt(m,"serviceCntLimit","equal")){
+		// In case we are willing to count the number of services, we
+		// can still continue and not return any value bellow
+		if(getMapFromMaps(m,"lenv","serviceCntNext")==NULL)
+		  setMapInMaps(m,"lenv","serviceCntNext","true");
+		//(void) closedir (dirp);
+		//return 1;
+	      }
             }
           }
       }
@@ -2052,6 +2132,40 @@ runRequest (map ** inputs)
     signal (SIGABRT, json_sig_handler);
 #endif
     setMapInMaps(m,"main","executionType","json");
+    char *pcaCgiQueryString=NULL;
+    if(strstr(cgiQueryString,"&")!=NULL){
+      char tmp='&';
+      char *token,*saveptr;
+      int iCnt=0;
+      token=strtok_r(cgiQueryString,"&",&saveptr);
+      while(token!=NULL){
+	if(iCnt>0){
+	  char *token1,*saveptr1;
+	  char *name=NULL;
+	  char *value=NULL;
+	  token1=strtok_r(token,"=",&saveptr1);
+	  while(token1!=NULL){
+	    if(name==NULL)
+	      name=zStrdup(token1);
+	    else
+	      value=zStrdup(token1);
+	    token1=strtok_r(NULL,"=",&saveptr1);
+	  }
+	  addToMap(request_inputs,name, value != NULL ? value : "");
+	  free(name);
+	  free(value);
+	  name=NULL;
+	  value=NULL;
+	}else{
+	  pcaCgiQueryString=zStrdup(token);
+	}
+	iCnt++;
+	token=strtok_r(NULL,"&",&saveptr);
+      }
+      if(pcaCgiQueryString==NULL)
+	pcaCgiQueryString=zStrdup(cgiQueryString);
+    }
+    //dumpMap(request_inputs);
     r_inputs = getMapOrFill (&request_inputs, "metapath", "");
     char conf_file1[10240];
     maps* m1 = (maps *) malloc (MAPS_SIZE);
@@ -2203,6 +2317,19 @@ runRequest (map ** inputs)
     }else if(strcmp(cgiQueryString,"/processes")==0 || strcmp(cgiQueryString,"/processes/")==0){
       /* - /processes */
       setMapInMaps(m,"lenv","requestType","desc");
+      setMapInMaps(m,"lenv","serviceCnt","0");
+      setMapInMaps(m,"lenv","serviceCounter","0");
+      map* pmTmp=getMap(request_inputs,"limit");
+      if(pmTmp!=NULL)
+	setMapInMaps(m,"lenv","serviceCntLimit",pmTmp->value);
+      else{
+	pmTmp=getMapFromMaps(m,"limitParam","schema_default");
+	if(pmTmp!=NULL)
+	  setMapInMaps(m,"lenv","serviceCntLimit",pmTmp->value);
+      }
+      pmTmp=getMap(request_inputs,"skip");
+      if(pmTmp!=NULL)
+	setMapInMaps(m,"lenv","serviceCntSkip",pmTmp->value);
       json_object *res3=json_object_new_array();
       int saved_stdout = zDup (fileno (stdout));
       zDup2 (fileno (stderr), fileno (stdout));
@@ -2210,10 +2337,14 @@ runRequest (map ** inputs)
           recursReaddirF (m, NULL, res3, NULL, ntmp, NULL, saved_stdout, 0,
 			  printGetCapabilitiesForProcessJ) < 0)
         {
-	}      
+	}
       zDup2 (saved_stdout, fileno (stdout));
       zClose(saved_stdout);
-      res=res3;
+      json_object* res4=json_object_new_object();
+      json_object_object_add(res4,"processes",res3);
+      setMapInMaps(m,"lenv","path","processes");
+      createNextLinks(m,res4);
+      res=res4;
       //json_object_object_add(res,"processes",res3);
     }
     else if(strstr(cgiQueryString,"/processes")==NULL && (strstr(cgiQueryString,"/jobs")!=NULL || strstr(cgiQueryString,"/jobs/")!=NULL)){
@@ -2235,8 +2366,22 @@ runRequest (map ** inputs)
       }
       else if(strcasecmp(cgiRequestMethod,"get")==0){
 	/* - /jobs List (GET) */
-	if(strlen(cgiQueryString)<=6)
+	fprintf(stderr,"%s %d %s\n",__FILE__,__LINE__,cgiQueryString);
+	fflush(stderr);
+	if(strlen(cgiQueryString)<=6 || (strstr(cgiQueryString,"&")!=NULL && strlen(cgiQueryString)-strlen(strstr(cgiQueryString,"&"))<=6 ) ){
+	  map* pmTmp=getMap(request_inputs,"limit");
+	  if(pmTmp!=NULL)
+	    setMapInMaps(m,"lenv","serviceCntLimit",pmTmp->value);
+	  else{
+	    pmTmp=getMapFromMaps(m,"limitParam","schema_default");
+	    if(pmTmp!=NULL)
+	      setMapInMaps(m,"lenv","serviceCntLimit",pmTmp->value);
+	  }
+	  pmTmp=getMap(request_inputs,"skip");
+	  if(pmTmp!=NULL)
+	    setMapInMaps(m,"lenv","serviceCntSkip",pmTmp->value);
 	  res=printJobList(m);
+	}
 	else{
 
 	  
@@ -2587,7 +2732,7 @@ runRequest (map ** inputs)
 	      fflush(stdout);
 	      rewind(stdout);
 	      res=printJResult(m,s1,request_output_real_format,eres);
-	      const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+	      const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
 	      if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
 		setMapInMaps(m,"lenv","jsonStr",jsonStr0);
 	      invokeBasicCallback(m,eres);
@@ -2657,7 +2802,7 @@ runRequest (map ** inputs)
 	printHeaders(m);
 	printf("Status: 200 OK \r\n\r\n");
       }
-      const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+      const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
       printf(jsonStr);
       printf("\n");
       fflush(stdout);

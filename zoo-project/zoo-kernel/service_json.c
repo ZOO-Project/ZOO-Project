@@ -26,6 +26,8 @@
 #include "json.h"
 #include <errno.h>
 #include "json_tokener.h"
+#include "json_object.h"
+#include "json.h"
 #include "stdlib.h"
 #include "mimetypes.h"
 #include "server_internal.h"
@@ -865,7 +867,7 @@ extern "C" {
     if(tmp!=NULL)
       json_object_object_add(res,"detail",json_object_new_string(tmp->value));
 
-    const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+    const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
     if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
       setMapInMaps(m,"lenv","jsonStr",jsonStr);
     maps* pmsTmp=getMaps(m,"lenv");
@@ -1357,9 +1359,9 @@ extern "C" {
 	  pjoRes=createStatus(pmsConf,SERVICE_SUCCEEDED);
 	else
 	  if(pmStatus!=NULL  && strncasecmp(pmStatus->value,"Running",7)==0){
-	    map* tmpMap=getMapFromMaps(pmsConf,"lenv","Message");
+	    /*map* tmpMap=getMapFromMaps(pmsConf,"lenv","Message");
 	    if(tmpMap!=NULL)
-	      setMapInMaps(pmsConf,"lenv","gs_message",tmpMap->value);
+	      setMapInMaps(pmsConf,"lenv","gs_message",tmpMap->value);*/
 	    pjoRes=createStatus(pmsConf,SERVICE_STARTED);
 	  }
 	  else
@@ -1378,20 +1380,43 @@ extern "C" {
     json_object* res=json_object_new_array();
     map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
     struct dirent *dp;
+    int cnt=0;
+    int skip=0;
+    int limit=10000;
+    map* pmLimit=getMapFromMaps(conf,"lenv","serviceCntLimit");
+    map* pmSkip=getMapFromMaps(conf,"lenv","serviceCntSkip");
+    if(pmLimit!=NULL){
+      limit=atoi(pmLimit->value);
+    }
+    if(pmSkip!=NULL){
+      skip=atoi(pmSkip->value);
+    }
     DIR *dirp = opendir (tmpPath->value);
     if(dirp!=NULL){
       while ((dp = readdir (dirp)) != NULL){
 	char* extn = strstr(dp->d_name, "_status.json");
 	if(extn!=NULL){
-	  char* tmpStr=zStrdup(dp->d_name);
-	  tmpStr[strlen(dp->d_name)-12]=0;
-	  json_object* cjob=printJobStatus(conf,tmpStr);
-	  json_object_array_add(res,cjob);
+	  if(cnt>=skip && cnt<limit+skip){
+	    char* tmpStr=zStrdup(dp->d_name);
+	    tmpStr[strlen(dp->d_name)-12]=0;
+	    json_object* cjob=printJobStatus(conf,tmpStr);
+	    json_object_array_add(res,cjob);
+	  }
+	  if(cnt==limit+skip)
+	    setMapInMaps(conf,"lenv","serviceCntNext","true");
+	  cnt++;
 	}
       }
       closedir (dirp);
     }
-    return res;
+    json_object* resFinal=json_object_new_object();
+    json_object_object_add(resFinal,"jobs",res);
+    setMapInMaps(conf,"lenv","path","jobs");
+    char pcCnt[10];
+    sprintf(pcCnt,"%d",cnt);
+    setMapInMaps(conf,"lenv","serviceCnt",pcCnt);
+    createNextLinks(conf,resFinal);
+    return resFinal;
   }
   
   /**
@@ -1635,7 +1660,7 @@ extern "C" {
 	resu=resu->next;
       }
       const char* jsonStr =
-	json_object_to_json_string_ext(eres,JSON_C_TO_STRING_PLAIN);
+	json_object_to_json_string_ext(eres,JSON_C_TO_STRING_NOSLASHESCAPE);
       map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
       map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
       map *sessId = getMapFromMaps (conf, "lenv", "usid");
@@ -1668,6 +1693,87 @@ extern "C" {
     }
   }
 
+
+  /**
+   * Create a link object with ref, type and href.
+   *
+   * @param conf maps pointer to the main configuration maps
+   * @param rel char pointer defining the rel attribute
+   * @param type char pointer defining the type attribute
+   * @param href char pointer defining the href attribute
+   * @return json_object pointer to the link object
+   */
+  json_object* createALink(maps* conf,const char* rel,const char* type,const char* href){
+    json_object* val=json_object_new_object();
+    json_object_object_add(val,"rel",
+			   json_object_new_string(rel));
+    json_object_object_add(val,"type",
+			   json_object_new_string(type));
+    json_object_object_add(val,"href",json_object_new_string(href));
+    return val;
+  }
+
+  /**
+   * Create the next links
+   *
+   * @param conf the maps containing the settings of the main.cfg file
+   * @param result an integer (>0 for adding the /result link)
+   * @param obj the JSON object pointer to add the links to
+   * @return 0
+   */
+  int createNextLinks(maps* conf,json_object* obj){
+    json_object* res=json_object_new_array();
+
+    map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
+    map *sessId = getMapFromMaps (conf, "lenv", "path");
+
+    char *Url0=(char*) malloc((strlen(tmpPath->value)+
+			       strlen(sessId->value)+2)*sizeof(char));
+    sprintf(Url0,"%s/%s",
+	    tmpPath->value,
+	    sessId->value);
+    json_object_array_add(res,createALink(conf,"self","application/json",Url0));
+
+    map* pmHtml=getMapFromMaps(conf,"openapi","partial_html_support");
+    if(pmHtml!=NULL && strcmp(pmHtml->value,"true")==0){
+      char *Url1=(char*) malloc((strlen(tmpPath->value)+
+				 strlen(sessId->value)+7)*sizeof(char));
+      sprintf(Url1,"%s/%s.html",
+	      tmpPath->value,
+	      sessId->value);
+      json_object_array_add(res,createALink(conf,"alternate","text/html",Url1));
+      free(Url1);
+    }
+
+    map* pmTmp=getMapFromMaps(conf,"lenv","serviceCntSkip");
+    map* pmLimit=getMapFromMaps(conf,"lenv","serviceCntLimit");
+    map* pmCnt=getMapFromMaps(conf,"lenv","serviceCnt");
+    if(pmTmp!=NULL && atoi(pmTmp->value)>0){
+      char* pcaTmp=(char*) malloc((strlen(Url0)+strlen(pmLimit->value)+25)*sizeof(char));
+      int cnt=atoi(pmTmp->value)-atoi(pmLimit->value);
+      if(cnt>=0)
+	sprintf(pcaTmp,"%s?limit=%s&skip=%d",Url0,pmLimit->value,cnt);
+      else
+	sprintf(pcaTmp,"%s?limit=%s&skip=%d",Url0,pmLimit->value,0);
+      json_object_array_add(res,createALink(conf,"prev","application/json",pcaTmp));
+      free(pcaTmp);
+    }
+    if(getMapFromMaps(conf,"lenv","serviceCntNext")!=NULL){
+      dumpMap(pmCnt);
+      char* pcaTmp=(char*) malloc((strlen(Url0)+strlen(pmLimit->value)+strlen(pmCnt->value)+15)*sizeof(char));
+      int cnt=(pmTmp!=NULL?atoi(pmTmp->value):0)+atoi(pmLimit->value);
+      sprintf(pcaTmp,"%s?limit=%s&skip=%d",Url0,pmLimit->value,cnt);
+      json_object_array_add(res,createALink(conf,"next","application/json",pcaTmp));
+      free(pcaTmp);
+    }
+    json_object_object_add(obj,"links",res);
+    free(Url0);
+    map* pmNb=getMapFromMaps(conf,"lenv","serviceCnt");
+    if(pmNb!=NULL)
+      json_object_object_add(obj,"numberTotal",json_object_new_int(atoi(pmNb->value)));
+
+    return 0;
+  }
 
   /**
    * Create the status links
@@ -1749,6 +1855,13 @@ extern "C" {
     return tmp1;
   }
 
+  /**
+   * Get the result path
+   *
+   * @param conf the conf maps containing the main.cfg settings
+   * @param jobId the job identifier
+   * @return the full path to the result file
+   */
   char* getResultPath(maps* conf,char* jobId){
     map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
     char *pacUrl=(char*) malloc((strlen(tmpPath->value)+
@@ -1757,6 +1870,13 @@ extern "C" {
     return pacUrl;
   }
 
+  /**
+   * Parse a json string
+   *
+   * @param conf the conf maps containing the main.cfg settings
+   * @param myString the string containing the json content
+   * @return a pointer to the created json_object
+   */
   json_object* parseJson(maps* conf,char* myString){
     json_object *pajObj = NULL;
     enum json_tokener_error jerr;
@@ -1777,7 +1897,14 @@ extern "C" {
     }
     return pajObj;
   }
-  
+
+  /**
+   * Read a json file
+   *
+   * @param conf the conf maps containing the main.cfg settings
+   * @praam filePath the file path to read
+   * @return a pointer to the created json_object
+   */
   json_object* json_readFile(maps* conf,char* filePath){
     json_object *pajObj = NULL;
     zStatStruct zsFStatus;
@@ -1798,7 +1925,14 @@ extern "C" {
       return NULL;
     return pajObj;
   }
-  
+
+  /**
+   * Create the json object for job status
+   *
+   * @param conf the conf maps containing the main.cfg settings
+   * @param status integer
+   * @return the created json_object
+   */
   json_object* createStatus(maps* conf,int status){
     int needResult=0;
     const char *rstatus;
@@ -1817,12 +1951,11 @@ extern "C" {
     case SERVICE_STARTED:
       {
 	message=_("ZOO-Kernel is currently running your service!");
-	map* pmStatus=getMapFromMaps(conf,"lenv","status");
-	if(pmStatus!=NULL)
-	  setMapInMaps(conf,"lenv","PercentCompleted",pmStatus->value);
-	pmStatus=getMapFromMaps(conf,"lenv","message");
-	if(pmStatus!=NULL)
+	map* pmStatus=getMapFromMaps(conf,"lenv","message");
+	if(pmStatus!=NULL){
 	  setMapInMaps(conf,"lenv","gs_message",pmStatus->value);
+	  message=zStrdup(pmStatus->value);
+	}
 	rstatus="running";
 	break;
       }
@@ -1882,18 +2015,26 @@ extern "C" {
 	sessId = getMapFromMaps (conf, "lenv", "usid");
     }else
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-    if(sessId!=NULL)
+    if(sessId!=NULL){
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
+      for(int i=0;i<5;i++){
+	char* pcaTmp=_getStatusField(conf,sessId->value,statusFieldsC[i]);
+	if(strcmp(pcaTmp,"-1")!=0){
+	  json_object_object_add(res,statusFields[i],json_object_new_string(pcaTmp));
+	}
+	free(pcaTmp);
+      }
+    }
 
     json_object_object_add(res,"status",json_object_new_string(rstatus));
-    map* mMap=getMapFromMaps(conf,"lenv","gs_message");
-    if(mMap==NULL)
-      json_object_object_add(res,"message",json_object_new_string(message));
-    else{
+    map* mMap=NULL;
+    /* if(mMap==NULL)*/
+    json_object_object_add(res,"message",json_object_new_string(message));
+      /*else{
       json_object_object_add(res,"message",json_object_new_string(mMap->value));
-      if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
-	json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
-    }
+      }*/
+    if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
+      json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
     if(status!=SERVICE_DISMISSED)
       createStatusLinks(conf,needResult,res);
     else{
@@ -1930,7 +2071,7 @@ extern "C" {
     char* tmp1=json_getStatusFilePath(conf);
     FILE* foutput1=fopen(tmp1,"w+");
     if(foutput1!=NULL){
-      const char* jsonStr1=json_object_to_json_string_ext(res,JSON_C_TO_STRING_PLAIN);
+      const char* jsonStr1=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
       fprintf(foutput1,"%s",jsonStr1);
       fclose(foutput1);
     }else{
@@ -1963,6 +2104,8 @@ extern "C" {
 	tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
 	setMapInMaps(conf,"lenv","gs_message",tmpStr0);
+	fprintf(stderr,"%s %d %s %s %s\n",__FILE__,__LINE__,tmpStr,tmpStr1,tmpStr0);
+	fflush(stderr);
 	free(tmpStr0);
 	free(tmpStr1);
 	return 0;
@@ -2084,7 +2227,11 @@ extern "C" {
       }
       else
 	json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
-      json_object_object_add(res8,"in",json_object_new_string(in));
+      map* pmTmp=getMap(tmpMaps1->content,"in");
+      if(pmTmp!=NULL)
+	json_object_object_add(res8,"in",json_object_new_string(pmTmp->value));
+      else
+	json_object_object_add(res8,"in",json_object_new_string(in));
       tmpMap=getMap(tmpMaps1->content,"name");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"name",json_object_new_string(tmpMap->value));
@@ -2092,8 +2239,11 @@ extern "C" {
 	json_object_object_add(res8,"name",json_object_new_string(fName));
       json_object *res6=json_object_new_object();
       tmpMap=getMap(tmpMaps1->content,"type");
-      if(tmpMap!=NULL)
+      char* pcaType=NULL;
+      if(tmpMap!=NULL){
 	json_object_object_add(res6,"type",json_object_new_string(tmpMap->value));
+	pcaType=zStrdup(tmpMap->value);
+      }
       else
 	json_object_object_add(res6,"type",json_object_new_string("string"));
       
@@ -2107,7 +2257,20 @@ extern "C" {
 	  tmps12 = strtok_r (NULL, ",", &saveptr12);
 	}
 	json_object_object_add(res6,"enum",pjoEnum);
-      }	
+      }
+
+      pmTmp=tmpMaps1->content;
+      while(pmTmp!=NULL){
+	if(strstr(pmTmp->name,"schema_")!=NULL){
+	  if(pcaType!=NULL && strncmp(pcaType,"integer",7)==0){
+	    json_object_object_add(res6,strstr(pmTmp->name,"schema_")+7,json_object_new_int(atoi(pmTmp->value)));
+	  }else
+	    json_object_object_add(res6,strstr(pmTmp->name,"schema_")+7,json_object_new_string(pmTmp->value));
+	}
+	pmTmp=pmTmp->next;
+      }
+      if(pcaType!=NULL)
+	free(pcaType);
       json_object_object_add(res8,"schema",res6);
     }
     json_object_object_add(res,fName,res8);    

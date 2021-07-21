@@ -50,7 +50,7 @@ $e
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
     <!-- Custom styles for this template -->
     <link href="$openapi["openapi"]["rootUrl"]/../static/openapi.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css" rel="stylesheet">
     <title>#if "id" in $values#$values["id"]#else##if $currentKey in $openapi and "title" in $openapi[$currentKey]#$openapi[$currentKey]["title"]#else#Landing Page#end if##end if#</title>
   </head>
   <body itemscope itemtype="https://schema.org/DataCatalog">
@@ -429,8 +429,10 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     #try
     #if "links" in $values
     #for i in range(len($values["links"]))
-    #if $i%2==0    
+    #if $i%2==0
+    #if "title" in $values["links"][$i]
     <h2>$values["links"][$i]["title"]</h2>
+    #end if
     <p>
       <a href="$values["links"][$i]["href"]">$printRel($openapi["links_title"],$values["links"][$i]["rel"])</a>
     </p>
@@ -454,8 +456,19 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     #end if
     #if "jobs" in $urlCompnents
     #set $removeCacheFile=True
+    #try
+    #set lValues=$values["jobs"]
+    #except
+    #set lValues=$values
+    #end try
+    #else
+    #if "processes" in $values
+    #set lValues=$values["processes"]
+    #else
+    #set lValues=None
     #end if
-    #if hasattr($values, "__len__") and isinstance($values,list) and len($values)>0
+    #end if
+    #if hasattr($lValues, "__len__") and isinstance($lValues,list) and len($lValues)>0
     <table class="table table-striped">
       <thead>
 	<tr>
@@ -477,28 +490,28 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 	</tr>
       </thead>
       <tbody>	
-	#for i in range(len($values))
+	#for i in range(len($lValues))
 	<tr>
 	  #if "jobs" not in $urlCompnents
 	  #*
 	  * Processes list
 	  *#
 	  <th scope="row">
-	    <a href="$(values[$i]["links"][0]["href"]).html">
+	    <a href="$(lValues[$i]["links"][0]["href"]).html">
 	      <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-link-45deg" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 	        <path d="M4.715 6.542L3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.001 1.001 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
 	        <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 0 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 0 0-4.243-4.243L6.586 4.672z"/>
 	      </svg>
-	    $values[$i]["id"]
+	    $lValues[$i]["id"]
 	    </a>
 	  </th>
-	  <td>$values[$i]["title"]</td>
-	  <td>#if "version" in $values[$i]#$values[$i]["version"]#else#1.0.0#end if#</td>
+	  <td>$lValues[$i]["title"]</td>
+	  <td>#if "version" in $lValues[$i]#$lValues[$i]["version"]#else#1.0.0#end if#</td>
 	  #else
 	  #*
 	  * Jobs list
 	  *#
-	  #set cValue=$values[$i]
+	  #set cValue=$lValues[$i]
 	  <th scope="row">
 	    #if "status" in $cValue and $cValue["status"]=="successful"
 	    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle-fill text-success" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -602,7 +615,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Sat Jun 12 02:34:23 CEST 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Wed Jul 21 16:36:03 CEST 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  

@@ -140,6 +140,7 @@ extern "C" {
   ZOO_DLL_EXPORT void unhandleStatus(maps*);
   ZOO_DLL_EXPORT int _updateStatus(maps*);
   ZOO_DLL_EXPORT char* _getStatus(maps*,char*);
+  ZOO_DLL_EXPORT char* _getStatusField(maps*,char*,const char*);
   ZOO_DLL_EXPORT char* _getStatusFile(maps*,char*);
   ZOO_DLL_EXPORT char* getStatus(int);
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);

@@ -318,17 +318,20 @@ void recordServiceStatus(maps* conf){
   map *sid=getMapFromMaps(conf,"lenv","sid");
   map *osid=getMapFromMaps(conf,"lenv","osid");
   map *uusid=getMapFromMaps(conf,"lenv","usid");
+  map *pmProcessId=getMapFromMaps(conf,"lenv","oIdentifier");
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+
 				strlen(uusid->value)+
+				strlen(pmProcessId->value)+
 				strlen(osid->value)+
 				strlen(sid->value)+
-				strlen(wpsStatus[2])+66+1)*sizeof(char));
+				strlen(wpsStatus[2])+79+1)*sizeof(char));
   sprintf(sqlQuery,
-	  "INSERT INTO %s.services (uuid,sid,osid,fstate)"
-	  "VALUES ('%s','%s','%s','%s');",
+	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate)"
+	  "VALUES ('%s','%s','%s','%s','%s');",
 	  schema->value,
 	  uusid->value,
+	  pmProcessId->value,
 	  sid->value,
 	  osid->value,
 	  wpsStatus[2]);
@@ -375,8 +378,8 @@ int _updateStatus(maps* conf){
   map *p=getMapFromMaps(conf,"lenv","status");
   map *msg=getMapFromMaps(conf,"lenv","message");
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+62+1)*sizeof(char));
-  sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$ where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+89+1)*sizeof(char));
+  sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$,updated_time=now() where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
   if( zoo_DS == NULL || zoo_DS[zoo_ds_nb-1]==NULL ){
     if(getMapFromMaps(conf,"lenv","file.log")==NULL){
       free(sqlQuery);
@@ -436,6 +439,48 @@ char* _getStatus(maps* conf,char* pid){
   return (char*)tmp1;
 }
 
+
+/**
+ * Get the ongoing status field of a running service
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pid the service identifier (usid key from the [lenv] section)
+ * @return the reported status char* (MESSAGE|POURCENTAGE)
+ */
+char* _getStatusField(maps* conf,char* pid,const char* field){
+  int zoo_ds_nb=getCurrentId(conf);
+  int created=-1;
+  map *schema=getMapFromMaps(conf,"database","schema");
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+(2*strlen(field))+82+1)*sizeof(char));
+  sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+  if( zoo_ds_nb==
+#ifdef META_DB
+      1
+#else
+      0
+#endif
+      ){
+    init_sql(conf);
+    zoo_ds_nb++;
+    created=1;
+  }
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  OGRFeature  *poFeature = NULL;
+  const char *tmp1;
+  while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+    for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+      if( poFeature->IsFieldSet( iField ) ){
+	tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
+      }
+      else
+	tmp1=NULL;
+    }
+    OGRFeature::DestroyFeature( poFeature );
+  }
+  cleanUpResultSet(conf,zoo_ds_nb-1);
+  free(sqlQuery);
+  return (char*)tmp1;
+}
 /**
  * Read the cache file of a running service 
  *

@@ -28,15 +28,36 @@
 #pragma once
 
 #include "service_internal_ms.h"
+
 #include "response_print.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <service.h>
 #include <json_object.h>
+#include "json_c_version.h"
+
+#if (JSON_C_MINOR_VERSION<=12)
+#define 	JSON_C_TO_STRING_NOSLASHESCAPE   (1<<4)
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+  /**
+   * Names of field to output in the status object
+   */
+  static const char* statusFields[5]={
+    "processID","created","started","finished","updated"
+  };
+
+  /**
+   * Coreresponding names of field from the data table to fetch informations
+   */
+  static const char* statusFieldsC[5]={
+    "processid","creation_time","start_time","end_time","updated_time"
+  };
+
   /**
    * Name and corresponding attributes depending on the WPS version
    */
@@ -90,6 +111,7 @@ extern "C" {
   json_object*  printJResult(maps*,service*,maps*,int);
   json_object* printJobStatus(maps*,char*);
   json_object* printJobList(maps*);
+  int createNextLinks(maps*,json_object*);
   int createStatusFile(maps*,int);
   json_object* createStatus(maps*,int);
   char* json_getStatusFilePath(maps*);

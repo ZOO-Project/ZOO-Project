@@ -75,11 +75,11 @@ ARG BUILD_DEPS=" \
     cmake \
     libsaga-dev \
     # Comment lines before this one if nor OTB nor SAGA \
-    \
+    git \
     libfcgi-dev \
     libgdal-dev \
     libwxgtk3.0-dev \
-    libjson-c-dev \
+    #libjson-c-dev \
     libssh2-1-dev \
     libssl-dev \
     libxml2-dev \
@@ -97,9 +97,17 @@ RUN set -ex \
     && make -C ./thirds/cgic206 libcgic.a \
     \
     && cd ./zoo-project/zoo-kernel \
+    #&& grep JSON_C_TO_STRING_NOSLASHESCAPE -rni /usr/include/ > /usr/demo.include \
+    && git clone https://github.com/json-c/json-c.git \
+    && mkdir json-c-build \
+    && cd json-c-build \
+    && cmake ../json-c -DCMAKE_INSTALL_PREFIX=/usr/local \
+    && make && make install \
+    && cd .. \
+    && sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=7.0 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr/local --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=7.0 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
@@ -259,6 +267,7 @@ COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
+COPY --from=builder1 /usr/local/ /usr/local/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/SAGA/examples/ /var/www/html/examples/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/OTB/examples/ /var/www/html/examples/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/cgal/examples/ /var/www/html/examples/

@@ -152,7 +152,7 @@ extern "C" {
 #endif
       i+=5;
     }
-    setOutputValue(outputs,"Result",(char*)"\"Long process run successfully\"",-1);
+    setOutputValue(outputs,"Result",(char*)"Long process run successfully",-1);
     return SERVICE_SUCCEEDED;
   }
 
