@@ -24,5 +24,7 @@ jobs:
       run: docker build . --file Dockerfile --tag djayzen/zookernel:$GITHUB_SHA
     - name: Tag the Docker image
       run: docker tag djayzen/zookernel:$GITHUB_SHA djayzen/zookernel:latest
-    - name: Docker Push
+    - name: Docker Push SHA
+      run: docker push djayzen/zookernel:$GITHUB_SHA
+    - name: Docker Push Latest
       run: docker push djayzen/zookernel
