@@ -2,7 +2,8 @@ version: '3'
 services:
   zookernel:
     platform: linux/amd64
-    build: .
+    image: djayzen/zookernel:latest
+    #build: .
     ports:
       - "80:80"
     volumes:
@@ -18,11 +19,14 @@ services:
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
     depends_on:
       - pgbouncer
+      - redis
     environment:
       - ZOO_REDIS_HOST=redis
   websocketd:
     platform: linux/amd64
     build: ./docker/websocketd
+    depends_on:
+      - redis
     ports:
       - 8888:8888
     environment:

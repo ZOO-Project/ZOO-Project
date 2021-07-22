@@ -21,6 +21,8 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag djayzen/zookernel:$GITHUB_RUN_ID
+      run: docker build . --file Dockerfile --tag djayzen/zookernel:$GITHUB_SHA
+    - name: Tag the Docker image
+      run: docker tag djayzen/zookernel:$GITHUB_SHA djayzen/zookernel:latest
     - name: Docker Push
-      run: docker push djayzen/zookernel:$GITHUB_RUN_ID
+      run: docker push djayzen/zookernel
