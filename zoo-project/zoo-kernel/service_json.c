@@ -1934,6 +1934,7 @@ extern "C" {
    * @return the created json_object
    */
   json_object* createStatus(maps* conf,int status){
+    int hasMessage=0;
     int needResult=0;
     const char *rstatus;
     char *message;
@@ -1955,6 +1956,7 @@ extern "C" {
 	if(pmStatus!=NULL){
 	  setMapInMaps(conf,"lenv","gs_message",pmStatus->value);
 	  message=zStrdup(pmStatus->value);
+	  hasMessage=1;
 	}
 	rstatus="running";
 	break;
@@ -1999,6 +2001,7 @@ extern "C" {
 	  if(mMap!=NULL)
 	    setMapInMaps(conf,"lenv","message",mMap->value);
 	  message=produceErrorMessage(conf);
+	  hasMessage=1;
 	  needResult=-1;
 	}
 	rstatus="failed";
@@ -2019,13 +2022,13 @@ extern "C" {
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
       for(int i=0;i<5;i++){
 	char* pcaTmp=_getStatusField(conf,sessId->value,statusFieldsC[i]);
-	if(strcmp(pcaTmp,"-1")!=0){
+	if(pcaTmp!=NULL && strcmp(pcaTmp,"-1")!=0){
 	  json_object_object_add(res,statusFields[i],json_object_new_string(pcaTmp));
 	}
-	free(pcaTmp);
+	if(pcaTmp==NULL || strncmp(pcaTmp,"-1",2)==0)
+	  free(pcaTmp);
       }
     }
-
     json_object_object_add(res,"status",json_object_new_string(rstatus));
     map* mMap=NULL;
     /* if(mMap==NULL)*/
@@ -2054,7 +2057,7 @@ extern "C" {
       free(Url0);
       json_object_object_add(res,"links",res1);
     }
-    if(needResult<0)
+    if(hasMessage>0)
       free(message);
     return res;
   }
@@ -2104,8 +2107,6 @@ extern "C" {
 	tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
 	setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
 	setMapInMaps(conf,"lenv","gs_message",tmpStr0);
-	fprintf(stderr,"%s %d %s %s %s\n",__FILE__,__LINE__,tmpStr,tmpStr1,tmpStr0);
-	fflush(stderr);
 	free(tmpStr0);
 	free(tmpStr1);
 	return 0;

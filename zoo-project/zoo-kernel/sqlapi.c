@@ -323,11 +323,11 @@ void recordServiceStatus(maps* conf){
   char *sqlQuery=(char*)malloc((strlen(schema->value)+
 				strlen(uusid->value)+
 				strlen(pmProcessId->value)+
-				strlen(osid->value)+
 				strlen(sid->value)+
+				strlen(osid->value)+
 				strlen(wpsStatus[2])+79+1)*sizeof(char));
   sprintf(sqlQuery,
-	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate)"
+	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate) "
 	  "VALUES ('%s','%s','%s','%s','%s');",
 	  schema->value,
 	  uusid->value,
@@ -378,7 +378,7 @@ int _updateStatus(maps* conf){
   map *p=getMapFromMaps(conf,"lenv","status");
   map *msg=getMapFromMaps(conf,"lenv","message");
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+89+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(msg->value)+strlen(p->value)+strlen(sid->value)+81+1)*sizeof(char));
   sprintf(sqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$,updated_time=now() where uuid=$$%s$$;",schema->value,p->value,msg->value,sid->value);
   if( zoo_DS == NULL || zoo_DS[zoo_ds_nb-1]==NULL ){
     if(getMapFromMaps(conf,"lenv","file.log")==NULL){
@@ -408,7 +408,7 @@ char* _getStatus(maps* conf,char* pid){
   int zoo_ds_nb=getCurrentId(conf);
   int created=-1;
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+104+1)*sizeof(char));  
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+104+1)*sizeof(char));
   sprintf(sqlQuery,"select CASE WHEN message is null THEN '-1' ELSE status||'|'||message END from %s.services where uuid=$$%s$$;",schema->value,pid);
   if( zoo_ds_nb==
 #ifdef META_DB
@@ -451,7 +451,7 @@ char* _getStatusField(maps* conf,char* pid,const char* field){
   int zoo_ds_nb=getCurrentId(conf);
   int created=-1;
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+(2*strlen(field))+82+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+83+1)*sizeof(char));
   sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
   if( zoo_ds_nb==
 #ifdef META_DB
@@ -494,7 +494,7 @@ char* _getStatusFile(maps* conf,char* pid){
   OGRFeature  *poFeature = NULL;
   const char *tmp1=NULL;
   int hasRes=-1;
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+82+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+81+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select content from %s.responses where uuid=$$%s$$"
 	  " order by creation_time desc limit 1",schema->value,pid);
@@ -575,8 +575,8 @@ void unhandleStatus(maps* conf){
 				strlen(schema->value)+
 				(fstate!=NULL?
 				 strlen(fstate->value):
-				 6)
-				+66+1)*sizeof(char));
+				 4)
+				+65+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "UPDATE %s.services set end_time=now(), fstate=$$%s$$"
 	  " where uuid=$$%s$$;",
@@ -598,7 +598,7 @@ void unhandleStatus(maps* conf){
 char* getStatusId(maps* conf,char* pid){
   int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+42+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select osid from %s.services where uuid=$$%s$$",
 	  schema->value,pid);
@@ -637,7 +637,7 @@ char* getStatusId(maps* conf,char* pid){
 void readFinalRes(maps* conf,char* pid,map* statusInfo){
   int zoo_ds_nb=getCurrentId(conf);
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+58+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+44+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select fstate from %s.services where uuid=$$%s$$",
 	  schema->value,pid);
