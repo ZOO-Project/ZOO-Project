@@ -586,9 +586,19 @@ void addToMap(map* pMap,const char* pccName,const char* pccValue){
     }
     else {
       map *tmp = getMap(pMap, pccName);
-      if (tmp->value != NULL)
+      if (tmp->value != NULL){
+	char* pcaTmp = zStrdup(tmp->value);
 	free(tmp->value);
-      tmp->value = zStrdup(pccValue);
+	if(strcmp(pcaTmp,pccValue)!=0){
+	  char *pcaRes=(char*) malloc((strlen(pcaTmp)+strlen(pccValue)+2)*sizeof(char));
+	  sprintf(pcaRes,"%s,%s",pcaTmp,pccValue);
+	  tmp->value = zStrdup(pcaRes);
+	  free(pcaRes);
+	}else
+	  tmp->value = zStrdup(pccValue);
+	free(pcaTmp);
+      }else
+	tmp->value = zStrdup(pccValue);
     }
   }
 }

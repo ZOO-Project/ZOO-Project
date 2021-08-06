@@ -1378,6 +1378,7 @@ extern "C" {
    */
   json_object* printJobList(maps* conf){
     json_object* res=json_object_new_array();
+    map* pmJobs=getMapFromMaps(conf,"lenv","selectedJob");
     map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
     struct dirent *dp;
     int cnt=0;
@@ -1391,23 +1392,41 @@ extern "C" {
     if(pmSkip!=NULL){
       skip=atoi(pmSkip->value);
     }
-    DIR *dirp = opendir (tmpPath->value);
-    if(dirp!=NULL){
-      while ((dp = readdir (dirp)) != NULL){
-	char* extn = strstr(dp->d_name, "_status.json");
-	if(extn!=NULL){
-	  if(cnt>=skip && cnt<limit+skip){
-	    char* tmpStr=zStrdup(dp->d_name);
-	    tmpStr[strlen(dp->d_name)-12]=0;
-	    json_object* cjob=printJobStatus(conf,tmpStr);
-	    json_object_array_add(res,cjob);
-	  }
-	  if(cnt==limit+skip)
-	    setMapInMaps(conf,"lenv","serviceCntNext","true");
-	  cnt++;
+    if(pmJobs!=NULL){
+      char *saveptr;
+      char *tmps = strtok_r(pmJobs->value, ",", &saveptr);
+      while(tmps!=NULL){
+	if(cnt>=skip && cnt<limit+skip && strlen(tmps)>2){
+	  char* tmpStr=zStrdup(tmps+1);
+	  tmpStr[strlen(tmpStr)-1]=0;
+	  json_object* cjob=printJobStatus(conf,tmpStr);
+	  json_object_array_add(res,cjob);
+	  free(tmpStr);
 	}
+	if(cnt==limit+skip)
+	  setMapInMaps(conf,"lenv","serviceCntNext","true");
+	cnt++;
+	tmps = strtok_r (NULL, ",", &saveptr);
       }
-      closedir (dirp);
+    }else{
+      DIR *dirp = opendir (tmpPath->value);
+      if(dirp!=NULL){
+	while ((dp = readdir (dirp)) != NULL){
+	  char* extn = strstr(dp->d_name, "_status.json");
+	  if(extn!=NULL){
+	    if(cnt>=skip && cnt<limit+skip){
+	      char* tmpStr=zStrdup(dp->d_name);
+	      tmpStr[strlen(dp->d_name)-12]=0;
+	      json_object* cjob=printJobStatus(conf,tmpStr);
+	      json_object_array_add(res,cjob);
+	    }
+	    if(cnt==limit+skip)
+	      setMapInMaps(conf,"lenv","serviceCntNext","true");
+	    cnt++;
+	  }
+	}
+	closedir (dirp);
+      }
     }
     json_object* resFinal=json_object_new_object();
     json_object_object_add(resFinal,"jobs",res);
@@ -2213,6 +2232,9 @@ extern "C" {
       map* tmpMap=getMap(tmpMaps1->content,"title");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"x-internal-summary",json_object_new_string(tmpMap->value));
+      tmpMap=getMap(tmpMaps1->content,"schema");
+      if(tmpMap!=NULL)
+	json_object_object_add(res8,"$ref",json_object_new_string(tmpMap->value));
       tmpMap=getMap(tmpMaps1->content,"abstract");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"description",json_object_new_string(tmpMap->value));
@@ -2238,41 +2260,44 @@ extern "C" {
 	json_object_object_add(res8,"name",json_object_new_string(tmpMap->value));
       else
 	json_object_object_add(res8,"name",json_object_new_string(fName));
-      json_object *res6=json_object_new_object();
-      tmpMap=getMap(tmpMaps1->content,"type");
-      char* pcaType=NULL;
-      if(tmpMap!=NULL){
-	json_object_object_add(res6,"type",json_object_new_string(tmpMap->value));
-	pcaType=zStrdup(tmpMap->value);
-      }
-      else
-	json_object_object_add(res6,"type",json_object_new_string("string"));
+      tmpMap=getMap(tmpMaps1->content,"schema");
+      if(tmpMap==NULL){
+	json_object *res6=json_object_new_object();
+	tmpMap=getMap(tmpMaps1->content,"type");
+	char* pcaType=NULL;
+	if(tmpMap!=NULL){
+	  json_object_object_add(res6,"type",json_object_new_string(tmpMap->value));
+	  pcaType=zStrdup(tmpMap->value);
+	}
+	else
+	  json_object_object_add(res6,"type",json_object_new_string("string"));
       
-      tmpMap=getMap(tmpMaps1->content,"enum");
-      if(tmpMap!=NULL){
-	char *saveptr12;
-	char *tmps12 = strtok_r (tmpMap->value, ",", &saveptr12);
-	json_object *pjoEnum=json_object_new_array();
-	while(tmps12!=NULL){
-	  json_object_array_add(pjoEnum,json_object_new_string(tmps12));
-	  tmps12 = strtok_r (NULL, ",", &saveptr12);
+	tmpMap=getMap(tmpMaps1->content,"enum");
+	if(tmpMap!=NULL){
+	  char *saveptr12;
+	  char *tmps12 = strtok_r (tmpMap->value, ",", &saveptr12);
+	  json_object *pjoEnum=json_object_new_array();
+	  while(tmps12!=NULL){
+	    json_object_array_add(pjoEnum,json_object_new_string(tmps12));
+	    tmps12 = strtok_r (NULL, ",", &saveptr12);
+	  }
+	  json_object_object_add(res6,"enum",pjoEnum);
 	}
-	json_object_object_add(res6,"enum",pjoEnum);
-      }
 
-      pmTmp=tmpMaps1->content;
-      while(pmTmp!=NULL){
-	if(strstr(pmTmp->name,"schema_")!=NULL){
-	  if(pcaType!=NULL && strncmp(pcaType,"integer",7)==0){
-	    json_object_object_add(res6,strstr(pmTmp->name,"schema_")+7,json_object_new_int(atoi(pmTmp->value)));
-	  }else
-	    json_object_object_add(res6,strstr(pmTmp->name,"schema_")+7,json_object_new_string(pmTmp->value));
+	pmTmp=tmpMaps1->content;
+	while(pmTmp!=NULL){
+	  if(strstr(pmTmp->name,"schema_")!=NULL){
+	    if(pcaType!=NULL && strncmp(pcaType,"integer",7)==0){
+	      json_object_object_add(res6,strstr(pmTmp->name,"schema_")+7,json_object_new_int(atoi(pmTmp->value)));
+	    }else
+	      json_object_object_add(res6,strstr(pmTmp->name,"schema_")+7,json_object_new_string(pmTmp->value));
+	  }
+	  pmTmp=pmTmp->next;
 	}
-	pmTmp=pmTmp->next;
+	if(pcaType!=NULL)
+	  free(pcaType);
+	json_object_object_add(res8,"schema",res6);
       }
-      if(pcaType!=NULL)
-	free(pcaType);
-      json_object_object_add(res8,"schema",res6);
     }
     json_object_object_add(res,fName,res8);    
   }

@@ -309,6 +309,36 @@ void recordStoredFile(maps* conf,const char* filename,const char* type,const cha
 }
 
 /**
+ * Run SQL query to fetch the job list
+ * 
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param query the SQL query to run
+ * @return char pointer to the allocated result string
+ */
+char* runSqlQuery(maps* conf,char* query){
+  int zoo_ds_nb=getCurrentId(conf);
+  if( zoo_DS == NULL || zoo_DS[zoo_ds_nb-1]==NULL ){
+    init_sql(conf);
+    zoo_ds_nb++;
+  }
+  execSql(conf,zoo_ds_nb-1,query);
+  OGRFeature  *poFeature = NULL;
+  char *tmp1;
+  while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+    for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+      if( poFeature->IsFieldSet( iField ) ){
+	tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
+      }
+      else
+	tmp1=NULL;
+    }
+    OGRFeature::DestroyFeature( poFeature );
+  }
+  cleanUpResultSet(conf,zoo_ds_nb-1);
+  return tmp1;
+}
+
+/**
  * Insert the reference tuple corresponding to the running service
  * 
  * @param conf the maps containing the setting of the main.cfg file

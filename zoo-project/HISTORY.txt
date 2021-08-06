@@ -1,4 +1,15 @@
 Version 1.8.1
+  * Change the table structure for storing ongoing execution status
+  informations to add required field for outputing correct
+  statusInfo.
+  * Change in the C-API: function addToMap, in case there is already a
+  value, then the value is appended to the string and values are coma
+  separated (reason of the change: support for filtering using
+  processId and status in OGC API - Processes).
+  * Add support for filtering using array of string the jobs list from
+  OGC API - Processes using processId or status parameter
+  * Change docker-compose to use binary docker image published from
+  GitHub action.
   * Minor updates in docker-compose to target the right arch and
   potentially cross compile in case you run from another arch
   * Get back the MapServer automatic publication of outputs/results

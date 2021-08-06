@@ -59,6 +59,31 @@ extern "C" {
   };
 
   /**
+   * Coreresponding names of field from the data table to fetch informations
+   */
+  static const char* statusSearchFields[2]={
+    "processid","status"
+  };
+
+  /**
+   * Coreresponding names of field from the data table to fetch informations
+   */
+  static const char* statusSearchFieldsReal[2]={
+    "processid","fstate"
+  };
+
+  /**
+   * Definitions of acceptable final status
+   */
+  static char oapipStatus[5][11]={
+    "successful",
+    "failed",
+    "running",
+    "dismissed",
+    "accepted"
+  };
+
+  /**
    * Name and corresponding attributes depending on the WPS version
    */
   static const char* jcapabilities[4]={

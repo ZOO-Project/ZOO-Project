@@ -2162,9 +2162,10 @@ runRequest (map ** inputs)
 	iCnt++;
 	token=strtok_r(NULL,"&",&saveptr);
       }
-      if(pcaCgiQueryString==NULL)
-	pcaCgiQueryString=zStrdup(cgiQueryString);
     }
+    if(pcaCgiQueryString==NULL)
+      pcaCgiQueryString=zStrdup(cgiQueryString);
+    
     //dumpMap(request_inputs);
     r_inputs = getMapOrFill (&request_inputs, "metapath", "");
     char conf_file1[10240];
@@ -2181,12 +2182,12 @@ runRequest (map ** inputs)
     freeMaps(&m1);
     free(m1);
     map* pmTmp0=getMapFromMaps(m,"openapi","full_html_support");
-    if(strstr(cgiQueryString,".html")==NULL && strstr(cgiAccept,"text/html")!=NULL && pmTmp0!=NULL && strncasecmp(pmTmp0->value,"true",4)==0){
+    if(strstr(pcaCgiQueryString,".html")==NULL && strstr(cgiAccept,"text/html")!=NULL && pmTmp0!=NULL && strncasecmp(pmTmp0->value,"true",4)==0){
       map* pmTmpUrl=getMapFromMaps(m,"openapi","rootUrl");
       char* pacTmpUrl=NULL;
-      if(strcmp(cgiQueryString,"/")!=0){
-	pacTmpUrl=(char*)malloc((strlen(cgiQueryString)+strlen(pmTmpUrl->value)+6)*sizeof(char));
-	sprintf(pacTmpUrl,"%s%s.html",pmTmpUrl->value,cgiQueryString);
+      if(strcmp(pcaCgiQueryString,"/")!=0){
+	pacTmpUrl=(char*)malloc((strlen(pcaCgiQueryString)+strlen(pmTmpUrl->value)+6)*sizeof(char));
+	sprintf(pacTmpUrl,"%s%s.html",pmTmpUrl->value,pcaCgiQueryString);
       }
       else{
 	pacTmpUrl=(char*)malloc((strlen(pmTmpUrl->value)+6)*sizeof(char));
@@ -2203,11 +2204,11 @@ runRequest (map ** inputs)
     setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
     /* - Root url */
     if((strncasecmp(cgiRequestMethod,"post",4)==0 &&
-	(strstr(cgiQueryString,"/processes/")==NULL ||
-	 strlen(cgiQueryString)<=11))
+	(strstr(pcaCgiQueryString,"/processes/")==NULL ||
+	 strlen(pcaCgiQueryString)<=11))
        ||
        (strncasecmp(cgiRequestMethod,"DELETE",6)==0 &&
-	(strstr(cgiQueryString,"/jobs/")==NULL || strlen(cgiQueryString)<=6)) ){
+	(strstr(pcaCgiQueryString,"/jobs/")==NULL || strlen(pcaCgiQueryString)<=6)) ){
       setMapInMaps(m,"lenv","status_code","405");
       map* error=createMap("code","InvalidMethod");
       addToMap(error,"message",_("The request method used to access the current path is not supported."));
@@ -2287,7 +2288,7 @@ runRequest (map ** inputs)
       if(pmTmp!=NULL)
 	json_object_object_add(res,"description",json_object_new_string(pmTmp->value));
       json_object_object_add(res,"links",res1);
-    }else if(strcmp(cgiQueryString,"/conformance")==0){
+    }else if(strcmp(pcaCgiQueryString,"/conformance")==0){
       /* - /conformance url */
       map* rootUrl=getMapFromMaps(m,"conformsTo","rootUrl");
       json_object *res1=json_object_new_array();
@@ -2303,18 +2304,18 @@ runRequest (map ** inputs)
 	}
       }
       json_object_object_add(res,"conformsTo",res1);
-    }else if(strncasecmp(cgiQueryString,"/api",4)==0){
-      if(strstr(cgiQueryString,".html")==NULL)
+    }else if(strncasecmp(pcaCgiQueryString,"/api",4)==0){
+      if(strstr(pcaCgiQueryString,".html")==NULL)
 	produceApi(m,res);
       else{	
 	char* pacTmp=(char*)malloc(9*sizeof(char));
-	sprintf(pacTmp,"%s",cgiQueryString+1);
+	sprintf(pacTmp,"%s",pcaCgiQueryString+1);
 	map* pmTmp=getMapFromMaps(m,pacTmp,"href");
 	free(pacTmp);
 	if(pmTmp!=NULL)
 	  setMapInMaps(m,"headers","Location",pmTmp->value);
       }	
-    }else if(strcmp(cgiQueryString,"/processes")==0 || strcmp(cgiQueryString,"/processes/")==0){
+    }else if(strcmp(pcaCgiQueryString,"/processes")==0 || strcmp(pcaCgiQueryString,"/processes/")==0){
       /* - /processes */
       setMapInMaps(m,"lenv","requestType","desc");
       setMapInMaps(m,"lenv","serviceCnt","0");
@@ -2347,10 +2348,10 @@ runRequest (map ** inputs)
       res=res4;
       //json_object_object_add(res,"processes",res3);
     }
-    else if(strstr(cgiQueryString,"/processes")==NULL && (strstr(cgiQueryString,"/jobs")!=NULL || strstr(cgiQueryString,"/jobs/")!=NULL)){
+    else if(strstr(pcaCgiQueryString,"/processes")==NULL && (strstr(pcaCgiQueryString,"/jobs")!=NULL || strstr(pcaCgiQueryString,"/jobs/")!=NULL)){
       /* - /jobs url */
       if(strncasecmp(cgiRequestMethod,"DELETE",6)==0) {
-	char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
+	char* jobId=zStrdup(strstr(pcaCgiQueryString,"/jobs/")+6);
 	setMapInMaps(m,"lenv","gs_usid",jobId);
 	setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
 	runDismiss(m,jobId);
@@ -2366,9 +2367,7 @@ runRequest (map ** inputs)
       }
       else if(strcasecmp(cgiRequestMethod,"get")==0){
 	/* - /jobs List (GET) */
-	fprintf(stderr,"%s %d %s\n",__FILE__,__LINE__,cgiQueryString);
-	fflush(stderr);
-	if(strlen(cgiQueryString)<=6 || (strstr(cgiQueryString,"&")!=NULL && strlen(cgiQueryString)-strlen(strstr(cgiQueryString,"&"))<=6 ) ){
+	if(strlen(pcaCgiQueryString)<=6){
 	  map* pmTmp=getMap(request_inputs,"limit");
 	  if(pmTmp!=NULL)
 	    setMapInMaps(m,"lenv","serviceCntLimit",pmTmp->value);
@@ -2380,15 +2379,71 @@ runRequest (map ** inputs)
 	  pmTmp=getMap(request_inputs,"skip");
 	  if(pmTmp!=NULL)
 	    setMapInMaps(m,"lenv","serviceCntSkip",pmTmp->value);
+	  // Build the SQL Clause
+	  char* pcaClause=NULL;
+	  char* pcaClauseFinal=NULL;
+	  for(int k=0;k<2;k++){
+	    pmTmp=getMap(request_inputs,statusSearchFields[k]);
+	    if(pmTmp!=NULL){
+	      char *saveptr;
+	      char *tmps = strtok_r(pmTmp->value, ",", &saveptr);
+	      while (tmps != NULL){
+		for(int l=0;l<3;l++){
+		  if(strcmp(tmps,oapipStatus[l])==0){
+		    tmps=wpsStatus[l];
+		    break;
+		  }
+		}
+		if(pcaClause==NULL){
+		  pcaClause=(char*)malloc((strlen(statusSearchFieldsReal[k])+strlen(tmps)+10)*sizeof(char));
+		  sprintf(pcaClause," (%s=$q$%s$q$",statusSearchFieldsReal[k],tmps);
+		}else{
+		  char* pcaTmp=zStrdup(pcaClause);
+		  pcaClause=(char*)realloc(pcaClause,strlen(statusSearchFieldsReal[k])+strlen(tmps)+strlen(pcaTmp)+11);
+		  sprintf(pcaClause,"%s OR %s=$q$%s$q$",pcaTmp,statusSearchFieldsReal[k],tmps);
+		  free(pcaTmp);
+		}
+		tmps = strtok_r (NULL, ",", &saveptr);
+	      }
+	      char* pcaTmp=zStrdup(pcaClause);
+	      pcaClause=(char*)realloc(pcaClause,strlen(pcaTmp)+3);
+	      sprintf(pcaClause,"%s) ",pcaTmp);
+	      free(pcaTmp);
+	    }
+	    if(pcaClause!=NULL){
+	      if(pcaClauseFinal==NULL){
+		pcaClauseFinal=(char*)malloc((strlen(pcaClause)+1)*sizeof(char));
+		sprintf(pcaClauseFinal,"%s",pcaClause);
+	      }else{
+		char* pcaTmp=zStrdup(pcaClauseFinal);
+		pcaClauseFinal=(char*)realloc(pcaClauseFinal,strlen(pcaTmp)+(strlen(pcaClause)+6)*sizeof(char));
+		sprintf(pcaClauseFinal,"%s AND %s",pcaClause,pcaTmp);
+		free(pcaTmp);
+	      }
+	      free(pcaClause);
+	      pcaClause=NULL;
+	    }
+	  }
+	  if(pcaClauseFinal!=NULL){
+	    map *schema=getMapFromMaps(m,"database","schema");
+	    char* pcaTmp=(char*) malloc((strlen(pcaClauseFinal)+strlen(schema->value)+98+1)*sizeof(char));
+	    sprintf(pcaTmp,"select replace(replace(array(select ''''||uuid||'''' from  %s.services where %s)::text,'{',''),'}','')",schema->value,pcaClauseFinal);
+	    free(pcaClauseFinal);
+	    char* tmp1=runSqlQuery(m,pcaTmp);
+	    if(tmp1!=NULL){
+	      setMapInMaps(m,"lenv","selectedJob",tmp1);
+	    }
+	    // RES <- "select replace(replace(array(select ''''||uuid||'''' from  services where clause)::text,'{',''),'}','')";
+	  }
 	  res=printJobList(m);
 	}
 	else{
 
 	  
-	  char* tmpUrl=strstr(cgiQueryString,"/jobs/");
+	  char* tmpUrl=strstr(pcaCgiQueryString,"/jobs/");
 	  if(tmpUrl!=NULL && strlen(tmpUrl)>6){
 	    if(strncasecmp(cgiRequestMethod,"DELETE",6)==0){
-	      char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
+	      char* jobId=zStrdup(strstr(pcaCgiQueryString,"/jobs/")+6);
 	      setMapInMaps(m,"lenv","gs_usid",jobId);
 	      setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
 	      runDismiss(m,jobId);
@@ -2402,7 +2457,7 @@ runRequest (map ** inputs)
 		res=createStatus(m,SERVICE_DISMISSED);
 	      }
 	    }else{
-	      char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
+	      char* jobId=zStrdup(strstr(pcaCgiQueryString,"/jobs/")+6);
 	      if(strlen(jobId)==36){
 		res=printJobStatus(m,jobId);
 	      }else{
@@ -2497,7 +2552,7 @@ runRequest (map ** inputs)
     else{
       service* s1=NULL;
       int t=0;
-      if(strstr(cgiQueryString,"/processes/")==NULL){
+      if(strstr(pcaCgiQueryString,"/processes/")==NULL){
 	map* error=createMap("code","BadRequest");
 	addToMap(error,"message",_("The ressource is not available"));
 	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
@@ -2551,8 +2606,8 @@ runRequest (map ** inputs)
 	if(json_object_object_get_ex(jobj,"id",&json_io)!=FALSE){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
 	}else{
-	  if(strstr(cgiQueryString,"/processes/")!=NULL && strlen(cgiQueryString)>11){
-	    cIdentifier=zStrdup(strstr(cgiQueryString,"/processes/")+11);
+	  if(strstr(pcaCgiQueryString,"/processes/")!=NULL && strlen(pcaCgiQueryString)>11){
+	    cIdentifier=zStrdup(strstr(pcaCgiQueryString,"/processes/")+11);
 	    if(strstr(cIdentifier,"execution")!=NULL)
 	      cIdentifier[strlen(cIdentifier)-10]=0;
 	  }
@@ -2750,12 +2805,12 @@ runRequest (map ** inputs)
 	    
       }//else error
       else
-	if(strstr(cgiQueryString,"/jobs")==NULL && strstr(cgiQueryString,"/jobs/")==NULL){
+	if(strstr(pcaCgiQueryString,"/jobs")==NULL && strstr(pcaCgiQueryString,"/jobs/")==NULL){
 	  /* - /processes/{id}/ */
 	  //DIR *dirp = opendir (ntmp);
 	  json_object *res3=json_object_new_object();
 	  char *orig = NULL;
-	  orig = zStrdup (strstr(cgiQueryString,"/processes/")+11);
+	  orig = zStrdup (strstr(pcaCgiQueryString,"/processes/")+11);
 	  if(orig[strlen(orig)-1]=='/')
 	    orig[strlen(orig)-1]=0;
 	  json_object* res1=json_object_new_object();
@@ -2774,15 +2829,15 @@ runRequest (map ** inputs)
 	  res=json_object_get(res3);
 	}else{
 	  char* cIdentifier=NULL;
-	  if(strstr(cgiQueryString,"/processes/")!=NULL){
+	  if(strstr(pcaCgiQueryString,"/processes/")!=NULL){
 
 	    
-	    int len0=strlen(strstr(cgiQueryString,"/processes/")+11);
-	    int len1=strlen(cgiQueryString)-strlen(strstr(cgiQueryString,"/job"));
+	    int len0=strlen(strstr(pcaCgiQueryString,"/processes/")+11);
+	    int len1=strlen(pcaCgiQueryString)-strlen(strstr(pcaCgiQueryString,"/job"));
 	    cIdentifier=(char*)malloc((len1-10)*sizeof(char));
 	    int cnt=0;
 	    for(int j=11;j<len1;j++){
-	      cIdentifier[cnt]=cgiQueryString[j];
+	      cIdentifier[cnt]=pcaCgiQueryString[j];
 	      cIdentifier[cnt+1]=0;
 	      cnt++;
 	    }
@@ -2808,6 +2863,7 @@ runRequest (map ** inputs)
       fflush(stdout);
       json_object_put(res);
     }
+    free(pcaCgiQueryString);
     //return 1;
 #endif
   }else{
