@@ -678,35 +678,39 @@ extern "C" {
 	char* key=(char*)malloc(15*sizeof(char));
 	sprintf(key,"sprefix_%d",i);
 	map* tmpMap1=getMap(tmpMaps->content,key);
-	if(i+1==atoi(tmpMap0->value))
-	  if(tmpName==NULL){
-	    tmpName=(char*) malloc((strlen(serv->name)+strlen(tmpMap1->value)+1)*sizeof(char));
-	    sprintf(tmpName,"%s%s",tmpMap1->value,serv->name);
-	  }else{
-	    char* tmpStr=zStrdup(tmpName);
-	    tmpName=(char*) realloc(tmpName,(strlen(tmpStr)+strlen(tmpMap1->value)+strlen(serv->name)+1)*sizeof(char));
-	    sprintf(tmpName,"%s%s%s",tmpStr,tmpMap1->value,serv->name);
-	    free(tmpStr);
+	if(tmpMap1!=NULL){
+	  if(i+1==atoi(tmpMap0->value))
+	    if(tmpName==NULL){
+	      tmpName=(char*) malloc((strlen(serv->name)+strlen(tmpMap1->value)+1)*sizeof(char));
+	      sprintf(tmpName,"%s%s",tmpMap1->value,serv->name);
+	    }else{
+	      char* tmpStr=zStrdup(tmpName);
+	      tmpName=(char*) realloc(tmpName,(strlen(tmpStr)+strlen(tmpMap1->value)+strlen(serv->name)+1)*sizeof(char));
+	      sprintf(tmpName,"%s%s%s",tmpStr,tmpMap1->value,serv->name);
+	      free(tmpStr);
+	    }
+	  else
+	    if(tmpName==NULL){
+	      tmpName=(char*) malloc((strlen(tmpMap1->value)+1)*sizeof(char));
+	      sprintf(tmpName,"%s",tmpMap1->value);
+	    }else{
+	      char* tmpStr=zStrdup(tmpName);
+	      tmpName=(char*) realloc(tmpName,(strlen(tmpStr)+strlen(tmpMap1->value)+1)*sizeof(char));
+	      sprintf(tmpName,"%s%s",tmpStr,tmpMap1->value);
+	      free(tmpStr);
 	  }
-	else
-	  if(tmpName==NULL){
-	    tmpName=(char*) malloc((strlen(tmpMap1->value)+1)*sizeof(char));
-	    sprintf(tmpName,"%s",tmpMap1->value);
-	  }else{
-	    char* tmpStr=zStrdup(tmpName);
-	    tmpName=(char*) realloc(tmpName,(strlen(tmpStr)+strlen(tmpMap1->value)+1)*sizeof(char));
-	    sprintf(tmpName,"%s%s",tmpStr,tmpMap1->value);
-	    free(tmpStr);
-	  }
+	}
       }
-      json_object_object_add(res,"id",json_object_new_string(tmpName));
       if(tmpName!=NULL){
+	json_object_object_add(res,"id",json_object_new_string(tmpName));
 	rUrl=zStrdup(tmpName);
 	free(tmpName);
       }
     }
-    else
+    else{
       json_object_object_add(res,"id",json_object_new_string(serv->name));
+      rUrl=serv->name;
+    }
     if(serv->content!=NULL){
       map* tmpMap=getMap(serv->content,"title");
       if(tmpMap!=NULL){
@@ -764,7 +768,7 @@ extern "C" {
 	json_object_object_add(res2,"title",json_object_new_string("Execute End Point"));
 	json_object_object_add(res3,"title",json_object_new_string("Execute End Point"));
 	char* tmpStr1=zStrdup(tmpStr);
-	tmpStr=(char*) realloc(tmpStr,(strlen(tmpStr)+10)*sizeof(char));
+	tmpStr=(char*) realloc(tmpStr,(strlen(tmpStr1)+11)*sizeof(char));
 	sprintf(tmpStr,"%s/execution",tmpStr1);
 	free(tmpStr1);
       }else{
