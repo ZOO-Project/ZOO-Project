@@ -911,6 +911,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	}		  
     }
   fflush (stdout);
+  fflush (stderr);
   zDup2 (saved_stdout, fileno (stdout));
   zClose(saved_stdout);
   free (orig);
@@ -2151,7 +2152,7 @@ runRequest (map ** inputs)
 	      value=zStrdup(token1);
 	    token1=strtok_r(NULL,"=",&saveptr1);
 	  }
-	  addToMap(request_inputs,name, value != NULL ? value : "");
+	  addToMapA(request_inputs,name, value != NULL ? value : "");
 	  free(name);
 	  free(value);
 	  name=NULL;
@@ -2336,16 +2337,18 @@ runRequest (map ** inputs)
       zDup2 (fileno (stderr), fileno (stdout));
       if (int res0 =		  
           recursReaddirF (m, NULL, res3, NULL, ntmp, NULL, saved_stdout, 0,
-			  printGetCapabilitiesForProcessJ) < 0)
-        {
-	}
-      zDup2 (saved_stdout, fileno (stdout));
+			  printGetCapabilitiesForProcessJ) < 0) {
+      }else{
+	fflush(stderr);
+	fflush(stdout);
+	zDup2 (saved_stdout, fileno (stdout));
+      }
       zClose(saved_stdout);
       json_object* res4=json_object_new_object();
       json_object_object_add(res4,"processes",res3);
       setMapInMaps(m,"lenv","path","processes");
       createNextLinks(m,res4);
-      res=res4;
+      res=json_object_get(res4);
       //json_object_object_add(res,"processes",res3);
     }
     else if(strstr(pcaCgiQueryString,"/processes")==NULL && (strstr(pcaCgiQueryString,"/jobs")!=NULL || strstr(pcaCgiQueryString,"/jobs/")!=NULL)){
@@ -2423,6 +2426,73 @@ runRequest (map ** inputs)
 	      free(pcaClause);
 	      pcaClause=NULL;
 	    }
+	  }
+	  // TODO: (min/max)Duration shoudl be set TO_CHAR('20 second'::interval, 'HH24:MI:SS')::interval
+	  char* pcaClauseMin=NULL;
+	  pmTmp=getMap(request_inputs,"minDuration");
+	  if(pmTmp!=NULL){
+	    setMapInMaps(m,"lenv","serviceMinDuration",pmTmp->value);
+	    char *saveptr;
+	    char *tmps = strtok_r(pmTmp->value, ",", &saveptr);
+	    while (tmps != NULL){
+	      if(pcaClauseMin==NULL){
+		pcaClauseMin=(char*)malloc((strlen(tmps)+52)*sizeof(char));
+		sprintf(pcaClauseMin," ('%s second'::interval <= (end_time - creation_time)",tmps);
+	      }else{
+		char* pcaTmp=zStrdup(pcaClauseMin);
+		pcaClauseMin=(char*)realloc(pcaClauseMin,strlen(tmps)+strlen(pcaTmp)+54);
+		sprintf(pcaClauseMin,"%s OR '%s second'::interval <= (end_time - creation_time)",pcaTmp,tmps);
+		free(pcaTmp);
+	      }
+	      tmps = strtok_r (NULL, ",", &saveptr);
+	    }
+	    char* pcaTmp=zStrdup(pcaClauseMin);
+	    pcaClauseMin=(char*)realloc(pcaClauseMin,strlen(pcaTmp)+3);
+	    sprintf(pcaClauseMin,"%s) ",pcaTmp);
+	    free(pcaTmp);
+	    if(pcaClauseFinal!=NULL){
+	      char* pcaTmp=zStrdup(pcaClauseFinal);
+	      pcaClauseFinal=(char*)realloc(pcaClauseFinal,strlen(pcaTmp)+(strlen(pcaClauseMin)+6)*sizeof(char));
+	      sprintf(pcaClauseFinal,"%s AND %s",pcaClauseMin,pcaTmp);
+	      free(pcaTmp);
+	    }else{
+	      pcaClauseFinal=(char*)malloc((strlen(pcaClauseMin)+1)*sizeof(char));
+	      sprintf(pcaClauseFinal,"%s",pcaClauseMin);
+	    }
+	    free(pcaClauseMin);
+	  }
+	  char* pcaClauseMax=NULL;
+	  pmTmp=getMap(request_inputs,"maxDuration");
+	  if(pmTmp!=NULL){
+	    setMapInMaps(m,"lenv","serviceMaxDuration",pmTmp->value);
+	    char *saveptr;
+	    char *tmps = strtok_r(pmTmp->value, ",", &saveptr);
+	    while (tmps != NULL){
+	      if(pcaClauseMax==NULL){
+		pcaClauseMax=(char*)malloc((strlen(tmps)+52)*sizeof(char));
+		sprintf(pcaClauseMax," ('%s second'::interval >= (end_time - creation_time)",tmps);
+	      }else{
+		char* pcaTmp=zStrdup(pcaClauseMax);
+		pcaClauseMax=(char*)realloc(pcaClauseMax,strlen(tmps)+strlen(pcaTmp)+54);
+		sprintf(pcaClauseMax,"%s OR '%s second'::interval >= (end_time - creation_time)",pcaTmp,tmps);
+		free(pcaTmp);
+	      }
+	      tmps = strtok_r (NULL, ",", &saveptr);
+	    }
+	    char* pcaTmp=zStrdup(pcaClauseMax);
+	    pcaClauseMax=(char*)realloc(pcaClauseMax,strlen(pcaTmp)+3);
+	    sprintf(pcaClauseMax,"%s) ",pcaTmp);
+	    free(pcaTmp);
+	    if(pcaClauseFinal!=NULL){
+	      char* pcaTmp=zStrdup(pcaClauseFinal);
+	      pcaClauseFinal=(char*)realloc(pcaClauseFinal,strlen(pcaTmp)+(strlen(pcaClauseMax)+6)*sizeof(char));
+	      sprintf(pcaClauseFinal,"%s AND %s",pcaClauseMax,pcaTmp);
+	      free(pcaTmp);
+	    }else{
+	      pcaClauseFinal=(char*)malloc((strlen(pcaClauseMax)+1)*sizeof(char));
+	      sprintf(pcaClauseFinal,"%s",pcaClauseMax);
+	    }
+	    free(pcaClauseMax);
 	  }
 	  if(pcaClauseFinal!=NULL){
 	    map *schema=getMapFromMaps(m,"database","schema");
@@ -2813,7 +2883,6 @@ runRequest (map ** inputs)
 	  orig = zStrdup (strstr(pcaCgiQueryString,"/processes/")+11);
 	  if(orig[strlen(orig)-1]=='/')
 	    orig[strlen(orig)-1]=0;
-	  json_object* res1=json_object_new_object();
 	  setMapInMaps(m,"lenv","requestType","GetCapabilities");
 	  int t=fetchServicesForDescription(NULL, m, orig,
 					    printGetCapabilitiesForProcessJ,
@@ -2831,7 +2900,6 @@ runRequest (map ** inputs)
 	  char* cIdentifier=NULL;
 	  if(strstr(pcaCgiQueryString,"/processes/")!=NULL){
 
-	    
 	    int len0=strlen(strstr(pcaCgiQueryString,"/processes/")+11);
 	    int len1=strlen(pcaCgiQueryString)-strlen(strstr(pcaCgiQueryString,"/job"));
 	    cIdentifier=(char*)malloc((len1-10)*sizeof(char));

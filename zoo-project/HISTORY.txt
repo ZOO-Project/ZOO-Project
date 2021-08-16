@@ -1,8 +1,10 @@
 Version 1.8.1
+  * Add support for minDuration and maxDuration for jobs filtering as
+  defined in OGC API - Processes.
   * Change the table structure for storing ongoing execution status
   informations to add required field for outputing correct
   statusInfo.
-  * Change in the C-API: function addToMap, in case there is already a
+  * Addition in the C-API: function addToMapA, in case there is already a
   value, then the value is appended to the string and values are coma
   separated (reason of the change: support for filtering using
   processId and status in OGC API - Processes).

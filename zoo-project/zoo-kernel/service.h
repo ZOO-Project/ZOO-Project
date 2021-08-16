@@ -469,6 +469,7 @@ extern "C" {
   ZOO_DLL_EXPORT service* createService();
   ZOO_DLL_EXPORT void freeService(service**);
   ZOO_DLL_EXPORT void addToMap(map*,const char*,const char*);
+  ZOO_DLL_EXPORT void addToMapA(map*,const char*,const char*);
   ZOO_DLL_EXPORT void addIntToMap(map*,const char*,const int);
   ZOO_DLL_EXPORT void addIntToMapArray(map*,const char*,int,const int);
   ZOO_DLL_EXPORT map* addToMapWithSize(map*,const char*,const char*,int);

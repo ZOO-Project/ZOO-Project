@@ -589,6 +589,35 @@ void addToMap(map* pMap,const char* pccName,const char* pccValue){
       if (tmp->value != NULL){
 	char* pcaTmp = zStrdup(tmp->value);
 	free(tmp->value);
+	tmp->value = zStrdup(pcaTmp);
+	free(pcaTmp);
+      }else
+	tmp->value = zStrdup(pccValue);
+    }
+  }
+}
+
+/**
+ * Add key value pair to an existing map or append the value.
+ *
+ * @param pMap the map to add the KVP
+ * @param pccName the key to add
+ * @param pccValue the corresponding value to add
+ */
+void addToMapA(map* pMap,const char* pccName,const char* pccValue){
+  if (pMap != NULL) { // knut: add NULL-pointer check
+    if (hasKey(pMap, pccName) == false) {
+      map* pmCursor = pMap;
+      while (pmCursor->next != NULL) {
+	pmCursor = pmCursor->next;
+      }
+      pmCursor->next = createMap(pccName, pccValue);
+    }
+    else {
+      map *tmp = getMap(pMap, pccName);
+      if (tmp->value != NULL){
+	char* pcaTmp = zStrdup(tmp->value);
+	free(tmp->value);
 	if(strcmp(pcaTmp,pccValue)!=0){
 	  char *pcaRes=(char*) malloc((strlen(pcaTmp)+strlen(pccValue)+2)*sizeof(char));
 	  sprintf(pcaRes,"%s,%s",pcaTmp,pccValue);
