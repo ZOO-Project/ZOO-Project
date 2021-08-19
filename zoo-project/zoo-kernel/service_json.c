@@ -2046,7 +2046,7 @@ extern "C" {
 	if(pcaTmp!=NULL && strcmp(pcaTmp,"-1")!=0){
 	  json_object_object_add(res,statusFields[i],json_object_new_string(pcaTmp));
 	}
-	if(pcaTmp==NULL || strncmp(pcaTmp,"-1",2)==0)
+	if(pcaTmp!=NULL && strncmp(pcaTmp,"-1",2)==0)
 	  free(pcaTmp);
       }
     }

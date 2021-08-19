@@ -49,6 +49,7 @@ create table services (
        finished_time timestamp with time zone default NULL,
        end_time timestamp with time zone default NULL,
        progress int,
+       itype varchar(10),
        message TEXT
 );
 --------------------------------------------------------------------------------

@@ -587,12 +587,9 @@ void addToMap(map* pMap,const char* pccName,const char* pccValue){
     else {
       map *tmp = getMap(pMap, pccName);
       if (tmp->value != NULL){
-	char* pcaTmp = zStrdup(tmp->value);
 	free(tmp->value);
-	tmp->value = zStrdup(pcaTmp);
-	free(pcaTmp);
-      }else
-	tmp->value = zStrdup(pccValue);
+      }
+      tmp->value = zStrdup(pccValue);
     }
   }
 }

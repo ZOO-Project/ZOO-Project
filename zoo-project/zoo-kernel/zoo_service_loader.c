@@ -2119,7 +2119,6 @@ runRequest (map ** inputs)
   maps *request_output_real_format = NULL;
   maps *request_input_real_format = NULL;
 
-  setMapInMaps(m,"main","executionType","xml");
   if((strlen(cgiQueryString)>0 && cgiQueryString[0]=='/') /*&& strstr(cgiAccept,"json")!=NULL*/){
     //
     // OGC API - Processes starts here
@@ -2432,7 +2431,7 @@ runRequest (map ** inputs)
 	      pcaClause=NULL;
 	    }
 	  }
-	  // TODO: (min/max)Duration shoudl be set TO_CHAR('20 second'::interval, 'HH24:MI:SS')::interval
+	  // (min/max)Duration shoudl be set TO_CHAR('20 second'::interval, 'HH24:MI:SS')::interval
 	  char* pcaClauseMin=NULL;
 	  pmTmp=getMap(request_inputs,"minDuration");
 	  if(pmTmp!=NULL){
@@ -2499,25 +2498,55 @@ runRequest (map ** inputs)
 	    }
 	    free(pcaClauseMax);
 	  }
+	  char* pcaClauseType=NULL;
+	  pmTmp=getMap(request_inputs,"type");
+	  if(pmTmp!=NULL){
+	    setMapInMaps(m,"lenv","serviceType",pmTmp->value);
+	    char *saveptr;
+	    char *tmps = strtok_r(pmTmp->value, ",", &saveptr);
+	    while (tmps != NULL){
+	      if(strcmp(tmps,"process")==0)
+		pcaClauseType=zStrdup(tmps);
+	      tmps = strtok_r (NULL, ",", &saveptr);
+	    }
+	    if(pcaClauseType!=NULL){
+	      if(pcaClauseFinal!=NULL){
+		char* pcaTmp=zStrdup(pcaClauseFinal);
+		pcaClauseFinal=(char*)realloc(pcaClauseFinal,
+					      (strlen(pcaTmp)+18)*sizeof(char));
+		sprintf(pcaClauseFinal,"%s AND itype='json'",
+			pcaTmp);
+		free(pcaTmp);
+	      }else{
+		pcaClauseFinal=(char*)malloc(13*sizeof(char));
+		sprintf(pcaClauseFinal,"itype='json'");
+	      }
+	      free(pcaClauseType);
+	    }
+	  }	  
 	  if(pcaClauseFinal!=NULL){
 	    map *schema=getMapFromMaps(m,"database","schema");
-	    char* pcaTmp=(char*) malloc((strlen(pcaClauseFinal)+strlen(schema->value)+98+1)*sizeof(char));
-	    sprintf(pcaTmp,"select replace(replace(array(select ''''||uuid||'''' from  %s.services where %s)::text,'{',''),'}','')",schema->value,pcaClauseFinal);
+	    char* pcaTmp=(char*) malloc((strlen(pcaClauseFinal)+
+					 strlen(schema->value)+
+					 98+1)
+					*sizeof(char));
+	    sprintf(pcaTmp,
+		    "select replace(replace(array(select ''''||uuid||'''' "
+		    "from  %s.services where %s)::text,'{',''),'}','')",
+		    schema->value,pcaClauseFinal);
 	    free(pcaClauseFinal);
 	    char* tmp1=runSqlQuery(m,pcaTmp);
 	    free(pcaTmp);
 	    if(tmp1!=NULL){
 	      setMapInMaps(m,"lenv","selectedJob",tmp1);
+	      free(tmp1);
 	    }
-	    // RES <- "select replace(replace(array(select ''''||uuid||'''' from  services where clause)::text,'{',''),'}','')";
 	  }
 	  if(res!=NULL)
 	    json_object_put(res);
 	  res=printJobList(m);
 	}
 	else{
-
-	  
 	  char* tmpUrl=strstr(pcaCgiQueryString,"/jobs/");
 	  if(tmpUrl!=NULL && strlen(tmpUrl)>6){
 	    if(strncasecmp(cgiRequestMethod,"DELETE",6)==0){
@@ -2528,6 +2557,13 @@ runRequest (map ** inputs)
 	      map* pmError=getMapFromMaps(m,"lenv","error");
 	      if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
 		printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
+		freeMap(&pmError);
+		free(pmError);
+		freeMaps(&m);
+		free(m);
+		json_object_put(res);
+		free(jobId);
+		free(pcaCgiQueryString);
 		return 1;
 	      }
 	      else{
@@ -2540,6 +2576,8 @@ runRequest (map ** inputs)
 		res=printJobStatus(m,jobId);
 	      }else{
 		// In case the service has run, then forward request to target result file
+		if(strlen(jobId)>36)
+		  jobId[36]=0;
 		char *sid=getStatusId(m,jobId);
 		if(sid==NULL){
 		  map* error=createMap("code","NoSuchJob");
@@ -2587,7 +2625,8 @@ runRequest (map ** inputs)
 			  freeMaps(&m);
 			  free(m);
 			  json_object_put(res);
-			  free(pcaCgiQueryString);
+			  json_object_put(pjoTmp);
+		  	  free(pcaCgiQueryString);
 			  return 1;			
 			}else{
 
@@ -2598,6 +2637,8 @@ runRequest (map ** inputs)
 			  sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
 			  setMapInMaps(m,"headers","Location",Url0);
 			}
+			if(pjoTmp!=NULL)
+			  json_object_put(pjoTmp);
 			free(Url0);
 		      }else{
 			// Service Failed

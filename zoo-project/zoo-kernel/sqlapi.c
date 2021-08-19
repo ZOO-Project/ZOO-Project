@@ -350,21 +350,24 @@ void recordServiceStatus(maps* conf){
   map *uusid=getMapFromMaps(conf,"lenv","usid");
   map *pmProcessId=getMapFromMaps(conf,"lenv","oIdentifier");
   map *schema=getMapFromMaps(conf,"database","schema");
+  map* pmType=getMapFromMaps(conf,"main","executionType");
   char *sqlQuery=(char*)malloc((strlen(schema->value)+
 				strlen(uusid->value)+
 				strlen(pmProcessId->value)+
+				strlen(pmType->value)+
 				strlen(sid->value)+
 				strlen(osid->value)+
-				strlen(wpsStatus[2])+79+1)*sizeof(char));
+				strlen(wpsStatus[2])+90+1)*sizeof(char));
   sprintf(sqlQuery,
-	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate) "
-	  "VALUES ('%s','%s','%s','%s','%s');",
+	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate,itype) "
+	  "VALUES ('%s','%s','%s','%s','%s','%s');",
 	  schema->value,
 	  uusid->value,
 	  pmProcessId->value,
 	  sid->value,
 	  osid->value,
-	  wpsStatus[2]);
+	  wpsStatus[2],
+	  pmType->value);
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   free(sqlQuery);
   cleanUpResultSet(conf,zoo_ds_nb-1);
