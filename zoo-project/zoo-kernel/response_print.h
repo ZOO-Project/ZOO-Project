@@ -194,7 +194,7 @@ extern "C" {
   };
 
 
-  static const char* const aapccStatusCodes[][8] = {
+  static const char* const aapccStatusCodes[][9] = {
     {
       "500 Not Implemented",
       "OperationNotSupported",
@@ -209,6 +209,7 @@ extern "C" {
       "OptionNotSupported",
       "VersionNegotiationFailed",
       "NoSuchMode",
+      "BadRequest",
       NULL
     },
     {

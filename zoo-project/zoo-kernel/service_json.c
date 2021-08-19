@@ -678,6 +678,7 @@ extern "C" {
 	char* key=(char*)malloc(15*sizeof(char));
 	sprintf(key,"sprefix_%d",i);
 	map* tmpMap1=getMap(tmpMaps->content,key);
+	free(key);
 	if(tmpMap1!=NULL){
 	  if(i+1==atoi(tmpMap0->value))
 	    if(tmpName==NULL){
@@ -736,7 +737,6 @@ extern "C" {
       int i=0;
       map* sType=getMap(serv->content,"serviceType");
       for(;i<limit;i+=2){
-	json_object *res1=json_object_new_object();
 	json_object *res2=json_object_new_array();
 	char *saveptr;
 	char* dupStr=strdup(jcapabilities[i+1]);
@@ -878,6 +878,7 @@ extern "C" {
     printf(jsonStr);
     if(m!=NULL)
       setMapInMaps(m,"lenv","hasPrinted","true");
+    json_object_put(res);
   }
 
   /**
@@ -1335,7 +1336,6 @@ extern "C" {
 	free(subscribers);
       }
     }
-    dumpMaps(*outputs);
   }
 
   /**
@@ -1637,7 +1637,6 @@ extern "C" {
 		setReferenceUrl(conf,resu);
 		nbFeatures=getMap(resu->content,"nb_features");
 		geodatatype=getMap(resu->content,"geodatatype");
-		dumpMap(resu->content);
 		if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
 		   (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0)){
 		  //error=1;
@@ -1782,7 +1781,6 @@ extern "C" {
       free(pcaTmp);
     }
     if(getMapFromMaps(conf,"lenv","serviceCntNext")!=NULL){
-      dumpMap(pmCnt);
       char* pcaTmp=(char*) malloc((strlen(Url0)+strlen(pmLimit->value)+strlen(pmCnt->value)+15)*sizeof(char));
       int cnt=(pmTmp!=NULL?atoi(pmTmp->value):0)+atoi(pmLimit->value);
       sprintf(pcaTmp,"%s?limit=%s&skip=%d",Url0,pmLimit->value,cnt);

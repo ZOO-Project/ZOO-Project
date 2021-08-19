@@ -428,6 +428,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 #endif
 		t = readServiceFile (m, tmps1, &s1, tmpsn);
 		free (tmpsn);
+		tmpsn=NULL;
 		if (t < 0)
 		  {
 		    map *tmp00 = getMapFromMaps (m, "lenv", "message");
@@ -440,6 +441,8 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 			       dp->d_name);
 		    zDup2 (saved_stdout, fileno (stdout));
 		    errorException (m, tmp01, "InternalError", NULL);
+		    freeService (&s1);
+		    free (s1);
 		    return -1;
 		  }
 #ifdef DEBUG
@@ -465,6 +468,8 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 		//return 1;
 	      }
             }
+	    if(tmpsn!=NULL)
+	      free(tmpsn);
           }
       }
   (void) closedir (dirp);
@@ -908,7 +913,9 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	  tmps = strtok_r (NULL, ",", &saveptr);
 	  if (corig != NULL)
 	    free (corig);
-	}		  
+	}
+      if(dirp!=NULL)
+	closedir (dirp);
     }
   fflush (stdout);
   fflush (stderr);
@@ -2302,6 +2309,7 @@ runRequest (map ** inputs)
 	  char* tmpStr=(char*) malloc((strlen(rootUrl->value)+strlen(tmpMap1->value)+1)*sizeof(char));
 	  sprintf(tmpStr,"%s%s",rootUrl->value,tmpMap1->value);
 	  json_object_array_add(res1,json_object_new_string(tmpStr));
+	  free(tmpStr);
 	}
       }
       json_object_object_add(res,"conformsTo",res1);
@@ -2315,7 +2323,7 @@ runRequest (map ** inputs)
 	free(pacTmp);
 	if(pmTmp!=NULL)
 	  setMapInMaps(m,"headers","Location",pmTmp->value);
-      }	
+      }
     }else if(strcmp(pcaCgiQueryString,"/processes")==0 || strcmp(pcaCgiQueryString,"/processes/")==0){
       /* - /processes */
       setMapInMaps(m,"lenv","requestType","desc");
@@ -2344,12 +2352,9 @@ runRequest (map ** inputs)
 	zDup2 (saved_stdout, fileno (stdout));
       }
       zClose(saved_stdout);
-      json_object* res4=json_object_new_object();
-      json_object_object_add(res4,"processes",res3);
+      json_object_object_add(res,"processes",res3);
       setMapInMaps(m,"lenv","path","processes");
-      createNextLinks(m,res4);
-      res=json_object_get(res4);
-      //json_object_object_add(res,"processes",res3);
+      createNextLinks(m,res);
     }
     else if(strstr(pcaCgiQueryString,"/processes")==NULL && (strstr(pcaCgiQueryString,"/jobs")!=NULL || strstr(pcaCgiQueryString,"/jobs/")!=NULL)){
       /* - /jobs url */
@@ -2402,7 +2407,7 @@ runRequest (map ** inputs)
 		  sprintf(pcaClause," (%s=$q$%s$q$",statusSearchFieldsReal[k],tmps);
 		}else{
 		  char* pcaTmp=zStrdup(pcaClause);
-		  pcaClause=(char*)realloc(pcaClause,strlen(statusSearchFieldsReal[k])+strlen(tmps)+strlen(pcaTmp)+11);
+		  pcaClause=(char*)realloc(pcaClause,strlen(statusSearchFieldsReal[k])+strlen(tmps)+strlen(pcaTmp)+12);
 		  sprintf(pcaClause,"%s OR %s=$q$%s$q$",pcaTmp,statusSearchFieldsReal[k],tmps);
 		  free(pcaTmp);
 		}
@@ -2500,11 +2505,14 @@ runRequest (map ** inputs)
 	    sprintf(pcaTmp,"select replace(replace(array(select ''''||uuid||'''' from  %s.services where %s)::text,'{',''),'}','')",schema->value,pcaClauseFinal);
 	    free(pcaClauseFinal);
 	    char* tmp1=runSqlQuery(m,pcaTmp);
+	    free(pcaTmp);
 	    if(tmp1!=NULL){
 	      setMapInMaps(m,"lenv","selectedJob",tmp1);
 	    }
 	    // RES <- "select replace(replace(array(select ''''||uuid||'''' from  services where clause)::text,'{',''),'}','')";
 	  }
+	  if(res!=NULL)
+	    json_object_put(res);
 	  res=printJobList(m);
 	}
 	else{
@@ -2527,25 +2535,36 @@ runRequest (map ** inputs)
 		res=createStatus(m,SERVICE_DISMISSED);
 	      }
 	    }else{
-	      char* jobId=zStrdup(strstr(pcaCgiQueryString,"/jobs/")+6);
+	      char* jobId=zStrdup(tmpUrl+6);
 	      if(strlen(jobId)==36){
 		res=printJobStatus(m,jobId);
 	      }else{
-
 		// In case the service has run, then forward request to target result file
-		//char* jobId=zStrdup(strstr(cgiQueryString,"/jobs/")+6);
-		jobId[strlen(jobId)-8]=0;
 		char *sid=getStatusId(m,jobId);
 		if(sid==NULL){
 		  map* error=createMap("code","NoSuchJob");
 		  addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
 		  printExceptionReportResponseJ(m,error);
+		  free(jobId);
+		  freeMap(&error);
+		  free(error);
+		  freeMaps(&m);
+		  free(m);
+		  json_object_put(res);
+		  free(pcaCgiQueryString);
 		  return 1;
 		}else{
 		  if(isRunning(m,jobId)>0){
 		    map* error=createMap("code","ResultNotReady");
 		    addToMap(error,"message",_("The job is still running."));
 		    printExceptionReportResponseJ(m,error);
+		    free(jobId);
+		    freeMap(&error);
+		    free(error);
+		    freeMaps(&m);
+		    free(m);
+		    json_object_put(res);
+		    free(pcaCgiQueryString);
 		    return 1;
 		  }else{
 		    char *Url0=getResultPath(m,jobId);
@@ -2562,6 +2581,13 @@ runRequest (map ** inputs)
 			  map* error=createMap("code",json_object_get_string(pjoCode));
 			  addToMap(error,"message",json_object_get_string(pjoMessage));
 			  printExceptionReportResponseJ(m,error);
+			  free(jobId);
+			  freeMap(&error);
+			  free(error);
+			  freeMaps(&m);
+			  free(m);
+			  json_object_put(res);
+			  free(pcaCgiQueryString);
 			  return 1;			
 			}else{
 
@@ -2598,6 +2624,13 @@ runRequest (map ** inputs)
 			map* error=createMap("code","NoApplicableCode");
 			addToMap(error,"message",_("The service failed to execute."));
 			printExceptionReportResponseJ(m,error);
+			free(jobId);
+			freeMap(&error);
+			free(error);
+			freeMaps(&m);
+			free(m);
+			json_object_put(res);
+			free(pcaCgiQueryString);
 			return 1;
 		      }
 
@@ -2605,6 +2638,13 @@ runRequest (map ** inputs)
 		      map* error=createMap("code","NoSuchJob");
 		      addToMap(error,"message",_("The JobID seem to be running on this server but not for this process id"));
 		      printExceptionReportResponseJ(m,error);
+		      free(jobId);
+		      freeMap(&error);
+		      free(error);
+		      freeMaps(&m);
+		      free(m);
+		      json_object_put(res);
+		      free(pcaCgiQueryString);
 		      return 1;
 		    }
 		  }
@@ -2630,8 +2670,14 @@ runRequest (map ** inputs)
 	freeMaps (&m);
 	free (m);
 	free (REQUEST);
+	json_object_put(res);
+	freeMap (&request_inputs);
+	free (request_inputs);
+	freeMap (&error);
+	free (error);
+	free(pcaCgiQueryString);
 	xmlCleanupParser ();
-	zooXmlCleanupNs ();			
+	zooXmlCleanupNs ();
 	return 1;
       }else if(strcasecmp(cgiRequestMethod,"post")==0){
 	/* - /processes/{processId}/execution Execution (POST) */
@@ -2929,8 +2975,9 @@ runRequest (map ** inputs)
       printf(jsonStr);
       printf("\n");
       fflush(stdout);
-      json_object_put(res);
     }
+    if(res!=NULL)
+      json_object_put(res);
     free(pcaCgiQueryString);
     //return 1;
 #endif

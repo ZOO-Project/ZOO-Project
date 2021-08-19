@@ -2544,7 +2544,7 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
     int iI=0;
     for(iI=0;iI<3;iI++){
       int iJ=0;
-      for(iJ=0;;iJ++){
+      for(iJ=1;;iJ++){
 	if(aapccStatusCodes[iI][iJ]==NULL)
 	  break;
 	else{
