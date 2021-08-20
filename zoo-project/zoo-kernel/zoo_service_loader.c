@@ -2358,18 +2358,23 @@ runRequest (map ** inputs)
     else if(strstr(pcaCgiQueryString,"/processes")==NULL && (strstr(pcaCgiQueryString,"/jobs")!=NULL || strstr(pcaCgiQueryString,"/jobs/")!=NULL)){
       /* - /jobs url */
       if(strncasecmp(cgiRequestMethod,"DELETE",6)==0) {
-	char* jobId=zStrdup(strstr(pcaCgiQueryString,"/jobs/")+6);
-	setMapInMaps(m,"lenv","gs_usid",jobId);
-	setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
-	runDismiss(m,jobId);
-	map* pmError=getMapFromMaps(m,"lenv","error");
-	if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-	  printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
-	  return 1;
-	}
-	else{
-	  setMapInMaps(m,"lenv","gs_location","false");
-	  res=createStatus(m,SERVICE_DISMISSED);
+	char* pcTmp=strstr(pcaCgiQueryString,"/jobs/");
+	if(strlen(pcTmp)>6){
+	  char* jobId=zStrdup(pcTmp+6);
+	  setMapInMaps(m,"lenv","gs_usid",jobId);
+	  setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
+	  runDismiss(m,jobId);
+	  map* pmError=getMapFromMaps(m,"lenv","error");
+	  if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
+	    printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
+	    return 1;
+	  }
+	  else{
+	    setMapInMaps(m,"lenv","gs_location","false");
+	    if(res!=NULL)
+	      json_object_put(res);
+	    res=createStatus(m,SERVICE_DISMISSED);
+	  }
 	}
       }
       else if(strcasecmp(cgiRequestMethod,"get")==0){
@@ -2431,7 +2436,7 @@ runRequest (map ** inputs)
 	      pcaClause=NULL;
 	    }
 	  }
-	  // (min/max)Duration shoudl be set TO_CHAR('20 second'::interval, 'HH24:MI:SS')::interval
+	  // (min/max)Duration should be set '%s second'::interval
 	  char* pcaClauseMin=NULL;
 	  pmTmp=getMap(request_inputs,"minDuration");
 	  if(pmTmp!=NULL){
@@ -2550,15 +2555,13 @@ runRequest (map ** inputs)
 	  char* tmpUrl=strstr(pcaCgiQueryString,"/jobs/");
 	  if(tmpUrl!=NULL && strlen(tmpUrl)>6){
 	    if(strncasecmp(cgiRequestMethod,"DELETE",6)==0){
-	      char* jobId=zStrdup(strstr(pcaCgiQueryString,"/jobs/")+6);
+	      char* jobId=zStrdup(tmpUrl+6);
 	      setMapInMaps(m,"lenv","gs_usid",jobId);
 	      setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
 	      runDismiss(m,jobId);
 	      map* pmError=getMapFromMaps(m,"lenv","error");
 	      if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
 		printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
-		freeMap(&pmError);
-		free(pmError);
 		freeMaps(&m);
 		free(m);
 		json_object_put(res);
@@ -2568,6 +2571,8 @@ runRequest (map ** inputs)
 	      }
 	      else{
 		setMapInMaps(m,"lenv","gs_location","false");
+		if(res!=NULL)
+		  json_object_put(res);
 		res=createStatus(m,SERVICE_DISMISSED);
 	      }
 	    }else{

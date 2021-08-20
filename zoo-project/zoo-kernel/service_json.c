@@ -1957,6 +1957,7 @@ extern "C" {
   json_object* createStatus(maps* conf,int status){
     int hasMessage=0;
     int needResult=0;
+    int isDismissed=0;
     const char *rstatus;
     char *message;
     // Create statusInfo JSON object
@@ -2001,6 +2002,7 @@ extern "C" {
 	message=_("ZOO-Kernel successfully dismissed your service!");
 	rstatus="dismissed";
 	needResult=1;
+	isDismissed=1;
 	break;
       }
     default:
@@ -2039,7 +2041,7 @@ extern "C" {
 	sessId = getMapFromMaps (conf, "lenv", "usid");
     }else
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-    if(sessId!=NULL){
+    if(sessId!=NULL && isDismissed==0){
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
       for(int i=0;i<5;i++){
 	char* pcaTmp=_getStatusField(conf,sessId->value,statusFieldsC[i]);
