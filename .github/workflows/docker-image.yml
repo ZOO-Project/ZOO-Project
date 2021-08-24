@@ -28,3 +28,7 @@ jobs:
       run: docker push djayzen/zookernel:$GITHUB_SHA
     - name: Docker Push Latest
       run: docker push djayzen/zookernel
+    - name: Start the test env
+      run: docker-compose up -d
+    - name: List available containers
+      run: docker ps
