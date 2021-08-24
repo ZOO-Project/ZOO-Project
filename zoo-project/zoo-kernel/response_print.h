@@ -193,12 +193,15 @@ extern "C" {
     }
   };
 
-
-  static const char* const aapccStatusCodes[][9] = {
+  /**
+   * Correspondance between HTTP status code and exception code
+   */
+  static const char* const aapccStatusCodes[][10] = {
     {
       "500 Not Implemented",
       "OperationNotSupported",
       "NoApplicableCode",
+      "InvalidQueryParameterValue",
       NULL
     },
     {
@@ -210,6 +213,8 @@ extern "C" {
       "VersionNegotiationFailed",
       "NoSuchMode",
       "BadRequest",
+      // ref. https://github.com/opengeospatial/ogcapi-processes/issues/250
+      //"InvalidQueryParameterValue",
       NULL
     },
     {

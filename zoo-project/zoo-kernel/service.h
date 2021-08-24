@@ -387,17 +387,19 @@ extern "C" {
 	"WrongInputData",
 	"InternalServerError",
 	"NoSuchJob",
-	"ResultNotReady"
+	"ResultNotReady",
+	"InvalidQueryParameterValue"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[3][2] = {
+  static const int OAPIPCorrespondances[4][2] = {
     {9,0},
     {20,1},
-    {21,2}
+    {21,2},
+    {22,3}
   };
 
   /**
@@ -407,7 +409,8 @@ extern "C" {
   static const char* const OAPIPExceptionCode[] = {
 	"no-such-process",
 	"no-such-job",
-	"result-not-ready"
+	"result-not-ready",
+	"invalid-query-parameter-value"
   };
 
   /**

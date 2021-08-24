@@ -121,15 +121,16 @@ extern "C" {
    * Equivalent range keywords for WPS version 1 and 2
    */
   static const char* rangeCorrespondances[4][2]={
+    { "rangeClosure", "rangeClosure" },
     { "rangeMin", "minimum" },
     { "rangeMax", "maximum"},
-    { "rangeSpacing", "spacing" }, 
-    { "rangeClosure", "rangeClosure" }
+    { "rangeSpacing", "spacing" }
   };
 
   json_object* mapToJson(map*);
   json_object* mapsToJson(maps*);
   json_object* serviceToJson(service*);
+  void printLiteralValueJ(maps*,map*,map*,json_object*,const char*);
   void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
   void printExceptionReportResponseJ(maps*,map*);
   void parseJRequest(maps*,service*,json_object*,map*,maps**,maps**);

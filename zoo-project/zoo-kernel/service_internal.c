@@ -457,7 +457,6 @@ int _updateStatus(maps *conf){
      status->value!=NULL && msg->value!=NULL && 
      strlen(status->value)>0 && strlen(msg->value)>1){    
     semid lockid = NULL;
-	
     char* stat=getStatusId(conf,sid->value);
     if(stat!=NULL){
       lockid=acquireLock(conf);
@@ -843,6 +842,7 @@ int updateStatus( maps* conf, const int percentCompleted, const char* message ){
   snprintf(tmp,4,"%d",percentCompleted);
   setMapInMaps( conf, "lenv", "status", tmp );
   setMapInMaps( conf, "lenv", "message", message);
+  setMapInMaps( conf, "lenv", "PercentCompleted", tmp);
   return _updateStatus( conf );
 }
 

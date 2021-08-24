@@ -62,7 +62,7 @@ server_internal.o: server_internal.c server_internal.h service.h mimetypes.h
 	g++ ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
 
 service_internal.o: service_internal.c service_internal.h service.h
-	gcc ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
+	gcc ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${JSCFLAGS} ${XML2CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
 service_yaml.o: service_yaml.c service.h
 	gcc ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c

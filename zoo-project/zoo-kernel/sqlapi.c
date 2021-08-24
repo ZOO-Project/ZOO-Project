@@ -321,7 +321,8 @@ char* runSqlQuery(maps* conf,char* query){
     init_sql(conf);
     zoo_ds_nb++;
   }
-  execSql(conf,zoo_ds_nb-1,query);
+  if(execSql(conf,zoo_ds_nb-1,query)<0)
+    return NULL;
   OGRFeature  *poFeature = NULL;
   char *tmp1;
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
@@ -484,8 +485,14 @@ char* _getStatusField(maps* conf,char* pid,const char* field){
   int zoo_ds_nb=getCurrentId(conf);
   int created=-1;
   map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+83+1)*sizeof(char));
-  sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+  char *sqlQuery=NULL;
+  if(strstr(field,"_time")!=NULL){
+    sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+99+1)*sizeof(char));
+    sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE display_date_rfc3339(%s) END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+  }else{
+    sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+83+1)*sizeof(char));
+    sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+  }
   if( zoo_ds_nb==
 #ifdef META_DB
       1
@@ -497,7 +504,8 @@ char* _getStatusField(maps* conf,char* pid,const char* field){
     zoo_ds_nb++;
     created=1;
   }
-  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  if(execSql(conf,zoo_ds_nb-1,sqlQuery)<0)
+    return NULL;
   OGRFeature  *poFeature = NULL;
   const char *tmp1;
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){

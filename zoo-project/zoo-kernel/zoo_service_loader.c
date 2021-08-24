@@ -2155,7 +2155,7 @@ runRequest (map ** inputs)
 	    if(name==NULL)
 	      name=zStrdup(token1);
 	    else
-	      value=zStrdup(token1);
+	      value=url_decode(token1);
 	    token1=strtok_r(NULL,"=",&saveptr1);
 	  }
 	  addToMapA(request_inputs,name, value != NULL ? value : "");
@@ -2528,7 +2528,71 @@ runRequest (map ** inputs)
 	      }
 	      free(pcaClauseType);
 	    }
-	  }	  
+	  }
+	  // datetime parameter 
+	  char* pcaClauseDate=NULL;
+	  pmTmp=getMap(request_inputs,"datetime");
+	  if(pmTmp!=NULL){
+	    if(strstr(pmTmp->value,"/")!=NULL){
+	      char *saveptr0;
+	      char *tmps0 = strtok_r(pmTmp->value, ",", &saveptr0);
+	      int iCnt0=0;
+	      while(tmps0 != NULL){
+		if(iCnt0>0){
+		  char *saveptr;
+		  char *tmps = strtok_r(tmps0, "/", &saveptr);
+		  int iCnt=0;
+		  while (tmps != NULL){
+		    if(iCnt==0 && tmps0[0]!='/'){
+		      if(strlen(tmps)>2){
+			pcaClauseDate=(char*)malloc((strlen(tmps)+30+1)*sizeof(char));
+			sprintf(pcaClauseDate,"creation_time>='%s'::timestamptz",tmps);
+		      }
+		    }else{
+		      if(strlen(tmps)>2){
+			if(pcaClauseDate==NULL){
+			  pcaClauseDate=(char*)malloc((strlen(tmps)+30+1)*sizeof(char));
+			  sprintf(pcaClauseDate,"creation_time<='%s'::timestamptz",tmps);
+			}else{
+			  char* pcaTmp=zStrdup(pcaClauseDate);
+			  pcaClauseDate=(char*)realloc(pcaClauseDate,(strlen(pcaTmp)+strlen(tmps)+35+1)*sizeof(char));
+			  sprintf(pcaClauseDate,"%s AND creation_time<='%s'::timestamptz",pcaTmp,tmps);
+			  free(pcaTmp);
+			}
+		      }
+		    }
+		    iCnt++;
+		    tmps = strtok_r (NULL, "/", &saveptr);
+		  }
+		}
+		iCnt0++;
+		tmps0 = strtok_r (NULL, ",", &saveptr0);
+	      }
+	    }else{
+	      char *saveptr0;
+	      char *tmps0 = strtok_r(pmTmp->value, ",", &saveptr0);
+	      int iCnt0=0;
+	      while(tmps0 != NULL){
+		if(iCnt0>0){
+		  pcaClauseDate=(char*)malloc((strlen(tmps0)+29+1)*sizeof(char));
+		  sprintf(pcaClauseDate,"creation_time='%s'::timestamptz",tmps0);
+		}
+		iCnt0++;
+		tmps0 = strtok_r (NULL, ",", &saveptr0);
+	      }
+	    }
+	    if(pcaClauseFinal==NULL)
+	      pcaClauseFinal=zStrdup(pcaClauseDate);
+	    else{
+	      char* pcaTmp=zStrdup(pcaClauseFinal);
+	      pcaClauseFinal=(char*)realloc(pcaClauseFinal,
+					    (strlen(pcaTmp)+strlen(pcaClauseDate)+6)*sizeof(char));
+	      sprintf(pcaClauseFinal,"%s AND %s",
+		      pcaTmp,pcaClauseDate);
+	      free(pcaTmp);
+	    }
+	    free(pcaClauseDate);
+	  }
 	  if(pcaClauseFinal!=NULL){
 	    map *schema=getMapFromMaps(m,"database","schema");
 	    char* pcaTmp=(char*) malloc((strlen(pcaClauseFinal)+
@@ -2545,6 +2609,9 @@ runRequest (map ** inputs)
 	    if(tmp1!=NULL){
 	      setMapInMaps(m,"lenv","selectedJob",tmp1);
 	      free(tmp1);
+	    }
+	    else{
+	      setMapInMaps(m,"lenv","selectedJob","-1");
 	    }
 	  }
 	  if(res!=NULL)

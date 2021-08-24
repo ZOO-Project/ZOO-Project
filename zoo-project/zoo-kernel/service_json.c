@@ -170,34 +170,85 @@ extern "C" {
    * @return a json_object pointer to the created json_object
    */
   void printAllowedRangesJ(maps* m,iotype* iot,json_object* prop){
-    // TODO: avoid adding both maximum and exclusiveMaximum (same for minimum)
-    // TODO: parse type/pass it as parameter and use it for proper type use 
     map* tmpMap1;
+    map* pmType=getMap(iot->content,"DataType");
     json_object* prop4=json_object_new_object();
+    int hasMin=0;
+    int hasMax=0;
     for(int i=0;i<4;i++){
       tmpMap1=getMap(iot->content,rangeCorrespondances[i][0]);
       if(tmpMap1!=NULL){
-	if(i<3)
-	  json_object_object_add(prop,rangeCorrespondances[i][1],json_object_new_string(tmpMap1->value));
+	if(i>=1 && ( (hasMin==0 && i==1) || (hasMax==0 && i==2)) ){
+	  map* pmaTmp=createMap("value",tmpMap1->value);
+	  printLiteralValueJ(m,pmType,pmaTmp,prop,rangeCorrespondances[i][1]);
+	  freeMap(&pmaTmp);
+	  free(pmaTmp);
+	}
 	else{
 	  char* currentValue=NULL;	  
-	  map* pmTmp=getMap(iot->content,rangeCorrespondances[0][0]);
+	  map* pmTmp=getMap(iot->content,rangeCorrespondances[1][0]);
 	  if(tmpMap1->value[0]=='o' && pmTmp!=NULL){
-	    json_object_object_add(prop,"exclusiveMinimum",json_object_new_string(pmTmp->value));
+	    hasMin=1;
+	    map* pmaTmp=createMap("value",pmTmp->value);
+	    printLiteralValueJ(m,pmType,pmaTmp,prop,"exclusiveMinimum");
+	    freeMap(&pmaTmp);
+	    free(pmaTmp);
 	    if(strlen(tmpMap1->value)==1){
-	      pmTmp=getMap(iot->content,rangeCorrespondances[1][0]);
-	      if(pmTmp!=NULL)
-		json_object_object_add(prop,"exclusiveMaximum",json_object_new_string(pmTmp->value));
+	      pmTmp=getMap(iot->content,rangeCorrespondances[2][0]);
+	      if(pmTmp!=NULL){
+		hasMax=1;
+		map* pmaTmp1=createMap("value",pmTmp->value);
+		printLiteralValueJ(m,pmType,pmaTmp1,prop,"exclusiveMaximum");
+		freeMap(&pmaTmp1);
+		free(pmaTmp1);
+	      }
 	    }
 	  }
 	  if(strlen(tmpMap1->value)>1 && tmpMap1->value[1]=='o'){
-	    pmTmp=getMap(iot->content,rangeCorrespondances[1][0]);
-	    if(pmTmp!=NULL)
-	      json_object_object_add(prop,"exclusiveMaximum",json_object_new_string(pmTmp->value));
+	    pmTmp=getMap(iot->content,rangeCorrespondances[2][0]);
+	    if(pmTmp!=NULL){
+	      hasMax=1;
+	      map* pmaTmp=createMap("value",pmTmp->value);
+	      printLiteralValueJ(m,pmType,pmaTmp,prop,"exclusiveMaximum");
+	      freeMap(&pmaTmp);
+	      free(pmaTmp);
+	    }
 	  }
 	}
       }
     }
+  }
+
+  /**
+   * Add literal property depending on the dataType
+   *
+   * @param pmConf the main configuration maps pointer
+   * @param pmType the dataType map pointer
+   * @param pmContent the iotype content map pointer
+   * @param schema the json_object pointer to add the value
+   * @param field the field name string
+   */
+  void printLiteralValueJ(maps* pmConf,map* pmType,map* pmContent,json_object* schema,const char* field){
+    map* pmTmp=getMap(pmContent,"value");
+    if(pmTmp!=NULL)
+      if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
+	json_object_object_add(schema,field,json_object_new_int(atoi(pmTmp->value)));
+      else{
+	if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
+	  json_object_object_add(schema,field,json_object_new_double(atof(pmTmp->value)));
+	  json_object_object_add(schema,"format",json_object_new_string("double"));
+	}
+	else{
+	  if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
+	    if(strncasecmp(pmType->value,"true",4)==0)
+	      json_object_object_add(schema,field,json_object_new_boolean(true));
+	    else
+	      json_object_object_add(schema,field,json_object_new_boolean(false));
+	  }
+	  else
+	    json_object_object_add(schema,field,json_object_new_string(pmTmp->value));
+	}
+      }
   }
   
   /**
@@ -220,29 +271,7 @@ extern "C" {
 	else
 	  json_object_object_add(schema,"type",json_object_new_string(tmpMap1->value));
       }
-      tmpMap1=getMap(in->defaults->content,"value");
-      char *pcType="integer";
-      if(tmpMap1!=NULL)
-	// TODO check types!
-	if(tmpMap2!=NULL && strncasecmp(tmpMap2->value,"integer",7)==0)
-	  json_object_object_add(schema,"default",json_object_new_int(atoi(tmpMap1->value)));
-	else{
-	  if(tmpMap2!=NULL && strncasecmp(tmpMap2->value,"float",5)==0){
-	    pcType="float";
-	    json_object_object_add(schema,"default",json_object_new_double(atof(tmpMap1->value)));
-	  }
-	  else{
-	    if(tmpMap2!=NULL && strncasecmp(tmpMap2->value,"bool",4)==0){
-	      pcType="boolean";
-	      if(strncasecmp(tmpMap1->value,"true",4)==0)
-		json_object_object_add(schema,"default",json_object_new_boolean(true));
-	      else
-		json_object_object_add(schema,"default",json_object_new_boolean(false));
-	    }
-	    else
-	      json_object_object_add(schema,"default",json_object_new_string(tmpMap1->value));
-	  }
-	}
+      printLiteralValueJ(m,tmpMap1,in->defaults->content,schema,"default");
       json_object* prop3=json_object_new_object();
       tmpMap1=getMap(in->defaults->content,"rangeMin");
       if(tmpMap1!=NULL){
@@ -808,9 +837,46 @@ extern "C" {
   }
 
   /**
+   * Produce an exception JSON object
+   * 
+   * @param m the maps containing the settings of the main.cfg file
+   * @param s the map containing the text,code,locator keys (or a map array of the same keys)
+   * @return the create JSON object (make sure to free memory)
+   */
+  json_object *createExceptionJ(maps* m,map* s){
+    json_object *res=json_object_new_object();
+    map* pmTmp=getMap(s,"code");
+    if(pmTmp!=NULL){
+      json_object_object_add(res,"title",json_object_new_string(pmTmp->value));
+      int i=0;
+      for(i=0;i<4;i++){
+	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
+	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
+	  char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
+	  sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
+	  json_object_object_add(res,"type",json_object_new_string(pcaTmp));
+	  free(pcaTmp);
+	}
+      }
+    }
+    else{
+      json_object_object_add(res,"title",json_object_new_string("NoApplicableCode"));
+    }
+    pmTmp=getMap(s,"text");
+    if(pmTmp==NULL)
+      pmTmp=getMap(s,"message");
+    if(pmTmp==NULL)
+      pmTmp=getMapFromMaps(m,"lenv","message");
+    if(pmTmp!=NULL)
+      json_object_object_add(res,"detail",json_object_new_string(pmTmp->value));
+    return res;
+  }
+  
+  /**
    * Print an OWS ExceptionReport Document and HTTP headers (when required) 
    * depending on the code.
-   * Set hasPrinted value to true in the [lenv] section.
+   * Set hasPrinted value to true in the [lenv] section. 
+   * @see createExceptionJ
    * 
    * @param m the maps containing the settings of the main.cfg file
    * @param s the map containing the text,code,locator keys (or a map array of the same keys)
@@ -819,12 +885,15 @@ extern "C" {
     if(getMapFromMaps(m,"lenv","hasPrinted")!=NULL)
       return;
     int buffersize;
-    json_object *res=json_object_new_object();
-
+    //json_object *res=json_object_new_object();
+    json_object *res=createExceptionJ(m,s);
     maps* tmpMap=getMaps(m,"main");
     const char *exceptionCode;
+    map* pmTmp=getMap(s,"code");
+    exceptionCode=produceStatusString(m,pmTmp);    
+
+    /*const char *exceptionCode;
     
-    map* tmp=getMap(s,"code");
     exceptionCode=produceStatusString(m,tmp);    
     if(tmp!=NULL){
       json_object_object_add(res,"title",json_object_new_string(tmp->value));
@@ -841,13 +910,13 @@ extern "C" {
     }
     else{
       json_object_object_add(res,"title",json_object_new_string("NoApplicableCode"));
-    }
+      }*/
     if(getMapFromMaps(m,"lenv","no-headers")==NULL)
       printHeaders(m);
 
-    tmp=getMapFromMaps(m,"lenv","status_code");
-    if(tmp!=NULL)
-      exceptionCode=tmp->value;
+    pmTmp=getMapFromMaps(m,"lenv","status_code");
+    if(pmTmp!=NULL)
+      exceptionCode=pmTmp->value;
     if(getMapFromMaps(m,"lenv","no-headers")==NULL){
       if(m!=NULL){
 	map *tmpSid=getMapFromMaps(m,"lenv","sid");
@@ -863,14 +932,14 @@ extern "C" {
 	printf("Status: %s\r\n\r\n",exceptionCode);
       }
     }
-    tmp=getMap(s,"text");
+    /*tmp=getMap(s,"text");
     if(tmp==NULL)
       tmp=getMap(s,"message");
     if(tmp==NULL)
       tmp=getMapFromMaps(m,"lenv","message");
     if(tmp!=NULL)
-      json_object_object_add(res,"detail",json_object_new_string(tmp->value));
-
+    json_object_object_add(res,"detail",json_object_new_string(tmp->value));*/
+    
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
     if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
       setMapInMaps(m,"lenv","jsonStr",jsonStr);
@@ -1397,6 +1466,16 @@ extern "C" {
       skip=atoi(pmSkip->value);
     }
     if(pmJobs!=NULL){
+      if(strcmp(pmJobs->value,"-1")==0){
+	// Exception invalid-query-paramter-value
+	map* pmaTmp=createMap("code","InvalidQueryParameterValue");
+	addToMap(pmaTmp,"message","The server was unable to parse one of the query pareter provided");
+	json_object_put(res);
+	printExceptionReportResponseJ(conf,pmaTmp);
+	freeMap(&pmaTmp);
+	free(pmaTmp);
+	return NULL;
+      }
       char *saveptr;
       char *tmps = strtok_r(pmJobs->value, ",", &saveptr);
       while(tmps!=NULL){

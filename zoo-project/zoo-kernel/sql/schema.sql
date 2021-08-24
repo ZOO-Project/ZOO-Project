@@ -72,3 +72,17 @@ create table files (
        expiration_time timestamp with time zone default now() + interval '48 hours'
 );
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- Function to display date respecting the RFC 3339
+CREATE OR REPLACE FUNCTION display_date_rfc3339(param_in timestamp with time zone)
+RETURNS text AS
+$$
+DECLARE var_out varchar;
+BEGIN
+	PERFORM set_config('timezone', 'UTC', true);
+	var_out := to_char(param_in , 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+	RETURN var_out;
+END;
+$$ language plpgsql VOLATILE;
+--------------------------------------------------------------------------------
