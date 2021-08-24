@@ -33,6 +33,6 @@ jobs:
     - name: List available containers
       run: docker ps
     - name: Run GetCapabilities version 1 tests
-      run: docker exec -it zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer GetCapabilities 100 10"
+      run: docker exec zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer GetCapabilities 100 10"
     - name: Run DescribeProcess version 1 tests
-      run: docker exec -it zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer DescribeProcess 100 10"
+      run: docker exec zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer DescribeProcess 100 10"
