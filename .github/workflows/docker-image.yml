@@ -39,10 +39,14 @@ jobs:
       run: |
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-    - name: Tag the Docker image
-      run: docker tag djayzen/zookernel:$GITHUB_SHA djayzen/zookernel:latest
-    - name: Docker Push Latest
-      run: docker push djayzen/zookernel
+    - name: Build and push latest
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: true
+        tags: ${{secrets.DOCKER_USER}}/zookernel:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Start the test env
       run: docker-compose up -d
     - name: Install required package
