@@ -18,9 +18,9 @@ jobs:
     - name: Cache Docker layers
       uses: actions/cache@v2
       with:
-	path: /tmp/.buildx-cache
-	key: ${{ runner.os }}-buildx-${{ github.sha }}
-	restore-keys: ${{ runner.os }}-buildx-
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-buildx-
     - name: docker login
       env:
         DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -30,11 +30,11 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v2
       with:
-	context: .
-	push: true
-	tags: djayzen/zookernel:$GITHUB_SHA
-	cache-from: type=local,src=/tmp/.buildx-cache
-	cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        context: .
+        push: true
+        tags: djayzen/zookernel:$GITHUB_SHA
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Move cache
       run: |
         rm -rf /tmp/.buildx-cache
