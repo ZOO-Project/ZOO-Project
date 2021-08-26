@@ -511,8 +511,6 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
   addToMap(errormap,"code", errorCode);
   addToMap(errormap,"locator", locator);
   funcError(m,errormap);
-  freeMaps (&m);
-  free (m);
   if(zooRegistry!=NULL){
     freeRegistry(&zooRegistry);
     free(zooRegistry);
@@ -520,7 +518,6 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
   free (orig);
   if (corig != NULL)
     free (corig);
-  //xmlFreeDoc (doc);
   xmlCleanupParser ();
   zooXmlCleanupNs ();
   freeMap(&errormap);
@@ -760,6 +757,8 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 				   tmps,"InvalidParameterValue","identifier",
 				   orig,corig,
 				   funcError);
+		    if(dirp!=NULL)
+		      closedir (dirp);
                     return 1;
 		  }
 #ifdef DEBUG
@@ -802,6 +801,8 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 				 tmps,"InvalidParameterValue","identifier",
 				 orig,corig,
 				 funcError);
+		  if(dirp!=NULL)
+		    closedir (dirp);
 		  return 1;
 		}
 #ifdef DEBUG
@@ -861,6 +862,8 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			    addToMap(errormap,"code", "InternalError");
 			    addToMap(errormap,"locator", "NULL");
 			    funcError(m,errormap);
+			    if(dirp!=NULL)
+			      closedir (dirp);
 			    return -1;
 			  }
 #ifdef DEBUG_SERVICE_CONF
@@ -879,6 +882,8 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 					   buff,"InternalError","NULL",
 					   orig,corig,
 					   funcError);
+			    if(dirp!=NULL)
+			      closedir (dirp);
 			    return 1;
 			  }
 #ifdef DEBUG
@@ -907,6 +912,8 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			     buff,"InvalidParameterValue","Identifier",
 			     orig,corig,
 			     funcError);
+	      if(dirp!=NULL)
+		closedir (dirp);
 	      return 1;
 	    }
 	  rewinddir (dirp);
@@ -3351,11 +3358,16 @@ runRequest (map ** inputs)
 
 	      r_inputs = getMap (request_inputs, "Identifier");
 
-	      fetchServicesForDescription(zooRegistry, m, r_inputs->value,
+	      int t=fetchServicesForDescription(zooRegistry, m, r_inputs->value,
 					  printDescribeProcessForProcess,
 					  (void*) doc, (void*) n, conf_dir,
 					  request_inputs,printExceptionReportResponse);
-
+	      if(t!=0){
+		xmlFreeDoc (doc);
+		closedir (dirp);
+		free (REQUEST);
+		return 1;
+	      }
 	      printDocument (m, doc, zGetpid ());
 	      freeMaps (&m);
 	      free (m);
@@ -3366,6 +3378,7 @@ runRequest (map ** inputs)
 	      free (REQUEST);
 	      free (SERVICE_URL);
 	      fflush (stdout);
+	      closedir (dirp);
 #ifdef META_DB
 	      close_sql(m,0);
 	      //end_sql();

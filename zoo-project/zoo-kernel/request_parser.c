@@ -670,8 +670,8 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				}
 			      addToMap (tmpmaps->content, "Reference", (char*) val);
 			    }
+			  xmlFree (val);
 			}
-		      xmlFree (val);
 		    }
 		  // Parse Header and Body from Reference
 		  xmlNodePtr cur3 = cur2->children;
@@ -1047,7 +1047,6 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
 							     &buffersize,
 							     "utf-8", 0);
-				  xmlFreeDoc (doc1);
 				}
 			      else
 				{

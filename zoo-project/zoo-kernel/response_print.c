@@ -865,7 +865,7 @@ void addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr 
 	  snprintf(tmp,index,"%s",meta->name);
 	  xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp,BAD_CAST meta->value);
 	  free(tmp);
-	}	  
+	}
 	if(ctitle!=NULL)
 	  free(ctitle);
 	ctitle=zStrdup(meta->value);
@@ -896,6 +896,8 @@ void addMetadata(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_ows,xmlNsPtr 
   if(oMeta!=NULL && hasValue<0 && nc1!=NULL){
     xmlAddChild(nc,nc1);
   }
+  if(ctitle!=NULL)
+    free(ctitle);
 }
 
 /**
@@ -961,7 +963,7 @@ void addAdditionalParameters(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_o
 	  snprintf(tmp,index,"%s",meta->name);
 	  xmlNewNsProp(nc1,ns_xlink,BAD_CAST tmp,BAD_CAST meta->value);
 	  free(tmp);
-	}	  
+	}
 	if(ctitle!=NULL)
 	  free(ctitle);
 	ctitle=zStrdup(meta->value);
@@ -1006,8 +1008,9 @@ void addAdditionalParameters(map* meta,xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_o
     len=1;
   if(cnt<len){
     xmlAddChild(nc,nc1);
-    free(ctitle);
   }
+  if(ctitle!=NULL)
+    free(ctitle);
 }
 
 /**
