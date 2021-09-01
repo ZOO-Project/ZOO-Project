@@ -1963,3 +1963,40 @@ char* allocateMapValue(map* pmNode, size_t sNumBytes)
 		
   return pmNode->value;
 }
+
+/*
+ * Find the value corresponding to an input (cache_file content or value field)
+ *
+ * @param inputs the maps for searching the corresponding value
+ * @param name the field name to search within the maps
+ * @return string the value if any, or NULL
+ *
+ * This function return a new string that should be freed after use.
+ */
+char* getValueFromMaps(maps* inputs,const char* name){
+  char* res=NULL;
+  map* pmTmp=getMapFromMaps(inputs,name,"cache_file");
+    if(pmTmp!=NULL){
+      FILE* f0 = fopen (pmTmp->value, "rb");
+      if(f0!=NULL){
+	long flen;
+	char *fcontent;
+	fseek (f0, 0, SEEK_END);
+	flen = ftell (f0);
+	fseek (f0, 0, SEEK_SET);
+	fcontent = (char *) malloc ((flen + 1) * sizeof (char));
+	fread(fcontent,flen,1,f0);
+	fcontent[flen]=0;
+	fclose(f0);
+	res=zStrdup(fcontent);
+	fprintf(stderr,"%s %d (%s)\n",__FILE__,__LINE__,fcontent);
+	free(fcontent);
+      }
+    }else{
+      pmTmp=getMapFromMaps(inputs,name,"value");
+      if(pmTmp!=NULL && strncasecmp(pmTmp->value,"NULL",4)!=0){
+	res = zStrdup(pmTmp->value);
+      }
+    }
+    return res;
+}

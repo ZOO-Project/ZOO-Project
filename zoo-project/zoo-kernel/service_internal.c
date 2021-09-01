@@ -952,3 +952,9 @@ char* file_exists(const char* dir, const char* name) {
 		return NULL;
 	}
 }
+
+#ifndef RELY_ON_DB
+char* _getStatusField(maps* conf,char* a,const char* b){
+  return zStrdup("-1");
+}
+#endif

@@ -1,4 +1,7 @@
 Version 1.8.1
+  * Add getValueFromMaps function the C-API to be used from C services
+  requiring to be functional in every memory management mode (load or
+  protected)
   * Add support for datetime parameter for jobs filtering as defined in
   OGC API - Processes.
   * Add support for type parameter for jobs filtering as defined in

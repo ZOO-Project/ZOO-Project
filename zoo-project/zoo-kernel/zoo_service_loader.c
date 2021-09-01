@@ -656,8 +656,8 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 	  //errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
 	  free (tmpMsg);
 	  free (*spService);
-	  freeMaps (&m);
-	  free (m);
+	  //freeMaps (&m);
+	  //free (m);
 	  return 1;
 	}
       }
@@ -2611,15 +2611,23 @@ runRequest (map ** inputs)
 		    "from  %s.services where %s)::text,'{',''),'}','')",
 		    schema->value,pcaClauseFinal);
 	    free(pcaClauseFinal);
-	    char* tmp1=runSqlQuery(m,pcaTmp);
+	    char* tmp1=
+#ifdef RELY_ON_DB
+	      runSqlQuery(m,pcaTmp)
+#else
+	      NULL
+#endif
+	      ;
 	    free(pcaTmp);
 	    if(tmp1!=NULL){
 	      setMapInMaps(m,"lenv","selectedJob",tmp1);
 	      free(tmp1);
 	    }
+#ifdef RELY_ON_DB
 	    else{
 	      setMapInMaps(m,"lenv","selectedJob","-1");
 	    }
+#endif
 	  }
 	  if(res!=NULL)
 	    json_object_put(res);

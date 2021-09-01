@@ -525,8 +525,9 @@ extern "C" {
   
   // knut : function for pre-allocated memory for a map value;
   // processing algorithms may be able to write directly to this space, thereby avoiding unneccesary copying of data
-  ZOO_DLL_EXPORT char* allocateMapValue(map* node, size_t num_bytes);  
+  ZOO_DLL_EXPORT char* allocateMapValue(map* node, size_t num_bytes);
   
+  ZOO_DLL_EXPORT char* getValueFromMaps(maps*,const char*);
 #ifdef __cplusplus
 }
 #endif
