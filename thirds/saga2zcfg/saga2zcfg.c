@@ -179,9 +179,12 @@ int main(int argc, char *argv[]) {
 	if(module!=NULL && !module->needs_GUI() /*&& !module->is_Interactive()*/ ){
 
 	  mkdir(library->Get_Library_Name().b_str(),0755);
-	  
+#ifdef DEBUG
+	  fprintf(stderr,"** %s %d Start creating %s \n",__FILE__,__LINE__,(module->Get_ID()+".zcfg").b_str());
+	  fflush(stderr);
+#endif
 	  FILE *stdout1=fopen((library->Get_Library_Name()+"/"+module->Get_ID()+".zcfg").b_str(),"w+");
-	  fprintf(stdout1,"[%d]\n",j);
+	  fprintf(stdout1,"[%s]\n",(module->Get_ID()).b_str());
 	  fprintf(stdout1," Title = %s\n",module->Get_Name().b_str());
 	  if(CSG_String(module->Get_Description()).is_Empty() ||
 	     module->Get_Description().Length()<module->Get_Name().Length() )
@@ -206,14 +209,23 @@ int main(int argc, char *argv[]) {
 	  fprintf(stdout1," <DataInputs>\n");
 	  for(int k=0;k<pc;k++){
 	    CSG_Parameter * param=params->Get_Parameter(k);
-	    
+
+#ifdef DEBUG
+	    fprintf(stderr,"** %s %d %s \n",__FILE__,__LINE__,CSG_String(param->Get_Name()).b_str());
+	    fprintf(stderr,"** %s %d %s \n",__FILE__,__LINE__,CSG_String(param->Get_Description()).b_str());
+	    fflush(stderr);
+#endif
 	    if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("parameters"),true)){
 	      int pc0=param->asParameters()->Get_Count();
 	      int l;
+#ifdef DEBUG
 	      fprintf(stderr,"%s\n",CSG_String(param->Get_Name()).b_str());
+#endif
 	      for(l=0;l<pc0;l++){
 		CSG_Parameter * param0=param->asParameters()->Get_Parameter(l);
+#ifdef DEBUG
 		fprintf(stderr,"%s\n",CSG_String(param0->Get_Type_Identifier()).b_str());
+#endif
 	      }
 	    }
 	    
@@ -413,6 +425,10 @@ int main(int argc, char *argv[]) {
 	    CSG_Parameter * param=params->Get_Parameter(k);
 	    if(param!=NULL && param->is_Output()){
 	      hasOutput=true;
+#ifdef DEBUG	      
+	      fprintf(stderr,"** %s %d %s \n",__FILE__,__LINE__,CSG_String(param->Get_Description()).b_str());
+	      fflush(stderr);
+#endif
 	      if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("tin"))){
 		char* tinOut[5]={
 		  (char*)"POINTS",
@@ -450,8 +466,17 @@ int main(int argc, char *argv[]) {
 	  }
 	  fprintf(stdout1,"</DataOutputs>\n");
 	  fclose(stdout1);
-	  if(!hasOutput)
+#ifdef DEBUG
+	  fprintf(stderr,"** %s %d Close %s \n",__FILE__,__LINE__,(module->Get_ID()+".zcfg").b_str());
+	  fflush(stderr);
+#endif
+	  if(!hasOutput){
 	    unlink((library->Get_Library_Name()+"/"+module->Get_ID()+".zcfg").b_str());
+#ifdef DEBUG
+	    fprintf(stderr,"** %s %d Removing %s \n",__FILE__,__LINE__,(module->Get_ID()+".zcfg").b_str());
+	    fflush(stderr);
+#endif
+	  }
 	}
       }
     }
