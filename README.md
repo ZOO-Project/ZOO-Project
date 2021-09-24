@@ -6,7 +6,7 @@
 ## Summary
 
 The **ZOO-Project** is an open source processing platform, released under MIT/X11 Licence.
-It provides the agnostic **ZOO-Kernel**, a server implementation of the **WPS** (1.0.0 and 2.0.0) and the **OGC API - Processes** standards published by the OGC. 
+It provides the polyglot **ZOO-Kernel**, a server implementation of the **WPS** (1.0.0 and 2.0.0) and the **OGC API - Processes** standards published by the OGC. 
 It contains **ZOO-Services**, a minimal set of ready-to-use services that can be used as a base to create more usefull services.
 It provides the **ZOO-API**, initially only available from the JavaScript service implementation, which exposes ZOO-Kernel variables and functions to the language used to implement the service.
 It contains the **ZOO-Client**, a JavaScript API which can be used from a client application to interract with a WPS server.
