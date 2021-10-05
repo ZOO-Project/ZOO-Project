@@ -18,7 +18,7 @@ RUN git clone https://github.com/ZOO-Project/examples.git zoo-demo \
 RUN git clone https://github.com/swagger-api/swagger-ui.git \
     && mv swagger-ui/dist /var/www/html/swagger-ui \
     && chmod -R 755 /var/www/html/swagger-ui \
-    && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost/ogc-api/api=g" -i /var/www/html/swagger-ui/index.html \
+    && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost/zoo-demo/ogc-api/api=g" -i /var/www/html/swagger-ui/index.html \
     && rm -rf swagger-ui
 
 COPY docker/ubuntugis/main.cfg /etc/zoo-project/main.cfg
@@ -33,6 +33,7 @@ RUN mkdir -p /var/data \
     && ln -s /usr/share/zoo-project/openapi/server/publish.py /usr/lib/cgi-bin/publish.py \
     && ln -s /usr/share/zoo-project/openapi/server/subscriber.py /usr/lib/cgi-bin/subscriber.py \
     && ln -s /usr/share/zoo-project/openapi/static /var/www/html/zoo-demo/static \
+    && sed -i "s|serviceProvider = service|serviceProvider = openapi|g" /etc/zoo-project/display.zcfg \
     && a2enmod cgi rewrite
 
 RUN cp /etc/zoo-project/main.cfg /usr/lib/cgi-bin/ \
