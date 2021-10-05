@@ -6,19 +6,16 @@ FROM ubuntu/apache2:2.4-20.04_edge
 RUN apt-get update && apt-get install -y software-properties-common git wget vim \
     && rm -rf /var/lib/apt/lists/* \
     && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-    && apt-get update
+    && apt-get update \
+    && apt-get install -y zoo-kernel zoo-service-ogr \
+    zoo-service-status zoo-service-otb zoo-service-openapi zoo-api
 
-RUN mkdir -p /tmp/build_zoo \
-    && apt-get --assume-yes install zoo-kernel zoo-service-ogr \
-    zoo-service-status zoo-service-otb zoo-service-openapi zoo-api \
-    && wget -N -O /tmp/build_zoo/examples-livedvd.tar.bz2 \
-    "http://download.osgeo.org/livedvd/data/zoo/examples-livedvd.tar.bz2" \
-    && cd /tmp/build_zoo \
-    && tar xf examples-livedvd.tar.bz2 && cp -r zoo-demo /var/www/html/zoo-demo \
+RUN git clone https://github.com/ZOO-Project/examples.git zoo-demo \
+    && cp -r zoo-demo /var/www/html/zoo-demo \
     && chmod -R 755 /var/www/html/zoo-demo \
     && wget -N -O /etc/zoo-project/main.cfg \
     "https://github.com/OSGeo/OSGeoLive/raw/master/app-conf/zoo-project/main.cfg" \
-    && mkdir -p /var/data && cp zoo-demo/symbols.sym /var/data/ \
+    && mkdir -p /var/data \
     && cp /var/lib/zoo-project/updateStatus.xsl /var/data/ \
     && ln -s /tmp /var/www/html/mpPathRelativeToServerAdress \
     && chown -R www-data:www-data /var/data \
