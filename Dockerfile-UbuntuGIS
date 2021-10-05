@@ -1,4 +1,4 @@
-# Build with `docker build . -t zoo -f Dockerfile_OSGeoLive`
+# Build with `docker build . -t zoo -f Dockerfile-UbuntuGIS`
 # Run with `docker run --name zoo-demo -d -p 80:80 zoo`
 
 FROM ubuntu/apache2:2.4-20.04_edge
