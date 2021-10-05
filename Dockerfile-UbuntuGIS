@@ -12,10 +12,11 @@ RUN apt-get update && apt-get install -y software-properties-common git wget vim
 
 RUN git clone https://github.com/ZOO-Project/examples.git zoo-demo \
     && cp -r zoo-demo /var/www/html/zoo-demo \
-    && chmod -R 755 /var/www/html/zoo-demo \
-    && wget -N -O /etc/zoo-project/main.cfg \
-    "https://github.com/OSGeo/OSGeoLive/raw/master/app-conf/zoo-project/main.cfg" \
-    && mkdir -p /var/data \
+    && chmod -R 755 /var/www/html/zoo-demo
+
+COPY docker/main-demo.cfg /etc/zoo-project/main.cfg
+
+RUN mkdir -p /var/data \
     && cp /var/lib/zoo-project/updateStatus.xsl /var/data/ \
     && ln -s /tmp /var/www/html/mpPathRelativeToServerAdress \
     && chown -R www-data:www-data /var/data \
