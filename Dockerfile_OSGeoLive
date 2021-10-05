@@ -1,3 +1,6 @@
+# Build with `docker build . -t zoo -f Dockerfile_OSGeoLive`
+# Run with `docker run --name zoo-demo -d -p 80:80 zoo`
+
 FROM ubuntu/apache2:2.4-20.04_edge
 
 RUN apt-get update && apt-get install -y software-properties-common git wget vim \
