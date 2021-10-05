@@ -21,9 +21,10 @@ RUN git clone https://github.com/swagger-api/swagger-ui.git \
     && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost/ogc-api/api=g" -i /var/www/html/swagger-ui/index.html \
     && rm -rf swagger-ui
 
-COPY docker/main-demo.cfg /etc/zoo-project/main.cfg
-COPY docker/oas.cfg /etc/zoo-project/oas.cfg
-COPY docker/.htaccess /var/www/html/.htaccess
+COPY docker/ubuntugis/main.cfg /etc/zoo-project/main.cfg
+COPY docker/ubuntugis/oas.cfg /etc/zoo-project/oas.cfg
+COPY docker/ubuntugis/.htaccess /var/www/html/zoo-demo/.htaccess
+COPY docker/ubuntugis/000-default.conf /etc/apache2/sites-available/000-default.conf
 
 RUN mkdir -p /var/data \
     && cp /var/lib/zoo-project/updateStatus.xsl /var/data/ \
@@ -31,7 +32,7 @@ RUN mkdir -p /var/data \
     && chown -R www-data:www-data /var/data \
     && ln -s /usr/share/zoo-project/openapi/server/publish.py /usr/lib/cgi-bin/publish.py \
     && ln -s /usr/share/zoo-project/openapi/server/subscriber.py /usr/lib/cgi-bin/subscriber.py \
-    && ln -s /usr/share/zoo-project/openapi/static /var/www/html/static \
+    && ln -s /usr/share/zoo-project/openapi/static /var/www/html/zoo-demo/static \
     && a2enmod cgi rewrite
 
 RUN cp /etc/zoo-project/main.cfg /usr/lib/cgi-bin/ \
