@@ -11,16 +11,23 @@ RUN apt-get update && apt-get install -y software-properties-common git wget vim
     zoo-service-status zoo-service-otb zoo-service-openapi zoo-api
 
 RUN git clone https://github.com/ZOO-Project/examples.git zoo-demo \
-    && cp -r zoo-demo /var/www/html/zoo-demo \
+    && mv zoo-demo /var/www/html/zoo-demo \
     && chmod -R 755 /var/www/html/zoo-demo
 
+RUN git clone https://github.com/swagger-api/swagger-ui.git \
+    && mv swagger-ui /var/www/html/swagger-ui \
+    && chmod -R 755 /var/www/html/swagger-ui \
+    && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/index.html \
+    && mv /var/www/html/swagger-ui/dist  /var/www/html/swagger-ui/oapip
+
 COPY docker/main-demo.cfg /etc/zoo-project/main.cfg
+COPY docker/oas.cfg /etc/zoo-project/oas.cfg
 
 RUN mkdir -p /var/data \
     && cp /var/lib/zoo-project/updateStatus.xsl /var/data/ \
     && ln -s /tmp /var/www/html/mpPathRelativeToServerAdress \
     && chown -R www-data:www-data /var/data \
-    && rm -rf zoo-demo \
     && a2enmod cgi
 
-RUN cp /etc/zoo-project/main.cfg /usr/lib/cgi-bin/
+RUN cp /etc/zoo-project/main.cfg /usr/lib/cgi-bin/ \
+    && cp /etc/zoo-project/oas.cfg /usr/lib/cgi-bin/
