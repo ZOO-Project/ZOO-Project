@@ -2311,13 +2311,16 @@ extern "C" {
   void addParameter(maps* conf,const char* oName,const char* fName,const char* in,json_object* res){
     maps* tmpMaps1=getMaps(conf,oName);
     json_object *res8=json_object_new_object();
+    int hasSchema=0;
     if(tmpMaps1!=NULL){
       map* tmpMap=getMap(tmpMaps1->content,"title");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"x-internal-summary",json_object_new_string(tmpMap->value));
       tmpMap=getMap(tmpMaps1->content,"schema");
-      if(tmpMap!=NULL)
+      if(tmpMap!=NULL){
 	json_object_object_add(res8,"$ref",json_object_new_string(tmpMap->value));
+	hasSchema=1;
+      }
       tmpMap=getMap(tmpMaps1->content,"abstract");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"description",json_object_new_string(tmpMap->value));
@@ -2332,17 +2335,20 @@ extern "C" {
 	  json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
       }
       else
-	json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
+	if(hasSchema==0)
+	  json_object_object_add(res8,"required",json_object_new_boolean(FALSE));
       map* pmTmp=getMap(tmpMaps1->content,"in");
       if(pmTmp!=NULL)
 	json_object_object_add(res8,"in",json_object_new_string(pmTmp->value));
       else
-	json_object_object_add(res8,"in",json_object_new_string(in));
+	if(hasSchema==0)
+	  json_object_object_add(res8,"in",json_object_new_string(in));
       tmpMap=getMap(tmpMaps1->content,"name");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"name",json_object_new_string(tmpMap->value));
       else
-	json_object_object_add(res8,"name",json_object_new_string(fName));
+	if(hasSchema==0)
+	  json_object_object_add(res8,"name",json_object_new_string(fName));
       tmpMap=getMap(tmpMaps1->content,"schema");
       if(tmpMap==NULL){
 	json_object *res6=json_object_new_object();
@@ -2453,7 +2459,15 @@ extern "C" {
     maps* tmpMaps1=getMaps(conf,"{id}");
     produceApiComponents(conf,res);
     json_object *res4=json_object_new_object();
-    setMapInMaps(conf,"headers","Content-Type","application/openapi+json; version=3.0;charset=UTF-8");
+    map* pmTmp=getMapFromMaps(conf,"/api","type");
+    if(pmTmp!=NULL){
+      char* pcaTmp=(char*)malloc((15+strlen(pmTmp->value))*sizeof(char));
+      sprintf(pcaTmp,"%s;charset=UTF-8",pmTmp->value);
+      setMapInMaps(conf,"headers","Content-Type",pcaTmp);
+      free(pcaTmp);
+    }
+    else
+      setMapInMaps(conf,"headers","Content-Type","application/vnd.oai.openapi+json;version=3.0;charset=UTF-8");
 
     produceApiInfo(conf,res,res4);
     map* tmpMap=getMapFromMaps(conf,"provider","providerName");
