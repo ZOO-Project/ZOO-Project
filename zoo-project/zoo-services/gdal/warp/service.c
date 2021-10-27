@@ -636,7 +636,7 @@ int Gdal_Warp( maps*& conf,maps*& inputs,maps*& outputs )
       bCreateOutput = TRUE;
     }
 
-    tmpMap=getMapFromMaps(inputs,"te","value");
+    tmpMap=getMapFromMaps(inputs,"cutline","value");
     if(tmpMap!=NULL && strncasecmp(tmpMap->value,"NULL",4)!=0 ){
       pszCutlineDSName = strdup(tmpMap->value);
     }
