@@ -18,8 +18,7 @@ jobs:
     - name: Build the Documentation using sphinx Docker image
       run: |
         docker run --rm -v $(pwd)/docs:/docs sphinxdoc/sphinx make html ;
-        sudo touch docs/_build/html/.nojekyll docs/_build/html/_static/.nojekyll ;
-        sudo ln -s docs/_build/html/_static docs/_build/html/static
+        sudo touch docs/_build/html/.nojekyll
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@4.1.5
       with:
