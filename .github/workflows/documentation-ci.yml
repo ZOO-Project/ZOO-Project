@@ -27,8 +27,9 @@ jobs:
     - name: Build documentation using JSDoc
       run: |
         npm install -g jsdoc ;
+        npm install ink-docstrap ;
         cd zoo-project/zoo-client/lib/js/wps-client ;
-        sudo jsdoc *js -R ../../../../../README.md ;
+        sudo jsdoc *js -R ../../../../../README.md -t ~/node_modules/ink-docstrap/template  ;
         cd ../../../../.. ;
         sudo cp -r zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
     - name: Deploy
