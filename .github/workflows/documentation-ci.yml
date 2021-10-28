@@ -22,7 +22,7 @@ jobs:
         sudo cp docs/_config.yml docs/_build/html/
     - name: Build the Documentation using doxygen Docker image
       run: |
-        docker run -t -v $(pwd)/zoo-project/zoo-kernel:/data -it hrektts/doxygen doxygen  ;
+        docker run --rm -v $(pwd)/zoo-project/zoo-kernel:/data hrektts/doxygen doxygen  ;
         sudo cp -r zoo-project/zoo-kernel/html docs/_build/html/C_API
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@4.1.5
