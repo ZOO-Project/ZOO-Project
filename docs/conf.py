@@ -13,8 +13,8 @@ exclude_patterns = ['_build']
 # General information
 
 project = 'ZOO-Project'
-copyright = '2009-2020, ZOO-Project team'
-version = '1.0'
+copyright = '2009-2021, ZOO-Project team'
+version = '1.9'
 release = '1.8'
 show_authors = True
 
