@@ -678,7 +678,7 @@ define([
             }
 
             $.ajax({
-		url: closure.statusLocation[sid]+"&timestamp="++(new Date()).getTime()
+		url: closure.statusLocation[sid]+"&timestamp="+(new Date()).getTime()
 	    })
 		.fail(
                     function(jqXHR, textStatus, errorThrown) {
