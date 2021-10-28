@@ -30,7 +30,7 @@ jobs:
         cd zoo-project/zoo-client/lib/js/wps-client ;
         sudo jsdoc *js -R ../../../../../README.md ;
         cd ../../../../.. ;
-        sudo cp zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
+        sudo cp -r zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@4.1.5
       with:
