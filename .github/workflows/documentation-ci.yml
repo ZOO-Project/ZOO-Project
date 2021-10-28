@@ -37,3 +37,4 @@ jobs:
         repository-name: ZOO-Project/docs
         branch: gh-pages
         folder: docs/_build/html
+        ssh-key: ${{ secrets.DEPLOY_KEY }}
