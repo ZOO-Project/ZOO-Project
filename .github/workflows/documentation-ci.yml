@@ -27,10 +27,10 @@ jobs:
     - name: Build documentation using JSDoc
       run: |
         npm install -g jsdoc ;
-        cd zoo-client/lib/js/wps-client ;
+        cd zoo-project/zoo-client/lib/js/wps-client ;
         sudo jsdoc *js -R README.md ;
-        cd ../../../.. ;
-        sudo cp zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
+        cd ../../../../.. ;
+        sudo cp zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@4.1.5
       with:
