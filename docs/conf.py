@@ -14,7 +14,7 @@ exclude_patterns = ['_build']
 
 project = 'ZOO-Project'
 copyright = '2009-2021, ZOO-Project team'
-version = '1.9'
+version = '1.8'
 release = '1.8'
 show_authors = True
 
