@@ -24,22 +24,29 @@ which is maintained, improved, and supported by a small but growing
 developer community. The PSC is composed of the following people (by
 alphabetical order):
 
+Current members:
+
     * Nicolas BOZON (`GeoLabs SARL <http://geolabs.fr>`_), FR
-    * Maria Antonia BROVELLI (`Politecnico di Milano
-      <http://www.polimi.it>`_), IT
-    * Massimiliano CANNATA (`SUPSI <http://www.ist.supsi.ch/>`_), CH
     * Gérald FENOY (`GeoLabs <http://www.geolabs.fr/>`_), FR **(Chair)**
-    * Hirofumi HAYASHI (`AppTech <http://www.apptec.co.jp/>`_), JP
-    * Daniel KASTL (`Georepublic <http://georepublic.de/en/>`_), DE
     * Jeff McKENNA (`Gateway Geomatics
       <http://www.gatewaygeomatics.com/>`_), CA
-    * Markus NETELER (`Fondazione Edmund Mach
-      <http://gis.fem-environment.eu/>`_), IT
     * Venkatesh RAGHAVAN (`Osaka City University
       <http://www.osaka-cu.ac.jp/index-e.html>`_), JP
     * Angelos TZOTSOS (`National Technical University of Athens
       <http://users.ntua.gr/tzotsos/>`_), GR
+    * Rajat Shinde (`Indian Intitute of Technology Bombay
+      <https://www.iitb.ac.in>`_), GR
 
+      
+Past members:
+
+    * Maria Antonia BROVELLI (`Politecnico di Milano
+      <http://www.polimi.it>`_), IT
+    * Massimiliano CANNATA (`SUPSI <http://www.ist.supsi.ch/>`_), CH
+    * Hirofumi HAYASHI (`AppTech <http://www.apptec.co.jp/>`_), JP
+    * Daniel KASTL (`Georepublic <http://georepublic.de/en/>`_), DE
+    * Markus NETELER (`Fondazione Edmund Mach
+      <http://gis.fem-environment.eu/>`_), IT
 
 .. _zoo_developers:
 
@@ -54,7 +61,7 @@ agree to adhere to them. The ZOO-Project commiters are listed here by alphabetic
    * Trevor CLARKE (aka tclarke)
    * Luca DELUCCHI (aka lucadelu)
    * René-Luc D'HONT  (aka reluc)
-   * Gérald FENOY (aka djay) **Admin**
+   * Gérald FENOY (aka djay / gfenoy on GitHub) **Admin**
    * Knut LANDMARK (aka knut)
    * Jeff MCKENNA (aka jmckenna)
    * Markus NETELER (aka neteler)

@@ -32,7 +32,7 @@ rules:
   candidate. If no major bugs, then announce that the release
   candidate has officially been promoted to the official release (if
   you want, you can do this with a motion and support of the PSC).
-* Ensure that release exactly matches something in SVN. Tag and branch
+* Ensure that release exactly matches something in git history. Tag and branch
   appropriately.
 * Update documentation as needed.
 * Announce on various email list and other locations
@@ -49,31 +49,37 @@ Release versions lead to an update in documentation and standard tarballs. This 
 
 .. code::
 
-    cd zoo-project-svn/
-    svn cp trunk branches/branch-1.6
-    svn cp trunk tags/rel-1.6.0
+    git checkout master
+    git pull origin master
+    git checkout -b branch-1.9
+    git push origin branch-1.9
+    git checkout branch-1.9
+    git pull origin branch-1.9
+    git tag -a -m "Create tag rel-1.9.0-rc1 " rel-1.9.0-rc1
 
 * If this is a major or minor relase, create a tag.
 
 .. code::
 
-    svn cp branches/branch-1.6 tags/rel-1.6.1
+    git checkout branch-1.9
+    git pull origin branch-1.9
+    git tag -a -m "Create tag rel-1.9.1" rel-1.9.1
 
 * Commit the tags or branches with the version numbers.
 
 .. code::
 
-    svn commit -m 'Created branch/tags for the X.Y.Z release'
+    git push origin rel-1.9.1
 
 * Create version archives
 
 .. code::
 
     export VERSION=2.6.0
-    cd zoo-propject-svn
-    cp -r trunk zoo-project-$VERSION
+    git clone -b branch-1.6 --single-branch git@github.com:ZOO-Project/ZOO-Project.git zoo-src
+    cp -r zoo-src zoo-project-$VERSION
     cd zoo-project-$VERSION
-    rm -rf $(find ./ -name ".svn") 
+    rm -rf $(find ./ -name ".git") 
     cd zoo-project/zoo-kernel
     autoconf
     # In case you did not build ZOO-Kernel
@@ -85,7 +91,7 @@ Release versions lead to an update in documentation and standard tarballs. This 
     # In case you built one or more ZOO-Services, then remove the generated file from the archive
     rm $(find ./zoo-project-$VERSION/zoo-project/zoo-services -name "*zo")
     # Remove documentation from the archive
-    rm -rf ./zoo-project-$VERSION/{docs,workshop}
+    rm -rf ./zoo-project-$VERSION/docs
     tar -cvjf ./zoo-project-$VERSION.tar.bz2 ./zoo-project-$VERSION
     zip -r ./zoo-project-$VERSION.zip ./zoo-project-$VERSION
     scp -P 1046 ./zoo-project-$VERSION.{zip,tar.bz2} zoo-project.org:/var/www/localhost/htdocs/dl/

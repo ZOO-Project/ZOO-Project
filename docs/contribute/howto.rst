@@ -44,7 +44,7 @@ Feel free to post any question, feedback, comment or idea to the general public 
 IRC
 ......................................
 
-Join the **#zoo-project** channel on irc.freenode.net to discuss with the ZOO-Tribe at any time.
+Join the **#zoo-project** channel on `LiberaChat <https://web.libera.chat/#gdal>`__ to discuss with the ZOO-Tribe at any time.
 
 
 Tracker

@@ -5,12 +5,17 @@ Committer guidelines
 
 This section gathers information to the registered ZOO-Project developers.
 
-Election to SVN Commit Access
+.. note::
+    Since March 2021, ZOO-Project's source code is under GitHub control
+    (https://github.com/ZOO-Project).  In the past, ZOO-Project has also used
+    Subversion for version control.
+
+Election to Git Commit Access
 -----------------------------
 
-Permission for SVN commit access shall be provided to new developers only if accepted by the :ref:`zoo_psc`. A proposal should be written to the PSC for new committers and voted.
+Permission for git commit access shall be provided to new developers only if accepted by the :ref:`zoo_psc`. A proposal should be written to the PSC for new committers and voted.
 
-Removal of SVN commit access should be handled by the same process.
+Removal of git commit access should be handled by the same process.
 
 The new committer should have demonstrated commitment to ZOO-Project and knowledge of the ZOO-Project source code and processes to the committee's satisfaction, usually by reporting bugs, submitting patches, and/or actively participating in the ZOO-Project mailing list(s).
 
@@ -23,34 +28,35 @@ New commiters are responsible for having read, and understood this document.
 Committer Tracking
 ------------------
 
-A list of all project committers will be kept in the main zoo-project directory (called `COMMITTERS <http://zoo-project.org/trac/browser/trunk/zoo-project/COMMITTERS>`__) listing for each SVN committer:
+A list of all project committers will be kept in the main zoo-project directory (called `COMMITTERS <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/COMMITTERS>`__) listing for each committer:
 
-    * Userid: the id that will appear in the SVN logs for this person.
+    * Userid: the id that will appear in the git logs for this person.
     * Full name: the users actual name.
     * Email address: A current email address at which the committer can be reached. It may be altered in normal ways to make it harder to auto-harvest.
 
 
-SVN Administrator
+
+Git Administrators
 -----------------
 
-One member of the Project Steering Committee will be designed the SVN Administrator. That person will be responsible for giving SVN commit access to folks, updating the COMMITTERS file, and other SVN related management. That person will need login access on the SVN server of course.
+One member of the Project Steering Committee will be designed the Git Administrator. That person will be responsible for giving git commit access to folks, updating the COMMITTERS file, and other git related management. That person will need a user account to access GitHub of course.
 
 
-SVN Commit Practices
+Git Commit Practices
 --------------------
 
-The following are considered good SVN commit practices for the ZOO-Project project.
+The following are considered good git commit practices for the ZOO-Project project.
 
    * Use meaningful descriptions for SVN commit log entries.
-   * Add a bug reference like "(#1234)" at the end of SVN commit log entries when committing changes related to a ticket in Trac. The '#' character enables Trac to create a hyperlink from the changeset to the mentionned ticket.
-   * After commiting changes related to a ticket in Trac, write the tree and revision in which it was fixed in the ticket description. Such as "Fixed in trunk (r12345) and in branches/1.7 (r12346)". The 'r' character enables Trac to create a hyperlink from the ticket to the changeset.
+   * Add an issue reference like "(#1234)" at the end of git commit log entries when committing changes related to an issue. The '#' character enables GitHub to create a hyperlink from the changeset to the mentionned ticket.
+   * After commiting changes related to an issue, write the tree and revision in which it was fixed in the issue description. Such as "Fixed in master (ZOO-Project@o0o00o0o) and in branches/1.7 (ZOO-Project@o0o00o0o)". The 'ZOO-Project@' prefix enables GitHub to create a hyperlink from the issue to the corresponding commit (using the 8 first letters of the commit sha hash, 'o0o00o0o' in the example).
    * Changes should not be committed in stable branches without a corresponding bug id. Any change worth pushing into the stable version is worth a bug entry.
    * Never commit new features to a stable branch without permission of the PSC or release manager. Normally only fixes should go into stable branches.
-   * New features go in the main development trunk.
+   * New features go in the main development main branch.
    * Only bug fixes should be committed to the code during pre-release code freeze, without permission from the PSC or release manager. 
-   * Significant changes to the main development version should be discussed on the zoo-discuss list before you make them, and larger changes will require a to be discussed and approved on zoo-psc list by the PSC.
+   * Significant changes to the main development version should be discussed on the zoo-discuss list before you make them, and larger changes will require to be discussed and approved on zoo-psc list by the PSC.
    * Do not create new branches without the approval of the PSC. Release managers are assumed to have permission to create a branch.
-   * All source code in SVN should be in Unix text format as opposed to DOS text mode.
+   * All source code in git should be in Unix text format as opposed to DOS text mode.
    * When committing new features or significant changes to existing source code, the committer should take reasonable measures to insure that the source code continues to build and work on the most commonly supported platforms (currently Linux and Windows), either by testing on those platforms directly, running Buildbot tests, or by getting help from other developers working on those platforms. If new files or library dependencies are added, then the configure.in, Makefile.in, Makefile.vc and related documentations should be kept up to date. 
 
 Legal

@@ -43,11 +43,11 @@ Install the geographic library as follow:
 Installation
 ------------
 
-:ref:`install-download` ZOO-Project latest version from svn using the following command:
+:ref:`install-download` ZOO-Project latest version from git using the following command:
 
 .. code-block:: guess
 
-  svn checkout http://svn.zoo-project.org/svn/trunk zoo-project
+  git clone https://github.com/ZOO-Project/ZOO-Project.git zoo-project
 
 Install the *cgic* library from packages using the following command:
 
