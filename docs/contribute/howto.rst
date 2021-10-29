@@ -8,6 +8,11 @@ Community
 
 Anybody is welcome to share and contribute ideas, code, documentation or any relevant resource. This should be done according to the directives stated in the ZOO-Project :ref:`contribute_index`.
 
+Code of Conduct 
+......................................
+
+Contributors to this project are expected to act respectfully toward others in accordance with the `OSGeo Code of Conduct <http://www.osgeo.org/code_of_conduct>`__.
+
 Governance
 ......................................
 
