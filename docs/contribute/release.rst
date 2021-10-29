@@ -11,10 +11,10 @@ rules:
   vote for accepting both the manager and the release procedure to
   happen.
 * If not already created, create  a wiki page (like this `one
-  <http://zoo-project.org/trac/wiki/Release/1.3.0/Notes>`_ using this
-  scheme: Release/M.m.r/Notes), summarizing changes from the previous
+  <https://github.com/ZOO-Project/ZOO-Project/wiki/Release:-1.8.0:-Notes>`_ using this
+  scheme: Release:-M.m.r:-Notes), summarizing changes from the previous
   release (extracted from the `revision log
-  <http://zoo-project.org/trac/browser/trunk/zoo-project/HISTORY.txt>`_).
+  <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/HISTORY.txt>`_).
 * That file should include new features, changed features, and
   deprecated features if any. Changes to the official documentation
   should be specifically noted along with other items that will cause
