@@ -36,7 +36,7 @@ following command:
 
 ::
 
-  svn checkout http://svn.zoo-project.org/svn/trunk/zoo-project/zoo-api
+  git clone https://github.com/ZOO-Project/ZOO-Project.git
 
 
 
