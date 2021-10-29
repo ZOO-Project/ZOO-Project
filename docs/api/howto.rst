@@ -25,8 +25,8 @@ ZOO-API relies on the following software:
 Download
 -----------------------
 
-    * `zoo-api.js <http://zoo-project.org/trac/export/1/trunk/zoo-api/js/ZOO-api.js>`__
-    * `zoo-proj4js.js <http://zoo-project.org/trac/export/1/trunk/zoo-api/js/ZOO-proj4js.js>`__
+    * `zoo-api.js <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-api/js/ZOO-api.js>`__
+    * `zoo-proj4js.js <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-api/js/ZOO-proj4js.js>`__
 
 
       
