@@ -47,15 +47,15 @@ extern "C" {
   /**
    * Names of field to output in the status object
    */
-  static const char* statusFields[5]={
-    "processID","created","started","finished","updated"
+  static const char* statusFields[6]={
+    "type", "processID","created","started","finished","updated"
   };
 
   /**
    * Coreresponding names of field from the data table to fetch informations
    */
-  static const char* statusFieldsC[5]={
-    "processid","creation_time","start_time","end_time","updated_time"
+  static const char* statusFieldsC[6]={
+    "itype", "processid","creation_time","start_time","end_time","updated_time"
   };
 
   /**

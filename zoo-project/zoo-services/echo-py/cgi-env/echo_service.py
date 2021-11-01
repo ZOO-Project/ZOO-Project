@@ -24,16 +24,36 @@ def echo(conf,inputs,outputs):
             else:
                 path=conf["main"]["tmpPath"]+"/result-"+conf["lenv"]["usid"]+".xml"
                 out_ds  = ogr.GetDriverByName("GML").CopyDataSource(ds, conf["main"]["tmpPath"]+"/result-"+conf["lenv"]["usid"]+".xml")
-        #outputs["b"]["value"]=open(path,"r",encoding="utf-8").read()
+        else:
+            try:
+                import json
+                lobj=json.loads(inputs["b"]["value"])
+                path=conf["main"]["tmpPath"]+"/result-"+conf["lenv"]["usid"]+".json"
+                f = open(path, "w+")
+                json.dump(lobj,f)
+                outputs["b"]["mimeType"]="application/json"
+            except Exception as e:
+                print("*******",file=sys.stderr)
+                print(e,file=sys.stderr)
+                print("*******",file=sys.stderr)
+                path=conf["main"]["tmpPath"]+"/result-"+conf["lenv"]["usid"]+".xml"
+                f = open(path, "w+")
+                f.write(inputs["b"]["value"])
+                f.close()
+                outputs["b"]["mimeType"]="text/xml"
         outputs["b"]["generated_file"]=path
-        #print(outputs["b"]["value"][:10],file=sys.stderr)
-        if "dataType" in inputs["b"]:
-            outputs["b"]["dataType"]=inputs["b"]["dataType"]
     else:
         outputs["b"]["value"]="Empty"
     if "c" in inputs:
         outputs["c"]["value"]=inputs["c"]["value"]
     else:
         outputs["c"]["value"]="Empty"
-    print(inputs["c"],file=sys.stderr)
+    if "pause" in inputs:
+        import time
+        nb_sleep=inputs["pause"]["value"]
+        for i in range(4):
+            conf["lenv"]["message"]="Sleeping for "+inputs["pause"]["value"]+" seconds ("+str(i)+"/4)"
+            zoo.update_status(conf,25*(i+1))
+            time.sleep((float(inputs["pause"]["value"])*25)/100)
     return zoo.SERVICE_SUCCEEDED
+

@@ -47,6 +47,17 @@
       CRS = urn:ogc:def:crs:EPSG:6.6:3785
      </Supported>
    </BoundingBoxData>
+  [pause]
+   Title = Literal Input (double)
+   Abstract = An optional input which can be used to specify the number of seconds to pause the service before returning
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 10.0
+    </Default>
+   </LiteralData>
  </DataInputs>
  <DataOutputs>
   [a]

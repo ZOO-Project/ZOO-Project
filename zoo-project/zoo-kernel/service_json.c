@@ -269,7 +269,15 @@ extern "C" {
 	if(strncasecmp(tmpMap1->value,"float",5)==0)
 	  json_object_object_add(schema,"type",json_object_new_string("number"));
 	else
-	  json_object_object_add(schema,"type",json_object_new_string(tmpMap1->value));
+	  if(strncasecmp(tmpMap1->value,"bool",5)==0)
+	    json_object_object_add(schema,"type",json_object_new_string("boolean"));
+	  else
+	    if(strstr(tmpMap1->value,"date")!=NULL){
+	      json_object_object_add(schema,"type",json_object_new_string("string"));
+	      json_object_object_add(schema,"format",json_object_new_string(tmpMap1->value));
+	    }
+	    else
+	      json_object_object_add(schema,"type",json_object_new_string(tmpMap1->value));
       }
       printLiteralValueJ(m,tmpMap1,in->defaults->content,schema,"default");
       json_object* prop3=json_object_new_object();
@@ -2122,7 +2130,7 @@ extern "C" {
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     if(sessId!=NULL && isDismissed==0){
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
-      for(int i=0;i<5;i++){
+      for(int i=0;i<6;i++){
 	char* pcaTmp=_getStatusField(conf,sessId->value,statusFieldsC[i]);
 	if(pcaTmp!=NULL && strcmp(pcaTmp,"-1")!=0){
 	  json_object_object_add(res,statusFields[i],json_object_new_string(pcaTmp));

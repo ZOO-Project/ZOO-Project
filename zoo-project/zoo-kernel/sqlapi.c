@@ -490,8 +490,13 @@ char* _getStatusField(maps* conf,char* pid,const char* field){
     sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+99+1)*sizeof(char));
     sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE display_date_rfc3339(%s) END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
   }else{
-    sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+83+1)*sizeof(char));
-    sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+    if(strstr(field,"itype")!=NULL){
+      sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+(2*strlen(field))+strlen(field)+137+1)*sizeof(char));
+      sprintf(sqlQuery,"select CASE WHEN %s is null  THEN 'unknown' ELSE CASE WHEN %s = 'json' THEN 'process' ELSE 'unknown' END END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+    }else{
+      sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+strlen(field)+strlen(field)+83+1)*sizeof(char));
+      sprintf(sqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,schema->value,pid);
+    }
   }
   if( zoo_ds_nb==
 #ifdef META_DB
