@@ -2195,6 +2195,8 @@ runRequest (map ** inputs)
     addMapsToMaps(&m,m1);
     freeMaps(&m1);
     free(m1);
+    // Redirect using HTTP Status 301 (cf. rfc2616) in case full_html_support is
+    // set to true
     map* pmTmp0=getMapFromMaps(m,"openapi","full_html_support");
     if(strstr(pcaCgiQueryString,".html")==NULL && strstr(cgiAccept,"text/html")!=NULL && pmTmp0!=NULL && strncasecmp(pmTmp0->value,"true",4)==0){
       map* pmTmpUrl=getMapFromMaps(m,"openapi","rootUrl");
@@ -2209,7 +2211,7 @@ runRequest (map ** inputs)
       }
       setMapInMaps(m,"headers","Location",pacTmpUrl);
       printHeaders(m);
-      printf("Status: 302 Moved permanently \r\n\r\n");
+      printf("Status: 301 Moved permanently \r\n\r\n");
       fflush(stdout);
       free(pacTmpUrl);
       return 1;
@@ -2858,6 +2860,7 @@ runRequest (map ** inputs)
 	}
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
+	json_object_put(jobj);
 	map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
 	map* mode=getMap(request_inputs,"mode");
 	if((preference!=NULL && strstr(preference->value,"respond-async")!=NULL) ||
@@ -3963,7 +3966,6 @@ runRequest (map ** inputs)
   }
   freeMaps (&m);
   free (m);
-
   freeMaps (&request_input_real_format);
   free (request_input_real_format);
 

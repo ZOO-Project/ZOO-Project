@@ -790,10 +790,18 @@ extern "C" {
       json_object *res3=json_object_new_object();
       map* pmTmp=getMapFromMaps(m,"lenv","requestType");
       if(pmTmp!=NULL && strncasecmp(pmTmp->value,"desc",4)==0){
-	json_object_object_add(res2,"rel",json_object_new_string("process-desc"));
+	//Previous value: "process-desc"
+	map* pmTmp=getMapFromMaps(m,"processes/{processID}","rel");
+	if(pmTmp!=NULL)
+	  json_object_object_add(res2,"rel",json_object_new_string(pmTmp->value));
+	else
+	  json_object_object_add(res2,"rel",json_object_new_string("self"));
       }
       else{
-	json_object_object_add(res2,"rel",json_object_new_string("execute"));
+	//Previous value: "execute"
+	map* pmTmp=getMapFromMaps(m,"processes/{processID}/execution","rel");
+	if(pmTmp!=NULL)
+	  json_object_object_add(res2,"rel",json_object_new_string(pmTmp->value));
       }
       json_object_object_add(res3,"rel",json_object_new_string("alternate"));
       json_object_object_add(res3,"type",json_object_new_string("text/html"));
@@ -1294,6 +1302,12 @@ extern "C" {
 	  cMaps->content=createMap("transmissionMode",json_object_get_string(json_cinput));
 	else
 	  addToMap(cMaps->content,"transmissionMode",json_object_get_string(json_cinput));
+      }else{
+	// Default to transmissionMode value
+	if(cMaps->content==NULL)
+	  cMaps->content=createMap("transmissionMode","value");
+	else
+	  addToMap(cMaps->content,"transmissionMode","value");
       }
       if(json_object_object_get_ex(val,"format",&json_cinput)!=FALSE){
 	json_object_object_foreach(json_cinput, key1, val1) {
@@ -1347,6 +1361,23 @@ extern "C" {
 	  parseJIOSingle(conf,ioElements,ioMaps,ioType,key,val);
 	}
       }
+    }else{
+      // Requirement 27: when no output is specified, the server should consider returning all outputs.
+      // default transmissionMode set to "value"
+      if(strcmp(ioType,"outputs")==0){
+	elements* peTmp=ioElements;
+	while(peTmp!=NULL){
+	  maps* pmsTmp=createMaps(peTmp->name);
+	  pmsTmp->content=createMap("transmissionMode","value");
+	  if(*ioMaps==NULL)
+	    *ioMaps=dupMaps(&pmsTmp);
+	  else
+	    addMapsToMaps(ioMaps,pmsTmp);
+	  freeMaps(&pmsTmp);
+	  free(pmsTmp);
+	  peTmp=peTmp->next;
+	}
+      }
     }
   }
 
@@ -1386,8 +1417,19 @@ extern "C" {
 	}
       }
       if(json_object_object_get_ex(req,"response",&json_io)!=FALSE){
-	addToMap(request_inputs,"response",json_object_get_string(json_io));
+	if(getMap(request_inputs,"response")==NULL)
+	  addToMap(request_inputs,"response",json_object_get_string(json_io));
+	else{
+	  map* pmTmp=getMap(request_inputs,"response");
+	  free(pmTmp->value);
+	  pmTmp->value=zStrdup(json_object_get_string(json_io));
+	}
 	setMapInMaps(conf,"request","response",json_object_get_string(json_io));
+      }else{
+	if(getMap(request_inputs,"response")==NULL){
+	  addToMap(request_inputs,"response","raw");
+	  setMapInMaps(conf,"request","response","raw");
+	}
       }
       json_io=NULL;
       if(json_object_object_get_ex(req,"subscriber",&json_io)!=FALSE){
@@ -1633,13 +1675,13 @@ extern "C" {
 		  if(pfData!=NULL){
 		    zStatStruct f_status;
 		    int s=zStat(gfile->value, &f_status);
-		    char* pcaTmp=(char*)malloc((f_status.st_size+1)*sizeof(char));
-		    fread(pcaTmp,1,f_status.st_size,pfData);
-		    pcaTmp[f_status.st_size]=0;
-		    fclose(pfData);
-		    map* pmMediaType=getMap(resu->content,"mediaType");
-		    if(pmMediaType!=NULL){
-		      if(strstr(pmMediaType->value,"json")!=NULL || strstr(pmMediaType->value,"text")!=NULL || strstr(pmMediaType->value,"kml")!=NULL){
+		    if(f_status.st_size>0){
+		      char* pcaTmp=(char*)malloc((f_status.st_size+1)*sizeof(char));
+		      fread(pcaTmp,1,f_status.st_size,pfData);
+		      pcaTmp[f_status.st_size]=0;
+		      fclose(pfData);
+		      map* pmMediaType=getMap(resu->content,"mediaType");
+		      if(pmMediaType!=NULL && strstr(pmMediaType->value,"json")!=NULL || strstr(pmMediaType->value,"text")!=NULL || strstr(pmMediaType->value,"kml")!=NULL){
 			if(strstr(pmMediaType->value,"json")!=NULL){
 			  json_object* pjoaTmp=parseJson(conf,pcaTmp);
 			  json_object_object_add(res1,"value",pjoaTmp);
@@ -1647,11 +1689,14 @@ extern "C" {
 			else
 			  json_object_object_add(res1,"value",json_object_new_string(pcaTmp));
 		      }
-		    }else{
-		      json_object_object_add(res1,"value",json_object_new_string(base64(pcaTmp,f_status.st_size)));
-		      json_object_object_add(res3,"encoding",json_object_new_string("base64"));
+		      else{
+			char* pcaB64=base64(pcaTmp,f_status.st_size);
+			json_object_object_add(res1,"value",json_object_new_string(pcaB64));
+			json_object_object_add(res3,"encoding",json_object_new_string("base64"));
+			free(pcaB64);
+		      }
+		      free(pcaTmp);
 		    }
-		    free(pcaTmp);
 		  }
 		}else{
 		  json_object_object_add(res3,"encoding",json_object_new_string("utf-8"));

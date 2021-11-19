@@ -697,9 +697,9 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
 	return -1;
       fsize=f_status.st_size;
       if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
-	fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
 	FILE* f=fopen(cached,"rb");
 	if(f!=NULL){
+	  fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
 	  fread(fcontent,f_status.st_size,1,f);
 	  fcontent[fsize]=0;
 	  fclose(f);
@@ -793,5 +793,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     free(mimeType);
   if(cached!=NULL)
     free(cached);
+  if(origin!=NULL)
+    free(origin);
+
   return 0;
 }

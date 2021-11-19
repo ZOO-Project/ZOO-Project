@@ -31,9 +31,9 @@ ARG RUN_DEPS=" \
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
-    && add-apt-repository ppa:osgeolive/nightly \
-    && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-    #&& add-apt-repository ppa:ubuntugis/ppa \
+    #&& add-apt-repository ppa:osgeolive/nightly \
+    #&& add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
+    && add-apt-repository ppa:ubuntugis/ppa \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
     && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' \
     \
@@ -106,7 +106,7 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=7.0 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
