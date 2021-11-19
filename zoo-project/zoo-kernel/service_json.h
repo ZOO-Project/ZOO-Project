@@ -146,6 +146,7 @@ extern "C" {
   char* getResultPath(maps*,char*);
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
+  void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);
 #ifdef __cplusplus
 }

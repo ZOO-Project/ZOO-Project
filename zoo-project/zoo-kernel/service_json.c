@@ -1680,21 +1680,7 @@ extern "C" {
 		      fread(pcaTmp,1,f_status.st_size,pfData);
 		      pcaTmp[f_status.st_size]=0;
 		      fclose(pfData);
-		      map* pmMediaType=getMap(resu->content,"mediaType");
-		      if(pmMediaType!=NULL && strstr(pmMediaType->value,"json")!=NULL || strstr(pmMediaType->value,"text")!=NULL || strstr(pmMediaType->value,"kml")!=NULL){
-			if(strstr(pmMediaType->value,"json")!=NULL){
-			  json_object* pjoaTmp=parseJson(conf,pcaTmp);
-			  json_object_object_add(res1,"value",pjoaTmp);
-			}
-			else
-			  json_object_object_add(res1,"value",json_object_new_string(pcaTmp));
-		      }
-		      else{
-			char* pcaB64=base64(pcaTmp,f_status.st_size);
-			json_object_object_add(res1,"value",json_object_new_string(pcaB64));
-			json_object_object_add(res3,"encoding",json_object_new_string("base64"));
-			free(pcaB64);
-		      }
+		      outputSingleJsonComplexRes(conf,resu,res1,res3,pcaTmp,f_status.st_size);
 		      free(pcaTmp);
 		    }
 		  }
@@ -1738,24 +1724,39 @@ extern "C" {
 		    json_object_object_add(res1,"bbox",jobj);
 		    json_object_object_add(res1,"crs",json_object_new_string(tmpMap0->value));
 		  }
-		  else
-		    json_object_object_add(res1,"value",json_object_new_string(tmpMap->value));
+		  else{
+		    if(getMap(resu->content,"mimeType")!=NULL){
+		      map* pmSize=getMap(resu->content,"size");
+		      long len=0;
+		      if(pmSize!=NULL)
+			len=atol(pmSize->value);
+		      else
+			len=strlen(tmpMap->value);
+		      outputSingleJsonComplexRes(conf,resu,res1,res3,tmpMap->value,len);
+		    }
+		    else
+		      json_object_object_add(res1,"value",json_object_new_string(tmpMap->value));
+		  }
 		}
-		map* tmpMap0=getMap(resu->content,"crs");
-		if(tmpMap0==NULL){
-		  json_object_object_foreach(res3, key, val) {
-		    if(strncasecmp(key,pccFields[0],4)==0 ||
-		       strncasecmp(key,pccFields[3],8)==0 ||
-		       strncasecmp(key,pccFields[6],15)==0)
-		      json_object_object_add(res1,pccFields[3],json_object_new_string(json_object_get_string(val)));
-		    if(strncasecmp(key,pccFields[1],4)==0 ||
-		       strncasecmp(key,pccFields[4],8)==0 ||
-		       strncasecmp(key,pccFields[7],15)==0)
-		      json_object_object_add(res1,pccFields[4],json_object_new_string(json_object_get_string(val)));
-		    if(strncasecmp(key,pccFields[2],4)==0 ||
-		       strncasecmp(key,pccFields[5],8)==0 ||
-		       strncasecmp(key,pccFields[8],15)==0)
-		      json_object_object_add(res1,pccFields[5],json_object_new_string(json_object_get_string(val)));
+		if(getMapFromMaps(conf,"oas","noformat")!=NULL){
+		  // This is an option to not use the format key and allocate
+		  // a the format object keys to the result itself
+		  map* tmpMap0=getMap(resu->content,"crs");
+		  if(tmpMap0==NULL){
+		    json_object_object_foreach(res3, key, val) {
+		      if(strncasecmp(key,pccFields[0],4)==0 ||
+			 strncasecmp(key,pccFields[3],8)==0 ||
+			 strncasecmp(key,pccFields[6],15)==0)
+			json_object_object_add(res1,pccFields[3],json_object_new_string(json_object_get_string(val)));
+		      if(strncasecmp(key,pccFields[1],4)==0 ||
+			 strncasecmp(key,pccFields[4],8)==0 ||
+			 strncasecmp(key,pccFields[7],15)==0)
+			json_object_object_add(res1,pccFields[4],json_object_new_string(json_object_get_string(val)));
+		      if(strncasecmp(key,pccFields[2],4)==0 ||
+			 strncasecmp(key,pccFields[5],8)==0 ||
+			 strncasecmp(key,pccFields[8],15)==0)
+			json_object_object_add(res1,pccFields[5],json_object_new_string(json_object_get_string(val)));
+		    }
 		  }
 		}
 	      }
@@ -1789,16 +1790,25 @@ extern "C" {
 					 json_object_new_string(pcaFileUrl));
 		  free(pcaFileUrl);
 		}
-		json_object_object_foreach(res3, key, val) {
-		  if(strncasecmp(key,pccFields[0],4)==0 ||
-		     strncasecmp(key,pccFields[3],8)==0 ||
-		     strncasecmp(key,pccFields[6],15)==0)
-		    json_object_object_add(res1,pccFields[0],json_object_new_string(json_object_get_string(val)));
+		if(getMapFromMaps(conf,"oas","noformat")!=NULL){
+		  json_object_object_foreach(res3, key, val) {
+		    if(strncasecmp(key,pccFields[0],4)==0 ||
+		       strncasecmp(key,pccFields[3],8)==0 ||
+		       strncasecmp(key,pccFields[6],15)==0)
+		      json_object_object_add(res1,pccFields[0],json_object_new_string(json_object_get_string(val)));
+		  }
 		}
 	      }
 	    }
 	  }
-	  json_object_put(res3);
+	  // Add format to res1 for complex output except json based ones
+	  map* pmTmp1=getMap(resu->content,"mimeType");
+	  if(pmTmp1!=NULL && getMapFromMaps(conf,"oas","noformat")==NULL){
+	    if(pmTmp1!=NULL && strstr(pmTmp1->value,"json")==NULL)
+	      json_object_object_add(res1,"format",res3);
+	  }
+	  else
+	    json_object_put(res3);
 	  if(pmIOAsArray!=NULL && strncasecmp(pmIOAsArray->value,"true",4)==0){
 	    json_object_array_add(eres,res1);
 	  }else{
@@ -1847,6 +1857,39 @@ extern "C" {
     }
   }
 
+  /**
+   * Append required field to Json objects for a complex output
+   * 
+   * @param conf maps pointer to the main configuration maps
+   * @param resu maps pointer to the output
+   * @param res1 json_object pointer to which the value field should be added
+   * @param res3 json_object pointer to the format object associated with res1
+   * @param pacValue char pointer to the value to be allocated
+   * @param len length of pacValue
+   */
+  void outputSingleJsonComplexRes(maps* conf,maps* resu,json_object* res1,json_object* res3,char* apcValue, long len){
+    map* pmMediaType=getMap(resu->content,"mediaType");
+    if(pmMediaType==NULL)
+      pmMediaType=getMap(resu->content,"mimeType");
+    if(pmMediaType!=NULL &&
+       (strstr(pmMediaType->value,"json")!=NULL || strstr(pmMediaType->value,"text")!=NULL || strstr(pmMediaType->value,"kml")!=NULL)){
+      if(strstr(pmMediaType->value,"json")!=NULL){
+	json_object* pjoaTmp=parseJson(conf,apcValue);
+	json_object_object_add(res1,"value",pjoaTmp);
+      }
+      else
+	json_object_object_add(res1,"value",json_object_new_string(apcValue));
+      json_object_object_add(res3,"mediaType",json_object_new_string(pmMediaType->value));
+    }
+    else{
+      char* pcaB64=base64(apcValue,len);
+      json_object_object_add(res1,"value",json_object_new_string(pcaB64));
+      json_object_object_add(res3,"encoding",json_object_new_string("base64"));
+      if(pmMediaType!=NULL)
+	json_object_object_add(res3,"mediaType",json_object_new_string(pmMediaType->value));
+      free(pcaB64);
+    }
+  }
 
   /**
    * Create a link object with ref, type and href.
