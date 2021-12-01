@@ -30,7 +30,7 @@ following command:
 
 ::
 
-  svn checkout http://svn.zoo-project.org/svn/trunk/zoo-project/zoo-client
+  svn checkout https://github.com/ZOO-Project/ZOO-Project/trunk/zoo-project/zoo-client
 
 
 .. warning::
@@ -84,6 +84,6 @@ your working directory.
 .. note:: 
     Building the ZOO-Client API documentation is optional, please
     refer to `the up-to-date ZOO-Client API Documentation
-    <http://www.zoo-project.org/jsDoc/index.html>`__ for the current
+    <https://zoo-project.github.io/docs/JS_API/index.html>`__ for the current
     API version. 
 
