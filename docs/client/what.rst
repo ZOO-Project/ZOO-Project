@@ -24,7 +24,7 @@ output XML responses. Read the :ref:`next section <client-howto>` to
 get started.
 
 Please, refer to the `ZOO-Client API documentation
-<http://www.zoo-project.org/jsDoc/index.html>`__ for accessing the
+<https://zoo-project.github.io/docs/JS_API/index.html>`__ for accessing the
 up-to-date documentation.
 
 
@@ -34,7 +34,7 @@ Templates
 ZOO-Client uses logic-less `Mustache <http://mustache.github.io/>`__
 templates for creating well-formed WPS requests. Please, refer to the
 `ZOO-Client API documentation
-<http://www.zoo-project.org/jsDoc//module-wpsPayload.html>`__ for more
+<https://zoo-project.github.io/docs/JS_API/module-wpsPayload.html>`__ for more
 details about the functions using the templates. 
 
 
