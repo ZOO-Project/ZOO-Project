@@ -1,13 +1,13 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# ZOO-Kernel Internationalization.
+# Copyright (C) 2015-2021 GeoLabs SARL
+# This file is distributed under the same license as the ZOO-Kernel package.
+# Gerald Fenoy <gerald.fenoy@geolabs.fr>, 2015
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
+"Project-Id-Version: ZOO-Kernel 1.8.1\n"
+"Report-Msgid-Bugs-To: zoo-discuss@lists.osgeo.org\n"
 "POT-Creation-Date: 2020-08-14 13:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
