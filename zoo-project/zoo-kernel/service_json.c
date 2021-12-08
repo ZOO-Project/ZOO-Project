@@ -50,14 +50,22 @@ extern "C" {
     map* length=getMap(myMap,"length");
     while(cursor!=NULL){
       json_object *val=NULL;
-      if(length==NULL && sizeMap==NULL)
-	val=json_object_new_string(cursor->value);
+      if(length==NULL && sizeMap==NULL){
+	if(strstr(cursor->name,"title")!=NULL)
+	  val=json_object_new_string(_(cursor->value));
+	else
+	  val=json_object_new_string(cursor->value);
+      }
       else{
 	if(length==NULL && sizeMap!=NULL){
 	  if(strncasecmp(cursor->name,"value",5)==0)
 	    val=json_object_new_string_len(cursor->value,atoi(sizeMap->value));
-	  else
-	    val=json_object_new_string(cursor->value);
+	  else{
+	    if(strstr(cursor->name,"title")!=NULL)
+	      val=json_object_new_string(_(cursor->value));
+	    else
+	      val=json_object_new_string(cursor->value);
+	  }
 	}
 	else{
 	  // In other case we should consider array with potential sizes
@@ -69,7 +77,10 @@ extern "C" {
 	    if(lsizeMap!=NULL && strncasecmp(cursor->name,"value",5)==0){
 	      json_object_array_add(val,json_object_new_string_len(cursor->value,atoi(sizeMap->value)));
 	    }else{
-	      json_object_array_add(val,json_object_new_string(cursor->value));
+	      if(strstr(cursor->name,"title")!=NULL)
+		json_object_array_add(val,json_object_new_string(_(cursor->value)));
+	      else
+		json_object_array_add(val,json_object_new_string(cursor->value));
 	    }
 	  }
 	}
@@ -542,7 +553,10 @@ extern "C" {
 	 strcasecmp(cmeta->name,"title")!=0 &&
 	 strcasecmp(cmeta->name,"length")!=0 ){
 	json_object_object_add(jcmeta,"name",json_object_new_string(cmeta->name));
-	json_object_object_add(jcmeta,"value",json_object_new_string(cmeta->value));
+	if(strcasecmp(cmeta->name,"title")!=0)
+	  json_object_object_add(jcmeta,"value",json_object_new_string(_(cmeta->value)));
+	else
+	  json_object_object_add(jcmeta,"value",json_object_new_string(cmeta->value));
 	json_object_array_add(carr,jcmeta);
 	hasElement++;
       }else{
@@ -572,7 +586,10 @@ extern "C" {
       if(strcasecmp(cmeta->name,"role")==0 ||
 	 strcasecmp(cmeta->name,"href")==0 ||
 	 strcasecmp(cmeta->name,"title")==0 ){
-	json_object_object_add(jcmeta,cmeta->name,json_object_new_string(cmeta->value));
+	if(strcasecmp(cmeta->name,"title")==0)
+	  json_object_object_add(jcmeta,cmeta->name,json_object_new_string(_(cmeta->value)));
+	else
+	  json_object_object_add(jcmeta,cmeta->name,json_object_new_string(cmeta->value));
 	hasElement++;
       }
       json_object_array_add(carr,jcmeta);
@@ -601,10 +618,10 @@ extern "C" {
 	pmMax=getMap(in->content,"maxOccurs");
       }
       if(tmpMap!=NULL)
-	json_object_object_add(input,"title",json_object_new_string(tmpMap->value));
+	json_object_object_add(input,"title",json_object_new_string(_ss(tmpMap->value)));
       tmpMap=getMap(in->content,"abstract");
       if(tmpMap!=NULL)
-	json_object_object_add(input,"description",json_object_new_string(tmpMap->value));
+	json_object_object_add(input,"description",json_object_new_string(_ss(tmpMap->value)));
       if(strcmp(io,"input")==0){
 	if(pmMin!=NULL && strcmp(pmMin->value,"1")!=0 && strcmp(pmMin->value,"0")!=0)
 	  json_object_object_add(input,"minOccurs",json_object_new_int(atoi(pmMin->value)));
@@ -752,11 +769,11 @@ extern "C" {
     if(serv->content!=NULL){
       map* tmpMap=getMap(serv->content,"title");
       if(tmpMap!=NULL){
-	json_object_object_add(res,"title",json_object_new_string(tmpMap->value));
+	json_object_object_add(res,"title",json_object_new_string(_ss(tmpMap->value)));
       }
       tmpMap=getMap(serv->content,"abstract");
       if(tmpMap!=NULL){
-	json_object_object_add(res,"description",json_object_new_string(tmpMap->value));
+	json_object_object_add(res,"description",json_object_new_string(_ss(tmpMap->value)));
       }
       tmpMap=getMap(serv->content,"processVersion");
       if(tmpMap!=NULL){
@@ -863,7 +880,7 @@ extern "C" {
     json_object *res=json_object_new_object();
     map* pmTmp=getMap(s,"code");
     if(pmTmp!=NULL){
-      json_object_object_add(res,"title",json_object_new_string(pmTmp->value));
+      json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       for(i=0;i<4;i++){
 	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
@@ -908,25 +925,6 @@ extern "C" {
     map* pmTmp=getMap(s,"code");
     exceptionCode=produceStatusString(m,pmTmp);    
 
-    /*const char *exceptionCode;
-    
-    exceptionCode=produceStatusString(m,tmp);    
-    if(tmp!=NULL){
-      json_object_object_add(res,"title",json_object_new_string(tmp->value));
-      int i=0;
-      for(i=0;i<3;i++){
-	if(strcasecmp(tmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
-	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
-	  char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
-	  sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
-	  json_object_object_add(res,"type",json_object_new_string(pcaTmp));
-	  free(pcaTmp);
-	}
-      }
-    }
-    else{
-      json_object_object_add(res,"title",json_object_new_string("NoApplicableCode"));
-      }*/
     if(getMapFromMaps(m,"lenv","no-headers")==NULL)
       printHeaders(m);
 
@@ -948,13 +946,6 @@ extern "C" {
 	printf("Status: %s\r\n\r\n",exceptionCode);
       }
     }
-    /*tmp=getMap(s,"text");
-    if(tmp==NULL)
-      tmp=getMap(s,"message");
-    if(tmp==NULL)
-      tmp=getMapFromMaps(m,"lenv","message");
-    if(tmp!=NULL)
-    json_object_object_add(res,"detail",json_object_new_string(tmp->value));*/
     
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
     if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
@@ -2336,14 +2327,14 @@ extern "C" {
     }
     tmpMap=getMapFromMaps(conf,"identification","abstract");
     if(tmpMap!=NULL){
-      json_object_object_add(res1,"description",json_object_new_string(tmpMap->value));
-      json_object_object_add(res5,"description",json_object_new_string(tmpMap->value));
+      json_object_object_add(res1,"description",json_object_new_string(_(tmpMap->value)));
+      json_object_object_add(res5,"description",json_object_new_string(_(tmpMap->value)));
       tmpMap=getMapFromMaps(conf,"openapi","rootUrl");
       json_object_object_add(res5,"url",json_object_new_string(tmpMap->value));
     }
     tmpMap=getMapFromMaps(conf,"identification","title");
     if(tmpMap!=NULL)
-      json_object_object_add(res1,"title",json_object_new_string(tmpMap->value));
+      json_object_object_add(res1,"title",json_object_new_string(_(tmpMap->value)));
     json_object_object_add(res1,"version",json_object_new_string(ZOO_VERSION));
     tmpMap=getMapFromMaps(conf,"identification","keywords");
     if(tmpMap!=NULL){
@@ -2411,7 +2402,7 @@ extern "C" {
     if(tmpMaps1!=NULL){
       map* tmpMap=getMap(tmpMaps1->content,"title");
       if(tmpMap!=NULL)
-	json_object_object_add(res8,"x-internal-summary",json_object_new_string(tmpMap->value));
+	json_object_object_add(res8,"x-internal-summary",json_object_new_string(_(tmpMap->value)));
       tmpMap=getMap(tmpMaps1->content,"schema");
       if(tmpMap!=NULL){
 	json_object_object_add(res8,"$ref",json_object_new_string(tmpMap->value));
@@ -2419,7 +2410,7 @@ extern "C" {
       }
       tmpMap=getMap(tmpMaps1->content,"abstract");
       if(tmpMap!=NULL)
-	json_object_object_add(res8,"description",json_object_new_string(tmpMap->value));
+	json_object_object_add(res8,"description",json_object_new_string(_(tmpMap->value)));
       tmpMap=getMap(tmpMaps1->content,"example");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"example",json_object_new_string(tmpMap->value));
@@ -2611,10 +2602,10 @@ extern "C" {
 	    map* cMap=getMapArray(tmpMaps->content,"method",i);
 	    map* vMap=getMapArray(tmpMaps->content,"title",i);
 	    if(vMap!=NULL)
-	      json_object_object_add(methodc,"summary",json_object_new_string(vMap->value));
+	      json_object_object_add(methodc,"summary",json_object_new_string(_(vMap->value)));
 	    vMap=getMapArray(tmpMaps->content,"abstract",i);
 	    if(vMap!=NULL)
-	      json_object_object_add(methodc,"description",json_object_new_string(vMap->value));
+	      json_object_object_add(methodc,"description",json_object_new_string(_(vMap->value)));
 	    vMap=getMapArray(tmpMaps->content,"tags",i);
 	    if(vMap!=NULL){
 	      json_object *cc=json_object_new_array();
@@ -2784,8 +2775,8 @@ extern "C" {
 		  json_object *pajDescription=json_object_new_object();
 		  json_object *pajPost=json_object_new_object();
 		  if(pmTitle!=NULL){
-		    json_object_object_add(pajDescription,"description",json_object_new_string(pmTitle->value));
-		    json_object_object_add(pajPost,"summary",json_object_new_string(pmTitle->value));
+		    json_object_object_add(pajDescription,"description",json_object_new_string(_(pmTitle->value)));
+		    json_object_object_add(pajPost,"summary",json_object_new_string(_(pmTitle->value)));
 		  }
 		  json_object *pajResponse=json_object_new_object();
 		  json_object_object_add(pajResponse,"200",pajDescription);

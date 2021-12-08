@@ -75,7 +75,7 @@ $e
 	      itemtype="https://schema.org/ListItem">
 	      <a itemprop="item" class="nav-link"
 	        href="$openapi["openapi"]["rootUrl"]/index.html">
-	        <span itemprop="name">Home #if $currentKey=="root"# <span class="sr-only">(current)</span>#end if#</span>
+	        <span itemprop="name">$zoo._("Home") #if $currentKey=="root"# <span class="sr-only">(current)</span>#end if#</span>
 	        <meta itemprop="position" content="1" />
 	      </a>
 	    </li>
@@ -115,16 +115,16 @@ $e
 
 #def printRel($o,$v)
 #if $v in $o
-$o[$v]
+$zoo._($o[$v])
 #else
 #if $v.count("http")>0
 #set ov=$v.split("/")
 #set ov1=$ov[len(ov)-1]
 #if $ov1 in $o
-$o[$ov1]
+$zoo._($o[$ov1])
 #end if
 #else
-View default (no title found for $v).
+$zoo._("View default (no title found for ")$v).
 #end if
 #end if
 #end def
@@ -287,7 +287,7 @@ View default (no title found for $v).
 #set provider=$conf["provider"]
 #set alt=$openapi["provider_alt"]
 #set elements=list($alt.keys())
-      <b>Address</b>
+      <b>$zoo._("Address")</b>
       #for i in ["addressDeliveryPoint","addressCity","addressAdministrativeArea","addressPostalCode","addressCountry","addressElectronicMailAddress","phoneVoice","phoneFacsimile"]
       #if i!="addressElectronicMailAddress" and $provider[$i]!="False"
       <p itemprop="$(alt[$i.lower()])">
@@ -311,8 +311,8 @@ View default (no title found for $v).
 #end def      
 #def printIndentification(conf)
 #set provider=$conf["provider"]
-$printCard({"id": "provider","title": "Provider","content": $printProvider($conf),"class": "show"})
-$printCard({"id": "contact","title": "Contact","content": $printContact($conf),"class": "show","attrs":'itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"'})
+$printCard({"id": "provider","title": $zoo._("Provider"),"content": $printProvider($conf),"class": "show"})
+$printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact($conf),"class": "show","attrs":'itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"'})
 #end def
       
 #if $currentKey=="root"
@@ -585,7 +585,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 
       <div class="microlight">$json.dumps(values)</div>
       <a class="btn btn-primary" data-toggle="collapse" href="#collapseJson" role="button" aria-expanded="false" aria-controls="collapseJson">
-        Display original data as JSON
+        $zoo._("Display original data as JSON")
       </a>
 
       <textarea id="collapseJson" class="form-control collapse show" ></textarea>
@@ -633,7 +633,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Wed Dec  8 01:24:49 CET 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Wed Dec  8 19:33:30 CET 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
@@ -650,7 +650,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
     <footer class="footer" itemscope itemtype="https://schema.org/SoftwareApplication">
       <div class="container-fluid">
 	<span class="text-muted">
-	  Powered by
+	  $zoo._("Powered by")
 	  <a target="_blank" itemprop="url"
 	    href="http://www.zoo-project.org/"><span itemprop="name">ZOO-Project</span></a>
 	  <span itemprop="version">$zoo.VERSION</span>.
@@ -672,7 +672,7 @@ $printCard({"id": "contact","title": "Contact","content": $printContact($conf),"
 
         <!-- Modal Header -->
         <div class="modal-header">
-          <h4 class="modal-title">Message</h4>
+          <h4 class="modal-title">$zoo._("Message")</h4>
           <button type="button" class="close" data-dismiss="modal">&times;</button>
         </div>
 

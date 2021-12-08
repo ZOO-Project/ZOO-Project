@@ -2303,7 +2303,7 @@ runRequest (map ** inputs)
 	    json_object *res3;
 	    res3=mapToJson(tmpMaps->content);
 	    if(getMap(tmpMaps->content,"title")==NULL && pacTitle!=NULL){
-	      json_object_object_add(res3,"title",json_object_new_string(pacTitle));
+	      json_object_object_add(res3,"title",json_object_new_string(_(pacTitle)));
 	    }
 	    char* tmpStr=NULL;
 	    if(strncasecmp(pacTmp,"/.html",6)==0){
@@ -2327,10 +2327,10 @@ runRequest (map ** inputs)
       
       map* pmTmp=getMapFromMaps(m,"identification","title");
       if(pmTmp!=NULL)
-	json_object_object_add(res,"title",json_object_new_string(pmTmp->value));
+	json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       pmTmp=getMapFromMaps(m,"identification","abstract");
       if(pmTmp!=NULL)
-	json_object_object_add(res,"description",json_object_new_string(pmTmp->value));
+	json_object_object_add(res,"description",json_object_new_string(_(pmTmp->value)));
       json_object_object_add(res,"links",res1);
     }else if(strcmp(pcaCgiQueryString,"/conformance")==0){
       /* - /conformance url */
