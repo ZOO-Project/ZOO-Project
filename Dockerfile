@@ -29,7 +29,7 @@ ARG RUN_DEPS=" \
     python3-pip\
 "
 RUN set -ex \
-    && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
+    && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS  \
     \
     #&& add-apt-repository ppa:osgeolive/nightly \
     #&& add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
@@ -60,7 +60,7 @@ ARG BUILD_DEPS=" \
     make \
     autoconf \
     gcc \
-    gettext-base \
+    gettext \
     \
     # Comment lines bellow if nor OTB nor SAGA \
     libotb-dev \
@@ -85,6 +85,7 @@ ARG BUILD_DEPS=" \
     libxml2-dev \
     libxslt1-dev \
     python3-dev \
+    python3-setuptools \
     uuid-dev \
     r-base-dev \
 "
@@ -119,6 +120,12 @@ RUN set -ex \
     && cp ../zoo-services/hello-r/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/r/minimal.r /usr/lib/cgi-bin/ \
+    && for i in  $(ls ./locale/po/*po | grep -v utf8 | grep -v message); do \
+         mkdir -p /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
+         msgfmt  $i -o /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
+         mkdir -p /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
+         msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
+       done  \
     \
     && cp oas.cfg /usr/lib/cgi-bin/ \
     \
@@ -253,12 +260,30 @@ ARG RUN_DEPS=" \
     xsltproc \
     libxml2-utils \
     gnuplot \
+    locales \
     #Uncomment the line below to add vi editor \
     #vim \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
 "
+ARG BUILD_DEPS=" \
+    make \
+    g++ \
+    gcc \
+    libgdal-dev \
+    python3-dev \
+"
+# For Azure use, uncomment bellow
+#ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
+#ARG WS_SERVER_URL="ws://zooprojectdemo.azurewebsites.net"
+# For basic usage
+ARG SERVER_URL="http://localhost/"
+ARG WS_SERVER_URL="ws://localhost"
+
+# For using another port than 80, uncomment below.
+# remember to also change the ports in docker-compose.yml
+#ARG PORT=8090
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -266,13 +291,21 @@ COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
-#COPY --from=builder1 /usr/local/ /usr/local/
+COPY --from=builder1 /usr/share/locale/ /usr/share/locale/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/SAGA/examples/ /var/www/html/examples/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/OTB/examples/ /var/www/html/examples/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/cgal/examples/ /var/www/html/examples/
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/templates/index.html /var/www/index.html
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/static /var/www/html/static
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/echo-py/cgi-env/ /usr/lib/cgi-bin/
+COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess
+COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
 
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
+COPY --from=builder1 /zoo-project/docker/oas.cfg /usr/lib/cgi-bin/
+COPY --from=builder1 /zoo-project/docker/main.cfg /usr/lib/cgi-bin/
 COPY --from=builder2 /usr/com/zoo-project/ /usr/com/zoo-project/
 
 # From optional zoo demos
@@ -282,21 +315,51 @@ COPY --from=demos /zoo-project/examples/ /var/www/html/
 COPY --from=demos /zoo-project/swagger-ui /var/www/html/swagger-ui
 
 
-
 RUN set -ex \
-    && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS \
+    && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS $BUILD_DEPS \
     \
-    && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/index.html \
+    && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/index.html \
+    && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess \
+    && sed "s=http://localhost=$SERVER_URL=g;s=publisherUr\=$SERVER_URL=publisherUrl\=http://localhost=g;s=ws://localhost=$WS_SERVER_URL=g" -i /usr/lib/cgi-bin/oas.cfg \
+    && sed "s=http://localhost=$SERVER_URL=g" -i /usr/lib/cgi-bin/main.cfg \
+    && for i in $(find /usr/share/locale/ -name "*mo"); do \
+         j=$(echo $i | sed "s:/usr/share/locale/::g;s:/LC_MESSAGES/zoo-kernel.mo::g"); \
+         locale-gen $j ; \
+         localedef -i $j -c -f UTF-8 -A /usr/share/locale/locale.alias ${j}.UTF-8; \
+       done \
     && mv  /var/www/html/swagger-ui/dist  /var/www/html/swagger-ui/oapip \
     && ln -s /tmp/ /var/www/html/temp \
     && ln -s /usr/lib/x86_64-linux-gnu/saga/ /usr/lib/saga \
     && ln -s /testing /var/www/html/cptesting \
     && rm -rf /var/lib/apt/lists/* \
-    && pip3 install Cheetah3 redis\
+    && cp /000-default.conf /etc/apache2/sites-available/ \
+    && export CPLUS_INCLUDE_PATH=/usr/include/gdal \
+    && export C_INCLUDE_PATH=/usr/include/gdal \
+    && pip3 install --upgrade pip setuptools wheel \
+    # see various issue reported about _2to3 invocation and setuptools < 58.0 \
+    && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
+    && pip3 install GDAL==2.4.2 \
+    && pip3 install Cheetah3 redis \
     && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
+    \
+    # For using another port than 80, uncomment below. \
+    # remember to also change the ports in docker-compose.yml \
+    # && sed "s:Listen 80:Listen $PORT:g" -i /etc/apache2/ports.conf \
+    \
     && mkdir -p /tmp/statusInfos \
     && chown www-data:www-data -R /tmp/statusInfos /usr/com/zoo-project \
-    && a2enmod cgi rewrite
+    \
+    # remove invalid zcfgs \
+    && rm /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg \
+    # Enable apache modules
+    \
+    && a2enmod cgi rewrite \
+    \
+    # Cleaup \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
+    && rm -rf /var/lib/apt/lists/*
 
+# For using another port than 80, change the value below.
+# remember to also change the ports in docker-compose.yml
 EXPOSE 80
 CMD /usr/sbin/apache2ctl -D FOREGROUND

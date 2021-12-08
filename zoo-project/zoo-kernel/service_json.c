@@ -1999,9 +1999,9 @@ extern "C" {
     json_object_object_add(val,"title",
 			   json_object_new_string(_("Status location")));
     json_object_object_add(val,"rel",
-			   json_object_new_string(_("status")));
+			   json_object_new_string("status"));
     json_object_object_add(val,"type",
-			   json_object_new_string(_("application/json")));
+			   json_object_new_string("application/json"));
     json_object_object_add(val,"href",json_object_new_string(Url0));
     json_object_array_add(res,val);
     if(result>0){
@@ -2015,10 +2015,15 @@ extern "C" {
       json_object* val1=json_object_new_object();
       json_object_object_add(val1,"title",
 			     json_object_new_string(_("Result location")));
-      json_object_object_add(val1,"rel",
-			     json_object_new_string(_("results")));
+      map* pmTmp=getMapFromMaps(conf,"/jobs/{jobID}/results","rel");
+      if(pmTmp!=NULL)
+	json_object_object_add(val1,"rel",
+			       json_object_new_string(pmTmp->value));
+      else
+	json_object_object_add(val1,"rel",
+			       json_object_new_string("results"));
       json_object_object_add(val1,"type",
-			     json_object_new_string(_("application/json")));
+			     json_object_new_string("application/json"));
       json_object_object_add(val1,"href",json_object_new_string(Url0));
       json_object_array_add(res,val1);
     }
@@ -2155,6 +2160,9 @@ extern "C" {
 	  message=zStrdup(pmStatus->value);
 	  hasMessage=1;
 	}
+	map* mMap=NULL;
+	if((mMap=getMapFromMaps(conf,"lenv","status"))!=NULL)
+	  json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
 	rstatus="running";
 	break;
       }
@@ -2207,7 +2215,6 @@ extern "C" {
       }
     }
     setMapInMaps(conf,"lenv","message",message);
-    setMapInMaps(conf,"lenv","status",rstatus);
 
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
     if(sessId!=NULL){
@@ -2228,14 +2235,7 @@ extern "C" {
       }
     }
     json_object_object_add(res,"status",json_object_new_string(rstatus));
-    map* mMap=NULL;
-    /* if(mMap==NULL)*/
     json_object_object_add(res,"message",json_object_new_string(message));
-      /*else{
-      json_object_object_add(res,"message",json_object_new_string(mMap->value));
-      }*/
-    if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
-      json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
     if(status!=SERVICE_DISMISSED)
       createStatusLinks(conf,needResult,res);
     else{
@@ -2247,9 +2247,9 @@ extern "C" {
       json_object_object_add(val,"title",
 			     json_object_new_string(_("The job list for the current process")));
       json_object_object_add(val,"rel",
-			     json_object_new_string(_("parent")));
+			     json_object_new_string("parent"));
       json_object_object_add(val,"type",
-			     json_object_new_string(_("application/json")));
+			     json_object_new_string("application/json"));
       json_object_object_add(val,"href",json_object_new_string(Url0));
       json_object_array_add(res1,val);
       free(Url0);

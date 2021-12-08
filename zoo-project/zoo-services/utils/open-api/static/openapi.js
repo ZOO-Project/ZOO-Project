@@ -100,7 +100,7 @@ function loadRequest(){
 	    });
         }
     }
-    console.log(System["JSON_STR"]["outputs"]);
+    //console.log(System["JSON_STR"]["outputs"]);
     for(var i in System["JSON_STR"]["outputs"]){
     //for(var i=0;i < System["JSON_STR"]["outputs"].length;i++){
         var cOutput={};
@@ -136,16 +136,18 @@ function loadRequest(){
     if($("input[name='main_value_failedUri']").val()!="")
         requestObject["subscriber"]["failedUri"]=$("input[name='main_value_failedUri']").val();
     $(".modal").find("textarea").first().val(js_beautify(JSON.stringify(requestObject)));
-    $("#exampleModal").modal('toggle');
+    $("#requestModal").modal('toggle');
     $('#result').html("");
-    $("#exampleModal").find(".btn-primary").off('click');
-    $("#exampleModal").find(".btn-primary").click(function(){
+    $("#requestModal").find(".btn-primary").off('click');
+    $("#requestModal").find(".btn-primary").click(function(){
         $('#result').html("");
         if(!socket && executionMode!="sync")
             socket = new WebSocket($('input[name="oapi_wsUrl"]').val());
         else
-	    if(executionMode=="sync")
+	    if(executionMode=="sync"){
+		var localHeaders={"Prefer": "return="+($("select[name='main_value_format']").val()=="raw"?"minimal":"representation")};
 		$.ajax({
+		    headers: localHeaders,
                     contentType: "application/json",
 		    data: $("textarea").val(),
                     type: "POST",
@@ -160,7 +162,7 @@ function loadRequest(){
 			$('#result').html(js_beautify(JSON.stringify(arguments[0].responseJSON)));
                     },
 		});
-	
+	    }
         if(executionMode=="sync"){
             return;
         }
@@ -173,11 +175,11 @@ function loadRequest(){
             if(event.data=="1"){
 		var localHeaders={};
 		if(executionMode!="sync"){
-		    localHeaders={"Prefer": "respond-async;return="+($("select[name='main_value_format']").val()=="sync"?"minimal":"representation")};
+		    localHeaders={"Prefer": "respond-async;return="+($("select[name='main_value_format']").val()=="raw"?"minimal":"representation")};
 		}else{
-		    localHeaders={"Prefer": "return="+($("select[name='main_value_format']").val()=="sync"?"minimal":"representation")};
+		    localHeaders={"Prefer": "return="+($("select[name='main_value_format']").val()=="raw"?"minimal":"representation")};
 		}
-		
+		console.log(localHeaders);
 		
 		$.ajax({
                     contentType: "application/json",

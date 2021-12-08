@@ -1,4 +1,10 @@
-Version 1.8.1
+Version 1.8.1	
+  * Update ZOO-Kernel internal messages natural lanngagues po file
+  * Fix issue with syncrhonous execution from the HTML UI when
+  requesting something else than raw data output.
+  * Add support for natural languages to be available within the
+  docker-compose setup.
+  * Add support for automatic natural languages support.
   * Add getValueFromMaps function the C-API to be used from C services
   requiring to be functional in every memory management mode (load or
   protected)

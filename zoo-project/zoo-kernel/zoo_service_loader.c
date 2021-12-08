@@ -1962,6 +1962,34 @@ runRequest (map ** inputs)
   r_inputs = getMap (request_inputs, "language");
   if (r_inputs == NULL)
     r_inputs = getMap (request_inputs, "AcceptLanguages");
+  if (r_inputs == NULL){
+    // HTTP_ACCEPT_LANGUAGE
+    char* pcAcceptLanguages=getenv("HTTP_ACCEPT_LANGUAGE");
+    if(pcAcceptLanguages!=NULL){
+      char* saveptr;
+      char *tmps = strtok_r (pcAcceptLanguages, ",", &saveptr);
+      while(tmps!=NULL){
+	if(strstr(tmps,";")==NULL && isValidLang (m, tmps) >=0 ){
+	  setMapInMaps(m, "main", "language",tmps);
+	  break;
+	}
+	else{
+	  char* saveptr1;
+	  char *tmps1 = strtok_r (tmps, ";", &saveptr1);
+	  int hasValue=-1;
+	  while(tmps1!=NULL && isValidLang (m, tmps)  >=0 ){
+	    setMapInMaps(m, "main", "language",tmps1);
+	    hasValue=1;
+	    break;
+	    tmps1 = strtok_r (NULL, ";", &saveptr1);
+	  }
+	  if(hasValue>0)
+	    break;
+	}
+	tmps = strtok_r (NULL, ",", &saveptr);
+      }
+    }
+  }
   if (r_inputs == NULL)
     r_inputs = getMapFromMaps (m, "main", "language");
   if (r_inputs != NULL)
@@ -2034,9 +2062,9 @@ runRequest (map ** inputs)
   if(strlen(cgiServerName)>0)
     {
       char tmpUrl[1024];
-	
+
       if ( getenv("HTTPS") != NULL && strncmp(getenv("HTTPS"), "on", 2) == 0 ) {
-	// Knut: check if non-empty instead of "on"?		
+	// Knut: check if non-empty instead of "on"?
 	if ( strncmp(cgiServerPort, "443", 3) == 0 ) { 
 	  sprintf(tmpUrl, "https://%s%s", cgiServerName, cgiScriptName);
 	}
