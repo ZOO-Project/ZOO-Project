@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ZOO-Kernel Internationalization\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-08-14 13:32+0200\n"
-"PO-Revision-Date: 2021-12-08 03:14+0000\n"
+"POT-Creation-Date: 2021-12-07 22:21+0100\n"
+"PO-Revision-Date: 2021-12-08 14:29+0000\n"
 "Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>\n"
 "Language-Team: French (France) (http://www.transifex.com/zoo-project/zoo-kernel-internationalization/language/fr_FR/)\n"
 "MIME-Version: 1.0\n"
@@ -19,13 +19,13 @@ msgstr ""
 "Language: fr_FR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: caching.c:507 caching.c:528 caching.c:756 request_parser.c:224
-#: request_parser.c:235 request_parser.c:272 request_parser.c:412
-#: request_parser.c:470 request_parser.c:522 request_parser.c:581
-#: request_parser.c:711 request_parser.c:837 request_parser.c:1334
-#: request_parser.c:1423 service_callback.c:202 zcfg2yaml.c:38
-#: zoo_service_loader.c:352 zoo_service_loader.c:627 zoo_service_loader.c:1660
-#: zoo_service_loader.c:2072 zoo_service_loader.c:2781
+#: caching.c:507 caching.c:528 caching.c:759 request_parser.c:225
+#: request_parser.c:236 request_parser.c:273 request_parser.c:418
+#: request_parser.c:476 request_parser.c:528 request_parser.c:587
+#: request_parser.c:717 request_parser.c:843 request_parser.c:1339
+#: request_parser.c:1428 service_callback.c:204 service_callback.c:377
+#: zcfg2yaml.c:38 zoo_service_loader.c:421 zoo_service_loader.c:605
+#: zoo_service_loader.c:608 zoo_service_loader.c:861 zoo_service_loader.c:1906
 msgid "Unable to allocate memory"
 msgstr "Impossible d'allouer la mémoire"
 
@@ -35,7 +35,7 @@ msgid ""
 "Unable to download the file for the input <%s>, response code was : %d."
 msgstr "Impossible de télécharger le fichier pour l'entrée <%s>, le code de la réponse été: %d."
 
-#: caching.c:742
+#: caching.c:745
 msgid "Unable to download the file."
 msgstr "Impossible de télécharger le fichier."
 
@@ -54,24 +54,24 @@ msgstr "ZOO-Kernel n'a pas pu charger vos données pour %s position %s."
 msgid "The maximum allowed occurrences for <%s> is one."
 msgstr "Le nombre maximum d'occurence pour <%s> est un."
 
-#: request_parser.c:324
+#: request_parser.c:326
 #, c-format
 msgid "Unable to find a valid protocol to download the remote file %s"
 msgstr "Impossible de trouver un protocole valable pour télécharger le fichier %s"
 
-#: request_parser.c:659
+#: request_parser.c:665
 msgid "Unable to add a request in the queue."
 msgstr "Impossible d'ajouter la requête dans la file d'attente."
 
-#: request_parser.c:1185
+#: request_parser.c:1190
 msgid "Unable to append maps to maps."
 msgstr "Impossible d'ajouter la maps à la maps."
 
-#: request_parser.c:1507
+#: request_parser.c:1512
 msgid "Duplicate <Output> elements in WPS Execute request"
 msgstr "Eléments <Output> dupliqués dans la requête WPS Execute"
 
-#: request_parser.c:1712
+#: request_parser.c:1718
 #, c-format
 msgid ""
 "The <%s> parameter has a size limit (%s MB) defined in the ZOO "
@@ -79,51 +79,56 @@ msgid ""
 "this limit (%f MB)."
 msgstr "Le paramètre <%s> possède une limite de taille (%s MB) définie dans le fichier de configuration du ServicesProvider ZOO, mais la référence fournie excède cette limite (%f MB)."
 
-#: request_parser.c:1745
+#: request_parser.c:1751
 #, c-format
 msgid ""
 "The <%s> argument was not specified in DataInputs but is required according "
 "to the ZOO ServicesProvider configuration file."
 msgstr "L'argument <%s> n'a pas été spécifié en entrée, ce qui est requis selon le fichier de configuration du ServicesProvider ZOO."
 
-#: request_parser.c:1771
+#: request_parser.c:1777
 #, c-format
 msgid ""
 "The <%s> argument specified as %s identifier was not recognized (not defined"
 " in the ZOO Configuration File)."
 msgstr "L'argument <%s> spécifié pour l'identifiant %s n'a pas été reconnu (non défini dans le fichier de configuration du ZOO)."
 
-#: request_parser.c:1893
+#: request_parser.c:1899
 #, c-format
 msgid "Mandatory parameter <%s> was not specified"
 msgstr "Le paramètre obligatoire <%s> n'as pas été spécifié"
 
-#: request_parser.c:1942
+#: request_parser.c:1948
 #, c-format
 msgid "The value <%s> was not recognized, %s %s the only acceptable value."
 msgstr "La valeur <%s> n'a pas été reconnue, %s %s est la seule valeur acceptée. "
 
-#: request_parser.c:1945
+#: request_parser.c:1951
 msgid "is"
 msgstr "est"
 
-#: request_parser.c:1957
+#: request_parser.c:1963
 msgid "are"
 msgstr "sont"
 
-#: response_print.c:1933
+#: response_print.c:153
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "Impossible de créer le fichier \"%s\" pour stocker la maps de session."
+
+#: response_print.c:2001
 #, c-format
 msgid "The service \"%s\" ran successfully."
 msgstr "Le service \"%s\" s'est exécuté avec succès."
 
-#: response_print.c:1941
+#: response_print.c:2009
 #, c-format
 msgid ""
 "The ZOO service \"%s\" is currently running. Please reload this document to "
 "get the up-to-date status of the service."
 msgstr "Le ZOO-Service \"%s\" est actuellement en cours d'exécution. Merci de recharger ce document afin d'obtenir le status mis à jour du service."
 
-#: response_print.c:1947
+#: response_print.c:2015
 #, c-format
 msgid ""
 "The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
@@ -131,110 +136,106 @@ msgid ""
 "provided in this document to get the up-to-date status and results."
 msgstr "Le service \"%s\" a été accepté par le ZOO-Kernel et est en cours d'exécution en tâche de fond. Merci d'utiliser le lien URL fournis dans l'attribut statusLocation de la racine de ce document pour obtenir des informations sur l'état d'éxcution du service."
 
-#: response_print.c:1964
+#: response_print.c:2032
 msgid "No more information available"
 msgstr "Pas plus d'infomation disponible"
 
-#: response_print.c:1971
+#: response_print.c:2039
 #, c-format
 msgid "error code not know : %i\n"
 msgstr "Code d'erreur inconnu : %i\n"
 
-#: response_print.c:2061
+#: response_print.c:2129
 msgid "Lock failed."
 msgstr "Impossible de vérouiller."
 
-#: response_print.c:2074
+#: response_print.c:2142
 #, c-format
 msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
 msgstr "Impossible de créer le fichier \"%s\" pour stocker le fichier ExecuteResponse."
 
-#: response_print.c:2613
+#: response_print.c:2707
 msgid "No debug message available"
 msgstr "Pas de message de débugage disponible"
 
-#: response_print.c:2711
-#, c-format
-msgid "Unable to create the file \"%s\" for storing the session maps."
-msgstr "Impossible de créer le fichier \"%s\" pour stocker la maps de session."
-
-#: response_print.c:2725
-msgid ""
-"Unable to run the Service. The message returned back by the Service was the "
-"following: "
-msgstr "Impossible d'exécuter le service. Le message retourné par le service est : "
-
-#: response_print.c:2726
-#, c-format
-msgid ""
-"Unable to run the Service. The message returned back by the Service was the "
-"following: %s"
-msgstr "Impossible d'exécuter le service. Le message retourné par le service est : %s"
-
-#: response_print.c:2729 response_print.c:2730
-msgid ""
-"Unable to run the Service. No more information was returned back by the "
-"Service."
-msgstr "Impossible d'exécuter le service. Aucune information n'a été retournée par le service."
-
-#: response_print.c:2836 service_json.c:1056
+#: response_print.c:2801
 #, c-format
 msgid "Unable to create the file \"%s\" for storing the %s final result."
 msgstr "Impossible de créer le fichier \"%s\" pour stocker le résultat final : %s."
 
-#: response_print.c:2846 service_json.c:1070
+#: response_print.c:2815
 #, c-format
 msgid "No value found for the requested output %s."
 msgstr "Pas de valeur trouvée pour la sortie demandée %s."
 
-#: response_print.c:2957
+#: response_print.c:3101 response_print.c:3150
 #, c-format
 msgid ""
 "Wrong RawDataOutput parameter: unable to fetch any result for the given "
 "parameter name: \"%s\"."
 msgstr "Paramètre RawDataOutput erroné: Impossible de récupérer un résultat pour le nom de paramètre fourni: \"%s\"."
 
-#: server_internal.c:996 server_internal.c:1076
+#: server_internal.c:997 server_internal.c:1002 server_internal.c:1104
+#: server_internal.c:1109 zoo_service_loader.c:2709
 msgid ""
 "The JobID from the request does not match any of the Jobs running on this "
 "server"
 msgstr "Le paramètre JobID de la requête ne correspond à aucun process en cours sur le serveur"
 
-#: server_internal.c:1002
+#: server_internal.c:1009 server_internal.c:1014
 msgid ""
 "The result for the requested JobID has not yet been generated. The service "
 "is currently running."
 msgstr "Le résultat pour le JobID demandé n'a pas encore été généré. Le service est en cours d'exécution."
 
-#: server_internal.c:1036
+#: server_internal.c:1052
 msgid ""
 "The result for the requested JobID has not yet been generated. The service "
 "ends but it still needs to produce the outputs."
 msgstr "Le résultat pour le JobID demandé n'a pas encore été généré. Le service est terminé mais il est en train de produire les sorties."
 
-#: server_internal.c:1118
+#: server_internal.c:1150 server_internal.c:1155
 msgid "The job cannot be removed, a file cannot be removed"
 msgstr "Le processus ne peut pas être supprimé, un fichier ne peut être supprimé."
 
-#: server_internal.c:1198
+#: server_internal.c:1235
 msgid "Unable to open the registry directory."
 msgstr "Impossible d'accéder au répertoire du registre."
 
-#: server_internal.c:1217
+#: server_internal.c:1254
 msgid "Unable to allocate memory."
 msgstr "Impossible d'allouer la mémoire."
 
-#: server_internal.c:1228 zoo_service_loader.c:367 zoo_service_loader.c:413
+#: server_internal.c:1265 zoo_service_loader.c:437 zoo_service_loader.c:498
 #, c-format
 msgid "Unable to parse the ZCFG file: %s (%s)"
 msgstr "Impossible d'analyser le fichier ZCFG: %s (%s)"
 
-#: server_internal.c:1231 zoo_service_loader.c:370 zoo_service_loader.c:417
+#: server_internal.c:1268 zoo_service_loader.c:440 zoo_service_loader.c:502
 #, c-format
 msgid "Unable to parse the ZCFG file: %s."
 msgstr "Impossible d'analyser le fichier ZCFG: %s."
 
-#: service_callback.c:857
+#: server_internal.c:1298
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
+msgstr "Impossible d'exécuter le service. Le message retourné par le service est : "
+
+#: server_internal.c:1299
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
+msgstr "Impossible d'exécuter le service. Le message retourné par le service est : %s"
+
+#: server_internal.c:1302 server_internal.c:1303
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr "Impossible d'exécuter le service. Aucune information n'a été retournée par le service."
+
+#: service_callback.c:281 service_callback.c:1034
 msgid "Unable to create a new thread"
 msgstr "Impossible de créer un nouveau thread"
 
@@ -296,7 +297,7 @@ msgstr "Il n'y a pas de définition pour remote_work_path dans votre section !"
 msgid "Unable to upload the script"
 msgstr "Impossible d'envoyer le script"
 
-#: service_internal_hpc.c:801 zoo_service_loader.c:851
+#: service_internal_hpc.c:801 zoo_service_loader.c:1097
 msgid "No message provided"
 msgstr "Pas de message fourni"
 
@@ -389,7 +390,7 @@ msgstr "Impossible de trouver une donnée géographique"
 msgid "Unable to create the mapfile for %s because of missing values."
 msgstr "Impossible de créer la mapfile pour %s à cause de valeurs manquantes."
 
-#: service_internal_ms.c:1338
+#: service_internal_ms.c:1340
 msgid "Unable to open your template mapfile!"
 msgstr "Impossible d'ouvrir le fichier mapfile modèle !"
 
@@ -425,49 +426,64 @@ msgstr "Impossible de charger votre fichier R"
 msgid "Unable to run your R service: "
 msgstr "Impossible d'exécuter votre service R : "
 
-#: service_json.c:802 service_json.c:835
+#: service_json.c:1173 service_json.c:1229
 #, c-format
 msgid "Missing input for %s"
 msgstr "Entrée manquante pour %s"
 
-#: service_json.c:822
+#: service_json.c:1193 service_json.c:1249
 #, c-format
 msgid "Issue with input %s"
 msgstr "Problème avec l'entrée %s"
 
-#: service_json.c:1158
+#: service_json.c:1705 service_json.c:1716 zoo_service_loader.c:2866
+#: zoo_service_loader.c:2877
+#, c-format
+msgid "ZOO-Kernel cannot parse your POST data: %s"
+msgstr "Le noyau ZOO-Kernel n'est pas en mesure de comprendre votre données postée: %s"
+
+#: service_json.c:2000
 msgid "Status location"
 msgstr "Localisation du status"
 
-#: service_json.c:1172
+#: service_json.c:2017
 msgid "Result location"
 msgstr "Localisation du résultat"
 
-#: service_json.c:1239
+#: service_json.c:2150
 msgid "ZOO-Kernel accepted to run your service!"
 msgstr "Le noyau ZOO-Kernel a accepté d'exécuter votre service !"
 
-#: service_json.c:1245
+#: service_json.c:2156
 msgid "ZOO-Kernel is currently running your service!"
 msgstr "Le noyau ZOO-Kernel est en cours d'exécution de votre service !"
 
-#: service_json.c:1251
+#: service_json.c:2168
 msgid "ZOO-Kernel pause your service!"
 msgstr "Le noyau ZOO-Kernel a mis votre service en pause !"
 
-#: service_json.c:1257
+#: service_json.c:2174
 msgid "ZOO-Kernel successfully run your service!"
 msgstr "Le noyau ZOO-Kernel a exécuter votre service avec succès !"
 
-#: service_json.c:1264
-msgid "ZOO-Kernel failed to run your service!"
-msgstr "Le noyau ZOO-Kernel n'a pas réussi à exécuter votre service !"
+#: service_json.c:2182
+msgid "ZOO-Kernel successfully dismissed your service!"
+msgstr "Le noyau ZOO-Kernel a rejeté l'exécution de votre service avec succès !"
 
-#: service_json.c:1285
+#: service_json.c:2257
+msgid "The job list for the current process"
+msgstr "La liste des tâches pour le process actuel"
+
+#: service_json.c:2289
 msgid "Unable to store the statusInfo!"
 msgstr "Incapable de stocker le statusInfo !"
 
-#: sqlapi.c:171
+#: service_json.c:2734 service_json.c:2735 service_json.c:2738
+#: service_json.c:2739
+msgid "Example "
+msgstr "Exemple"
+
+#: sqlapi.c:172
 msgid "Failed to connect to the database backend"
 msgstr "Échec lors de la connection au serveur de base de données."
 
@@ -481,91 +497,316 @@ msgid ""
 "Unable to copy over SSH the file requested for setting the value of %s."
 msgstr "Impossible de copier les fichier via SSH nécessaire pour définir la valeur de %s."
 
-#: zoo_service_loader.c:1043 zoo_service_loader.c:1088
-#, c-format
-msgid "ZOO Kernel failed to process your request, receiving signal %d = %s "
-msgstr "Le noyau ZOO-Kernel n'a pas pu exécuter votre requête, recevant le signal %d = %s"
-
-#: zoo_service_loader.c:1274
-#, c-format
-msgid "Error occurred while running the %s function: %s"
-msgstr "Une erreur s'est produite lors de l'exécution de la fonction %s : %s"
-
-#: zoo_service_loader.c:1325
-#, c-format
-msgid "Unable to load C Library %s"
-msgstr "Impossible de charger la librairie C %s"
-
-#: zoo_service_loader.c:1451
-#, c-format
-msgid ""
-"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
-" Kernel.\n"
-msgstr "Le langage de programmation (%s) spécifié dans le fichier ZCFG n'est actuellement pas supporté par ZOO-Kernel.\n"
-
-#: zoo_service_loader.c:1516
-msgid "Unable to cache HTTP POST Execute request."
-msgstr "Impossible de mettre la requête Execute HTTP POST en cache."
-
-#: zoo_service_loader.c:1680
-msgid "Unable to load the main.cfg file."
-msgstr "Impossible de charger le fichier main.cfg."
-
-#: zoo_service_loader.c:1728
-#, c-format
-msgid "The value %s is not supported for the <language> parameter"
-msgstr "La valeur %s n'est pas supportée pour le paramètre <language>"
-
-#: zoo_service_loader.c:1825
-#, c-format
-msgid "CORS is enabled.\r\n"
-msgstr "CORS activé.\r\n"
-
-#: zoo_service_loader.c:1879
-msgid "OGC API - Processing is not supported by this ZOO-Kernel."
-msgstr "Le noyau ZOO-Kernel ne supporte pas OGC API - Processing"
-
-#: zoo_service_loader.c:1899
-msgid "Unable to load the oas.cfg file."
-msgstr "Impossible de charger le fichier oas.cfg."
-
-#: zoo_service_loader.c:1968
-msgid "The ressource is not available"
-msgstr "La ressource n'est pas disponible"
-
-#: zoo_service_loader.c:2100 zoo_service_loader.c:2805
+#: zoo_service_loader.c:642
 #, c-format
 msgid ""
 "The value for <identifier> seems to be wrong (%s). Please specify one of the"
 " processes in the list returned by a GetCapabilities request."
 msgstr "La valeur d' <identifier> à l'air erronée (%s). Spécifiez s'il vous plait un des services retournés par la requête GetCapabilities."
 
-#: zoo_service_loader.c:2191 zoo_service_loader.c:3000
+#: zoo_service_loader.c:1289 zoo_service_loader.c:1334
+#, c-format
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s "
+msgstr "Le noyau ZOO-Kernel n'a pas pu exécuter votre requête, recevant le signal %d = %s"
+
+#: zoo_service_loader.c:1520
+#, c-format
+msgid "Error occurred while running the %s function: %s"
+msgstr "Une erreur s'est produite lors de l'exécution de la fonction %s : %s"
+
+#: zoo_service_loader.c:1571
+#, c-format
+msgid "Unable to load C Library %s"
+msgstr "Impossible de charger la librairie C %s"
+
+#: zoo_service_loader.c:1697
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
+" Kernel.\n"
+msgstr "Le langage de programmation (%s) spécifié dans le fichier ZCFG n'est actuellement pas supporté par ZOO-Kernel.\n"
+
+#: zoo_service_loader.c:1762
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "Impossible de mettre la requête Execute HTTP POST en cache."
+
+#: zoo_service_loader.c:1926
+msgid "Unable to load the main.cfg file."
+msgstr "Impossible de charger le fichier main.cfg."
+
+#: zoo_service_loader.c:2002
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "La valeur %s n'est pas supportée pour le paramètre <language>"
+
+#: zoo_service_loader.c:2106
+#, c-format
+msgid "CORS is enabled.\r\n"
+msgstr "CORS activé.\r\n"
+
+#: zoo_service_loader.c:2170
+msgid ""
+"OGC API - Processes is not supported by this ZOO-Kernel, please contact the "
+"service provider."
+msgstr "Le noyau ZOO-Kernel ne support pas l'OGC API - Processes, merci de contacter le fournisseur de service."
+
+#: zoo_service_loader.c:2226
+msgid "Unable to load the oas.cfg file."
+msgstr "Impossible de charger le fichier oas.cfg."
+
+#: zoo_service_loader.c:2266
+msgid "The request method used to access the current path is not supported."
+msgstr "La méthode utilisée pour accéder au chemin actuelle n'est pas prise en charge."
+
+#: zoo_service_loader.c:2276
+msgid "This API does not support the method."
+msgstr "Cette API ne prend pas en charge la méthode."
+
+#: zoo_service_loader.c:2722
+msgid "The job is still running."
+msgstr "La tâche est en cours d'exécution."
+
+#: zoo_service_loader.c:2791
+msgid "The service failed to execute."
+msgstr "Le service n'a pas pu s'exécuter."
+
+#: zoo_service_loader.c:2805
+msgid ""
+"The JobID seem to be running on this server but not for this process id"
+msgstr "La tâche JobID semble en cours d'exécution sur ce serveur mais pas pour cet identifiant de processus"
+
+#: zoo_service_loader.c:2833
+msgid "The ressource is not available"
+msgstr "La ressource n'est pas disponible"
+
+#: zoo_service_loader.c:2927 zoo_service_loader.c:3687
 msgid "Initializing"
 msgstr "Initialisation"
 
-#: zoo_service_loader.c:2593
+#: zoo_service_loader.c:3379
 msgid "The specified path does not exist."
 msgstr "Le chemin spécifié n'existe pas."
 
-#: zoo_service_loader.c:2706
+#: zoo_service_loader.c:3498
 msgid "Unable to run Execute request using the GET HTTP method"
 msgstr "Impossible de lancer la requête Execute en utilisant la méthode GET"
 
-#: zoo_service_loader.c:2881
+#: zoo_service_loader.c:3574
 msgid ""
 "The status parameter cannot be set to true if storeExecuteResponse is set to"
 " false. Please modify your request parameters."
 msgstr "Le paramètre de status ne peut être définit à vrai si storeExecuteResponse est défini à faux. Veuillez s'il vous plaît modifier les paramètres de la requête."
 
-#: zoo_service_loader.c:2909
+#: zoo_service_loader.c:3602
 msgid "The process does not permit the desired execution mode."
 msgstr "Le service ne supporte pas ce mode d'exécution."
 
-#: zoo_service_loader.c:3183
+#: zoo_service_loader.c:3870
 msgid "Issue with geographic data"
 msgstr "Problème avec la donnée géographique"
 
-#: zoo_service_loader.c:3204
+#: zoo_service_loader.c:3891
 msgid "Unable to run the child process properly"
 msgstr "Impossible de lancer le processus fils"
+
+#: locale/.cache/my_service_string_to_translate.c:1
+msgid " The ZOO-Project OGC WPS Developement Server"
+msgstr "Le serveur de développement du ZOO-Project"
+
+#: locale/.cache/my_service_string_to_translate.c:2
+msgid ""
+" Developement version of ZOO-Project OGC WPS. See http://www.zoo-project.org"
+msgstr "Version de développement de ZOO-Project. Voir http://www.zoo-project.org"
+
+#: locale/.cache/my_service_string_to_translate.c:3
+msgid "The limit parameter"
+msgstr "Le paramètre limite"
+
+#: locale/.cache/my_service_string_to_translate.c:4
+msgid "The skip parameter"
+msgstr "Le paramètre de saut"
+
+#: locale/.cache/my_service_string_to_translate.c:5
+msgid "this document"
+msgstr "ce document"
+
+#: locale/.cache/my_service_string_to_translate.c:6
+msgid "landing page of this API"
+msgstr "Page d'accueil de cet API"
+
+#: locale/.cache/my_service_string_to_translate.c:7
+msgid "the API definition"
+msgstr "La définition de l'API"
+
+#: locale/.cache/my_service_string_to_translate.c:8
+#: locale/.cache/my_service_string_to_translate.c:41
+msgid "This document"
+msgstr "Ce document"
+
+#: locale/.cache/my_service_string_to_translate.c:9
+msgid "OGC API - Processes conformance classes implemented by this server"
+msgstr "Les classes de conformité OGC API - Processes implémentées par ce serveur"
+
+#: locale/.cache/my_service_string_to_translate.c:10
+msgid "information about standards that this API conforms to"
+msgstr "informations à propose des standards auxquels cet API se conforme."
+
+#: locale/.cache/my_service_string_to_translate.c:11
+msgid "The processes offered by this server"
+msgstr "Les services offerts par ce serveur"
+
+#: locale/.cache/my_service_string_to_translate.c:12
+msgid "retrieve available processes"
+msgstr "trouver les services disponibles"
+
+#: locale/.cache/my_service_string_to_translate.c:13
+msgid "retrieve a process description"
+msgstr "obtenir la description d'un service"
+
+#: locale/.cache/my_service_string_to_translate.c:14
+#: locale/.cache/my_service_string_to_translate.c:15
+#: locale/.cache/my_service_string_to_translate.c:16
+#: locale/.cache/my_service_string_to_translate.c:19
+msgid "execute a job"
+msgstr "Exécuter un service"
+
+#: locale/.cache/my_service_string_to_translate.c:17
+msgid "Job Management"
+msgstr "Gestion des tâches"
+
+#: locale/.cache/my_service_string_to_translate.c:18
+msgid "retrieve a list of jobs run"
+msgstr "obtenir la liste des tâches "
+
+#: locale/.cache/my_service_string_to_translate.c:20
+msgid "Status"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:21
+#: locale/.cache/my_service_string_to_translate.c:51
+msgid "The status of a job."
+msgstr "Le status d'une tâche"
+
+#: locale/.cache/my_service_string_to_translate.c:22
+msgid "Cancel a job"
+msgstr "Annuler une tâche"
+
+#: locale/.cache/my_service_string_to_translate.c:23
+msgid "Get Result"
+msgstr "Obtenir le résultat"
+
+#: locale/.cache/my_service_string_to_translate.c:24
+#: locale/.cache/my_service_string_to_translate.c:53
+msgid "The result of a job execution."
+msgstr "Le résultat de l'exécution d'une tâche"
+
+#: locale/.cache/my_service_string_to_translate.c:25
+#: locale/.cache/my_service_string_to_translate.c:54
+msgid "The id of a process"
+msgstr "L'identifiant d'un service"
+
+#: locale/.cache/my_service_string_to_translate.c:26
+#: locale/.cache/my_service_string_to_translate.c:55
+msgid "The id of a job"
+msgstr "L'identifiant d'une tâche"
+
+#: locale/.cache/my_service_string_to_translate.c:27
+#: locale/.cache/my_service_string_to_translate.c:56
+msgid "The id of an output"
+msgstr "L'identifiant d'une entrée"
+
+#: locale/.cache/my_service_string_to_translate.c:28
+msgid "The optional f parameter"
+msgstr "Le paramètre f optionel"
+
+#: locale/.cache/my_service_string_to_translate.c:29
+msgid "NotFound"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:30
+msgid "ServerError"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:31
+msgid "InvalidParameter"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:32
+msgid "NotAllowed"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:33
+msgid "NotSupported"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:34
+msgid "Results received successfully"
+msgstr "Résultats reçus avec succès"
+
+#: locale/.cache/my_service_string_to_translate.c:35
+msgid "Status received successfully"
+msgstr "Status reçu avec succès"
+
+#: locale/.cache/my_service_string_to_translate.c:36
+msgid "Exception received successfully"
+msgstr "Exception reçue avec succès"
+
+#: locale/.cache/my_service_string_to_translate.c:38
+msgid ""
+"The limit parameter indicates the number of elements to return in an array"
+msgstr "Le paramètre limit indique le nombre d'éléments à retourner dans le tableau"
+
+#: locale/.cache/my_service_string_to_translate.c:39
+msgid ""
+"The skip parameter indicates the number of elements to skip before starting "
+"returning values in an array"
+msgstr "Le paramètre skip indique le nombre d'éléments à ignorer avant de commencer à renvoyer des valeurs dans un tableau"
+
+#: locale/.cache/my_service_string_to_translate.c:40
+msgid ""
+"The landing page provides links to the API definition, the Conformance "
+"statements and the metadata about the processes offered by this service."
+msgstr "La page d'accueil fournit des liens vers la définition de l'API, les déclarations de conformité et les métadonnées sur les processus offerts par ce service."
+
+#: locale/.cache/my_service_string_to_translate.c:42
+msgid ""
+"list all requirements classes specified in a standard (e.g., WPS REST/JSON "
+"Binding Core) that the server conforms to"
+msgstr "liste toutes les classes d'exigences spécifiées dans une norme (par exemple, WPS REST/JSON Binding Core) à laquelle le serveur se conforme"
+
+#: locale/.cache/my_service_string_to_translate.c:43
+msgid "Information about the available processes"
+msgstr "Informations à propose des services disponibles"
+
+#: locale/.cache/my_service_string_to_translate.c:44
+msgid "A process description."
+msgstr "La description d'un service"
+
+#: locale/.cache/my_service_string_to_translate.c:45
+#: locale/.cache/my_service_string_to_translate.c:46
+#: locale/.cache/my_service_string_to_translate.c:47
+#: locale/.cache/my_service_string_to_translate.c:49
+msgid "An execute endpoint."
+msgstr "Un URL d'exécution"
+
+#: locale/.cache/my_service_string_to_translate.c:48
+msgid "A list of jobs run."
+msgstr "Une liste de tâche exécutées."
+
+#: locale/.cache/my_service_string_to_translate.c:50
+msgid "Mandatory execute request in JSON format"
+msgstr "La requête doit obligatoirement être au format JSON"
+
+#: locale/.cache/my_service_string_to_translate.c:52
+msgid "Cancel the job execution."
+msgstr "Annuler l'exécution d'une tâche"
+
+#: locale/.cache/my_service_string_to_translate.c:57
+msgid ""
+"The optional f parameter indicates the output format which the server shall "
+"provide as part of the response document.  The default format is JSON."
+msgstr "Le paramètre optionnel f indique le format de sortie que le serveur doit fournir dans le document de réponse. Le format par défaut est JSON."
+
+#: locale/.cache/my_service_string_to_translate.c:58
+msgid "Exception"
+msgstr ""
