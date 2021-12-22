@@ -610,12 +610,11 @@ msgid "Unable to run the child process properly"
 msgstr "Impossible de lancer le processus fils"
 
 #: locale/.cache/my_service_string_to_translate.c:1
-msgid " The ZOO-Project OGC WPS Developement Server"
+msgid "The ZOO-Project OGC WPS Developement Server"
 msgstr "Le serveur de développement du ZOO-Project"
 
 #: locale/.cache/my_service_string_to_translate.c:2
-msgid ""
-" Developement version of ZOO-Project OGC WPS. See http://www.zoo-project.org"
+msgid "Developement version of ZOO-Project OGC WPS. See http://www.zoo-project.org"
 msgstr "Version de développement de ZOO-Project. Voir http://www.zoo-project.org"
 
 #: locale/.cache/my_service_string_to_translate.c:3

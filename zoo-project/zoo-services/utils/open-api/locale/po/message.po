@@ -101,6 +101,18 @@ msgstr ""
 msgid "Contact"
 msgstr ""
 
+#: templates/index.html:403
+msgid "Submit"
+msgstr ""
+
+#: templates/index.html:425
+msgid "Close"
+msgstr ""
+
+#: templates/index.html:426
+msgid "Submit Job"
+msgstr ""
+
 #: templates/index.html:588
 msgid "Display original data as JSON"
 msgstr ""

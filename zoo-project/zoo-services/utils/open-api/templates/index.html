@@ -400,7 +400,7 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
 	    $printCard({"id":"ModeThree","title":"Mode","content": $printControl({"title":"mode","type": "main_value","name": "mode","options":["async","sync"]})})
 	  </div>
 	  
-	  <button type="submit" class="btn btn-primary" >Submit</button>
+	  <button type="submit" class="btn btn-primary" >$zoo._("Submit")</button>
 	</form>
     <div class="modal" tabindex="-1" id="requestModal">
       <div class="modal-dialog modal-xl">
@@ -422,8 +422,8 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
 	    </div>
 	  </div>
 	  <div class="modal-footer">
-	    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-	    <button type="button" class="btn btn-primary">Submit Job</button>
+	    <button type="button" class="btn btn-secondary" data-dismiss="modal">$zoo._("Close")</button>
+	    <button type="button" class="btn btn-primary">$zoo._("Submit Job")</button>
 	  </div>
 	</div>
       </div>
@@ -591,7 +591,13 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
       <textarea id="collapseJson" class="form-control collapse show" ></textarea>
       <script>
       window.onload = function(){
-        \$("main").find("table").DataTable();
+      \$("main").find("table").DataTable(
+      #if $conf["main"]["language"]!="en-US"
+      { language: {
+            url: '//cdn.datatables.net/plug-ins/1.11.3/i18n/$(conf["main"]["language"].replace("-","_").lower()).json'
+      } }
+      #end if
+      );
         var jsContent=\$(".microlight").html();
         var tmpStr=js_beautify(jsContent);
         \$("textarea").last().val(tmpStr);
@@ -633,7 +639,7 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Wed Dec  8 19:33:30 CET 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Wed Dec 22 14:37:25 CET 2021 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  
@@ -696,7 +702,7 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.13.0/beautify.min.js" integrity="sha512-84xqGKD+OW9ElGeIq5RkXhsKveQx+kAjahn9r7f/Vm9J0bDrwEabW3MQNgYdTzLBnwfrTGs0nuPx3pZxh6itNg==" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js" ></script>
-      </body>
+  </body>
 </html>
 #if "cache_file" in $inputs["tmpl"] and $removeCacheFile
 <!-- REMOVED ! -->      
