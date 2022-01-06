@@ -273,8 +273,8 @@ $zoo._("View default (no title found for ")$v).
 #end if
 #if "maxOccurs" in $obj and ($obj["maxOccurs"]=="unbounded" or $obj["maxOccurs"]>1)
 	<div class="btn-group" role="group" aria-label="Basic example">
-	  <button type="button" class="btn btn-secondary" onclick="addElementToList(\$(this));">Add</button>
-	  <button type="button" class="btn btn-secondary" onclick="delElementToList(\$(this));">Delete</button>
+	  <button type="button" class="btn btn-secondary" onclick="addElementToList(\$(this));">$zoo._("Add")</button>
+	  <button type="button" class="btn btn-secondary" onclick="delElementToList(\$(this));">$zoo._("Delete")</button>
 	</div>
 #end if
 #end def
@@ -546,7 +546,7 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
 	      #if $cValueLink["href"].count("result")==0
 	      <a class="dropdown-item delete"
 	        href="#"
-	        data-value="$(cValueLink["href"])">Delete</a>
+	        data-value="$(cValueLink["href"])">$zoo._("Delete")</a>
 	      #end if
 	      <a class="dropdown-item" href="$(cValueLink["href"]).html">$cValueLink["title"]</a>
 	      #end for	      
@@ -639,7 +639,7 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
       </script>
       <hr>
       <address>$openapi["openapi"]["rootUrl"]$(currentUrl).html</address>
-      <!-- hhmts start -->Last modified: Wed Dec 22 14:37:25 CET 2021 <!-- hhmts end -->
+      <!-- hhmts start -->Last modified: Wed Jan  5 14:32:07 CET 2022 <!-- hhmts end -->
     </main>
 #if $currentKey=="root"
     </div>  

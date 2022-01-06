@@ -1,14 +1,14 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# ZOO-Service OGC API - Processes services
+# Copyright (C) YEAR GeoLabs
+# This file is distributed under the same license as the ZOO-Service OGC API - Processes services package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: ZOO-Service OGC API - Processes services 1.8.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-12-08 22:33+0100\n"
+"POT-Creation-Date: 2022-01-06 18:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -50,7 +50,7 @@ msgid "View the alternative version in HTML."
 msgstr ""
 
 #: service.c:9
-msgid "View the specifications that the link context conforms to."
+msgid "View the conformance classes that the link's context conforms to."
 msgstr ""
 
 #: service.c:10
@@ -89,6 +89,14 @@ msgstr ""
 msgid "View default (no title found for "
 msgstr ""
 
+#: templates/index.html:276
+msgid "Add"
+msgstr ""
+
+#: templates/index.html:277 templates/index.html:549
+msgid "Delete"
+msgstr ""
+
 #: templates/index.html:290
 msgid "Address"
 msgstr ""
@@ -117,10 +125,10 @@ msgstr ""
 msgid "Display original data as JSON"
 msgstr ""
 
-#: templates/index.html:653
+#: templates/index.html:659
 msgid "Powered by"
 msgstr ""
 
-#: templates/index.html:675
+#: templates/index.html:681
 msgid "Message"
 msgstr ""

@@ -129,7 +129,8 @@ RUN set -ex \
     \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\
-       msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; \
+       find ../zoo-services/ -name "${lang}*" ; \
+       msgcat $(find ../zoo-services/ -name "${lang}*") -o ${lang}.po ; \
        msgfmt ${lang}.po -o /usr/share/locale/${lang}/LC_MESSAGES/zoo-services.mo; \
        msgfmt ${lang}.po -o /usr/local/share/locale/${lang}/LC_MESSAGES/zoo-services.mo; \
        done \
