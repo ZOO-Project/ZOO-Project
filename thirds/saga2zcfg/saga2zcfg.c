@@ -326,6 +326,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stdout1,"  <LiteralData>\n");
 		fprintf(stdout1,"   dataType = string\n");
 		fprintf(stdout1,"   <Default>\n");
+
 #if SAGA_MAJOR_VERSION == 2
 		if( !param->Get_Data()->Get_Default().is_Empty() ){
 		  fprintf(stdout1,"    value = %s\n",param->Get_Data()->Get_Default().b_str());
@@ -351,6 +352,7 @@ int main(int argc, char *argv[]) {
 		  fprintf(stdout1,"   dataType = integer\n");
 
 		fprintf(stdout1,"   <Default>\n");
+
 #if SAGA_MAJOR_VERSION == 2
 		if( !param->Get_Data()->Get_Default().is_Empty() ){
 		  fprintf(stdout1,"    value = %s\n",param->Get_Data()->Get_Default().b_str());
@@ -370,7 +372,8 @@ int main(int argc, char *argv[]) {
 	      }
 	      if(CSG_String(param->Get_Type_Identifier()).is_Same_As(CSG_String("boolean"),true)){
 		fprintf(stdout1,"  <LiteralData>\n");
-		fprintf(stdout1,"   dataType = bool\n");
+		fprintf(stdout1,"   dataType = boolean\n");
+		fprintf(stdout1,"   AllowedValues = true,false\n");
 		fprintf(stdout1,"   <Default>\n");
 #if SAGA_MAJOR_VERSION == 2
 		if( !param->Get_Data()->Get_Default().is_Empty() ){
@@ -449,18 +452,22 @@ int main(int argc, char *argv[]) {
 
 		if(CSG_String(param->Get_Type_Identifier()).Contains("points")){
 		  printPoints(stdout1);
-		}
-		if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("shapes"))){
-		  printShapes(stdout1);
-		}
-		if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("grid")) ||
-		   CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("data_object"))){
-		  printGrids(stdout1);
-		}
-		if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("table"))){
-		  printTables(stdout1);
-		}
-
+		}else
+		  if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("shapes"))){
+		    printShapes(stdout1);
+		  }else
+		    if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("grid")) ||
+		       CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("data_object"))){
+		      printGrids(stdout1);
+		    }else
+		      if(CSG_String(param->Get_Type_Identifier()).Contains(CSG_String("table"))){
+			printTables(stdout1);
+		      }else{
+			  fprintf(stdout1,"  <LiteralData>\n");
+			  fprintf(stdout1,"   dataType = %s\n",CSG_String(param->Get_Type_Identifier()));
+			  fprintf(stdout1,"   <Default/>\n");
+			  fprintf(stdout1,"  </LiteralData>\n");
+			}
 	      }
 	    }
 	  }

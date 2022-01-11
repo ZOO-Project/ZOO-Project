@@ -218,106 +218,117 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	  else
 	    std::cout << "   maxOccurs = 1" << std::endl;
 	  std::replace( s.begin(), s.end(), '\n', ' ');
-	  
-	  if(type == ParameterType_StringList || type == ParameterType_String || type == ParameterType_Float
-	     || type == ParameterType_Int || type == ParameterType_Choice || type == ParameterType_ListView
-	     || type == ParameterType_RAM || type == ParameterType_Directory){
-	    std::cout << "   <LiteralData>" << std::endl;
-	    std::string lt;
-	    if(type == ParameterType_Int || type == ParameterType_RAM)
-	      lt="integer";
-	    if(type == ParameterType_Float)
-	      lt="float";
-	    if(type == ParameterType_String || type == ParameterType_StringList
-	       || type == ParameterType_Choice || type == ParameterType_Directory
-	       || type == ParameterType_ListView)
-	      lt="string";
-	    std::cout << "    dataType = " << lt << std::endl;
-	    if(type == ParameterType_Choice || type == ParameterType_ListView){
-	      const std::vector<std::string> nList = m_Application->GetChoiceNames(paramKey);
-	      const std::vector<std::string> keysList = m_Application->GetChoiceKeys(paramKey);
-	      if(keysList.size()==0){
-		std::cout << "    <Default />" << std::endl;
+
+	  if(type == ParameterType_Bool){
+	      std::cout << "   <LiteralData>" << std::endl;
+	      std::string lt;
+	      std::cout << "    dataType = boolean" << std::endl;
+	      std::cout << "   </LiteralData>" << std::endl;
+	      std::cout << "    <Default>" << std::endl;
+	      if(m_Application->HasValue(paramKey))
+		std::cout << "    value = " << m_Application->GetParameterAsString(paramKey) << std::endl;
+	      std::cout << "    </Default>" << std::endl;
+	  }else{
+	    if(type == ParameterType_StringList || type == ParameterType_String || type == ParameterType_Float
+	       || type == ParameterType_Int || type == ParameterType_Choice || type == ParameterType_ListView
+	       || type == ParameterType_RAM || type == ParameterType_Directory){
+	      std::cout << "   <LiteralData>" << std::endl;
+	      std::string lt;
+	      if(type == ParameterType_Int || type == ParameterType_RAM)
+		lt="integer";
+	      if(type == ParameterType_Float)
+		lt="float";
+	      if(type == ParameterType_String || type == ParameterType_StringList
+		 || type == ParameterType_Choice || type == ParameterType_Directory
+		 || type == ParameterType_ListView)
+		lt="string";
+	      std::cout << "    dataType = " << lt << std::endl;
+	      if(type == ParameterType_Choice || type == ParameterType_ListView){
+		const std::vector<std::string> nList = m_Application->GetChoiceNames(paramKey);
+		const std::vector<std::string> keysList = m_Application->GetChoiceKeys(paramKey);
+		if(keysList.size()==0){
+		  std::cout << "    <Default />" << std::endl;
+		}
+		for (unsigned int j = 0; j < keysList.size(); j++){
+		  const std::string key(keysList[j]);
+		  if(j==0){
+		    std::cout << "    <Default>" << std::endl;
+		    if(m_Application->HasValue(paramKey))
+		      std::cout << "    value = " << m_Application->GetParameterAsString(paramKey) << std::endl;
+		    else
+		      std::cout << "    value = " << key << std::endl;
+		  }
+		  else{
+		    if(j==1){
+		      std::cout << "    AllowedValues = "+keysList[0]+",";
+		    }
+		    std::cout << keysList[j];
+		    if(j+1>=keysList.size()){
+		      std::cout << std::endl;
+		      std::cout << "    </Default>" << std::endl;
+		    }
+		    else
+		      std::cout << ",";
+		  }
+		}
 	      }
-	      for (unsigned int j = 0; j < keysList.size(); j++){
-		const std::string key(keysList[j]);
-		if(j==0){
+	      else{
+		if(type!=17 && m_Application->HasValue(paramKey)){
 		  std::cout << "    <Default>" << std::endl;
-		  if(m_Application->HasValue(paramKey))
-		    std::cout << "    value = " << m_Application->GetParameterAsString(paramKey) << std::endl;
-		  else
-		    std::cout << "    value = " << key << std::endl;
-		}
-		else{
-		  if(j==1){
-		    std::cout << "    AllowedValues = "+keysList[0]+",";
-		  }
-		  std::cout << keysList[j];
-		  if(j+1>=keysList.size()){
-		    std::cout << std::endl;
-		    std::cout << "    </Default>" << std::endl;
-		  }
-		  else
-		    std::cout << ",";
-		}
-	      }
-	    }
-	    else{
-	      if(type!=17 && m_Application->HasValue(paramKey)){
-		std::cout << "    <Default>" << std::endl;
-		std::cout << "     value = " << m_Application->GetParameterAsString(paramKey) << std::endl;
-		std::cout << "    </Default>" << std::endl;
-	      }
-	      else
-		std::cout << "    <Default />" << std::endl;
-	    }
-	    std::cout << "   </LiteralData>" << std::endl;
-	  }
-	  else{
-	    if(type == ParameterType_OutputImage){
-	      printOutputImage(m_Application->GetParameterOutputImagePixelType(paramKey));
-	    }
-	    else{
-	      {
-		std::cout << "   <ComplexData>" << std::endl;
-		if(type == ParameterType_InputImage || type == ParameterType_InputImageList){
-		  printImages();
+		  std::cout << "     value = " << m_Application->GetParameterAsString(paramKey) << std::endl;
+		  std::cout << "    </Default>" << std::endl;
 		}
 		else
-		  if(type == ParameterType_InputVectorData || type == ParameterType_InputVectorDataList){
-		    printVector();
+		  std::cout << "    <Default />" << std::endl;
+	      }
+	      std::cout << "   </LiteralData>" << std::endl;
+	    }
+	    else{
+	      if(type == ParameterType_OutputImage){
+		printOutputImage(m_Application->GetParameterOutputImagePixelType(paramKey));
+	      }
+	      else{
+		{
+		  std::cout << "   <ComplexData>" << std::endl;
+		  if(type == ParameterType_InputImage || type == ParameterType_InputImageList){
+		    printImages();
 		  }
 		  else
-		    if(type == ParameterType_InputFilename || type == ParameterType_OutputFilename){
+		    if(type == ParameterType_InputVectorData || type == ParameterType_InputVectorDataList){
+		      printVector();
+		    }
+		    else
+		      if(type == ParameterType_InputFilename || type == ParameterType_OutputFilename){
 		      
-		      std::string geoid("geoid");
-		      if(paramKey.find(geoid)!= std::string::npos)
-			printGeoid();
-		      else{
-			std::string dtype("vector");
-			std::string descr(m_Application->GetParameterDescription(paramKey));
-			if(descr.find(dtype)!= std::string::npos)
-			  printVector();
+			std::string geoid("geoid");
+			if(paramKey.find(geoid)!= std::string::npos)
+			  printGeoid();
 			else{
-			  std::string dtype1("ASCII");
-			  if(descr.find(dtype1)!= std::string::npos)
-			    printAscii();
+			  std::string dtype("vector");
+			  std::string descr(m_Application->GetParameterDescription(paramKey));
+			  if(descr.find(dtype)!= std::string::npos)
+			    printVector();
 			  else{
-			    std::string dtype2("XML");
-			    std::string dtype3("xml");
-			    if(descr.find(dtype2)!= std::string::npos || descr.find(dtype3)!= std::string::npos)
-			      printXml();
-			    else
-			      printImages();
+			    std::string dtype1("ASCII");
+			    if(descr.find(dtype1)!= std::string::npos)
+			      printAscii();
+			    else{
+			      std::string dtype2("XML");
+			      std::string dtype3("xml");
+			      if(descr.find(dtype2)!= std::string::npos || descr.find(dtype3)!= std::string::npos)
+				printXml();
+			      else
+				printImages();
+			    }
 			  }
 			}
 		      }
-		    }
-		std::cout << "   </ComplexData>" << std::endl;
+		  std::cout << "   </ComplexData>" << std::endl;
+		}
 	      }
+
 	    }
 	  }
-
 
 	}
       }

@@ -6,9 +6,6 @@
  statusSupported = true
  serviceType = C
  serviceProvider = gdal_grid_service.zo
- <MetaData>
-   title = My Demo
- </MetaData>
  <DataInputs>
   [OF]
    Title = Format of the output data
@@ -31,12 +28,7 @@
    maxOccurs = 1
    <LiteralData>
     DataType = string
-    <Default>
-     uom = feet
-    </Default>	
-    <Supported>
-     value = AAIGrid
-    </Supported>
+    <Default />
    </LiteralData>
   [OutputDSN]
    Title = The output data source name
@@ -44,13 +36,8 @@
    minOccurs = 1
    maxOccurs = 1
    <LiteralData>
-    DataType = string
-    <Default>
-     uom = feet
-    </Default>	
-    <Supported>
-     value = AAIGrid
-    </Supported>
+    dataType = string
+    <Default />
    </LiteralData>
  </DataInputs>
  <DataOutputs>
@@ -58,12 +45,7 @@
    Title = The resulting converted file
    Abstract = The file name resulting of the convertion
    <LiteralData>
-    DataType = string
-    <Default>
-     uom = feet
-    </Default>	
-    <Supported>
-     value = AAIGrid
-    </Supported>
+    dataType = string
+    <Default />
    </LiteralData>
  </DataOutputs>  
