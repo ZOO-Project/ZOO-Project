@@ -30,7 +30,7 @@
   [Result]
    Title = Voronoi Diagram.
    Abstract = JSON String / GML Entity of the Voronoi Diagram.
-   <ComplexOutput>
+   <ComplexData>
     <Default>
      mimeType = application/json
      encoding = UTF-8
@@ -52,5 +52,5 @@
      schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
      useMapserver = true
     </Supported>
-   </ComplexOutput>
+   </ComplexData>
  </DataOutputs>  

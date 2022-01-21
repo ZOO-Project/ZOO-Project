@@ -35,7 +35,7 @@
   [Result]
    Title = Delaunay Triangulation
    Abstract = JSON String / GML Entity of the Delaunay Triangulation.
-   <ComplexOutput>
+   <ComplexData>
     <Default>
      mimeType = application/json
      encoding = UTF-8
@@ -51,5 +51,5 @@
      schema = http://schemas.opengis.net/gml/3.1.0/base/feature.xsd
      asReference = true	
     </Supported>
-   </ComplexOutput>
+   </ComplexData>
  </DataOutputs>  

@@ -139,6 +139,7 @@ function loadRequest(){
     $("#requestModal").modal('toggle');
     $('#result').html("");
     $("#requestModal").find(".btn-primary").off('click');
+    var firstRun=true;
     $("#requestModal").find(".btn-primary").click(function(){
         $('#result').html("");
         if(!socket && executionMode!="sync")
@@ -166,9 +167,10 @@ function loadRequest(){
         if(executionMode=="sync"){
             return;
         }
+	console.log(firstRun);
         socket.onopen = function () {
-            console.log('Connected!');
-            socket.send("SUB "+$('input[name="oapi_reqID"]').val());
+	    console.log('Connected!');
+	    socket.send("SUB "+$('input[name="oapi_reqID"]').val());
         };
         socket.onmessage = function(event) {
             console.log('MESSAGE: ' + event.data);
@@ -197,19 +199,22 @@ function loadRequest(){
 	    }
             else{
 		//progressBar
-		console.log('MESSAGE: ' + event.data);
 		$("#progress_details").show();
 		var cObj=JSON.parse(event.data);
 		if(cObj["jobID"]){
+		    console.log('MESSAGE: ' + event.data);
                     $("#prgress_description").html(cObj["jobID"]+": "+cObj["message"]);
                     $(".progress-bar").attr("aria-valuenow",cObj["progress"]);
                     $(".progress-bar").css("width",cObj["progress"]+"%");
 		}else{
+		    console.log('MESSAGE (to close): ' + event.data);
                     $("#progress_details").hide();
                     if(cObj)
 			$('#result').html(js_beautify(JSON.stringify(cObj)));
                     else
 			$('#result').html(cObj["message"]);
+		    socket.close();
+		    socket=false;
 		}
             }
         };
