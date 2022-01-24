@@ -223,11 +223,11 @@ int main(int itkNotUsed(argc), char * itkNotUsed(argv)[])
 	      std::cout << "   <LiteralData>" << std::endl;
 	      std::string lt;
 	      std::cout << "    dataType = boolean" << std::endl;
-	      std::cout << "   </LiteralData>" << std::endl;
 	      std::cout << "    <Default>" << std::endl;
 	      if(m_Application->HasValue(paramKey))
 		std::cout << "    value = " << m_Application->GetParameterAsString(paramKey) << std::endl;
 	      std::cout << "    </Default>" << std::endl;
+	      std::cout << "   </LiteralData>" << std::endl;
 	  }else{
 	    if(type == ParameterType_StringList || type == ParameterType_String || type == ParameterType_Float
 	       || type == ParameterType_Int || type == ParameterType_Choice || type == ParameterType_ListView
