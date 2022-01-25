@@ -49,8 +49,8 @@ Release versions lead to an update in documentation and standard tarballs. This 
 
 .. code::
 
-    git checkout master
-    git pull origin master
+    git checkout main
+    git pull origin main
     git checkout -b branch-1.9
     git push origin branch-1.9
     git checkout branch-1.9
