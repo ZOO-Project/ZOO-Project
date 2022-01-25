@@ -11,7 +11,7 @@ for j in cgi-env/*zcfg ;
 grep -A 10 links_title ../../../../docker/oas.cfg | grep = | cut -d'=' -f2 | sed 's:V:_ss("V:g;s:$:"):g'  >> service.c 
 
 xgettext --package-name="ZOO-Service OGC API - Processes services" \
-	--package-version=1.8.0 \
+	--package-version=1.9.0 \
 	--copyright-holder="GeoLabs" \
 	service.c templates/index.html -k_ss -k_ -o message.po
 
