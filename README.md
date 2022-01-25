@@ -1,5 +1,7 @@
 # ZOO-Project
 [![Docker Image CI](https://github.com/ZOO-Project/ZOO-Project/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ZOO-Project/ZOO-Project/actions/workflows/docker-image.yml)
+[![DOI](https://zenodo.org/badge/353351321.svg)](https://zenodo.org/badge/latestdoi/353351321)
+
 
 [ZOO-Project](http://www.zoo-project.org) ♥️ [Open Geospatial Consortium (OGC)](https://www.ogc.org/) Standards
 
