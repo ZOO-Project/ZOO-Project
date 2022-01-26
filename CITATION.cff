@@ -1,0 +1,9 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Fenoy
+    given-names: Gérald
+    orcid: https://orcid.org/0000-0002-9617-8641
+title: ZOO-Project/ZOO-Project: v1.9.0-rc1
+version: rel-1.9.0-rc1
+date-released: 2017-12-18
