@@ -32,11 +32,19 @@ rules:
   candidate. If no major bugs, then announce that the release
   candidate has officially been promoted to the official release (if
   you want, you can do this with a motion and support of the PSC).
+* Update documentation as needed.  
 * Ensure that release exactly matches something in git history. Tag and branch
   appropriately.
-* Update documentation as needed.
+* Once the tag is pushed back to GitHub, make sure to use the 
+  "Create release from tag" button on the tag page (accessible from the 
+  `Tags list <https://github.com/ZOO-Project/ZOO-Project/tags>`__).
+  Set the release title to "ZOO-Project X.Y.Z" and you may include the 
+  release note as the release description. Before publishing the
+  release, make sure to upload a copy of the archives stored on 
+  zoo-project.org/dl.
 * Announce on various email list and other locations
   (news_item@osgeo.org, SlashGeo, etc)
+
 
 Creating an Official Release
 ----------------------------
