@@ -31,7 +31,6 @@ services:
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
-      - ./docker/startUp.sh:/startUp.sh
       - ./docker/tmp:/tmp
       - ./docker/com:/usr/com/zoo-project
     depends_on:

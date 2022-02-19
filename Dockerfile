@@ -304,6 +304,9 @@ ARG WS_SERVER_URL="ws://localhost"
 # remember to also change the ports in docker-compose.yml
 #ARG PORT=8090
 
+WORKDIR /zoo-project
+COPY ./docker/startUp.sh /
+
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
 COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1.8
@@ -368,6 +371,7 @@ RUN set -ex \
     \
     && mkdir -p /tmp/statusInfos \
     && chown www-data:www-data -R /tmp/statusInfos /usr/com/zoo-project \
+    && chmod 755 /startUp.sh
     \
     # remove invalid zcfgs \
     && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
