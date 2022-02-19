@@ -25,7 +25,7 @@
 #ifndef ZOO_SQLAPI_H
 #define ZOO_SQLAPI_H 1
 
-#ifdef META_DB
+#if defined(META_DB) || defined(USE_AMQP)
 #include "ogrsf_frmts.h"
 #include "ogr_p.h"
 #if GDAL_VERSION_MAJOR >= 2
@@ -36,7 +36,7 @@
 #include "service.h"
 #include "service_internal.h"
 
-#ifdef META_DB
+#if defined(META_DB) || defined(USE_AMQP)
 extern "C" 
 #if GDAL_VERSION_MAJOR >=2
   GDALDataset
@@ -50,7 +50,7 @@ extern "C"
 extern "C" {
 #endif
 
-#ifdef META_DB
+#if defined(META_DB) || defined(USE_AMQP)
   ZOO_DLL_EXPORT char* _createInitString(maps*,const char*);
   ZOO_DLL_EXPORT int _init_sql(maps*,const char*);
   ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,int,const char*);

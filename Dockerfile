@@ -7,6 +7,7 @@ ARG BUILD_DEPS=" \
     dirmngr \
     gpg-agent \
     software-properties-common \
+    #wget \
 "
 ARG RUN_DEPS=" \
     libcurl3-gnutls \
@@ -24,6 +25,8 @@ ARG RUN_DEPS=" \
     libxslt1.1 \
     gdal-bin \
     libcgal13 \
+    librabbitmq4 \
+    nlohmann-json-dev \
     python3 \
     r-base \
     python3-pip\
@@ -88,6 +91,9 @@ ARG BUILD_DEPS=" \
     python3-setuptools \
     uuid-dev \
     r-base-dev \
+    librabbitmq-dev \
+    libkrb5-dev \
+    nlohmann-json-dev \
 "
 WORKDIR /zoo-project
 COPY . .
@@ -107,11 +113,12 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
     # TODO: why not copied by 'make'?
+    && cp zoo_loader_fpm zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && cp zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
@@ -159,13 +166,13 @@ RUN set -ex \
     && make -C ../../../thirds/saga2zcfg \
     && mkdir zcfgs \
     && cd zcfgs \
-    && dpkg -L saga \
+    #&& dpkg -L saga \
     && export MODULE_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/saga/ \
     && export SAGA_MLB=/usr/lib/x86_64-linux-gnu/saga/ \
     && ln -s /usr/lib/x86_64-linux-gnu/saga/ /usr/lib/saga \
     && ../../../../thirds/saga2zcfg/saga2zcfg \
     && mkdir /usr/lib/cgi-bin/SAGA \
-    && ls \
+    #&& ls \
     && cp -r * /usr/lib/cgi-bin/SAGA \
     #Remove OTB if not built or SAGA if no SAGA \
     && for j in OTB SAGA ; do for i in $(find /usr/lib/cgi-bin/$j/ -name "*zcfg"); do sed "s:image/png:image/png\n     useMapserver = true\n     msClassify = true:g;s:text/xml:text/xml\n     useMapserver = true:g;s:mimeType = application/x-ogc-aaigrid:mimeType = application/x-ogc-aaigrid\n   </Supported>\n   <Supported>\n     mimeType = image/png\n     useMapserver=true:g" -i $i; done; done \
@@ -252,6 +259,7 @@ RUN set -ex \
     && git clone https://github.com/ZOO-Project/examples.git \
     && git clone https://github.com/swagger-api/swagger-ui.git \
     && git clone https://github.com/WPS-Benchmarking/cptesting.git /testing \
+    && git clone https://www.github.com/singularityhub/singularity-cli.git /singularity-cli \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -270,11 +278,13 @@ ARG RUN_DEPS=" \
     libxml2-utils \
     gnuplot \
     locales \
+    libapache2-mod-fcgid \
+    python3-setuptools \
     #Uncomment the line below to add vi editor \
     vim \
     #Uncomment the lines below to add debuging \
-    #valgrind \
-    #gdb \
+    valgrind \
+    gdb \
 "
 ARG BUILD_DEPS=" \
     make \
@@ -318,6 +328,7 @@ COPY --from=builder1 /zoo-project/docker/main.cfg /usr/lib/cgi-bin/
 COPY --from=builder2 /usr/com/zoo-project/ /usr/com/zoo-project/
 
 # From optional zoo demos
+COPY --from=demos /singularity-cli/ /singularity-cli/
 COPY --from=demos /testing/ /testing/
 COPY --from=demos /zoo-project/examples/data/ /usr/com/zoo-project/
 COPY --from=demos /zoo-project/examples/ /var/www/html/
@@ -348,7 +359,7 @@ RUN set -ex \
     # see various issue reported about _2to3 invocation and setuptools < 58.0 \
     && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
     && pip3 install GDAL==2.4.2 \
-    && pip3 install Cheetah3 redis \
+    && pip3 install Cheetah3 redis spython \
     && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
     \
     # For using another port than 80, uncomment below. \

@@ -3,7 +3,7 @@ services:
   zookernel:
     platform: linux/amd64
     image: djayzen/zookernel:latest
-    #build: .
+    build: .
     ports:
       - "80:80"
     volumes:
@@ -17,13 +17,31 @@ services:
       - ./docker/.htaccess:/var/www/html/.htaccess
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
+      - ./docker/com:/usr/com/zoo-project
+      - ./docker/tmp:/tmp
     depends_on:
       - pgbouncer
       - redis
+      - rabbitmq
     environment:
       - ZOO_REDIS_HOST=redis
-  websocketd:
+  zoofpm:
     platform: linux/amd64
+    image: djayzen/zookernel:latest
+    volumes:
+      - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
+      - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
+      - ./docker/startUp.sh:/startUp.sh
+      - ./docker/tmp:/tmp
+      - ./docker/com:/usr/com/zoo-project
+    depends_on:
+      - rabbitmq
+      - pgbouncer
+    environment:
+      - ZOO_RABBITMQ_HOST=rabbitmq
+    command: [ "/startUp.sh" ]
+  websocketd:
+    #platform: linux/amd64
     build: ./docker/websocketd
     depends_on:
       - redis
@@ -35,8 +53,8 @@ services:
       - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/shell.py
     command: ["--port=8888", "/shell.py"]
   pg:
-    platform: linux/amd64
-    image: postgres:9.6.18-alpine
+    #platform: linux/amd64
+    image: postgres:12.10-alpine
     restart: always
     environment:
       POSTGRES_USER: zoo
@@ -45,9 +63,13 @@ services:
     volumes:
       # Load the zoo kernel schema
       - ./zoo-project/zoo-kernel/sql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      # Load the async AMQP schema
+      - ./zoo-project/zoo-kernel/sql/async_amqp.sql:/docker-entrypoint-initdb.d/2-schema.sql
+    depends_on:
+      - rabbitmq
   pgbouncer:
-    platform: linux/amd64
-    image: edoburu/pgbouncer:1.8.1
+    #platform: linux/amd64
+    image: edoburu/pgbouncer:1.12.0
     environment:
       DATABASE_URL: "postgres://zoo:zoo@pg/zoo"
       MAX_CLIENT_CONN: 1000
@@ -60,3 +82,10 @@ services:
       - pg
   redis:
     image: redis:6.0.9
+  rabbitmq:
+    image: rabbitmq:3.8.9-management-alpine
+    volumes:
+      - ./docker/definitions.json:/etc/rabbitmq/definitions.json
+    ports:
+      - "15672:15672"
+      - "5672:5672"

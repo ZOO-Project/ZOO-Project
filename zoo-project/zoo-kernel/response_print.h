@@ -93,7 +93,6 @@
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include "cgic.h"
 
 #ifdef __cplusplus
 extern "C" {

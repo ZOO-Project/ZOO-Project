@@ -32,11 +32,62 @@
 #include "mimetypes.h"
 #include "server_internal.h"
 #include "service_internal.h"
+#include "service_internal_ms.h"
 #include <dirent.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+  /**
+   * Convert a json object to maps
+   *
+   * @param jopObj the json object to convert
+   * @return the allocated maps
+   */
+  maps* jsonToMaps(json_object* jopObj){
+    maps* res=NULL;
+    //enum json_type type;
+    json_object_object_foreach(jopObj, key, val) { /*Passing through every object element*/
+      json_object* json_input=NULL;
+      if(json_object_object_get_ex(jopObj, key, &json_input)!=FALSE){
+	map* tmpMap=jsonToMap(json_input);
+	if(res==NULL){
+	  res=createMaps(key);
+	  addMapToMap(&(res->content),tmpMap);
+	}else{
+	  maps *tres=createMaps(key);
+	  addMapToMap(&(tres->content),tmpMap);
+	  addMapsToMaps(&res,tres);
+	  freeMaps(&tres);
+	  free(tres);
+	}
+      }
+    }
+    return res;
+  }
+
+  /**
+   * Convert a json object to map
+   *
+   * @param jopObj the json object to convert
+   * @return the allocated map
+   */
+  map* jsonToMap(json_object* jopObj){
+    map* res=NULL;
+    json_object_object_foreach(jopObj, key, val) {
+      if(val!=NULL && json_object_is_type (val,json_type_string)){
+	const char* pcVal=json_object_get_string(val);
+	if(strlen(pcVal)>0){
+	  if(res==NULL)
+	    res=createMap(key,pcVal);
+	  else
+	    addToMap(res,key,pcVal);
+	}
+      }
+    }
+    return res;
+  }
 
   /**
    * Convert a map to a json object
@@ -48,6 +99,7 @@ extern "C" {
     map* cursor=myMap;
     map* sizeMap=getMap(myMap,"size");
     map* length=getMap(myMap,"length");
+    map* toLoad=getMap(myMap,"to_load");
     while(cursor!=NULL){
       json_object *val=NULL;
       if(length==NULL && sizeMap==NULL){
@@ -58,8 +110,10 @@ extern "C" {
       }
       else{
 	if(length==NULL && sizeMap!=NULL){
-	  if(strncasecmp(cursor->name,"value",5)==0)
-	    val=json_object_new_string_len(cursor->value,atoi(sizeMap->value));
+	  if(strncasecmp(cursor->name,"value",5)==0){
+	    if(strlen(cursor->value)!=0 && toLoad!=NULL && strncasecmp(toLoad->value,"true",4)==0)
+	      val=json_object_new_string_len(cursor->value,atoi(sizeMap->value));
+	  }
 	  else{
 	    if(strstr(cursor->name,"title")!=NULL)
 	      val=json_object_new_string(_(cursor->value));
@@ -74,8 +128,10 @@ extern "C" {
 	  val=json_object_new_array();
 	  for(i=0;i<limit;i++){
 	    map* lsizeMap=getMapArray(myMap,"size",i);
+	    toLoad=getMapArray(myMap,"to_load",i);
 	    if(lsizeMap!=NULL && strncasecmp(cursor->name,"value",5)==0){
-	      json_object_array_add(val,json_object_new_string_len(cursor->value,atoi(sizeMap->value)));
+	      if(strlen(cursor->value)!=0 && toLoad!=NULL && strncasecmp(toLoad->value,"true",4)==0)
+		json_object_array_add(val,json_object_new_string_len(cursor->value,atoi(sizeMap->value)));
 	    }else{
 	      if(strstr(cursor->name,"title")!=NULL)
 		json_object_array_add(val,json_object_new_string(_(cursor->value)));

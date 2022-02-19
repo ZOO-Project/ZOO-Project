@@ -2037,3 +2037,57 @@ void parseCookie(maps** conf,const char* cookie){
   free(res);
   free(tcook);
 }
+
+/**
+ * Parse all the http requests possibily attached to inputs and, add them to the
+ * request queue.
+ *
+ * @param conf maps containing the main configuration file
+ * @param inputs maps containing all the inputs
+ * @param hInternet an HTINTERNET connection
+ * @return 0 in case of success
+ */
+int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
+  maps* curs=inputs;
+  while(curs!=NULL){
+    map* href=getMap(curs->content,"href");
+    if(href!=NULL){
+      map* len=getMap(curs->content,"length");
+      if(len!=NULL and atoi(len->value)>1){
+        int llen=atoi(len->value);
+        for(int i=0;i<llen;i++){
+          map* body=getMapArray(curs->content,"Body",i);
+          if(body!=NULL){
+            addRequestToQueue(&conf,hInternet,(char *) href->value,false);
+            InternetOpenUrl (hInternet,
+                             href->value,
+                             body->value,
+                             strlen(body->value),
+                             INTERNET_FLAG_NO_CACHE_WRITE,
+                             0,
+                             conf);
+          }else{
+            addRequestToQueue(&conf,hInternet,(char *) href->value,true);
+          }
+        }
+      }else{
+        map* body=getMap(curs->content,"Body");
+        if(body!=NULL){
+          addRequestToQueue(&conf,hInternet,(char *) href->value,false);
+          InternetOpenUrl (hInternet,
+                           href->value,
+                           body->value,
+                           strlen(body->value),
+                           INTERNET_FLAG_NO_CACHE_WRITE,
+                           0,
+                           conf);
+        }else{
+          addRequestToQueue(&conf,hInternet,(char *) href->value,true);
+        }
+      }
+    }
+    curs=curs->next;
+  }
+
+  return 0;
+}

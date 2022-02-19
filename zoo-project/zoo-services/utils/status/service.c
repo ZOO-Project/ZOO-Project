@@ -87,9 +87,9 @@ extern "C" {
        * Parse Status to extract Status / Message
        */
       char *tmpStr=_getStatus(conf,tmpMap->value);
-      //#ifdef DEBUG
+#ifdef DEBUG
       fprintf(stderr,"DEBUG: %s \n",tmpStr);
-      //#endif
+#endif
       if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
 	char *tmpStr1=strdup(tmpStr);
 	char *tmpStr0=strdup(strstr(tmpStr,"|")+1);

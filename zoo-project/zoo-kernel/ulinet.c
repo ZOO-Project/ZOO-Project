@@ -323,31 +323,25 @@ int AddMissingHeaderEntry(_HINTERNET* handle,const char* key,const char* value){
  * @return 1 if the host is listed as protected, 0 in other case
  */
 int isProtectedHost(const char* protectedHosts, const char* url) {
-	char *token, *saveptr;
-	int cnt;
+  char *token, *saveptr;
+  int cnt;
 
-	// knut: make a copy of url since strtok family modifies first argument and cannot be used on constant strings  
-	char* urlcpy = (char*)malloc(sizeof(char)*(strlen(url) + 1));
-	urlcpy = strncpy(urlcpy, url, strlen(url) + 1); // since count > strlen(url), a null character is properly appended
+  // knut: make a copy of url since strtok family modifies first argument and cannot be used on constant strings
+  char* urlcpy = (char*)malloc(sizeof(char)*(strlen(url) + 1));
+  urlcpy = strncpy(urlcpy, url, strlen(url) + 1); // since count > strlen(url), a null character is properly appended
 
-	//token = strtok_r (url, "//", &saveptr);
-	token = strtok_r(urlcpy, "//", &saveptr);   // knut
-	cnt = 0;
-	while (token != NULL && cnt <= 1) {
-		fprintf(stderr, "%s %d %s \n", __FILE__, __LINE__, token);
-		if (cnt == 1)
-			fprintf(stderr, "%s %d %s \n", __FILE__, __LINE__, strstr(protectedHosts, token));
-		fflush(stderr);
-		if (cnt == 1 && strstr(protectedHosts, token) != NULL) {
-			fprintf(stderr, "%s %d %s \n", __FILE__, __LINE__, strstr(protectedHosts, token));
-			free(urlcpy);
-			return 1;
-		}
-		token = strtok_r(NULL, "/", &saveptr);
-		cnt += 1;
-	}
-	free(urlcpy);
-	return 0;
+  //token = strtok_r (url, "//", &saveptr);
+  token = strtok_r(urlcpy, "//", &saveptr);   // knut
+  cnt = 0;
+  while (token != NULL && cnt <= 1) {
+    if (cnt == 1 && strstr(protectedHosts, token) != NULL) {
+      return 1;
+    }
+    token = strtok_r(NULL, "/", &saveptr);
+    cnt += 1;
+  }
+  free(urlcpy);
+  return 0;
 }
 
 /**
