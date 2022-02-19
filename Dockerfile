@@ -371,7 +371,7 @@ RUN set -ex \
     \
     && mkdir -p /tmp/statusInfos \
     && chown www-data:www-data -R /tmp/statusInfos /usr/com/zoo-project \
-    && chmod 755 /startUp.sh
+    && chmod 755 /startUp.sh \
     \
     # remove invalid zcfgs \
     && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
