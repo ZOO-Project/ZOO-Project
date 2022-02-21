@@ -351,7 +351,8 @@ RUN set -ex \
          localedef -i $j -c -f UTF-8 -A /usr/share/locale/locale.alias ${j}.UTF-8; \
        done \
     && mv  /var/www/html/swagger-ui/dist  /var/www/html/swagger-ui/oapip \
-    && ln -s /tmp/ /var/www/html/temp \
+    && mkdir /tmp/zTmp \
+    && ln -s /tmp/zTmp /var/www/html/temp \
     && ln -s /usr/lib/x86_64-linux-gnu/saga/ /usr/lib/saga \
     && ln -s /testing /var/www/html/cptesting \
     && rm -rf /var/lib/apt/lists/* \
@@ -369,8 +370,8 @@ RUN set -ex \
     # remember to also change the ports in docker-compose.yml \
     # && sed "s:Listen 80:Listen $PORT:g" -i /etc/apache2/ports.conf \
     \
-    && mkdir -p /tmp/statusInfos \
-    && chown www-data:www-data -R /tmp/statusInfos /usr/com/zoo-project \
+    && mkdir -p /tmp/zTmp/statusInfos \
+    && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project \
     && chmod 755 /startUp.sh \
     \
     # remove invalid zcfgs \

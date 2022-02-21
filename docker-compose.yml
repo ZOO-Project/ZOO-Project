@@ -18,7 +18,7 @@ services:
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
       - ./docker/com:/usr/com/zoo-project
-      - ./docker/tmp:/tmp
+      - ./docker/tmp:/tmp/zTmp
     depends_on:
       - pgbouncer
       - redis
@@ -31,7 +31,7 @@ services:
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
-      - ./docker/tmp:/tmp
+      - ./docker/tmp:/tmp/zTmp
       - ./docker/com:/usr/com/zoo-project
     depends_on:
       - rabbitmq
