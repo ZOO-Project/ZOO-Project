@@ -97,6 +97,43 @@ extern "C" {
       return res;
   }
 
+#if GDAL_VERSION_MAJOR >= 2
+GDALDataset*
+#else
+OGRDataSource*
+#endif
+  loadEntity(maps* conf,maps* inputs,char **filename,const char **oDriver,const char *entity,int iter){
+    map* tmp=getMapFromMaps(inputs,entity,"value");
+    map* tmp1=getMapFromMaps(inputs,entity,"mimeType");
+    map* pmCacheFile=getMapFromMaps(inputs,entity,"cache_file");
+    if(pmCacheFile!=NULL){
+#if GDAL_VERSION_MAJOR >= 2
+      return (GDALDataset*) GDALOpenEx( pmCacheFile->value,
+					GDAL_OF_READONLY | GDAL_OF_VECTOR,
+					NULL, NULL, NULL );
+#else
+    return OGRSFDriverRegistrar::Open(*filename,FALSE);
+#endif
+    }
+    *oDriver="GeoJSON";
+    sprintf(*filename,"/vsimem/input_%d.json",getpid()+iter);
+    if(tmp1!=NULL){
+      if(strcmp(tmp1->value,"text/xml")==0){
+	sprintf(*filename,"/vsimem/input_%d.xml",getpid()+iter);
+	*oDriver="GML";
+      }
+    }
+    VSILFILE *ifile=VSIFileFromMemBuffer(*filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
+    VSIFCloseL(ifile);
+#if GDAL_VERSION_MAJOR >= 2
+    return (GDALDataset*) GDALOpenEx( *filename,
+				      GDAL_OF_READONLY | GDAL_OF_VECTOR,
+				      NULL, NULL, NULL );
+#else
+    return OGRSFDriverRegistrar::Open(*filename,FALSE);
+#endif
+  }
+
 #ifdef WIN32
   __declspec(dllexport)
 #endif
@@ -126,33 +163,18 @@ extern "C" {
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
-    char filename[1024];
-    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver;
-    oDriver="GeoJSON";
-    sprintf(filename,"/vsimem/input_%d.json",getpid());
-    if(tmp1!=NULL){
-      if(strcmp(tmp1->value,"text/xml")==0){
-	sprintf(filename,"/vsimem/input_%d.xml",getpid());
-	oDriver="GML";
-      }
-    }
-    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
-    VSIFCloseL(ifile);
-
 #if GDAL_VERSION_MAJOR >= 2
-      GDALDataset *ipoDS =
-	(GDALDataset*) GDALOpenEx( filename,
-				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
-				   NULL, NULL, NULL );
-      GDALDriverManager* poR=GetGDALDriverManager();
-      GDALDriver          *poDriver = NULL;
+    GDALDataset       *ipoDS;
+    GDALDriverManager *poR=GetGDALDriverManager();
+    GDALDriver        *poDriver = NULL;
 #else
-      OGRDataSource* ipoDS = 
-	OGRSFDriverRegistrar::Open(filename,FALSE);
-      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-      OGRSFDriver          *poDriver = NULL;
+    OGRDataSource        *ipoDS;
+    OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+    OGRSFDriver          *poDriver = NULL;
 #endif
+    ipoDS=loadEntity(conf,inputs,&filename,&oDriver,"InputPolygon",1);
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
@@ -349,6 +371,7 @@ extern "C" {
 
     delete poODS;
     delete ipoDS;
+    free(filename);
 
     char *res1=readVSIFile(conf,pszDestDataSource);
     if(res1==NULL)
@@ -379,32 +402,18 @@ int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry:
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
-    char filename[1024];
-    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver;
-    oDriver="GeoJSON";
-    sprintf(filename,"/vsimem/input_%d.json",getpid());
-    if(tmp1!=NULL){
-      if(strcmp(tmp1->value,"text/xml")==0){
-	sprintf(filename,"/vsimem/input_%d.xml",getpid());
-	oDriver="GML";
-      }
-    }
-    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
-    VSIFCloseL(ifile);
 #if GDAL_VERSION_MAJOR >= 2
-    GDALDataset *ipoDS =
-      (GDALDataset*) GDALOpenEx( filename,
-				 GDAL_OF_READONLY | GDAL_OF_VECTOR,
-				 NULL, NULL, NULL );
+    GDALDataset *ipoDS;
     GDALDriverManager* poR=GetGDALDriverManager();
     GDALDriver          *poDriver = NULL;
 #else
-    OGRDataSource* ipoDS = 
-      OGRSFDriverRegistrar::Open(filename,FALSE);
+    OGRDataSource *ipoDS;
     OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
     OGRSFDriver          *poDriver = NULL;
 #endif
+    ipoDS=loadEntity(conf,inputs,&filename,&oDriver,"InputPolygon",1);
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
@@ -606,6 +615,7 @@ int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry:
 
     delete poODS;
     delete ipoDS;
+    free(filename);
 
     char *res1=readVSIFile(conf,pszDestDataSource);
     if(res1==NULL)
@@ -636,41 +646,24 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     OGRLayer *poDstLayer;
     const char *oDriver1;
 #if GDAL_VERSION_MAJOR >= 2
-    GDALDataset *poODS;
+    GDALDataset         *poODS;
+    GDALDataset         *ipoDS;
+    GDALDriverManager   *poR=GetGDALDriverManager();
+    GDALDriver          *poDriver = NULL;
 #else
-    OGRDataSource *poODS;
+    OGRDataSource        *poODS;
+    OGRDataSource        *ipoDS;
+    OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+    OGRSFDriver          *poDriver = NULL;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
-    char filename[1024];
-    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver;
-    oDriver="GeoJSON";
-    sprintf(filename,"/vsimem/input_%d.json",getpid());
-    if(tmp1!=NULL){
-      if(strcmp(tmp1->value,"text/xml")==0){
-	sprintf(filename,"/vsimem/input_%d.xml",getpid());
-	oDriver="GML";
-      }
-    }
-    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
-    VSIFCloseL(ifile);
-#if GDAL_VERSION_MAJOR >= 2
-      GDALDataset *ipoDS =
-	(GDALDataset*) GDALOpenEx( filename,
-				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
-				   NULL, NULL, NULL );
-      GDALDriverManager* poR=GetGDALDriverManager();
-      GDALDriver          *poDriver = NULL;
-#else
-      OGRDataSource* ipoDS = 
-	OGRSFDriverRegistrar::Open(filename,FALSE);
-      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-      OGRSFDriver          *poDriver = NULL;
-#endif
+    ipoDS=loadEntity(conf,inputs,&filename,&oDriver,"InputPolygon",1);
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
@@ -867,6 +860,7 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
 
     delete poODS;
     delete ipoDS;
+    free(filename);
 
     char *res1=readVSIFile(conf,pszDestDataSource);
     if(res1==NULL)
@@ -890,41 +884,24 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     OGRLayer *poDstLayer;
     const char *oDriver1;
 #if GDAL_VERSION_MAJOR >= 2
-    GDALDataset *poODS;
+    GDALDataset         *poODS;
+    GDALDataset         *ipoDS;
+    GDALDriverManager   *poR=GetGDALDriverManager();
+    GDALDriver          *poDriver = NULL;
 #else
-    OGRDataSource *poODS;
+    OGRDataSource        *poODS;
+    OGRDataSource        *ipoDS;
+    OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+    OGRSFDriver          *poDriver = NULL;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
-    char filename[1024];
-    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver;
-    oDriver="GeoJSON";
-    sprintf(filename,"/vsimem/input_%d.json",getpid());
-    if(tmp1!=NULL){
-      if(strcmp(tmp1->value,"text/xml")==0){
-	sprintf(filename,"/vsimem/input_%d.xml",getpid());
-	oDriver="GML";
-      }
-    }
-    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
-    VSIFCloseL(ifile);
-#if GDAL_VERSION_MAJOR >= 2
-      GDALDataset *ipoDS =
-	(GDALDataset*) GDALOpenEx( filename,
-				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
-				   NULL, NULL, NULL );
-      GDALDriverManager* poR=GetGDALDriverManager();
-      GDALDriver          *poDriver = NULL;
-#else
-      OGRDataSource* ipoDS = 
-	OGRSFDriverRegistrar::Open(filename,FALSE);
-      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-      OGRSFDriver          *poDriver = NULL;
-#endif
+    ipoDS=loadEntity(conf,inputs,&filename,&oDriver,"InputPolygon",1);
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {
@@ -1122,6 +1099,7 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
 
     delete poODS;
     delete ipoDS;
+    free(filename);
 
     char *res1=readVSIFile(conf,pszDestDataSource);
     if(res1==NULL)
@@ -1148,33 +1126,6 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     return applyOne(conf,inputs,outputs,&OGRGeometry::ConvexHull,"http://fooa/gml/3.1.0/polygon.xsd");
   }
 
-#if GDAL_VERSION_MAJOR >= 2
-GDALDataset*
-#else
-OGRDataSource* 
-#endif
-  loadEntity(maps* conf,maps* inputs,char **filename,const char **oDriver,const char *entity,int iter){
-    map* tmp=getMapFromMaps(inputs,entity,"value");
-    map* tmp1=getMapFromMaps(inputs,entity,"mimeType");
-    *oDriver="GeoJSON";
-    sprintf(*filename,"/vsimem/input_%d.json",getpid()+iter);
-    if(tmp1!=NULL){
-      if(strcmp(tmp1->value,"text/xml")==0){
-	sprintf(*filename,"/vsimem/input_%d.xml",getpid()+iter);
-	*oDriver="GML";
-      }
-    }
-    VSILFILE *ifile=VSIFileFromMemBuffer(*filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
-    VSIFCloseL(ifile);
-#if GDAL_VERSION_MAJOR >= 2
-    return (GDALDataset*) GDALOpenEx( *filename,
-				      GDAL_OF_READONLY | GDAL_OF_VECTOR,
-				      NULL, NULL, NULL );
-#else
-    return OGRSFDriverRegistrar::Open(*filename,FALSE);    
-#endif
-  }
-
   int applyOneBool(maps*& conf,maps*& inputs,maps*& outputs,OGRBoolean (OGRGeometry::*myFunc)() const){
 #ifdef DEBUG
     fprintf(stderr,"\nService internal print\n");
@@ -1185,42 +1136,28 @@ OGRDataSource*
     OGRGeometryH geometry,res;
     OGRLayer *poDstLayer;
     const char *oDriver1;
-    OGRDataSource       *poODS;
-#ifdef DEBUG
-    dumpMaps(cursor);
+#if GDAL_VERSION_MAJOR >= 2
+    GDALDataset *poODS;
+#else
+    OGRDataSource *poODS;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
     }
-    char filename[1024];
-    map* tmp1=getMapFromMaps(inputs,"InputPolygon","mimeType");
+    char *filename=(char*)malloc(1024*sizeof(char));
     const char *oDriver;
-    oDriver="GeoJSON";
-    sprintf(filename,"/vsimem/input_%d.json",getpid());
-    if(tmp1!=NULL){
-      if(strcmp(tmp1->value,"text/xml")==0){
-	sprintf(filename,"/vsimem/input_%d.xml",getpid());
-	oDriver="GML";
-      }
-    }
-    VSILFILE *ifile=VSIFileFromMemBuffer(filename,(GByte*)tmp->value,strlen(tmp->value),FALSE);
-    VSIFCloseL(ifile);
-
 #if GDAL_VERSION_MAJOR >= 2
-      GDALDataset *ipoDS =
-	(GDALDataset*) GDALOpenEx( filename,
-				   GDAL_OF_READONLY | GDAL_OF_VECTOR,
-				   NULL, NULL, NULL );
-      GDALDriverManager* poR=GetGDALDriverManager();
-      GDALDriver          *poDriver = NULL;
+    GDALDataset       *ipoDS;
+    GDALDriverManager *poR=GetGDALDriverManager();
+    GDALDriver        *poDriver = NULL;
 #else
-      OGRDataSource* ipoDS = 
-	OGRSFDriverRegistrar::Open(filename,FALSE);
-      OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-      OGRSFDriver          *poDriver = NULL;
+    OGRDataSource        *ipoDS;
+    OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+    OGRSFDriver          *poDriver = NULL;
 #endif
+    ipoDS=loadEntity(conf,inputs,&filename,&oDriver,"InputPolygon",1);
     char pszDestDataSource[100];
     if( ipoDS == NULL )
       {	
@@ -1278,6 +1215,7 @@ OGRDataSource*
       }
 
     delete ipoDS;
+    free(filename);
     setMapInMaps(outputs,"Result","value","true");
 
     OGRCleanupAll();

@@ -1,4 +1,5 @@
 Version 2.0.0
+  * Make C OGR base-vect-ops compatible with memory=protect
   * Add volumes to be shared by the ZOO-Kernel and the ZOO-FPM
   * Add a RabbitMQ and, a ZOO-FPM container to docker-compose
   * Add documentation for RabbitMQ support and ZOO Fast Process

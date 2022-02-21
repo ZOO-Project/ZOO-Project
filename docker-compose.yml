@@ -3,7 +3,7 @@ services:
   zookernel:
     platform: linux/amd64
     image: djayzen/zookernel:latest
-    build: .
+    #build: .
     ports:
       - "80:80"
     volumes:
