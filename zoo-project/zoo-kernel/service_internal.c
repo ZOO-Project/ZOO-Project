@@ -958,3 +958,32 @@ char* _getStatusField(maps* conf,char* a,const char* b){
   return zStrdup("-1");
 }
 #endif
+
+/**
+ * Verify if an Execute request has been invoked asynchronously
+ *
+ * @param pmsConf the maps pointing to the main configuration
+ * @return true if the service should be invoked asynchronously, false otherwise
+ */
+bool isAsyncCall(maps* pmsConf){
+  int iStatus=0;
+  map* pmTmp=getMapFromMaps(pmsConf,"request","status");
+  if(pmTmp==NULL){
+    pmTmp=getMapFromMaps(pmsConf,"request","mode");
+    iStatus=1;
+  }
+  return
+    ((iStatus==0 && pmTmp!=NULL && strncasecmp(pmTmp->value,"true",4)==0) ||
+     (iStatus==1 && pmTmp!=NULL && strncasecmp(pmTmp->value,"async",5)==0));
+}
+
+/**
+ * Verify if the server rely on database backend
+ *
+ * @param pmsConf the maps pointing to the main configuration
+ * @return true if the server rely no database, false otherwise
+ */
+bool hasDbs(maps* pmsConf){
+  return
+    (getMaps(pmsConf,"database")!=NULL || getMaps(pmsConf,"metadb")!=NULL);
+}

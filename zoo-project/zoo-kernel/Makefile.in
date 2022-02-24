@@ -47,7 +47,7 @@ service_callback.o: service_callback.c
 	$(CXX) -fPIC ${XML2CFLAGS} ${GDAL_CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c
 
 request_parser.o: request_parser.c request_parser.h
-	$(CXX) -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c
+	$(CXX) -fPIC ${RABBITMQ_CPPFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c request_parser.c
 
 sqlapi.o: sqlapi.c sqlapi.h
 	$(CXX) -fPIC ${JSON_CFLAGS} ${METADB_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${JS_ENABLED} -c sqlapi.c

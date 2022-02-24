@@ -163,6 +163,9 @@ extern "C" {
 
   ZOO_DLL_EXPORT char* file_exists(const char* dir, const char* name); 
 
+  ZOO_DLL_EXPORT bool isAsyncCall(maps*);
+  ZOO_DLL_EXPORT bool hasDbs(maps*);
+
 #ifdef __cplusplus
 }
 #endif

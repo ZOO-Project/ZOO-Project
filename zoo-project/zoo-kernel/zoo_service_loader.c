@@ -946,7 +946,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
  */
 int loadHttpRequests(maps* conf,maps* inputs){
   // Resolve reference
-  // TODO: add erro gesture
+  // TODO: add error gesture
   int eres;
   maps* tmpMaps=getMaps(conf,"http_requests");
   if(tmpMaps!=NULL){
@@ -4168,6 +4168,16 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    map* r_inputs = getMapOrFill (&request_inputs, "metapath", "");
 
 	    maps* lconf=dupMaps(iconf);
+	    // Determine the executionType for this run
+	    if(getMap(request_inputs,"xrequest")!=NULL){
+	      setMapInMaps(lconf,"main","executionType","xml");
+	      initAllEnvironment(lconf,request_inputs,ntmp,"xrequest");
+	    }
+	    else{
+	      setMapInMaps(lconf,"main","executionType","json");
+	      initAllEnvironment(lconf,request_inputs,ntmp,"jrequest");
+	    }
+
 
 	    // Populate the Registry
 	    char conf_dir[1024];
@@ -4239,14 +4249,15 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    if(json_object_object_get_ex(msg_obj,"request_output_real_format",&reqo_format_jobj)!=FALSE)
 	      request_output_real_format=jsonToMaps(reqo_format_jobj);
 
-	    initAllEnvironment(lconf,request_inputs,ntmp,"xrequest");
-
 	    map* version=getMap(request_inputs,"version");
 	    if(version==NULL)
 	      version=getMapFromMaps(lconf,"main","version");
-	    setMapInMaps(lconf,"main","rversion",version->value);
+	    if(version!=NULL)
+	      setMapInMaps(lconf,"main","rversion",version->value);
 
-	    int vid=getVersionId(version->value);
+	    int vid=0;
+	    if(version!=NULL)
+	      vid=getVersionId(version->value);
 	    if(vid<0)
 	      vid=0;
 
@@ -4355,6 +4366,23 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 
 	    fflush (stderr);
 
+	    // Set Headers from lenv coming form the message
+	    // TODO: append current headers by fetching the renv from the
+	    // message?
+	    map* pmCursor=*lenv;
+	    while(pmCursor!=NULL){
+	      if(strncasecmp(pmCursor->name,"rb_headers_",11)==0){
+		setMapInMaps(lconf,"lenv",pmCursor->name,pmCursor->value);
+	      }
+	      pmCursor=pmCursor->next;
+	    }
+	    // Add the request section in the main conf maps
+	    pmCursor=*irequest_inputs;
+	    while(pmCursor!=NULL){
+	      setMapInMaps(lconf,"request",pmCursor->name,pmCursor->value);
+	      pmCursor=pmCursor->next;
+	    }
+
 	    parseInputHttpRequests(lconf,request_input_real_format,&hInternet);
 
 	    fbkp1 =
@@ -4418,6 +4446,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      free (tmpmaps);
 	      return -1;
 	    }
+
 	    if(getMapFromMaps(lconf,"lenv","mapError")!=NULL){
 	      setMapInMaps(lconf,"lenv","message",_("Issue with geographic data"));
 #ifdef USE_CALLBACK

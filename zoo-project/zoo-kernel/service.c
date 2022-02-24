@@ -1021,9 +1021,9 @@ void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
  * @param iIndex the index of the MapArray 
  * @param icValue the corresponding value to add
  */
-void addIntToMapArray(map* pmMap,const char* pccName,int iIndex,const int icValue){
-  char acValue[10];
-  sprintf(acValue,"%d",icValue);
+void addIntToMapArray(map* pmMap,const char* pccName,int iIndex,const unsigned long icValue){
+  char acValue[12];
+  sprintf(acValue,"%lu",icValue);
   setMapArray(pmMap,pccName,iIndex,acValue);
 }
 

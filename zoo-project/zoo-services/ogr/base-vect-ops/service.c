@@ -112,7 +112,7 @@ OGRDataSource*
 					GDAL_OF_READONLY | GDAL_OF_VECTOR,
 					NULL, NULL, NULL );
 #else
-    return OGRSFDriverRegistrar::Open(*filename,FALSE);
+      return OGRSFDriverRegistrar::Open(pmCacheFile->value,FALSE);
 #endif
     }
     *oDriver="GeoJSON";
@@ -159,6 +159,8 @@ OGRDataSource*
     OGRDataSource *poODS;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp)
+      tmp=getMapFromMaps(inputs,"InputPolygon","cache_file");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
@@ -378,9 +380,8 @@ OGRDataSource*
       return SERVICE_FAILED;
     setMapInMaps(outputs,"Result","value",res1);
     free(res1);
-
-    OGRCleanupAll();
-    dumpMaps(outputs);
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
 
 }
@@ -398,6 +399,8 @@ int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry:
     OGRDataSource *poODS;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp)
+      tmp=getMapFromMaps(inputs,"InputPolygon","cache_file");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
@@ -622,8 +625,8 @@ int applyOne(maps*& conf,maps*& inputs,maps*& outputs,OGRGeometry* (OGRGeometry:
       return SERVICE_FAILED;
     setMapInMaps(outputs,"Result","value",res1);
     free(res1);
-
-    OGRCleanupAll();
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
 
@@ -657,6 +660,8 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
     OGRSFDriver          *poDriver = NULL;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp)
+      tmp=getMapFromMaps(inputs,"InputPolygon","cache_file");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
@@ -867,8 +872,8 @@ int Buffer(maps*& conf,maps*& inputs,maps*& outputs){
       return SERVICE_FAILED;
     setMapInMaps(outputs,"Result","value",res1);
     free(res1);
-
-    OGRCleanupAll();
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
 
 }
@@ -895,6 +900,8 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     OGRSFDriver          *poDriver = NULL;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp)
+      tmp=getMapFromMaps(inputs,"InputPolygon","cache_file");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
@@ -1107,7 +1114,8 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     setMapInMaps(outputs,"Result","value",res1);
     free(res1);
 
-    OGRCleanupAll();
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
 
 }
@@ -1142,6 +1150,8 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     OGRDataSource *poODS;
 #endif
     map* tmp=getMapFromMaps(inputs,"InputPolygon","value");
+    if(!tmp)
+      tmp=getMapFromMaps(inputs,"InputPolygon","cache_file");
     if(!tmp){
       setMapInMaps(conf,"lenv","message",_ss("Unable to parse the input geometry from InputPolygon"));
       return SERVICE_FAILED;
@@ -1218,7 +1228,8 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     free(filename);
     setMapInMaps(outputs,"Result","value","true");
 
-    OGRCleanupAll();
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
 
@@ -1519,7 +1530,8 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
       return SERVICE_FAILED;
     setMapInMaps(outputs,"Result","value",res1);
     free(res1);
-    OGRCleanupAll();
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
   
@@ -1679,8 +1691,8 @@ int Centroid(maps*& conf,maps*& inputs,maps*& outputs){
     free(filename1);
 
     setMapInMaps(outputs,"Result","value","true");
-
-    OGRCleanupAll();
+    if(!isAsyncCall(conf) || !hasDbs(conf))
+      OGRCleanupAll();
     return SERVICE_SUCCEEDED;
   }
 

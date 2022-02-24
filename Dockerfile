@@ -283,8 +283,8 @@ ARG RUN_DEPS=" \
     #Uncomment the line below to add vi editor \
     vim \
     #Uncomment the lines below to add debuging \
-    valgrind \
-    gdb \
+    #valgrind \
+    #gdb \
 "
 ARG BUILD_DEPS=" \
     make \
