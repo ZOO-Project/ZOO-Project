@@ -88,7 +88,6 @@ int cgiMain(){
   
   maps *conf=NULL;
   conf = (maps *) malloc (MAPS_SIZE);
-  
   int ret = conf_read (file_value, conf);
   if ( ret == 2){
     //a verifier mais conf_read ne renvoie jamais 0
@@ -96,6 +95,27 @@ int cgiMain(){
     return 1;
   }
 
+  char ntmp[1024];
+#ifndef ETC_DIR
+#ifndef WIN32
+    getcwd (ntmp, 1024);
+#else
+    _getcwd (ntmp, 1024);
+#endif
+
+    //  zGetcwd (ntmp, 1024);
+#else
+  sprintf(ntmp,"%s",ETC_DIR);
+#endif
+  char conf_file1[10240];
+  snprintf (conf_file1, 10240, "%s/oas.cfg", ntmp);
+  maps *oapi = (maps *) malloc (MAPS_SIZE);
+  ret = conf_read (conf_file1, oapi);
+  if ( ret == 2){
+    fprintf(stderr,_("Unable to load the %s file.\n"),file_value);
+    return 1;
+  }
+  addMapsToMaps(&conf,oapi);
   //dumpMaps(conf);
   
   int async_worker;
@@ -170,11 +190,11 @@ int cgiMain(){
 
 	  msg_obj = json_tokener_parse(msg);
 
-	  //#ifdef DEBUG
+#ifdef AMQP_DEBUG
 	  fprintf(stderr,"##########################################@@\n",getpid());
 	  fprintf(stderr,"# MSG TO TREAT:  %s\n",msg);
 	  fprintf(stderr,"##########################################@@\n",getpid());
-	  //#endif DEBUG
+#endif //AMQP_DEBUG
 
 	  json_object_object_get_ex(msg_obj,"request_inputs",&req_jobj);
 	  map* mpReq=jsonToMap(req_jobj);

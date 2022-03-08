@@ -2891,6 +2891,8 @@ runRequest (map ** inputs)
 	      cIdentifier[strlen(cIdentifier)-10]=0;
 	  }
 	}
+	if(cIdentifier!=NULL)
+	  addToMap(request_inputs,"Identifier",cIdentifier);
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
@@ -2907,6 +2909,66 @@ runRequest (map ** inputs)
 #ifdef DEBUG
 	  fprintf (stderr, "\nPID : %d\n", cpid);
 #endif
+
+#ifdef USE_AMQP
+
+      // Publish message in RabbitMQ
+      // m: the main configuration file
+      // s1: the service to execute
+      // request_inputs: the request as it has been parsed till now
+      // request_input_real_format: input maps
+      // request_output_real_format: output maps
+
+      init_amqp(m);
+      eres = SERVICE_ACCEPTED;
+      json_object *msg_jobj = json_object_new_object();
+
+      maps* lenv=getMaps(m,"lenv");
+      json_object *maps1_obj = mapToJson(lenv->content);
+      json_object_object_add(msg_jobj,"main_lenv",maps1_obj);
+
+      lenv=getMaps(m,"subscriber");
+      if(lenv!=NULL){
+	json_object *maps1_obj = mapToJson(lenv->content);
+	json_object_object_add(msg_jobj,"main_subscriber",maps1_obj);
+      }
+
+      json_object *req_format_jobj = mapsToJson(request_input_real_format);
+      json_object_object_add(msg_jobj,"request_input_real_format",req_format_jobj);
+
+      json_object *req_jobj = mapToJson(request_inputs);
+      json_object_object_add(msg_jobj,"request_inputs",req_jobj);
+
+      json_object *outputs_jobj = mapsToJson(request_output_real_format);
+      json_object_object_add(msg_jobj,"request_output_real_format",outputs_jobj);
+
+      bind_amqp();
+      init_confirmation();
+      if ( (send_msg(json_object_to_json_string_ext(msg_jobj,JSON_C_TO_STRING_PLAIN),"application/json") != 0) ){
+        eres = SERVICE_FAILED;
+      }
+      close_amqp();
+      json_object_put(msg_jobj);
+
+
+#ifdef RELY_ON_DB
+      init_sql(m);
+      recordServiceStatus(m);
+#endif
+#ifdef USE_CALLBACK
+      invokeCallback(m,NULL,NULL,0,0);
+#endif
+      eres = SERVICE_ACCEPTED;
+      createStatusFile(m,eres);
+      if(preference!=NULL)
+	setMapInMaps(m,"headers","Preference-Applied",preference->value);
+      //invokeBasicCallback(m,SERVICE_ACCEPTED);
+      printHeaders(m);
+      printf("Status: 201 Created \r\n\r\n");
+      return 1;
+      // ----- End USE_AMQP -----
+
+#else
 
 #ifndef WIN32
 	  pid = fork ();
@@ -3073,6 +3135,7 @@ runRequest (map ** inputs)
 		setMapInMaps(m,"lenv","jsonStr",jsonStr0);
 	      invokeBasicCallback(m,eres);
 	    }
+#endif
 	}else{
 	  loadHttpRequests(m,request_input_real_format);
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
@@ -4166,6 +4229,8 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    sprintf(ntmp,"%s",ETC_DIR);
 #endif
 	    map* r_inputs = getMapOrFill (&request_inputs, "metapath", "");
+	    setMapInMaps(conf,"lenv","usid",uusid->value);
+	    setMapInMaps(conf,"lenv","uusid",uusid->value);
 
 	    maps* lconf=dupMaps(iconf);
 	    // Determine the executionType for this run
@@ -4177,6 +4242,30 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      setMapInMaps(lconf,"main","executionType","json");
 	      initAllEnvironment(lconf,request_inputs,ntmp,"jrequest");
 	    }
+	    // Update every lenv map add add them to the main conf maps lenv section
+	    map* pmTmp0=*lenv;
+	    while(pmTmp0!=NULL){
+	      setMapInMaps(lconf,"lenv",pmTmp0->name,pmTmp0->value);
+	      pmTmp0=pmTmp0->next;
+	    }
+	    map* pmSubscribers;
+	    json_object *req_subscribers;
+	    if(json_object_object_get_ex(msg_obj,"main_subscriber",&req_subscribers)!=FALSE){
+	      pmSubscribers=jsonToMap(req_subscribers);
+	      if(pmSubscribers!=NULL){
+		maps* pmsaTmp=createMaps("subscriber");
+		pmsaTmp->content=pmSubscribers;
+		addMapsToMaps(&lconf,pmsaTmp);
+		freeMaps(&pmsaTmp);
+		free(pmsaTmp);
+	      }
+	    }
+	    maps* pmsTmp=getMaps(lconf,"lenv");
+	    dumpMap(pmsTmp->content);
+#ifdef USE_CALLBACK
+	    invokeCallback(lconf,NULL,NULL,0,0);
+#endif
+	    invokeBasicCallback(lconf,SERVICE_STARTED);
 
 
 	    // Populate the Registry
@@ -4218,6 +4307,22 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #endif
 	    }
 	    r_inputs = getMap (request_inputs, "Identifier");
+	    // TODO: Remove the following as we are already defining the
+	    // Identifier from the client ZOO-Kernel sending the message
+	    if(r_inputs==NULL){
+	      // JSON
+	      map* pmTmp=request_inputs;
+	      while(pmTmp!=NULL){
+		if(strstr(pmTmp->name,"processes")!=NULL){
+		  char* pczTmp=strstr(pmTmp->name,"processes")+2;
+		  pczTmp[strlen(pczTmp)-11]=0;
+		  addToMap(request_inputs,"Identifier",pczTmp);
+		  r_inputs = getMap (request_inputs, "Identifier");
+		  break;
+		}
+		pmTmp=pmTmp->next;
+	      }
+	    }
 	    service *s1;
 	    fetchService(zooRegistry,lconf,&s1,request_inputs,ntmp,r_inputs->value,printExceptionReportResponse);
 	    /**
@@ -4242,6 +4347,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    maps *request_output_real_format = NULL;
 	    maps *tmpmaps = request_input_real_format;
 	    int eres;
+	    map* pmExecutionType=getMapFromMaps(lconf,"main","executionType");
 
 	    if(json_object_object_get_ex(msg_obj,"request_input_real_format",&reqi_format_jobj)!=FALSE)
 	      request_input_real_format=jsonToMaps(reqi_format_jobj);
@@ -4267,11 +4373,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 
 	    dsNb=getMapFromMaps(conf,"lenv", "ds_nb");
 	    setMapInMaps(lconf, "lenv", "ds_nb",dsNb->value);
-	    map* usid = getMap(*lenv, "uusid");
-	    setMapInMaps(lconf, "lenv", "uusid",usid->value);
-	    setMapInMaps(lconf, "lenv", "usid",usid->value);
-	    usid = getMapFromMaps (lconf, "lenv", "uusid");
-	    usid = getMapFromMaps (lconf, "lenv", "uusid");
+	    map* usid = getMapFromMaps (lconf, "lenv", "uusid");
 	    map* tmpm = getMap(*lenv, "osid");
 	    setMapInMaps(lconf, "lenv", "osid",tmpm->value);
 	    tmpm = getMapFromMaps (lconf, "lenv", "osid");
@@ -4318,12 +4420,15 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    fflush(f2);
 	    free(fbkp);
 
+	    int iNbChars=7;
+	    if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
+	      iNbChars=8;
 	    fbkp =
 	      (char *)
 	      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
 		       strlen (usid->value) + 7) * sizeof (char));
-	    sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
-		     usid->value);
+	    sprintf (fbkp, "%s/%s_%s.%s", r_inputs->value, r_inputs1->value,
+		     usid->value, pmExecutionType->value);
 	    setMapInMaps (lconf, "lenv", "file.responseInit", fbkp);
 	    flog =
 	      (char *)
@@ -4348,7 +4453,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #ifdef USE_CALLBACK
 	    invokeCallback(lconf,NULL,NULL,0,0);
 #endif
-	    if(vid==0){
+	    if(vid==0 && (pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)){
 	      //
 	      // set status to SERVICE_STARTED and flush stdout to ensure full
 	      // content was outputed (the file used to store the ResponseDocument).
@@ -4389,8 +4494,8 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      (char *)
 	      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
 		       strlen (usid->value) + 13) * sizeof (char));
-	    sprintf (fbkp1, "%s/%s_final_%s.xml", r_inputs->value,
-		     r_inputs1->value, usid->value);
+	    sprintf (fbkp1, "%s/%s_final_%s.%s", r_inputs->value,
+		     r_inputs1->value, usid->value, pmExecutionType->value);
 	    setMapInMaps (lconf, "lenv", "file.responseFinal", fbkp1);
 
 	    f1 = freopen (fbkp1, "w+", stdout);
@@ -4462,10 +4567,38 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 				 &request_output_real_format, &eres);
 	    }
 
-	    if (eres != -1)
-	      outputResponse (s1, request_input_real_format,
-			      request_output_real_format, request_inputs,
-			      cpid, lconf, eres);
+	    if (eres != -1){
+	      if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
+		outputResponse (s1, request_input_real_format,
+				request_output_real_format, request_inputs,
+				cpid, lconf, eres);
+	      else{
+		setMapInMaps(lconf,"lenv","force","true");
+		createStatusFile(lconf,eres);
+		setMapInMaps(lconf,"lenv","force","false");
+		setMapInMaps(lconf,"lenv","no-headers","true");
+		fflush(stdout);
+		rewind(stdout);
+		json_object* res=printJResult(lconf,s1,request_output_real_format,eres);
+		const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
+		if(getMapFromMaps(lconf,"lenv","jsonStr")==NULL)
+		  setMapInMaps(lconf,"lenv","jsonStr",jsonStr0);
+		invokeBasicCallback(lconf,eres);
+		map* pmHasPrinted=getMapFromMaps(lconf,"lenv","hasPrinted");
+		if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
+		  if(getMapFromMaps(lconf,"lenv","no-headers")==NULL){
+		    printHeaders(lconf);
+		    printf("Status: 200 OK \r\n\r\n");
+		  }
+		  const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
+		  printf(jsonStr);
+		  printf("\n");
+		  fflush(stdout);
+		}
+		if(res!=NULL)
+		  json_object_put(res);
+	      }
+	    }
 	    fflush (stdout);
 
 	    fflush(stderr);

@@ -1,4 +1,6 @@
 Version 2.0.0
+  * Use the RabbitMQ also for OGC API - Processes
+  * Pass the subscriber if any is passed from the original request
   * Make C OGR base-vect-ops compatible with memory=protect
   * Add volumes to be shared by the ZOO-Kernel and the ZOO-FPM
   * Add a RabbitMQ and, a ZOO-FPM container to docker-compose
