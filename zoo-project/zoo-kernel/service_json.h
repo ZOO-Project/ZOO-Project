@@ -27,8 +27,6 @@
 
 #pragma once
 
-#include "service_internal_ms.h"
-
 #include "response_print.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -127,6 +125,8 @@ extern "C" {
     { "rangeSpacing", "spacing" }
   };
 
+  maps* jsonToMaps(json_object*);
+  map* jsonToMap(json_object*);
   json_object* mapToJson(map*);
   json_object* mapsToJson(maps*);
   json_object* serviceToJson(service*);

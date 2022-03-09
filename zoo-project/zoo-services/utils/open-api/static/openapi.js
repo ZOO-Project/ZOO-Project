@@ -90,7 +90,7 @@ function loadRequest(){
 		    if(!requestObject["inputs"][System["JSON_STR"]["inputs"][i]["id"]])
 			requestObject["inputs"][System["JSON_STR"]["inputs"][i]["id"]]=cInput;
 		    else{
-			if(!requestObject["inputs"][System["JSON_STR"]["inputs"][i]["id"]].length){
+			if(!Array.isArray(requestObject["inputs"][System["JSON_STR"]["inputs"][i]["id"]])){
 			    var saveObject=requestObject["inputs"][System["JSON_STR"]["inputs"][i]["id"]];
 			    requestObject["inputs"][System["JSON_STR"]["inputs"][i]["id"]]=[saveObject];
 			}

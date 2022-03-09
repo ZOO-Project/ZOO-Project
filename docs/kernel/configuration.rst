@@ -1,4 +1,3 @@
-
 .. _kernel_config:
 
 ZOO-Kernel configuration
@@ -427,6 +426,45 @@ with two different zcfg files.
 .. note:: 
   As currently implemented, the ZOO-Kernel searches the CWD for the library files of 
   included services if the ``libPath`` parameter is not set.
+
+RabbitMQ section
+................
+
+The ``[rabbitmq]`` section may be used to configure how to access the
+RabbitMQ server used for communication between the ZOO-Kernel and the
+ZOO-Kernel Fast Process Manager.
+
+This optional section is used only in case you have build your
+ZOO-Kernel with the following configure option:
+``--with-rabbitmq=yes``.
+
+The available parameters are the following:
+
+ * ``host``: the hostname or IP adddess of the server
+ * ``port``: the port used to connect
+ * ``user``: the user name
+ * ``passwd``: the password
+ * ``exchange``: the exchange
+ * ``routingkey``: the routing key
+ * ``queue``: the 'queue <https://www.rabbitmq.com/queues.html>'__ name
+
+Server section
+..............
+
+The ``[server]`` section is used by the ZOO-Kernel Fast Process
+Manager which handle execution of services should know how much
+instances you are willing to create to execute services.
+
+ * ``async_worker``: the number of instances
+
+To start the ZOO-Kernel Fast Process Manager you can use the following
+commands.
+
+.. code-block:: guess
+    :linenos:
+    
+    cd /usr/lib/cgi-bin
+    ./zoo_loader_fpm main.cfg
 
 
 OpenAPI Specification configuration file

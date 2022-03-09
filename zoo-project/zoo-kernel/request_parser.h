@@ -51,7 +51,8 @@ extern "C" {
   void checkValidValue(map*,map**,const char*,const char**,int);
   int validateRequest(maps**,service*,map*,maps**,maps**,HINTERNET*);
   void parseCookie(maps**,const char*);
-  
+  int parseInputHttpRequests(maps*,maps*, HINTERNET*);
+
 #ifdef __cplusplus
 }
 #endif

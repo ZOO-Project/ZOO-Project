@@ -1,3 +1,15 @@
+Version 2.0.0
+  * Use the RabbitMQ also for OGC API - Processes
+  * Pass the subscriber if any is passed from the original request
+  * Make C OGR base-vect-ops compatible with memory=protect
+  * Add volumes to be shared by the ZOO-Kernel and the ZOO-FPM
+  * Add a RabbitMQ and, a ZOO-FPM container to docker-compose
+  * Add documentation for RabbitMQ support and ZOO Fast Process
+  Manager (ZOO-FPM)
+  * Optional use of ZOO-Kernel Fast Process Manager backends to handle
+  asynchronous execution  
+  * Partial integration of the code from the
+  Publicamundi_David_integration01-devel branch
 Version 1.9.0
   * Update ZOO-Kernel internal messages natural languages po files
   * Fix issue with synchronous execution from the HTML UI when

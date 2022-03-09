@@ -100,6 +100,33 @@ AC_SUBST([CALLBACK_FILE])
 AC_SUBST([CALLBACK_USE])
 
 #============================================================================
+# Detect if rabbitmq is available
+#============================================================================
+
+AC_ARG_WITH([rabbitmq],
+    [AS_HELP_STRING([--with-rabbitmq], [asynchronous requests management with rabbitmq  ])],
+    [AMQP="-DUSE_AMQP"], [AMQP=""])
+
+if test -z "$AMQP"
+then
+    RABBITMQ_LDFLAGS=""
+    RABBITMQ_CPPFLAGS=""
+    RABBITMQ_FILE=""
+else
+    AC_CHECK_LIB([rabbitmq], [main])
+    RABBITMQ_LDFLAGS=`pkg-config --libs librabbitmq`
+    RABBITMQ_CPPFLAGS="-DUSE_AMQP" `pkg-config --cflags librabbitmq`
+    RABBITMQ_FILE="service_internal_amqp.o"
+    ZOOFPM_FILE="zoo_loader_fpm"
+    RELY_ON_DB="-DRELY_ON_DB"
+    AC_SUBST([RELY_ON_DB])
+fi
+AC_SUBST([RABBITMQ_LDFLAGS])
+AC_SUBST([RABBITMQ_CPPFLAGS])
+AC_SUBST([RABBITMQ_FILE])
+AC_SUBST([ZOOFPM_FILE])
+
+#============================================================================
 # Detect if openssl is available
 #============================================================================
 

@@ -675,6 +675,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		    }
 		  // Parse Header and Body from Reference
 		  xmlNodePtr cur3 = cur2->children;
+#ifdef USE_AMQP
+		  int iHeaders=0;
+#endif
 		  while (cur3 != NULL)
 		    {
 		      while (cur3 != NULL
@@ -722,6 +725,21 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					    (3 + xmlStrlen (val) +
 					     strlen (key)), "%s: %s", key,
 					    (char *) val);
+#ifdef USE_AMQP
+				  if(getMaps(*main_conf,"rabbitmq")){
+				    char* pcaName=NULL;
+				    pcaName=(char*) malloc((26)*sizeof(char));
+				    sprintf(pcaName,"rb_headers_%d",hInternet->nb);
+				    if(getMapFromMaps(*main_conf,"lenv",pcaName)==NULL){
+				      setMapInMaps(*main_conf,"lenv",pcaName,has);
+				    }
+				    else{
+				      maps* pmCurrent=getMaps(*main_conf,"lenv");
+				      setMapArray(pmCurrent->content,pcaName,iHeaders,has);
+				    }
+				  }
+				  iHeaders++;
+#endif
 				  free (key);
 				}
 			      xmlFree (val);
@@ -1876,7 +1894,6 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
         }
       tmpReqI = tmpReqI->next;
     }
-
   ensureDecodedBase64 (request_inputs);
   return 1;
 }
@@ -2036,4 +2053,75 @@ void parseCookie(maps** conf,const char* cookie){
   freeMaps(&res);
   free(res);
   free(tcook);
+}
+
+/**
+ * Parse all the http requests possibily attached to inputs and, add them to the
+ * request queue.
+ *
+ * @param conf maps containing the main configuration file
+ * @param inputs maps containing all the inputs
+ * @param hInternet an HTINTERNET connection
+ * @return 0 in case of success
+ */
+int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
+  maps* curs=inputs;
+  int iCnt=0;
+  while(curs!=NULL){
+    map* href=getMap(curs->content,"href");
+    if(href!=NULL){
+      char* pcaHeaders=(char *)malloc(22*sizeof(char));
+      sprintf(pcaHeaders,"rb_headers_%d",iCnt);
+      map* pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+      int iHeaderCnt=0;
+      while(pmTmp!=NULL){
+	char* pcaTmpValue=zStrdup(pmTmp->value);
+	hInternet->ihandle[iCnt].header =
+	  curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
+	free(pcaTmpValue);
+	free(pcaHeaders);
+	pcaHeaders=(char *)malloc(33*sizeof(char));
+	iHeaderCnt++;
+	sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
+	pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+      }
+      map* len=getMap(curs->content,"length");
+      if(len!=NULL and atoi(len->value)>1){
+        int llen=atoi(len->value);
+        for(int i=0;i<llen;i++){
+          map* body=getMapArray(curs->content,"Body",i);
+          if(body!=NULL){
+            addRequestToQueue(&conf,hInternet,(char *) href->value,false);
+            InternetOpenUrl (hInternet,
+                             href->value,
+                             body->value,
+                             strlen(body->value),
+                             INTERNET_FLAG_NO_CACHE_WRITE,
+                             0,
+                             conf);
+          }else{
+            addRequestToQueue(&conf,hInternet,(char *) href->value,true);
+          }
+        }
+      }else{
+        map* body=getMap(curs->content,"Body");
+        if(body!=NULL){
+          addRequestToQueue(&conf,hInternet,(char *) href->value,false);
+          InternetOpenUrl (hInternet,
+                           href->value,
+                           body->value,
+                           strlen(body->value),
+                           INTERNET_FLAG_NO_CACHE_WRITE,
+                           0,
+                           conf);
+        }else{
+          addRequestToQueue(&conf,hInternet,(char *) href->value,true);
+        }
+      }
+      iCnt++;
+    }
+    curs=curs->next;
+  }
+
+  return 0;
 }
