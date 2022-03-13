@@ -522,6 +522,10 @@ AC_ARG_WITH([ms-version],
        [AS_HELP_STRING([--with-ms-version=VERSION], [Specifies the MapServer version to build against])], 
        [MS_VERSION="$withval"], [MS_VERSION=""])
 
+AC_ARG_WITH([ms-force-linkage],
+       [AS_HELP_STRING([--with-ms-force-linkage=yes], [Specifies if the MapServer version should be force linked])], 
+       [MS_FORCE_LINKAGE="$withval"], [MS_FORCE_LINKAGE=""])
+
 if test -z $MS_SRC_PATH;
 then
 	MS_CPPFLAGS=""
@@ -536,7 +540,12 @@ else
        else
 	if test "x$MS_VERSION" = "x7";
 	then
+		
 		MS_LDFLAGS="-L$MS_SRC_PATH/lib -lmapserver"
+		if test "x$MS_FORCE_LINKAGE" = "xyes";
+		then
+			MS_LDFLAGS="$MS_LDFLAGS -Wl,-rpath,$MS_SRC_PATH/lib/"
+		fi
 		MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include/mapserver "
                	AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
         else

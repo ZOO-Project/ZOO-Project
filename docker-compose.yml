@@ -14,11 +14,13 @@ services:
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
       - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
       - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/usr/lib/cgi-bin/subscriber.py
+      - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/.htaccess:/var/www/html/.htaccess
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
       - ./docker/com:/usr/com/zoo-project
       - ./docker/tmp:/tmp/zTmp
+      - ./thirds/MapServer/share/ogcapi/templates/html-bootstrap4:/mapserver/share/mapserver/ogcapi/templates/html-plain/
     depends_on:
       - pgbouncer
       - redis
@@ -32,6 +34,7 @@ services:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
       - ./docker/tmp:/tmp/zTmp
+      - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/com:/usr/com/zoo-project
     depends_on:
       - rabbitmq

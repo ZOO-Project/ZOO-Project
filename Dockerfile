@@ -12,7 +12,13 @@ ARG BUILD_DEPS=" \
 ARG RUN_DEPS=" \
     libcurl3-gnutls \
     libfcgi \
-    libmapserver-dev \
+    # For latest MapServer
+    libfribidi0 \
+    libprotobuf-c1 \
+    #libfribidi-dev \
+    #libprotobuf-c-dev \
+    # For packaged MapServer
+    #libmapserver-dev \
     curl \
     \
     saga \
@@ -64,6 +70,13 @@ ARG BUILD_DEPS=" \
     autoconf \
     gcc \
     gettext \
+    # Latest MapServer dependencies
+    swig \
+    protobuf-c-compiler \
+    libprotobuf-c-dev \
+    libfreetype6-dev \
+    libcairo2-dev \
+    libfribidi-dev \
     \
     # Comment lines bellow if nor OTB nor SAGA \
     libotb-dev \
@@ -97,13 +110,38 @@ ARG BUILD_DEPS=" \
 "
 WORKDIR /zoo-project
 COPY . .
+#COPY thirds/MapServer-GS thirds/
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && make -C ./thirds/cgic206 libcgic.a \
     \
+    && cd thirds \
+    && git clone https://github.com/MapServer/MapServer.git \
+    && cd MapServer \
+    #&& git clone --branch=add-save-config https://github.com/GeoLabs/MapServer.git MapServer-GS \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+       -DWITH_PYTHON=0 \
+       -DWITH_CLIENT_WMS=1 \
+       -DWITH_CLIENT_WFS=1 \
+       -DCMAKE_PREFIX_PATH=/usr/ \
+       -DWITH_KML=1 \
+       -DCMAKE_INSTALL_PREFIX=/usr \
+       -DWITH_OGCAPI=1 \
+       -DPROTOBUF_INCLUDE_DIR=/usr/include/google//protobuf-c \
+       -DPROTOBUFC_LIBRARY=/usr/lib/x86_64-linux-gnu/libprotobuf-c.so \
+       -DPROTOBUF_COMPILER=/usr/bin/protoc-c \
+       -DPython_INCLUDE_DIRS=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")  \
+       -DPython_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))") \
+       -DCMAKE_INSTALL_PREFIX=/mapserver \
+    && make -j 4 \
+    && make install PREFIX=/mapserver \
+    && cd ../../.. \
     && cd ./zoo-project/zoo-kernel \
+    # Uncomment bellow to fetch latest json-c from GitHub \
     #&& git clone https://github.com/json-c/json-c.git \
     #&& mkdir json-c-build \
     #&& cd json-c-build \
@@ -113,7 +151,8 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --help \ 
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/mapserver --with-ms-version=7 --with-ms-force-linkage=yes --with-ms-obj=../../thirds/MapServer/build/CMakeFiles/mapserver.dir/mapfile.c.o --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
@@ -272,8 +311,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG RUN_DEPS=" \
     apache2 \
     curl \
-    cgi-mapserver \
-    mapserver-bin \
+    # Not needed if MapServer is built from source \
+    #cgi-mapserver \
+    #mapserver-bin \
     xsltproc \
     libxml2-utils \
     gnuplot \
@@ -306,6 +346,7 @@ ARG WS_SERVER_URL="ws://localhost"
 
 WORKDIR /zoo-project
 COPY ./docker/startUp.sh /
+COPY ./docker/mapserver.conf /mapserver/etc/mapserver.conf
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -323,7 +364,7 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-services/echo-py/cgi-env/ /usr
 COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess
 COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
-
+COPY --from=builder1 /mapserver /mapserver
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
 COPY --from=builder1 /zoo-project/docker/oas.cfg /usr/lib/cgi-bin/
@@ -371,7 +412,8 @@ RUN set -ex \
     # && sed "s:Listen 80:Listen $PORT:g" -i /etc/apache2/ports.conf \
     \
     && mkdir -p /tmp/zTmp/statusInfos \
-    && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project \
+    && ln -s /mapserver/bin/mapserv /usr/lib/cgi-bin/mapserv \
+    && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project /mapserver/etc/ \
     && chmod 755 /startUp.sh \
     \
     # remove invalid zcfgs \

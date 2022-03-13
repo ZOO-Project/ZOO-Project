@@ -1,4 +1,8 @@
 Version 2.0.0
+  * Add support for MapServer 8.0 (actually 7.7-dev) including
+  returning result as OGC API -Features
+  * Integrate downloading MapServer 8.0 and building from the
+  Dockerfile
   * Use the RabbitMQ also for OGC API - Processes
   * Pass the subscriber if any is passed from the original request
   * Make C OGR base-vect-ops compatible with memory=protect
