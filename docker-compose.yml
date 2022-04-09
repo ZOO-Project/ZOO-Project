@@ -18,7 +18,7 @@ services:
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
       - ./docker/com:/usr/com/zoo-project
-      - ./docker/tmp:/tmp/zTmp
+      - zTmp:/tmp/zTmp
     depends_on:
       - pgbouncer
       - redis
@@ -88,3 +88,11 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
+
+volumes:
+  zTmp:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind,uid=33,gid=33
+      device: $PWD/docker/tmp
