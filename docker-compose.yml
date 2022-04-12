@@ -31,7 +31,7 @@ services:
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
-      - ./docker/tmp:/tmp/zTmp
+      - zTmp:/tmp/zTmp
       - ./docker/com:/usr/com/zoo-project
     depends_on:
       - rabbitmq
@@ -93,6 +93,7 @@ volumes:
   zTmp:
     driver: local
     driver_opts:
-      type: none
-      o: bind,uid=33,gid=33
-      device: $PWD/docker/tmp
+      type: tmpfs
+      o: uid=33,gid=33
+      device: tmpfs
+      
