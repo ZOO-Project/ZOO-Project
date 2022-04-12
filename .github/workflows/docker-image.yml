@@ -48,7 +48,7 @@ jobs:
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Start the test env
-      run: mkdir docker/tmp ; chmod 777 -R docker/ ; docker-compose up -d
+      run: docker-compose up -d
     - name: Install required package
       run: docker exec zoo-project_zookernel_1 /bin/bash -c "apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get -y install lynx;"
     - name: Run GetCapabilities tests version 1.0.0
