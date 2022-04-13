@@ -93,7 +93,6 @@ volumes:
   zTmp:
     driver: local
     driver_opts:
-      type: tmpfs
-      o: uid=33,gid=33
-      device: tmpfs
-      
+      type: none
+      o: bind,uid=33,gid=33
+      device: $PWD/docker/tmp
