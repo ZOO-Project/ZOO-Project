@@ -62,7 +62,7 @@ Open a terminal and run the following commands:
 ````
 git clone https://github.com/ZOO-Project/ZOO-Project.git
 cd ZOO-Project
-mkdir -p docker/tmp && chmod -R 777 docker
+mkdir -p docker/tmp docker/com && chmod -R 777 docker
 docker-compose up 
 ````
 
