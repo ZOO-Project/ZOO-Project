@@ -18,7 +18,7 @@ services:
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
       - ./docker/com:/usr/com/zoo-project
-      - zTmp:/tmp/zTmp
+      - ./docker/tmp:/tmp/zTmp
     depends_on:
       - pgbouncer
       - redis
@@ -31,7 +31,7 @@ services:
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
-      - zTmp:/tmp/zTmp
+      - ./docker/tmp:/tmp/zTmp
       - ./docker/com:/usr/com/zoo-project
     depends_on:
       - rabbitmq
@@ -88,11 +88,3 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
-
-volumes:
-  zTmp:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind,uid=33,gid=33
-      device: $PWD/docker/tmp
