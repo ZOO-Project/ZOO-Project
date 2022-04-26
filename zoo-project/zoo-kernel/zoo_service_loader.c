@@ -68,6 +68,7 @@ extern "C" int crlex ();
 #include "request_parser.h"
 #include "service.h"
 
+
 #if defined(WIN32) || defined(USE_JSON)
 #include "caching.h"
 #endif
@@ -317,6 +318,138 @@ bool compareCnt(maps* conf, const char* field, const char* type){
       return true;
 }
 
+int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
+    map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
+    map *servicesNamespaceParentPath = getMapFromMaps (m, "servicesNamespace", "path");
+    memset(newPath,0,maxSize);
+
+    if (zooServicesNamespaceMap && strcmp(zooServicesNamespaceMap->value,"anonymous") == 0 ){
+        if (oldPath){
+            snprintf (newPath,maxSize, "%s", oldPath);
+        }
+    } else if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && servicesNamespaceParentPath && servicesNamespaceParentPath->value){
+        snprintf (newPath,maxSize, "%s/%s", servicesNamespaceParentPath->value,zooServicesNamespaceMap->value);
+    } else {
+        if (oldPath)
+            snprintf (newPath,maxSize, "%s", oldPath);
+    }
+    return 0;
+}
+
+size_t calcDecodeLength(const char* b64input) { //Calculates the length of a decoded string
+    size_t len = strlen(b64input),
+            padding = 0;
+    if (b64input[len-1] == '=' && b64input[len-2] == '=') //last two chars are =
+        padding = 2;
+    else if (b64input[len-1] == '=') //last char is =
+        padding = 1;
+
+    return (len*3)/4 - padding;
+}
+
+int Base64Decode(char* b64message, unsigned char** buffer, size_t* length) { //Decodes a base64 encoded string
+    BIO *bio, *b64;
+
+    int decodeLen = calcDecodeLength(b64message);
+    *buffer = (unsigned char*)malloc(decodeLen + 1);
+    (*buffer)[decodeLen] = '\0';
+
+    bio = BIO_new_mem_buf(b64message, -1);
+    b64 = BIO_new(BIO_f_base64());
+    bio = BIO_push(b64, bio);
+
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Do not use newlines to flush buffer
+    *length = BIO_read(bio, *buffer, strlen(b64message));
+    // assert(*length == decodeLen); //length should equal decodeLen, else something went horribly wrong
+    BIO_free_all(bio);
+
+    return (0); //success
+}
+
+int addServicesNamespaceToMap(maps* conf){
+    int ret=0;
+    int ei = 1;
+    int canContinue=false;
+    char **orig = environ;
+    char *s=*orig;
+    char* JWT=NULL;
+    char* namespaceName=NULL;
+
+    if(orig!=NULL)
+        for (; s; ei++ ) {
+            // retrieving service workspace
+            if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
+                if (strstr(s,"REDIRECT_REDIRECT_SERVICES_NAMESPACE")!=NULL){
+                    char* baseU=strchr(s,'=');
+                    if (strlen(baseU)>1) {
+                        namespaceName = ++baseU;
+#ifdef DEBUG
+                        fprintf(stderr,"zooServicesNamespace: %s\n",namespaceName);
+#endif
+
+                        // checking if namespace folder exists
+                        char *namespaceFolder = (char *) malloc(1024);
+                        memset(namespaceFolder, '\0', 1024);
+                        map *servicesNamespaceParentFolder = getMapFromMaps(conf, "servicesNamespace", "path");
+                        sprintf(namespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, namespaceName);
+                        DIR *dir = opendir(namespaceFolder);
+                        if (dir) {
+                            // creating a zooServicesNamespace map
+                            // the map will contain the namespace name
+                            maps *_tmpMaps = createMaps("zooServicesNamespace");
+                            if (_tmpMaps->content == NULL)
+                                _tmpMaps->content = createMap("namespace", namespaceName);
+                            else
+                                addToMap(_tmpMaps->content, "namespace", namespaceName);
+
+                            // adding the zooServicesNamespace map to the other maps
+                            if (conf) {
+                                addMapsToMaps(&conf, _tmpMaps);
+                            }
+                        } else {
+                            map* error=createMap("code","BadRequest");
+                            addToMap(error,"message",_("The resource is not available"));
+                            printExceptionReportResponseJ(conf,error);
+                            ret = 1;
+                            freeMap(&error);
+                            free(error);
+                        }
+                    }
+                }
+            }
+            s = *(orig+ei);
+        }
+
+    return ret;
+}
+
+void setRootUrlMap(maps* m){
+    char *rootUrl= " ";
+    map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
+    map* rootHost=getMapFromMaps(m,"openapi","rootHost");
+    map* rootPath=getMapFromMaps(m,"openapi","rootPath");
+
+#ifdef DEBUG
+    fprintf (stderr, "zooServicesNamespaceMap: %s\n", zooServicesNamespaceMap->value);
+    fprintf (stderr, "rootHost: %s\n", rootHost->value);
+    fprintf (stderr, "rootPath: %s\n", rootPath->value);
+#endif
+
+    if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && strcmp(zooServicesNamespaceMap->value,"generalNamespace") != 0 ){
+        rootUrl=(char*) malloc((strlen(rootHost->value)+(strlen(rootPath->value)+ strlen(zooServicesNamespaceMap->value)+13)*sizeof(char)));
+        sprintf(rootUrl,"%s/%s/%s",rootHost->value, zooServicesNamespaceMap->value, rootPath->value);
+    } else {
+        rootUrl=(char*) malloc((strlen(rootHost->value)+(strlen(rootPath->value)+13)*sizeof(char)));
+        sprintf(rootUrl,"%s/%s",rootHost->value, rootPath->value);
+    }
+
+#ifdef DEBUG
+    fprintf (stderr, "rootUrl: %s\n", rootUrl);
+#endif
+    setMapInMaps(m,"openapi","rootUrl",rootUrl);
+}
+
+
 /**
  * Recursivelly parse zcfg starting from the ZOO-Kernel cwd.
  * Call the func function given in arguments after parsing the ZCFG file.
@@ -334,12 +467,20 @@ bool compareCnt(maps* conf, const char* field, const char* type){
  * @see inheritance, readServiceFile
  */
 int
-recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
+recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		 //( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_dir,
 		 char *prefix, int saved_stdout, int level,
 		 void (func) (registry *, maps *, void*, void*, service *) )
 		 //void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr, service *) )
 {
+
+  // if services namespace is present in the map, conf_dir will
+  // point to the user services path else it will point to
+  // the default service path
+  char conf_dir[1024];
+    getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
+
+
   struct dirent *dp;
   int scount = 0;
   xmlDocPtr doc=(xmlDocPtr) doc1;
@@ -431,6 +572,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 		fprintf (stderr, "#################\n%s\n#################\n",
 			 tmps1);
 #endif
+        fprintf (stderr, "readServiceFile: file %s\n", tmps1);
 		t = readServiceFile (m, tmps1, &s1, tmpsn);
 		free (tmpsn);
 		tmpsn=NULL;
@@ -480,6 +622,13 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
   (void) closedir (dirp);
   return 1;
 }
+
+
+
+
+
+
+
 
 /**
  * When th zcfg file is not found, print error message and cleanup memory
@@ -553,6 +702,13 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
     setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
   } 
   else {
+    char conf_dir2[1024*2];
+    memset(conf_dir2,0,1024*2);
+
+    strcpy(conf_dir2,ntmp);
+    getServicesNamespacePath(m,ntmp,conf_dir2,1024);
+    strcpy(ntmp,conf_dir2);
+
     snprintf (tmps1, 1024, "%s/%s.zcfg", ntmp, cIdentifier);
 #ifdef DEBUG
     fprintf (stderr, "Trying to load %s\n", tmps1);
@@ -688,7 +844,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
  */
 int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 				void (func) (registry *, maps *, void*, void*, service *),
-				void* doc, void* n, char* conf_dir, map* request_inputs,
+				void* doc, void* n, char *conf_dir_, map* request_inputs,
 				void (funcError) (maps*, map*) ){
   char *orig = zStrdup (r_inputs);
   service* s1=NULL;
@@ -696,6 +852,10 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
   int t;
   int scount = 0;
   struct dirent *dp;
+
+  char conf_dir[1024];
+  getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
+
 
   zDup2 (fileno (stderr), fileno (stdout));  
   if (strcasecmp ("all", orig) == 0)
@@ -1366,6 +1526,7 @@ void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                    maps ** inputs, maps ** ioutputs, int *eres)
 {
+  char serviceNamespacePath[1024];
   char tmps1[1024];
   char ntmp[1024];
   maps *m = *myMap;
@@ -1374,6 +1535,16 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   /**
    * Extract serviceType to know what kind of service should be loaded
    */
+
+    memset(serviceNamespacePath,'\0',1024);
+    map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
+    map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
+
+    if( zooServicesNamespaceMap && strlen(zooServicesNamespaceMap->value)>0 && zooServicesNamespacePathMap && strlen(zooServicesNamespacePathMap->value)>0){
+        sprintf(serviceNamespacePath,"%s/%s",zooServicesNamespacePathMap->value,zooServicesNamespaceMap->value);
+        setMapInMaps(m, "lenv","cwd", serviceNamespacePath);
+    }
+
   map *r_inputs = NULL;
   map* cwdMap=getMapFromMaps(m,"main","servicePath");
   if(cwdMap!=NULL){
@@ -1391,26 +1562,29 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   fflush (stderr);
 #endif
 
-  map* libp = getMapFromMaps(m, "main", "libPath");  
+  map* libp = getMapFromMaps(m, "main", "libPath");
+
   if (strlen (r_inputs->value) == 1
       && strncasecmp (r_inputs->value, "C", 1) == 0)
   {
-     if (libp != NULL && libp->value != NULL) {
-	    r_inputs = getMap (s1->content, "ServiceProvider");
-		sprintf (tmps1, "%s/%s", libp->value, r_inputs->value);
-	 }
-     else {	 
-        r_inputs = getMap (request_inputs, "metapath");
-        if (r_inputs != NULL)
-          sprintf (tmps1, "%s/%s", ntmp, r_inputs->value);
-        else
-          sprintf (tmps1, "%s/", ntmp);
-	  
-        char *altPath = zStrdup (tmps1);
-        r_inputs = getMap (s1->content, "ServiceProvider");
-        sprintf (tmps1, "%s/%s", altPath, r_inputs->value);
-        free (altPath);
-	 }
+      if (libp != NULL && libp->value != NULL) {
+          r_inputs = getMap (s1->content, "ServiceProvider");
+          sprintf (tmps1, "%s/%s", libp->value, r_inputs->value);
+          fprintf (stderr, "libpath1 + service provider : %s/%s", libp->value, r_inputs->value);
+      }
+      else {
+          r_inputs = getMap (request_inputs, "metapath");
+          if (r_inputs != NULL)
+              sprintf (tmps1, "%s/%s", ntmp, r_inputs->value);
+          else
+              sprintf (tmps1, "%s/", ntmp);
+
+          char *altPath = zStrdup ( strlen(serviceNamespacePath)>0?serviceNamespacePath:tmps1);
+
+          r_inputs = getMap (s1->content, "ServiceProvider");
+          sprintf (tmps1, "%s/%s", altPath, r_inputs->value);
+          free (altPath);
+      }
 #ifdef DEBUG
       fprintf (stderr, "Trying to load %s\n", tmps1);
 #endif
@@ -1614,7 +1788,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 #ifdef USE_PYTHON
   if (strncasecmp (r_inputs->value, "PYTHON", 6) == 0)
-    {		  
+    {
       *eres =
         zoo_python_support (&m, request_inputs, s1,
                             &request_input_real_format,
@@ -1939,6 +2113,18 @@ runRequest (map ** inputs)
   fprintf (stderr, "***** END MAPS\n");
 #endif
 
+
+  int i = addServicesNamespaceToMap(m);
+  if(i) {
+      map* error=createMap("code","BadRequest");
+      addToMap(error,"message",_("The resource is not available"));
+      printExceptionReportResponseJ(m,error);
+      setMapInMaps(m,"lenv","status_code","404 Bad Request");
+      return 1;
+  }
+
+  maps* zooServicesNamespaceMap=getMaps(m,"zooServicesNamespace");
+
   map *getPath = getMapFromMaps (m, "main", "gettextPath");
   if (getPath != NULL)
     {
@@ -2110,6 +2296,7 @@ runRequest (map ** inputs)
   }
 
   // Populate the Registry
+  char conf_dir_[1024];
   char conf_dir[1024];
   int t;
   char tmps1[1024];
@@ -2118,14 +2305,20 @@ runRequest (map ** inputs)
   map* cwdMap0=getMapFromMaps(m,"main","servicePath");
   if (r_inputs != NULL)
     if(cwdMap0!=NULL)
-      snprintf (conf_dir, 1024, "%s/%s", cwdMap0->value, r_inputs->value);
+      snprintf (conf_dir_, 1024, "%s/%s", cwdMap0->value, r_inputs->value);
     else
-      snprintf (conf_dir, 1024, "%s/%s", ntmp, r_inputs->value);
+      snprintf (conf_dir_, 1024, "%s/%s", ntmp, r_inputs->value);
   else
     if(cwdMap0!=NULL)
-      snprintf (conf_dir, 1024, "%s", cwdMap0->value);
+      snprintf (conf_dir_, 1024, "%s", cwdMap0->value);
     else
-      snprintf (conf_dir, 1024, "%s", ntmp);
+      snprintf (conf_dir_, 1024, "%s", ntmp);
+
+   getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
+#ifdef DEBUG
+  fprintf (stderr, "conf_dir: %s\n", conf_dir);
+  fprintf (stderr, "new conf_dir: %s\n", conf_dir);
+#endif
   map* reg = getMapFromMaps (m, "main", "registry");
   registry* zooRegistry=NULL;
   if(reg!=NULL){
@@ -2228,6 +2421,8 @@ runRequest (map ** inputs)
     addMapsToMaps(&m,m1);
     freeMaps(&m1);
     free(m1);
+
+    setRootUrlMap(m);
     // Redirect using HTTP Status 301 (cf. rfc2616) in case full_html_support is
     // set to true
     map* pmTmp0=getMapFromMaps(m,"openapi","full_html_support");
@@ -2827,7 +3022,7 @@ runRequest (map ** inputs)
       int t=0;
       if(strstr(pcaCgiQueryString,"/processes/")==NULL){
 	map* error=createMap("code","BadRequest");
-	addToMap(error,"message",_("The ressource is not available"));
+	addToMap(error,"message",_("The resource is not available"));
 	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
 	printExceptionReportResponseJ(m,error);
 	freeMaps (&m);
