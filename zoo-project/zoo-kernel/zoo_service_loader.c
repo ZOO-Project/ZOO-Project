@@ -336,50 +336,17 @@ int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
     return 0;
 }
 
-size_t calcDecodeLength(const char* b64input) { //Calculates the length of a decoded string
-    size_t len = strlen(b64input),
-            padding = 0;
-    if (b64input[len-1] == '=' && b64input[len-2] == '=') //last two chars are =
-        padding = 2;
-    else if (b64input[len-1] == '=') //last char is =
-        padding = 1;
-
-    return (len*3)/4 - padding;
-}
-
-int Base64Decode(char* b64message, unsigned char** buffer, size_t* length) { //Decodes a base64 encoded string
-    BIO *bio, *b64;
-
-    int decodeLen = calcDecodeLength(b64message);
-    *buffer = (unsigned char*)malloc(decodeLen + 1);
-    (*buffer)[decodeLen] = '\0';
-
-    bio = BIO_new_mem_buf(b64message, -1);
-    b64 = BIO_new(BIO_f_base64());
-    bio = BIO_push(b64, bio);
-
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Do not use newlines to flush buffer
-    *length = BIO_read(bio, *buffer, strlen(b64message));
-    // assert(*length == decodeLen); //length should equal decodeLen, else something went horribly wrong
-    BIO_free_all(bio);
-
-    return (0); //success
-}
-
 int addServicesNamespaceToMap(maps* conf){
     int ret=0;
-    int ei = 1;
-    int canContinue=false;
     char **orig = environ;
     char *s=*orig;
-    char* JWT=NULL;
     char* namespaceName=NULL;
 
     if(orig!=NULL)
         for (; s; ei++ ) {
             // retrieving service workspace
             if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
-                if (strstr(s,"REDIRECT_REDIRECT_SERVICES_NAMESPACE")!=NULL){
+                if (strstr(s,"SERVICES_NAMESPACE")!=NULL){
                     char* baseU=strchr(s,'=');
                     if (strlen(baseU)>1) {
                         namespaceName = ++baseU;
@@ -572,7 +539,6 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		fprintf (stderr, "#################\n%s\n#################\n",
 			 tmps1);
 #endif
-        fprintf (stderr, "readServiceFile: file %s\n", tmps1);
 		t = readServiceFile (m, tmps1, &s1, tmpsn);
 		free (tmpsn);
 		tmpsn=NULL;
@@ -622,13 +588,6 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
   (void) closedir (dirp);
   return 1;
 }
-
-
-
-
-
-
-
 
 /**
  * When th zcfg file is not found, print error message and cleanup memory
