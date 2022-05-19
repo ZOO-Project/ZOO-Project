@@ -318,6 +318,15 @@ bool compareCnt(maps* conf, const char* field, const char* type){
       return true;
 }
 
+/**
+ * Checks if the zooServicesNamespace map is present in the m map;
+ * if it is, the path to the directory where the ZOO-kernel should search for service providers will be updated.
+ *
+ * @param m the conf maps containing the main.cfg settings
+ * @param oldPath default location where the ZOO-kernel should search for service providers
+ * @param newPath location where the ZOO-kernel should search for service providers considering the namespace
+ * @param maxSize maximum number of bytes to be used in the newPath buffer.
+ */
 int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
     map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
     map *servicesNamespaceParentPath = getMapFromMaps (m, "servicesNamespace", "path");
@@ -336,6 +345,12 @@ int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
     return 0;
 }
 
+/***
+ * Checks if the env variable SERVICES_NAMESPACE is set;
+ * if it is, the zooServicesNamespace map will be added to the conf map
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ */
 int addServicesNamespaceToMap(maps* conf){
     int ret=0;
     char **orig = environ;
@@ -390,6 +405,10 @@ int addServicesNamespaceToMap(maps* conf){
     return ret;
 }
 
+/***
+ * Updates the rootUrl property in the map m by concatenating the rootHost, the namespace and the rootPath
+ * @param m the conf maps containing the main.cfg and oas.cfg settings
+ */
 void setRootUrlMap(maps* m){
     char *rootUrl= " ";
     map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
@@ -435,14 +454,12 @@ void setRootUrlMap(maps* m){
  */
 int
 recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
-		 //( maps * m, registry *r, xmlDocPtr doc, xmlNodePtr n, char *conf_dir,
 		 char *prefix, int saved_stdout, int level,
 		 void (func) (registry *, maps *, void*, void*, service *) )
-		 //void (func) (registry *, maps *, xmlDocPtr, xmlNodePtr, service *) )
 {
 
   // if services namespace is present in the map, conf_dir will
-  // point to the user services path else it will point to
+  // point to the namespace services path else it will point to
   // the default service path
   char conf_dir[1024];
     getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
