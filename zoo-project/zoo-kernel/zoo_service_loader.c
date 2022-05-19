@@ -353,6 +353,7 @@ int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
  */
 int addServicesNamespaceToMap(maps* conf){
     int ret=0;
+    int ei = 1;
     char **orig = environ;
     char *s=*orig;
     char* namespaceName=NULL;
