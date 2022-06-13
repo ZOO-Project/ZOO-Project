@@ -436,7 +436,6 @@ void setRootUrlMap(maps* m){
     setMapInMaps(m,"openapi","rootUrl",rootUrl);
 }
 
-
 /**
  * Recursivelly parse zcfg starting from the ZOO-Kernel cwd.
  * Call the func function given in arguments after parsing the ZCFG file.
@@ -2423,20 +2422,71 @@ runRequest (map ** inputs)
     }
     json_object *res=json_object_new_object();
     setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
+
+    // retrieves the deploy service provider from main.cfg
+    map* deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
+    map* undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
+
     /* - Root url */
-    if((strncasecmp(cgiRequestMethod,"post",4)==0 &&
-	(strstr(pcaCgiQueryString,"/processes/")==NULL ||
-	 strlen(pcaCgiQueryString)<=11))
-       ||
-       (strncasecmp(cgiRequestMethod,"DELETE",6)==0 &&
+    // POST method to route /processes with no deploy service provider specified
+    if(strncasecmp(cgiRequestMethod,"post",4)==0 && deployServiceProvider==NULL &&
+        (strstr(pcaCgiQueryString,"/processes/")==NULL || strlen(pcaCgiQueryString)<=11)){
+
+          setMapInMaps(m,"lenv","status_code","501");
+          map* error=createMap("code","NotImplemented");
+          addToMap(error,"message",_("The request method used to access the current path is not supported."));
+          printExceptionReportResponseJ(m,error);
+          json_object_put(res);
+          // TODO: cleanup memory
+          return 1;
+    }
+    // DELETE method to route /processes
+    else if ((strncasecmp(cgiRequestMethod,"DELETE",6)==0 &&
 	(strstr(pcaCgiQueryString,"/jobs/")==NULL || strlen(pcaCgiQueryString)<=6)) ){
-      setMapInMaps(m,"lenv","status_code","405");
-      map* error=createMap("code","InvalidMethod");
-      addToMap(error,"message",_("The request method used to access the current path is not supported."));
-      printExceptionReportResponseJ(m,error);
-      json_object_put(res);
-      // TODO: cleanup memory
-      return 1;
+
+        // if the undeploy service provider is not provided, return not implemented error
+        if(undeployServiceProvider==NULL){
+          setMapInMaps(m,"lenv","status_code","501");
+          map* error=createMap("code","NotImplemented");
+          addToMap(error,"message",_("The request method used to access the current path is not supported."));
+          printExceptionReportResponseJ(m,error);
+          json_object_put(res);
+          return 1;
+      }else {
+          fprintf(stderr,"%s\n",cgiQueryString);
+          char* p=strstr(cgiQueryString,"/processes/");
+          if (strlen(cgiQueryString)>11/*/processes/*/){
+
+            char *orig = zStrdup (p+11);
+            if(orig[strlen(orig)-1]=='/')
+                orig[strlen(orig)-1]=0;
+
+            char *theS=strchr(orig,'/');
+            if (theS){
+              *theS='\0';
+            }
+
+            fprintf(stderr,"%s\n",orig);
+
+            service *s1=NULL;
+            maps *request_output_real_format = NULL;
+            maps *request_input_real_format = NULL;
+
+            fprintf (stderr, "######## conf");
+            dumpMaps(m);
+            fprintf (stderr, "######## request_inputs");
+            dumpMap(request_inputs);
+
+            loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
+			   &request_output_real_format, &eres);
+
+//            int fail=runUndeployService(m,orig);
+//            free (orig);
+//            if (fail){
+//                return 1;
+//            }
+          }
+        }
     }
     else if(cgiContentLength==1){
       if(strncasecmp(cgiRequestMethod,"GET",3)!=0){
@@ -2537,7 +2587,10 @@ runRequest (map ** inputs)
 	if(pmTmp!=NULL)
 	  setMapInMaps(m,"headers","Location",pmTmp->value);
       }
-    }else if(strcmp(pcaCgiQueryString,"/processes")==0 || strcmp(pcaCgiQueryString,"/processes/")==0){
+    }
+    // GET method to route /processes or /processes/
+    // Returns list of processes
+    else if(strncasecmp(cgiRequestMethod,"get",3)==0 && (strcmp(pcaCgiQueryString,"/processes")==0 || strcmp(pcaCgiQueryString,"/processes/")==0)){
       /* - /processes */
       setMapInMaps(m,"lenv","requestType","desc");
       setMapInMaps(m,"lenv","serviceCnt","0");
@@ -2593,7 +2646,7 @@ runRequest (map ** inputs)
       }
       else if(strcasecmp(cgiRequestMethod,"get")==0){
 	/* - /jobs List (GET) */
-	if(strlen(pcaCgiQueryString)<=6){
+	if(strncasecmp(cgiRequestMethod,"get",3)==0 && strlen(pcaCgiQueryString)<=6){
 	  map* pmTmp=getMap(request_inputs,"limit");
 	  if(pmTmp!=NULL)
 	    setMapInMaps(m,"lenv","serviceCntLimit",pmTmp->value);
@@ -2997,7 +3050,7 @@ runRequest (map ** inputs)
     else{
       service* s1=NULL;
       int t=0;
-      if(strstr(pcaCgiQueryString,"/processes/")==NULL){
+      if(strstr(pcaCgiQueryString,"/processes")==NULL && strstr(pcaCgiQueryString,"/processes/")==NULL){
 	map* error=createMap("code","BadRequest");
 	addToMap(error,"message",_("The resource is not available"));
 	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
@@ -3014,7 +3067,7 @@ runRequest (map ** inputs)
 	xmlCleanupParser ();
 	zooXmlCleanupNs ();
 	return 1;
-      }else if(strcasecmp(cgiRequestMethod,"post")==0){
+      }else if(strcasecmp(cgiRequestMethod,"post")==0 ){
 	/* - /processes/{processId}/execution Execution (POST) */
 	eres = SERVICE_STARTED;
 	initAllEnvironment(m,request_inputs,ntmp,"jrequest");
@@ -3056,15 +3109,17 @@ runRequest (map ** inputs)
 	char* cIdentifier=NULL;
 	if(json_object_object_get_ex(jobj,"id",&json_io)!=FALSE){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
-	}else{
-	  if(strstr(pcaCgiQueryString,"/processes/")!=NULL && strlen(pcaCgiQueryString)>11){
+	} else if(strstr(pcaCgiQueryString,"/processes/")!=NULL && strlen(pcaCgiQueryString)>11){
 	    cIdentifier=zStrdup(strstr(pcaCgiQueryString,"/processes/")+11);
 	    if(strstr(cIdentifier,"execution")!=NULL)
 	      cIdentifier[strlen(cIdentifier)-10]=0;
-	  }
-	}
+	} else if( deployServiceProvider!=NULL ) {
+          cIdentifier = deployServiceProvider->value;
+    }
 	if(cIdentifier!=NULL)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
+
+    fprintf(stderr, "Identifier: %s\n", cIdentifier);
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
@@ -3197,7 +3252,7 @@ runRequest (map ** inputs)
 	      fbkpres =
 		(char *)
 		malloc ((strlen (r_inputs->value) +
-			 strlen (usid->value) + 7) * sizeof (char));                    
+			 strlen (usid->value) + 7) * sizeof (char));
 	      sprintf (fbkpres, "%s/%s.res", r_inputs->value, usid->value);
 	      bmap = createMaps("status");
 	      bmap->content=createMap("usid",usid->value);
