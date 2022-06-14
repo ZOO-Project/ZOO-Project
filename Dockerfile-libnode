@@ -1,0 +1,15 @@
+FROM ubuntu:bionic-20201119 AS base
+
+ARG NODE_VERSION=16.15.1
+
+RUN set -ex && \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install python3 g++-8 make python3-pip wget
+
+RUN wget https://github.com/nodejs/node/archive/refs/tags/v${NODE_VERSION}.tar.gz && \
+    mkdir -p /usr/src && \
+    tar -C /usr/src -zxvf v${NODE_VERSION}.tar.gz && \
+    cd /usr/src/node-${NODE_VERSION} && \
+    CXX=g++-8 ./configure --shared
+
+RUN cd /usr/src/node-${NODE_VERSION} && make -j4 && make install
