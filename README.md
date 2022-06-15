@@ -62,7 +62,8 @@ Open a terminal and run the following commands:
 ````
 git clone https://github.com/ZOO-Project/ZOO-Project.git
 cd ZOO-Project
+mkdir -p docker/tmp && chmod -R 777 docker
 docker-compose up 
 ````
 
-Then, from your favoritue browser, just load the following URL: http://localhost/ and get immediate access to the 700+ ZOO-Services through WPS and OGC API - Processes depending on your preferences 🎉.
+Then, from your favorite browser, just load the following URL: http://localhost/ and get immediate access to the 700+ ZOO-Services through WPS and OGC API - Processes depending on your preferences 🎉.
