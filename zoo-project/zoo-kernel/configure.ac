@@ -6,6 +6,7 @@ AC_CONFIG_MACRO_DIR([macros])
 AC_PROG_YACC
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_CXXCPP
 AC_PROG_SED
 AC_PROG_AWK
 
@@ -740,6 +741,52 @@ fi
 
 AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
+
+# ===========================================================================
+# Detect if libnode is installed
+# ===========================================================================
+
+AC_ARG_WITH([nodejs], 
+	[AS_HELP_STRING([--with-nodejs=PATH], [Specifies --with-libnode=path-to-libnode to enable Node.js support, specify --with-libnode on linux debian like, Node.js support is disabled by default ])], 
+	[NODEJS_HOME="$withval";NODEJS_ENABLED="-DUSE_NODEJS"], [NODEJS_ENABLED=""])
+
+if test -z "$NODEJS_ENABLED"
+then
+	NODEJS_FILE=""
+else
+	AC_LANG_PUSH([C++])
+	AC_LANG_POP([C++])
+	AC_LANG_PUSH([C++])
+	NODEJS_FILE="service_internal_nodejs.o"
+	if test "$NODEJS_HOME" = "yes"
+	then
+		NODEJS_HOME=/usr
+		NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/node/"
+		# libnode is not compatible across versions on purpose
+        NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
+        NODEJS_LIB="node"
+	fi 
+
+	CPPFLAGS_SAVE="$CPPFLAGS"
+    CPPFLAGS="$NODEJS_CPPFLAGS"
+
+	AC_CHECK_HEADERS([node.h],
+        [], [AC_MSG_ERROR([could not find headers include related to libnode])])
+
+	LIBS_SAVE="$LIBS"
+    LIBS="$NODEJS_LDFLAGS"
+
+    AC_CHECK_LIB([$NODEJS_LIB], [node_module_register],
+		[], [AC_MSG_ERROR([could not find $NODEJS_LIB])], [])
+	LIBS="$LIBS_SAVE"
+	AC_LANG_POP([C++])
+	
+    AC_SUBST([NODEJS_CPPFLAGS])
+    AC_SUBST([NODEJS_LDFLAGS])
+fi
+
+AC_SUBST([NODEJS_ENABLED])
+AC_SUBST([NODEJS_FILE])
 
 # ===========================================================================
 # Detect if php is installed
