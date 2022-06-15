@@ -12,7 +12,8 @@ RUN wget https://github.com/nodejs/node/archive/refs/tags/v${NODE_VERSION}.tar.g
     cd /usr/src/node-${NODE_VERSION} && \
     CXX=g++-8 ./configure --shared --prefix=/usr
 
-RUN cd /usr/src/node-${NODE_VERSION} && \
-    make -j4 && make install && \
+RUN cd /usr/src/node-${NODE_VERSION} && make -j4 
+
+RUN cd /usr/src/node-${NODE_VERSION} && make install && \
     install out/Release/node /usr/bin && \
     cd /usr/lib && ln -s libnode.so.93 libnode.so
