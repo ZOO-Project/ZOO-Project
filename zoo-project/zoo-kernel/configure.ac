@@ -755,17 +755,14 @@ then
 	NODEJS_FILE=""
 else
 	AC_LANG_PUSH([C++])
-	AC_LANG_POP([C++])
-	AC_LANG_PUSH([C++])
 	NODEJS_FILE="service_internal_nodejs.o"
 	if test "$NODEJS_HOME" = "yes"
 	then
 		NODEJS_HOME=/usr
-		NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/node/"
-		# libnode is not compatible across versions on purpose
-        NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
-        NODEJS_LIB="node"
 	fi 
+	NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/node/"
+	NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
+	NODEJS_LIB="node"
 
 	CPPFLAGS_SAVE="$CPPFLAGS"
     CPPFLAGS="$NODEJS_CPPFLAGS"
