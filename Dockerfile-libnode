@@ -10,6 +10,6 @@ RUN wget https://github.com/nodejs/node/archive/refs/tags/v${NODE_VERSION}.tar.g
     mkdir -p /usr/src && \
     tar -C /usr/src -zxvf v${NODE_VERSION}.tar.gz && \
     cd /usr/src/node-${NODE_VERSION} && \
-    CXX=g++-8 ./configure --shared
+    CXX=g++-8 ./configure --shared --prefix=/usr
 
 RUN cd /usr/src/node-${NODE_VERSION} && make -j4 && make install
