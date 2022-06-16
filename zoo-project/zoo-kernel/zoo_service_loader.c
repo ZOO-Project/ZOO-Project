@@ -3067,10 +3067,42 @@ runRequest (map ** inputs)
 	xmlCleanupParser ();
 	zooXmlCleanupNs ();
 	return 1;
-      }else if(strcasecmp(cgiRequestMethod,"post")==0 ){
+      }
+      else if(strcasecmp(cgiRequestMethod,"post")==0 ){
+
+
+       // POST to /processes/
+       // the request_inputs should be an application package
+       // we will wrap the application package in a zoo service inputs
+       if( strcasecmp(pcaCgiQueryString,"/processes/")==0 ){
+
+       json_object *cwl_input_object = json_object_new_object();
+       json_object *inputs = json_object_new_object();
+       json_object_object_add(inputs, "applicationPackage", json_object_new_string(request_inputs->value));
+       json_object_object_add(cwl_input_object, "inputs", inputs);
+
+       json_object *outputs = json_object_new_object();
+       json_object *result = json_object_new_object();
+       json_object *resultNested = json_object_new_object();
+       json_object *format = json_object_new_object();
+
+       json_object_object_add(format, "mediaType", json_object_new_string("application/json"));
+       json_object_object_add(resultNested, "format", format);
+       json_object_object_add(resultNested, "transmissionMode", json_object_new_string("reference"));
+       json_object_object_add(result, "resultNested", resultNested);
+       json_object_object_add(outputs, "Result", resultNested);
+       json_object_object_add(cwl_input_object, "outputs", outputs);
+
+       const char *jsonInputStr = json_object_to_json_string(cwl_input_object);
+       map *deploy_request_inputs = createMap("jrequest", jsonInputStr);
+       initAllEnvironment(m,deploy_request_inputs,ntmp,"jrequest");
+      } else {
+	    initAllEnvironment(m,request_inputs,ntmp,"jrequest");
+    }
+
+
 	/* - /processes/{processId}/execution Execution (POST) */
 	eres = SERVICE_STARTED;
-	initAllEnvironment(m,request_inputs,ntmp,"jrequest");
 	map* req=getMapFromMaps(m,"renv","jrequest");
 	json_object *jobj = NULL;
 	const char *mystring = NULL;
@@ -3120,6 +3152,11 @@ runRequest (map ** inputs)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
 
     fprintf(stderr, "Identifier: %s\n", cIdentifier);
+    fprintf(stderr, "Inputs:\n");
+    dumpMap(request_inputs);
+    fprintf(stderr, "Inputs formatted:\n");
+    dumpMap(req);
+
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
