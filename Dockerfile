@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 18.04 with updates and external packages
 #
-FROM mmomtchev:ubuntu-libnode AS base
+FROM mmomtchev/ubuntu-libnode:0.9.2 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
