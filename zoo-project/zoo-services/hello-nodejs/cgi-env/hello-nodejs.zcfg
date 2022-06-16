@@ -1,0 +1,40 @@
+[hellonodejs]
+ Title = HelloWorld Service for Node.js
+ Abstract = Output and Hello Wolrd string
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = hello.js
+ serviceType = NODEJS
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [S]
+   Title = Name
+   Abstract = The name to display in the hello message
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData>
+    title = Mon test  
+   </MetaData>   
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [result]
+   Title = The resulting string
+   Abstract = The string created by service.
+   <MetaData>
+    title = Mon test  
+   </MetaData>   
+   <LiteralOutput>
+     dataType = string
+     <Default>
+     </Default>
+   </LiteralOutput>
+ </DataOutputs>  

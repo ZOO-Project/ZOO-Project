@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-int zoo_js_support(maps **, map *, service *, maps **, maps **);
+int zoo_nodejs_support(maps **, map *, service *, maps **, maps **);
 
 #ifdef __cplusplus
 }

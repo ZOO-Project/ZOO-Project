@@ -94,6 +94,10 @@ extern "C" int crlex ();
 #include "service_internal_js.h"
 #endif
 
+#ifdef USE_NODEJS
+#include "service_internal_nodejs.h"
+#endif
+
 #ifdef USE_RUBY
 #include "service_internal_ruby.h"
 #endif
@@ -1822,6 +1826,16 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     {
       *eres =
         zoo_js_support (&m, request_inputs, s1, &request_input_real_format,
+                        &request_output_real_format);
+    }
+  else
+#endif
+
+#ifdef USE_NODEJS
+  if (strncasecmp (r_inputs->value, "NODEJS", 2) == 0)
+    {
+      *eres =
+        zoo_nodejs_support (&m, request_inputs, s1, &request_input_real_format,
                         &request_output_real_format);
     }
   else

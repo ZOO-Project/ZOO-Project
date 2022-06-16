@@ -41,7 +41,7 @@ using v8::Value;
 
 static int RunNodeInstance(MultiIsolatePlatform *platform, const std::vector<std::string> &args, const std::vector<std::string> &exec_args);
 
-static std::vector<std::string> args = {};
+static std::vector<std::string> args = {"zoo_loader"};
 static std::vector<std::string> exec_args = {};
 static std::unique_ptr<MultiIsolatePlatform> platform = nullptr;
 
@@ -51,7 +51,7 @@ int init() {
     std::vector<std::string> errors;
     int exit_code = node::InitializeNodeWithArgs(&args, &exec_args, &errors);
     for (const std::string &error : errors)
-        fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+        fprintf(stderr, "%s\n", error.c_str());
     if (exit_code != 0) {
         return exit_code;
     }
@@ -59,6 +59,8 @@ int init() {
     platform = MultiIsolatePlatform::Create(4);
     V8::InitializePlatform(platform.get());
     V8::Initialize();
+
+    return 0;
 }
 
 int JSLoadScripts() {
@@ -105,7 +107,7 @@ int JSLoadScripts() {
  * @return SERVICE_SUCCEEDED or SERVICE_FAILED if the service run, -1
  *  if the service failed to load or throw error at runtime.
  */
-extern "C" int zoo_js_support(maps **main_conf, map *request, service *s, maps **inputs, maps **outputs) {
+extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, maps **inputs, maps **outputs) {
     if (platform == nullptr) {
         int r = init();
         if (r != 0)
