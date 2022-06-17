@@ -47,7 +47,7 @@ static std::unique_ptr<MultiIsolatePlatform> platform = nullptr;
 
 static const char *testScript = "console.log('hello world')";
 
-int init() {
+static int init() {
     std::vector<std::string> errors;
     int exit_code = node::InitializeNodeWithArgs(&args, &exec_args, &errors);
     for (const std::string &error : errors)
@@ -63,7 +63,7 @@ int init() {
     return 0;
 }
 
-int JSLoadScripts() {
+static int JSLoadScripts() {
     int exit_code = 0;
 
     std::vector<std::string> errors;
