@@ -18,7 +18,7 @@
 #include "qgsexception.h"
 #include "qgslogger.h"
 
-QgsGcpPoint::QgsGcpPoint( const QgsPointXY &sourcePoint, const QgsPointXY &destinationPoint, const QgsCoordinateReferenceSystem &destinationPointCrs, bool enabled )
+QgsGcpPoint::QgsGcpPoint( const QgsPointXYZ &sourcePoint, const QgsPointXYZ &destinationPoint, const QgsCoordinateReferenceSystem &destinationPointCrs, bool enabled )
   : mSourcePoint( sourcePoint )
   , mDestinationPoint( destinationPoint )
   , mDestinationCrs( destinationPointCrs )
