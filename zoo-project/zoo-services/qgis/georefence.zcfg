@@ -21,7 +21,7 @@
     </Default>
    </ComplexData>
    [GCPs]
-   Title = The Ground Control points based on which the given raster is to be georeferenced
+   Title = The Ground Control Points (GCPs) based on which the given raster is to be georeferenced
    minOccurs=3
    maxOccurs=9
    <ComplexData>
@@ -31,6 +31,17 @@
       schema = TBD
     </Default>
    </ComplexData>
+   [CRS]
+   Title = The Coordinate Reference System (CRS) into which the data is to be transformed
+   minOccours = 1
+   maxOccours = 1
+   <ComplexData>
+    <Default>
+      mimeType = text
+      encoding = UTF-8
+      schema = TBD
+    </Default>
+   </ComplexData>   
    </DataInputs>
  <DataOutputs>
   [raster]
