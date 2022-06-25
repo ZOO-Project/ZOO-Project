@@ -16,7 +16,7 @@
 #ifndef QGSGCPPOINT_H
 #define QGSGCPPOINT_H
 
-#include "qgis_analysis.h"
+//#include "qgis_analysis.h"
 #include "qgscoordinatereferencesystem.h"
 
 class QgsCoordinateTransformContext;
