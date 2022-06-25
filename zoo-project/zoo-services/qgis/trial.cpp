@@ -7,6 +7,8 @@
 
 int main(){
 
+	std::cout << "All dependancies imported. Execution starting \n";
+
 	//specify the source coordinates for 3 GCPs with random points for testing 
 	// format (x1,y1), (x2,y2), (x3,y3)
 	sourceCoordinates=[[30,41],[45,51],[60,21]];
@@ -17,7 +19,7 @@ int main(){
 	crsCode=4326;
 	destinationCRS=QgsCoordinateReferenceSystem.fromEpsgId(crsCode);
 
-
+	std::cout << "Source and destination coordinates and destination CRS defined \n";
 
 	//create first GCP
  	
@@ -32,7 +34,7 @@ int main(){
 	//create a CGP out of the source coordiantes, destination coordinates and the CRS and enable it
 	gcp1=QgsGcpPoint(sourcePoint,destinationPoint,destinationCRS,true);
 
-
+	std::cout << "First GCP created \n";
 
 	//create second GCP
  
@@ -46,7 +48,7 @@ int main(){
 	//create a CGP out of the source coordiantes, destination coordinates and the CRS and enable it
 	gcp3=QgsGcpPoint(sourcePoint,destinationPoint,destinationCRS,true);
 
-
+	std::cout << "Second GCP created \n";
 
 	//create third GCP
  
@@ -60,11 +62,15 @@ int main(){
 	//create a CGP out of the source coordiantes, destination coordinates and the CRS and enable it
 	gcp3=QgsGcpPoint(sourcePoint,destinationPoint,destinationCRS,true);
 
-	
+	std::cout << "Third GCP created \n";
+
+
 	//create an array form the source points
 	QgsPointXY sourcePoints[3]={sourcePoint1,sourcePoint2,sourcePoint3};
 	//create an array from the destination points
 	QgsPointXY destinationPoints[3]={destinationPoint1,destinationPoint2,destinationPoint3};
+
+	std::cout << "Arrays created out of the source and destination points \n";
 
 
 	//create a GCP transformer which converts points from the source coordinate system to the destination coordinate system
@@ -87,12 +93,14 @@ int main(){
 	//use the source and destination points to get the paramters for the transformer
 	parameterUpdateFlag=gcpTransform.updateParametersFromGcps(sourcePoints,destinationPoints,invertYAxis=false);
 
+
 	//check if the parameters were successfully updated
 	if (parameterUpdateFlag){
-		std::cout << "parameters updated";
+		std::cout << "parameters created and parameters updated using GCPs \n";
 	}
 	else{
-		std::cout << "parameters not updated";
+		std::cout << "parameters created but parameters could not be updated \n";
+		std::cout << "halting Execution\n"
 		return 0;
 	}
 
@@ -100,25 +108,36 @@ int main(){
 	//get a transformer that can be applied to geometries (points) from the transform calculated from the GCPs
 	geometryTransformer=QgsGcpGeometryTransformer(gcpTransform);
 
+	std::cout << "Transformer created from the calculated transform \n"
+
+
 	//specfy a point which on which the transform is to be applied
 	sourceX=55;
 	sourceY=57;
 	testPointSource=QgsPointXY(sourceX,sourceY);
 
+
+
 	//create an array out of the test point(s)
 	testPoints[1]={testPointSource};
+
+	std::cout << "Point to test the transform created\n"
+
 
 	//create a flag that will be updated based on wether the transform was applied or not
 	bool applicationFlag=false;
 	//apply the transform on the test point
 	transformedPoint=geometryTransformer.transform(testPoints,*applicationFlag)
-	
 
-
-
-	std::cout << "First GCP created \n";
-	
-
+	//check if the transform  was successfully applied
+	if (parameterUpdateFlag){
+		std::cout << "Transform succesfully applied \n";
+	}
+	else{
+		std::cout << "Transform could not be applied \n";
+		std::cout << "halting Execution\n"
+		return 0;
+	}	
 
 
 
