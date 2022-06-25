@@ -46,7 +46,7 @@ class ANALYSIS_EXPORT QgsGcpPoint
      * \param destinationPointCrs CRS of destination point
      * \param enabled whether the point is currently enabled
      */
-    QgsGcpPoint( const QgsPointXYZ &sourcePoint, const QgsPointXYZ &destinationPoint,
+    QgsGcpPoint( const QgsPointXY &sourcePoint, const QgsPointXY &destinationPoint,
                  const QgsCoordinateReferenceSystem &destinationPointCrs, bool enabled = true );
 
     /**
@@ -65,7 +65,7 @@ class ANALYSIS_EXPORT QgsGcpPoint
      *
      * \see sourcePoint()
      */
-    void setSourcePoint( QgsPointXYZ point ) { mSourcePoint = point; }
+    void setSourcePoint( QgsPointXY point ) { mSourcePoint = point; }
 
     /**
      * Returns the destination coordinates.
@@ -79,7 +79,7 @@ class ANALYSIS_EXPORT QgsGcpPoint
      *
      * \see destinationPoint()
      */
-    void setDestinationPoint( QgsPointXYZ point ) { mDestinationPoint = point; }
+    void setDestinationPoint( QgsPointXY point ) { mDestinationPoint = point; }
 
     /**
      * Returns the CRS of the destination point.
@@ -98,7 +98,7 @@ class ANALYSIS_EXPORT QgsGcpPoint
     /**
      * Returns the destionationPoint() transformed to the given target CRS.
      */
-    QgsPointXYZ transformedDestinationPoint( const QgsCoordinateReferenceSystem &targetCrs, const QgsCoordinateTransformContext &context ) const;
+    QgsPointXY transformedDestinationPoint( const QgsCoordinateReferenceSystem &targetCrs, const QgsCoordinateTransformContext &context ) const;
 
     /**
      * Returns TRUE if the point is currently enabled.
@@ -130,8 +130,8 @@ class ANALYSIS_EXPORT QgsGcpPoint
 
   private:
 
-    QgsPointXYZ mSourcePoint;
-    QgsPointXYZ mDestinationPoint;
+    QgsPointXY mSourcePoint;
+    QgsPointXY mDestinationPoint;
     QgsCoordinateReferenceSystem mDestinationCrs;
     bool mEnabled = true;
 
