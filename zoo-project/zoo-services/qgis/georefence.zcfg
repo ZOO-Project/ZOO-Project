@@ -1,12 +1,11 @@
 [ExtractNDVI]
  Title = Georefencing. 
  Abstract = Georeferences a given image using the Ground Control Points specified by the user. 
- Profile = urn:ogc:wps:1.0.0:buffer
- processVersion = 2
+ processVersion = 1
  storeSupported = true
  statusSupported = true
  serviceProvider = QGIS georefencer
- serviceType = C++
+ serviceType = C
  <MetaData>
    title = Demo
  </MetaData>
@@ -21,33 +20,22 @@
      mimeType = image/tiff
     </Default>
    </ComplexData>
-  [red]
-   Title = The red band number
-   Abstract = The RED band number to use.
-   minOccurs = 0
-   maxOccurs = 1
-   <LiteralData>
-    DataType = int
+   [GCPs]
+   Title = The Ground Control points based on which the given raster is to be georeferenced
+   minOccurs=3
+   maxOccurs=9
+   <ComplexData>
     <Default>
-     value = 1
+      mimeType = text
+      encoding = UTF-8
+      schema = TBD
     </Default>
-   </LiteralData>
-  [nir]
-   Title = The NIR band number
-   Abstract = The NIR band number to use.
-   minOccurs = 0
-   maxOccurs = 1
-   <LiteralData>
-    DataType = int
-    <Default>
-     value = 2
-    </Default>
-   </LiteralData>
- </DataInputs>
+   </ComplexData>
+   </DataInputs>
  <DataOutputs>
   [raster]
-   Title = The resulting raster
-   Abstract = A single band raster containing the NDVI of the original raster using formula : (NIR - RED) / (NIR + RED) .
+   Title = Georefenced raster
+   Abstract = The georefenced version of the input raster. 
    <ComplexData>
     <Default>
      mimeType = image/tiff
