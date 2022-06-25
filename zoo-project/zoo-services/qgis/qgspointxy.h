@@ -298,4 +298,4 @@
  }
   
   
- #endif //QGSPOINTXY_H
+ #endif //QGSPOINTXY_H  
