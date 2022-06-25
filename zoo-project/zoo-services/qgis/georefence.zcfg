@@ -41,7 +41,14 @@
       encoding = UTF-8
       schema = TBD
     </Default>
-   </ComplexData>   
+   </ComplexData>
+   [transform]
+   Title = The transform to be applied i.e. linear, helmert, etc
+   minOccours = 1
+   maxOccours = 1
+   <LiteralData>
+    DataType = int
+   </LiteralData>
    </DataInputs>
  <DataOutputs>
   [raster]
