@@ -97,8 +97,11 @@ int cgiMain(){
     strQuery=zStrdup(cgiQueryString);
   map* tmpMap=NULL;
 
-  if(strncmp(cgiContentType,"application/json",16)==0 &&
-     strncasecmp(cgiRequestMethod,"post",4)==0){
+
+    if(strncasecmp(cgiRequestMethod,"delete",6)==0){
+        tmpMap=createMap("jrequest","DELETE");
+    } else if(strncmp(cgiContentType,"application/json",16)==0 &&
+            (strncasecmp(cgiRequestMethod,"post",4)==0 || strncasecmp(cgiRequestMethod,"delete",6)==0){
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
@@ -117,6 +120,7 @@ int cgiMain(){
 	 len+=1;
        }
        delete[] buffer;
+       fprintf (stderr, "######## zoo_loader.c res: %s", res);
        tmpMap=createMap("jrequest",res);
        free(res);
   }else if(strncmp(cgiContentType,"text/xml",8)==0 ||
@@ -231,7 +235,7 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-  if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
+  if(strncasecmp(cgiRequestMethod,"post",4)==0 ||
      (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
 #ifdef WIN32
      ||tmpReq!=NULL

@@ -2457,34 +2457,40 @@ runRequest (map ** inputs)
           char* p=strstr(cgiQueryString,"/processes/");
           if (strlen(cgiQueryString)>11/*/processes/*/){
 
-            char *orig = zStrdup (p+11);
-            if(orig[strlen(orig)-1]=='/')
-                orig[strlen(orig)-1]=0;
+            char *serviceName = zStrdup (p+11);
+            if(serviceName[strlen(serviceName)-1]=='/')
+                serviceName[strlen(serviceName)-1]=0;
 
-            char *theS=strchr(orig,'/');
+            char *theS=strchr(serviceName,'/');
             if (theS){
               *theS='\0';
             }
 
-            fprintf(stderr,"%s\n",orig);
+            fprintf(stderr,"%s\n",serviceName);
 
-            service *s1=NULL;
-            maps *request_output_real_format = NULL;
-            maps *request_input_real_format = NULL;
+       // creating output structur
+       json_object *cwl_input_object = json_object_new_object();
+       json_object *outputs = json_object_new_object();
+       json_object *result = json_object_new_object();
+       json_object *resultNested = json_object_new_object();
+       json_object *format = json_object_new_object();
+       json_object_object_add(format, "mediaType", json_object_new_string("application/json"));
+       json_object_object_add(resultNested, "format", format);
+       json_object_object_add(resultNested, "transmissionMode", json_object_new_string("reference"));
+       json_object_object_add(result, "resultNested", resultNested);
+       json_object_object_add(outputs, "Result", resultNested);
+       json_object_object_add(cwl_input_object, "outputs", outputs);
+       const char *jsonInputStr = json_object_to_json_string(cwl_input_object);
+       map *undeploy_request_inputs = createMap("jrequest", jsonInputStr);
 
-            fprintf (stderr, "######## conf");
-            dumpMaps(m);
-            fprintf (stderr, "######## request_inputs");
-            dumpMap(request_inputs);
+       service *s1 = NULL;
+       fprintf (stderr, "######## fetching service: %s", undeployServiceProvider->value);
+       fetchService(zooRegistry,m,&s1,undeploy_request_inputs,ntmp,undeployServiceProvider->value,printExceptionReportResponseJ);
+       initAllEnvironment(m,undeploy_request_inputs,ntmp,"jrequest");
+       loadServiceAndRun (&m,s1,undeploy_request_inputs, &request_input_real_format,&request_output_real_format, &eres);
 
-            loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format,
-			   &request_output_real_format, &eres);
+            free (serviceName);
 
-//            int fail=runUndeployService(m,orig);
-//            free (orig);
-//            if (fail){
-//                return 1;
-//            }
           }
         }
     }
