@@ -28,10 +28,14 @@
 #pragma once
 #include "service.h"
 #include "service_internal.h"
+#include <napi.h>
+#include <node_api.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+Napi::Object JSObject_FromMap(Napi::Env env, map *t);
 
 int zoo_nodejs_support(maps **, map *, service *, maps **, maps **);
 
