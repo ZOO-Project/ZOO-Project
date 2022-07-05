@@ -123,7 +123,7 @@ service_loader.o: service_loader.c service.h
 	$(CXX) -c ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} service_loader.c
 
 zoo_service_loader.o: zoo_service_loader.c service.h version.h ${MS_FILE} ${R_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${NODEJS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} ${HPC_FILES} ${METADB_FILE} ${RABBITMQ_FILE}
-	$(CXX) -g -O2 ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${MONO_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${RCFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${SAGA_ENABLED} ${OTB_ENABLED} ${HPC_ENABLED} ${PYTHON_ENABLED} ${R_ENABLED} ${JS_ENABLED} ${NODEJS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} ${MONO_ENABLED} ${METADB_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
+	$(CXX) -g -O2 ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${MONO_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${RCFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${SAGA_ENABLED} ${OTB_ENABLED} ${HPC_ENABLED} ${PYTHON_ENABLED} ${R_ENABLED} ${JS_ENABLED} ${NODEJS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} ${MONO_ENABLED} ${METADB_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
 libzoo_service.${EXT}: version.h service_internal.o service.o sqlapi.o ${CALLBACK_FILE}
 	$(CXX) -shared  ${GDAL_CFLAGS} ${DEFAULT_OPTS} -fpic -o libzoo_service.${EXT} ${CFLAGS}  service_internal.o service.o sqlapi.o ${CALLBACK_FILE} ${FCGI_LDFLAGS} ${GDAL_LIBS} ${ZOO_LDFLAGS} ${MACOS_LD_FLAGS}

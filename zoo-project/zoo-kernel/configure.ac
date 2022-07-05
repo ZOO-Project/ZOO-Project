@@ -755,7 +755,7 @@ else
 	LIBS_SAVE="$LIBS"
     LIBS="$NODEJS_LDFLAGS"
 
-    AC_CHECK_LIB([$NODEJS_LIB], [node_module_register],
+    AC_CHECK_LIB([$NODEJS_LIB], [napi_create_environment],
 		[], [AC_MSG_ERROR([could not find $NODEJS_LIB])], [])
 	LIBS="$LIBS_SAVE"
 	AC_LANG_POP([C++])
