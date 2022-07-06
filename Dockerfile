@@ -97,6 +97,7 @@ ARG BUILD_DEPS=" \
     libkrb5-dev \
     nlohmann-json-dev \
     libnode-dev \
+    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY . .
@@ -211,6 +212,7 @@ ARG BUILD_DEPS=" \
     libxslt1-dev \
     libcgal-dev \
     libnode-dev \
+    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
@@ -304,6 +306,7 @@ ARG BUILD_DEPS=" \
     libgdal-dev \
     python3-dev \
     libnode-dev \
+    node-addon-api \
 "
 # For Azure use, uncomment bellow
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
