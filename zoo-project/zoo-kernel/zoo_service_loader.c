@@ -48,8 +48,6 @@ extern "C" int crlex ();
 #include "service_internal_python.h"
 #endif
 
-#include "cgic.h"
-
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
@@ -156,10 +154,11 @@ extern "C" int crlex ();
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
 
+#include "cgic.h"
+
 #ifndef WIN32
 extern char **environ;
 #endif
-
 
 #ifdef WIN32
 extern "C"

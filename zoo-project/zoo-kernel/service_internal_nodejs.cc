@@ -22,19 +22,20 @@
  * THE SOFTWARE.
  */
 
-#define NAPI_DISABLE_CPP_EXCEPTIONS
-//#define NODE_ADDON_API_ENABLE_MAYBE
 #define NODEJS_DEBUG
 #define NAPI_EXPERIMENTAL
 
 #include "service_internal_nodejs.h"
 #include "response_print.h"
-#include <js_native_api.h>
 
 napi_platform platform = nullptr;
 
-static const char *testScript =
-    "function hello_nodejs() { outputs['result']['value']='Hello '+inputs['S']['value']+' from the JS World !'; }";
+static const char *testScript = "require('vm').runInThisContext(\""
+                                "function hello_nodejs(conf, inputs, outputs) { "
+                                "console.log('from JS', conf, inputs, outputs);"
+                                "outputs['result']['value']='Hello "
+                                "'+inputs['S']['value']+' from the JS World !'; }"
+                                "\");";
 
 static int NodeJSInit() {
 #ifdef NODEJS_DEBUG
@@ -42,29 +43,6 @@ static int NodeJSInit() {
 #endif
   if (napi_create_platform(0, NULL, 0, NULL, NULL, 0, &platform) != napi_ok) {
     fprintf(stderr, "Failed creating the platform\n");
-    return -1;
-  }
-
-  return 0;
-}
-
-static int JSLoadScripts() {
-#ifdef NODEJS_DEBUG
-  fprintf(stderr, "libnode create environment\n");
-#endif
-  napi_env env;
-
-  if (napi_create_environment(platform, NULL, testScript, &env) != napi_ok) {
-    fprintf(stderr, "Failed running JS\n");
-    return -1;
-  }
-
-  if (napi_run_environment(env) != napi_ok) {
-    fprintf(stderr, "Failed flushing pending JS callbacks\n");
-    return -1;
-  }
-
-  if (napi_destroy_environment(env, NULL) != napi_ok) {
     return -1;
   }
 
@@ -90,7 +68,7 @@ static Napi::Object JSObject_FromMaps(Napi::Env env, maps *t) {
       Napi::Object child = JSObject_FromMaps(env, tmp->child);
       obj.Set("child", child);
     }
-    obj.Set(tmp->name, obj);
+    res.Set(tmp->name, obj);
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "Object : %s added \n", tmp->name);
 #endif
@@ -177,6 +155,51 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
   return scope.Escape(res).ToObject();
 }
 
+static int JSLoadScripts(maps **main_conf, map *request, service *s, maps **inputs, maps **outputs) {
+#ifdef NODEJS_DEBUG
+  fprintf(stderr, "libnode create environment\n");
+#endif
+  napi_env _env;
+
+  if (napi_create_environment(platform, NULL, testScript, &_env) != napi_ok) {
+    fprintf(stderr, "Failed running JS\n");
+    return -1;
+  }
+
+  int ret;
+  {
+    Napi::Env env(_env);
+    Napi::HandleScope scope(env);
+
+    try {
+
+      Napi::Value _fn = env.Global().Get("hello_nodejs");
+      if (!_fn.IsFunction()) {
+        fprintf(stderr, "hello_nodejs is not a function: %s\n", _fn.ToString().Utf8Value().c_str());
+        return -1;
+      }
+      Napi::Function fn = _fn.As<Napi::Function>();
+
+      Napi::Object js_main_conf = JSObject_FromMaps(env, *main_conf);
+      Napi::Object js_inputs = JSObject_FromMaps(env, *inputs);
+      Napi::Object js_outputs = JSObject_FromMaps(env, *outputs);
+
+      fn.Call({js_main_conf, js_inputs, js_outputs});
+
+      ret = SERVICE_SUCCEEDED;
+    } catch (const Napi::Error &e) {
+      fprintf(stderr, "Caught a JS exception: %s\n", e.what());
+    }
+  }
+
+  if (napi_destroy_environment(_env, NULL) != napi_ok) {
+    fprintf(stderr, "Failed destroying JS environment\n");
+    ret = -1;
+  }
+
+  return ret;
+}
+
 /**
  * Load a JavaScript file then run the function corresponding to the service by
  * passing the conf, inputs and outputs parameters by value as JavaScript
@@ -194,8 +217,8 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   if (platform == nullptr) {
     int r = NodeJSInit();
     if (r != 0)
-      return r;
+      return -1;
   }
 
-  return JSLoadScripts();
+  return JSLoadScripts(main_conf, request, s, inputs, outputs);
 }
