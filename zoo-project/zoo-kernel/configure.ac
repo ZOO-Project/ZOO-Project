@@ -770,6 +770,9 @@ else
 	AC_CHECK_HEADERS([node.h],
         [], [AC_MSG_ERROR([could not find headers include related to libnode])])
 
+	AC_CHECK_HEADERS([napi.h],
+        [], [AC_MSG_ERROR([could not find headers include related to node-addon-api])])
+
 	LIBS_SAVE="$LIBS"
     LIBS="$NODEJS_LDFLAGS"
 
