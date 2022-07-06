@@ -181,7 +181,7 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
         Napi::Value _name = propNames.Get(index);
 
         if (!_name.IsString()) {
-          fprintf(stderr, "Property name is not a string: %s\n", _name.ToString());
+          fprintf(stderr, "Property name is not a string: %s\n", _name.ToString().Utf8Value().c_str());
           return NULL;
         }
 
@@ -191,7 +191,7 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
         Napi::Value value = obj.Get(name);
         if (value.IsBoolean() && value.ToBoolean() == false) {
 #ifdef NODEJS_DEBUG
-          fprintf(stderr, "Enumerate id : %d => %s => No more value\n", index, name.c_str());
+          fprintf(stderr, "Enumerate id : %ld => %s => No more value\n", index, name.c_str());
 #endif
         }
         if (value.IsObject()) {
@@ -246,7 +246,7 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
       Napi::Value _name = propNames.Get(index);
 
       if (!_name.IsString()) {
-        fprintf(stderr, "Property name is not a string: %s\n", _name.ToString());
+        fprintf(stderr, "Property name is not a string: %s\n", _name.ToString().Utf8Value().c_str());
         return NULL;
       }
       std::string name = _name.ToString().Utf8Value();
@@ -254,7 +254,7 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
       Napi::Value value = obj.Get(name);
       if (value.IsBoolean() && value.ToBoolean() == false) {
 #ifdef NODEJS_DEBUG
-        fprintf(stderr, "Enumerate id : %d => %s => No more value\n", index, name.c_str());
+        fprintf(stderr, "Enumerate id : %ld => %s => No more value\n", index, name.c_str());
 #endif
       } else if (value.IsString()) {
         if (res != NULL) {
@@ -273,6 +273,62 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
 #endif
   }
   return res;
+}
+
+/**
+ * The function used as ZOOUpdateStatus from the JavaScript environment
+ * (ZOO-API).
+ *
+ * @param info Node-API JavaScript call convention
+ * @return true
+ * @see setHeader,_updateStatus
+ */
+Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  Napi::EscapableHandleScope scope(env);
+
+  if (info.Length() > 2) {
+#ifdef NODEJS_DEBUG
+    fprintf(stderr, "Number of arguments used to call the function : %i", info.Length());
+#endif
+    throw Napi::Error::New(env, "Too many arguments in call to ZOOUpdateStatus");
+  }
+  if (!info[0].IsObject()) {
+    throw Napi::Error::New(env, "First argument is not an object in call to ZOOUpdateStatus");
+  }
+  maps *conf = mapsFromJSObject(env, info[0]);
+
+  if (!info[1].IsNumber()) {
+    throw Napi::Error::New(env, "Second argument is not a number in call to ZOOUpdateStatus");
+  }
+
+  std::string status = std::to_string(info[1].ToNumber().Int32Value());
+
+#ifdef NODEJS_DEBUG
+  fprintf(stderr, "ZOOUpdateStatus: %s\n", status.c_str());
+#endif
+  if (getMapFromMaps(conf, "lenv", "status") != NULL) {
+    if (status.size() > 0) {
+      setMapInMaps(conf, "lenv", "status", status.c_str());
+    } else {
+      setMapInMaps(conf, "lenv", "status", "15");
+    }
+    _updateStatus(conf);
+  }
+  freeMaps(&conf);
+  free(conf);
+  return scope.Escape(Napi::Boolean::New(env, true)).ToBoolean();
+}
+
+/**
+ * Construct the ZOO environment
+ *
+ * @param env The JavaScript context
+ */
+void CreateZOOEnvironment(Napi::Env env) {
+  Napi::HandleScope scope(env);
+  auto ZOOUpdateStatusRef = Napi::Function::New(env, ZOOUpdateStatus, "ZOOUpdateStatus");
+  env.Global().Set("ZOOUpdateStatus", ZOOUpdateStatusRef);
 }
 
 /**
@@ -324,12 +380,13 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     return -1;
   }
 
-  std::ifstream js_scipt(full_path);
-  std::stringstream js_text;
-  js_text << js_loader_prologue << js_scipt.rdbuf() << js_loader_epilogue;
-  std::string js_escaped = std::regex_replace(js_text.str(), std::regex("`"), "\`");
+  std::ifstream js_script(full_path);
+  std::stringstream js_raw;
+  js_raw << js_script.rdbuf();
+  std::string js_text =
+      js_loader_prologue + std::regex_replace(js_raw.str(), std::regex("`"), "\\`") + js_loader_epilogue;
 
-  if (napi_create_environment(platform, NULL, js_escaped.c_str(), &_env) != napi_ok) {
+  if (napi_create_environment(platform, NULL, js_text.c_str(), &_env) != napi_ok) {
     fprintf(stderr, "Failed running JS\n");
     return -1;
   }
@@ -340,6 +397,8 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     Napi::HandleScope scope(env);
 
     try {
+      CreateZOOEnvironment(env);
+
       Napi::Value _fn = env.Global().Get(s->name);
       if (!_fn.IsFunction()) {
         fprintf(stderr, "%s is not a function: %s\n", s->name, _fn.ToString().Utf8Value().c_str());
