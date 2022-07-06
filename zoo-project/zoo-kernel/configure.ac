@@ -760,7 +760,7 @@ else
 	then
 		NODEJS_HOME=/usr
 	fi 
-	NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/node/"
+	NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/libnode/ -I$NODEJS_HOME/include/node/"
 	NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
 	NODEJS_LIB="node"
 

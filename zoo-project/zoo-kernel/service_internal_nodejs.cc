@@ -25,20 +25,18 @@
 #define NODEJS_DEBUG
 #define NAPI_EXPERIMENTAL
 
-#include "service_internal_nodejs.h"
+#include <fstream>
+#include <regex>
+#include <sstream>
+#include <string>
+
 #include "response_print.h"
+#include "service_internal_nodejs.h"
 
 napi_platform platform = nullptr;
 
-static const char *testScript = "require('vm').runInThisContext(\""
-                                "function hello_nodejs(conf, inputs, outputs) { "
-                                "console.log('from JS', conf, inputs, outputs);"
-                                "outputs['result']['value']='Hello "
-                                "'+inputs['S']['value']+' from the JS World !';"
-                                "return 3; }"
-                                "\");";
-
-static int NodeJSInit() {}
+static const char *js_loader_prologue = "require('vm').runInThisContext(`";
+static const char *js_loader_epilogue = "`);";
 
 /**
  * Convert a maps to a JavaScript Object
@@ -306,7 +304,32 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 #endif
   napi_env _env;
 
-  if (napi_create_environment(platform, NULL, testScript, &_env) != napi_ok) {
+  map *path_meta = getMap(request, "metapath");
+  map *path_service = getMap(s->content, "serviceProvider");
+
+  std::string full_path;
+  map *cwdMap = getMapFromMaps(*main_conf, "main", "servicePath");
+  if (cwdMap != nullptr)
+    full_path =
+        std::string(cwdMap->value) + '/' + std::string(path_meta->value) + '/' + std::string(path_service->value);
+  else {
+    char *cwd = get_current_dir_name();
+    full_path = std::string(cwd) + '/' + std::string(path_meta->value) + '/' + std::string(path_service->value);
+    free(cwd);
+  }
+
+  struct stat js_stat;
+  if (stat(full_path.c_str(), &js_stat) != 0) {
+    fprintf(stderr, "Failed opening %s\n", full_path.c_str());
+    return -1;
+  }
+
+  std::ifstream js_scipt(full_path);
+  std::stringstream js_text;
+  js_text << js_loader_prologue << js_scipt.rdbuf() << js_loader_epilogue;
+  std::string js_escaped = std::regex_replace(js_text.str(), std::regex("`"), "\`");
+
+  if (napi_create_environment(platform, NULL, js_escaped.c_str(), &_env) != napi_ok) {
     fprintf(stderr, "Failed running JS\n");
     return -1;
   }
@@ -317,9 +340,9 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     Napi::HandleScope scope(env);
 
     try {
-      Napi::Value _fn = env.Global().Get("hello_nodejs");
+      Napi::Value _fn = env.Global().Get(s->name);
       if (!_fn.IsFunction()) {
-        fprintf(stderr, "hello_nodejs is not a function: %s\n", _fn.ToString().Utf8Value().c_str());
+        fprintf(stderr, "%s is not a function: %s\n", s->name, _fn.ToString().Utf8Value().c_str());
         return -1;
       }
       Napi::Function fn = _fn.As<Napi::Function>();
