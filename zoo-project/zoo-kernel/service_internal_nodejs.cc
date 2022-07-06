@@ -34,20 +34,11 @@ static const char *testScript = "require('vm').runInThisContext(\""
                                 "function hello_nodejs(conf, inputs, outputs) { "
                                 "console.log('from JS', conf, inputs, outputs);"
                                 "outputs['result']['value']='Hello "
-                                "'+inputs['S']['value']+' from the JS World !'; }"
+                                "'+inputs['S']['value']+' from the JS World !';"
+                                "return 3; }"
                                 "\");";
 
-static int NodeJSInit() {
-#ifdef NODEJS_DEBUG
-  fprintf(stderr, "libnode init\n");
-#endif
-  if (napi_create_platform(0, NULL, 0, NULL, NULL, 0, &platform) != napi_ok) {
-    fprintf(stderr, "Failed creating the platform\n");
-    return -1;
-  }
-
-  return 0;
-}
+static int NodeJSInit() {}
 
 /**
  * Convert a maps to a JavaScript Object
@@ -155,49 +146,135 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
   return scope.Escape(res).ToObject();
 }
 
-static int JSLoadScripts(maps **main_conf, map *request, service *s, maps **inputs, maps **outputs) {
-#ifdef NODEJS_DEBUG
-  fprintf(stderr, "libnode create environment\n");
-#endif
-  napi_env _env;
+/**
+ * Convert a JavaScript Object to a maps
+ *
+ * @param env the JavaScript context
+ * @param t the JavaScript Object to convert
+ * @return a new maps containing the JavaScript Object
+ */
+maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
+  Napi::HandleScope scope(env);
 
-  if (napi_create_environment(platform, NULL, testScript, &_env) != napi_ok) {
-    fprintf(stderr, "Failed running JS\n");
-    return -1;
+  maps *res = NULL;
+  maps *tres = NULL;
+  if (!t.IsObject()) {
+    fprintf(stderr, "JS value is not an object");
+    return NULL;
   }
+  Napi::Object obj = t.ToObject();
 
-  int ret;
-  {
-    Napi::Env env(_env);
-    Napi::HandleScope scope(env);
+  if (obj.IsArray()) {
+#ifdef NODEJS_DEBUG
+    fprintf(stderr, "Is finally an array !\n");
+#endif
+  } else {
+#ifdef NODEJS_DEBUG
+    fprintf(stderr, "Is not an array !\n");
+#endif
+    Napi::Array propNames = obj.GetPropertyNames();
+    if (propNames.Length() > 0) {
+      size_t index, argNum = propNames.Length();
+#ifdef NODEJS_DEBUG
+      fprintf(stderr, "Properties length :  %lu\n", argNum);
+#endif
 
-    try {
+      for (index = 0, argNum = propNames.Length(); index < argNum; index++) {
+        Napi::Value _name = propNames.Get(index);
 
-      Napi::Value _fn = env.Global().Get("hello_nodejs");
-      if (!_fn.IsFunction()) {
-        fprintf(stderr, "hello_nodejs is not a function: %s\n", _fn.ToString().Utf8Value().c_str());
-        return -1;
+        if (!_name.IsString()) {
+          fprintf(stderr, "Property name is not a string: %s\n", _name.ToString());
+          return NULL;
+        }
+
+        std::string name = _name.ToString().Utf8Value();
+        tres = createMaps(name.c_str());
+
+        Napi::Value value = obj.Get(name);
+        if (value.IsBoolean() && value.ToBoolean() == false) {
+#ifdef NODEJS_DEBUG
+          fprintf(stderr, "Enumerate id : %d => %s => No more value\n", index, name.c_str());
+#endif
+        }
+        if (value.IsObject()) {
+          tres->content = mapFromJSObject(env, value);
+        } else if (value.IsString()) {
+          tres->content = createMap(name.c_str(), value.ToString().Utf8Value().c_str());
+        }
+
+        if (res == NULL)
+          res = dupMaps(&tres);
+        else
+          addMapsToMaps(&res, tres);
+        freeMaps(&tres);
+        free(tres);
+        tres = NULL;
       }
-      Napi::Function fn = _fn.As<Napi::Function>();
-
-      Napi::Object js_main_conf = JSObject_FromMaps(env, *main_conf);
-      Napi::Object js_inputs = JSObject_FromMaps(env, *inputs);
-      Napi::Object js_outputs = JSObject_FromMaps(env, *outputs);
-
-      fn.Call({js_main_conf, js_inputs, js_outputs});
-
-      ret = SERVICE_SUCCEEDED;
-    } catch (const Napi::Error &e) {
-      fprintf(stderr, "Caught a JS exception: %s\n", e.what());
     }
   }
 
-  if (napi_destroy_environment(_env, NULL) != napi_ok) {
-    fprintf(stderr, "Failed destroying JS environment\n");
-    ret = -1;
-  }
+#ifdef NODEJS_DEBUG
+  dumpMaps(res);
+#endif
+  return res;
+}
 
-  return ret;
+/**
+ * Convert a JavaScript Object to a map
+ *
+ * @param env the JavaScript context
+ * @param t the JavaScript Object to convert
+ * @return a new map containing the JavaScript Object
+ */
+map *mapFromJSObject(Napi::Env env, Napi::Value t) {
+  Napi::HandleScope scope(env);
+
+  map *res = NULL;
+
+  if (!t.IsObject()) {
+    fprintf(stderr, "JS value is not an object");
+    return NULL;
+  }
+  Napi::Object obj = t.ToObject();
+
+  Napi::Array propNames = obj.GetPropertyNames();
+  if (propNames.Length() > 0) {
+    size_t index, argNum = propNames.Length();
+#ifdef NODEJS_DEBUG
+    fprintf(stderr, "Properties length :  %lu\n", argNum);
+#endif
+
+    for (index = 0, argNum = propNames.Length(); index < argNum; index++) {
+      Napi::Value _name = propNames.Get(index);
+
+      if (!_name.IsString()) {
+        fprintf(stderr, "Property name is not a string: %s\n", _name.ToString());
+        return NULL;
+      }
+      std::string name = _name.ToString().Utf8Value();
+
+      Napi::Value value = obj.Get(name);
+      if (value.IsBoolean() && value.ToBoolean() == false) {
+#ifdef NODEJS_DEBUG
+        fprintf(stderr, "Enumerate id : %d => %s => No more value\n", index, name.c_str());
+#endif
+      } else if (value.IsString()) {
+        if (res != NULL) {
+#ifdef NODEJS_DEBUG
+          fprintf(stderr, "%s - %s\n", name.c_str(), value.ToString().Utf8Value().c_str());
+#endif
+          addToMap(res, name.c_str(), value.ToString().Utf8Value().c_str());
+        } else {
+          res = createMap(name.c_str(), value.ToString().Utf8Value().c_str());
+          res->next = NULL;
+        }
+      }
+    }
+#ifdef NODEJS_DEBUG
+    dumpMap(res);
+#endif
+  }
+  return res;
 }
 
 /**
@@ -215,10 +292,60 @@ static int JSLoadScripts(maps **main_conf, map *request, service *s, maps **inpu
  */
 extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, maps **inputs, maps **outputs) {
   if (platform == nullptr) {
-    int r = NodeJSInit();
-    if (r != 0)
+#ifdef NODEJS_DEBUG
+    fprintf(stderr, "libnode init\n");
+#endif
+    if (napi_create_platform(0, NULL, 0, NULL, NULL, 0, &platform) != napi_ok) {
+      fprintf(stderr, "Failed creating the platform\n");
       return -1;
+    }
   }
 
-  return JSLoadScripts(main_conf, request, s, inputs, outputs);
+#ifdef NODEJS_DEBUG
+  fprintf(stderr, "libnode create environment\n");
+#endif
+  napi_env _env;
+
+  if (napi_create_environment(platform, NULL, testScript, &_env) != napi_ok) {
+    fprintf(stderr, "Failed running JS\n");
+    return -1;
+  }
+
+  int ret;
+  {
+    Napi::Env env(_env);
+    Napi::HandleScope scope(env);
+
+    try {
+      Napi::Value _fn = env.Global().Get("hello_nodejs");
+      if (!_fn.IsFunction()) {
+        fprintf(stderr, "hello_nodejs is not a function: %s\n", _fn.ToString().Utf8Value().c_str());
+        return -1;
+      }
+      Napi::Function fn = _fn.As<Napi::Function>();
+
+      Napi::Object js_main_conf = JSObject_FromMaps(env, *main_conf);
+      Napi::Object js_inputs = JSObject_FromMaps(env, *inputs);
+      Napi::Object js_outputs = JSObject_FromMaps(env, *outputs);
+
+      Napi::Value status = fn.Call({js_main_conf, js_inputs, js_outputs});
+
+      *outputs = mapsFromJSObject(env, js_outputs);
+
+      if (!status.IsNumber()) {
+        fprintf(stderr, "Service returned a non-number value: %s\n", status.ToString().Utf8Value().c_str());
+        return -1;
+      }
+      ret = status.ToNumber().Int32Value();
+    } catch (const Napi::Error &e) {
+      fprintf(stderr, "Caught a JS exception: %s\n", e.what());
+    }
+  }
+
+  if (napi_destroy_environment(_env, NULL) != napi_ok) {
+    fprintf(stderr, "Failed destroying JS environment\n");
+    ret = -1;
+  }
+
+  return ret;
 }
