@@ -22,6 +22,8 @@
  * THE SOFTWARE.
  */
 
-function hellojs(conf,inputs,outputs){
+function hellonodejs(conf,inputs,outputs){
 	outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
+
+  return 3;
 }
