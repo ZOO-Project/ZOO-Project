@@ -320,6 +320,9 @@ Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
   return scope.Escape(Napi::Boolean::New(env, true)).ToBoolean();
 }
 
+static const char *ZooStatus[] = {"SERVICE_ACCEPTED", "SERVICE_STARTED", "SERVICE_PAUSED", "SERVICE_SUCCEEDED",
+                                  "SERVICE_FAILED"};
+
 /**
  * Construct the ZOO environment
  *
@@ -328,6 +331,9 @@ Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
 void CreateZOOEnvironment(Napi::Env env) {
   Napi::HandleScope scope(env);
   auto ZOOUpdateStatusRef = Napi::Function::New(env, ZOOUpdateStatus, "ZOOUpdateStatus");
+
+  for (size_t i = 0; i < sizeof(ZooStatus) / sizeof(ZooStatus[0]); i++)
+    env.Global().Set(ZooStatus[i], i);
   env.Global().Set("ZOOUpdateStatus", ZOOUpdateStatusRef);
 }
 

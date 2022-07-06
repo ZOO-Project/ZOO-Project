@@ -27,5 +27,5 @@ function hellonodejs(conf,inputs,outputs){
   outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
   ZOOUpdateStatus(conf, 100);
 
-  return 3;
+  return SERVICE_SUCCEEDED;
 }
