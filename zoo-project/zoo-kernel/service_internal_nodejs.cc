@@ -35,8 +35,8 @@
 
 napi_platform platform = nullptr;
 
-static const char *js_loader_prologue = "require('vm').runInThisContext(`";
-static const char *js_loader_epilogue = "`);";
+static const char *js_loader =
+    "global.nativeRequire = require; global.require = require('module').createRequire(process.cwd() + '/');";
 
 /**
  * Convert a maps to a JavaScript Object
@@ -289,7 +289,7 @@ Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
 
   if (info.Length() > 2) {
 #ifdef NODEJS_DEBUG
-    fprintf(stderr, "Number of arguments used to call the function : %i", info.Length());
+    fprintf(stderr, "Number of arguments used to call the function : %ld", info.Length());
 #endif
     throw Napi::Error::New(env, "Too many arguments in call to ZOOUpdateStatus");
   }
@@ -387,17 +387,15 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   }
 
   std::ifstream js_script(full_path);
-  std::stringstream js_raw;
-  js_raw << js_script.rdbuf();
-  std::string js_text =
-      js_loader_prologue + std::regex_replace(js_raw.str(), std::regex("`"), "\\`") + js_loader_epilogue;
+  std::stringstream js_text;
+  js_text << js_script.rdbuf();
 
-  if (napi_create_environment(platform, NULL, js_text.c_str(), &_env) != napi_ok) {
+  if (napi_create_environment(platform, NULL, js_loader, &_env) != napi_ok) {
     fprintf(stderr, "Failed running JS\n");
     return -1;
   }
 
-  int ret;
+  int ret = -1;
   {
     Napi::Env env(_env);
     Napi::HandleScope scope(env);
@@ -405,10 +403,14 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     try {
       CreateZOOEnvironment(env);
 
+      Napi::Function nativeRequire = env.Global().Get("nativeRequire").As<Napi::Function>();
+      Napi::Object vm = nativeRequire.Call({Napi::String::New(env, "vm")}).ToObject();
+      vm.Get("runInThisContext").As<Napi::Function>().Call(vm, {Napi::String::New(env, js_text.str())});
+
       Napi::Value _fn = env.Global().Get(s->name);
       if (!_fn.IsFunction()) {
         fprintf(stderr, "%s is not a function: %s\n", s->name, _fn.ToString().Utf8Value().c_str());
-        return -1;
+        return ret;
       }
       Napi::Function fn = _fn.As<Napi::Function>();
 
@@ -420,11 +422,11 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
       *outputs = mapsFromJSObject(env, js_outputs);
 
-      if (!status.IsNumber()) {
+      if (status.IsNumber()) {
+        ret = status.ToNumber().Int32Value();
+      } else {
         fprintf(stderr, "Service returned a non-number value: %s\n", status.ToString().Utf8Value().c_str());
-        return -1;
       }
-      ret = status.ToNumber().Int32Value();
     } catch (const Napi::Error &e) {
       fprintf(stderr, "Caught a JS exception: %s\n", e.what());
     }
@@ -432,7 +434,6 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
   if (napi_destroy_environment(_env, NULL) != napi_ok) {
     fprintf(stderr, "Failed destroying JS environment\n");
-    ret = -1;
   }
 
   return ret;
