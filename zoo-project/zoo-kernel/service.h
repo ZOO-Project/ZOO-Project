@@ -191,7 +191,14 @@ extern "C" {
  * The global dismissed status for a service
  */
 #define SERVICE_DISMISSED 5
-
+/**
+ * The global deployed status for a service
+ */
+#define SERVICE_DEPLOYED 6
+/**
+ * The global undelployed status for a service
+ */
+#define SERVICE_UNDEPLOYED 7
 /**
  * The memory size to create an elements
  */

@@ -1855,7 +1855,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       *eres = -1;
     }
   *myMap = m;
-  *ioutputs = request_output_real_format;  
+  *ioutputs = request_output_real_format;
 }
 
 
@@ -2453,7 +2453,6 @@ runRequest (map ** inputs)
           json_object_put(res);
           return 1;
       }else {
-          fprintf(stderr,"%s\n",cgiQueryString);
           char* p=strstr(cgiQueryString,"/processes/");
           if (strlen(cgiQueryString)>11/*/processes/*/){
 
@@ -2466,31 +2465,39 @@ runRequest (map ** inputs)
               *theS='\0';
             }
 
-            fprintf(stderr,"%s\n",serviceName);
 
-       // creating output structur
-       json_object *cwl_input_object = json_object_new_object();
-       json_object *outputs = json_object_new_object();
-       json_object *result = json_object_new_object();
-       json_object *resultNested = json_object_new_object();
-       json_object *format = json_object_new_object();
-       json_object_object_add(format, "mediaType", json_object_new_string("application/json"));
-       json_object_object_add(resultNested, "format", format);
-       json_object_object_add(resultNested, "transmissionMode", json_object_new_string("reference"));
-       json_object_object_add(result, "resultNested", resultNested);
-       json_object_object_add(outputs, "Result", resultNested);
-       json_object_object_add(cwl_input_object, "outputs", outputs);
-       const char *jsonInputStr = json_object_to_json_string(cwl_input_object);
-       map *undeploy_request_inputs = createMap("jrequest", jsonInputStr);
+            service *s1 = NULL;
+            fetchService(zooRegistry,m,&s1,request_inputs,ntmp,undeployServiceProvider->value,printExceptionReportResponseJ);
 
-       service *s1 = NULL;
-       fprintf (stderr, "######## fetching service: %s", undeployServiceProvider->value);
-       fetchService(zooRegistry,m,&s1,undeploy_request_inputs,ntmp,undeployServiceProvider->value,printExceptionReportResponseJ);
-       initAllEnvironment(m,undeploy_request_inputs,ntmp,"jrequest");
-       loadServiceAndRun (&m,s1,undeploy_request_inputs, &request_input_real_format,&request_output_real_format, &eres);
+            maps *request_output_real_format = NULL;
+            maps *request_input_real_format = NULL;
+
+            maps* tmpMaps=createMaps("Result");
+            tmpMaps->content=createMap("dataType","string");
+            initAllEnvironment(m,request_inputs,ntmp,"jrequest");
+            loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format, &tmpMaps, &eres);
+            res=printJResult(m,s1,request_output_real_format,eres);
+
+
+
+            if (eres != -1){
+              json_object *res=json_object_new_object();
+              setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
+              dumpMaps(request_input_real_format);
+              dumpMaps(tmpMaps);
+
+              res=printJResult(m,s1,tmpMaps,eres);
+              const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
+              if(getMapFromMaps(m,"lenv","jsonStr")==NULL){
+		        setMapInMaps(m,"lenv","jsonStr",jsonStr0);
+              }
+            } else {
+                // TODO throw an error
+
+                return 1;
+            }
 
             free (serviceName);
-
           }
         }
     }
@@ -3163,6 +3170,8 @@ runRequest (map ** inputs)
     fprintf(stderr, "Inputs formatted:\n");
     dumpMap(req);
 
+
+
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
@@ -3259,6 +3268,7 @@ runRequest (map ** inputs)
 #endif
 	  if (pid > 0)
 	    {
+
 	      //
 	      // dady :
 	      // set status to SERVICE_ACCEPTED
@@ -3407,16 +3417,19 @@ runRequest (map ** inputs)
 	    }
 #endif
 	}else{
+      // request is synchronous
 	  loadHttpRequests(m,request_input_real_format);
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
 	    return -1;
 	  loadServiceAndRun (&m,s1,request_inputs,
 			     &request_input_real_format,
 			     &request_output_real_format,&eres);
+      fprintf (stderr, "######## print Result eres %deres != -1", eres);
 	  res=printJResult(m,s1,request_output_real_format,eres);
+      dumpMaps(request_output_real_format);
 	}
 
-	    
+
       }//else error
       else
 	if(strstr(pcaCgiQueryString,"/jobs")==NULL && strstr(pcaCgiQueryString,"/jobs/")==NULL){
@@ -3453,23 +3466,25 @@ runRequest (map ** inputs)
 	      cIdentifier[cnt+1]=0;
 	      cnt++;
 	    }
-
 	    fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
-
-
 	  }
-
-	  
 	}
 
     }
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
+
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
       if(getMapFromMaps(m,"lenv","no-headers")==NULL){
-	printHeaders(m);
-	printf("Status: 200 OK \r\n\r\n");
+        printHeaders(m);
+        if (eres == 7){
+            printf("Status: 204 NoContent \r\n\r\n");
+        } else {
+            printf("Status: 200 OK \r\n\r\n");
+        }
+        fprintf (stderr, "######## Status: 200 OK 2   res: %d \n", eres);
       }
       const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
+      fprintf (stderr, "######## Dumping jsonStr\n %s",jsonStr);
       printf(jsonStr);
       printf("\n");
       fflush(stdout);

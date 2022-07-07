@@ -1628,6 +1628,7 @@ extern "C" {
    * @return the JSON object pointer to the result
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
+
     if(res==SERVICE_FAILED){
       char* pacTmp=produceErrorMessage(conf);
       map* pamTmp=createMap("message",pacTmp);
@@ -1891,12 +1892,22 @@ extern "C" {
       }
       free(pacTmp);
       if(res==3){
-	map* mode=getMapFromMaps(conf,"request","mode");
-	if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
-	  setMapInMaps(conf,"headers","Status","201 Created");
-	else
-	  setMapInMaps(conf,"headers","Status","200 Ok");
-      }
+        map* mode=getMapFromMaps(conf,"request","mode");
+        if(mode!=NULL && strncasecmp(mode->value,"async",5)==0) {
+            setMapInMaps(conf, "headers", "Status", "201 Created");
+        }
+        else {
+            setMapInMaps(conf, "headers", "Status", "200 Ok");
+        }
+      } else if(res==6){
+            // service deployed
+          printf("Status: 201 Created \r\n\r\n");
+          setMapInMaps(conf, "headers", "Status", "201 Created");
+      } else if (res==7){
+            // service undeployed
+          printf("Status: 204 No Content \r\n\r\n");
+          setMapInMaps(conf, "headers", "Status", "204 No Content");
+        }
       else{
 	setMapInMaps(conf,"headers","Status","500 Issue running your service");
       }

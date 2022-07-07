@@ -101,23 +101,23 @@ int cgiMain(){
     if(strncasecmp(cgiRequestMethod,"delete",6)==0){
         tmpMap=createMap("jrequest","DELETE");
     } else if(strncmp(cgiContentType,"application/json",16)==0 &&
-            (strncasecmp(cgiRequestMethod,"post",4)==0 || strncasecmp(cgiRequestMethod,"delete",6)==0){
+            (strncasecmp(cgiRequestMethod,"post",4)==0 )){
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
        int len=0;
        while((r=fread(buffer,sizeof(char),1,cgiIn))>0){
-	 buffer[1]=0;
-	 if(res==NULL){
-	   res=(char*)malloc(2*sizeof(char));
-	   sprintf(res,"%s",buffer);
-	 }
-	 else{
-	   res=(char*)realloc(res,(len+2)*sizeof(char));
-	   memcpy(res + len, buffer, sizeof(char));
-	   res[len+1]=0;
-	 }
-	 len+=1;
+         buffer[1]=0;
+         if(res==NULL){
+           res=(char*)malloc(2*sizeof(char));
+           sprintf(res,"%s",buffer);
+         }
+         else{
+           res=(char*)realloc(res,(len+2)*sizeof(char));
+           memcpy(res + len, buffer, sizeof(char));
+           res[len+1]=0;
+         }
+         len+=1;
        }
        delete[] buffer;
        fprintf (stderr, "######## zoo_loader.c res: %s", res);
@@ -235,7 +235,7 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-  if(strncasecmp(cgiRequestMethod,"post",4)==0 ||
+  if(strncasecmp(cgiRequestMethod,"post",4)==0 || strncasecmp(cgiRequestMethod,"delete",6)==0 ||
      (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
 #ifdef WIN32
      ||tmpReq!=NULL
