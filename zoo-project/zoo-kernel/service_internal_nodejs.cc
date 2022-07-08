@@ -167,8 +167,7 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
   maps *res = nullptr;
   maps *tres = nullptr;
   if (!t.IsObject()) {
-    fprintf(stderr, "JS value is not an object");
-    return nullptr;
+    throw Napi::TypeError::New(env, "JS value is not an object");
   }
   Napi::Object obj = t.ToObject();
 
@@ -191,8 +190,7 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
         Napi::Value _name = propNames.Get(index);
 
         if (!_name.IsString()) {
-          fprintf(stderr, "Property name is not a string: %s\n", _name.ToString().Utf8Value().c_str());
-          return nullptr;
+          throw Napi::TypeError::New(env, "Property name is not a string: " + _name.ToString().Utf8Value());
         }
 
         std::string name = _name.ToString().Utf8Value();
@@ -240,8 +238,7 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
   map *res = nullptr;
 
   if (!t.IsObject()) {
-    fprintf(stderr, "JS value is not an object");
-    return nullptr;
+    throw Napi::Error::New(env, "JS value is not an object");
   }
   Napi::Object obj = t.ToObject();
 
@@ -256,8 +253,7 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
       Napi::Value _name = propNames.Get(index);
 
       if (!_name.IsString()) {
-        fprintf(stderr, "Property name is not a string: %s\n", _name.ToString().Utf8Value().c_str());
-        return nullptr;
+        throw Napi::Error::New(env, "Property name is not a string: " + _name.ToString().Utf8Value());
       }
       std::string name = _name.ToString().Utf8Value();
 
@@ -523,6 +519,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 #endif
     if (napi_create_platform(0, nullptr, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
       fprintf(stderr, "Failed creating the platform\n");
+      errorException(*main_conf, "Failed initializing Node.js/V8", "NoApplicableCode", nullptr);
       return -1;
     }
   }
@@ -549,6 +546,8 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   struct stat js_stat;
   if (stat(full_path.c_str(), &js_stat) != 0) {
     fprintf(stderr, "Failed opening %s\n", full_path.c_str());
+    std::string err = "Failed opening " + full_path;
+    errorException(*main_conf, full_path.c_str(), "NoApplicableCode", nullptr);
     return -1;
   }
 
@@ -557,7 +556,8 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   js_text << js_script.rdbuf();
 
   if (napi_create_environment(platform, nullptr, js_loader, &_env) != napi_ok) {
-    fprintf(stderr, "Failed running JS\n");
+    fprintf(stderr, "Failed creating environment\n");
+    errorException(*main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
     return -1;
   }
 
@@ -576,6 +576,8 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
       Napi::Value _fn = env.Global().Get(s->name);
       if (!_fn.IsFunction()) {
         fprintf(stderr, "%s is not a function: %s\n", s->name, _fn.ToString().Utf8Value().c_str());
+        std::string err = std::string(s->name) + " is not a function: " + _fn.ToString().Utf8Value();
+        errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
         return ret;
       }
       Napi::Function fn = _fn.As<Napi::Function>();
@@ -592,14 +594,19 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
         ret = status.ToNumber().Int32Value();
       } else {
         fprintf(stderr, "Service returned a non-number value: %s\n", status.ToString().Utf8Value().c_str());
+        std::string err = "Service returned a non-number value: " + status.ToString().Utf8Value();
+        errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
       }
     } catch (const Napi::Error &e) {
       fprintf(stderr, "Caught a JS exception: %s\n", e.what());
+      std::string err = "Caught a JS exception: " + e.Message();
+      errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
     }
   }
 
   if (napi_destroy_environment(_env, nullptr) != napi_ok) {
     fprintf(stderr, "Failed destroying JS environment\n");
+    errorException(*main_conf, "Failed destroying JS environment", "NoApplicableCode", nullptr);
   }
 
   return ret;
