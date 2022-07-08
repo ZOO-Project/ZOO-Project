@@ -45,9 +45,11 @@ static const char *js_loader =
   if (!arg.IsString())                                                                                                 \
     throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not a string");
 #define ARG_IS_OBJECT(env, arg)                                                                                        \
-  if (!arg.IsObject()) {                                                                                               \
-    throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an object");                                 \
-  }
+  if (!arg.IsObject())                                                                                                 \
+    throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an object");
+#define ARG_IS_NUMBER(env, arg)                                                                                        \
+  if (!arg.IsObject())                                                                                                 \
+    throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an number");
 
 static Napi::Object JSObject_FromMap(Napi::Env env, map *t);
 static map *mapFromJSObject(Napi::Env env, Napi::Value t);
@@ -304,15 +306,11 @@ static Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
 #endif
     throw Napi::Error::New(env, "Too many arguments in call to ZOOUpdateStatus");
   }
-  if (!info[0].IsObject()) {
-    throw Napi::Error::New(env, "First argument is not an object in call to ZOOUpdateStatus");
-  }
+
+  ARG_IS_OBJECT(env, info[0]);
   maps *conf = mapsFromJSObject(env, info[0]);
 
-  if (!info[1].IsNumber()) {
-    throw Napi::Error::New(env, "Second argument is not a number in call to ZOOUpdateStatus");
-  }
-
+  ARG_IS_NUMBER(env, info[1]);
   std::string status = std::to_string(info[1].ToNumber().Int32Value());
 
 #ifdef NODEJS_DEBUG
