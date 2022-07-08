@@ -33,10 +33,20 @@
 #include "response_print.h"
 #include "service_internal_nodejs.h"
 
+#include "ulinet.h"
+
 napi_platform platform = nullptr;
 
 static const char *js_loader =
     "global.nativeRequire = require; global.require = require('module').createRequire(process.cwd() + '/');";
+
+#define ARG_IS_STRING(env, arg)                                                                                        \
+  if (!arg.IsString())                                                                                                 \
+    throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not a string");
+#define ARG_IS_OBJECT(env, arg)                                                                                        \
+  if (!arg.IsObject()) {                                                                                               \
+    throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an object");                                 \
+  }
 
 /**
  * Convert a maps to a JavaScript Object
@@ -51,9 +61,9 @@ static Napi::Object JSObject_FromMaps(Napi::Env env, maps *t) {
   Napi::Object res = Napi::Object::New(env);
 
   maps *tmp = t;
-  while (tmp != NULL) {
+  while (tmp != nullptr) {
     Napi::Object obj = JSObject_FromMap(env, tmp->content);
-    if (tmp->child != NULL) {
+    if (tmp->child != nullptr) {
       Napi::Object child = JSObject_FromMaps(env, tmp->child);
       obj.Set("child", child);
     }
@@ -82,14 +92,14 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
   map *isBinary = getMap(t, "size");
   map *tmap = getMapType(t);
 #ifdef NODEJS_DEBUG
-  if (tmap == NULL)
+  if (tmap == nullptr)
     fprintf(stderr, "tmap is null !\n");
   else
     fprintf(stderr, "tmap is not null ! (%s = %s)\n", tmap->name, tmap->value);
 #endif
-  while (isArray == NULL && tmpm != NULL) {
+  while (isArray == nullptr && tmpm != nullptr) {
     Napi::Value jsstr;
-    if (isBinary != NULL && strncasecmp(tmpm->name, "value", 5) == 0)
+    if (isBinary != nullptr && strncasecmp(tmpm->name, "value", 5) == 0)
       jsstr = Napi::String::New(env, tmpm->value, atoi(isBinary->value));
     else
       jsstr = Napi::String::New(env, tmpm->value);
@@ -99,7 +109,7 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
 #endif
     tmpm = tmpm->next;
   }
-  if (isArray != NULL) {
+  if (isArray != nullptr) {
     map *len = getMap(t, "length");
     int cnt = atoi(len->value);
     Napi::Object values = Napi::Array::New(env);
@@ -110,16 +120,16 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
       tmpm1 = getMapArray(t, "value", i);
       tmpm2 = getMapArray(t, tmap->name, i);
       tmpm3 = getMapArray(t, "size", i);
-      if (tmpm1 != NULL) {
+      if (tmpm1 != nullptr) {
         Napi::Value jsstr;
-        if (tmpm3 != NULL)
+        if (tmpm3 != nullptr)
           jsstr = Napi::String::New(env, tmpm1->value, atoi(tmpm3->value));
         else
           jsstr = Napi::String::New(env, tmpm1->value);
 
         values.Set(i, jsstr);
       }
-      if (tmpm2 != NULL) {
+      if (tmpm2 != nullptr) {
         Napi::Value jsstr = Napi::String::New(env, tmpm2->value);
         mvalues.Set(i, jsstr);
       }
@@ -128,7 +138,7 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
     res.Set("value", values);
     res.Set(tmap->name, mvalues);
 
-    while (tmpm != NULL) {
+    while (tmpm != nullptr) {
       if (strncasecmp(tmpm->name, "value", 5) != 0 && strncasecmp(tmpm->name, "size", 4) != 0 &&
           strncasecmp(tmpm->name, tmap->name, strlen(tmap->name)) != 0) {
         Napi::Value jsstr = Napi::String::New(env, tmpm->value);
@@ -154,11 +164,11 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
 maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
   Napi::HandleScope scope(env);
 
-  maps *res = NULL;
-  maps *tres = NULL;
+  maps *res = nullptr;
+  maps *tres = nullptr;
   if (!t.IsObject()) {
     fprintf(stderr, "JS value is not an object");
-    return NULL;
+    return nullptr;
   }
   Napi::Object obj = t.ToObject();
 
@@ -182,7 +192,7 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
 
         if (!_name.IsString()) {
           fprintf(stderr, "Property name is not a string: %s\n", _name.ToString().Utf8Value().c_str());
-          return NULL;
+          return nullptr;
         }
 
         std::string name = _name.ToString().Utf8Value();
@@ -200,13 +210,13 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
           tres->content = createMap(name.c_str(), value.ToString().Utf8Value().c_str());
         }
 
-        if (res == NULL)
+        if (res == nullptr)
           res = dupMaps(&tres);
         else
           addMapsToMaps(&res, tres);
         freeMaps(&tres);
         free(tres);
-        tres = NULL;
+        tres = nullptr;
       }
     }
   }
@@ -227,11 +237,11 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
 map *mapFromJSObject(Napi::Env env, Napi::Value t) {
   Napi::HandleScope scope(env);
 
-  map *res = NULL;
+  map *res = nullptr;
 
   if (!t.IsObject()) {
     fprintf(stderr, "JS value is not an object");
-    return NULL;
+    return nullptr;
   }
   Napi::Object obj = t.ToObject();
 
@@ -247,7 +257,7 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
 
       if (!_name.IsString()) {
         fprintf(stderr, "Property name is not a string: %s\n", _name.ToString().Utf8Value().c_str());
-        return NULL;
+        return nullptr;
       }
       std::string name = _name.ToString().Utf8Value();
 
@@ -257,14 +267,14 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
         fprintf(stderr, "Enumerate id : %ld => %s => No more value\n", index, name.c_str());
 #endif
       } else if (value.IsString()) {
-        if (res != NULL) {
+        if (res != nullptr) {
 #ifdef NODEJS_DEBUG
           fprintf(stderr, "%s - %s\n", name.c_str(), value.ToString().Utf8Value().c_str());
 #endif
           addToMap(res, name.c_str(), value.ToString().Utf8Value().c_str());
         } else {
           res = createMap(name.c_str(), value.ToString().Utf8Value().c_str());
-          res->next = NULL;
+          res->next = nullptr;
         }
       }
     }
@@ -279,7 +289,8 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
  * The function used as ZOOUpdateStatus from the JavaScript environment
  * (ZOO-API).
  *
- * @param info Node-API JavaScript call convention
+ * @param conf Configuration object
+ * @param status Completion
  * @return true
  * @see setHeader,_updateStatus
  */
@@ -307,7 +318,7 @@ Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
 #ifdef NODEJS_DEBUG
   fprintf(stderr, "ZOOUpdateStatus: %s\n", status.c_str());
 #endif
-  if (getMapFromMaps(conf, "lenv", "status") != NULL) {
+  if (getMapFromMaps(conf, "lenv", "status") != nullptr) {
     if (status.size() > 0) {
       setMapInMaps(conf, "lenv", "status", status.c_str());
     } else {
@@ -318,6 +329,157 @@ Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
   freeMaps(&conf);
   free(conf);
   return scope.Escape(Napi::Boolean::New(env, true)).ToBoolean();
+}
+
+/**
+ * The function used as ZOOTranslate from the JavaScript environment.
+ * Use the ZOO-Services messages translation function from the Python
+ * environment (ZOO-API)
+ *
+ * @param str String to translate
+ * @return Translated string
+ */
+Napi::String ZOOTranslate(const Napi::CallbackInfo &info) {
+  Napi::Env env(info.Env());
+  Napi::EscapableHandleScope scope(env);
+
+  if (info.Length() != 1 || !info[0].IsString())
+    throw Napi::Error::New(env, "Invalid argument for ZOOTranslate");
+
+  std::string str = info[0].ToString().Utf8Value();
+  return scope.Escape(Napi::String::New(env, _ss(str.c_str()))).ToString();
+}
+
+/**
+ * Set the HTTP header of a request
+ *
+ * @param handle the HINTERNET handle
+ * @param env the JavaScript context
+ * @param header the JavaScript Array containing the headers to send
+ * @return the HINTERNET handle
+ */
+HINTERNET setHeader(HINTERNET *handle, Napi::Env env, Napi::Array header) {
+#ifdef ULINET_DEBUG
+  fprintf(stderr, "setHeader\n");
+#endif
+  size_t length = header.Length();
+#ifdef ULINET_DEBUG
+  fprintf(stderr, "header is an array of %ld elements\n", length);
+#endif
+  handle->ihandle[handle->nb].header = nullptr;
+  for (size_t i = 0; i < length; i++) {
+    Napi::Value val = header.Get(i);
+    if (!val.IsString())
+      throw Napi::TypeError::New(env, val.ToString().Utf8Value() + " is not a string");
+    std::string s = val.ToString().Utf8Value();
+#ifdef ULINET_DEBUG
+    curl_easy_setopt(handle->ihandle[handle->nb].handle, CURLOPT_VERBOSE, 1);
+    fprintf(stderr, "Element of array n° %d, value : %s\n", i, tmp1);
+#endif
+    handle->ihandle[handle->nb].header = curl_slist_append(handle->ihandle[handle->nb].header, s.c_str());
+  }
+  return *handle;
+}
+
+/**
+ * The function used as ZOORequest from the JavaScript environment (ZOO-API)
+ *
+ * @param cx the JavaScript context
+ * @param argc the number of parameters
+ * @param argv1 the parameter values
+ * @return true
+ * @see setHeader
+ */
+Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
+  Napi::Env env(info.Env());
+  Napi::EscapableHandleScope scope(env);
+
+  HINTERNET hInternet;
+  Napi::Object header;
+  std::string url;
+  std::string method;
+  std::string body;
+  size_t dwRead;
+
+  maps *tmpConf = createMaps("main");
+  tmpConf->content = createMap("memory", "load");
+  hInternet = InternetOpen(const_cast<char *>("ZooWPSClient\0"), INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+
+  if (!CHECK_INET_HANDLE(hInternet))
+    return scope.Escape(Napi::Boolean::New(env, false));
+
+  if (info.Length() >= 2) {
+    ARG_IS_STRING(env, info[0]);
+    method = info[0].ToString().Utf8Value();
+    ARG_IS_STRING(env, info[1]);
+    url = info[1].ToString().Utf8Value();
+  } else {
+    method = std::string("GET");
+    ARG_IS_STRING(env, info[0]);
+    url = info[0].ToString().Utf8Value();
+  }
+  hInternet.waitingRequests[hInternet.nb] = strdup(url.c_str());
+
+  if (info.Length() == 4) {
+    std::string body;
+    ARG_IS_STRING(env, info[2])
+    body = info[2].ToString().Utf8Value();
+    ARG_IS_OBJECT(env, info[3]);
+    header = info[3].ToObject();
+#ifdef ULINET_DEBUG
+    fprintf(stderr, "URL (%s) \nBODY (%s)\n", url.c_str(), body.c_str());
+#endif
+    if (header.IsArray())
+      setHeader(&hInternet, env, header.As<Napi::Array>());
+#ifdef ULINET_DEBUG
+    fprintf(stderr, "BODY (%s)\n", body);
+#endif
+    InternetOpenUrl(&hInternet, hInternet.waitingRequests[hInternet.nb], const_cast<char *>(body.c_str()),
+                    body.length(), INTERNET_FLAG_NO_CACHE_WRITE, 0, tmpConf);
+    processDownloads(&hInternet);
+  } else {
+    if (info.Length() == 3) {
+      if (method == "GET") {
+        ARG_IS_OBJECT(env, info[2]);
+        header = info[2].ToObject();
+        if (header.IsArray()) {
+          setHeader(&hInternet, env, header.As<Napi::Array>());
+        } else {
+          throw Napi::TypeError::New(env, "header must be an array");
+        }
+        InternetOpenUrl(&hInternet, hInternet.waitingRequests[hInternet.nb], nullptr, 0, INTERNET_FLAG_NO_CACHE_WRITE,
+                        0, tmpConf);
+        processDownloads(&hInternet);
+      } else {
+        ARG_IS_OBJECT(env, info[2]);
+        body = info[2].ToString();
+        InternetOpenUrl(&hInternet, hInternet.waitingRequests[hInternet.nb], const_cast<char *>(body.c_str()),
+                        body.length(), INTERNET_FLAG_NO_CACHE_WRITE, 0, tmpConf);
+        processDownloads(&hInternet);
+      }
+    } else {
+      InternetOpenUrl(&hInternet, hInternet.waitingRequests[hInternet.nb], nullptr, 0, INTERNET_FLAG_NO_CACHE_WRITE, 0,
+                      tmpConf);
+      processDownloads(&hInternet);
+    }
+  }
+  char *tmpValue = (char *)malloc((hInternet.ihandle[0].nDataLen + 1) * sizeof(char));
+  InternetReadFile(hInternet.ihandle[0], (LPVOID)tmpValue, hInternet.ihandle[0].nDataLen, &dwRead);
+#ifdef ULINET_DEBUG
+  fprintf(stderr, "content downloaded (%d) (%s) \n", dwRead, tmpValue);
+#endif
+  if (dwRead == 0) {
+    return scope.Escape(Napi::String::New(env, "Unable to access the file."));
+  }
+
+#ifdef ULINET_DEBUG
+  fprintf(stderr, "content downloaded (%d) (%s) \n", dwRead, tmpValue);
+#endif
+
+  freeMaps(&tmpConf);
+  free(tmpConf);
+  InternetCloseHandle(&hInternet);
+  return scope.Escape(Napi::String::New(env, tmpValue));
 }
 
 static const char *ZooStatus[] = {"SERVICE_ACCEPTED", "SERVICE_STARTED", "SERVICE_PAUSED", "SERVICE_SUCCEEDED",
@@ -331,10 +493,14 @@ static const char *ZooStatus[] = {"SERVICE_ACCEPTED", "SERVICE_STARTED", "SERVIC
 void CreateZOOEnvironment(Napi::Env env) {
   Napi::HandleScope scope(env);
   auto ZOOUpdateStatusRef = Napi::Function::New(env, ZOOUpdateStatus, "ZOOUpdateStatus");
+  auto ZOOTranslateRef = Napi::Function::New(env, ZOOTranslate, "ZOOTranslate");
+  auto ZOORequestRef = Napi::Function::New(env, ZOORequest, "ZOORequest");
 
   for (size_t i = 0; i < sizeof(ZooStatus) / sizeof(ZooStatus[0]); i++)
     env.Global().Set(ZooStatus[i], i);
   env.Global().Set("ZOOUpdateStatus", ZOOUpdateStatusRef);
+  env.Global().Set("ZOOTranslate", ZOOTranslateRef);
+  env.Global().Set("ZOORequest", ZOORequestRef);
 }
 
 /**
@@ -355,7 +521,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "libnode init\n");
 #endif
-    if (napi_create_platform(0, NULL, 0, NULL, NULL, 0, &platform) != napi_ok) {
+    if (napi_create_platform(0, nullptr, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
       fprintf(stderr, "Failed creating the platform\n");
       return -1;
     }
@@ -390,7 +556,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   std::stringstream js_text;
   js_text << js_script.rdbuf();
 
-  if (napi_create_environment(platform, NULL, js_loader, &_env) != napi_ok) {
+  if (napi_create_environment(platform, nullptr, js_loader, &_env) != napi_ok) {
     fprintf(stderr, "Failed running JS\n");
     return -1;
   }
@@ -432,7 +598,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     }
   }
 
-  if (napi_destroy_environment(_env, NULL) != napi_ok) {
+  if (napi_destroy_environment(_env, nullptr) != napi_ok) {
     fprintf(stderr, "Failed destroying JS environment\n");
   }
 
