@@ -48,7 +48,7 @@ static const char *js_loader =
   if (!arg.IsObject())                                                                                                 \
     throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an object");
 #define ARG_IS_NUMBER(env, arg)                                                                                        \
-  if (!arg.IsObject())                                                                                                 \
+  if (!arg.IsNumber())                                                                                                 \
     throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an number");
 
 static Napi::Object JSObject_FromMap(Napi::Env env, map *t);
@@ -520,8 +520,14 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "libnode init\n");
 #endif
-    if (napi_create_platform(0, nullptr, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
-      fprintf(stderr, "Failed creating the platform\n");
+    char *argv[] = {"--inspect", "--inspect-brk"};
+    int argc = 0;
+    map *inspector = getMap(s->content, "inspector");
+    if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
+      argc = 2;
+    }
+
+    if (napi_create_platform(argc, argv, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
       errorException(*main_conf, "Failed initializing Node.js/V8", "NoApplicableCode", nullptr);
       return -1;
     }
@@ -548,7 +554,6 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
   struct stat js_stat;
   if (stat(full_path.c_str(), &js_stat) != 0) {
-    fprintf(stderr, "Failed opening %s\n", full_path.c_str());
     std::string err = "Failed opening " + full_path;
     errorException(*main_conf, full_path.c_str(), "NoApplicableCode", nullptr);
     return -1;
@@ -559,7 +564,6 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   js_text << js_script.rdbuf();
 
   if (napi_create_environment(platform, nullptr, js_loader, &_env) != napi_ok) {
-    fprintf(stderr, "Failed creating environment\n");
     errorException(*main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
     return -1;
   }
@@ -578,7 +582,6 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
       Napi::Value _fn = env.Global().Get(s->name);
       if (!_fn.IsFunction()) {
-        fprintf(stderr, "%s is not a function: %s\n", s->name, _fn.ToString().Utf8Value().c_str());
         std::string err = std::string(s->name) + " is not a function: " + _fn.ToString().Utf8Value();
         errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
         return ret;
@@ -596,19 +599,16 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
       if (status.IsNumber()) {
         ret = status.ToNumber().Int32Value();
       } else {
-        fprintf(stderr, "Service returned a non-number value: %s\n", status.ToString().Utf8Value().c_str());
         std::string err = "Service returned a non-number value: " + status.ToString().Utf8Value();
         errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
       }
     } catch (const Napi::Error &e) {
-      fprintf(stderr, "Caught a JS exception: %s\n", e.what());
       std::string err = "Caught a JS exception: " + e.Message();
       errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
     }
   }
 
   if (napi_destroy_environment(_env, nullptr) != napi_ok) {
-    fprintf(stderr, "Failed destroying JS environment\n");
     errorException(*main_conf, "Failed destroying JS environment", "NoApplicableCode", nullptr);
   }
 

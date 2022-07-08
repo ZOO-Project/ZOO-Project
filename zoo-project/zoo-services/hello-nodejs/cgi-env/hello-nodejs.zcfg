@@ -6,6 +6,7 @@
  storeSupported = true
  statusSupported = true
  serviceProvider = hello.js
+ inspector = false
  serviceType = NODEJS
  <MetaData>
    title = Demo
