@@ -49,6 +49,9 @@ static const char *js_loader =
     throw Napi::TypeError::New(env, arg.ToString().Utf8Value() + " is not an object");                                 \
   }
 
+static Napi::Object JSObject_FromMap(Napi::Env env, map *t);
+static map *mapFromJSObject(Napi::Env env, Napi::Value t);
+
 /**
  * Convert a maps to a JavaScript Object
  *
@@ -84,7 +87,7 @@ static Napi::Object JSObject_FromMaps(Napi::Env env, maps *t) {
  * @param t the map to convert
  * @return a new JavaScript Object
  */
-Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
+static Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
   Napi::EscapableHandleScope scope(env);
 
   Napi::Object res = Napi::Object::New(env);
@@ -162,7 +165,7 @@ Napi::Object JSObject_FromMap(Napi::Env env, map *t) {
  * @param t the JavaScript Object to convert
  * @return a new maps containing the JavaScript Object
  */
-maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
+static maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
   Napi::HandleScope scope(env);
 
   maps *res = nullptr;
@@ -233,7 +236,7 @@ maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
  * @param t the JavaScript Object to convert
  * @return a new map containing the JavaScript Object
  */
-map *mapFromJSObject(Napi::Env env, Napi::Value t) {
+static map *mapFromJSObject(Napi::Env env, Napi::Value t) {
   Napi::HandleScope scope(env);
 
   map *res = nullptr;
@@ -291,7 +294,7 @@ map *mapFromJSObject(Napi::Env env, Napi::Value t) {
  * @return true
  * @see setHeader,_updateStatus
  */
-Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
+static Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   Napi::EscapableHandleScope scope(env);
 
@@ -336,7 +339,7 @@ Napi::Boolean ZOOUpdateStatus(const Napi::CallbackInfo &info) {
  * @param str String to translate
  * @return Translated string
  */
-Napi::String ZOOTranslate(const Napi::CallbackInfo &info) {
+static Napi::String ZOOTranslate(const Napi::CallbackInfo &info) {
   Napi::Env env(info.Env());
   Napi::EscapableHandleScope scope(env);
 
@@ -355,7 +358,7 @@ Napi::String ZOOTranslate(const Napi::CallbackInfo &info) {
  * @param header the JavaScript Array containing the headers to send
  * @return the HINTERNET handle
  */
-HINTERNET setHeader(HINTERNET *handle, Napi::Env env, Napi::Array header) {
+static HINTERNET setHeader(HINTERNET *handle, Napi::Env env, Napi::Array header) {
 #ifdef ULINET_DEBUG
   fprintf(stderr, "setHeader\n");
 #endif
@@ -388,7 +391,7 @@ HINTERNET setHeader(HINTERNET *handle, Napi::Env env, Napi::Array header) {
  * @return true
  * @see setHeader
  */
-Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
+static Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
   Napi::Env env(info.Env());
   Napi::EscapableHandleScope scope(env);
 
@@ -488,7 +491,7 @@ static const char *ZooStatus[] = {"SERVICE_ACCEPTED", "SERVICE_STARTED", "SERVIC
  *
  * @param env The JavaScript context
  */
-void CreateZOOEnvironment(Napi::Env env) {
+static void CreateZOOEnvironment(Napi::Env env) {
   Napi::HandleScope scope(env);
   auto ZOOUpdateStatusRef = Napi::Function::New(env, ZOOUpdateStatus, "ZOOUpdateStatus");
   auto ZOOTranslateRef = Napi::Function::New(env, ZOOTranslate, "ZOOTranslate");

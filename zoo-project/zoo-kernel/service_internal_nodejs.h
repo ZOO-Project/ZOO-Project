@@ -35,9 +35,6 @@
 extern "C" {
 #endif
 
-Napi::Object JSObject_FromMap(Napi::Env env, map *t);
-map *mapFromJSObject(Napi::Env env, Napi::Value t);
-
 int zoo_nodejs_support(maps **, map *, service *, maps **, maps **);
 
 #ifdef __cplusplus
