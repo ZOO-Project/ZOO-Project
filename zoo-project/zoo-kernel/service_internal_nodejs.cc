@@ -22,7 +22,8 @@
  * THE SOFTWARE.
  */
 
-#define NODEJS_DEBUG
+//#define NODEJS_DEBUG
+//#define ULINET_DEBUG
 #define NAPI_EXPERIMENTAL
 
 #include <fstream>
@@ -370,7 +371,7 @@ HINTERNET setHeader(HINTERNET *handle, Napi::Env env, Napi::Array header) {
     std::string s = val.ToString().Utf8Value();
 #ifdef ULINET_DEBUG
     curl_easy_setopt(handle->ihandle[handle->nb].handle, CURLOPT_VERBOSE, 1);
-    fprintf(stderr, "Element of array n° %d, value : %s\n", i, tmp1);
+    fprintf(stderr, "Element of array n° %ld, value : %s\n", i, s.c_str());
 #endif
     handle->ihandle[handle->nb].header = curl_slist_append(handle->ihandle[handle->nb].header, s.c_str());
   }
@@ -380,9 +381,10 @@ HINTERNET setHeader(HINTERNET *handle, Napi::Env env, Napi::Array header) {
 /**
  * The function used as ZOORequest from the JavaScript environment (ZOO-API)
  *
- * @param cx the JavaScript context
- * @param argc the number of parameters
- * @param argv1 the parameter values
+ * @param method Optional method or otherwise GET
+ * @param url URL
+ * @param body Optional body
+ * @param headers Optional headers
  * @return true
  * @see setHeader
  */
@@ -428,7 +430,7 @@ Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
     if (header.IsArray())
       setHeader(&hInternet, env, header.As<Napi::Array>());
 #ifdef ULINET_DEBUG
-    fprintf(stderr, "BODY (%s)\n", body);
+    fprintf(stderr, "BODY (%s)\n", body.c_str());
 #endif
     InternetOpenUrl(&hInternet, hInternet.waitingRequests[hInternet.nb], const_cast<char *>(body.c_str()),
                     body.length(), INTERNET_FLAG_NO_CACHE_WRITE, 0, tmpConf);
@@ -462,14 +464,14 @@ Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
   char *tmpValue = (char *)malloc((hInternet.ihandle[0].nDataLen + 1) * sizeof(char));
   InternetReadFile(hInternet.ihandle[0], (LPVOID)tmpValue, hInternet.ihandle[0].nDataLen, &dwRead);
 #ifdef ULINET_DEBUG
-  fprintf(stderr, "content downloaded (%d) (%s) \n", dwRead, tmpValue);
+  fprintf(stderr, "content downloaded (%ld) (%s) \n", dwRead, tmpValue);
 #endif
   if (dwRead == 0) {
     return scope.Escape(Napi::String::New(env, "Unable to access the file."));
   }
 
 #ifdef ULINET_DEBUG
-  fprintf(stderr, "content downloaded (%d) (%s) \n", dwRead, tmpValue);
+  fprintf(stderr, "content downloaded (%ld) (%s) \n", dwRead, tmpValue);
 #endif
 
   freeMaps(&tmpConf);

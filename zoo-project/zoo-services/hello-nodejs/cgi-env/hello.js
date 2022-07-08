@@ -29,5 +29,10 @@ function hellonodejs(conf,inputs,outputs){
 
   console.log('ZOOTranslate', ZOOTranslate("my error"));
 
+  ZOORequest('https://www.google.com');
+  ZOORequest('GET',' https://www.google.com');
+  ZOORequest('POST', 'https://www.google.com', 'formdata', ['Accept-Encoding: gzip, deflate']);
+  ZOORequest('GET', 'https://www.google.com', ['Accept-Encoding: gzip, deflate']);
+
   return SERVICE_SUCCEEDED;
 }
