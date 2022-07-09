@@ -516,29 +516,6 @@ static void CreateZOOEnvironment(Napi::Env env) {
  *  if the service failed to load or throw error at runtime.
  */
 extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, maps **inputs, maps **outputs) {
-  if (platform == nullptr) {
-#ifdef NODEJS_DEBUG
-    fprintf(stderr, "libnode init\n");
-#endif
-    char *argv[5];
-    int argc = 0;
-    map *inspector = getMap(s->content, "inspector");
-    if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
-      argv[argc++] = const_cast<char *>("--inspect");
-      argv[argc++] = const_cast<char *>("--inspect-brk");
-    }
-
-    if (napi_create_platform(argc, argv, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
-      errorException(*main_conf, "Failed initializing Node.js/V8", "NoApplicableCode", nullptr);
-      return -1;
-    }
-  }
-
-#ifdef NODEJS_DEBUG
-  fprintf(stderr, "libnode create environment\n");
-#endif
-  napi_env _env;
-
   map *path_meta = getMap(request, "metapath");
   map *path_service = getMap(s->content, "serviceProvider");
 
@@ -563,6 +540,31 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   std::ifstream js_script(full_path);
   std::stringstream js_text;
   js_text << js_script.rdbuf();
+
+  if (platform == nullptr) {
+#ifdef NODEJS_DEBUG
+    fprintf(stderr, "libnode init\n");
+#endif
+    char *argv[5];
+    int argc = 0;
+    argv[argc++] = const_cast<char *>("zoo_service_loader");
+
+    map *inspector = getMap(s->content, "inspector");
+    if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
+      argv[argc++] = const_cast<char *>("--inspect-brk");
+    }
+    argv[argc++] = const_cast<char *>(full_path.c_str());
+
+    if (napi_create_platform(argc, argv, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
+      errorException(*main_conf, "Failed initializing Node.js/V8", "NoApplicableCode", nullptr);
+      return -1;
+    }
+  }
+
+#ifdef NODEJS_DEBUG
+  fprintf(stderr, "libnode create environment\n");
+#endif
+  napi_env _env;
 
   if (napi_create_environment(platform, nullptr, js_loader, &_env) != napi_ok) {
     errorException(*main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
