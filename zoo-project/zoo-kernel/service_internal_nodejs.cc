@@ -38,6 +38,7 @@
 
 napi_platform platform = nullptr;
 
+static const char *debugger = "require('inspector').waitForDebugger(); debugger;\n";
 static const char *js_loader =
     "global.nativeRequire = require; global.require = require('module').createRequire(process.cwd() + '/');";
 
@@ -538,8 +539,9 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   }
 
   std::ifstream js_script(full_path);
-  std::stringstream js_text;
-  js_text << js_script.rdbuf();
+  std::stringstream js_text_raw;
+  js_text_raw << js_script.rdbuf();
+  std::string js_text = std::move(js_text_raw.str());
 
   if (platform == nullptr) {
 #ifdef NODEJS_DEBUG
@@ -551,7 +553,8 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
     map *inspector = getMap(s->content, "inspector");
     if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
-      argv[argc++] = const_cast<char *>("--inspect-brk");
+      argv[argc++] = const_cast<char *>("--inspect");
+      js_text = debugger + js_text;
     }
     argv[argc++] = const_cast<char *>(full_path.c_str());
 
@@ -581,7 +584,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
       Napi::Function nativeRequire = env.Global().Get("nativeRequire").As<Napi::Function>();
       Napi::Object vm = nativeRequire.Call({Napi::String::New(env, "vm")}).ToObject();
-      vm.Get("runInThisContext").As<Napi::Function>().Call(vm, {Napi::String::New(env, js_text.str())});
+      vm.Get("runInThisContext").As<Napi::Function>().Call(vm, {Napi::String::New(env, js_text)});
 
       Napi::Value _fn = env.Global().Get(s->name);
       if (!_fn.IsFunction()) {
