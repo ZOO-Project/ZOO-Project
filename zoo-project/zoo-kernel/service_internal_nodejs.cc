@@ -520,11 +520,12 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "libnode init\n");
 #endif
-    char *argv[] = {"--inspect", "--inspect-brk"};
+    char *argv[5];
     int argc = 0;
     map *inspector = getMap(s->content, "inspector");
     if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
-      argc = 2;
+      argv[argc++] = const_cast<char *>("--inspect");
+      argv[argc++] = const_cast<char *>("--inspect-brk");
     }
 
     if (napi_create_platform(argc, argv, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
