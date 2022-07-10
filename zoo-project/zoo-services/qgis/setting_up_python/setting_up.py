@@ -29,7 +29,7 @@ js=json.loads(open(qepath,'r').read())
 for k, v in js.items():
     os.environ[k]=v
 
-os.environ['PROJ_LIB']='C:/Program Files/QGIS 3.22.3/share/proj'
+os.environ['PROJ_LIB']='/usr/bin/qgis'
 
 import PyQt5.QtCore
 from osgeo import gdal
@@ -40,7 +40,7 @@ from qgis.core import (QgsApplication,
 from qgis.analysis import QgsNativeAlgorithms
 
 feedback=QgsProcessingFeedback()
-QgsApplication.setPrefixPath(js['HOMEPAt'], True)
+QgsApplication.setPrefixPath(js['HOME'], True)
 qgs=QgsApplication([], False)
 qgs.initQgis()
 
