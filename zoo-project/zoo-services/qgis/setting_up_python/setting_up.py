@@ -53,5 +53,9 @@ for alg in QgsApplication.processingRegistry().algorithms():
     algs[alg.displayName()] = alg.id()
 print(algs)
 
+print(dir(qgis.analysis))
+print(dir(qgis.core.QgsApplication))
+print(dir(qgis.core.QgsProcessingRegistry))
+print(dir(qgis.analysis.QgsNativeAlgorithms))
 
 processing.algorithmHelp("native:georeference")
