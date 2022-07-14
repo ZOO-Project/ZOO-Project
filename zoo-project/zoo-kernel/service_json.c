@@ -1645,7 +1645,14 @@ extern "C" {
       printHeaders(conf);
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
+      // raw response
       maps* resu=result;
+
+      // when the response is SERVICE DEPLOYED
+      // we want to return a 201 status code
+      if (res == SERVICE_DEPLOYED){
+          setMapInMaps(conf,"headers","Status","201 Service Deployed");
+      }
       printRawdataOutputs(conf,s,resu);
       map* pmError=getMapFromMaps(conf,"lenv","error");
       if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
@@ -1653,6 +1660,7 @@ extern "C" {
       }
       return NULL;
     }else{
+      // not raw response
       json_object* eres1=json_object_new_object();
       map* pmIOAsArray=getMapFromMaps(conf,"openapi","io_as_array");
       json_object* eres;
@@ -1899,16 +1907,7 @@ extern "C" {
         else {
             setMapInMaps(conf, "headers", "Status", "200 Ok");
         }
-      } else if(res==6){
-            // service deployed
-          printf("Status: 201 Created \r\n\r\n");
-          setMapInMaps(conf, "headers", "Status", "201 Created");
-      } else if (res==7){
-            // service undeployed
-          printf("Status: 204 No Content \r\n\r\n");
-          setMapInMaps(conf, "headers", "Status", "204 No Content");
-        }
-      else{
+      } else{
 	setMapInMaps(conf,"headers","Status","500 Issue running your service");
       }
       return eres;

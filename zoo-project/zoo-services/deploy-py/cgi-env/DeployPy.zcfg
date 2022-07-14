@@ -1,13 +1,13 @@
 [DeployPy]
- Title = Create a welcome message string.
- Abstract = Create a welcome string.
+ Title = Deploys a zoo service from an application package.
+ Abstract = Deploys a zoo service from an application package.
  processVersion = 2
  storeSupported = true
  statusSupported = true
  serviceProvider = deploy_service
  serviceType = Python
  <MetaData>
-   title = Demo
+   title = Service Deploy
  </MetaData>
  <DataInputs>
   [applicationPackage]
@@ -20,28 +20,18 @@
    </MetaData>
    <LiteralData>
     DataType = string
-    <Default>
-     UOM = meter
-    </Default>
-    <Supported>
-     UOM = meter
-    </Supported>
    </LiteralData>
  </DataInputs>
  <DataOutputs>
   [Result]
-   Title = The welcome message
-   Abstract = The welcome message created by service.
+   Title = Message to display
+   Abstract = The message displayed when the service has been deployed.
+   minOccurs = 0
+   maxOccurs = 1
    <MetaData>
-    title = My test
+    title = Deploy response message
    </MetaData>
    <LiteralData>
     DataType = string
-    <Default>
-     UOM = meter
-    </Default>
-    <Supported>
-     UOM = meter
-    </Supported>
    </LiteralData>
  </DataOutputs>

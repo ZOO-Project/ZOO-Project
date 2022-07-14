@@ -2339,7 +2339,7 @@ runRequest (map ** inputs)
 #ifndef USE_GDB
 #ifndef WIN32
     signal (SIGCHLD, SIG_IGN);
-#endif  
+#endif
     signal (SIGSEGV, json_sig_handler);
     signal (SIGTERM, json_sig_handler);
     signal (SIGINT, json_sig_handler);
@@ -2381,7 +2381,7 @@ runRequest (map ** inputs)
     }
     if(pcaCgiQueryString==NULL)
       pcaCgiQueryString=zStrdup(cgiQueryString);
-    
+
     //dumpMap(request_inputs);
     r_inputs = getMapOrFill (&request_inputs, "metapath", "");
     char conf_file1[10240];
@@ -2465,7 +2465,6 @@ runRequest (map ** inputs)
               *theS='\0';
             }
 
-
             service *s1 = NULL;
             fetchService(zooRegistry,m,&s1,request_inputs,ntmp,undeployServiceProvider->value,printExceptionReportResponseJ);
 
@@ -2476,27 +2475,35 @@ runRequest (map ** inputs)
             tmpMaps->content=createMap("dataType","string");
             initAllEnvironment(m,request_inputs,ntmp,"jrequest");
             loadServiceAndRun (&m, s1, request_inputs, &request_input_real_format, &tmpMaps, &eres);
-            res=printJResult(m,s1,request_output_real_format,eres);
 
-
-
-            if (eres != -1){
+            if (eres == SERVICE_UNDEPLOYED){
+              // if the status is Service undeployed
+              // return a 204 status code
               json_object *res=json_object_new_object();
-              setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
+              setMapInMaps(m,"headers","Status","204 NoContent");
+              printf("Status: 204 NoContent \r\n\r\n");
               dumpMaps(request_input_real_format);
               dumpMaps(tmpMaps);
-
               res=printJResult(m,s1,tmpMaps,eres);
               const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
               if(getMapFromMaps(m,"lenv","jsonStr")==NULL){
 		        setMapInMaps(m,"lenv","jsonStr",jsonStr0);
               }
             } else {
-                // TODO throw an error
-
+                map* serviceError = getMapFromMaps(m,"lenv","message");
+                setMapInMaps(m,"lenv","status_code","500");
+                map* error=createMap("code","Internal Server Error");
+                if(serviceError != NULL){
+                    // if the error message is present
+                    addToMap(error,"message",_(serviceError->value));
+                } else {
+                    // else return a general error message
+                    addToMap(error,"message",_("There was a error undeploying the service"));
+                }
+                printExceptionReportResponseJ(m,error);
+                json_object_put(res);
                 return 1;
             }
-
             free (serviceName);
           }
         }
@@ -2559,12 +2566,12 @@ runRequest (map ** inputs)
 	  }
 	  free(pacTmp);
 	  if(pacTitle!=NULL)
-	    free(pacTitle);	  
+	    free(pacTitle);
 	}
 	tmps = strtok_r (NULL, ",", &saveptr);
       }
       free(orig);
-      
+
       map* pmTmp=getMapFromMaps(m,"identification","title");
       if(pmTmp!=NULL)
 	json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
@@ -2592,7 +2599,7 @@ runRequest (map ** inputs)
     }else if(strncasecmp(pcaCgiQueryString,"/api",4)==0){
       if(strstr(pcaCgiQueryString,".html")==NULL)
 	produceApi(m,res);
-      else{	
+      else{
 	char* pacTmp=(char*)malloc(9*sizeof(char));
 	sprintf(pacTmp,"%s",pcaCgiQueryString+1);
 	map* pmTmp=getMapFromMaps(m,pacTmp,"href");
@@ -2622,7 +2629,7 @@ runRequest (map ** inputs)
       json_object *res3=json_object_new_array();
       int saved_stdout = zDup (fileno (stdout));
       zDup2 (fileno (stderr), fileno (stdout));
-      if (int res0 =		  
+      if (int res0 =
           recursReaddirF (m, NULL, res3, NULL, ntmp, NULL, saved_stdout, 0,
 			  printGetCapabilitiesForProcessJ) < 0) {
       }else{
@@ -2809,7 +2816,7 @@ runRequest (map ** inputs)
 	      free(pcaClauseType);
 	    }
 	  }
-	  // datetime parameter 
+	  // datetime parameter
 	  char* pcaClauseDate=NULL;
 	  pmTmp=getMap(request_inputs,"datetime");
 	  if(pmTmp!=NULL){
@@ -2987,7 +2994,7 @@ runRequest (map ** inputs)
 			  json_object_put(res);
 			  json_object_put(pjoTmp);
 		  	  free(pcaCgiQueryString);
-			  return 1;			
+			  return 1;
 			}else{
 
 			  map* tmpPath = getMapFromMaps (m, "main", "tmpUrl");
@@ -3051,14 +3058,14 @@ runRequest (map ** inputs)
 		  }
 		}
 
-		
+
 	      }
 	      free(jobId);
 	    }
 	  }
 	}
-	  
-      }    
+
+      }
     }
     else{
       service* s1=NULL;
@@ -3096,15 +3103,18 @@ runRequest (map ** inputs)
 
        json_object *outputs = json_object_new_object();
        json_object *result = json_object_new_object();
-       json_object *resultNested = json_object_new_object();
+       json_object *resultParent = json_object_new_object();
+       json_object *serviceId = json_object_new_object();
        json_object *format = json_object_new_object();
 
+
+       json_object *resultsArray=json_object_new_array();
+       // Result (message in the response body)
        json_object_object_add(format, "mediaType", json_object_new_string("application/json"));
-       json_object_object_add(resultNested, "format", format);
-       json_object_object_add(resultNested, "transmissionMode", json_object_new_string("reference"));
-       json_object_object_add(result, "resultNested", resultNested);
-       json_object_object_add(outputs, "Result", resultNested);
-       json_object_object_add(cwl_input_object, "outputs", outputs);
+       json_object_object_add(result, "format", format);
+       json_object_object_add(result, "transmissionMode", json_object_new_string("reference"));
+       json_object_object_add(resultParent, "Result", result);
+       json_object_object_add(cwl_input_object, "outputs", resultParent);
 
        const char *jsonInputStr = json_object_to_json_string(cwl_input_object);
        map *deploy_request_inputs = createMap("jrequest", jsonInputStr);
@@ -3311,7 +3321,7 @@ runRequest (map ** inputs)
 	      bmap->content=createMap("usid",usid->value);
 	      addToMap(bmap->content,"sid",tmpm->value);
 	      addIntToMap(bmap->content,"pid",zGetpid());
-	  
+
 	      // Create PID file referencing the OS process identifier
 	      fbkpid =
 		(char *)
@@ -3338,9 +3348,9 @@ runRequest (map ** inputs)
 
 	      fbkp =
 		(char *)
-		malloc ((strlen (r_inputs->value) + 
+		malloc ((strlen (r_inputs->value) +
 			 strlen (usid->value) + 7) * sizeof (char));
-	      sprintf (fbkp, "%s/%s.json", r_inputs->value, 
+	      sprintf (fbkp, "%s/%s.json", r_inputs->value,
 		       usid->value);
 	      setMapInMaps (m, "lenv", "file.responseInit", fbkp);
 	      flog =
@@ -3388,7 +3398,7 @@ runRequest (map ** inputs)
 
 	      char *flenv =
 		(char *)
-		malloc ((strlen (r_inputs->value) + 
+		malloc ((strlen (r_inputs->value) +
 			 strlen (usid->value) + 12) * sizeof (char));
 	      sprintf (flenv, "%s/%s_lenv.cfg", r_inputs->value, usid->value);
 	      maps* lenvMaps=getMaps(m,"lenv");
@@ -3424,9 +3434,9 @@ runRequest (map ** inputs)
 	  loadServiceAndRun (&m,s1,request_inputs,
 			     &request_input_real_format,
 			     &request_output_real_format,&eres);
-      fprintf (stderr, "######## print Result eres %deres != -1", eres);
+      fprintf (stderr, "######## print Result eres %d \n\n", eres);
 	  res=printJResult(m,s1,request_output_real_format,eres);
-      dumpMaps(request_output_real_format);
+
 	}
 
 

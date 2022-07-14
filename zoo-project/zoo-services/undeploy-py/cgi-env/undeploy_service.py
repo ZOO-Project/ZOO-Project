@@ -1,6 +1,7 @@
 import zoo
-import json
 
 def UndeployPy(conf,inputs,outputs):
-    outputs["Result"]["value"]="successfully undeployed"
-    return zoo.SERVICE_FAILED
+    conf["lenv"]["message"]="successfully undeployed"
+
+    # 7 is for SERVICE_UNDEPLOYED
+    return 7
