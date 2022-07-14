@@ -386,7 +386,7 @@ RUN set -ex \
     && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess \
     && sed "s=http://localhost=$SERVER_URL=g;s=publisherUr\=$SERVER_URL=publisherUrl\=http://localhost=g;s=ws://localhost=$WS_SERVER_URL=g" -i /usr/lib/cgi-bin/oas.cfg \
     && sed "s=http://localhost=$SERVER_URL=g" -i /usr/lib/cgi-bin/main.cfg \
-    && for i in $(find /usr/share/locale/ -name "*mo"); do \
+    && for i in $(find /usr/share/locale/ -name "zoo-kernel.mo"); do \
          j=$(echo $i | sed "s:/usr/share/locale/::g;s:/LC_MESSAGES/zoo-kernel.mo::g"); \
          locale-gen $j ; \
          localedef -i $j -c -f UTF-8 -A /usr/share/locale/locale.alias ${j}.UTF-8; \
@@ -425,9 +425,13 @@ RUN set -ex \
     \
     && a2enmod cgi rewrite \
     \
-    # Cleaup \
+    # Cleanup \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
+
+
+# service namespaces parent folder
+RUN mkdir -p /opt/zooservices_namespaces && chmod -R 700 /opt/zooservices_namespaces && chown -R www-data /opt/zooservices_namespaces
 
 # For using another port than 80, change the value below.
 # remember to also change the ports in docker-compose.yml

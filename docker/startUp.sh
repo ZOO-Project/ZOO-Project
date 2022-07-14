@@ -2,6 +2,11 @@
 # Author: Gérald Fenoy
 # Copyright GeoLabs 2021
 
+mkdir -p /tmp/zTmp/statusInfos
+cp /var/www/html/data/* /usr/com/zoo-project
+chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project
+chmod 777 -R /tmp/zTmp
+
 CMD="curl -o toto.out http://rabbitmq:15672"
 $CMD
 cat toto.out
