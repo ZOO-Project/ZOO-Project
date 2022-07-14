@@ -2482,8 +2482,6 @@ runRequest (map ** inputs)
               json_object *res=json_object_new_object();
               setMapInMaps(m,"headers","Status","204 NoContent");
               printf("Status: 204 NoContent \r\n\r\n");
-              dumpMaps(request_input_real_format);
-              dumpMaps(tmpMaps);
               res=printJResult(m,s1,tmpMaps,eres);
               const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
               if(getMapFromMaps(m,"lenv","jsonStr")==NULL){
@@ -3174,14 +3172,6 @@ runRequest (map ** inputs)
 	if(cIdentifier!=NULL)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
 
-    fprintf(stderr, "Identifier: %s\n", cIdentifier);
-    fprintf(stderr, "Inputs:\n");
-    dumpMap(request_inputs);
-    fprintf(stderr, "Inputs formatted:\n");
-    dumpMap(req);
-
-
-
 	fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
@@ -3434,9 +3424,7 @@ runRequest (map ** inputs)
 	  loadServiceAndRun (&m,s1,request_inputs,
 			     &request_input_real_format,
 			     &request_output_real_format,&eres);
-      fprintf (stderr, "######## print Result eres %d \n\n", eres);
 	  res=printJResult(m,s1,request_output_real_format,eres);
-
 	}
 
 
@@ -3491,10 +3479,8 @@ runRequest (map ** inputs)
         } else {
             printf("Status: 200 OK \r\n\r\n");
         }
-        fprintf (stderr, "######## Status: 200 OK 2   res: %d \n", eres);
       }
       const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
-      fprintf (stderr, "######## Dumping jsonStr\n %s",jsonStr);
       printf(jsonStr);
       printf("\n");
       fflush(stdout);

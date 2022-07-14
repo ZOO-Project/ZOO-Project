@@ -3182,10 +3182,8 @@ void* printRawdataOutput(maps* conf,maps* outputs){
 
   map* status = getMapFromMaps(conf,"headers","Status");
   if(status!=NULL){
-        fprintf (stderr, "######## status is %s \n\n", status->value);
         printf("Status: %s;\r\n",status->value);
   } else {
-        fprintf (stderr, "######## status is empty");
         printf("Status: 200 OK;\r\n");
   }
 
@@ -3197,7 +3195,6 @@ void* printRawdataOutput(maps* conf,maps* outputs){
       char* locationUrlHeader=NULL;
       locationUrlHeader=(char*)malloc((strlen(rootUrl->value)+strlen(location->value)+12)*sizeof(char));
       sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
-      fprintf (stderr, "######## location is %s \n\n", locationUrlHeader);
       printf("Location: %s\r\n\r\n",locationUrlHeader);
   }
 

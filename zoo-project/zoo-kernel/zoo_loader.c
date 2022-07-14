@@ -120,7 +120,6 @@ int cgiMain(){
          len+=1;
        }
        delete[] buffer;
-       fprintf (stderr, "######## zoo_loader.c res: %s", res);
        tmpMap=createMap("jrequest",res);
        free(res);
   }else if(strncmp(cgiContentType,"text/xml",8)==0 ||
