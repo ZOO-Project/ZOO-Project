@@ -759,9 +759,12 @@ else
 	if test "$NODEJS_HOME" = "yes"
 	then
 		NODEJS_HOME=/usr
+		NODEJS_CPPFLAGS="`pkg-config --cflags node` `pkg-config --cflags node-addon-api`"
+		NODEJS_LDFLAGS=`pkg-config --libs node`
+	else
+		NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/libnode/ -I$NODEJS_HOME/include/node/"
+		NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
 	fi 
-	NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/libnode/ -I$NODEJS_HOME/include/node/"
-	NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
 	NODEJS_LIB="node"
 
 	CPPFLAGS_SAVE="$CPPFLAGS"
