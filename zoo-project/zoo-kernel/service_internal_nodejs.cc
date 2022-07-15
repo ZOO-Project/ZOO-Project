@@ -538,11 +538,6 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     return -1;
   }
 
-  std::ifstream js_script(full_path);
-  std::stringstream js_text_raw;
-  js_text_raw << js_script.rdbuf();
-  std::string js_text = std::move(js_text_raw.str());
-
   if (platform == nullptr) {
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "libnode init\n");
@@ -553,8 +548,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
     map *inspector = getMap(s->content, "inspector");
     if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
-      argv[argc++] = const_cast<char *>("--inspect");
-      js_text = debugger + js_text;
+      argv[argc++] = const_cast<char *>("--inspect-brk");
     }
     argv[argc++] = const_cast<char *>(full_path.c_str());
 
@@ -582,23 +576,21 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     try {
       CreateZOOEnvironment(env);
 
-      Napi::Function nativeRequire = env.Global().Get("nativeRequire").As<Napi::Function>();
-      Napi::Object vm = nativeRequire.Call({Napi::String::New(env, "vm")}).ToObject();
-      vm.Get("runInThisContext").As<Napi::Function>().Call(vm, {Napi::String::New(env, js_text)});
+      Napi::Function require = env.Global().Get("require").As<Napi::Function>();
+      Napi::Object moduleExport = require.Call({Napi::String::New(env, full_path)}).ToObject();
 
-      Napi::Value _fn = env.Global().Get(s->name);
-      if (!_fn.IsFunction()) {
-        std::string err = std::string(s->name) + " is not a function: " + _fn.ToString().Utf8Value();
+      if (!moduleExport.IsFunction()) {
+        std::string err = std::string(s->name) + " is not a function: " + moduleExport.ToString().Utf8Value();
         errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
         return ret;
       }
-      Napi::Function fn = _fn.As<Napi::Function>();
+      Napi::Function jsFn = moduleExport.As<Napi::Function>();
 
       Napi::Object js_main_conf = JSObject_FromMaps(env, *main_conf);
       Napi::Object js_inputs = JSObject_FromMaps(env, *inputs);
       Napi::Object js_outputs = JSObject_FromMaps(env, *outputs);
 
-      Napi::Value status = fn.Call({js_main_conf, js_inputs, js_outputs});
+      Napi::Value status = jsFn.Call({js_main_conf, js_inputs, js_outputs});
 
       *outputs = mapsFromJSObject(env, js_outputs);
 

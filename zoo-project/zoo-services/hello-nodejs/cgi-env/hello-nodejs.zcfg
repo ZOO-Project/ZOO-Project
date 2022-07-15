@@ -8,6 +8,7 @@
  serviceProvider = hello.js
  inspector = false
  serviceType = NODEJS
+ jsModuleType = CJS
  <MetaData>
    title = Demo
  </MetaData>

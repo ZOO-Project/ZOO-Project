@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-function hellonodejs(conf,inputs,outputs){
+function hellonodejs(conf,inputs,outputs) {
   ZOOUpdateStatus(conf, 0);
   outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
   ZOOUpdateStatus(conf, 100);
@@ -36,3 +36,5 @@ function hellonodejs(conf,inputs,outputs){
 
   return SERVICE_SUCCEEDED;
 }
+
+module.exports = hellonodejs;
