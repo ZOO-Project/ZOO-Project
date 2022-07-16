@@ -584,9 +584,11 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
       Napi::Value moduleExport;
 
       if (es6_mode) {
+        // Importing an ES6 module requires resolving the Promise returned by import
         Napi::Function import = env.Global().Get("import").As<Napi::Function>();
         Napi::Object modulePromise = import.Call({Napi::String::New(env, full_path)}).ToObject();
         Napi::Reference<Napi::Value> ref;
+        // This registers the lambda as a then callback that will receive the resolved value
         modulePromise.Get("then").As<Napi::Function>().Call(
             modulePromise, {Napi::Function::New(env, [main_conf, &ref](const Napi::CallbackInfo &info) {
               Napi::HandleScope scope(info.Env());
@@ -594,8 +596,12 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
                 errorException(*main_conf, "ES6 export is not an object", "NoApplicableCode", nullptr);
                 return;
               }
+              // Here we are in a completely foreign context and we cannot simply
+              // escape values to the outer scope -> we have to use a persistent handle
+              // not bound to any scope
               ref = Napi::Persistent(info[0].ToObject().Get("default"));
             })});
+        // This lambda will get called on error
         modulePromise.Get("catch").As<Napi::Function>().Call(
             modulePromise, {Napi::Function::New(env, [main_conf](const Napi::CallbackInfo &info) {
               Napi::HandleScope scope(info.Env());
@@ -605,10 +611,13 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
                 return;
               }
             })});
+        // Run the environment - this will trigger the execution of one
+        // of the above two lambdas
         if (napi_run_environment(_env) != napi_ok) {
           errorException(*main_conf, "Failed resolving ES6 Promise", "NoApplicableCode", nullptr);
           return ret;
         }
+        // Retrieve the resolved value from the persistent reference
         moduleExport = ref.Value();
       } else {
         Napi::Function require = env.Global().Get("require").As<Napi::Function>();
