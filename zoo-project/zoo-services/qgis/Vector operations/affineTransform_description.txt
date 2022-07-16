@@ -1,0 +1,123 @@
+Affine transform (native:affinetransform)
+
+Applies an affine transformation to geometries.
+
+Applies an affine transformation to the geometries from a layer. Affine transformations can include translation, scaling and rotation. The operations are performed in a scale, rotation, translation order.
+
+Z and M values present in the geometry can also be translated and scaled independently.
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Input layer
+
+	Parameter type:	QgsProcessingParameterFeatureSource
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProcessingFeatureSourceDefinition
+		- QgsProperty
+		- QgsVectorLayer
+
+DELTA_X: Translation (x-axis)
+
+	Parameter type:	QgsProcessingParameterDistance
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+DELTA_Y: Translation (y-axis)
+
+	Parameter type:	QgsProcessingParameterDistance
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+DELTA_Z: Translation (z-axis)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+DELTA_M: Translation (m values)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+SCALE_X: Scale factor (x-axis)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+SCALE_Y: Scale factor (y-axis)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+SCALE_Z: Scale factor (z-axis)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+SCALE_M: Scale factor (m values)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+ROTATION_Z: Rotation around z-axis (degrees counter-clockwise)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+OUTPUT: Transformed
+
+	Parameter type:	QgsProcessingParameterFeatureSink
+
+	Accepted data types:
+		- str: destination vector file, e.g. 'd:/test.shp'
+		- str: 'memory:' to store result in temporary memory layer
+		- str: using vector provider ID prefix and destination URI, e.g. 'postgres:…' to store result in PostGIS table
+		- QgsProcessingOutputLayerDefinition
+		- QgsProperty
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputVectorLayer>
+	Transformed

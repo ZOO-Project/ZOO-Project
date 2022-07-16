@@ -1,0 +1,50 @@
+Centroids (native:centroids)
+
+This algorithm creates a new point layer, with points representing the centroid of the geometries in an input layer.
+
+The attributes associated to each point in the output layer are the same ones associated to the original features.
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Input layer
+
+	Parameter type:	QgsProcessingParameterFeatureSource
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProcessingFeatureSourceDefinition
+		- QgsProperty
+		- QgsVectorLayer
+
+ALL_PARTS: Create centroid for each part
+
+	Parameter type:	QgsProcessingParameterBoolean
+
+	Accepted data types:
+		- bool
+		- int
+		- str
+		- QgsProperty
+
+OUTPUT: Centroids
+
+	Parameter type:	QgsProcessingParameterFeatureSink
+
+	Accepted data types:
+		- str: destination vector file, e.g. 'd:/test.shp'
+		- str: 'memory:' to store result in temporary memory layer
+		- str: using vector provider ID prefix and destination URI, e.g. 'postgres:…' to store result in PostGIS table
+		- QgsProcessingOutputLayerDefinition
+		- QgsProperty
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputVectorLayer>
+	Centroids
