@@ -22,10 +22,15 @@
  * THE SOFTWARE.
  */
 
+import assert from 'assert';
+import proj4 from 'proj4';
+
 export default function hellonodejs(conf,inputs,outputs) {
   ZOOUpdateStatus(conf, 0);
   outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World (ES6 mode) !";
   ZOOUpdateStatus(conf, 100);
+
+  assert(proj4.defs.GOOGLE.projName === 'merc');
 
   console.log('ZOOTranslate', ZOOTranslate("my error"));
 
