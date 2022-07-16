@@ -37,10 +37,7 @@
 #include "ulinet.h"
 
 napi_platform platform = nullptr;
-
-static const char *debugger = "require('inspector').waitForDebugger(); debugger;\n";
-static const char *js_loader =
-    "global.nativeRequire = require; global.require = require('module').createRequire(process.cwd() + '/');";
+bool debugger = false;
 
 #define ARG_IS_STRING(env, arg)                                                                                        \
   if (!arg.IsString())                                                                                                 \
@@ -538,7 +535,6 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     return -1;
   }
 
-  bool debugger = false;
   if (platform == nullptr) {
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "libnode init\n");
@@ -548,7 +544,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     argv[argc++] = const_cast<char *>("zoo_service_loader");
 
     map *inspector = getMap(s->content, "inspector");
-    if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
+    if (inspector != nullptr && inspector->value != nullptr && !strncasecmp(inspector->value, "true", strlen("true"))) {
       argv[argc++] = const_cast<char *>("--inspect-brk");
       debugger = true;
     }
@@ -560,12 +556,19 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     }
   }
 
+  bool es6_mode = false;
+  map *module_type = getMap(s->content, "jsModuleType");
+  if (module_type != nullptr && module_type->value != nullptr &&
+      !strncasecmp(module_type->value, "ES6", strlen("ES6"))) {
+    es6_mode = true;
+  }
+
 #ifdef NODEJS_DEBUG
   fprintf(stderr, "libnode create environment\n");
 #endif
   napi_env _env;
 
-  if (napi_create_environment(platform, nullptr, js_loader, &_env) != napi_ok) {
+  if (napi_create_environment(platform, nullptr, nullptr, &_env) != napi_ok) {
     errorException(*main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
     return -1;
   }
@@ -578,11 +581,42 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     try {
       CreateZOOEnvironment(env);
 
-      Napi::Function require = env.Global().Get("require").As<Napi::Function>();
-      Napi::Object moduleExport = require.Call({Napi::String::New(env, full_path)}).ToObject();
+      Napi::Value moduleExport;
+
+      if (es6_mode) {
+        Napi::Function import = env.Global().Get("import").As<Napi::Function>();
+        Napi::Object modulePromise = import.Call({Napi::String::New(env, full_path)}).ToObject();
+        Napi::Reference<Napi::Value> ref;
+        modulePromise.Get("then").As<Napi::Function>().Call(
+            modulePromise, {Napi::Function::New(env, [main_conf, &ref](const Napi::CallbackInfo &info) {
+              Napi::HandleScope scope(info.Env());
+              if (!info[0].IsObject()) {
+                errorException(*main_conf, "ES6 export is not an object", "NoApplicableCode", nullptr);
+                return;
+              }
+              ref = Napi::Persistent(info[0].ToObject().Get("default"));
+            })});
+        modulePromise.Get("catch").As<Napi::Function>().Call(
+            modulePromise, {Napi::Function::New(env, [main_conf](const Napi::CallbackInfo &info) {
+              Napi::HandleScope scope(info.Env());
+              if (!info[0].IsNull()) {
+                std::string err = "Failed importing module: " + info[0].As<Napi::Error>().Message();
+                errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+                return;
+              }
+            })});
+        if (napi_run_environment(_env) != napi_ok) {
+          errorException(*main_conf, "Failed resolving ES6 Promise", "NoApplicableCode", nullptr);
+          return ret;
+        }
+        moduleExport = ref.Value();
+      } else {
+        Napi::Function require = env.Global().Get("require").As<Napi::Function>();
+        moduleExport = require.Call({Napi::String::New(env, full_path)});
+      }
 
       if (!moduleExport.IsFunction()) {
-        std::string err = std::string(s->name) + " is not a function: " + moduleExport.ToString().Utf8Value();
+        std::string err = "Default export of " + std::string(s->name) + " is not a function";
         errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
         return ret;
       }
