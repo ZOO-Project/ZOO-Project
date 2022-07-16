@@ -538,6 +538,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     return -1;
   }
 
+  bool debugger = false;
   if (platform == nullptr) {
 #ifdef NODEJS_DEBUG
     fprintf(stderr, "libnode init\n");
@@ -549,6 +550,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     map *inspector = getMap(s->content, "inspector");
     if (inspector != nullptr && inspector->value != nullptr && !strncmp(inspector->value, "true", strlen("true"))) {
       argv[argc++] = const_cast<char *>("--inspect-brk");
+      debugger = true;
     }
     argv[argc++] = const_cast<char *>(full_path.c_str());
 
@@ -590,7 +592,16 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
       Napi::Object js_inputs = JSObject_FromMaps(env, *inputs);
       Napi::Object js_outputs = JSObject_FromMaps(env, *outputs);
 
-      Napi::Value status = jsFn.Call({js_main_conf, js_inputs, js_outputs});
+      Napi::Value status;
+      if (debugger) {
+        Napi::Object process = env.Global().Get("process").ToObject();
+        Napi::Function binding = process.Get("binding").As<Napi::Function>();
+        Napi::Object inspector = binding.Call(process, {Napi::String::New(env, "inspector")}).ToObject();
+        Napi::Function callAndPauseOnStart = inspector.Get("callAndPauseOnStart").As<Napi::Function>();
+        status = callAndPauseOnStart.Call({jsFn, env.Global(), js_main_conf, js_inputs, js_outputs});
+      } else {
+        status = jsFn.Call({js_main_conf, js_inputs, js_outputs});
+      }
 
       *outputs = mapsFromJSObject(env, js_outputs);
 
