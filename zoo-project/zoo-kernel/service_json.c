@@ -1628,6 +1628,7 @@ extern "C" {
    * @return the JSON object pointer to the result
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
+
     if(res==SERVICE_FAILED){
       char* pacTmp=produceErrorMessage(conf);
       map* pamTmp=createMap("message",pacTmp);
@@ -1644,7 +1645,14 @@ extern "C" {
       printHeaders(conf);
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
+      // raw response
       maps* resu=result;
+
+      // when the response is SERVICE DEPLOYED
+      // we want to return a 201 status code
+      if (res == SERVICE_DEPLOYED){
+          setMapInMaps(conf,"headers","Status","201 Service Deployed");
+      }
       printRawdataOutputs(conf,s,resu);
       map* pmError=getMapFromMaps(conf,"lenv","error");
       if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
@@ -1652,6 +1660,7 @@ extern "C" {
       }
       return NULL;
     }else{
+      // not raw response
       json_object* eres1=json_object_new_object();
       map* pmIOAsArray=getMapFromMaps(conf,"openapi","io_as_array");
       json_object* eres;
@@ -1891,13 +1900,14 @@ extern "C" {
       }
       free(pacTmp);
       if(res==3){
-	map* mode=getMapFromMaps(conf,"request","mode");
-	if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
-	  setMapInMaps(conf,"headers","Status","201 Created");
-	else
-	  setMapInMaps(conf,"headers","Status","200 Ok");
-      }
-      else{
+        map* mode=getMapFromMaps(conf,"request","mode");
+        if(mode!=NULL && strncasecmp(mode->value,"async",5)==0) {
+            setMapInMaps(conf, "headers", "Status", "201 Created");
+        }
+        else {
+            setMapInMaps(conf, "headers", "Status", "200 Ok");
+        }
+      } else{
 	setMapInMaps(conf,"headers","Status","500 Issue running your service");
       }
       return eres;

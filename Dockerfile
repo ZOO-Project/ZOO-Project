@@ -320,6 +320,8 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-services/cgal/examples/ /var/w
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/templates/index.html /var/www/index.html
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/static /var/www/html/static
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/echo-py/cgi-env/ /usr/lib/cgi-bin/
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/deploy-py/cgi-env/ /usr/lib/cgi-bin/
+COPY --from=builder1 /zoo-project/zoo-project/zoo-services/undeploy-py/cgi-env/ /usr/lib/cgi-bin/
 COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess
 COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
@@ -390,6 +392,7 @@ RUN set -ex \
 
 # service namespaces parent folder
 RUN mkdir -p /opt/zooservices_namespaces && chmod -R 700 /opt/zooservices_namespaces && chown -R www-data /opt/zooservices_namespaces
+
 
 # For using another port than 80, change the value below.
 # remember to also change the ports in docker-compose.yml
