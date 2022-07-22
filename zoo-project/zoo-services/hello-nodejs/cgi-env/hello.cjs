@@ -32,7 +32,7 @@ function hellonodejs(conf,inputs,outputs) {
 
   assert(proj4.defs.GOOGLE.projName === 'merc');
 
-  console.log('ZOOTranslate', ZOOTranslate("my error"));
+  console.error('ZOOTranslate', ZOOTranslate("my error"));
 
   ZOORequest('https://www.google.com');
   ZOORequest('GET',' https://www.google.com');
