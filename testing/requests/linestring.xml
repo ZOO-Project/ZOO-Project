@@ -1,0 +1,15 @@
+<wps:Execute service="WPS" version="1.0.0" xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wps/1.0.0/../wpsExecute_request.xsd" language="en-US">
+  <!-- template-version: 0.21 -->
+	<ows:Identifier>hello-cjs</ows:Identifier>
+	<wps:DataInputs>
+		<wps:Input>
+			<ows:Identifier>S</ows:Identifier>
+			<wps:Data>
+        <wps:ComplexData mimeType="application/json"><![CDATA[{"type":"LineString","coordinates":[[3.529575318442421,44.94649802995406],[6.796223931358889,45.44562421984608]]}]]>
+        </wps:ComplexData>			
+      </wps:Data>
+		</wps:Input>
+	</wps:DataInputs>
+	<wps:ResponseForm>
+  </wps:ResponseForm>
+</wps:Execute>
