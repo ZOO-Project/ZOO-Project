@@ -1,11 +1,11 @@
-[hellonodejs]
+[hellonodejs-es6]
  Title = HelloWorld Service for Node.js
  Abstract = Output and Hello World string
  Profile = urn:ogc:wps:1.0.0:buffer
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = hello.js
+ serviceProvider = hello.mjs
  inspector = false
  serviceType = NODEJS
  jsModuleType = ES6
