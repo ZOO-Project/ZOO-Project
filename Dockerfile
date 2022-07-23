@@ -134,6 +134,7 @@ RUN set -ex \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-js/cgi-env/* /usr/lib/cgi-bin/ \
     && cp -r ../zoo-services/hello-nodejs/cgi-env/* /usr/lib/cgi-bin/ \
+    && cp -r ../zoo-services/linestring-dem/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-r/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/r/minimal.r /usr/lib/cgi-bin/ \
