@@ -30,6 +30,7 @@ ARG RUN_DEPS=" \
     python3 \
     r-base \
     python3-pip\
+    libnode93 \
 "
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS  \
@@ -39,6 +40,7 @@ RUN set -ex \
     && add-apt-repository ppa:ubuntugis/ppa \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
     && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' \
+    && add-apt-repository ppa:mmomtchev/libnode \
     \
     && apt-get install -y $RUN_DEPS \
     \
@@ -94,6 +96,8 @@ ARG BUILD_DEPS=" \
     librabbitmq-dev \
     libkrb5-dev \
     nlohmann-json-dev \
+    libnode-dev \
+    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY . .
@@ -113,7 +117,12 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 \
+              --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
+              --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
+              --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 \
+              --with-itk-version=4.12 --with-saga=/usr \
+              --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
@@ -124,6 +133,8 @@ RUN set -ex \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-js/cgi-env/* /usr/lib/cgi-bin/ \
+    && cp -r ../zoo-services/hello-nodejs/cgi-env/* /usr/lib/cgi-bin/ \
+    && cp -r ../zoo-services/linestring-dem/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-r/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/r/minimal.r /usr/lib/cgi-bin/ \
@@ -201,6 +212,8 @@ ARG BUILD_DEPS=" \
     libxml2-dev \
     libxslt1-dev \
     libcgal-dev \
+    libnode-dev \
+    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
@@ -285,6 +298,7 @@ ARG RUN_DEPS=" \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
+    libnode93 \
 "
 ARG BUILD_DEPS=" \
     make \
@@ -292,6 +306,8 @@ ARG BUILD_DEPS=" \
     gcc \
     libgdal-dev \
     python3-dev \
+    libnode-dev \
+    node-addon-api \
 "
 # For Azure use, uncomment bellow
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"

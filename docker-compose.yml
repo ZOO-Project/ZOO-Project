@@ -2,7 +2,7 @@ version: '3'
 services:
   zookernel:
     platform: linux/amd64
-    image: djayzen/zookernel:latest
+    image: mmomtchev/zookernel:latest
     #build: .
     ports:
       - "80:80"
@@ -27,7 +27,7 @@ services:
       - ZOO_REDIS_HOST=redis
   zoofpm:
     platform: linux/amd64
-    image: djayzen/zookernel:latest
+    image: mmomtchev/zookernel:latest
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
