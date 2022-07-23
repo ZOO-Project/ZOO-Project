@@ -1,0 +1,53 @@
+[linestring-dem]
+ Title = Terrain Height under a LineString
+ Abstract = Output the terrain height under a given LineString
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = linestring-dem/linestring-dem.js
+ inspector = false
+ serviceType = NODEJS
+ jsModuleType = CJS
+ <MetaData>
+   title = LineString-DEM
+ </MetaData>
+ <DataInputs>
+  [DEM]
+   Title = The input DEM data
+   Abstract = The input data source name to use.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [Line]
+   Title = LineString
+   Abstract = The given LineString
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData>
+    title = LineString GeoJSON
+   </MetaData>   
+   <ComplexData>
+    <Default>
+     mimeType = application/json
+     encoding = UTF-8
+    </Default>
+   </ComplexData>
+ </DataInputs>
+ <DataOutputs>
+  [result]
+   Title = Heights
+   Abstract = The resulting array of heights
+   <MetaData>
+    title = Heights
+   </MetaData>
+   <ComplexData>
+    <Default>
+     mimeType = application/json
+     encoding = UTF-8
+    </Default>
+   </ComplexData>
+ </DataOutputs>  
