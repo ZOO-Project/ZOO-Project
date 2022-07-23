@@ -1,0 +1,75 @@
+andom points inside polygons (qgis:randompointsinsidepolygons)
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Input layer
+
+	Parameter type:	QgsProcessingParameterFeatureSource
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProcessingFeatureSourceDefinition
+		- QgsProperty
+		- QgsVectorLayer
+
+STRATEGY: Sampling strategy
+
+	Parameter type:	QgsProcessingParameterEnum
+
+	Available values:
+		- 0: Points count
+		- 1: Points density
+
+	Accepted data types:
+		- int
+		- str: as string representation of int, e.g. '1'
+		- QgsProperty
+
+VALUE: Point count or density
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+EXPRESSION: Expression
+
+	Parameter type:	QgsProcessingParameterExpression
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+MIN_DISTANCE: Minimum distance between points
+
+	Parameter type:	QgsProcessingParameterDistance
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+OUTPUT: Random points
+
+	Parameter type:	QgsProcessingParameterFeatureSink
+
+	Accepted data types:
+		- str: destination vector file, e.g. 'd:/test.shp'
+		- str: 'memory:' to store result in temporary memory layer
+		- str: using vector provider ID prefix and destination URI, e.g. 'postgres:…' to store result in PostGIS table
+		- QgsProcessingOutputLayerDefinition
+		- QgsProperty
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputVectorLayer>
+	Random points
