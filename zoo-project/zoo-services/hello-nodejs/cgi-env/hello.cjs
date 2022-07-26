@@ -25,9 +25,9 @@
 const assert = require('assert');
 const proj4 = require('proj4');
 
-function hellonodejs(conf,inputs,outputs) {
+function hellonodejs_cjs(conf, inputs, outputs) {
   ZOOUpdateStatus(conf, 0);
-  outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World !";
+  outputs["result"]["value"] = "Hello " + inputs["S"]["value"] + " from the JS World !";
   ZOOUpdateStatus(conf, 100);
 
   assert(proj4.defs.GOOGLE.projName === 'merc');
@@ -35,11 +35,11 @@ function hellonodejs(conf,inputs,outputs) {
   console.error('ZOOTranslate', ZOOTranslate("my error"));
 
   ZOORequest('https://www.google.com');
-  ZOORequest('GET',' https://www.google.com');
+  ZOORequest('GET', 'https://www.google.com');
   ZOORequest('POST', 'https://www.google.com', 'formdata', ['Accept-Encoding: gzip, deflate']);
   ZOORequest('GET', 'https://www.google.com', ['Accept-Encoding: gzip, deflate']);
 
   return SERVICE_SUCCEEDED;
 }
 
-module.exports = hellonodejs;
+module.exports = { hellonodejs_cjs };

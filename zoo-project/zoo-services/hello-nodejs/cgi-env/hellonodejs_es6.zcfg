@@ -1,4 +1,4 @@
-[hellonodejs-es6]
+[hellonodejs_es6]
  Title = HelloWorld Service for Node.js
  Abstract = Output and Hello World string
  Profile = urn:ogc:wps:1.0.0:buffer

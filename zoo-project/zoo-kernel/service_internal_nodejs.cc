@@ -590,7 +590,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
         Napi::Reference<Napi::Value> ref;
         // This registers the lambda as a then callback that will receive the resolved value
         modulePromise.Get("then").As<Napi::Function>().Call(
-            modulePromise, {Napi::Function::New(env, [main_conf, &ref](const Napi::CallbackInfo &info) {
+            modulePromise, {Napi::Function::New(env, [main_conf, s, &ref](const Napi::CallbackInfo &info) {
               Napi::HandleScope scope(info.Env());
               if (!info[0].IsObject()) {
                 errorException(*main_conf, "ES6 export is not an object", "NoApplicableCode", nullptr);
@@ -599,7 +599,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
               // Here we are in a completely foreign context and we cannot simply
               // escape values to the outer scope -> we have to use a persistent handle
               // not bound to any scope
-              ref = Napi::Persistent(info[0].ToObject().Get("default"));
+              ref = Napi::Persistent(info[0].ToObject().Get(s->name));
             })});
         // This lambda will get called on error
         modulePromise.Get("catch").As<Napi::Function>().Call(
@@ -621,7 +621,13 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
         moduleExport = ref.Value();
       } else {
         Napi::Function require = env.Global().Get("require").As<Napi::Function>();
-        moduleExport = require.Call({Napi::String::New(env, full_path)});
+        Napi::Value exports = require.Call({Napi::String::New(env, full_path)});
+        if (!exports.IsObject()) {
+          std::string err = "Export of " + std::string(s->name) + " is not an object";
+          errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+          return ret;
+        }
+        moduleExport = exports.ToObject().Get(s->name);
       }
 
       if (!moduleExport.IsFunction()) {

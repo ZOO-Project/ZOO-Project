@@ -477,8 +477,9 @@ sub-directory in the same directory as the service main file.
 Javascript ZCFG requirements
 **********************************
 
-.. Note:: The module should provide a default export which should be the function implementing
-          the service.
+.. Note:: For each Service provided by your ZOO Javascript Services Provider, the ZCFG File 
+          must be named the same as the exported Javascript function name (also the case of
+          characters is important).
 
 The ZCFG file should contain the following :
 
@@ -490,8 +491,8 @@ serviceProvider
     you should use ``my_module.js``.
 jsModuleType (optional, default is ``CJS``)
     The module type used, ``CJS`` for CommonJS or ``ES6`` for ECMAScript 6 modules. CommonJS
-    modules should contain a ``modules.export = entryFunction`` while ECMAScript 6 modules should
-    contain ``default export entryFunction``.
+    modules should contain a ``modules.export = { serviceName: entryFunction }`` while
+    ECMAScript 6 modules should contain ``export serviceName``.
 inspector (optional, default ``false``)
     Enables the built-in debugger. When enabled the service won't run until a V8 Inspector
     Protocol has connected to port 9229.

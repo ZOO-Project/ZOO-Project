@@ -25,9 +25,9 @@
 import assert from 'assert';
 import proj4 from 'proj4';
 
-export default function hellonodejs(conf,inputs,outputs) {
+export function hellonodejs_es6(conf, inputs, outputs) {
   ZOOUpdateStatus(conf, 0);
-  outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from the JS World (ES6 mode) !";
+  outputs["result"]["value"] = "Hello " + inputs["S"]["value"] + " from the JS World (ES6 mode) !";
   ZOOUpdateStatus(conf, 100);
 
   assert(proj4.defs.GOOGLE.projName === 'merc');
@@ -35,7 +35,7 @@ export default function hellonodejs(conf,inputs,outputs) {
   console.error('ZOOTranslate', ZOOTranslate("my error"));
 
   ZOORequest('https://www.google.com');
-  ZOORequest('GET',' https://www.google.com');
+  ZOORequest('GET', 'https://www.google.com');
   ZOORequest('POST', 'https://www.google.com', 'formdata', ['Accept-Encoding: gzip, deflate']);
   ZOORequest('GET', 'https://www.google.com', ['Accept-Encoding: gzip, deflate']);
 
