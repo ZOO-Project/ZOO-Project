@@ -100,7 +100,7 @@ int cgiMain(){
 
     if(strncasecmp(cgiRequestMethod,"delete",6)==0){
         tmpMap=createMap("jrequest","DELETE");
-    } else if(strncmp(cgiContentType,"application/json",16)==0 &&
+    } else if((strncmp(cgiContentType,"application/json",16)==0 || strncmp(cgiContentType,"application/cwl",15)==0 )&&
             (strncasecmp(cgiRequestMethod,"post",4)==0 )){
        char *buffer=new char[2];
        char *res=NULL;
