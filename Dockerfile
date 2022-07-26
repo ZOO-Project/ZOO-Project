@@ -98,11 +98,13 @@ ARG BUILD_DEPS=" \
     nlohmann-json-dev \
     libnode-dev \
     node-addon-api \
+    nodejs \
 "
 WORKDIR /zoo-project
 COPY . .
 
 RUN set -ex \
+    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && make -C ./thirds/cgic206 libcgic.a \
@@ -145,6 +147,7 @@ RUN set -ex \
          msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
        done  \
     \
+    && ( cd /usr/lib/cgi-bin/ && npm install ) \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\
        find ../zoo-services/ -name "${lang}*" ; \
