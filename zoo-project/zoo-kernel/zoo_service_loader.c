@@ -337,7 +337,14 @@ int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
             snprintf (newPath,maxSize, "%s", oldPath);
         }
     } else if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && servicesNamespaceParentPath && servicesNamespaceParentPath->value){
-        snprintf (newPath,maxSize, "%s/%s", servicesNamespaceParentPath->value,zooServicesNamespaceMap->value);
+
+        char path[1024];
+        snprintf (path,maxSize, "%s/%s", servicesNamespaceParentPath->value,zooServicesNamespaceMap->value);
+        if (strstr(oldPath,path)) {
+            snprintf (newPath,maxSize, "%s", oldPath);
+        } else {
+            snprintf(newPath, maxSize, path);
+        }
     } else {
         if (oldPath)
             snprintf (newPath,maxSize, "%s", oldPath);
