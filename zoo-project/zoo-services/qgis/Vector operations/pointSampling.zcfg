@@ -1,0 +1,69 @@
+[SamplePointsInPolygon]
+ Title = Point sampling inside polygons
+ Abstract = Given some parameters and strategy sample points inside polygons
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qgis
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [inputGeometry]
+   Title = Geometry from which points are to be sampled.
+   Abstract = URI to a vector file that contains the mentionned two bands.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+    </Default>
+   </ComplexData>
+  [strategy]
+   Title = The strategy based on which points are to be sampled
+   Abstract = Wether the points are to be sampled based on the number of points or the density.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = int
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [value]
+   Title = The point count/density value
+   Abstract = The value of the number of points or the density according to which the points are to be sampled.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [expression]
+   Title = Expresssion parameter
+   Abstract = String expression.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  
+ </DataInputs>
+ <DataOutputs>
+  [sampledPoints]
+   Title = The Points sampled from the polygons
+   Abstract = The points sampled from the polygon
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+     extension = .geojson
+    </Default>
+   </ComplexData>
+ </DataOutputs>  

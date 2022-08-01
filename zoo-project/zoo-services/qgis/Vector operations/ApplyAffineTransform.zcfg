@@ -13,7 +13,7 @@
  <DataInputs>
   [inputGeometry]
    Title = Geometry on which the transform is to be applied
-   Abstract = URI to a raster file that contains the mentionned two bands.
+   Abstract = URI to a vector file that contains the mentionned two bands.
    minOccurs = 1
    maxOccurs = 1
    <ComplexData>
