@@ -250,12 +250,20 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   Py_Initialize();  
 #if PY_MAJOR_VERSION >= 3  
   PyEval_InitThreads();
-  PyImport_ImportModule("zoo");  
+  PyImport_ImportModule("zoo");
 #else
   init_zoo();
-#endif 
+#endif
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION < 10
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
+#else
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 10
+  mainstate = PyEval_SaveThread();
+#else
+  mainstate = PyThreadState_Swap(NULL);
+#endif
+#endif 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   PyObject *pName, *pModule, *pFunc;
@@ -287,6 +295,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   } 
 
   pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
   int res=SERVICE_FAILED;
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
