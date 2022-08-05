@@ -24,6 +24,7 @@
 
 import assert from 'assert';
 import proj4 from 'proj4';
+import axios from 'axios';
 
 export function hellonodejs_es6(conf, inputs, outputs) {
   ZOOUpdateStatus(conf, 0);
@@ -31,6 +32,7 @@ export function hellonodejs_es6(conf, inputs, outputs) {
   ZOOUpdateStatus(conf, 100);
 
   assert(proj4.defs.GOOGLE.projName === 'merc');
+  assert(typeof axios.get === 'function');
 
   console.error('ZOOTranslate', ZOOTranslate("my error"));
 

@@ -148,7 +148,8 @@ RUN set -ex \
        done  \
     \
     && npm -g install gdal-async --build-from-source --shared_gdal \
-    && ( cd /usr/lib/cgi-bin/ && npm install ) \
+    && npm -g install proj4 \
+    && ( cd /usr/lib/cgi-bin/hello-nodejs && npm install ) \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\
        find ../zoo-services/ -name "${lang}*" ; \

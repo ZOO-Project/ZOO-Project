@@ -5,7 +5,7 @@
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = hello.mjs
+ serviceProvider = hello-nodejs/hello.mjs
  inspector = false
  serviceType = NODEJS
  jsModuleType = ES6
