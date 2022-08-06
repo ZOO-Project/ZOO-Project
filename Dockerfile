@@ -149,6 +149,8 @@ RUN set -ex \
     \
     && npm -g install gdal-async --build-from-source --shared_gdal \
     && npm -g install proj4 \
+    && npm -g install bower \
+    && npm -g install wps-js-52-north \
     && ( cd /usr/lib/cgi-bin/hello-nodejs && npm install ) \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\

@@ -470,10 +470,11 @@ Environment
 *********
 
 The Node.js services environment offers a fully functional Node.js environment.
-The ``gdal-async`` and ``proj4`` modules are supported out of the box and can
-be imported/required. Loading of external CJS and ES6 modules installed from
-the NPM registry in a ``node_modules`` sub-directory is also supported when this
-directory is present in the same directory as the service JavaScript file.
+The ``gdal-async``, ``proj4`` and ``wps-js-52-north`` modules are supported
+out of the box and can be imported/required. Loading of external CJS and ES6
+modules installed from the NPM registry in a ``node_modules`` sub-directory is
+also supported when this directory is present in the same directory as the
+service JavaScript file.
 
 
 Javascript ZCFG requirements
