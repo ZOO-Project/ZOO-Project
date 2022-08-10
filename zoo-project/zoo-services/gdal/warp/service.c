@@ -745,7 +745,7 @@ int Gdal_Warp( maps*& conf,maps*& inputs,maps*& outputs )
 
     if( hDstDS != NULL && bCreateOutput )
     {
-      char tmp[024];
+      char tmp[1024];
       sprintf( tmp, 
 	       "Output dataset %s exists,\n"
 	       "but some commandline options were provided indicating a new dataset\n"

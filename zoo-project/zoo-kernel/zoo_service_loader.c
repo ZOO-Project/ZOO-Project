@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2020 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2022 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -434,6 +434,7 @@ void setRootUrlMap(maps* m){
     fprintf (stderr, "rootUrl: %s\n", rootUrl);
 #endif
     setMapInMaps(m,"openapi","rootUrl",rootUrl);
+    free(rootUrl);
 }
 
 
@@ -2387,6 +2388,7 @@ runRequest (map ** inputs)
     r_inputs = getMapOrFill (&request_inputs, "metapath", "");
     char conf_file1[10240];
     maps* m1 = (maps *) malloc (MAPS_SIZE);
+    m1->child=NULL;
     snprintf (conf_file1, 10240, "%s/%s/oas.cfg", ntmp, r_inputs->value);
     if (conf_read (conf_file1, m1) == 2)
       {
@@ -3339,9 +3341,17 @@ runRequest (map ** inputs)
 	    /*map* error=createMap("code","BadRequest");
 	      addToMap(error,"message",_("Failed to acces the requested service"));
 	      printExceptionReportResponseJ(m,error);*/
+	    json_object_put(res);
+	    json_object_put(res3);
+	    freeMaps(&m);
+	    free(m);
+	    free(orig);
+	    free(pcaCgiQueryString);	    
 	    return 1;
 	  }
 	  res=json_object_get(res3);
+	  free(orig);
+	  json_object_put(res3);
 	}else{
 	  char* cIdentifier=NULL;
 	  if(strstr(pcaCgiQueryString,"/processes/")!=NULL){
