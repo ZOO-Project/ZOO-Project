@@ -586,7 +586,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
       if (es6_mode) {
         // Importing an ES6 module requires resolving the Promise returned by import
         Napi::Function import = env.Global().Get("import").As<Napi::Function>();
-        Napi::Object modulePromise = import.Call({Napi::String::New(env, full_path)}).ToObject();
+        Napi::Object modulePromise = import.MakeCallback(env.Global(), {Napi::String::New(env, full_path)}).ToObject();
         Napi::Reference<Napi::Value> ref;
         // This registers the lambda as a then callback that will receive the resolved value
         modulePromise.Get("then").As<Napi::Function>().Call(
