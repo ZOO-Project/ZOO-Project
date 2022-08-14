@@ -449,7 +449,7 @@ static Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
         processDownloads(&hInternet);
       } else {
         ARG_IS_OBJECT(env, info[2]);
-        body = info[2].ToString();
+        body = info[2].ToString().Utf8Value();
         InternetOpenUrl(&hInternet, hInternet.waitingRequests[hInternet.nb], const_cast<char *>(body.c_str()),
                         body.length(), INTERNET_FLAG_NO_CACHE_WRITE, 0, tmpConf);
         processDownloads(&hInternet);
@@ -631,7 +631,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
       }
 
       if (!moduleExport.IsFunction()) {
-        std::string err = "Default export of " + std::string(s->name) + " is not a function";
+        std::string err = full_path + " does not export a function named " + std::string(s->name);
         errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
         return ret;
       }
