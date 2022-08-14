@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2012 GeoLabs SARL
+ * Copyright (c) 2009-2022 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -312,7 +312,6 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
 	*main_conf=mapsFromJSObject(cx,tmp3);
       }
     }
-
   }
   else{
 #ifdef JS_DEBUG
@@ -323,7 +322,25 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
      */
     jsval tmp1;
     JSBool hasResult=JS_GetProperty(cx,d,"result",&tmp1);
-    res=JSVAL_TO_INT(tmp1);
+    if(hasResult)
+      res=JSVAL_TO_INT(tmp1);
+    else{
+      char tmp1[1024];
+      if(strlen(dbg)==0)
+	sprintf(dbg,"No result was found in the returned object.");
+      sprintf(tmp1,"Unable to run %s from the JavaScript file %s : \n %s",s->name,filename,dbg);
+#ifdef JS_DEBUG
+      fprintf(stderr,"%s",tmp1);
+#endif
+      errorException(*main_conf,tmp1,"NoApplicableCode",NULL);
+      free(filename);
+      JS_MaybeGC(cx);
+      JS_DestroyContext(cx);
+      JS_DestroyRuntime(rt);
+      JS_ShutDown();
+      // Should return -1 here but the unallocation won't work from zoo_service_loader.c line 1847
+      return -1;
+    }
 
 #ifdef JS_DEBUG
     fprintf(stderr," * %d * \n",res);
@@ -526,6 +543,8 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
   maps *tres=NULL;
   jsint oi=0;
   JSObject* tt=JSVAL_TO_OBJECT(t);
+  if(JSVAL_IS_NULL(t))
+    return NULL;
   if(JS_IsArrayObject(cx,tt)){
 #ifdef JS_DEBUG
     fprintf(stderr,"Is finally an array !\n");
@@ -620,6 +639,7 @@ maps* mapsFromJSObject(JSContext *cx,jsval t){
       tres=(maps*)malloc(MAPS_SIZE);
       tres->name=NULL;
       tres->content=NULL;
+      tres->child=NULL;
       tres->next=NULL;
 
       for (index=0,argNum=idp->length;index<argNum;index++) { 
@@ -973,10 +993,11 @@ JSRequest(JSContext *cx, uintN argc, jsval *argv1)
 #endif
   JS_SET_RVAL(cx, argv1,STRING_TO_JSVAL(JS_NewStringCopyN(cx,tmpValue,strlen(tmpValue))));
   free(url);
-  if(argc>=2)
-    free(method);
+  //if(argc>=2)
+  free(method);
   freeMaps(&tmpConf);
   free(tmpConf);
+  free(tmpValue);
   InternetCloseHandle(&hInternet);
   JS_MaybeGC(cx);
   return JS_TRUE;

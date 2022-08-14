@@ -1532,7 +1532,13 @@ GDALWarpCreateOutput( maps*& conf,char **papszSrcFiles, const char *pszFilename,
                      && (pszMethod == NULL || EQUALN(pszMethod,"GCP_",4)) )
                 pszThisSourceSRS = GDALGetGCPProjection( hSrcDS );
             else if( pszMethod != NULL && EQUAL(pszMethod,"RPC") )
-                pszThisSourceSRS = SRS_WKT_WGS84_LAT_LONG;
+                pszThisSourceSRS =
+#ifdef	SRS_WKT_WGS84_LAT_LONG
+		  SRS_WKT_WGS84_LAT_LONG
+#else
+		  SRS_WKT_WGS84
+#endif
+		  ;
             else
                 pszThisSourceSRS = "";
         }

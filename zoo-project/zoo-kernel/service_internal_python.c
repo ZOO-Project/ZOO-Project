@@ -220,13 +220,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #endif
 	map* home = NULL;
 // knut: also set PYTHONHOME environment variable so that Python can load standard modules
-#ifndef WIN32	
+#ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);  
   //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
 	  setenv("PYTHONHOME", home->value, 1); // overwrite
   }
-#else	
+#else
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
@@ -236,7 +236,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  SetEnvironmentVariable("PYTHONHOME", home->value);
   }
   char buffer[128];
-#endif  
+#endif
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
@@ -673,6 +673,10 @@ maps* _mapsFromPyDict(PyDictObject* t){
 	}
 
 	maps* ptr = (maps*) malloc(MAPS_SIZE);
+	ptr->content = NULL;
+	ptr->child = NULL;
+	ptr->next = NULL;
+
 	maps* res = ptr;	
 	
 	PyObject* key;
