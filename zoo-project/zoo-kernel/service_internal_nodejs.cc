@@ -209,6 +209,9 @@ static maps *mapsFromJSObject(Napi::Env env, Napi::Value t) {
         if (value.IsObject()) {
           tres->content = mapFromJSObject(env, value);
         } else if (value.IsString()) {
+#ifdef NODEJS_DEBUG
+          fprintf(stderr, "Add string %s with length %d\n", name.c_str(), strlen(value.ToString().Utf8Value().c_str()));
+#endif
           tres->content = createMap(name.c_str(), value.ToString().Utf8Value().c_str());
         }
 
@@ -269,10 +272,15 @@ static map *mapFromJSObject(Napi::Env env, Napi::Value t) {
       } else if (value.IsString()) {
         if (res != nullptr) {
 #ifdef NODEJS_DEBUG
-          fprintf(stderr, "%s - %s\n", name.c_str(), value.ToString().Utf8Value().c_str());
+          fprintf(stderr, "String %s - (%d) %s\n", name.c_str(), strlen(value.ToString().Utf8Value().c_str()),
+                  value.ToString().Utf8Value().c_str());
 #endif
           addToMap(res, name.c_str(), value.ToString().Utf8Value().c_str());
         } else {
+#ifdef NODEJS_DEBUG
+          fprintf(stderr, "String (new) %s - (%d) %s\n", name.c_str(), strlen(value.ToString().Utf8Value().c_str()),
+                  value.ToString().Utf8Value().c_str());
+#endif
           res = createMap(name.c_str(), value.ToString().Utf8Value().c_str());
           res->next = nullptr;
         }
@@ -500,6 +508,29 @@ static void CreateZOOEnvironment(Napi::Env env) {
   env.Global().Set("ZOORequest", ZOORequestRef);
 }
 
+// The custom bootstrap code is required to prevent libnode
+// from switching stdin/stdout to non-blocking mode
+const char *bootstrap = "delete process.stdin;"
+                        "delete process.stdout;"
+                        "const {Writable} = require('stream');"
+                        "process.stdout = new Writable({"
+                        "  write(buf, enc, cb) {"
+                        "    cb();"
+                        "}"
+                        "});"
+                        "const {Readable} = require('stream');"
+                        "process.stdin = new Readable({read(){}});"
+                        "process.stdin.push(null);"
+                        "const CJSLoader = require('internal/modules/cjs/loader');"
+                        "global.module = new CJSLoader.Module();"
+                        "global.require = require('module').createRequire(process.argv[0]);"
+                        "const ESMLoader = require('internal/modules/esm/loader').ESMLoader;"
+                        "const internalLoader = new ESMLoader;"
+                        "const parent_path = require('url').pathToFileURL(process.argv[0]);"
+                        "global.import = (mod) => internalLoader.import(mod, parent_path, "
+                        "Object.create(null));"
+                        "global.import.meta = { url: parent_path };";
+
 /**
  * Load a JavaScript file then run the function corresponding to the service by
  * passing the conf, inputs and outputs parameters by value as JavaScript
@@ -568,7 +599,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 #endif
   napi_env _env;
 
-  if (napi_create_environment(platform, nullptr, nullptr, &_env) != napi_ok) {
+  if (napi_create_environment(platform, nullptr, bootstrap, &_env) != napi_ok) {
     errorException(*main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
     return -1;
   }
