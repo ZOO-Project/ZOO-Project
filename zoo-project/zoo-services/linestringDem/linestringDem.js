@@ -37,7 +37,7 @@ function linestringDem(conf, inputs, outputs) {
 
     return SERVICE_SUCCEEDED;
   } catch (e) {
-    console.error(e);
+    alert(e);
     throw e;
   }
 }

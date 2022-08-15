@@ -487,6 +487,17 @@ static Napi::Value ZOORequest(const Napi::CallbackInfo &info) {
   return scope.Escape(Napi::String::New(env, tmpValue));
 }
 
+static Napi::Value alert(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (info.Length() != 1 || !info[0].IsString()) {
+    throw Napi::TypeError::New(env, "alert must have a single string argument");
+  }
+
+  fprintf(stderr, "[ZOO-API:NodeJS] %s\n", info[0].ToString().Utf8Value().c_str());
+  return env.Undefined();
+}
+
 static const char *ZooStatus[] = {"SERVICE_ACCEPTED", "SERVICE_STARTED", "SERVICE_PAUSED", "SERVICE_SUCCEEDED",
                                   "SERVICE_FAILED"};
 
@@ -500,24 +511,29 @@ static void CreateZOOEnvironment(Napi::Env env) {
   auto ZOOUpdateStatusRef = Napi::Function::New(env, ZOOUpdateStatus, "ZOOUpdateStatus");
   auto ZOOTranslateRef = Napi::Function::New(env, ZOOTranslate, "ZOOTranslate");
   auto ZOORequestRef = Napi::Function::New(env, ZOORequest, "ZOORequest");
+  auto alertRef = Napi::Function::New(env, alert, "alert");
 
   for (size_t i = 0; i < sizeof(ZooStatus) / sizeof(ZooStatus[0]); i++)
     env.Global().Set(ZooStatus[i], i);
   env.Global().Set("ZOOUpdateStatus", ZOOUpdateStatusRef);
   env.Global().Set("ZOOTranslate", ZOOTranslateRef);
   env.Global().Set("ZOORequest", ZOORequestRef);
+  env.Global().Set("alert", alertRef);
 }
 
 // The custom bootstrap code is required to prevent libnode
 // from switching stdin/stdout to non-blocking mode
 const char *bootstrap = "delete process.stdin;"
                         "delete process.stdout;"
+                        "delete process.stderr;"
                         "const {Writable} = require('stream');"
                         "process.stdout = new Writable({"
                         "  write(buf, enc, cb) {"
+                        "    alert(buf.toString());"
                         "    cb();"
-                        "}"
+                        "  }"
                         "});"
+                        "process.stderr = process.stdout;"
                         "const {Readable} = require('stream');"
                         "process.stdin = new Readable({read(){}});"
                         "process.stdin.push(null);"
