@@ -231,10 +231,13 @@ RUN set -ex \
     && cp cgi-env/* /usr/lib/cgi-bin/ \
     \
     && cd .. \
-    && cd ../zoo-services/ogr/base-vect-ops \
-    && make \
-    && cp cgi-env/* /usr/lib/cgi-bin/ \
-    && cd ../.. \
+    # Build OGR Services
+    && for i in base-vect-ops ogr2ogr; do \
+       cd ../zoo-services/ogr/$i && \
+       make && \
+       cp cgi-env/* /usr/lib/cgi-bin/ && \
+       cd ../.. ; \
+    done \
     \
     && cd ../zoo-services/gdal/ \
     && for i in contour dem grid profile translate warp ; do cd $i ; make && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \

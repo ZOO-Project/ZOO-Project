@@ -2884,6 +2884,8 @@ runRequest (map ** inputs)
 	    }else{
 	      char* jobId=zStrdup(tmpUrl+6);
 	      if(strlen(jobId)==36){
+		if(res!=NULL)
+		  json_object_put(res);
 		res=printJobStatus(m,jobId);
 	      }else{
 		// In case the service has run, then forward request to target result file
@@ -3329,6 +3331,8 @@ runRequest (map ** inputs)
 	      setMapInMaps(m,"lenv","no-headers","true");
 	      fflush(stdout);
 	      rewind(stdout);
+	      if(res!=NULL)
+		json_object_put(res); 
 	      res=printJResult(m,s1,request_output_real_format,eres);
 	      const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
 	      if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
@@ -3343,6 +3347,8 @@ runRequest (map ** inputs)
 	  loadServiceAndRun (&m,s1,request_inputs,
 			     &request_input_real_format,
 			     &request_output_real_format,&eres);
+	  if(res!=NULL)
+	    json_object_put(res);
 	  res=printJResult(m,s1,request_output_real_format,eres);
 	}
 
@@ -4422,6 +4428,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 				 strlen(uusid->value)+strlen(sqlQueryTmp0)+129)*sizeof(char));
   sprintf(sqlQuery0,sqlQueryTmp0,schema->value,schema->value,uusid->value,getpid());
   OGRLayer *res=fetchSql(conf,0,sqlQuery0);
+  free(sqlQuery0);
   if(res!=NULL){
     OGRFeature  *poFeature = NULL;
     const char *tmp1;
@@ -4550,7 +4557,12 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    // Reset metapath
 	    addToMap(request_inputs,"metapath","");
 	    setMapInMaps(lconf,"lenv","metapath","");
-	    fetchService(zooRegistry,lconf,&s1,request_inputs,ntmp,r_inputs->value,printExceptionReportResponse);
+	    if(fetchService(zooRegistry,lconf,&s1,request_inputs,ntmp,r_inputs->value,printExceptionReportResponse)!=0){
+	      // TODO: cleanup memory
+	      freeMaps(&lconf);
+	      free(lconf);
+	      return -1;
+	    }
 
 	    /**
 	     * Create the input and output maps data structure
@@ -4869,7 +4881,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 					   strlen(uusid->value)+36)*sizeof(char));
 	    sprintf(sqlQuery2,"DELETE FROM %s.workers WHERE uuid='%s'",schema->value,uusid->value);
 	    OGRLayer *res2=fetchSql(lconf,0,sqlQuery2);
-
+	    free(sqlQuery2);
 	    freeMaps(&lconf);
 	    free(lconf);
 	  }else{
