@@ -39,7 +39,7 @@ jobs:
     - name: Move cache
       run: |
         rm -rf /tmp/.buildx-osgeolive-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-osgeolive-cache
+        mv /tmp/.buildx-osgeolive-cache-new /tmp/.buildx-osgeolive-cache
     - name: Build and push osgeolive-latest
       uses: docker/build-push-action@v2
       with:
