@@ -941,6 +941,9 @@ void readFinalRes(maps* conf,char* pid,map* statusInfo){
   if (istat == 0 && file_status.st_size > 0)
     {
       maps *res = (maps *) malloc (MAPS_SIZE);
+      res->content = NULL;
+      res->child = NULL;
+      res->next = NULL;
       conf_read (fbkpid, res);
       res->child=NULL;
       map* status=getMapFromMaps(res,"status","status");

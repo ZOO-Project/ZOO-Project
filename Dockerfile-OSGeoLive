@@ -1,7 +1,7 @@
 #
-# Base: Ubuntu 18.04 with updates and external packages
+# Base: Ubuntu 22.04 with updates and external packages
 #
-FROM ubuntu:bionic-20201119 AS base
+FROM ubuntu:jammy-20220801 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -20,13 +20,14 @@ ARG RUN_DEPS=" \
     libotb \
     otb-bin \
     \
+    libopengl0 \
     libpq5 \
     libpython3.6 \
     libxslt1.1 \
     gdal-bin \
-    libcgal13 \
+    #libcgal13 \
     librabbitmq4 \
-    nlohmann-json-dev \
+    #nlohmann-json-dev \
     python3 \
     r-base \
     python3-pip\
@@ -34,12 +35,13 @@ ARG RUN_DEPS=" \
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS  \
     \
-    #&& add-apt-repository ppa:osgeolive/nightly \
+    && add-apt-repository ppa:osgeolive/nightly \
     #&& add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-    && add-apt-repository ppa:ubuntugis/ppa \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
-    && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' \
+    #&& add-apt-repository ppa:ubuntugis/ppa \
+    #&& apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
+    #&& add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' \
     \
+    && apt-cache search libcgal nlohmann\
     && apt-get install -y $RUN_DEPS \
     \
     && curl -o libmozjs185-1.0_1.8.5-1.0.0+dfsg-7_amd64.deb http://launchpadlibrarian.net/309343863/libmozjs185-1.0_1.8.5-1.0.0+dfsg-7_amd64.deb \
@@ -72,6 +74,7 @@ ARG BUILD_DEPS=" \
     qttools5-dev \
     qttools5-dev-tools \
     qtbase5-dev \
+    libopengl-dev \
     libqt5opengl5-dev \
     libtinyxml-dev \
     libfftw3-dev \
@@ -81,7 +84,8 @@ ARG BUILD_DEPS=" \
     git \
     libfcgi-dev \
     libgdal-dev \
-    libwxgtk3.0-dev \
+    #libwxgtk3.0-dev \
+    libwxgtk-media3.0-gtk3-dev \
     libjson-c-dev \
     libssh2-1-dev \
     libssl-dev \
@@ -93,12 +97,14 @@ ARG BUILD_DEPS=" \
     r-base-dev \
     librabbitmq-dev \
     libkrb5-dev \
-    nlohmann-json-dev \
+    #mozjs \
+    #nlohmann-json-dev \
 "
 WORKDIR /zoo-project
 COPY . .
 
 RUN set -ex \
+    && apt-cache search nlohmann libwxgtk \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && make -C ./thirds/cgic206 libcgic.a \
@@ -113,7 +119,16 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ls \
+    #&& touch config.guess config.sub \
+    && echo UNAME $(uname -m) \
+    && find / -name config.guess \
+    && autoreconf --install \
+    && find / -name itkCommand.h \
+    #&& automake \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=8.0 --with-itk-version=4.13 --with-saga=/usr --with-saga-version=7.3 --with-wx-config=/usr/bin/wx-config \
+    && echo "ZOOMakefile.opts content:"\
+    && cat ZOOMakefile.opts \
     && make -j4 \
     && make install \
     \
@@ -151,7 +166,8 @@ RUN set -ex \
     #Comment lines below from here if no OTB \
     && mkdir otb_build \
     && cd otb_build \
-    && cmake ../../../thirds/otb2zcfg \
+    && cmake --help-policy CMP0028 \
+    && cmake ../../../thirds/otb2zcfg -DOpenGL_GL_PREFERENCE=GLVND \
     && make \
     && mkdir OTB \
     && cd OTB \
@@ -201,6 +217,7 @@ ARG BUILD_DEPS=" \
     libxml2-dev \
     libxslt1-dev \
     libcgal-dev \
+    uuid \
 "
 WORKDIR /zoo-project
 COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
@@ -226,18 +243,15 @@ RUN set -ex \
     && make \
     && make install \
     \
-    && cd ../../cgal \
+    #&& cd ../../cgal \
+    #&& make \
+    #&& cp cgi-env/* /usr/lib/cgi-bin/ \
+    \
+    && cd ../.. \
+    && cd ../zoo-services/ogr/base-vect-ops \
     && make \
     && cp cgi-env/* /usr/lib/cgi-bin/ \
-    \
-    && cd .. \
-    # Build OGR Services
-    && for i in base-vect-ops ogr2ogr; do \
-       cd ../zoo-services/ogr/$i && \
-       make && \
-       cp cgi-env/* /usr/lib/cgi-bin/ && \
-       cd ../.. ; \
-    done \
+    && cd ../.. \
     \
     && cd ../zoo-services/gdal/ \
     && for i in contour dem grid profile translate warp ; do cd $i ; make && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \
@@ -286,8 +300,9 @@ ARG RUN_DEPS=" \
     #Uncomment the line below to add vi editor \
     vim \
     #Uncomment the lines below to add debuging \
-    #valgrind \
-    #gdb \
+    valgrind \
+    gdb \
+    strace \
 "
 ARG BUILD_DEPS=" \
     make \
@@ -365,7 +380,7 @@ RUN set -ex \
     && pip3 install --upgrade pip setuptools wheel \
     # see various issue reported about _2to3 invocation and setuptools < 58.0 \
     && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
-    && pip3 install GDAL==2.4.2 \
+    #&& pip3 install GDAL==2.4.2 \
     && pip3 install Cheetah3 redis spython \
     && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
     \
@@ -378,7 +393,7 @@ RUN set -ex \
     && chmod 755 /startUp.sh \
     \
     # remove invalid zcfgs \
-    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg  /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg /usr/lib/cgi-bin/OTB/TrainRegression.zcfg \
     # Update SAGA zcfg
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \

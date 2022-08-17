@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2017-2021 GeoLabs SARL. All rights reserved.
+ *  Copyright 2017-2022 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,9 @@
 #include "mimetypes.h"
 #include "server_internal.h"
 #include "service_internal.h"
+#ifdef USE_MS
 #include "service_internal_ms.h"
+#endif
 #include <dirent.h>
 
 #ifdef __cplusplus
@@ -347,10 +349,8 @@ extern "C" {
 	      json_object_object_add(schema,"type",json_object_new_string(tmpMap1->value));
       }
       printLiteralValueJ(m,tmpMap1,in->defaults->content,schema,"default");
-      json_object* prop3=json_object_new_object();
       tmpMap1=getMap(in->defaults->content,"rangeMin");
       if(tmpMap1!=NULL){
-	json_object* prop5=json_object_new_array();
 	printAllowedRangesJ(m,in->defaults,schema);
 	if(in->supported!=NULL){
 	  iotype* iot=in->supported;
@@ -444,6 +444,10 @@ extern "C" {
     map* tmpMap=getMap(el->content,"minOccurs");
     if(tmpMap!=NULL /*&& strcmp(tmpMap->value,"1")!=0*/){
       json_object_object_add(res,"minItems",json_object_new_int(atoi(tmpMap->value)));
+    }else{
+      json_object_put(res);
+      res=NULL;
+      return res;
     }
     tmpMap=getMap(el->content,"maxOccurs");
     if(tmpMap!=NULL){
@@ -456,7 +460,8 @@ extern "C" {
 	res=NULL;
 	return res;
       }
-    }
+    }else
+      return res;
   }
 
   /**
@@ -624,6 +629,9 @@ extern "C" {
     if(hasElement>=0){
       json_object_object_add(jcaps,"additionalParameter",carr);
       json_object_object_add(doc,"additionalParameters",jcaps);
+    }else{
+      json_object_put(carr);
+      json_object_put(jcaps);
     }
   }
 
@@ -653,6 +661,8 @@ extern "C" {
     }
     if(hasElement>=0)
       json_object_object_add(doc,"metadata",carr);
+    else
+      json_object_put(carr);
   }
 
   /**
@@ -690,13 +700,16 @@ extern "C" {
 	}
       }
       if(in->format!=NULL){
-	json_object* input1=json_object_new_object();
+	//json_object* input1=json_object_new_object();
 	json_object* prop0=json_object_new_array();
 	json_object* prop1=json_object_new_array();
 	json_object* pjoSchema=json_object_new_array();
 	if(strcasecmp(in->format,"LiteralData")==0 ||
 	   strcasecmp(in->format,"LiteralOutput")==0){
 	  printLiteralDataJ(m,in,input);
+	  json_object_put(prop0);
+	  json_object_put(prop1);
+	  json_object_put(pjoSchema);
 	}else{
 	  if(strcasecmp(in->format,"ComplexData")==0 ||
 	     strcasecmp(in->format,"ComplexOutput")==0) {
@@ -744,12 +757,17 @@ extern "C" {
 		json_object_object_add(prop2,"nullable",json_object_new_boolean(true));
 	      json_object_object_add(input,"extended-schema",prop2);
 	    }
+	    
 	    json_object* prop4=json_object_new_object();
 	    json_object_object_add(prop4,"oneOf",pjoSchema);
 	    json_object_object_add(input,"schema",prop4);
+	    json_object_put(prop0);
 	  }
 	  else{
 	    printBoundingBoxJ(m,in,input);
+	    json_object_put(prop0);
+	    json_object_put(prop1);
+	    json_object_put(pjoSchema);
 	  }
 	}
       }
@@ -1809,6 +1827,7 @@ extern "C" {
 	      }
 	    }
 	    else{
+#ifdef USE_MS
 	      map* pmTest=getMap(resu->content,"useMapserver");
 	      if(pmTest!=NULL){
 		map* geodatatype=getMap(resu->content,"geodatatype");
@@ -1830,6 +1849,7 @@ extern "C" {
 		    json_object_object_add(res1,pccFields[0],json_object_new_string(pmMimeType->value));
 		}
 	      }else{
+#endif
 		char *pcaFileUrl=produceFileUrl(s,conf,resu,NULL,itn);
 		itn++;
 		if(pcaFileUrl!=NULL){
@@ -1845,7 +1865,9 @@ extern "C" {
 		      json_object_object_add(res1,pccFields[0],json_object_new_string(json_object_get_string(val)));
 		  }
 		}
+#ifdef USE_MS
 	      }
+#endif
 	    }
 	  }
 	  // Add format to res1 for complex output except json based ones
@@ -2272,6 +2294,7 @@ extern "C" {
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     if(sessId!=NULL && isDismissed==0){
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
+#ifdef RELY_ON_DB
       for(int i=0;i<6;i++){
 	char* pcaTmp=_getStatusField(conf,sessId->value,statusFieldsC[i]);
 	if(pcaTmp!=NULL && strcmp(pcaTmp,"-1")!=0){
@@ -2280,6 +2303,7 @@ extern "C" {
 	if(pcaTmp!=NULL && strncmp(pcaTmp,"-1",2)==0)
 	  free(pcaTmp);
       }
+#endif
     }
     json_object_object_add(res,"status",json_object_new_string(rstatus));
     json_object_object_add(res,"message",json_object_new_string(message));

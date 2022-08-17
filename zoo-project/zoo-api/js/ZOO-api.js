@@ -6200,8 +6200,8 @@ ZOO.Process = ZOO.Class({
   Execute: function(inputs,outputs) {
     if (this.identifier == null)
       return null;
-      var body = new XML('<wps:Execute service="WPS" version="1.0.0" xmlns:wps="'+this.namespaces['wps']+'" xmlns:ows="'+this.namespaces['ows']+'" xmlns:xlink="'+this.namespaces['xlink']+'" xmlns:xsi="'+this.namespaces['xsi']+'" xsi:schemaLocation="'+this.schemaLocation+'"><ows:Identifier>'+this.identifier+'</ows:Identifier>'+this.buildDataInputsNode(inputs)+this.buildDataOutputsNode(outputs)+'</wps:Execute>');
-    body = body.toXMLString();
+      var body = ('<wps:Execute service="WPS" version="1.0.0" xmlns:wps="'+this.namespaces['wps']+'" xmlns:ows="'+this.namespaces['ows']+'" xmlns:xlink="'+this.namespaces['xlink']+'" xmlns:xsi="'+this.namespaces['xsi']+'" xsi:schemaLocation="'+this.schemaLocation+'"><ows:Identifier>'+this.identifier+'</ows:Identifier>'+this.buildDataInputsNode(inputs)+this.buildDataOutputsNode(outputs)+'</wps:Execute>');
+    //body = body.toXMLString();
     var headers=['Content-Type: text/xml; charset=UTF-8'];
     if(arguments.length>2){
       headers[headers.length]=arguments[2];

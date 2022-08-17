@@ -220,13 +220,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #endif
 	map* home = NULL;
 // knut: also set PYTHONHOME environment variable so that Python can load standard modules
-#ifndef WIN32	
+#ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);  
   //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
 	  setenv("PYTHONHOME", home->value, 1); // overwrite
   }
-#else	
+#else
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
@@ -236,7 +236,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  SetEnvironmentVariable("PYTHONHOME", home->value);
   }
   char buffer[128];
-#endif  
+#endif
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
@@ -250,12 +250,20 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   Py_Initialize();  
 #if PY_MAJOR_VERSION >= 3  
   PyEval_InitThreads();
-  PyImport_ImportModule("zoo");  
+  PyImport_ImportModule("zoo");
 #else
   init_zoo();
-#endif 
+#endif
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION < 10
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
+#else
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 10
+  mainstate = PyEval_SaveThread();
+#else
+  mainstate = PyThreadState_Swap(NULL);
+#endif
+#endif 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   PyObject *pName, *pModule, *pFunc;
@@ -287,6 +295,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   } 
 
   pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
   int res=SERVICE_FAILED;
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
@@ -664,6 +673,10 @@ maps* _mapsFromPyDict(PyDictObject* t){
 	}
 
 	maps* ptr = (maps*) malloc(MAPS_SIZE);
+	ptr->content = NULL;
+	ptr->child = NULL;
+	ptr->next = NULL;
+
 	maps* res = ptr;	
 	
 	PyObject* key;
