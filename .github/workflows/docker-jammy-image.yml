@@ -45,6 +45,7 @@ jobs:
       with:
         context: .
         push: true
+        file: Dockerfile-OSGeoLive
         tags: ${{secrets.DOCKER_USER}}/zookernel:osgeolive-latest
         cache-from: type=local,src=/tmp/.buildx-osgeolive-cache
         cache-to: type=local,dest=/tmp/.buildx-osgeolive-cache-new,mode=max
