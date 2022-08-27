@@ -38,6 +38,8 @@ sourceFileAddress='F:/GSOC22/Files/Vector operations/uttarPradesh.geojson'
 samplingStrategyFlag=3
 #set the value for the strategy
 samplingValue=2
+#set the expression
+expression=None
 #balancing parameter
 minimumDistanece=0.05
 #set the destination for the transformed geometry
