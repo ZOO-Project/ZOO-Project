@@ -16,7 +16,7 @@ RUN conda --version
 RUN mkdir -p /var/zooqgis
 
 #install pyqgis
-run conda install -c conda-forge qgis
+RUN conda install -c conda-forge qgis
 
 #
 
