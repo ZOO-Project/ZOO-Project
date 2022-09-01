@@ -231,10 +231,13 @@ RUN set -ex \
     && cp cgi-env/* /usr/lib/cgi-bin/ \
     \
     && cd .. \
-    && cd ../zoo-services/ogr/base-vect-ops \
-    && make \
-    && cp cgi-env/* /usr/lib/cgi-bin/ \
-    && cd ../.. \
+    # Build OGR Services
+    && for i in base-vect-ops ogr2ogr; do \
+       cd ../zoo-services/ogr/$i && \
+       make && \
+       cp cgi-env/* /usr/lib/cgi-bin/ && \
+       cd ../.. ; \
+    done \
     \
     && cd ../zoo-services/gdal/ \
     && for i in contour dem grid profile translate warp ; do cd $i ; make && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \
@@ -343,7 +346,7 @@ COPY --from=demos /zoo-project/swagger-ui /var/www/html/swagger-ui
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS $BUILD_DEPS \
     \
-    && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/index.html \
+    && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
     && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess \
     && sed "s=http://localhost=$SERVER_URL=g;s=publisherUr\=$SERVER_URL=publisherUrl\=http://localhost=g;s=ws://localhost=$WS_SERVER_URL=g" -i /usr/lib/cgi-bin/oas.cfg \
     && sed "s=http://localhost=$SERVER_URL=g" -i /usr/lib/cgi-bin/main.cfg \

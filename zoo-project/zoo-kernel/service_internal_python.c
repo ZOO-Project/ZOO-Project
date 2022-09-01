@@ -220,13 +220,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #endif
 	map* home = NULL;
 // knut: also set PYTHONHOME environment variable so that Python can load standard modules
-#ifndef WIN32	
+#ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);  
   //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
 	  setenv("PYTHONHOME", home->value, 1); // overwrite
   }
-#else	
+#else
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
@@ -236,7 +236,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  SetEnvironmentVariable("PYTHONHOME", home->value);
   }
   char buffer[128];
-#endif  
+#endif
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
@@ -516,7 +516,6 @@ PyDictObject* PyDict_FromMap(map* t){
 	      lcvalue=PyString_FromString(cMap->value);;
 	    }else
 	      lcvalue=Py_None;
-
 	    if(PyList_SetItem(value,i,lvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
@@ -531,25 +530,27 @@ PyDictObject* PyDict_FromMap(map* t){
 	    }
 	  }
 	  
-	  PyObject* lmvalue;
-	  map* mMap=getMapArray(tmp,tmap->name,i);
-	  if(mMap!=NULL){
-	    lmvalue=PyString_FromString(mMap->value);
-	  }else
-	    lmvalue=Py_None;
+	  if(tmap!=NULL){
+	    PyObject* lmvalue;
+	    map* mMap=getMapArray(tmp,tmap->name,i);
+	    if(mMap!=NULL){
+	      lmvalue=PyString_FromString(mMap->value);
+	    }else
+	      lmvalue=Py_None;
 	  
-	  if(PyList_SetItem(mvalue,i,lmvalue)<0){
+	    if(PyList_SetItem(mvalue,i,lmvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
-	  } 
-	  
+	    }
+	  }
 	}
 
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
-	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
+
+	if(tmap!=NULL && PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
@@ -673,6 +674,10 @@ maps* _mapsFromPyDict(PyDictObject* t){
 	}
 
 	maps* ptr = (maps*) malloc(MAPS_SIZE);
+	ptr->content = NULL;
+	ptr->child = NULL;
+	ptr->next = NULL;
+
 	maps* res = ptr;	
 	
 	PyObject* key;

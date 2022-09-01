@@ -999,6 +999,8 @@ void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
     sprintf(acTmp,"%s",pccKey);
     addToMap(pmMap,"length","1");
   }
+  if(getMap(pmMap,"isArray")==NULL)
+    addToMap(pmMap,"isArray","true");
   pmSize=getMapArray(pmMap,"size",iIndex);
   if(pmSize!=NULL && strncasecmp(pccKey,"value",5)==0){
     map* pmPtr=getMapOrFill(&pmMap,acTmp,(char *)"");

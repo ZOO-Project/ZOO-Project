@@ -88,6 +88,9 @@ int cgiMain(){
   
   maps *conf=NULL;
   conf = (maps *) malloc (MAPS_SIZE);
+  conf->content = NULL;
+  conf->child = NULL;
+  conf->next = NULL;
   int ret = conf_read (file_value, conf);
   if ( ret == 2){
     //a verifier mais conf_read ne renvoie jamais 0
@@ -110,6 +113,9 @@ int cgiMain(){
   char conf_file1[10240];
   snprintf (conf_file1, 10240, "%s/oas.cfg", ntmp);
   maps *oapi = (maps *) malloc (MAPS_SIZE);
+  oapi->content = NULL;
+  oapi->child = NULL;
+  oapi->next = NULL;
   ret = conf_read (conf_file1, oapi);
   if ( ret == 2){
     fprintf(stderr,_("Unable to load the %s file.\n"),file_value);
