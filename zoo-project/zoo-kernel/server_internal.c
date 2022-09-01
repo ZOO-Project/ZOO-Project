@@ -709,20 +709,20 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	    return res;
 	  }
 	}
-
-	if(out1==NULL){
-	  *out=dupMaps(&tmpMaps2);
-	  out1=*out;
-	}
-	else
-	  addMapsToMaps(&out1,tmpMaps2);
-	freeMap(&tmpMaps2->content);
-	free(tmpMaps2->content);
-	tmpMaps2->content=NULL;
-	freeMaps(&tmpMaps2);
-	free(tmpMaps2);
-	tmpMaps2=NULL;
       }
+
+      if(out1==NULL){
+	*out=dupMaps(&tmpMaps2);
+	out1=*out;
+      }
+      else
+	addMapsToMaps(&out1,tmpMaps2);
+      freeMap(&tmpMaps2->content);
+      free(tmpMaps2->content);
+      tmpMaps2->content=NULL;
+      freeMaps(&tmpMaps2);
+      free(tmpMaps2);
+      tmpMaps2=NULL;
     }
     else /*toto*/{ 
       iotype* tmpIoType=NULL;

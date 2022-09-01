@@ -516,7 +516,6 @@ PyDictObject* PyDict_FromMap(map* t){
 	      lcvalue=PyString_FromString(cMap->value);;
 	    }else
 	      lcvalue=Py_None;
-
 	    if(PyList_SetItem(value,i,lvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
@@ -531,25 +530,27 @@ PyDictObject* PyDict_FromMap(map* t){
 	    }
 	  }
 	  
-	  PyObject* lmvalue;
-	  map* mMap=getMapArray(tmp,tmap->name,i);
-	  if(mMap!=NULL){
-	    lmvalue=PyString_FromString(mMap->value);
-	  }else
-	    lmvalue=Py_None;
+	  if(tmap!=NULL){
+	    PyObject* lmvalue;
+	    map* mMap=getMapArray(tmp,tmap->name,i);
+	    if(mMap!=NULL){
+	      lmvalue=PyString_FromString(mMap->value);
+	    }else
+	      lmvalue=Py_None;
 	  
-	  if(PyList_SetItem(mvalue,i,lmvalue)<0){
+	    if(PyList_SetItem(mvalue,i,lmvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
-	  } 
-	  
+	    }
+	  }
 	}
 
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
-	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
+
+	if(tmap!=NULL && PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
