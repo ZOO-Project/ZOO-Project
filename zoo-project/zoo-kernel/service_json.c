@@ -124,23 +124,7 @@ extern "C" {
 	  }
 	}
 	else{
-	  // In other case we should consider array with potential sizes
-	  int limit=atoi(length->value);
-	  int i=0;
-	  val=json_object_new_array();
-	  for(i=0;i<limit;i++){
-	    map* lsizeMap=getMapArray(myMap,"size",i);
-	    toLoad=getMapArray(myMap,"to_load",i);
-	    if(lsizeMap!=NULL && strncasecmp(cursor->name,"value",5)==0){
-	      if(strlen(cursor->value)!=0 && toLoad!=NULL && strncasecmp(toLoad->value,"true",4)==0)
-		json_object_array_add(val,json_object_new_string_len(cursor->value,atoi(sizeMap->value)));
-	    }else{
-	      if(strstr(cursor->name,"title")!=NULL)
-		json_object_array_add(val,json_object_new_string(_(cursor->value)));
-	      else
-		json_object_array_add(val,json_object_new_string(cursor->value));
-	    }
-	  }
+	  val=json_object_new_string(cursor->value);
 	}
       }
       if(val!=NULL)
@@ -299,7 +283,36 @@ extern "C" {
    */
   void printLiteralValueJ(maps* pmConf,map* pmType,map* pmContent,json_object* schema,const char* field){
     map* pmTmp=getMap(pmContent,"value");
-    if(pmTmp!=NULL)
+    map* pmLength=getMap(pmContent,"length");
+    if(pmLength!=NULL){
+      int len=atoi(pmLength->value);
+      json_object* defaultProp=json_object_new_array();
+      for(int i=0;i<len;i++){
+	map* pmTmp0=getMapArray(pmContent,"value",i);
+	if(pmTmp0!=NULL){
+	  if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
+	    json_object_array_add(defaultProp,json_object_new_int(atoi(pmTmp0->value)));
+	  else{
+	    if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
+	      json_object_array_add(defaultProp,json_object_new_double(atof(pmTmp0->value)));
+	      json_object_object_add(schema,"format",json_object_new_string("double"));
+	    }
+	    else{
+	      if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
+		if(strncasecmp(pmTmp0->value,"true",4)==0)
+		  json_object_array_add(defaultProp,json_object_new_boolean(true));
+		else
+		  json_object_array_add(defaultProp,json_object_new_boolean(false));
+	      }
+	      else
+		json_object_array_add(defaultProp,json_object_new_string(pmTmp0->value));
+	    }
+	  }
+	}
+      }
+      json_object_object_add(schema,field,defaultProp);
+    }
+    else if(pmTmp!=NULL)
       if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
 	json_object_object_add(schema,field,json_object_new_int(atoi(pmTmp->value)));
       else{
@@ -309,7 +322,7 @@ extern "C" {
 	}
 	else{
 	  if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
-	    if(strncasecmp(pmType->value,"true",4)==0)
+	    if(strncasecmp(pmTmp->value,"true",4)==0)
 	      json_object_object_add(schema,field,json_object_new_boolean(true));
 	    else
 	      json_object_object_add(schema,field,json_object_new_boolean(false));
@@ -333,7 +346,6 @@ extern "C" {
     map* pmMin=getMap(in->content,"minOccurs");
     if(in->defaults!=NULL){
       map* tmpMap1=getMap(in->defaults->content,"DataType");
-      map* tmpMap2=getMap(in->defaults->content,"DataType");
       if(tmpMap1!=NULL){
 	if(strncasecmp(tmpMap1->value,"float",5)==0)
 	  json_object_object_add(schema,"type",json_object_new_string("number"));
@@ -376,10 +388,6 @@ extern "C" {
 	      tmps = strtok_r (NULL, ",", &saveptr);
 	    }
 	    json_object_object_add(schema,"enum",prop5);
-	  }else{
-	    tmpMap1=getMap(in->defaults->content,"DataType");
-	    if(tmpMap1!=NULL && strncasecmp(tmpMap1->value,"string",6)==0)
-	      json_object_object_add(schema,"default",json_object_new_string("Any value"));
 	  }
 	}
       }
