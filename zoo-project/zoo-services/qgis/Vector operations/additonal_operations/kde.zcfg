@@ -76,6 +76,28 @@
      value = 1
     </Default>
    </LiteralData>
+   [radiusField]
+   Title = The field where radius is to be used 
+   Abstract = The field with the radius.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [weightField]
+   Title = Field corresponding to the weight of the vector 
+   Abstract = The field corresponding to the weight of the vector entity used for weighing during kernel density estimation.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
  </DataInputs>
  <DataOutputs>
   [outputGeometry]

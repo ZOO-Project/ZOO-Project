@@ -21,7 +21,13 @@ def qgisKDE(sourceFile,radius,radiusField,pixelSize,weightField,kernelShape,deca
         #set parameters for the transform
         transformParameters={
             'INPUT':sourceFile,
-            'RADIUS':parts,
+            'RADIUS':radius,
+            'RADIUS_FIELD':radiusField,
+            'PIXEL_SIZE':pixelSize,
+            'WEIGHT_FIELD':WeightField,
+            'KERNEL':kernelShape,
+            'OUTPUT_VALUE':rawOrScaled,
+            'DECAY':decayRatio,
             'OUTPUT':destinationFile
         }
         #apply the transform
