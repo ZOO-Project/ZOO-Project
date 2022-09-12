@@ -34,7 +34,7 @@ function hellonodejs_cjs(conf, inputs, outputs) {
   assert(proj4.defs.GOOGLE.projName === 'merc');
   assert(typeof axios.get === 'function');
 
-  alert('ZOOTranslate', ZOOTranslate("my error"));
+  alert(`ZOOTranslate ${ZOOTranslate("my error")}`);
 
   ZOORequest('https://www.google.com');
   ZOORequest('GET', 'https://www.google.com');
