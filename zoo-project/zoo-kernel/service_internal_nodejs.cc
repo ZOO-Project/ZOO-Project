@@ -536,16 +536,7 @@ const char *bootstrap = "delete process.stdin;"
                         "process.stderr = process.stdout;"
                         "const {Readable} = require('stream');"
                         "process.stdin = new Readable({read(){}});"
-                        "process.stdin.push(null);"
-                        "const CJSLoader = require('internal/modules/cjs/loader');"
-                        "global.module = new CJSLoader.Module();"
-                        "global.require = require('module').createRequire(process.argv[0]);"
-                        "const ESMLoader = require('internal/modules/esm/loader').ESMLoader;"
-                        "const internalLoader = new ESMLoader;"
-                        "const parent_path = require('url').pathToFileURL(process.argv[0]);"
-                        "global.import = (mod) => internalLoader.import(mod, parent_path, "
-                        "Object.create(null));"
-                        "global.import.meta = { url: parent_path };";
+                        "process.stdin.push(null);";
 
 /**
  * Load a JavaScript file then run the function corresponding to the service by
