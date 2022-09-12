@@ -25,6 +25,7 @@
 //#define NODEJS_DEBUG
 //#define ULINET_DEBUG
 #define NAPI_EXPERIMENTAL
+#define NAPI_EMBEDDING
 
 #include <fstream>
 #include <regex>
