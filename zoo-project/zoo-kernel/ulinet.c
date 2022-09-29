@@ -547,15 +547,13 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     else{
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
     }
-    //if(pmMethod==NULL || strcasecmp(pmMethod->value,"DELETE")!=0){
     hInternet->ihandle[hInternet->nb].post=zStrdup(lpszHeaders);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
-    //}
-    //#ifdef ULINET_DEBUG
+#ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
-    //#endif
+#endif
   }
   if(hInternet->ihandle[hInternet->nb].header!=NULL)
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
