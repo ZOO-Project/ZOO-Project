@@ -2587,6 +2587,8 @@ void _printExceptionReportResponse(maps* m,map* s){
   tmp=getMapFromMaps(m,"lenv","status_code");
   if(tmp!=NULL)
     exceptionCode=tmp->value;
+  if(exceptionCode==NULL)
+    exceptionCode=aapccStatusCodes[3][0];
   if(m!=NULL){
     map *tmpSid=getMapFromMaps(m,"lenv","sid");
     if(tmpSid!=NULL){
@@ -3117,9 +3119,9 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	  else
 	    printf("Content-Disposition: INLINE\r\n");
 	  if(rs!=NULL)
-	    fwrite(pmValue->value,1,atoi(rs->value),stdout);
+	    fwrite(pmValue->value,sizeof(char),atoi(rs->value),stdout);
 	  else
-	    fwrite(pmValue->value,1,strlen(pmValue->value),stdout);
+	    fwrite(pmValue->value,sizeof(char),strlen(pmValue->value),stdout);
 	}
       }
       pmsOut=pmsOut->next;
@@ -3158,31 +3160,35 @@ void* printRawdataOutput(maps* conf,maps* outputs){
     }
     return NULL;
   }
-  map* fname=getMapFromMaps(outputs,outputs->name,"filename");	  	  
-  if(fname!=NULL)
-    printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+  map* pmHeaders=getMapFromMaps(conf,"lenv","no-headers");
   map* rs=getMapFromMaps(outputs,outputs->name,"size");
-  if(rs!=NULL)
-    printf("Content-Length: %s\r\n",rs->value);
-  char mime[1024];
-  map* mi=getMap(outputs->content,"mimeType");
-  map* en=getMap(outputs->content,"encoding");
-  if(mi!=NULL && en!=NULL)
-    sprintf(mime,
-	    "Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
-	    mi->value,en->value);
-  else
-    if(mi!=NULL)
+  if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
+    map* fname=getMapFromMaps(outputs,outputs->name,"filename");
+    if(fname!=NULL)
+      printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+    if(rs!=NULL)
+      printf("Content-Length: %s\r\n",rs->value);
+    char mime[1024];
+    map* mi=getMap(outputs->content,"mimeType");
+    map* en=getMap(outputs->content,"encoding");
+    if(mi!=NULL && en!=NULL)
       sprintf(mime,
-	      "Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
-	      mi->value);
+	      "Content-Type: %s; charset=%s\r\nStatus: 200 OK\r\n\r\n",
+	      mi->value,en->value);
     else
-      sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-  printf("%s",mime);
+      if(mi!=NULL)
+	sprintf(mime,
+		"Content-Type: %s; charset=UTF-8\r\nStatus: 200 OK\r\n\r\n",
+		mi->value);
+      else
+	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+    printf("%s",mime);
+  }
   if(rs!=NULL)
     fwrite(toto->value,1,atoi(rs->value),stdout);
   else
-    fwrite(toto->value,1,strlen(toto->value),stdout);	
+    fwrite(toto->value,1,strlen(toto->value),stdout);
+  fflush(stdout);
 }
 
 /**

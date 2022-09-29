@@ -95,10 +95,13 @@ int cgiMain(){
   char *strQuery=NULL;
   if(cgiQueryString!=NULL)
     strQuery=zStrdup(cgiQueryString);
-  map* tmpMap=NULL;
+  map* pmaRequest=NULL;
 
-  if(strncmp(cgiContentType,"application/json",16)==0 &&
-     strncasecmp(cgiRequestMethod,"post",4)==0){
+  if((strncmp(cgiContentType,"application/json",16)==0 ||
+      strstr(cgiContentType,"json")!=NULL) && // Accept application/ogcapppkg+jon
+     ( strncasecmp(cgiRequestMethod,"post",4) == 0
+       ||
+       strncasecmp(cgiRequestMethod,"put",4) == 0 ) ){
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
@@ -117,10 +120,13 @@ int cgiMain(){
 	 len+=1;
        }
        delete[] buffer;
-       tmpMap=createMap("jrequest",res);
-       free(res);
+       if(res!=NULL){
+	 pmaRequest=createMap("jrequest",res);
+	 free(res);
+       }
   }else if(strncmp(cgiContentType,"text/xml",8)==0 ||
-     strncasecmp(cgiRequestMethod,"post",4)==0){
+	   strncasecmp(cgiRequestMethod,"post",4)==0 ||
+	   strncasecmp(cgiRequestMethod,"put",4)==0){
     if(cgiContentLength==0){
 
        char *buffer=new char[2];
@@ -141,14 +147,14 @@ int cgiMain(){
        }
        delete[] buffer;
        if(res!=NULL && (strQuery==NULL || strlen(strQuery)==0))
-	 tmpMap=createMap("request",res);
+	 pmaRequest=createMap("request",res);
        if(res!=NULL)
 	 free(res);
     }else{  
       char *buffer=new char[cgiContentLength+1];
       if(fread(buffer,sizeof(char),cgiContentLength,cgiIn)>0){
 	buffer[cgiContentLength]=0;
-	tmpMap=createMap("request",buffer);
+	pmaRequest=createMap("request",buffer);
       }else{
 	buffer[0]=0;
 	char **array, **arrayStep;
@@ -176,17 +182,17 @@ int cgiMain(){
 	  delete[]ivalue;
 	  arrayStep++;
 	}	
-	if(tmpMap!=NULL)
-	  addToMap(tmpMap,"request",buffer);
+	if(pmaRequest!=NULL)
+	  addToMap(pmaRequest,"request",buffer);
 	else
-	  tmpMap=createMap("request",buffer);
+	  pmaRequest=createMap("request",buffer);
       }
       delete[]buffer;
     }	
   }
   else{	  
 #ifdef DEBUG
-    dumpMap(tmpMap);
+    dumpMap(pmaRequest);
 #endif
     char **array, **arrayStep;
     if (cgiFormEntries(&array) != cgiFormSuccess) {
@@ -199,10 +205,10 @@ int cgiMain(){
 #ifdef DEBUG
       fprintf(stderr,"(( \n %s \n %s \n ))",*arrayStep,value);
 #endif
-      if(tmpMap!=NULL)
-        addToMap(tmpMap,*arrayStep,value);
+      if(pmaRequest!=NULL)
+        addToMap(pmaRequest,*arrayStep,value);
       else
-        tmpMap=createMap(*arrayStep,value);
+        pmaRequest=createMap(*arrayStep,value);
       arrayStep++;
       delete[]value;
     }
@@ -210,7 +216,7 @@ int cgiMain(){
   }
  
 #ifdef WIN32
-  map *tmpReq=getMap(tmpMap,"rfile");  
+  map *tmpReq=getMap(pmaRequest,"rfile");
   if(tmpReq!=NULL){	  	  
     FILE *lf=fopen(tmpReq->value,"r");	
     fseek(lf,0,SEEK_END);
@@ -222,7 +228,7 @@ int cgiMain(){
     cgiContentLength=strlen(buffer)-strlen(pchr)+1;
     buffer[cgiContentLength]=0;
     fclose(lf);
-    addToMap(tmpMap,"request",buffer);
+    addToMap(pmaRequest,"request",buffer);
     free(buffer);
   }
 #endif
@@ -231,8 +237,8 @@ int cgiMain(){
    * format else try to use the attribute "request" which should be the only 
    * one.
    */
-  if(strncasecmp(cgiRequestMethod,"post",4)==0 || 
-     (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
+  if(strncasecmp(cgiRequestMethod,"post",4)==0 || strncasecmp(cgiRequestMethod,"put",4)==0 ||
+     (count(pmaRequest)==1 && strncmp(pmaRequest->value,"<",1)==0)
 #ifdef WIN32
      ||tmpReq!=NULL
 #endif
@@ -240,9 +246,9 @@ int cgiMain(){
     /**
      * Store the original XML request in xrequest map
      */
-    map* t1=getMap(tmpMap,"request");
+    map* t1=getMap(pmaRequest,"request");
     if(t1!=NULL && strncasecmp(t1->value,"<",1)==0) {
-      addToMap(tmpMap,"xrequest",t1->value);
+      addToMap(pmaRequest,"xrequest",t1->value);
       xmlInitParser();
       xmlDocPtr doc = xmlReadMemory(t1->value, cgiContentLength, "input_request.xml", NULL, XML_PARSE_RECOVER);
       {
@@ -250,13 +256,13 @@ int cgiMain(){
 	if(reqptr!=NULL){
 	  xmlNodeSet* req=reqptr->nodesetval;
 	  if(req!=NULL && req->nodeNr==1){
-	    addToMap(tmpMap,"soap","true");
+	    addToMap(pmaRequest,"soap","true");
 	    for(int k=0;k < req->nodeNr;k++){
 	      xmlDocSetRootElement(doc, req->nodeTab[k]);
 	      xmlChar *xmlbuff;
 	      int buffersize;
 	      xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, "utf-8", 1);
-	      addToMap(tmpMap,"xrequest",(char*)xmlbuff);
+	      addToMap(pmaRequest,"xrequest",(char*)xmlbuff);
 	      xmlFree(xmlbuff);
 	    }
 	  }
@@ -269,13 +275,13 @@ int cgiMain(){
       tval=NULL;
       tval = (char*) xmlGetProp(cur,BAD_CAST "service");
       if(tval!=NULL){
-	addToMap(tmpMap,"service",tval);
+	addToMap(pmaRequest,"service",tval);
 	xmlFree(tval);
       }
       tval=NULL;
       tval = (char*) xmlGetProp(cur,BAD_CAST "language");
       if(tval!=NULL){
-	addToMap(tmpMap,"language",tval);
+	addToMap(pmaRequest,"language",tval);
 	xmlFree(tval);
       }
       const char* requests[6]={"GetCapabilities","DescribeProcess","Execute","GetStatus","GetResult","Dismiss"};
@@ -302,17 +308,17 @@ int cgiMain(){
 	xmlNodeSet* vers=versptr->nodesetval;
 	if(vers!=NULL && vers->nodeTab!=NULL && vers->nodeTab[0]!=NULL){
 	  xmlChar* content=xmlNodeListGetString(doc, vers->nodeTab[0]->xmlChildrenNode,1);
-	  addToMap(tmpMap,"version",(char*)content);
+	  addToMap(pmaRequest,"version",(char*)content);
 	  xmlFree(content);
 	}
 	if(cur->ns){
-	  addToMap(tmpMap,"wps_schemas",(char*)cur->ns->href);
+	  addToMap(pmaRequest,"wps_schemas",(char*)cur->ns->href);
 	  int j=0;
 	  for(j=0;j<2;j++)
 	    if(strncasecmp(schemas[j][2],(char*)cur->ns->href,strlen(schemas[j][2]))==0){
 	      char vers[6];
 	      sprintf(vers,"%d.0.0",j+1);
-	      addToMap(tmpMap,"version",(char*)vers);
+	      addToMap(pmaRequest,"version",(char*)vers);
 	    }
 	}
 	xmlXPathFreeObject(versptr);
@@ -320,12 +326,12 @@ int cgiMain(){
 	tval=NULL;
 	tval = (char*) xmlGetProp(cur,BAD_CAST "version");
 	if(tval!=NULL){
-	  addToMap(tmpMap,"version",tval);
+	  addToMap(pmaRequest,"version",tval);
 	  xmlFree(tval);
 	}
 	tval = (char*) xmlGetProp(cur,BAD_CAST "language");
 	if(tval!=NULL){
-	  addToMap(tmpMap,"language",tval);
+	  addToMap(pmaRequest,"language",tval);
 	  xmlFree(tval);
 	}
 	xmlXPathObjectPtr idptr=extractFromDoc(doc,"/*/*[local-name()='Identifier']");
@@ -349,11 +355,11 @@ int cgiMain(){
 	    }
 	    xmlXPathFreeObject(idptr);
 	    if(identifiers[0]!=0)
-	      addToMap(tmpMap,"Identifier",identifiers);
+	      addToMap(pmaRequest,"Identifier",identifiers);
 	    free(identifiers);
 	  }
 	}
-	if(getMap(tmpMap,"Identifier")==NULL){
+	if(getMap(pmaRequest,"Identifier")==NULL){
 	  idptr=extractFromDoc(doc,"/*/*[local-name()='JobID']");
 	  if(idptr!=NULL){
 	    xmlNodeSet* id=idptr->nodesetval;
@@ -375,7 +381,7 @@ int cgiMain(){
 	      }
 	      xmlXPathFreeObject(idptr);
 	      if(identifiers[0]!=0)
-		addToMap(tmpMap,"JobID",identifiers);
+		addToMap(pmaRequest,"JobID",identifiers);
 	      free(identifiers);
 	    }
 	  }
@@ -384,14 +390,14 @@ int cgiMain(){
       xmlFreeDoc(doc);
       xmlCleanupParser();
     }else{
-      if(tmpMap!=NULL){	
-	if(getMap(tmpMap,"jrequest")==NULL){
-	  freeMap(&tmpMap);
-	  free(tmpMap);
-	  tmpMap=createMap("not_valid","true");
+      if(pmaRequest!=NULL){
+	if(getMap(pmaRequest,"jrequest")==NULL){
+	  freeMap(&pmaRequest);
+	  free(pmaRequest);
+	  pmaRequest=createMap("not_valid","true");
 	}
       }else
-	tmpMap=createMap("not_valid","true");
+	pmaRequest=createMap("not_valid","true");
     }
 
     char *token,*saveptr;
@@ -408,12 +414,12 @@ int cgiMain(){
           value=zStrdup(token1);
         token1=strtok_r(NULL,"=",&saveptr1);
       }	  
-      //addToMap(tmpMap,name,value);
+      //addToMap(pmaRequest,name,value);
       /* knut: strtok(_r) ignores delimiter bytes at start and end of string; 
        * it will return non-empty string or NULL, e.g. "metapath=" yields value=NULL.
        * This modification sets value="" instead of NULL.
        */
-      addToMap(tmpMap,name, value != NULL ? value : "");
+      addToMap(pmaRequest,name, value != NULL ? value : "");
       free(name);
       free(value);
       name=NULL;
@@ -423,23 +429,23 @@ int cgiMain(){
   }
   
   if(strncasecmp(cgiContentType,"multipart/form-data",19)==0){
-    map* tmp=getMap(tmpMap,"dataInputs");
+    map* tmp=getMap(pmaRequest,"dataInputs");
     if(tmp!=NULL){
       if(strcasestr(strQuery,"dataInputs=")!=NULL)
-	addToMap(tmpMap,"dataInputs",strcasestr(strQuery,"dataInputs=")+11);
+	addToMap(pmaRequest,"dataInputs",strcasestr(strQuery,"dataInputs=")+11);
       else
-	addToMap(tmpMap,"dataInputs","None");
+	addToMap(pmaRequest,"dataInputs","None");
     }
   }
 
   if(strQuery!=NULL)
     free(strQuery);
 
-  runRequest(&tmpMap);
+  runRequest(&pmaRequest);
 
-  if(tmpMap!=NULL){
-    freeMap(&tmpMap);
-    free(tmpMap);
+  if(pmaRequest!=NULL){
+    freeMap(&pmaRequest);
+    free(pmaRequest);
   }
   return 0;
 
