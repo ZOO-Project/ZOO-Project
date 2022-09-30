@@ -374,32 +374,34 @@ int addServicesNamespaceToMap(maps* conf){
                         char *namespaceFolder = (char *) malloc(1024);
                         memset(namespaceFolder, '\0', 1024);
                         map *servicesNamespaceParentFolder = getMapFromMaps(conf, "servicesNamespace", "path");
-                        sprintf(namespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, namespaceName);
-                        DIR *dir = opendir(namespaceFolder);
-                        if (dir) {
+			if(servicesNamespaceParentFolder!=NULL){
+			  sprintf(namespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, namespaceName);
+			  DIR *dir = opendir(namespaceFolder);
+			  if (dir) {
                             // creating a zooServicesNamespace map
                             // the map will contain the namespace name
                             maps *_tmpMaps = createMaps("zooServicesNamespace");
                             if (_tmpMaps->content == NULL)
-                                _tmpMaps->content = createMap("namespace", namespaceName);
+			      _tmpMaps->content = createMap("namespace", namespaceName);
                             else
-                                addToMap(_tmpMaps->content, "namespace", namespaceName);
+			      addToMap(_tmpMaps->content, "namespace", namespaceName);
 
                             // adding the zooServicesNamespace map to the other maps
                             if (conf) {
-                                addMapsToMaps(&conf, _tmpMaps);
-				freeMaps(&_tmpMaps);
-				free(_tmpMaps);
-				_tmpMaps=NULL;
+			      addMapsToMaps(&conf, _tmpMaps);
+			      freeMaps(&_tmpMaps);
+			      free(_tmpMaps);
+			      _tmpMaps=NULL;
                             }
-                        } else {
+			  } else {
                             map* error=createMap("code","BadRequest");
                             addToMap(error,"message",_("The resource is not available"));
                             printExceptionReportResponseJ(conf,error);
                             ret = 1;
                             freeMap(&error);
                             free(error);
-                        }
+			  }
+			}
                     }
                 }
             }
