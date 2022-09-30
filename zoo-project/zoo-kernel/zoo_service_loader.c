@@ -2965,8 +2965,6 @@ runRequest (map ** inputs)
 		if(strlen(jobId)>36)
 		  jobId[36]=0;
 		char *sid=getStatusId(m,jobId);
-		fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,sid);
-		fflush(stderr);
 		if(sid==NULL){
 		  map* error=createMap("code","NoSuchJob");
 		  addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
@@ -2994,8 +2992,6 @@ runRequest (map ** inputs)
 		    return 1;
 		  }else{
 		    char *Url0=getResultPath(m,jobId);
-		    fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,Url0);
-		    fflush(stderr);
 		    zStatStruct f_status;
 		    int s=zStat(Url0, &f_status);
 		    if(s==0 && f_status.st_size>0){
@@ -3527,24 +3523,14 @@ runRequest (map ** inputs)
     if(res!=NULL)
       json_object_put(res);
     free(pcaCgiQueryString);
-    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-    fflush(stderr);
     map* pmTest=getMap(request_inputs,"shouldFree");
-    fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-    fflush(stderr);
     if(pmTest!=NULL){
-      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-      fflush(stderr);
       freeMap (inputs);
       free (*inputs);
       *inputs=NULL;
-      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-      fflush(stderr);
       freeMap(&r_inputs);
       free (r_inputs);
       r_inputs=NULL;
-      fprintf(stderr,"%s %d \n",__FILE__,__LINE__);
-      fflush(stderr);
     }
     //return 1;
 #endif
