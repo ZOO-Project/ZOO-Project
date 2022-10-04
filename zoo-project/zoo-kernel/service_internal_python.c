@@ -368,7 +368,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
-  if(PyString_Check(trace)){
+  if(trace!=NULL && PyString_Check(trace)){
     pbt=(char*)malloc((8+strlen(PyString_AsString(trace)))*sizeof(char));
     sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
   }
@@ -376,9 +376,8 @@ void PythonZooReport(maps* m,const char* module,int load){
     fprintf(stderr,"EMPTY TRACE ?");
 
   trace=NULL;
-  
   trace=PyObject_Str(ptype);
-  if(PyString_Check(trace)){
+  if(trace!=NULL && PyString_Check(trace) && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
     if(pbt!=NULL)
       free(pbt);
@@ -389,7 +388,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   else
     fprintf(stderr,"EMPTY TRACE ?");
   
-  if(ptraceback!=NULL){
+  if(ptraceback!=NULL && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
     pName = PyString_FromString("traceback");
     pModule = PyImport_Import(pName);
@@ -415,14 +414,19 @@ void PythonZooReport(maps* m,const char* module,int load){
     }
     free(tpbt);
   }
-  if(load>0){
+  if(load>0 && pbt!=NULL){
     char *tmpS=(char*)malloc((strlen(tmp0)+strlen(module)+strlen(pbt)+1)*sizeof(char));
     sprintf(tmpS,tmp0,module,pbt);
     errorException(m,tmpS,"NoApplicableCode",NULL);
     free(tmpS);
-  }else
-    errorException(m,pbt,"NoApplicableCode",NULL);
-  free(pbt);
+  }else{
+    if(pbt!=NULL)
+      errorException(m,pbt,"NoApplicableCode",NULL);
+    else
+      errorException(m,_("Something went wrong but, no Python traceback can be fecthed."),"NoApplicableCode",NULL);
+  }
+  if(pbt!=NULL)
+    free(pbt);
 }
 
 /**
