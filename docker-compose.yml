@@ -20,7 +20,6 @@ services:
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
       - ./docker/com:/usr/com/zoo-project
       - ./docker/tmp:/tmp/zTmp
-      - ./thirds/MapServer/share/ogcapi/templates/html-bootstrap4:/mapserver/share/mapserver/ogcapi/templates/html-plain/
     depends_on:
       - pgbouncer
       - redis

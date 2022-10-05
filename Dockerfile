@@ -118,8 +118,10 @@ RUN set -ex \
     && make -C ./thirds/cgic206 libcgic.a \
     \
     && cd thirds \
-    && git clone https://github.com/MapServer/MapServer.git \
-    && cd MapServer \
+    #&& git clone -b https://github.com/MapServer/MapServer.git \
+    && curl -Lo mapserver-8.0.0.tar.gz https://github.com/MapServer/MapServer/releases/download/rel-8-0-0/mapserver-8.0.0.tar.gz \
+    && tar -xf mapserver-8.0.0.tar.gz \
+    && cd mapserver-8.0.0 \
     #&& git clone --branch=add-save-config https://github.com/GeoLabs/MapServer.git MapServer-GS \
     && mkdir build \
     && cd build \
@@ -139,6 +141,11 @@ RUN set -ex \
        -DCMAKE_INSTALL_PREFIX=/mapserver \
     && make -j 4 \
     && make install PREFIX=/mapserver \
+    && find . \
+    && mkdir -p /mapserver/share/mapserver/ogcapi/templates/html-plain/ \
+    #&& find share/ogcapi/ \
+    && cp -r ../share/ogcapi/templates/html-bootstrap4/* /mapserver/share/mapserver/ogcapi/templates/html-plain/ \
+    && grep MS_VERSION_ -rni /mapserver \
     && cd ../../.. \
     && cd ./zoo-project/zoo-kernel \
     # Uncomment bellow to fetch latest json-c from GitHub \

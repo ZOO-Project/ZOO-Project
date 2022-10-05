@@ -814,12 +814,12 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     myLayer->data = zStrdup(OGR_L_GetName(poLayer));
     myLayer->connection = zStrdup(pszDataSource);
     myLayer->index = m->numlayers;
-#if MS_VERSION_MINOR < 6
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
     myLayer->dump = MS_TRUE;
 #endif
     myLayer->status = MS_ON;
     msConnectLayer(myLayer,MS_OGR,pszDataSource);
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
     // TODO: define myLayer->template=VOID; ??
     msUpdateLayerFromString(myLayer,"LAYER TEMPLATE VOID END");
 #endif
@@ -942,7 +942,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       }
       if(tmpMap!=NULL)
 	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value
-#if MS_VERSION_MINOR < 6				
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
 				,0
 #endif
 				);
@@ -1038,7 +1038,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   myLayer->tileitem=NULL;
   myLayer->data = zStrdup(pszFilename);
   myLayer->index = m->numlayers;
-#if MS_VERSION_MINOR < 6
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
   myLayer->dump = MS_TRUE;
 #endif
   myLayer->status = MS_ON;
@@ -1301,7 +1301,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   
   if(styleMap!=NULL && strlen(styleMap->value)>9){
     msUpdateLayerFromString(myLayer,styleMap->value
-#if MS_VERSION_MINOR < 6
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
 			    ,MS_FALSE
 #endif
 			    );
@@ -1368,7 +1368,7 @@ void outputMapfile(maps* conf,maps* outputs){
    */  
   map* mapfileTemplate=getMapArray(outputs->content,"msInclude",imyIndex);
   mapObj *myMap=NULL;
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
   configObj* config = NULL;
   if(pmMsConfig!=NULL){
     config = msLoadConfig(pmMsConfig->value);
@@ -1383,7 +1383,7 @@ void outputMapfile(maps* conf,maps* outputs){
     char *mapfileTemplatePath=(char*)malloc(((strlen(dataPath->value)+strlen(sid->value)+strlen(outputs->name)+10)*sizeof(char)));
     sprintf(mapfileTemplatePath,"%s/%s_%s.map",dataPath->value,outputs->name,sid->value);
     myMap=msLoadMap(mapfileTemplate->value,mapfileTemplatePath
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 		    ,config
 #endif
 		    );
@@ -1392,7 +1392,7 @@ void outputMapfile(maps* conf,maps* outputs){
       return ;
     }
   }
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
   free(myMap->name);
 #endif
   myMap->name=zStrdup("ZOO-Project_WXS_Server");
@@ -1406,7 +1406,7 @@ void outputMapfile(maps* conf,maps* outputs){
   myMap->web.imagepath=zStrdup(tmp1->value);
   tmp1=getMapFromMaps(conf,"main","tmpUrl");
   myMap->web.imageurl=zStrdup(tmp1->value);
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
   msApplyDefaultOutputFormats(myMap);
 #endif
 
@@ -1414,7 +1414,7 @@ void outputMapfile(maps* conf,maps* outputs){
    * Define supported output formats
    */
   outputFormatObj *o1=msCreateDefaultOutputFormat(NULL,"AGG/PNG","png"
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 						  ,"image/png"
 #endif
 						  );
@@ -1425,14 +1425,14 @@ void outputMapfile(maps* conf,maps* outputs){
     o1->transparent=MS_TRUE;
     o1->inmapfile=MS_TRUE;
     msAppendOutputFormat(myMap,msCloneOutputFormat(o1));
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o1);
 #endif
   }
 
 #ifdef USE_KML
   outputFormatObj *o2=msCreateDefaultOutputFormat(NULL,"KML","kml"
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 						  ,"application/vnd.google-earth.kml+xml"
 #endif
 						  );
@@ -1442,14 +1442,14 @@ void outputMapfile(maps* conf,maps* outputs){
   }else{
     o2->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o2));
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o2);
 #endif
   }
 #endif
 
   outputFormatObj *o3=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","tiff"
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 						  ,"image/tiff"
 #endif
 						  );
@@ -1459,13 +1459,13 @@ void outputMapfile(maps* conf,maps* outputs){
     o3->imagemode=MS_IMAGEMODE_INT16;
     o3->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o3));
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o3);
 #endif
   }
 
   outputFormatObj *o4=msCreateDefaultOutputFormat(NULL,"GDAL/AAIGRID","grd"
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 						  ,"image/x-aaigrid"
 #endif
 						  );
@@ -1475,14 +1475,14 @@ void outputMapfile(maps* conf,maps* outputs){
     o4->imagemode=MS_IMAGEMODE_BYTE;
     o4->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o4));
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o4);
 #endif
   }
 
 #ifdef USE_CAIRO
   outputFormatObj *o5=msCreateDefaultOutputFormat(NULL,"CAIRO/PNG","cairopng"
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 						  ,"image/png"
 #endif
 						  );
@@ -1493,7 +1493,7 @@ void outputMapfile(maps* conf,maps* outputs){
     o5->transparent=MS_TRUE;
     o5->inmapfile=MS_TRUE;
     msAppendOutputFormat(myMap,msCloneOutputFormat(o5));
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o5);
 #endif
   }
@@ -1501,7 +1501,7 @@ void outputMapfile(maps* conf,maps* outputs){
 
   
   outputFormatObj *o6=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","geotiff"
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 						  ,"image/tiff; application=geotiff "
 #endif
 						  );
@@ -1512,7 +1512,7 @@ void outputMapfile(maps* conf,maps* outputs){
     o6->mimetype=strdup("image/geotiff");
     o6->inmapfile=MS_TRUE;
     msAppendOutputFormat(myMap,msCloneOutputFormat(o6));
-#if MS_VERSION_MINOR < 7
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o6);
 #endif
   }
@@ -1521,7 +1521,7 @@ void outputMapfile(maps* conf,maps* outputs){
    * Set default projection to EPSG:4326
    */
   msLoadProjectionStringEPSG(&myMap->projection,"EPSG:4326");
-#if MS_VERSION_MINOR < 6
+#if MS_VERSION_MINOR < 6  && MS_VERSION_MAJOR <= 7
   myMap->transparent=1;
 #endif
   
@@ -1618,7 +1618,7 @@ void outputMapfile(maps* conf,maps* outputs){
 #endif
     return;
   }
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
   if (msInsertHashTable(&(config->maps), pcaMapName, mapPath) == NULL){
 #ifdef DEBUGMS
     fprintf(stderr,"Unable to add metadata");
@@ -1636,7 +1636,7 @@ void outputMapfile(maps* conf,maps* outputs){
   msInitSymbolSet(&myMap->symbolset);
   myMap->symbolset.filename=zStrdup(tmpPath);
   free(tmpPath);
-#if MS_VERSION_MINOR > 6
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
   if(pmMsConfig!=NULL){
     msSaveConfig(config,pmMsConfig->value);
   }
