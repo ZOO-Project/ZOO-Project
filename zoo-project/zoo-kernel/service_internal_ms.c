@@ -35,8 +35,10 @@
 #include "response_print.h"
 #include "caching.h"
 
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
 // Not exposed yet from the MapServer C-API
 extern void writeHashTable(FILE *stream, int indent, const char *title, hashTableObj *table);
+#endif
 
 /**
  * Get a list of configuration keys having a corresponding mandatory ows_*.
