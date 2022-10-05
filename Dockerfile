@@ -104,7 +104,7 @@ RUN set -ex \
     && make -C ./thirds/cgic206 libcgic.a \
     \
     && cd ./zoo-project/zoo-kernel \
-    #&& git clone https://github.com/json-c/json-c.git \
+    #&& git clone --depth 1 https://github.com/json-c/json-c.git \
     #&& mkdir json-c-build \
     #&& cd json-c-build \
     #&& cmake ../json-c -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -259,10 +259,10 @@ WORKDIR /zoo-project
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
-    && git clone https://github.com/ZOO-Project/examples.git \
-    && git clone https://github.com/swagger-api/swagger-ui.git \
-    && git clone https://github.com/WPS-Benchmarking/cptesting.git /testing \
-    && git clone https://www.github.com/singularityhub/singularity-cli.git /singularity-cli \
+    && git clone --depth 1 https://github.com/ZOO-Project/examples.git \
+    && git clone --depth 1 https://github.com/swagger-api/swagger-ui.git \
+    && git clone --depth 1 https://github.com/WPS-Benchmarking/cptesting.git /testing \
+    && git clone --depth 1 https://www.github.com/singularityhub/singularity-cli.git /singularity-cli \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
