@@ -99,7 +99,7 @@ int cgiMain(){
 
 
     if(strncasecmp(cgiRequestMethod,"delete",6)==0){
-        tmpMap=createMap("jrequest","DELETE");
+        pmaReques=createMap("jrequest","DELETE");
     } else if((strncmp(cgiContentType,"application/json",16)==0 || strncmp(cgiContentType,"application/cwl",15)==0 )&&
             (strncasecmp(cgiRequestMethod,"post",4)==0 )){
        char *buffer=new char[2];
@@ -238,7 +238,7 @@ int cgiMain(){
    * one.
    */
   if(strncasecmp(cgiRequestMethod,"post",4)==0 || strncasecmp(cgiRequestMethod,"delete",6)==0 ||
-     (count(tmpMap)==1 && strncmp(tmpMap->value,"<",1)==0) 
+     (count(pmaRequest)==1 && strncmp(pmaRequest->value,"<",1)==0) 
 #ifdef WIN32
      ||tmpReq!=NULL
 #endif

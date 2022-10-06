@@ -3162,23 +3162,25 @@ void* printRawdataOutput(maps* conf,maps* outputs){
   }
   map* pmHeaders=getMapFromMaps(conf,"lenv","no-headers");
   map* rs=getMapFromMaps(outputs,outputs->name,"size");
-  if(rs!=NULL)
-    printf("Content-Length: %s\r\n",rs->value);
-  char mime[1024];
-  map* mi=getMap(outputs->content,"mimeType");
-  map* en=getMap(outputs->content,"encoding");
-  if(mi!=NULL && en!=NULL)
-    sprintf(mime,
-	    "Content-Type: %s; charset=%s\r\n",
-	    mi->value,en->value);
-  else
-    if(mi!=NULL)
+  if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
+    if(rs!=NULL)
+      printf("Content-Length: %s\r\n",rs->value);
+    char mime[1024];
+    map* mi=getMap(outputs->content,"mimeType");
+    map* en=getMap(outputs->content,"encoding");
+    if(mi!=NULL && en!=NULL)
       sprintf(mime,
-	      "Content-Type: %s; charset=UTF-8\r\n",
-	      mi->value);
+	      "Content-Type: %s; charset=%s\r\n",
+	      mi->value,en->value);
     else
-      sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\n");
-  printf("%s",mime);
+      if(mi!=NULL)
+	sprintf(mime,
+		"Content-Type: %s; charset=UTF-8\r\n",
+		mi->value);
+      else
+	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\n");
+    printf("%s",mime);
+  }
 
   // checking if the deploy service has returned the service id
   // if it did we add the service url to the location header
