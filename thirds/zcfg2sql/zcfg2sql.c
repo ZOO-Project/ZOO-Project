@@ -54,9 +54,9 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 	    "schema is NULL"
 	  };
 	  char *condNames[3]={
-	    "mime_type",
-	    "encoding",
-	    "schema"
+	    (char*)"mime_type",
+	    (char*)"encoding",
+	    (char*)"schema"
 	  };
 	  for(i=0;i<3;i++)
 	    if(values[i]!=NULL){
@@ -81,8 +81,8 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 	      getMap(tmpio->content,"AllowedValues")
 	    };
 	    char *fields[20]={
-	      "default_value",
-	      "def"
+	      (char*)"default_value",
+	      (char*)"def"
 	    };
 	    fprintf(f,"INSERT INTO CollectionDB.LiteralDataDomain"
 		    " (def,data_type_id) VALUES \n(true,");
@@ -105,7 +105,7 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 		fprintf(f,"INSERT INTO CollectionDB.AllowedValuesAssignment"
 			" (allowed_value_id,literal_data_domain_id) VALUES "
 			"((SELECT last_value FROM CollectionDB.AllowedValues_id_seq),"
-			"(SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));\n",tmp);
+			"(SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));\n");
 		tmp=strtok(NULL,",");
 	      }
 	    }
@@ -123,7 +123,7 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
       getMap(tmp->content,"minOccurs"),
       getMap(tmp->content,"maxOccurs")
     };
-    char *toto=",min_occurs,max_occurs";
+    char *toto=(char*)",min_occurs,max_occurs";
     if(strcmp(type,"Input")==0){
       fprintf(f,"INSERT INTO CollectionDB.ows_Input "
 	      "(identifier,title,abstract,min_occurs,max_occurs)"
@@ -265,9 +265,9 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 	    "schema is NULL",
 	  };
 	  char *condNames[3]={
-	    "mime_type",
-	    "encoding",
-	    "schema"
+	    (char*)"mime_type",
+	    (char*)"encoding",
+	    (char*)"schema"
 	  };
 	  for(i=0;i<3;i++)
 	    if(values[i]!=NULL){
@@ -305,8 +305,8 @@ void dumpElementsAsSQL(const char* type,elements* e,int index,int level,FILE* f)
 	      getMap(tmp->defaults->content,"AllowedValues")
 	    };
 	    char *fields[20]={
-	      "default_value",
-	      "def"
+	      (char*)"default_value",
+	      (char*)"def"
 	    };
 	    fprintf(f,"INSERT INTO CollectionDB.LiteralDataDomain"
 		    " (def,data_type_id) VALUES \n(false,");

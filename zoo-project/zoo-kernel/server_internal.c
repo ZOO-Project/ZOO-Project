@@ -878,7 +878,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
     *err=res;
     return result;
   }
-  return "";
+  return (char*)"";
 }
 
 /**
@@ -1016,6 +1016,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  setMapInMaps(conf,"lenv","code","ResultNotReady");
 	  setMapInMaps(conf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service is currently running."));
 	}
+	free(sid);
 	return;
       }
       else{
@@ -1056,6 +1057,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 			  "ResultNotReady", pid);
 	  freeMap(&statusInfo);
 	  free(statusInfo);
+	  free(sid);
 	  return;
 	}
       }else
@@ -1162,6 +1164,7 @@ void runDismiss(maps* conf,char* pid){
 	  
 	}
       }
+      closedir (dirp);
     }
 #ifdef RELY_ON_DB
     removeService(conf,pid);
@@ -1169,7 +1172,7 @@ void runDismiss(maps* conf,char* pid){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0){
       map* statusInfo=createMap("JobID",pid);
       addToMap(statusInfo,"Status","Dismissed");
-      printStatusInfo(conf,statusInfo,"Dismiss");
+      printStatusInfo(conf,statusInfo,(char*)"Dismiss");
       free(statusInfo);
     }else{
       setMapInMaps(conf,"lenv","error","false");

@@ -1,8 +1,39 @@
+--------------------------------------------------------------------------------
+--
+-- PostgreSQL definition of tables required byt the ZOO-Kernel version >= 1.8.0
+-- if the the metadb is activated
+--
+-- Copyright (C) 2018-2022 GeoLabs SARL. All rights reserved.
+-- Author: Gérald Fenoy <gerald.fenoy@geolabs.fr>
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+--
+--------------------------------------------------------------------------------
+-- If your database is not using UTF-8 per default then uncomment the following
+-- SET client_encoding = 'UTF8';
+--------------------------------------------------------------------------------
+
 create schema CollectionDB;
 
 set search_path = CollectionDB, pg_catalog;
 
-CREATE OR REPLACE FUNCTION update_Description() RETURNS trigger AS 
+CREATE OR REPLACE FUNCTION update_Description() RETURNS trigger AS
 $$
 DECLARE
 	i integer;
@@ -69,7 +100,7 @@ create table CollectionDB.DescriptionsAdditionalParametersAssignment (
 --
 -- See reference for primitive datatypes
 -- https://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes
--- 
+--
 create table CollectionDB.PrimitiveDataTypes (
        id serial primary key,
        name varchar(255)
@@ -273,8 +304,7 @@ create table CollectionDB.zoo_DeploymentMetadata (
     id serial primary key,
     executable_name varchar,
     configuration_identifier varchar,
-	service_type_id int references CollectionDB.zoo_ServiceTypes(id)
-);
+        service_type_id int references CollectionDB.zoo_ServiceTypes(id));
 
 create table CollectionDB.zoo_PrivateProcessInfo (
     id serial primary key
@@ -313,7 +343,8 @@ CREATE OR REPLACE VIEW public.ows_process AS
 	title,
 	abstract,
 	(SELECT service_type FROM CollectionDB.zoo_ServiceTypes WHERE id = (SELECT service_type_id FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id)))) as service_type,
-	(SELECT executable_name  as service_provider FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as service_provider,
+	(SELECT executable_name FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as service_provider,
+	(SELECT configuration_identifier FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as conf_id,
 	availability
 	FROM CollectionDB.ows_Process
 	WHERE

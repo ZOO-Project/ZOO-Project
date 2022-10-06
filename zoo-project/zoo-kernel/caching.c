@@ -265,7 +265,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fo=fopen(fname,"w+");
       char* origin=getProvenance(conf,request);
 #ifdef DEBUG
-      fprintf(stderr,"ORIGIN: %s\n",mimeType);
+      fprintf(stderr,"ORIGIN: %s\n",origin);
 #endif
       fwrite(origin,sizeof(char),strlen(origin),fo);
       fclose(fo);

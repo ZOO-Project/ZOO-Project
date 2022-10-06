@@ -751,8 +751,10 @@ map* getMapOrFill(map** ppmMap,const char *pccKey,const char* pccValue){
     if(pmTmp!=NULL){
       addToMap((*ppmMap),pccKey,pccValue);
     }
-    else
+    else{
       (*ppmMap)=createMap(pccKey,pccValue);
+      addToMap(*ppmMap,"shouldFree","true");
+    }
     pmTmp1=getMap(*ppmMap,pccKey);
   }
   return pmTmp1;
@@ -2002,3 +2004,48 @@ char* getValueFromMaps(maps* inputs,const char* name){
     }
     return res;
 }
+
+/**
+ * Replace a char by another one in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
+void
+_translateChar (char *str, char toReplace, char toReplaceBy)
+{
+  int i = 0, len = strlen (str);
+  for (i = 0; i < len; i++)
+    {
+      if (str[i] == toReplace)
+        str[i] = toReplaceBy;
+    }
+}
+
+/**
+ * Replace all "val" occurence with the corresponding "rep" value in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
+char*
+translateCharMap (const char *str, map* rep)
+{
+  char* res=zStrdup(str);
+  if(rep!=NULL){
+    int i = 0, len=1;
+    map* pmLen=getMap(rep,"length");
+    if(pmLen!=NULL)
+      len=atoi(pmLen->value);
+    for (i = 0; i < len; i++)
+      {
+	map* pmVal=getMapArray(rep,"val",i);
+	map* pmRep=getMapArray(rep,"rep",i);
+	_translateChar(res,pmVal->value[0],pmRep->value[0]);
+      }
+  }
+  return res;
+}
+
