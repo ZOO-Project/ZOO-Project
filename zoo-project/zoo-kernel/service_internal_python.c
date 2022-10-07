@@ -220,13 +220,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #endif
 	map* home = NULL;
 // knut: also set PYTHONHOME environment variable so that Python can load standard modules
-#ifndef WIN32	
+#ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);  
   //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
 	  setenv("PYTHONHOME", home->value, 1); // overwrite
   }
-#else	
+#else
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
@@ -236,7 +236,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  SetEnvironmentVariable("PYTHONHOME", home->value);
   }
   char buffer[128];
-#endif  
+#endif
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
@@ -250,12 +250,20 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   Py_Initialize();  
 #if PY_MAJOR_VERSION >= 3  
   PyEval_InitThreads();
-  PyImport_ImportModule("zoo");  
+  PyImport_ImportModule("zoo");
 #else
   init_zoo();
-#endif 
+#endif
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION < 10
   mainstate = PyThreadState_Swap(NULL);
   PyEval_ReleaseLock();
+#else
+#if PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 10
+  mainstate = PyEval_SaveThread();
+#else
+  mainstate = PyThreadState_Swap(NULL);
+#endif
+#endif 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   PyObject *pName, *pModule, *pFunc;
@@ -287,6 +295,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   } 
 
   pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
   int res=SERVICE_FAILED;
   if (pModule != NULL) {
     pFunc=PyObject_GetAttrString(pModule,s->name);
@@ -359,7 +368,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
-  if(PyString_Check(trace)){
+  if(trace!=NULL && PyString_Check(trace)){
     pbt=(char*)malloc((8+strlen(PyString_AsString(trace)))*sizeof(char));
     sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
   }
@@ -367,9 +376,8 @@ void PythonZooReport(maps* m,const char* module,int load){
     fprintf(stderr,"EMPTY TRACE ?");
 
   trace=NULL;
-  
   trace=PyObject_Str(ptype);
-  if(PyString_Check(trace)){
+  if(trace!=NULL && PyString_Check(trace) && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
     if(pbt!=NULL)
       free(pbt);
@@ -380,7 +388,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   else
     fprintf(stderr,"EMPTY TRACE ?");
   
-  if(ptraceback!=NULL){
+  if(ptraceback!=NULL && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
     pName = PyString_FromString("traceback");
     pModule = PyImport_Import(pName);
@@ -406,14 +414,19 @@ void PythonZooReport(maps* m,const char* module,int load){
     }
     free(tpbt);
   }
-  if(load>0){
+  if(load>0 && pbt!=NULL){
     char *tmpS=(char*)malloc((strlen(tmp0)+strlen(module)+strlen(pbt)+1)*sizeof(char));
     sprintf(tmpS,tmp0,module,pbt);
     errorException(m,tmpS,"NoApplicableCode",NULL);
     free(tmpS);
-  }else
-    errorException(m,pbt,"NoApplicableCode",NULL);
-  free(pbt);
+  }else{
+    if(pbt!=NULL)
+      errorException(m,pbt,"NoApplicableCode",NULL);
+    else
+      errorException(m,_("Something went wrong but, no Python traceback can be fecthed."),"NoApplicableCode",NULL);
+  }
+  if(pbt!=NULL)
+    free(pbt);
 }
 
 /**
@@ -507,7 +520,6 @@ PyDictObject* PyDict_FromMap(map* t){
 	      lcvalue=PyString_FromString(cMap->value);;
 	    }else
 	      lcvalue=Py_None;
-
 	    if(PyList_SetItem(value,i,lvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
@@ -522,25 +534,27 @@ PyDictObject* PyDict_FromMap(map* t){
 	    }
 	  }
 	  
-	  PyObject* lmvalue;
-	  map* mMap=getMapArray(tmp,tmap->name,i);
-	  if(mMap!=NULL){
-	    lmvalue=PyString_FromString(mMap->value);
-	  }else
-	    lmvalue=Py_None;
+	  if(tmap!=NULL){
+	    PyObject* lmvalue;
+	    map* mMap=getMapArray(tmp,tmap->name,i);
+	    if(mMap!=NULL){
+	      lmvalue=PyString_FromString(mMap->value);
+	    }else
+	      lmvalue=Py_None;
 	  
-	  if(PyList_SetItem(mvalue,i,lmvalue)<0){
+	    if(PyList_SetItem(mvalue,i,lmvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
-	  } 
-	  
+	    }
+	  }
 	}
 
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
-	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
+
+	if(tmap!=NULL && PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
@@ -664,6 +678,10 @@ maps* _mapsFromPyDict(PyDictObject* t){
 	}
 
 	maps* ptr = (maps*) malloc(MAPS_SIZE);
+	ptr->content = NULL;
+	ptr->child = NULL;
+	ptr->next = NULL;
+
 	maps* res = ptr;	
 	
 	PyObject* key;

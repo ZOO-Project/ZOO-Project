@@ -41,7 +41,7 @@ sshapi.o: sshapi.c
 	$(CXX) -fPIC ${CFLAGS} -c sshapi.c
 
 service_json.o: service_json.c
-	$(CXX) -fPIC ${JS_ENABLED} ${GDAL_CFLAGS}  ${XML2CFLAGS} ${CFLAGS} ${JSON_CFLAGS} -c service_json.c
+	$(CXX) -fPIC ${JS_ENABLED} ${GDAL_CFLAGS}  ${XML2CFLAGS} ${CFLAGS} ${JSON_CFLAGS} ${MS_CFLAGS} -c service_json.c
 
 service_callback.o: service_callback.c
 	$(CXX) -fPIC ${XML2CFLAGS} ${GDAL_CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c

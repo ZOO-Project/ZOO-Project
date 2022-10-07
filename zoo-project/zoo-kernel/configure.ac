@@ -5,9 +5,19 @@ AC_CONFIG_MACRO_DIR([macros])
 # Checks for programs.
 AC_PROG_YACC
 AC_PROG_CC
-AC_PROG_LEX
 AC_PROG_CXX
 AC_PROG_SED
+AC_PROG_AWK
+
+dnl autoconf 2.69 AC_PROG_LEX has no parameters
+dnl autoconf 2.70 AC_PROG_LEX prints a deprecation warning without params
+m4_if(m4_version_compare(m4_defn([AC_AUTOCONF_VERSION]), [2.70]), [-1], [dnl
+  dnl autoconf < 2.70
+  AC_PROG_LEX
+], [
+  dnl autoconf >= 2.70
+  AC_PROG_LEX([noyywrap])
+])
 
 # Checks for libraries.
 AC_CHECK_LIB([curl], [curl_easy_init,curl_easy_setopt,curl_easy_cleanup,curl_easy_perform])
@@ -432,11 +442,19 @@ AC_SUBST([GDAL_LIBS])
 
 AC_ARG_WITH([proj],
         [AS_HELP_STRING([--with-proj=PATH], [Specifies an alternative location for PROJ4 setup])],
-        [PROJPATH="$withval"], [PROJPATH=""])
+        [PROJPATH="$withval"], [PROJPATH="/usr"])
 
 # Extract the linker and include flags
+if test -f $PROJPATH/include/proj_api.h ; then
+   PJ_FULL_VERSION="$(grep 'define PJ_VERSION' /usr/include/proj_api.h | awk {'print $3'})"
+   PROJ_MAJOR_VERSION="$(echo ${PJ_FULL_VERSION:0:1})"
+   PROJ_VERSION="-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H -DPROJ_VERSION_MAJOR=${PROJ_MAJOR_VERSION}"
+else
+   PROJ_MAJOR_VERSION="$(grep "define PROJ_VERSION_MAJOR" -rni $PROJPATH/include/proj.h | awk {'print $3'})"
+   PROJ_VERSION="-DPROJ_VERSION_MAJOR=${PROJ_MAJOR_VERSION}"
+fi
+PROJ_CPPFLAGS="-I$PROJPATH/include ${PROJ_VERSION}"
 PROJ_LDFLAGS="-L$PROJPATH/lib"
-PROJ_CPPFLAGS="-I$PROJPATH/include"
 
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
@@ -474,7 +492,7 @@ else
 	fi
 fi
 
-GEOS_LDFLAGS=`$GEOSCONFIG --libs`
+GEOS_LDFLAGS=`$GEOSCONFIG --clibs`
 GEOS_CPPFLAGS=`$GEOSCONFIG --cflags`
 
 # Check headers file
@@ -1044,13 +1062,12 @@ else
 	else
 		ITK_LDFLAGS="-lITKBiasCorrection-$ITKVERS -lITKCommon-$ITKVERS -lITKIOImageBase-$ITKVERS -lITKKLMRegionGrowing-$ITKVERS -lITKLabelMap-$ITKVERS -lITKMesh-$ITKVERS -lITKMetaIO-$ITKVERS -lITKOptimizers-$ITKVERS -lITKPath-$ITKVERS -lITKPolynomials-$ITKVERS -lITKQuadEdgeMesh-$ITKVERS -lITKSpatialObjects-$ITKVERS -lITKStatistics-$ITKVERS -lITKVNLInstantiation-$ITKVERS -lITKWatersheds-$ITKVERS -litkNetlibSlatec-$ITKVERS -litksys-$ITKVERS -litkv3p_netlib-$ITKVERS -litkvcl-$ITKVERS -litkvnl-$ITKVERS -litkvnl_algo-$ITKVERS"
 	fi
-
-	if test -a "${OTBPATH}/include/OTB-${OTBVERS}" ; then 
-		OTB_RPATH="$OTBPATH/include/OTB-${OTBVERS}/"
+	if test -a "${OTBPATH}/include/OTB-${OTBVERS}" ; then
+	   	OTB_RPATH="$OTBPATH/include/OTB-${OTBVERS}/"
 		OTB_CPPFLAGS="-I${OTB_RPATH} -I${OTB_RPATH}ApplicationEngine -I$OTB_RPATH/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTB_RPATH/Utilities/ITK -I$OTB_RPATH/ -I$OTB_RPATH/IO -I$OTB_RPATH/UtilitiesAdapters/OssimAdapters -I$OTB_RPATH/UtilitiesAdapters/CurlAdapters -I$OTB_RPATH/Utilities/BGL -I$OTB_RPATH/UtilitiesAdapters/ITKPendingPatches -I$OTB_RPATH/Utilities/otbconfigfile $GDAL_CFLAGS"
 		OTB_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ -lOTBImageIO-$OTBVERS -lOTBCommon-$OTBVERS -lOTBApplicationEngine-$OTBVERS -L$ITKPATH/lib $ITK_LDFLAGS"
 	else
-		OTB_CPPFLAGS="-I${OTB_RPATH} -I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
+		OTB_CPPFLAGS="-I$OTBPATH/include/otb/ApplicationEngine -I$OTBPATH/include/otb/Common -I$ITKPATH/include/ITK-$ITKVERS -I$OTBPATH/include/otb/Utilities/ITK -I$OTBPATH/include/otb/ -I$OTBPATH/include/otb/IO -I$OTBPATH/include/otb/UtilitiesAdapters/OssimAdapters -I$OTBPATH/include/otb/UtilitiesAdapters/CurlAdapters -I$OTBPATH/include/otb/Utilities/BGL -I$OTBPATH/include/otb/UtilitiesAdapters/ITKPendingPatches -I$OTBPATH/include/otb/Utilities/otbconfigfile $GDAL_CFLAGS"
 		OTB_LDFLAGS="-L$OTBPATH/lib/otb -lOTBIO -lOTBCommon -lOTBApplicationEngine -L$ITKPATH/lib $ITK_LDFLAGS"
 
 	fi
@@ -1071,7 +1088,7 @@ else
 	#UVERS="$(echo -e '5.8\n$OTBVERS' | sort -r | head -n1)"
 	#if test "$OTBVERS" ==  "$UVERS" ; then 
 	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplicationRegistry.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplications();]])],
-			[AC_MSG_RESULT([checking for GetAvailableApplications... yes])],[AC_MSG_ERROR([checking for GetAvailableApplications... failed])])
+			[AC_MSG_RESULT([checking for GetAvailableApplications... yes])],[AC_MSG_WARN([checking for GetAvailableApplications... failed])])
 	#else
 	#	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include "otbWrapperApplication.h"]],[[std::vector<std::string> list = otb::Wrapper::ApplicationRegistry::GetAvailableApplication();]])],
 	#						   [AC_MSG_RESULT([checking for GetAvailableApplication... yes])],[AC_MSG_ERROR([checking for GetAvailableApplication... failed])])
