@@ -429,6 +429,12 @@ char* isInCache(maps* conf,char* request){
 /**
  * Read the downloaded file for a specific input
  *
+ * The map defining the input's metadata should contains, at least, the
+ * following fields:
+ *
+ *  - Reference: pointing to the URL to acces the resource
+ *  - Order: couter (starting at 1)
+ *
  * @param m the maps containing the settings of the main.cfg file
  * @param in the input
  * @param index the input index

@@ -540,7 +540,7 @@ char* _getStatusFile(maps* conf,char* pid){
   OGRFeature  *poFeature = NULL;
   const char *tmp1=NULL;
   int hasRes=-1;
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+81+1)*sizeof(char));
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+strlen(pid)+82+1)*sizeof(char));
   sprintf(sqlQuery,
 	  "select content from %s.responses where uuid=$$%s$$"
 	  " order by creation_time desc limit 1",schema->value,pid);

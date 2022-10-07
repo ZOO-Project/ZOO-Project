@@ -197,6 +197,21 @@ extern "C"
 
 
 /**
+ * Close any sqk backend connexion and call end_sql.
+ *
+ * @param pmsConf the maps pointer to the main configuration file
+ * @see close_sql,end_sql
+ */
+void cleanUpSql(maps* pmsConf){
+#if defined(META_DB) || defined(RELY_ON_DB)
+  map* pmDsNb=getMapFromMaps(pmsConf,"lenv","ds_nb");
+  if(pmDsNb!=NULL && atoi(pmDsNb->value)>1)
+    close_sql(pmsConf,1);
+  close_sql(pmsConf,0);
+  end_sql();
+#endif
+}
+/**
  * Replace a char by another one in a string
  *
  * @param str the string to update
@@ -1557,14 +1572,14 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
    * Extract serviceType to know what kind of service should be loaded
    */
 
-    memset(serviceNamespacePath,'\0',1024);
-    map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
-    map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
+  memset(serviceNamespacePath,'\0',1024);
+  map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
+  map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
 
-    if( zooServicesNamespaceMap && strlen(zooServicesNamespaceMap->value)>0 && zooServicesNamespacePathMap && strlen(zooServicesNamespacePathMap->value)>0){
-        sprintf(serviceNamespacePath,"%s/%s",zooServicesNamespacePathMap->value,zooServicesNamespaceMap->value);
-        setMapInMaps(m, "lenv","cwd", serviceNamespacePath);
-    }
+  if( zooServicesNamespaceMap && strlen(zooServicesNamespaceMap->value)>0 && zooServicesNamespacePathMap && strlen(zooServicesNamespacePathMap->value)>0){
+    sprintf(serviceNamespacePath,"%s/%s",zooServicesNamespacePathMap->value,zooServicesNamespaceMap->value);
+    setMapInMaps(m, "lenv","cwd", serviceNamespacePath);
+  }
 
   map *r_inputs = NULL;
   map* cwdMap=getMapFromMaps(m,"main","servicePath");
@@ -1585,7 +1600,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 
   map* libp = getMapFromMaps(m, "main", "libPath");
 
-  if (strlen (r_inputs->value) == 1
+  if (r_inputs!=NULL && strlen (r_inputs->value) == 1
       && strncasecmp (r_inputs->value, "C", 1) == 0)
   {
       if (libp != NULL && libp->value != NULL) {
@@ -2972,10 +2987,20 @@ runRequest (map ** inputs)
 		  free(jobId);
 		  freeMap(&error);
 		  free(error);
-		  freeMaps(&m);
-		  free(m);
 		  json_object_put(res);
 		  free(pcaCgiQueryString);
+		  map* pmTest=getMap(request_inputs,"shouldFree");
+		  if(pmTest!=NULL){
+		    freeMap (inputs);
+		    free (*inputs);
+		    *inputs=NULL;
+		    freeMap(&r_inputs);
+		    free (r_inputs);
+		    r_inputs=NULL;
+		  }
+		  cleanUpSql(m);
+		  freeMaps(&m);
+		  free(m);
 		  return 1;
 		}else{
 		  if(isRunning(m,jobId)>0){
@@ -2985,10 +3010,20 @@ runRequest (map ** inputs)
 		    free(jobId);
 		    freeMap(&error);
 		    free(error);
-		    freeMaps(&m);
-		    free(m);
 		    json_object_put(res);
 		    free(pcaCgiQueryString);
+		    map* pmTest=getMap(request_inputs,"shouldFree");
+		    if(pmTest!=NULL){
+		      freeMap (inputs);
+		      free (*inputs);
+		      *inputs=NULL;
+		      freeMap(&r_inputs);
+		      free (r_inputs);
+		      r_inputs=NULL;
+		    }
+		    cleanUpSql(m);
+		    freeMaps(&m);
+		    free(m);
 		    return 1;
 		  }else{
 		    char *Url0=getResultPath(m,jobId);
@@ -3062,16 +3097,24 @@ runRequest (map ** inputs)
 		      }
 
 		    }else{
-		      map* error=createMap("code","NoSuchJob");
-		      addToMap(error,"message",_("The JobID seem to be running on this server but not for this process id"));
-		      printExceptionReportResponseJ(m,error);
+		      free(Url0);
+		      runGetStatus(m,jobId,"GetResult");
 		      free(jobId);
-		      freeMap(&error);
-		      free(error);
-		      freeMaps(&m);
-		      free(m);
+		      free(sid);
 		      json_object_put(res);
 		      free(pcaCgiQueryString);
+		      map* pmTest=getMap(request_inputs,"shouldFree");
+		      if(pmTest!=NULL){
+			freeMap (inputs);
+			free (*inputs);
+			*inputs=NULL;
+			freeMap(&r_inputs);
+			free (r_inputs);
+			r_inputs=NULL;
+		      }
+		      cleanUpSql(m);
+		      freeMaps(&m);
+		      free(m);
 		      return 1;
 		    }
 		  }
@@ -3722,13 +3765,7 @@ runRequest (map ** inputs)
 	  if (strncasecmp (REQUEST, "GetStatus", 9) == 0 ||
 	      strncasecmp (REQUEST, "GetResult", 9) == 0){
 	    runGetStatus(m,r_inputs->value,REQUEST);
-#ifdef RELY_ON_DB
-	    map* dsNb=getMapFromMaps(m,"lenv","ds_nb");
-	    if(dsNb!=NULL && atoi(dsNb->value)>1)
-	      close_sql(m,1);
-	    close_sql(m,0);
-#endif
-	  
+	    cleanUpSql(m);
 	    freeMaps (&m);
 	    free(m);
 	    if(zooRegistry!=NULL){
@@ -4432,13 +4469,7 @@ runRequest (map ** inputs)
       cleanupCallbackThreads();
 #endif
 
-#ifdef RELY_ON_DB
-#ifdef META_DB
-      close_sql(m,1);
-#endif
-      close_sql(m,0);
-      end_sql();
-#endif
+      cleanUpSql(m);
       free(fbkpid);
       free(fbkpres);
       free (fbkp1);
@@ -4454,10 +4485,8 @@ runRequest (map ** inputs)
       free (flog);
     }
   else{
-    //InternetCloseHandle (&hInternet);  
-#ifdef META_DB
-    close_sql(m,0);
-#endif
+    //InternetCloseHandle (&hInternet);
+    cleanUpSql(m);
   }
 
   if(s1!=NULL){
@@ -4781,6 +4810,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    fflush (stderr);
 	    f0 = freopen (fbkp, "w+", stdout);
 	    rewind (stdout);
+
 #ifndef WIN32
 	    fclose (stdin);
 #endif
