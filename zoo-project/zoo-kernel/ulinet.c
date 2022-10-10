@@ -501,7 +501,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
 
-  if(memUse!=NULL && strcasecmp(memUse->value,"load")==0)
+  if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
     ldwFlags=INTERNET_FLAG_NO_CACHE_WRITE;
   
   switch(ldwFlags)

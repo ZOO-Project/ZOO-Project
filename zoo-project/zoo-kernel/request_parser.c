@@ -2059,16 +2059,21 @@ void parseCookie(maps** conf,const char* cookie){
  * Parse all the http requests possibily attached to inputs and, add them to the
  * request queue.
  *
+ * Add Reference and Order fields to the input's metadata map.
+ *
  * @param conf maps containing the main configuration file
  * @param inputs maps containing all the inputs
  * @param hInternet an HTINTERNET connection
  * @return 0 in case of success
+ * @see readCurrentInput
  */
 int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
   maps* curs=inputs;
   int iCnt=0;
   while(curs!=NULL){
     map* href=getMap(curs->content,"href");
+    if(href==NULL)
+      href=getMap(curs->content,"xlink:href");
     if(href!=NULL){
       char* pcaHeaders=(char *)malloc(22*sizeof(char));
       sprintf(pcaHeaders,"rb_headers_%d",iCnt);
@@ -2118,6 +2123,8 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
           addRequestToQueue(&conf,hInternet,(char *) href->value,true);
         }
       }
+      addIntToMap(curs->content,"Order",iCnt+1);
+      addToMap(curs->content,"Reference",href->value);
       iCnt++;
     }
     curs=curs->next;
