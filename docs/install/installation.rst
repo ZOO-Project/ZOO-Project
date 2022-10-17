@@ -15,12 +15,11 @@ steps :
 Build cgic
 ----------
 
-Run the following commands from the ``thirds/cgic`` directory to build
+Run the following commands from the ``thirds/cgic206`` directory to build
 the cgic library.
 
 ::
 
-   cd thirds/cgic
    make
 
 The cgic library originaly come from `http://www.boutell.com/cgic
