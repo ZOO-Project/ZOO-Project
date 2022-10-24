@@ -199,6 +199,7 @@ extern "C" {
  * The global undelployed status for a service
  */
 #define SERVICE_UNDEPLOYED 7
+
 /**
  * The memory size to create an elements
  */
@@ -342,6 +343,8 @@ extern "C" {
     "SERVICE_SUCCEEDED",
     "SERVICE_FAILED",
     "SERVICE_DISMISSED",
+    "SERVICE_DEPLOYED",
+    "SERVICE_UNDEPLOYED",
     NULL
   };
 

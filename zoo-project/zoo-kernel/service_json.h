@@ -84,9 +84,10 @@ extern "C" {
   /**
    * Name and corresponding attributes depending on the WPS version
    */
-  static const char* jcapabilities[4]={
+  static const char* jcapabilities[]={
     "jobControlOptions","sync-execute async-execute dismiss",
-    "outputTransmission","value reference"
+    "outputTransmission","value reference",
+    "jobControlOptions","async-execute"
   };
 
   /**
@@ -147,6 +148,9 @@ extern "C" {
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
+  void handleDRUError(maps*);
+  int convertOGCAppPkgToExecute(maps*,map*,json_object**);
+  json_object* convertCwlToOGCAppPkg(maps*,map*);
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);
 #ifdef __cplusplus
 }

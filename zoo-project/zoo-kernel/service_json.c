@@ -870,6 +870,15 @@ extern "C" {
       if(tmpMap!=NULL){
 	json_object_object_add(res,"description",json_object_new_string(_ss(tmpMap->value)));
       }
+      tmpMap=getMap(serv->content,"mutable");
+      if(tmpMap==NULL)
+	json_object_object_add(res,"mutable",json_object_new_boolean(TRUE));
+      else{
+	if(strcmp(tmpMap->value,"false")==0)
+	  json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
+	else
+	  json_object_object_add(res,"mutable",json_object_new_boolean(TRUE));
+      }
       tmpMap=getMap(serv->content,"processVersion");
       if(tmpMap!=NULL){
 	if(strlen(tmpMap->value)<5){
@@ -891,6 +900,11 @@ extern "C" {
 	printJAdditionalParameters(m,serv->additional_parameters,res);
       }
       map* sType=getMap(serv->content,"serviceType");
+      map* pmMutable=getMap(serv->content,"mutable");
+      if(pmMutable==NULL || strncasecmp(pmMutable->value,"true",4)==0){
+	i=2;
+	limit=6;
+      }
       for(;i<limit;i+=2){
 	json_object *res2=json_object_new_array();
 	char *saveptr;
@@ -2831,7 +2845,10 @@ extern "C" {
 	      }
 	      json_object_object_add(methodc,"parameters",cc2);
 	    }
-	    if(/*i==1 && */cMap!=NULL && strncasecmp(cMap->value,"post",4)==0){
+	    if(/*i==1 && */cMap!=NULL &&
+	       (strncasecmp(cMap->value,"post",4)==0
+		||
+		strncasecmp(cMap->value,"put",3)==0)){
 	      int len=1;
 	      map* pmRequestBodyLength=getMapArray(tmpMaps->content,"requestBody_length",i);
 	      if(pmRequestBodyLength!=NULL)
@@ -3022,7 +3039,93 @@ extern "C" {
     json_object_array_add(res3,res4);
     json_object_object_add(res,"servers",res3);
   }
-  
+
+  /**
+   * Print exception report in case Deploy or Undeploy failed to execute
+   *
+   * @param conf the main configuration maps pointer
+   */
+  void handleDRUError(maps* conf){
+    map* pmError=getMapFromMaps(conf,"lenv","jsonStr");
+    setMapInMaps(conf,"lenv","hasPrinted","false");
+    setMapInMaps(conf,"lenv","no-headers","false");
+    setMapInMaps(conf,"headers","Status","500 Internal Server Error");
+    setMapInMaps(conf,"lenv","status_code","500 Internal Server Error");
+    if(pmError!=NULL){
+      printHeaders(conf);
+      printf("\r\n");
+      printf(pmError->value);
+      printf("\n");
+    }else{
+      pmError=createMap("code","InternalError");
+      map* pmORequestMethod=getMapFromMaps(conf,"lenv","orequest_method");
+      if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0)
+	addToMap(pmError,"message",_("Failed to update the process!"));
+      else
+	addToMap(pmError,"message",_("Failed to deploy process!"));
+      printExceptionReportResponseJ(conf,pmError);
+      freeMap(&pmError);
+      free(pmError);
+    }
+    setMapInMaps(conf,"lenv","no-headers","true");
+    setMapInMaps(conf,"lenv","hasPrinted","true");
+  }
+
+  json_object* convertCwlToOGCAppPkg(maps* conf,map* request_inputs){
+    json_object* pjRes=NULL;
+    map* pmJRequest=getMap(request_inputs,"jrequest");
+    map* pmCgiContentType=getMapFromMaps(conf,"request","Content-Type");
+    if(pmJRequest!=NULL && pmCgiContentType!=NULL && strstr(pmCgiContentType->value,"cwl")!=NULL){
+      pjRes=json_object_new_object();
+      json_object *pjExecutionUnit=json_object_new_object();
+      json_object *pjExecutionUnitFormat=json_object_new_object();
+      json_object_object_add(pjExecutionUnitFormat,"mediaType",json_object_new_string("application/cwl"));
+      json_object_object_add(pjExecutionUnit,"value",json_object_new_string(pmJRequest->value));
+      json_object_object_add(pjExecutionUnit,"format",pjExecutionUnitFormat);
+      json_object* pjExecutionUnits=json_object_new_array();
+      json_object_array_add(pjExecutionUnits,pjExecutionUnit);
+      json_object_object_add(pjRes,"executionUnit",pjExecutionUnits);
+    }
+    return pjRes;
+  }
+
+  /**
+   * Convert an OGC Application Package into a standard execute payload
+   *
+   * @param conf the main configuration maps pointer
+   * @param request_inputs map containing the request inputs
+   * @param pjRequest the json_object corresponding to the initial payload
+   */
+  int convertOGCAppPkgToExecute(maps* conf,map* request_inputs,json_object** pjRequest){
+    json_object* pjRes=json_object_new_object();
+    json_object* pjProcessDescription=NULL;
+    json_object* pjExecutionUnit=NULL;
+    if(json_object_object_get_ex(*pjRequest, "processDescription", &pjProcessDescription)==FALSE){
+      if(json_object_object_get_ex(*pjRequest, "executionUnit", &pjExecutionUnit)!=FALSE){
+	json_object* pjInputs=json_object_new_object();
+	json_object_object_add(pjInputs,"applicationPackage",json_object_get(pjExecutionUnit));
+	json_object_object_add(pjRes,"inputs",pjInputs);
+	json_object_put(*pjRequest);
+	*pjRequest=json_object_get(pjRes);
+	const char* jsonStr=json_object_to_json_string_ext(*pjRequest,JSON_C_TO_STRING_NOSLASHESCAPE);
+	setMapInMaps(conf,"lenv","jrequest",jsonStr);
+      }
+      json_object_put(pjRes);
+    }
+    return 0;
+  }
+
+  /**
+   * Print exception report in case Deploy or Undeploy failed to execute
+   *
+   * @param conf the main configuration maps pointer
+   */
+  int parseProcessDescription(maps* conf){
+    fprintf(stderr,"Should parse process description %s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
+    return 0;
+  }
+
 #ifdef __cplusplus
 }
 #endif

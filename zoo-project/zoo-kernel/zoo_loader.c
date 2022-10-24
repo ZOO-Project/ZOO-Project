@@ -100,8 +100,12 @@ int cgiMain(){
 
     if(strncasecmp(cgiRequestMethod,"delete",6)==0){
         pmaRequest=createMap("jrequest","DELETE");
-    } else if((strncmp(cgiContentType,"application/json",16)==0 || strncmp(cgiContentType,"application/cwl",15)==0 )&&
-            (strncasecmp(cgiRequestMethod,"post",4)==0 )){
+    } else if((strncmp(cgiContentType,"application/json",16)==0
+	       || strstr(cgiContentType,"json")!=NULL
+	       || strncmp(cgiContentType,"application/cwl",15)==0 )&&
+            (strncasecmp(cgiRequestMethod,"post",4)==0
+	     ||
+	     strncasecmp(cgiRequestMethod,"put",3)==0)){
        char *buffer=new char[2];
        char *res=NULL;
        int r=0;
