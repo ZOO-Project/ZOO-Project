@@ -977,13 +977,33 @@ map* getMapArray(map* pmMap,const char* pccKey,int iIndex){
 }
 
 /**
+ * Get the key name for a specific map array element
+ *
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
+ * @param iIndex of the MapArray
+ * @return an allocated char pointer containing the key name
+ * @warning make sure to free resources returned by this function
+ */
+char* getMapArrayKey(map* pmMap,const char* pccKey,int iIndex){
+  char* pcaTmp=(char*)malloc((strlen(pccKey)+5)*sizeof(char));
+  if(iIndex>0)
+    sprintf(pcaTmp,"%s_%d",pccKey,iIndex);
+  else
+    sprintf(pcaTmp,"%s",pccKey);
+#ifdef DEBUG
+  fprintf(stderr,"** KEY %s\n",pcaTmp);
+#endif
+  return pcaTmp;
+}
+
+/**
  * Add a key value in a MapArray for a specific index
  *
  * @param pmMap the map to search for the key
  * @param pccKey the key to search in the map
  * @param iIndex the index of the MapArray 
  * @param pccValue the value to set in the MapArray 
- * @return a pointer on the map found or NULL if not found
  */
 void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
   char acTmp[1024];
@@ -2047,5 +2067,73 @@ translateCharMap (const char *str, map* rep)
       }
   }
   return res;
+}
+
+
+/**
+ * Update the counter value (in conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to update (serviceCnt or serviceCounter)
+ * @param type char pointer can be "incr" for incrementing the value by 1, other
+ * will descrement the value by 1
+ */
+void updateCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv",field);
+  if(pmTmp!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    if(strncmp(type,"incr",4)==0)
+      iCnt++;
+    else
+      iCnt--;
+    char* pcaTmp=(char*) malloc((10+1)*sizeof(char));
+    sprintf(pcaTmp,"%d",iCnt);
+    setMapInMaps(conf,"lenv",field,pcaTmp);
+    free(pcaTmp);
+  }
+}
+
+/**
+ * Compare a value with conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to compare with (serviceCntLimit or serviceCntSkip)
+ * @param type comparison operator can be : elower, lower, eupper, upper, or
+ * equal
+ * @return boolean resulting of the comparison between the values
+ */
+bool compareCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv","serviceCnt");
+  map* pmTmp1=getMapFromMaps(conf,"lenv",field);
+
+  if(pmTmp!=NULL && pmTmp1!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    int iCntOther=atoi(pmTmp1->value);
+    if(strncmp(field,"serviceCntLimit",15)==0){
+      pmTmp1=getMapFromMaps(conf,"lenv","serviceCntSkip");
+      if(pmTmp1!=NULL)
+	iCntOther+=atoi(pmTmp1->value);
+    }
+    if(strncmp(type,"lower",5)==0)
+      return iCnt<iCntOther;
+    else{
+      if(strncmp(type,"elower",6)==0)
+	return iCnt<=iCntOther;
+      else{
+	if(strncmp(type,"eupper",6)==0)
+	  return iCnt>=iCntOther;
+	else{
+	  if(strncmp(type,"upper",5)==0)
+	    return iCnt>iCntOther;
+	  else
+	    return iCnt==iCntOther;
+	}
+      }
+    }
+  }else
+    if(strncmp(type,"equal",5)==0)
+      return false;
+    else
+      return true;
 }
 
