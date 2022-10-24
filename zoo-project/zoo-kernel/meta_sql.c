@@ -465,20 +465,22 @@ int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
     const char *tmp1;
     poFeature = res->GetNextFeature();
     while( poFeature != NULL ){
-      service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
+      if(compareCnt(conf,"serviceCntSkip","eupper") && compareCnt(conf,"serviceCntLimit","lower")){
+	service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
 #ifdef USE_HPC
-      addNestedOutputs(&s);
+	addNestedOutputs(&s);
 #endif
-      func(reg,conf,doc,n,s);
-      freeService(&s);
-      free(s);
+	func(reg,conf,doc,n,s);
+	freeService(&s);
+	free(s);
+      }
       OGRFeature::DestroyFeature( poFeature );
       poFeature = res->GetNextFeature();
       result++;
     }
     cleanFetchSql(conf,0,res);
   }
-  return result;
+  return result-1;
 }
 
 #endif
