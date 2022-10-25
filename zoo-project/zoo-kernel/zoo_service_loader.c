@@ -3601,7 +3601,10 @@ runRequest (map ** inputs)
 			     &request_output_real_format,&eres);
 	  if(res!=NULL)
 	    json_object_put(res);
-	  if(eres!=SERVICE_DEPLOYED && eres!=SERVICE_UNDEPLOYED)
+	  if(eres!=SERVICE_DEPLOYED && eres!=SERVICE_UNDEPLOYED &&
+	     ( (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)==0)
+		||
+		(undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)==0) ) )
 	    res=printJResult(m,s1,request_output_real_format,eres);
 	}
 	freeService (&s1);
@@ -3612,6 +3615,8 @@ runRequest (map ** inputs)
 	if(deployServiceProvider!=NULL && undeployServiceProvider!=NULL){
 	  //map* pmTmp=getMapFromMaps(m,"lenv","Identifier");
 	  map* pmTmp=getMap(request_inputs,"Identifier");
+	  if(pmTmp==NULL)
+	    pmTmp=getMapFromMaps(m,"lenv","Identifier");
 	  if((eres==SERVICE_DEPLOYED || eres==SERVICE_UNDEPLOYED) && pmTmp!=NULL &&
 	     (strcmp(pmTmp->value,deployServiceProvider->value)==0 || strcmp(pmTmp->value,undeployServiceProvider->value)==0) ) {
 	    map* pmDeployed=getMapFromMaps(m,"lenv","deployedServiceId");
@@ -3698,6 +3703,7 @@ runRequest (map ** inputs)
 	  }else{
 	    if((strcmp(pmTmp->value,deployServiceProvider->value)==0 || strcmp(pmTmp->value,undeployServiceProvider->value)==0) ){
 	      handleDRUError(m);
+	      res=NULL;
 	    }
 	  }
 	}

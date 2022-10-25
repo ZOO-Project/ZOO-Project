@@ -3058,11 +3058,26 @@ extern "C" {
       printf("\n");
     }else{
       pmError=createMap("code","InternalError");
+      map* pmMessage=getMapFromMaps(conf,"lenv","message");
       map* pmORequestMethod=getMapFromMaps(conf,"lenv","orequest_method");
-      if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0)
-	addToMap(pmError,"message",_("Failed to update the process!"));
-      else
-	addToMap(pmError,"message",_("Failed to deploy process!"));
+      if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0){
+	if(pmMessage!=NULL){
+	  char* pcaMessage=(char*)malloc((strlen(pmMessage->value)+strlen(_("Failed to update the process!"))+1)*sizeof(char));
+	  sprintf(pcaMessage,"%s %s",_("Failed to update the process!"),pmMessage->value);
+	  addToMap(pmError,"message",pcaMessage);
+	  free(pcaMessage);
+	}else
+	  addToMap(pmError,"message",_("Failed to update the process!"));
+      }
+      else{
+	if(pmMessage!=NULL){
+	  char* pcaMessage=(char*)malloc((strlen(pmMessage->value)+strlen(_("Failed to deploy process!"))+1)*sizeof(char));
+	  sprintf(pcaMessage,"%s %s",_("Failed to deploy process!"),pmMessage->value);
+	  addToMap(pmError,"message",pcaMessage);
+	  free(pcaMessage);
+	}else
+	  addToMap(pmError,"message",_("Failed to deploy process!"));
+      }
       printExceptionReportResponseJ(conf,pmError);
       freeMap(&pmError);
       free(pmError);
@@ -3071,6 +3086,13 @@ extern "C" {
     setMapInMaps(conf,"lenv","hasPrinted","true");
   }
 
+  /**
+   * Convert a CWL to OGC Application Package format
+   *
+   * @param conf the main configuration maps pointer
+   * @param request_inputs map containing the request inputs
+   * @param pjRequest the json_object corresponding to the initial payload
+   */
   json_object* convertCwlToOGCAppPkg(maps* conf,map* request_inputs){
     json_object* pjRes=NULL;
     map* pmJRequest=getMap(request_inputs,"jrequest");
@@ -3095,6 +3117,7 @@ extern "C" {
    * @param conf the main configuration maps pointer
    * @param request_inputs map containing the request inputs
    * @param pjRequest the json_object corresponding to the initial payload
+   * @return 0 in case of success.
    */
   int convertOGCAppPkgToExecute(maps* conf,map* request_inputs,json_object** pjRequest){
     json_object* pjRes=json_object_new_object();
