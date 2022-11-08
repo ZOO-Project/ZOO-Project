@@ -1321,6 +1321,9 @@ void initAllEnvironment(maps* conf,map* request_inputs,
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
     addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
   }
+  if(strlen(cgiAuthType)>0){
+    addToMap(_tmpMaps->content,"HTTP_AUTHORIZATION",cgiAuthType);
+  }
   addMapsToMaps (&conf, _tmpMaps);
   freeMaps (&_tmpMaps);
   free (_tmpMaps);
@@ -1351,7 +1354,7 @@ void initAllEnvironment(maps* conf,map* request_inputs,
     setMapInMaps (conf, "lenv", "uusid", test1->value);
   }
 #endif
-  
+
 }
 
 /**
@@ -1486,6 +1489,56 @@ void register_signals(void (func)(int)){
   signal (SIGABRT, func);
 #endif
 }
+
+#ifdef USE_AMQP
+/**
+ * Publish a message in RabbitMQ
+ *
+ * @param pmsConf the maps pointing to the main configuration file
+ * @param pmRequest the request as it has been parsed till now
+ * @param pmsInpuits the inputs maps
+ * @param pmsOutpuits the outputs maps
+ */
+void publish_amqp_msg(maps* pmsConf,int* eres,map* pmRequest,maps* pmsInputs,maps* pmsOututs){
+  // Publish message in RabbitMQ
+  // m: the main configuration file
+  // ** Not used ** s1: the service to execute
+  // request_inputs: the request as it has been parsed till now
+  // request_input_real_format: input maps
+  // request_output_real_format: output maps
+
+  init_amqp(pmsConf);
+  *eres = SERVICE_ACCEPTED;
+  json_object *poMsg = json_object_new_object();
+
+  maps* lenv=getMaps(pmsConf,"lenv");
+  json_object *maps1_obj = mapToJson(lenv->content);
+  json_object_object_add(poMsg,"main_lenv",maps1_obj);
+
+  lenv=getMaps(pmsConf,"subscriber");
+  if(lenv!=NULL){
+    json_object *maps1_obj = mapToJson(lenv->content);
+    json_object_object_add(poMsg,"main_subscriber",maps1_obj);
+  }
+
+  json_object *req_format_jobj = mapsToJson(pmsInputs);
+  json_object_object_add(poMsg,"request_input_real_format",req_format_jobj);
+
+  json_object *req_jobj = mapToJson(pmRequest);
+  json_object_object_add(poMsg,"request_inputs",req_jobj);
+
+  json_object *outputs_jobj = mapsToJson(pmsOututs);
+  json_object_object_add(poMsg,"request_output_real_format",outputs_jobj);
+
+  bind_amqp();
+  init_confirmation();
+  if ( (send_msg(json_object_to_json_string_ext(poMsg,JSON_C_TO_STRING_PLAIN),"application/json") != 0) ){
+    *eres = SERVICE_FAILED;
+  }
+  close_amqp();
+  json_object_put(poMsg);
+}
+#endif
 
 /**
  * Load a service provider and run the service function.
@@ -2391,6 +2444,8 @@ runRequest (map ** inputs)
     freeMaps(&m1);
     free(m1);
 
+    initAllEnvironment(m,request_inputs,ntmp,"jrequest");
+
     // retrieves the deploy service provider from main.cfg
     map* deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
     map* undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
@@ -2440,6 +2495,7 @@ runRequest (map ** inputs)
 	    pcaTmp[f_status.st_size]=0;
 	    addToMap(request_inputs,"jrequest",pcaTmp);
 	    dumpMap(request_inputs);
+	    setMapInMaps(m,"renv","jrequest",pcaTmp);
 	    free(pcaTmp);
 	  }
 	  fclose(pfRequest);
@@ -2487,6 +2543,10 @@ runRequest (map ** inputs)
 	free(pcaCgiQueryString);
 	pcaCgiQueryString=(char*)malloc((strlen(deployServiceProvider->value)+22)*sizeof(char));
 	sprintf(pcaCgiQueryString,"/processes/%s/execution",deployServiceProvider->value);
+#ifndef USE_AMQP
+	setMapInMaps(m,"lenv","noRunSql","false");
+#endif
+
 	if(strncasecmp(cgiRequestMethod,"PUT",3)==0){
 	  setMapInMaps(m,"lenv","request_method","POST");
 	  setMapInMaps(m,"lenv","orequest_method","PUT");
@@ -3233,8 +3293,6 @@ runRequest (map ** inputs)
 	return 1;
       }
       else if(strcasecmp(pmCgiRequestMethod->value,"post")==0 ){
-	initAllEnvironment(m,request_inputs,ntmp,"jrequest");
-
 	/* - /processes/{processId}/execution Execution (POST) */
 	eres = SERVICE_STARTED;
 	map* req=getMapFromMaps(m,"renv","jrequest");
@@ -3601,6 +3659,7 @@ runRequest (map ** inputs)
 			     &request_output_real_format,&eres);
 	  if(res!=NULL)
 	    json_object_put(res);
+
 	  if(eres!=SERVICE_DEPLOYED && eres!=SERVICE_UNDEPLOYED &&
 	     ( (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)==0)
 		||
@@ -3645,6 +3704,28 @@ runRequest (map ** inputs)
 	      char* pcaFileName=(char*)malloc((strlen(newPath)+strlen(pmDeployed->value)+7)*sizeof(char));
 	      sprintf(pcaFileName,"%s/%s.json",newPath,pmDeployed->value);
 	      if(strcmp(pmTmp->value,deployServiceProvider->value)==0){
+#ifdef USE_AMQP
+		setMapInMaps(m,"lenv","noRunSql","true");
+		maps* pmsOutputsBis=NULL;
+		maps* pmsItem=request_output_real_format;
+		while(pmsItem!=NULL){
+		  maps* pmsCurrent=createMaps(pmsItem->name);
+		  map* pmContent=pmsItem->content;
+		  while(pmContent!=NULL){
+		    if(strcasecmp(pmContent->name,"value")!=0 &&
+		       strcasecmp(pmContent->name,"size")!=0 )
+		      if(pmsCurrent->content==NULL)
+			pmsCurrent->content=createMap(pmContent->name,pmContent->value);
+		      else
+			addToMap(pmsCurrent->content,pmContent->name,pmContent->value);
+		    pmContent=pmContent->next;
+		  }
+		  pmsItem=pmsItem->next;
+		}
+		publish_amqp_msg(m,&eres,request_inputs,request_input_real_format,pmsOutputsBis);
+		freeMaps(&pmsOutputsBis);
+		free(pmsOutputsBis);
+#endif
 		setMapInMaps(m,"lenv","no-headers","true");
 		FILE*  pfRequest=fopen(pcaFileName,"wb+");
 		if(pfRequest!=NULL){
@@ -3674,8 +3755,9 @@ runRequest (map ** inputs)
 		  setMapInMaps(m,"headers","Status","204 No Content");
 		printHeaders(m);
 		printf("Location: %s/processes/%s\r\n",pmRootUrl->value,pmDeployed->value);
-		if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0)
+		if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0){
 		  printf("Status: 204 No Content\r\n\r\n");
+		}
 		else{
 		  printf("Status: 201 Created\r\n\r\n");
 		  printf(jsonStr);
@@ -3687,7 +3769,8 @@ runRequest (map ** inputs)
 		//json_object_put(res5);
 		setMapInMaps(m,"lenv","no-header","true");
 		setMapInMaps(m,"lenv","hasPrinted","true");
-		json_object_put(res);
+		//if(res!=NULL)
+		//  json_object_put(res);
 		res=NULL;
 	      }else
 		if(pmTmp!=NULL && strcmp(pmTmp->value,undeployServiceProvider->value)==0){
@@ -3695,6 +3778,7 @@ runRequest (map ** inputs)
 		  printHeaders(m);
 		  printf("Status: 204 No Content\r\n\r\n");
 		  setMapInMaps(m,"lenv","hasPrinted","true");
+		  res=NULL;
 		}
 	      free(pcaFileName);
 	    }else{
@@ -4807,7 +4891,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      setMapInMaps(lconf,"main","executionType","xml");
 	      initAllEnvironment(lconf,request_inputs,ntmp,"xrequest");
 	    }
-	    // Update every lenv map add add them to the main conf maps lenv section
+	    // Update every lenv map and add them to the main conf maps lenv section
 	    map* pmTmp0=*lenv;
 	    while(pmTmp0!=NULL){
 	      setMapInMaps(lconf,"lenv",pmTmp0->name,pmTmp0->value);
@@ -4830,7 +4914,6 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    invokeCallback(lconf,NULL,NULL,0,0);
 #endif
 	    invokeBasicCallback(lconf,SERVICE_STARTED);
-
 
 	    // Populate the Registry
 	    char conf_dir[1024];
@@ -5132,8 +5215,11 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      eres=-1;//SERVICE_FAILED;
 	    }else{
 	      map* testMap=getMapFromMaps(lconf,"main","memory");
-	      if(testMap==NULL || strcasecmp(testMap->value,"load")!=0)
+	      if(testMap==NULL || strcasecmp(testMap->value,"load")!=0){
 		dumpMapsValuesToFiles(&lconf,&request_input_real_format);
+	      }
+	      // TODO: set size to 0 for every outputs
+	      //setMapInMaps(request_output_real_format,"Result","size","0");
 	      loadServiceAndRun (&lconf, s1, request_inputs,
 				 &request_input_real_format,
 				 &request_output_real_format, &eres);
