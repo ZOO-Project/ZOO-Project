@@ -2547,7 +2547,10 @@ extern "C" {
       else
 	json_object_object_add(cc1,"application/json",cc0);
       json_object *cc2=json_object_new_object();
-      json_object_object_add(cc2,"content",cc1);
+      if(strcmp(code,"204")!=0)
+	json_object_object_add(cc2,"content",cc1);
+      else
+	json_object_put(cc1);
       json_object_object_add(cc2,"description",json_object_new_string(msg));
       json_object_object_add(res,code,cc2);
     }
@@ -2605,7 +2608,7 @@ extern "C" {
 	}
 	else
 	  json_object_object_add(res6,"type",json_object_new_string("string"));
-      
+
 	tmpMap=getMap(tmpMaps1->content,"enum");
 	if(tmpMap!=NULL){
 	  char *saveptr12;
@@ -2685,9 +2688,62 @@ extern "C" {
     }
   }
 
+  /**
+   * Add a securityScheme to the OpenAPI components/securitySchemes object
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param fName the key to add to the res json object
+   * @param res the json object to store the content
+   */
+  void addSecurityScheme(maps* pmsConf,const char* fName,json_object* res){
+    json_object *poJsonObject=json_object_new_object();
+    maps* pmsTmp=getMaps(pmsConf,"osecurity");
+    // Get type
+    map* pmTmp=getMap(pmsTmp->content,"type");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"type",json_object_new_string(pmTmp->value));
+    // Get scheme if any
+    pmTmp=getMap(pmsTmp->content,"scheme");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"scheme",json_object_new_string(pmTmp->value));
+    // Get format if any
+    pmTmp=getMap(pmsTmp->content,"format");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"bearerFormat",json_object_new_string(pmTmp->value));
+    // Get the in key if any (for type=apiKey)
+    pmTmp=getMap(pmsTmp->content,"in");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"in",json_object_new_string(pmTmp->value));
+    // Get the name of the apiKey
+    pmTmp=getMap(pmsTmp->content,"oname");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"name",json_object_new_string(pmTmp->value));
+    json_object_object_add(res,fName,poJsonObject);
+  }
+
+  /**
+   * Produce the JSON object for api securitySchemes
+   *
+   * @param conf the maps containing the settings of the main.cfg file
+   * @param res the JSON object to populate with the parameters
+   */
+  void produceApiSecuritySchemes(maps* conf,json_object* res){
+    json_object *res9=json_object_new_object();
+    maps* tmpMaps1=getMaps(conf,"osecurity");
+    map* tmpMap2=getMapFromMaps(conf,"osecurity","name");
+    char *saveptr12;
+    char *tmps12 = strtok_r (tmpMap2->value, ",", &saveptr12);
+    while(tmps12!=NULL){
+      addSecurityScheme(conf,tmps12,res9);
+      tmps12 = strtok_r (NULL, ",", &saveptr12);
+    }
+    json_object_object_add(res,"securitySchemes",res9);
+  }
+
   void produceApiComponents(maps*conf,json_object* res){
     json_object* res1=json_object_new_object();
     produceApiParameters(conf,res1);
+    produceApiSecuritySchemes(conf,res1);
     json_object_object_add(res,"components",res1);
   }
   
@@ -2761,6 +2817,22 @@ extern "C" {
 	    map* vMap=getMapArray(tmpMaps->content,"title",i);
 	    if(vMap!=NULL)
 	      json_object_object_add(methodc,"summary",json_object_new_string(_(vMap->value)));
+	    vMap=getMapArray(tmpMaps->content,"secured",i);
+	    if(vMap!=NULL){
+	      json_object *poSecurity=json_object_new_array();
+	      json_object *poScopes=json_object_new_array();
+	      map* pmSMap=getMapArray(tmpMaps->content,"scopes",i);
+	      char *pcSaveptr;
+	      char *pcTmps = strtok_r (tmpMap->value, ",", &pcSaveptr);
+	      while(pcTmps!=NULL){
+		json_object_array_add(poScopes,json_object_new_string(pcTmps));
+		pcTmps = strtok_r (NULL, ",", &pcSaveptr);
+	      }
+	      json_object *poSecurityItem=json_object_new_object();
+	      json_object_object_add(poSecurityItem,vMap->value,poScopes);
+	      json_object_array_add(poSecurity,poSecurityItem);
+	      json_object_object_add(methodc,"security",poSecurity);
+	    }
 	    vMap=getMapArray(tmpMaps->content,"abstract",i);
 	    if(vMap!=NULL)
 	      json_object_object_add(methodc,"description",json_object_new_string(_(vMap->value)));

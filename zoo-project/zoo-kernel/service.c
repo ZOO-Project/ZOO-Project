@@ -840,18 +840,22 @@ void loadMapBinary(map** ppmOut,map* pmIn,int iPos){
     sprintf(tmp,"value_%d",iPos);
     pmTmpVin=getMap(pmIn,tmp);
     pmTmpVout=getMap(pmOut,tmp);
-    free(pmTmpVout->value);
-    pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
-    memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
-    pmTmpVout->value[atoi(pmSize->value)]=0;
-  }else{
-    if(pmSize!=NULL){
-      pmTmpVin=getMap(pmIn,"value");
-      pmTmpVout=getMap(pmOut,"value");
+    if(pmTmpVin!=NULL && pmTmpVout!=NULL){
       free(pmTmpVout->value);
       pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
       memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
       pmTmpVout->value[atoi(pmSize->value)]=0;
+    }
+  }else{
+    if(pmSize!=NULL){
+      pmTmpVin=getMap(pmIn,"value");
+      pmTmpVout=getMap(pmOut,"value");
+      if(pmTmpVin!=NULL && pmTmpVout!=NULL){
+	free(pmTmpVout->value);
+	pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
+	memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
+	pmTmpVout->value[atoi(pmSize->value)]=0;
+      }
     }
   }
 }
