@@ -644,13 +644,11 @@ maps* mapsFromPyDict(PyDictObject* t){
 #ifdef DEBUG
     dumpMap(cursor->content);
 #endif
-    cursor->next=NULL;
     if(res==NULL)
       res=dupMaps(&cursor);
     else
       addMapsToMaps(&res,cursor);
-    freeMap(&cursor->content);
-    free(cursor->content);
+    freeMaps(&cursor);
     free(cursor);
 #ifdef DEBUG
     dumpMaps(res);
