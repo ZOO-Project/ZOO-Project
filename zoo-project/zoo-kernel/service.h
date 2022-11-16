@@ -325,6 +325,19 @@ extern "C" {
     struct registry* next; //!< the next registry pointer
   } registry;
 
+  /**
+   * Statuses list
+   */
+  static const char* ZOO_STATUS[] = {
+    "SERVICE_ACCEPTED",
+    "SERVICE_STARTED",
+    "SERVICE_PAUSED",
+    "SERVICE_SUCCEEDED",
+    "SERVICE_FAILED",
+    "SERVICE_DISMISSED",
+    NULL
+  };
+
   // knut
   enum WPSException {
 	  /*
@@ -486,6 +499,7 @@ extern "C" {
   ZOO_DLL_EXPORT maps* dupMaps(maps**);
   ZOO_DLL_EXPORT void addMapsToMaps(maps**,maps*);
   ZOO_DLL_EXPORT map* getMapArray(map*,const char*,int);
+  ZOO_DLL_EXPORT char* getMapArrayKey(map*,const char*,int);
   ZOO_DLL_EXPORT void setMapArray(map*,const char*,int,const char*);
   ZOO_DLL_EXPORT map* getMapType(map*);
   ZOO_DLL_EXPORT int addMapsArrayToMaps(maps**,maps*,char*);
@@ -507,6 +521,9 @@ extern "C" {
   ZOO_DLL_EXPORT void inheritance(registry*,service**);
   ZOO_DLL_EXPORT void mapsToCharXXX(maps*,char***);
   ZOO_DLL_EXPORT void charxxxToMaps(char***,maps**);
+  // OGC-API - Processes - Part 1: Core processes list restriction
+  ZOO_DLL_EXPORT void updateCnt(maps*, const char*, const char*);
+  ZOO_DLL_EXPORT bool compareCnt(maps*, const char*, const char*);
 #if defined(_MSC_VER) && _MSC_VER < 1800
   // snprintf for Visual Studio compiler;
   // it is also used by services (e.g., GetStatus), therefore exported to shared library
