@@ -28,6 +28,7 @@ jobs:
       run: |
         npm install -g jsdoc ;
         npm install -g ink-docstrap ;
+        npm install -g taffydb ;
         cd zoo-project/zoo-client/lib/js/wps-client ;
         sudo jsdoc *js -R ../../../../../README.md -t /usr/local/lib/node_modules/ink-docstrap/template  ;
         cd ../../../../.. ;

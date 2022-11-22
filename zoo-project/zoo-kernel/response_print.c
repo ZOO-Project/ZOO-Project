@@ -88,14 +88,24 @@ void addPrefix(maps* pmsConf,map* pmLevel,service* psService){
  */
 void printHeaders(maps* pmsConf){
   maps *pmsTmp=getMaps(pmsConf,"headers");
-  if(pmsTmp!=NULL){
-    map* pmTmp=pmsTmp->content;
-    while(pmTmp!=NULL){
-      printf("%s: %s\r\n",pmTmp->name,pmTmp->value);
-      pmTmp=pmTmp->next;
+  map* pmHeaders=getMapFromMaps(pmsConf,"lenv","no-headers");
+  if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
+    if(pmsTmp!=NULL){
+      map* pmTmp=pmsTmp->content;
+      while(pmTmp!=NULL){
+	if(strcasecmp(pmTmp->name,"status")!=0){
+	  printf("%s: %s\r\n",pmTmp->name,pmTmp->value);
+	}
+	pmTmp=pmTmp->next;
+      }
     }
+    printSessionHeaders(pmsConf);
+    map* pmTmp=getMapFromMaps(pmsConf,"headers","status");
+    if(pmTmp!=NULL){
+      printf("Status: %s\r\n\r\n",pmTmp->value);
+    }
+    setMapInMaps(pmsConf,"lenv","no-headers","true");
   }
-  printSessionHeaders(pmsConf);
 }
 
 /**
@@ -2622,16 +2632,16 @@ void _printExceptionReportResponse(maps* m,map* s){
  * (when required) depending on the code.
  * 
  * @param pmsConf the maps containing the settings of the main.cfg file
- * @param psService the service
+ * @param pmError the map containing the text,code,locator keys (or a map array)
  */
-void printExceptionReportResponse(maps* pmsConf,map* psService){
+void printExceptionReportResponse(maps* pmsConf,map* pmError){
   if(getMapFromMaps(pmsConf,"lenv","hasPrinted")!=NULL)
     return;
   map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
   if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-    _printExceptionReportResponse(pmsConf,psService);
+    _printExceptionReportResponse(pmsConf,pmError);
   else
-    printExceptionReportResponseJ(pmsConf,psService);
+    printExceptionReportResponseJ(pmsConf,pmError);
 }
 
 /**
@@ -3180,6 +3190,12 @@ void* printRawdataOutput(maps* conf,maps* outputs){
       else
 	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\n");
     printf("%s",mime);
+    map* pmStatus = getMapFromMaps(conf,"headers","Status");
+    if(pmStatus!=NULL){
+      printf("Status: %s;\r\n\r\n",pmStatus->value);
+    } else {
+      printf("Status: 200 OK;\r\n\r\n");
+    }
   }
 
   // checking if the deploy service has returned the service id

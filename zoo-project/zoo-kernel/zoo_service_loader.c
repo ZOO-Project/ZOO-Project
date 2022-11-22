@@ -197,7 +197,7 @@ extern "C"
 
 
 /**
- * Close any sqk backend connexion and call end_sql.
+ * Close any sql backend connexion and call end_sql.
  *
  * @param pmsConf the maps pointer to the main configuration file
  * @see close_sql,end_sql
@@ -682,11 +682,14 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 #ifdef META_DB
   int metadb_id=_init_sql(m,"metadb");
   //FAILED CONNECTING DB
-  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<0){
+  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
     fprintf(stderr,"ERROR CONNECTING METADB\n");
   }
-  if(metadb_id>=0)
+  if(metadb_id>0){
     *spService=extractServiceFromDb(m,cIdentifier,0);
+    s1=*spService;
+    close_sql(m,metadb_id-1);
+  }
   if(s1!=NULL){
     inheritance(zooRegistry,spService);
 #ifdef USE_HPC
@@ -842,7 +845,6 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
       }
 #ifdef META_DB
       fetchServicesFromDb(zooRegistry,m,doc,n,func,0);
-      close_sql(m,0);
 #endif
     }
   else
@@ -860,8 +862,13 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	  map* import = getMapFromMaps (m, IMPORTSERVICE, corig);   
 	  if (import != NULL && import->value != NULL) 
 	    {
-#ifdef META_DB			
-	      service* s2=extractServiceFromDb(m,import->name,0);
+#ifdef META_DB
+	      int metadb_id=_init_sql(m,"metadb");
+	      service* s2=NULL;
+	      if(metadb_id>0){
+		s2=extractServiceFromDb(m,import->name,0);
+		close_sql(m,metadb_id-1);
+	      }
 	      if(s2==NULL){
 #endif
 		s1 = createService();
@@ -940,12 +947,16 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	  else
 	    {
 #ifdef META_DB
-	      _init_sql(m,"metadb");
+	      int metadb_id=_init_sql(m,"metadb");
 	      //FAILED CONNECTING DB
-	      if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
+	      if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
 		fprintf(stderr,"ERROR CONNECTING METADB");
 	      }
-	      service* s2=extractServiceFromDb(m,corig,0);
+	      service* s2=NULL;
+	      if(metadb_id>0){
+		s2=extractServiceFromDb(m,corig,0);
+		close_sql(m,metadb_id-1);
+	      }
 	      if(s2!=NULL){
 		inheritance(zooRegistry,&s2);
 #ifdef USE_HPC
@@ -974,13 +985,18 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			s1 = createService();
 			if (s1 == NULL)
 			  {
+			    fflush (stdout);
+			    fflush (stderr);
 			    zDup2 (saved_stdout, fileno (stdout));
+			    zClose(saved_stdout);
 			    map* errormap = createMap("text", _("Unable to allocate memory"));
 			    addToMap(errormap,"code", "InternalError");
 			    addToMap(errormap,"locator", "NULL");
 			    funcError(m,errormap);
 			    if(dirp!=NULL)
 			      closedir (dirp);
+			    freeMap(&errormap);
+			    free(errormap);
 			    return -1;
 			  }
 #ifdef DEBUG_SERVICE_CONF
@@ -994,7 +1010,10 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			free (tmp0);
 			if (t < 0)
 			  {
+			    fflush (stdout);
+			    fflush (stderr);
 			    zDup2 (saved_stdout, fileno (stdout));
+			    zClose(saved_stdout);
 			    exitAndCleanUp(zooRegistry, m,
 					   buff,"InternalError","NULL",
 					   orig,corig,
@@ -1024,11 +1043,15 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	    }		      
 	  if (hasVal < 0)
 	    {
+	      fflush (stdout);
+	      fflush (stderr);
 	      zDup2 (saved_stdout, fileno (stdout));
+	      zClose(saved_stdout);
 	      exitAndCleanUp(zooRegistry, m,
 			     buff,"InvalidParameterValue","Identifier",
 			     orig,corig,
 			     funcError);
+	      fflush(stdout);
 	      if(dirp!=NULL)
 		closedir (dirp);
 	      return 1;
@@ -2604,8 +2627,8 @@ runRequest (map ** inputs)
 	sprintf(pacTmpUrl,"%s/index.html",pmTmpUrl->value);
       }
       setMapInMaps(m,"headers","Location",pacTmpUrl);
+      setMapInMaps(m,"headers","Status","301 Moved permanently");
       printHeaders(m);
-      printf("Status: 301 Moved permanently \r\n\r\n");
       fflush(stdout);
       free(pacTmpUrl);
       return 1;
@@ -2776,7 +2799,6 @@ runRequest (map ** inputs)
       int nbServices=fetchServicesFromDb(zooRegistry,m,res3,NULL,printGetCapabilitiesForProcessJ,1);
       // Keep track of the total number of processes
       map* pmCnt=getMapFromMaps(m,"lenv","serviceCnt");
-      dumpMap(pmCnt);
       char acCnt[10];
       if(pmCnt!=NULL)
 	sprintf(acCnt,"%d",nbServices+atoi(pmCnt->value));
@@ -3400,7 +3422,7 @@ runRequest (map ** inputs)
 #ifdef DEBUG
 	  fprintf (stderr, "\nPID : %d\n", cpid);
 #endif
-	  setMapInMaps(m,"lenv","no-headers","true");
+	  //setMapInMaps(m,"lenv","no-headers","true");
 #ifdef USE_AMQP
 
       // Publish message in RabbitMQ
@@ -3453,11 +3475,13 @@ runRequest (map ** inputs)
       createStatusFile(m,eres);
       if(preference!=NULL)
 	setMapInMaps(m,"headers","Preference-Applied",preference->value);
-      //invokeBasicCallback(m,SERVICE_ACCEPTED);
-      printHeaders(m);
-      printf("Status: 201 Created \r\n\r\n");
-      return 1;
-      // ----- End USE_AMQP -----
+      setMapInMaps(m,"headers","Status","201 Created");
+      map* pmTmp=getMapFromMaps(m,"lenv","usid");
+      if(pmTmp!=NULL){
+	if(res!=NULL)
+	  json_object_put(res);
+	res=printJobStatus(m,pmTmp->value);
+      }
 
 #else
 
@@ -3844,13 +3868,14 @@ runRequest (map ** inputs)
 
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
-      if(getMapFromMaps(m,"lenv","no-headers")==NULL){
+      if(pmHasPrinted=getMapFromMaps(m,"lenv","no-headers"))==NULL ||  strncasecmp(pmHasPrinted->value,"false",5)==0){
         printHeaders(m);
-        if (eres == 7){
-            printf("Status: 204 NoContent \r\n\r\n");
-        } else {
-            printf("Status: 200 OK \r\n\r\n");
-        }
+        if(getMapFromMaps(m,"headers","Status")==NULL)
+          if (eres == 7){
+              printf("Status: 204 NoContent \r\n\r\n");
+          } else {
+              printf("Status: 200 OK \r\n\r\n");
+          }
       }
       const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
       printf(jsonStr);
@@ -4835,7 +4860,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #ifdef META_DB
   metadb_id=_init_sql(conf,"metadb");
 #endif
-  init_sql(conf);
+  int iSqlCon=init_sql(conf);
     //}
   map *uusid=getMap(*lenv,"usid");
   map *schema=getMapFromMaps(conf,"database","schema");
@@ -4844,7 +4869,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
   char* sqlQuery0=(char*)malloc(((2*strlen(schema->value))+
 				 strlen(uusid->value)+strlen(sqlQueryTmp0)+129)*sizeof(char));
   sprintf(sqlQuery0,sqlQueryTmp0,schema->value,schema->value,uusid->value,getpid());
-  OGRLayer *res=fetchSql(conf,0,sqlQuery0);
+  OGRLayer *res=fetchSql(conf,iSqlCon-1,sqlQuery0);
   free(sqlQuery0);
   if(res!=NULL){
     OGRFeature  *poFeature = NULL;
@@ -5301,7 +5326,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    char* sqlQuery2=(char*)malloc(((strlen(schema->value))+
 					   strlen(uusid->value)+36)*sizeof(char));
 	    sprintf(sqlQuery2,"DELETE FROM %s.workers WHERE uuid='%s'",schema->value,uusid->value);
-	    OGRLayer *res2=fetchSql(lconf,0,sqlQuery2);
+	    OGRLayer *res2=fetchSql(lconf,iSqlCon-1,sqlQuery2);
 	    free(sqlQuery2);
 	    freeMaps(&lconf);
 	    free(lconf);
@@ -5318,7 +5343,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	poFeature = res->GetNextFeature();
       }
     }
-    cleanFetchSql(conf,0,res);
+    cleanFetchSql(conf,iSqlCon-1,res);
   }else{
     fprintf(stderr,"Concurrent access on the workers table imply that there is no need to take this request into account!\n");
     fflush(stderr);
