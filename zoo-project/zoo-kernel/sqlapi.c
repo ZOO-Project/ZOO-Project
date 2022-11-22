@@ -197,6 +197,8 @@ int init_sql(maps* conf){
  * @param conf the maps containing the setting of the main.cfg file
  */
 void close_sql(maps* conf,int cid){
+  if(cid<0)
+    return;
   if( zoo_ResultSet != NULL ){
     zoo_DS[cid]->ReleaseResultSet( zoo_ResultSet );
     zoo_ResultSet=NULL;

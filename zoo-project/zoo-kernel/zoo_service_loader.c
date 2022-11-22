@@ -676,14 +676,14 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 #ifdef META_DB
   int metadb_id=_init_sql(m,"metadb");
   //FAILED CONNECTING DB
-  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<0){
+  if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
     fprintf(stderr,"ERROR CONNECTING METADB\n");
   }
-  if(metadb_id>=0){
+  if(metadb_id>0){
     *spService=extractServiceFromDb(m,cIdentifier,0);
     s1=*spService;
+    close_sql(m,metadb_id-1);
   }
-  close_sql(m,0);
   if(s1!=NULL){
     inheritance(zooRegistry,spService);
 #ifdef USE_HPC
@@ -839,7 +839,6 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
       }
 #ifdef META_DB
       fetchServicesFromDb(zooRegistry,m,doc,n,func,0);
-      close_sql(m,0);
 #endif
     }
   else
@@ -857,8 +856,13 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	  map* import = getMapFromMaps (m, IMPORTSERVICE, corig);   
 	  if (import != NULL && import->value != NULL) 
 	    {
-#ifdef META_DB			
-	      service* s2=extractServiceFromDb(m,import->name,0);
+#ifdef META_DB
+	      int metadb_id=_init_sql(m,"metadb");
+	      service* s2=NULL;
+	      if(metadb_id>0){
+		s2=extractServiceFromDb(m,import->name,0);
+		close_sql(m,metadb_id-1);
+	      }
 	      if(s2==NULL){
 #endif
 		s1 = createService();
@@ -937,13 +941,16 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	  else
 	    {
 #ifdef META_DB
-	      _init_sql(m,"metadb");
+	      int metadb_id=_init_sql(m,"metadb");
 	      //FAILED CONNECTING DB
-	      if(getMapFromMaps(m,"lenv","dbIssue")!=NULL){
+	      if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
 		fprintf(stderr,"ERROR CONNECTING METADB");
 	      }
-	      service* s2=extractServiceFromDb(m,corig,0);
-	      close_sql(m,0);
+	      service* s2=NULL;
+	      if(metadb_id>0){
+		s2=extractServiceFromDb(m,corig,0);
+		close_sql(m,metadb_id-1);
+	      }
 	      if(s2!=NULL){
 		inheritance(zooRegistry,&s2);
 #ifdef USE_HPC
@@ -2506,7 +2513,7 @@ runRequest (map ** inputs)
 	  }
 	  free(pacTmp);
 	  if(pacTitle!=NULL)
-	    free(pacTitle);	  
+	    free(pacTitle);
 	}
 	tmps = strtok_r (NULL, ",", &saveptr);
       }
@@ -4507,7 +4514,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #ifdef META_DB
   metadb_id=_init_sql(conf,"metadb");
 #endif
-  init_sql(conf);
+  int iSqlCon=init_sql(conf);
     //}
   map *uusid=getMap(*lenv,"usid");
   map *schema=getMapFromMaps(conf,"database","schema");
@@ -4516,7 +4523,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
   char* sqlQuery0=(char*)malloc(((2*strlen(schema->value))+
 				 strlen(uusid->value)+strlen(sqlQueryTmp0)+129)*sizeof(char));
   sprintf(sqlQuery0,sqlQueryTmp0,schema->value,schema->value,uusid->value,getpid());
-  OGRLayer *res=fetchSql(conf,0,sqlQuery0);
+  OGRLayer *res=fetchSql(conf,iSqlCon-1,sqlQuery0);
   free(sqlQuery0);
   if(res!=NULL){
     OGRFeature  *poFeature = NULL;
@@ -4971,7 +4978,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    char* sqlQuery2=(char*)malloc(((strlen(schema->value))+
 					   strlen(uusid->value)+36)*sizeof(char));
 	    sprintf(sqlQuery2,"DELETE FROM %s.workers WHERE uuid='%s'",schema->value,uusid->value);
-	    OGRLayer *res2=fetchSql(lconf,0,sqlQuery2);
+	    OGRLayer *res2=fetchSql(lconf,iSqlCon-1,sqlQuery2);
 	    free(sqlQuery2);
 	    freeMaps(&lconf);
 	    free(lconf);
@@ -4988,7 +4995,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	poFeature = res->GetNextFeature();
       }
     }
-    cleanFetchSql(conf,0,res);
+    cleanFetchSql(conf,iSqlCon-1,res);
   }else{
     fprintf(stderr,"Concurrent access on the workers table imply that there is no need to take this request into account!\n");
     fflush(stderr);
