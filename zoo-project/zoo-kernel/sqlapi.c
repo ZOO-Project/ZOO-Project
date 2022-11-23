@@ -384,11 +384,6 @@ void recordServiceStatus(maps* conf){
 				strlen(sid->value)+
 				strlen(osid->value)+
 				strlen(wpsStatus[2])+90+1)*sizeof(char));
-  if( zoo_ds_nb == 0 ){
-    init_sql(conf);
-    isCreated=1;
-    zoo_ds_nb++;
-  }
   sprintf(sqlQuery,
 	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate,itype) "
 	  "VALUES ('%s','%s','%s','%s','%s','%s');",
@@ -399,6 +394,11 @@ void recordServiceStatus(maps* conf){
 	  osid->value,
 	  wpsStatus[2],
 	  pmType->value);
+  if( zoo_ds_nb == 0 ){
+    init_sql(conf);
+    isCreated=1;
+    zoo_ds_nb++;
+  }
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   free(sqlQuery);
   cleanUpResultSet(conf,zoo_ds_nb-1);
@@ -597,20 +597,23 @@ char* _getStatusFile(maps* conf,char* pid){
  */
 void removeService(maps* conf,char* pid){
   int zoo_ds_nb=getCurrentId(conf);
+  int iCreated=0;
   map *schema=getMapFromMaps(conf,"database","schema");
   char *sqlQuery=(char*)
     malloc((strlen(pid)+strlen(schema->value)+38+1)
 	   *sizeof(char));
-  if( zoo_ds_nb == 0 ){
-    init_sql(conf);
-    zoo_ds_nb++;
-  }
   sprintf(sqlQuery,
 	  "DELETE FROM %s.services where uuid=$$%s$$;",
 	  schema->value,pid);
+  if( zoo_ds_nb == 0 ){
+    init_sql(conf);
+    zoo_ds_nb++;
+    iCreated=1;
+  }
   execSql(conf,zoo_ds_nb-1,sqlQuery);
   cleanUpResultSet(conf,zoo_ds_nb-1);
-  //close_sql(conf,zoo_ds_nb-1);
+  if(iCreated>0)
+    close_sql(conf,zoo_ds_nb-1);
   free(sqlQuery);
   //end_sql();
 }

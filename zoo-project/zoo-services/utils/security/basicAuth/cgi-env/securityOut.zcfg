@@ -1,0 +1,23 @@
+[securityOut]
+ Title = Basic out filtering 
+ Abstract = This service can be executed as a filter for OGC API - Processes requests after handling them (non-blocking)
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = C
+ serviceProvider = security_service.zo
+ <MetaData>
+   title = My Demo
+ </MetaData>
+ <DataInputs>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting string
+   Abstract = Unused string
+   <LiteralData>
+    DataType = string
+    <Default>
+    </Default>	
+   </LiteralData>
+ </DataOutputs>  

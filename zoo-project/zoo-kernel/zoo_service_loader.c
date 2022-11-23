@@ -1338,6 +1338,9 @@ void initAllEnvironment(maps* conf,map* request_inputs,
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"HTTP_COOKIE")!=NULL){
     addToMap(_tmpMaps->content,"HTTP_COOKIE1",&cgiCookie[0]);
   }
+  if(strlen(cgiAuthType)>0){
+    addToMap(_tmpMaps->content,"HTTP_AUTHORIZATION",cgiAuthType);
+  }
   addMapsToMaps (&conf, _tmpMaps);
   freeMaps (&_tmpMaps);
   free (_tmpMaps);
@@ -1875,6 +1878,101 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 }
 
 
+/**
+ * Set the security flag for the current request.
+ * Set [lenv] secured_url to true in case the access should be secured,
+ * false in other cases.
+ *
+ * @param pmsConf the maps pointing to the main.cfg file content
+ * @param pcCgiQueryString the string containing the request
+ */
+void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
+  maps* pmsCurrentPath=getMaps(pmsConf,(strlen(pcCgiQueryString)>1?(pcCgiQueryString+1):"root"));
+  int isSet=-1;
+  if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"execution")!=NULL)
+    pmsCurrentPath=getMaps(pmsConf,"processes/{processId}/execution");
+  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"processes/")!=NULL)
+    pmsCurrentPath=getMaps(pmsConf,"processes/{processId}");
+  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"results")!=NULL)
+    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobID}/results");
+  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"jobs/")!=NULL)
+    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobID}");
+  if(pmsCurrentPath!=NULL){
+    map* pmLength=getMap(pmsCurrentPath->content,"length");
+    int iLength=1;
+    int iCnt=0;
+    if(pmLength!=NULL)
+      iLength=atoi(pmLength->value);
+    for(;iCnt<iLength;iCnt++){
+      map* pmCurrentElement=getMapArray(pmsCurrentPath->content,"method",iCnt);
+      if(pmCurrentElement!=NULL && strcasecmp(pmCurrentElement->value,cgiRequestMethod)==0){
+	map* pmSecured=getMapArray(pmsCurrentPath->content,"secured",iCnt);
+	if(pmSecured!=NULL)
+	  setMapInMaps(pmsConf,"lenv","secured_url","true");
+	else
+	  setMapInMaps(pmsConf,"lenv","secured_url","false");
+	return;
+      }
+    }
+  }
+  if(isSet==-1)
+    setMapInMaps(pmsConf,"lenv","secured_url","false");
+}
+
+
+/**
+ * Invoke the execution of the security module in case security is activated
+ *
+ * @param pmsConf the maps pointing to the main.cfg file content
+ * @param pcType the string defining the process to execute ('in' or 'out')
+ * @return 0 in case of success, 1 in case or error
+ */
+int ensureSecured(maps* pmsConf,const char* pcType){
+    int eres=0;
+    service* psaService=NULL;
+    maps* pmsOsecurity=getMaps(pmsConf,"osecurity");
+    map* pmPath=NULL;
+    map* pmName=NULL;
+    char* pcaName=(char*)malloc((strlen(pcType)+13)*sizeof(char));
+    sprintf(pcaName,"module_name_%s",pcType);
+    if(pmsOsecurity!=NULL &&
+       ((pmPath=getMap(pmsOsecurity->content,"module_path"))!=NULL) &&
+       ((pmName=getMap(pmsOsecurity->content,pcaName))!=NULL)){
+      if(fetchService(NULL,pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
+	fprintf(stderr,"ERROR fetching the service %s %d \n",__FILE__,__LINE__);
+	free(pcaName);
+	return 1;
+      }
+      free(pcaName);
+      maps* pmsInputs=NULL;
+      maps* pmsOutputs=NULL;
+      loadServiceAndRun (&pmsConf, psaService, NULL,
+			 &pmsInputs,
+			 &pmsOutputs, &eres);
+      dumpMaps(getMaps(pmsConf,"auth_env"));
+      freeService(&psaService);
+      free(psaService);
+      if(eres==SERVICE_SUCCEEDED)
+	return 0;
+      else
+	return 1;
+    }
+    return 0;
+}
+
+/**
+ * Invoke the ensureSecured then printExceptionReportResponseJ functions
+ *
+ * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param pmError the map containing the text,code,locator keys (or a map array)
+ * @see printExceptionReportResponseJ,ensureSecured
+ */
+void localPrintExceptionJ(maps* pmsConf,map* pmError){
+  ensureSecured(pmsConf,"out");
+  printExceptionReportResponseJ(pmsConf,pmError);
+}
+
+
 #ifdef WIN32
 /**
  * createProcess function: create a new process after setting some env variables
@@ -2398,6 +2496,27 @@ runRequest (map ** inputs)
     freeMaps(&m1);
     free(m1);
 
+    initAllEnvironment(m,request_inputs,ntmp,"jrequest");
+    setSecurityFlags(m,pcaCgiQueryString);
+    // In case security is activated, then execute the security module
+    if(ensureSecured(m,"in")!=0){
+      maps* pmsTmp=getMaps(m,"lenv");
+      localPrintExceptionJ(m,pmsTmp->content);
+      freeMaps(&m);
+      free(m);
+      free (REQUEST);
+      map* pmTest=getMap(request_inputs,"shouldFree");
+      if(pmTest!=NULL){
+	freeMap (inputs);
+	free (*inputs);
+	*inputs=NULL;
+	freeMap(&r_inputs);
+	free (r_inputs);
+	r_inputs=NULL;
+      }
+      free(pcaCgiQueryString);
+      return 1;
+    }
     setRootUrlMap(m);
     // Redirect using HTTP Status 301 (cf. rfc2616) in case full_html_support is
     // set to true
@@ -2432,7 +2551,7 @@ runRequest (map ** inputs)
       setMapInMaps(m,"lenv","status_code","405");
       map* pmaError=createMap("code","InvalidMethod");
       addToMap(pmaError,"message",_("The request method used to access the current path is not supported."));
-      printExceptionReportResponseJ(m,pmaError);
+      localPrintExceptionJ(m,pmaError);
       json_object_put(res);
       // TODO: cleanup memory
       freeMaps(&m);
@@ -2452,7 +2571,7 @@ runRequest (map ** inputs)
 	map* pmaError=createMap("code","InvalidMethod");
 	const char* pccErr=_("This API does not support the method.");
 	addToMap(pmaError,"message",pccErr);
-	printExceptionReportResponseJ(m,pmaError);
+	localPrintExceptionJ(m,pmaError);
 	// TODO: cleanup memory
 	freeMaps(&m);
 	free(m);
@@ -2631,7 +2750,7 @@ runRequest (map ** inputs)
 	  runDismiss(m,jobId);
 	  map* pmError=getMapFromMaps(m,"lenv","error");
 	  if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-	    printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
+	    localPrintExceptionJ(m,getMapFromMaps(m,"lenv","code"));
 	    register_signals(donothing);
 	    freeService (&s1);
 	    free(s1);
@@ -2924,7 +3043,7 @@ runRequest (map ** inputs)
 	      runDismiss(m,jobId);
 	      map* pmError=getMapFromMaps(m,"lenv","error");
 	      if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-		printExceptionReportResponseJ(m,getMapFromMaps(m,"lenv","code"));
+		localPrintExceptionJ(m,getMapFromMaps(m,"lenv","code"));
 		freeMaps(&m);
 		free(m);
 		json_object_put(res);
@@ -2943,7 +3062,10 @@ runRequest (map ** inputs)
 	      if(strlen(jobId)==36){
 		if(res!=NULL)
 		  json_object_put(res);
+		ensureSecured(m,"out");
 		res=printJobStatus(m,jobId);
+		if(res==NULL)
+		  fflush(stdout);
 	      }else{
 		// In case the service has run, then forward request to target result file
 		if(strlen(jobId)>36)
@@ -2952,7 +3074,7 @@ runRequest (map ** inputs)
 		if(sid==NULL){
 		  map* error=createMap("code","NoSuchJob");
 		  addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
-		  printExceptionReportResponseJ(m,error);
+		  localPrintExceptionJ(m,error);
 		  free(jobId);
 		  freeMap(&error);
 		  free(error);
@@ -2975,7 +3097,7 @@ runRequest (map ** inputs)
 		  if(isRunning(m,jobId)>0){
 		    map* error=createMap("code","ResultNotReady");
 		    addToMap(error,"message",_("The job is still running."));
-		    printExceptionReportResponseJ(m,error);
+		    localPrintExceptionJ(m,error);
 		    free(jobId);
 		    freeMap(&error);
 		    free(error);
@@ -3008,7 +3130,7 @@ runRequest (map ** inputs)
 			   json_object_object_get_ex(pjoTmp,"description",&pjoMessage)!=FALSE){
 			  map* error=createMap("code",json_object_get_string(pjoCode));
 			  addToMap(error,"message",json_object_get_string(pjoMessage));
-			  printExceptionReportResponseJ(m,error);
+			  localPrintExceptionJ(m,error);
 			  free(jobId);
 			  freeMap(&error);
 			  free(error);
@@ -3026,6 +3148,7 @@ runRequest (map ** inputs)
 						     strlen(jobId)+8)*sizeof(char));
 			  sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
 			  setMapInMaps(m,"headers","Location",Url0);
+			  ensureSecured(m,"out");
 			}
 			if(pjoTmp!=NULL)
 			  json_object_put(pjoTmp);
@@ -3054,7 +3177,7 @@ runRequest (map ** inputs)
 			}
 			map* error=createMap("code","NoApplicableCode");
 			addToMap(error,"message",_("The service failed to execute."));
-			printExceptionReportResponseJ(m,error);
+			localPrintExceptionJ(m,error);
 			free(jobId);
 			freeMap(&error);
 			free(error);
@@ -3067,6 +3190,7 @@ runRequest (map ** inputs)
 
 		    }else{
 		      free(Url0);
+		      ensureSecured(m,"out");
 		      runGetStatus(m,jobId,"GetResult");
 		      free(jobId);
 		      free(sid);
@@ -3105,7 +3229,7 @@ runRequest (map ** inputs)
 	map* error=createMap("code","BadRequest");
 	addToMap(error,"message",_("The resource is not available"));
 	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
-	printExceptionReportResponseJ(m,error);
+	localPrintExceptionJ(m,error);
 	freeMaps (&m);
 	free (m);
 	free (REQUEST);
@@ -3122,13 +3246,12 @@ runRequest (map ** inputs)
       }else if(strcasecmp(cgiRequestMethod,"post")==0){
 	/* - /processes/{processId}/execution Execution (POST) */
 	eres = SERVICE_STARTED;
-	initAllEnvironment(m,request_inputs,ntmp,"jrequest");
 	map* req=getMapFromMaps(m,"renv","jrequest");
 	if(req==NULL){
 	  map* error=createMap("code","BadRequest");
 	  addToMap(error,"message",_("The request body is empty"));
 	  setMapInMaps(m,"lenv","status_code","400 Bad Request");
-	  printExceptionReportResponseJ(m,error);
+	  localPrintExceptionJ(m,error);
 	  freeMaps (&m);
 	  free (m);
 	  free (REQUEST);
@@ -3160,7 +3283,7 @@ runRequest (map ** inputs)
 	  char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
 	  sprintf(pacMessage,pccErr,pcTmpErr);
 	  addToMap(pamError,"message",pacMessage);
-	  printExceptionReportResponseJ(m,pamError);
+	  localPrintExceptionJ(m,pamError);
 	  fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 	  json_tokener_free(tok);
 	  return 1;
@@ -3172,7 +3295,7 @@ runRequest (map ** inputs)
 	  char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
 	  sprintf(pacMessage,pccErr,pcTmpErr);
 	  addToMap(pamError,"message",pacMessage);
-	  printExceptionReportResponseJ(m,pamError);
+	  localPrintExceptionJ(m,pamError);
 	  fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 	  json_tokener_free(tok);
 	  return 1;
@@ -3191,7 +3314,7 @@ runRequest (map ** inputs)
 	}
 	if(cIdentifier!=NULL)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
-	if(fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ)!=0){
+	if(fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,localPrintExceptionJ)!=0){
 	  // TODO: cleanup memory
 	  register_signals(donothing);
 	  freeService(&s1);
@@ -3483,7 +3606,7 @@ runRequest (map ** inputs)
 					    printGetCapabilitiesForProcessJ,
 					    NULL, (void*) res3, ntmp,
 					    request_inputs,
-					    printExceptionReportResponseJ);
+					    localPrintExceptionJ);
 	  if(t==1){
 	    /*map* error=createMap("code","BadRequest");
 	      addToMap(error,"message",_("Failed to acces the requested service"));
@@ -3514,7 +3637,7 @@ runRequest (map ** inputs)
 	      cnt++;
 	    }
 
-	    fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,printExceptionReportResponseJ);
+	    fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,localPrintExceptionJ);
 
 
 	  }
@@ -3523,6 +3646,7 @@ runRequest (map ** inputs)
 	}
 
     }
+    ensureSecured(m,"out");
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
       if((pmHasPrinted=getMapFromMaps(m,"lenv","no-headers"))==NULL ||  strncasecmp(pmHasPrinted->value,"false",5)==0){
@@ -5006,7 +5130,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #endif
   close_sql(conf,0);
   setMapInMaps(conf,"lenv","ds_nb","-1");
-  //end_sql();
+  end_sql();
   return 0;
 }
 #endif
