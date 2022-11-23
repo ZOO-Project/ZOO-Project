@@ -472,7 +472,7 @@ OpenAPI Specification configuration file
 
 Since revision 949 of the ZOO-Kernel, you can now activate the OGC
 API - Processing support. In such a case you will need to have an
-``oas.cfg`` file located in tne same directory where the ``main.cfg`` is.
+``oas.cfg`` file located in the same directory where the ``main.cfg`` is.
 
 This ``oas.cfg`` file gets the same syntactic rules than the
 ``main.cfg``. The ZOO-Kernel uses this file to produce information
@@ -569,7 +569,78 @@ to this `page
 <https://github.com/opengeospatial/wps-rest-binding#overview>`__ or use
 the `Swagger UI <https://swagger.io/tools/swagger-ui/>`__. A live
 instance is available `here <https://demo.mapmint.com/swagger-ui/dist/>`__.
-  
+
+OpenAPI Security
+................
+
+OpenAPI permits the definition of security restrictions to access a
+given path using a specific request method. For more details, please
+consult the `OpenAPI Authentication and Authorization
+<https://swagger.io/docs/specification/authentication/>`__ section.
+
+Since revision `ae34767
+<https://github.com/ZOO-Project/ZOO-Project/commit/ae34767ab5f9127ae654980f00a2e79ec94aeb45>`__,
+the ZOO-Kernel supports OGC API - Processes request filtering. It can
+invoke the execution of other services before and after handling a
+request. So, you can implement your service for security or other
+purposes.
+
+To support security from your OpenAPI, you can add an optional section
+``osecurity`` to the ``oas.cfg`` file. It should contain the following keys:
+
+ * ``name``: the name used in the components' security schemes
+ * ``module_path``: the full path to the location of the service metadata files and processes (can be stored somewhere else to be hidden from the services list)
+ * ``module_name_in``: the process to use before handling the request
+ * ``module_name_out``: the process to use after having handled the request
+ * ``type``: the `scheme type <https://swagger.io/docs/specification/authentication/>`__ (http, apiKey, …)
+ * ``scheme``: the scheme name (Basic, Bearer) `list of possible values <https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml>`__
+ * ``format``: bearer format (used only in case scheme is set to Bearer, can be JWT, optional)
+ * ``realm``: the realm to use when returning 401 WWW-Authenticate response header (optional)
+ * ``passwd``: the htpassword file used to authenticate users (only used for Basic scheme, optional)
+
+Then to secure a given path and request method couple, you should add
+the optional secured key and set it to the name used in the
+components' security schemes.
+
+Below is an example of ``oas.cfg`` file for securing the execution of
+the HelloPy processes.
+
+.. code-block:: guess
+    
+    [processes/HelloPy/execution]
+     rel=http://www.opengis.net/def/rel/ogc/1.0/execute
+     length=1
+     method=post
+     secured=BasicAuth
+     title=execute a job
+     abstract=An execute endpoint.
+     tags=ExecuteEndpoint
+     tags_description=
+     schema=http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteSync.yaml
+     parameters=/components/parameters/processID,/components/parameters/oas-header1
+     ecode=400,404,500
+     eschema=http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteAsync.yaml
+    
+     [osecurity]
+     name=BasicAuth
+     module_path=/opt/securityServices
+     module_name_in=securityIn
+     module_name_out=securityOut
+     type=http
+     scheme=basic
+     realm=Secured section
+     charset=utf-8
+     passwd=/tmp/htpasswords
+
+
+In the example, we used the demonstration `securityIn and securityOut
+services
+<https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/basicAuth/service.c>`__
+for handling HTTP Basic Authentication. 
+
+
+
+
 .. rubric:: Footnotes
 
 .. [#f1] If GET requests are passed through ``xlink:href`` to the ZOO-Kernel , the latter will execute the request the first time and store the result  on disk. The next time the same request is executed, the cached file will be used and this will make your process run much faster. If ``cachedir`` was not specified in the ``main.cfg`` then the ``tmpPath`` value will be used.
