@@ -94,6 +94,7 @@ ARG BUILD_DEPS=" \
     librabbitmq-dev \
     libkrb5-dev \
     nlohmann-json-dev \
+    libaprutil1-dev\
 "
 WORKDIR /zoo-project
 COPY . .
@@ -127,6 +128,13 @@ RUN set -ex \
     && cp ../zoo-services/hello-r/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/r/minimal.r /usr/lib/cgi-bin/ \
+    \
+    # Install Basic Authentication sample
+    && cd ../zoo-services/utils/security/basicAuth \
+    && make \
+    && cp cgi-env/* /usr/lib/cgi-bin \
+    && cd ../../../../zoo-kernel \
+    \
     && for i in  $(ls ./locale/po/*po | grep -v utf8 | grep -v message); do \
          mkdir -p /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
          msgfmt  $i -o /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \

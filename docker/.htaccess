@@ -1,4 +1,5 @@
 RewriteEngine On
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 SetEnvIf Request_URI "^\/?(\w+)\/ogc-api(.*)" SERVICES_NAMESPACE=$1
 RewriteRule ^\/?(\w+)\/ogc-api/(.*) /ogc-api/$2 [PT]
 RewriteCond %{REQUEST_FILENAME} !-f
