@@ -3190,31 +3190,23 @@ void* printRawdataOutput(maps* conf,maps* outputs){
       else
 	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\n");
     printf("%s",mime);
+    // checking if the deploy service has returned the service id
+    // if it did we add the service url to the location header
+    map* location = getMapFromMaps(conf,"lenv","deployedServiceId");
+    if(location!=NULL){
+      map* rootUrl=getMapFromMaps(conf,"openapi","rootUrl");
+      char* locationUrlHeader=NULL;
+      locationUrlHeader=(char*)malloc((strlen(rootUrl->value)+strlen(location->value)+12)*sizeof(char));
+      sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
+      printf("Location: %s\r\n",locationUrlHeader);
+    }
+
     map* pmStatus = getMapFromMaps(conf,"headers","Status");
     if(pmStatus!=NULL){
       printf("Status: %s;\r\n\r\n",pmStatus->value);
     } else {
       printf("Status: 200 OK;\r\n\r\n");
     }
-  }
-
-  // checking if the deploy service has returned the service id
-  // if it did we add the service url to the location header
-  map* location = getMapFromMaps(conf,"lenv","deployedServiceId");
-  if(location!=NULL){
-        map* rootUrl=getMapFromMaps(conf,"openapi","rootUrl");
-        char* locationUrlHeader=NULL;
-        locationUrlHeader=(char*)malloc((strlen(rootUrl->value)+strlen(location->value)+12)*sizeof(char));
-        sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
-        printf("Location: %s\r\n",locationUrlHeader);
-  }
-
-
-  map* status = getMapFromMaps(conf,"headers","Status");
-  if(status!=NULL){
-        printf("Status: %s;\r\n\r\n",status->value);
-  } else {
-        printf("Status: 200 OK;\r\n\r\n");
   }
 
 

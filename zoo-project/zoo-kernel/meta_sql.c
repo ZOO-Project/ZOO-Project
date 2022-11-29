@@ -1,7 +1,7 @@
 /*
  * Author : Gérald Fenoy
  *
- * Copyright 2017 GeoLabs SARL. All rights reserved.
+ * Copyright 2017-2022 GeoLabs SARL. All rights reserved.
  *
  * This work was supported by public funds received in the framework of GEOSUD,
  * a project (ANR-10-EQPX-20) of the program "Investissements d'Avenir" managed
@@ -41,7 +41,7 @@
 #include "service_internal_hpc.h"
 #endif
 #define META_SERVICES_LIST_ALL \
-  "select id,identifier,title,abstract,service_type,service_provider,conf_id"\
+  "select id,identifier,title,abstract,service_type,service_provider,conf_id,mutable"\
   " from ows_process"
 #define META_SERVICES_LIST_ALL_LENGTH strlen(META_SERVICES_LIST_ALL)
 
@@ -402,6 +402,7 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       addToMap(s->content,"serviceType",poFeature->GetFieldAsString( 4 ));
       addToMap(s->content,"serviceProvider",poFeature->GetFieldAsString( 5 ));
       addToMap(s->content,"confId",poFeature->GetFieldAsString( 6 ));
+      addToMap(s->content,"mutable",poFeature->GetFieldAsString( 7 ));
       addToMap(s->content,"fromDb","true");
       s->metadata=NULL;
       fillMetadata(iDbId,conf,&s->metadata,poFeature->GetFieldAsString( 0 ));

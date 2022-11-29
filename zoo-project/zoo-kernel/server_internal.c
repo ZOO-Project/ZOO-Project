@@ -519,46 +519,6 @@ char *base64(const char *input, int length)
   return buff;
 }
 
-
-size_t bas64d_length(const char* pccInput){
-  size_t iLen = strlen(pccInput),
-    iPadding = 0;
-  if (pccInput[iLen-1] == '=' && pccInput[iLen-2] == '=') //last two chars are =
-    iPadding = 2;
-  else if (pccInput[iLen-1] == '=') //last char is =
-    iPadding = 1;
-  return (iLen*3)/4 - iPadding;
-}
-
-/**
- * Base64 decoding of a char*
- *
- * @param input the value to decode
- * @param length the value length
- * @param red the value length
- * @return the buffer containing the base64 value 
- * @warning make sure to free the returned value
- */
-char *base64d_nonl(const char *input, int length,int* red)
-{
-  BIO *b64, *bmem;
-  int iLen = bas64d_length(input);
-  char *buffer = (char *)malloc(iLen+1);
-  if(buffer){
-    memset(buffer, 0, iLen);
-    b64 = BIO_new(BIO_f_base64());
-    if(b64){
-      bmem = BIO_new_mem_buf((unsigned char*)input,-1);
-      bmem = BIO_push(b64, bmem);
-      BIO_set_flags(bmem, BIO_FLAGS_BASE64_NO_NL);
-      *red=BIO_read(bmem, buffer, length);
-      buffer[length-1]=0;
-      BIO_free_all(bmem);
-    }
-  }
-  return buffer;
-}
-
 /**
  * Base64 decoding of a char*
  *

@@ -872,7 +872,7 @@ extern "C" {
       }
       tmpMap=getMap(serv->content,"mutable");
       if(tmpMap==NULL)
-	json_object_object_add(res,"mutable",json_object_new_boolean(TRUE));
+	json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
       else{
 	if(strcmp(tmpMap->value,"false")==0)
 	  json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));

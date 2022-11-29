@@ -49,7 +49,6 @@ extern "C" {
   char *get_uuid();  
   char *base64(const char*,int);
   char *base64d(const char*,int,int*);
-  char *base64d_nonl(const char*,int,int*);
   void readBase64(map **);
   char *url_decode(char *);
   int getVersionId(const char*);
