@@ -3,6 +3,16 @@ Version 2.0.0
   returning result as OGC API -Features
   * Integrate downloading MapServer 8.0 and building from the
   Dockerfile
+  * Include basicAuth build instructions in the Dockefile
+  * Add basicAuth service illustrating how to secure access to OGC API
+  - Processes using Basic Authentication
+  * Use the osecurity section to detect secured path, request method
+  from the published OpenAPI
+  * Update the printHeaders function to allow Status definition at runtime
+  * Add a [osecurity] section to secure access to path,method couple
+  from the published OpenAPI
+  * Update the database connexion handling to make it independent from
+  instantiation order
   * Use the RabbitMQ also for OGC API - Processes
   * Pass the subscriber if any is passed from the original request
   * Make C OGR base-vect-ops compatible with memory=protect

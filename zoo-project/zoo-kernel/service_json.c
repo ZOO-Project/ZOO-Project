@@ -1035,26 +1035,36 @@ extern "C" {
     map* pmTmp=getMap(s,"code");
     exceptionCode=produceStatusString(m,pmTmp);
     map* pmNoHeaders=getMapFromMaps(m,"lenv","no-headers");
-    if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0)
-      printHeaders(m);
-    pmTmp=getMapFromMaps(m,"lenv","status_code");
-    if(pmTmp!=NULL)
-      exceptionCode=pmTmp->value;
-    if(exceptionCode==NULL)
-      exceptionCode=aapccStatusCodes[3][0];
     if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){
-      if(m!=NULL){
-	map *tmpSid=getMapFromMaps(m,"lenv","sid");
-	if(tmpSid!=NULL){
-	  if( getpid()==atoi(tmpSid->value) ){
+      if(getMapFromMaps(m,"headers","Content-Type")==NULL){
+	map* pmExceptionContentType=getMapFromMaps(m,"openapi","exception_mime_tye");
+	if(pmExceptionContentType!=NULL)
+	  setMapInMaps(m,"headers","Content-Type",pmExceptionContentType->value);
+	else
+	  setMapInMaps(m,"headers","Content-Type","application/json;encoding=utf-8");
+      }
+      printHeaders(m);
+      if(getMapFromMaps(m,"headers","status")==NULL){
+	pmTmp=getMapFromMaps(m,"lenv","status_code");
+	if(pmTmp!=NULL)
+	  exceptionCode=pmTmp->value;
+	if(exceptionCode==NULL)
+	  exceptionCode=aapccStatusCodes[3][0];
+	if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){
+	  if(m!=NULL){
+	    map *tmpSid=getMapFromMaps(m,"lenv","sid");
+	    if(tmpSid!=NULL){
+	      if( getpid()==atoi(tmpSid->value) ){
+		printf("Status: %s\r\n\r\n",exceptionCode);
+	      }
+	    }
+	    else{
+	      printf("Status: %s\r\n\r\n",exceptionCode);
+	    }
+	  }else{
 	    printf("Status: %s\r\n\r\n",exceptionCode);
 	  }
 	}
-	else{
-	  printf("Status: %s\r\n\r\n",exceptionCode);
-	}
-      }else{
-	printf("Status: %s\r\n\r\n",exceptionCode);
       }
     }
     
@@ -1699,9 +1709,6 @@ extern "C" {
       free(pamTmp);
       return NULL;
     }
-    map* pmHeaders=getMapFromMaps(conf,"lenv","no-headers");
-    if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0)
-      printHeaders(conf);
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
       maps* resu=result;
@@ -1961,11 +1968,11 @@ extern "C" {
       }
       free(pacTmp);
       if(res==3){
-	map* mode=getMapFromMaps(conf,"request","mode");
-	if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
-	  setMapInMaps(conf,"headers","Status","201 Created");
-	else
-	  setMapInMaps(conf,"headers","Status","200 OK");
+        map* mode=getMapFromMaps(conf,"request","mode");
+        if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
+	  setMapInMaps(conf, "headers", "Status", "201 Created");
+        else
+	  setMapInMaps(conf, "headers", "Status", "200 Ok");
       }
       else{
 	setMapInMaps(conf,"headers","Status","500 Issue running your service");
@@ -2704,16 +2711,17 @@ extern "C" {
    * @param res the JSON object to populate with the parameters
    */
   void produceApiSecuritySchemes(maps* conf,json_object* res){
-    json_object *res9=json_object_new_object();
-    maps* tmpMaps1=getMaps(conf,"osecurity");
-    map* tmpMap2=getMapFromMaps(conf,"osecurity","name");
-    char *saveptr12;
-    char *tmps12 = strtok_r (tmpMap2->value, ",", &saveptr12);
-    while(tmps12!=NULL){
-      addSecurityScheme(conf,tmps12,res9);
-      tmps12 = strtok_r (NULL, ",", &saveptr12);
+    map* pmTmp=getMapFromMaps(conf,"osecurity","name");
+    if(pmTmp!=NULL){
+      json_object *res9=json_object_new_object();
+      char *saveptr12;
+      char *tmps12 = strtok_r (pmTmp->value, ",", &saveptr12);
+      while(tmps12!=NULL){
+	addSecurityScheme(conf,tmps12,res9);
+	tmps12 = strtok_r (NULL, ",", &saveptr12);
+      }
+      json_object_object_add(res,"securitySchemes",res9);
     }
-    json_object_object_add(res,"securitySchemes",res9);
   }
 
   void produceApiComponents(maps*conf,json_object* res){
