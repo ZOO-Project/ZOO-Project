@@ -751,8 +751,10 @@ map* getMapOrFill(map** ppmMap,const char *pccKey,const char* pccValue){
     if(pmTmp!=NULL){
       addToMap((*ppmMap),pccKey,pccValue);
     }
-    else
+    else{
       (*ppmMap)=createMap(pccKey,pccValue);
+      addToMap(*ppmMap,"shouldFree","true");
+    }
     pmTmp1=getMap(*ppmMap,pccKey);
   }
   return pmTmp1;
@@ -838,18 +840,22 @@ void loadMapBinary(map** ppmOut,map* pmIn,int iPos){
     sprintf(tmp,"value_%d",iPos);
     pmTmpVin=getMap(pmIn,tmp);
     pmTmpVout=getMap(pmOut,tmp);
-    free(pmTmpVout->value);
-    pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
-    memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
-    pmTmpVout->value[atoi(pmSize->value)]=0;
-  }else{
-    if(pmSize!=NULL){
-      pmTmpVin=getMap(pmIn,"value");
-      pmTmpVout=getMap(pmOut,"value");
+    if(pmTmpVin!=NULL && pmTmpVout!=NULL){
       free(pmTmpVout->value);
       pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
       memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
       pmTmpVout->value[atoi(pmSize->value)]=0;
+    }
+  }else{
+    if(pmSize!=NULL){
+      pmTmpVin=getMap(pmIn,"value");
+      pmTmpVout=getMap(pmOut,"value");
+      if(pmTmpVin!=NULL && pmTmpVout!=NULL){
+	free(pmTmpVout->value);
+	pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
+	memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
+	pmTmpVout->value[atoi(pmSize->value)]=0;
+      }
     }
   }
 }
@@ -975,13 +981,33 @@ map* getMapArray(map* pmMap,const char* pccKey,int iIndex){
 }
 
 /**
+ * Get the key name for a specific map array element
+ *
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
+ * @param iIndex of the MapArray
+ * @return an allocated char pointer containing the key name
+ * @warning make sure to free resources returned by this function
+ */
+char* getMapArrayKey(map* pmMap,const char* pccKey,int iIndex){
+  char* pcaTmp=(char*)malloc((strlen(pccKey)+5)*sizeof(char));
+  if(iIndex>0)
+    sprintf(pcaTmp,"%s_%d",pccKey,iIndex);
+  else
+    sprintf(pcaTmp,"%s",pccKey);
+#ifdef DEBUG
+  fprintf(stderr,"** KEY %s\n",pcaTmp);
+#endif
+  return pcaTmp;
+}
+
+/**
  * Add a key value in a MapArray for a specific index
  *
  * @param pmMap the map to search for the key
  * @param pccKey the key to search in the map
  * @param iIndex the index of the MapArray 
  * @param pccValue the value to set in the MapArray 
- * @return a pointer on the map found or NULL if not found
  */
 void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
   char acTmp[1024];
@@ -999,6 +1025,8 @@ void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
     sprintf(acTmp,"%s",pccKey);
     addToMap(pmMap,"length","1");
   }
+  if(getMap(pmMap,"isArray")==NULL)
+    addToMap(pmMap,"isArray","true");
   pmSize=getMapArray(pmMap,"size",iIndex);
   if(pmSize!=NULL && strncasecmp(pccKey,"value",5)==0){
     map* pmPtr=getMapOrFill(&pmMap,acTmp,(char *)"");
@@ -2000,3 +2028,116 @@ char* getValueFromMaps(maps* inputs,const char* name){
     }
     return res;
 }
+
+/**
+ * Replace a char by another one in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
+void
+_translateChar (char *str, char toReplace, char toReplaceBy)
+{
+  int i = 0, len = strlen (str);
+  for (i = 0; i < len; i++)
+    {
+      if (str[i] == toReplace)
+        str[i] = toReplaceBy;
+    }
+}
+
+/**
+ * Replace all "val" occurence with the corresponding "rep" value in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
+char*
+translateCharMap (const char *str, map* rep)
+{
+  char* res=zStrdup(str);
+  if(rep!=NULL){
+    int i = 0, len=1;
+    map* pmLen=getMap(rep,"length");
+    if(pmLen!=NULL)
+      len=atoi(pmLen->value);
+    for (i = 0; i < len; i++)
+      {
+	map* pmVal=getMapArray(rep,"val",i);
+	map* pmRep=getMapArray(rep,"rep",i);
+	_translateChar(res,pmVal->value[0],pmRep->value[0]);
+      }
+  }
+  return res;
+}
+
+
+/**
+ * Update the counter value (in conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to update (serviceCnt or serviceCounter)
+ * @param type char pointer can be "incr" for incrementing the value by 1, other
+ * will descrement the value by 1
+ */
+void updateCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv",field);
+  if(pmTmp!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    if(strncmp(type,"incr",4)==0)
+      iCnt++;
+    else
+      iCnt--;
+    char* pcaTmp=(char*) malloc((10+1)*sizeof(char));
+    sprintf(pcaTmp,"%d",iCnt);
+    setMapInMaps(conf,"lenv",field,pcaTmp);
+    free(pcaTmp);
+  }
+}
+
+/**
+ * Compare a value with conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to compare with (serviceCntLimit or serviceCntSkip)
+ * @param type comparison operator can be : elower, lower, eupper, upper, or
+ * equal
+ * @return boolean resulting of the comparison between the values
+ */
+bool compareCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv","serviceCnt");
+  map* pmTmp1=getMapFromMaps(conf,"lenv",field);
+
+  if(pmTmp!=NULL && pmTmp1!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    int iCntOther=atoi(pmTmp1->value);
+    if(strncmp(field,"serviceCntLimit",15)==0){
+      pmTmp1=getMapFromMaps(conf,"lenv","serviceCntSkip");
+      if(pmTmp1!=NULL)
+	iCntOther+=atoi(pmTmp1->value);
+    }
+    if(strncmp(type,"lower",5)==0)
+      return iCnt<iCntOther;
+    else{
+      if(strncmp(type,"elower",6)==0)
+	return iCnt<=iCntOther;
+      else{
+	if(strncmp(type,"eupper",6)==0)
+	  return iCnt>=iCntOther;
+	else{
+	  if(strncmp(type,"upper",5)==0)
+	    return iCnt>iCntOther;
+	  else
+	    return iCnt==iCntOther;
+	}
+      }
+    }
+  }else
+    if(strncmp(type,"equal",5)==0)
+      return false;
+    else
+      return true;
+}
+

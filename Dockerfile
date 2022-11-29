@@ -99,6 +99,7 @@ ARG BUILD_DEPS=" \
     libnode-dev \
     node-addon-api \
     nodejs \
+    libaprutil1-dev\
 "
 WORKDIR /zoo-project
 COPY . .
@@ -110,7 +111,7 @@ RUN set -ex \
     && make -C ./thirds/cgic206 libcgic.a \
     \
     && cd ./zoo-project/zoo-kernel \
-    #&& git clone https://github.com/json-c/json-c.git \
+    #&& git clone  --depth=1 https://github.com/json-c/json-c.git \
     #&& mkdir json-c-build \
     #&& cd json-c-build \
     #&& cmake ../json-c -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -140,6 +141,13 @@ RUN set -ex \
     && cp ../zoo-services/hello-r/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/r/minimal.r /usr/lib/cgi-bin/ \
+    \
+    # Install Basic Authentication sample
+    && cd ../zoo-services/utils/security/basicAuth \
+    && make \
+    && cp cgi-env/* /usr/lib/cgi-bin \
+    && cd ../../../../zoo-kernel \
+    \
     && for i in  $(ls ./locale/po/*po | grep -v utf8 | grep -v message); do \
          mkdir -p /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
          msgfmt  $i -o /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
@@ -254,10 +262,13 @@ RUN set -ex \
     && cp cgi-env/* /usr/lib/cgi-bin/ \
     \
     && cd .. \
-    && cd ../zoo-services/ogr/base-vect-ops \
-    && make \
-    && cp cgi-env/* /usr/lib/cgi-bin/ \
-    && cd ../.. \
+    # Build OGR Services
+    && for i in base-vect-ops ogr2ogr; do \
+       cd ../zoo-services/ogr/$i && \
+       make && \
+       cp cgi-env/* /usr/lib/cgi-bin/ && \
+       cd ../.. ; \
+    done \
     \
     && cd ../zoo-services/gdal/ \
     && for i in contour dem grid profile translate warp ; do cd $i ; make && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \
@@ -279,10 +290,10 @@ WORKDIR /zoo-project
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
-    && git clone https://github.com/ZOO-Project/examples.git \
-    && git clone https://github.com/swagger-api/swagger-ui.git \
-    && git clone https://github.com/WPS-Benchmarking/cptesting.git /testing \
-    && git clone https://www.github.com/singularityhub/singularity-cli.git /singularity-cli \
+    && git clone --depth=1  https://github.com/ZOO-Project/examples.git \
+    && git clone --depth=1 https://github.com/swagger-api/swagger-ui.git \
+    && git clone --depth=1 https://github.com/WPS-Benchmarking/cptesting.git /testing \
+    && git clone --depth=1 https://www.github.com/singularityhub/singularity-cli.git /singularity-cli \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -370,7 +381,7 @@ COPY --from=demos /zoo-project/swagger-ui /var/www/html/swagger-ui
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS $BUILD_DEPS \
     \
-    && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/index.html \
+    && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
     && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess \
     && sed "s=http://localhost=$SERVER_URL=g;s=publisherUr\=$SERVER_URL=publisherUrl\=http://localhost=g;s=ws://localhost=$WS_SERVER_URL=g" -i /usr/lib/cgi-bin/oas.cfg \
     && sed "s=http://localhost=$SERVER_URL=g" -i /usr/lib/cgi-bin/main.cfg \

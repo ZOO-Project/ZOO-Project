@@ -124,23 +124,7 @@ extern "C" {
 	  }
 	}
 	else{
-	  // In other case we should consider array with potential sizes
-	  int limit=atoi(length->value);
-	  int i=0;
-	  val=json_object_new_array();
-	  for(i=0;i<limit;i++){
-	    map* lsizeMap=getMapArray(myMap,"size",i);
-	    toLoad=getMapArray(myMap,"to_load",i);
-	    if(lsizeMap!=NULL && strncasecmp(cursor->name,"value",5)==0){
-	      if(strlen(cursor->value)!=0 && toLoad!=NULL && strncasecmp(toLoad->value,"true",4)==0)
-		json_object_array_add(val,json_object_new_string_len(cursor->value,atoi(sizeMap->value)));
-	    }else{
-	      if(strstr(cursor->name,"title")!=NULL)
-		json_object_array_add(val,json_object_new_string(_(cursor->value)));
-	      else
-		json_object_array_add(val,json_object_new_string(cursor->value));
-	    }
-	  }
+	  val=json_object_new_string(cursor->value);
 	}
       }
       if(val!=NULL)
@@ -299,7 +283,36 @@ extern "C" {
    */
   void printLiteralValueJ(maps* pmConf,map* pmType,map* pmContent,json_object* schema,const char* field){
     map* pmTmp=getMap(pmContent,"value");
-    if(pmTmp!=NULL)
+    map* pmLength=getMap(pmContent,"length");
+    if(pmLength!=NULL){
+      int len=atoi(pmLength->value);
+      json_object* defaultProp=json_object_new_array();
+      for(int i=0;i<len;i++){
+	map* pmTmp0=getMapArray(pmContent,"value",i);
+	if(pmTmp0!=NULL){
+	  if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
+	    json_object_array_add(defaultProp,json_object_new_int(atoi(pmTmp0->value)));
+	  else{
+	    if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
+	      json_object_array_add(defaultProp,json_object_new_double(atof(pmTmp0->value)));
+	      json_object_object_add(schema,"format",json_object_new_string("double"));
+	    }
+	    else{
+	      if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
+		if(strncasecmp(pmTmp0->value,"true",4)==0)
+		  json_object_array_add(defaultProp,json_object_new_boolean(true));
+		else
+		  json_object_array_add(defaultProp,json_object_new_boolean(false));
+	      }
+	      else
+		json_object_array_add(defaultProp,json_object_new_string(pmTmp0->value));
+	    }
+	  }
+	}
+      }
+      json_object_object_add(schema,field,defaultProp);
+    }
+    else if(pmTmp!=NULL)
       if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
 	json_object_object_add(schema,field,json_object_new_int(atoi(pmTmp->value)));
       else{
@@ -333,7 +346,6 @@ extern "C" {
     map* pmMin=getMap(in->content,"minOccurs");
     if(in->defaults!=NULL){
       map* tmpMap1=getMap(in->defaults->content,"DataType");
-      map* tmpMap2=getMap(in->defaults->content,"DataType");
       if(tmpMap1!=NULL){
 	if(strncasecmp(tmpMap1->value,"float",5)==0)
 	  json_object_object_add(schema,"type",json_object_new_string("number"));
@@ -376,10 +388,6 @@ extern "C" {
 	      tmps = strtok_r (NULL, ",", &saveptr);
 	    }
 	    json_object_object_add(schema,"enum",prop5);
-	  }else{
-	    tmpMap1=getMap(in->defaults->content,"DataType");
-	    if(tmpMap1!=NULL && strncasecmp(tmpMap1->value,"string",6)==0)
-	      json_object_object_add(schema,"default",json_object_new_string("Any value"));
 	  }
 	}
       }
@@ -645,19 +653,32 @@ extern "C" {
     map* cmeta=meta;
     json_object* carr=json_object_new_array();
     int hasElement=-1;
-    while(cmeta!=NULL){
+    int iCnt=0;
+    int iLen=1;
+    if(cmeta==NULL)
+      return;
+    map* pmLength=getMap(cmeta,"length");
+    if(pmLength!=NULL)
+      iLen=atoi(pmLength->value);
+    char* pcFields[]={
+      (char*)"role",
+      (char*)"href",
+      (char*)"title"
+    };
+    for(;iCnt<iLen;iCnt++){
       json_object* jcmeta=json_object_new_object();
-      if(strcasecmp(cmeta->name,"role")==0 ||
-	 strcasecmp(cmeta->name,"href")==0 ||
-	 strcasecmp(cmeta->name,"title")==0 ){
-	if(strcasecmp(cmeta->name,"title")==0)
-	  json_object_object_add(jcmeta,cmeta->name,json_object_new_string(_(cmeta->value)));
-	else
-	  json_object_object_add(jcmeta,cmeta->name,json_object_new_string(cmeta->value));
-	hasElement++;
+      int iCnt1=0;
+      for(;iCnt1<3;iCnt1++){
+	map* pmValue=getMapArray(meta,pcFields[iCnt1],iCnt);
+	if(pmValue!=NULL){
+	  if(strcasecmp(pmValue->name,"title")==0)
+	    json_object_object_add(jcmeta,pcFields[iCnt1],json_object_new_string(_(pmValue->value)));
+	  else
+	    json_object_object_add(jcmeta,pcFields[iCnt1],json_object_new_string(pmValue->value));
+	  hasElement++;
+	}
       }
       json_object_array_add(carr,jcmeta);
-      cmeta=cmeta->next;
     }
     if(hasElement>=0)
       json_object_object_add(doc,"metadata",carr);
@@ -863,6 +884,12 @@ extern "C" {
 	json_object_object_add(res,"version",json_object_new_string("1.0.0"));
       int limit=4;
       int i=0;
+      if(serv->metadata!=NULL){
+	printJMetadata(m,serv->metadata,res);
+      }
+      if(serv->additional_parameters!=NULL){
+	printJAdditionalParameters(m,serv->additional_parameters,res);
+      }
       map* sType=getMap(serv->content,"serviceType");
       for(;i<limit;i+=2){
 	json_object *res2=json_object_new_array();
@@ -956,6 +983,7 @@ extern "C" {
     if(pmTmp!=NULL){
       json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
+      int hasType=-1;
       for(i=0;i<4;i++){
 	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
 	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
@@ -963,11 +991,16 @@ extern "C" {
 	  sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
 	  json_object_object_add(res,"type",json_object_new_string(pcaTmp));
 	  free(pcaTmp);
+	  hasType=0;
 	}
+      }
+      if(hasType<0){
+	json_object_object_add(res,"type",json_object_new_string(pmTmp->value));
       }
     }
     else{
       json_object_object_add(res,"title",json_object_new_string("NoApplicableCode"));
+      json_object_object_add(res,"type",json_object_new_string("NoApplicableCode"));
     }
     pmTmp=getMap(s,"text");
     if(pmTmp==NULL)
@@ -976,6 +1009,7 @@ extern "C" {
       pmTmp=getMapFromMaps(m,"lenv","message");
     if(pmTmp!=NULL)
       json_object_object_add(res,"detail",json_object_new_string(pmTmp->value));
+    //setMapInMaps(m,"headers","Content-Type","application/problem+json;charset=UTF-8");
     return res;
   }
   
@@ -989,45 +1023,62 @@ extern "C" {
    * @param s the map containing the text,code,locator keys (or a map array of the same keys)
    */
   void printExceptionReportResponseJ(maps* m,map* s){
-    if(getMapFromMaps(m,"lenv","hasPrinted")!=NULL)
+    map* pmHasprinted=getMapFromMaps(m,"lenv","hasExceptionPrinted");
+    if(pmHasprinted!=NULL && strncasecmp(pmHasprinted->value,"true",4)==0)
       return;
+    pmHasprinted=getMapFromMaps(m,"lenv","hasPrinted");
     int buffersize;
     //json_object *res=json_object_new_object();
     json_object *res=createExceptionJ(m,s);
     maps* tmpMap=getMaps(m,"main");
     const char *exceptionCode;
     map* pmTmp=getMap(s,"code");
-    exceptionCode=produceStatusString(m,pmTmp);    
-
-    if(getMapFromMaps(m,"lenv","no-headers")==NULL)
+    exceptionCode=produceStatusString(m,pmTmp);
+    map* pmNoHeaders=getMapFromMaps(m,"lenv","no-headers");
+    if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){
+      if(getMapFromMaps(m,"headers","Content-Type")==NULL){
+	map* pmExceptionContentType=getMapFromMaps(m,"openapi","exception_mime_tye");
+	if(pmExceptionContentType!=NULL)
+	  setMapInMaps(m,"headers","Content-Type",pmExceptionContentType->value);
+	else
+	  setMapInMaps(m,"headers","Content-Type","application/json;encoding=utf-8");
+      }
       printHeaders(m);
-
-    pmTmp=getMapFromMaps(m,"lenv","status_code");
-    if(pmTmp!=NULL)
-      exceptionCode=pmTmp->value;
-    if(getMapFromMaps(m,"lenv","no-headers")==NULL){
-      if(m!=NULL){
-	map *tmpSid=getMapFromMaps(m,"lenv","sid");
-	if(tmpSid!=NULL){
-	  if( getpid()==atoi(tmpSid->value) ){
+      if(getMapFromMaps(m,"headers","status")==NULL){
+	pmTmp=getMapFromMaps(m,"lenv","status_code");
+	if(pmTmp!=NULL)
+	  exceptionCode=pmTmp->value;
+	if(exceptionCode==NULL)
+	  exceptionCode=aapccStatusCodes[3][0];
+	if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){
+	  if(m!=NULL){
+	    map *tmpSid=getMapFromMaps(m,"lenv","sid");
+	    if(tmpSid!=NULL){
+	      if( getpid()==atoi(tmpSid->value) ){
+		printf("Status: %s\r\n\r\n",exceptionCode);
+	      }
+	    }
+	    else{
+	      printf("Status: %s\r\n\r\n",exceptionCode);
+	    }
+	  }else{
 	    printf("Status: %s\r\n\r\n",exceptionCode);
 	  }
 	}
-	else{
-	  printf("Status: %s\r\n\r\n",exceptionCode);
-	}
-      }else{
-	printf("Status: %s\r\n\r\n",exceptionCode);
       }
     }
     
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
     if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
       setMapInMaps(m,"lenv","jsonStr",jsonStr);
-    maps* pmsTmp=getMaps(m,"lenv");
-    printf(jsonStr);
-    if(m!=NULL)
-      setMapInMaps(m,"lenv","hasPrinted","true");
+
+    if(pmHasprinted==NULL || strncasecmp(pmHasprinted->value,"false",5)==0){
+      printf(jsonStr);
+      if(m!=NULL){
+	setMapInMaps(m,"lenv","hasPrinted","true");
+	setMapInMaps(m,"lenv","hasExceptionPrinted","true");
+      }
+    }
     json_object_put(res);
   }
 
@@ -1123,8 +1174,8 @@ extern "C" {
 	output->content=createMap("xlink:href",json_object_get_string(json_value));
 	int len=0;
 	int createdStr=0;
-	char *tmpStr="url";
-	char *tmpStr1="input";
+	char *tmpStr=(char*)"url";
+	char *tmpStr1=(char*)"input";
 	if(getMaps(conf,"http_requests")==NULL){
 	  maps* tmpMaps=createMaps("http_requests");
 	  tmpMaps->content=createMap("length","1");
@@ -1182,8 +1233,8 @@ extern "C" {
 	addToMap(output->content,"crs","http://www.opengis.net/def/crs/OGC/1.3/CRS84");
     }
     char* tmpStrs[2]={
-      "lowerCorner",
-      "upperCorner"
+      (char*)"lowerCorner",
+      (char*)"upperCorner"
     };
     for(int i=0;i<2;i++)
       if(json_object_object_get_ex(req,tmpStrs[i],&json_cinput)!=FALSE){
@@ -1458,7 +1509,7 @@ extern "C" {
     elements* io=s->inputs;
     json_object* json_io=NULL;
     int parsed=0;
-    char* tmpS="input";
+    char* tmpS=(char*)"input";
     maps* in=*inputs;
     parseJIO(conf,req,s->inputs,inputs,"inputs");
     parseJIO(conf,req,s->outputs,outputs,"outputs");
@@ -1531,7 +1582,7 @@ extern "C" {
    */
   json_object* printJobStatus(maps* pmsConf,char* pcJobId){
     json_object* pjoRes=NULL;
-    runGetStatus(pmsConf,pcJobId,"GetStatus");
+    runGetStatus(pmsConf,pcJobId,(char*)"GetStatus");
     map* pmError=getMapFromMaps(pmsConf,"lenv","error");
     if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
       printExceptionReportResponseJ(pmsConf,getMapFromMaps(pmsConf,"lenv","code"));
@@ -1610,11 +1661,11 @@ extern "C" {
       DIR *dirp = opendir (tmpPath->value);
       if(dirp!=NULL){
 	while ((dp = readdir (dirp)) != NULL){
-	  char* extn = strstr(dp->d_name, "_status.json");
+	  char* extn = strstr(dp->d_name, ".json");
 	  if(extn!=NULL){
 	    if(cnt>=skip && cnt<limit+skip){
 	      char* tmpStr=zStrdup(dp->d_name);
-	      tmpStr[strlen(dp->d_name)-12]=0;
+	      tmpStr[strlen(dp->d_name)-5]=0;
 	      json_object* cjob=printJobStatus(conf,tmpStr);
 	      json_object_array_add(res,cjob);
 	    }
@@ -1658,8 +1709,6 @@ extern "C" {
       free(pamTmp);
       return NULL;
     }
-    if(getMapFromMaps(conf,"lenv","no-headers")==NULL)
-      printHeaders(conf);
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
       maps* resu=result;
@@ -1720,11 +1769,14 @@ extern "C" {
 		  } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
 		  if (jerr != json_tokener_success) {
 		    fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+		    json_tokener_free(tok);
 		    return eres1;
 		  }
 		  if (tok->char_offset < slen){
+		    json_tokener_free(tok);
 		    return eres1;
 		  }
+		  json_tokener_free(tok);
 		}
 		json_object_object_add(res3,"encoding",json_object_new_string("utf-8"));
 		json_object_object_add(res1,"value",jobj);
@@ -1773,6 +1825,7 @@ extern "C" {
 		      addToMap(pamError,"message",pacMessage);
 		      printExceptionReportResponseJ(conf,pamError);
 		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+		      json_tokener_free(tok);
 		      return NULL;
 		    }
 		    if (tok->char_offset < slen){
@@ -1784,8 +1837,10 @@ extern "C" {
 		      addToMap(pamError,"message",pacMessage);
 		      printExceptionReportResponseJ(conf,pamError);
 		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+		      json_tokener_free(tok);
 		      return NULL;
 		    }
+		    json_tokener_free(tok);
 		    json_object_object_add(res1,"bbox",jobj);
 		    json_object_object_add(res1,"crs",json_object_new_string(tmpMap0->value));
 		  }
@@ -1913,11 +1968,11 @@ extern "C" {
       }
       free(pacTmp);
       if(res==3){
-	map* mode=getMapFromMaps(conf,"request","mode");
-	if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
-	  setMapInMaps(conf,"headers","Status","201 Created");
-	else
-	  setMapInMaps(conf,"headers","Status","200 Ok");
+        map* mode=getMapFromMaps(conf,"request","mode");
+        if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
+	  setMapInMaps(conf, "headers", "Status", "201 Created");
+        else
+	  setMapInMaps(conf, "headers", "Status", "200 Ok");
       }
       else{
 	setMapInMaps(conf,"headers","Status","500 Issue running your service");
@@ -2159,12 +2214,15 @@ extern "C" {
     if (jerr != json_tokener_success) {
       setMapInMaps(conf,"lenv","message",json_tokener_error_desc(jerr));
       fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+      json_tokener_free(tok);
       return NULL;
     }
     if (tok->char_offset < slen){
       fprintf(stderr, "Error parsing json\n");
+      json_tokener_free(tok);
       return NULL;
     }
+    json_tokener_free(tok);
     return pajObj;
   }
 
@@ -2230,7 +2288,7 @@ extern "C" {
 	  hasMessage=1;
 	}
 	map* mMap=NULL;
-	if((mMap=getMapFromMaps(conf,"lenv","status"))!=NULL)
+	if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
 	  json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
 	rstatus="running";
 	break;
@@ -2409,12 +2467,15 @@ extern "C" {
     if(tmpMap!=NULL){
       json_object_object_add(res1,"description",json_object_new_string(_(tmpMap->value)));
       json_object_object_add(res5,"description",json_object_new_string(_(tmpMap->value)));
-      tmpMap=getMapFromMaps(conf,"openapi","rootUrl");
-      json_object_object_add(res5,"url",json_object_new_string(tmpMap->value));
     }
-    tmpMap=getMapFromMaps(conf,"identification","title");
+    tmpMap=getMapFromMaps(conf,"openapi","rootUrl");
     if(tmpMap!=NULL)
+      json_object_object_add(res5,"url",json_object_new_string(tmpMap->value));
+    tmpMap=getMapFromMaps(conf,"identification","title");
+    if(tmpMap!=NULL){
       json_object_object_add(res1,"title",json_object_new_string(_(tmpMap->value)));
+      json_object_object_add(res5,"description",json_object_new_string(_(tmpMap->value)));
+    }
     json_object_object_add(res1,"version",json_object_new_string(ZOO_VERSION));
     tmpMap=getMapFromMaps(conf,"identification","keywords");
     if(tmpMap!=NULL){
@@ -2469,7 +2530,10 @@ extern "C" {
       else
 	json_object_object_add(cc1,"application/json",cc0);
       json_object *cc2=json_object_new_object();
-      json_object_object_add(cc2,"content",cc1);
+      if(strcmp(code,"204")!=0)
+	json_object_object_add(cc2,"content",cc1);
+      else
+	json_object_put(cc1);
       json_object_object_add(cc2,"description",json_object_new_string(msg));
       json_object_object_add(res,code,cc2);
     }
@@ -2527,7 +2591,7 @@ extern "C" {
 	}
 	else
 	  json_object_object_add(res6,"type",json_object_new_string("string"));
-      
+
 	tmpMap=getMap(tmpMaps1->content,"enum");
 	if(tmpMap!=NULL){
 	  char *saveptr12;
@@ -2607,9 +2671,63 @@ extern "C" {
     }
   }
 
+  /**
+   * Add a securityScheme to the OpenAPI components/securitySchemes object
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param fName the key to add to the res json object
+   * @param res the json object to store the content
+   */
+  void addSecurityScheme(maps* pmsConf,const char* fName,json_object* res){
+    json_object *poJsonObject=json_object_new_object();
+    maps* pmsTmp=getMaps(pmsConf,"osecurity");
+    // Get type
+    map* pmTmp=getMap(pmsTmp->content,"type");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"type",json_object_new_string(pmTmp->value));
+    // Get scheme if any
+    pmTmp=getMap(pmsTmp->content,"scheme");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"scheme",json_object_new_string(pmTmp->value));
+    // Get format if any
+    pmTmp=getMap(pmsTmp->content,"format");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"bearerFormat",json_object_new_string(pmTmp->value));
+    // Get the in key if any (for type=apiKey)
+    pmTmp=getMap(pmsTmp->content,"in");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"in",json_object_new_string(pmTmp->value));
+    // Get the name of the apiKey
+    pmTmp=getMap(pmsTmp->content,"oname");
+    if(pmTmp!=NULL)
+      json_object_object_add(poJsonObject,"name",json_object_new_string(pmTmp->value));
+    json_object_object_add(res,fName,poJsonObject);
+  }
+
+  /**
+   * Produce the JSON object for api securitySchemes
+   *
+   * @param conf the maps containing the settings of the main.cfg file
+   * @param res the JSON object to populate with the parameters
+   */
+  void produceApiSecuritySchemes(maps* conf,json_object* res){
+    map* pmTmp=getMapFromMaps(conf,"osecurity","name");
+    if(pmTmp!=NULL){
+      json_object *res9=json_object_new_object();
+      char *saveptr12;
+      char *tmps12 = strtok_r (pmTmp->value, ",", &saveptr12);
+      while(tmps12!=NULL){
+	addSecurityScheme(conf,tmps12,res9);
+	tmps12 = strtok_r (NULL, ",", &saveptr12);
+      }
+      json_object_object_add(res,"securitySchemes",res9);
+    }
+  }
+
   void produceApiComponents(maps*conf,json_object* res){
     json_object* res1=json_object_new_object();
     produceApiParameters(conf,res1);
+    produceApiSecuritySchemes(conf,res1);
     json_object_object_add(res,"components",res1);
   }
   
@@ -2683,6 +2801,22 @@ extern "C" {
 	    map* vMap=getMapArray(tmpMaps->content,"title",i);
 	    if(vMap!=NULL)
 	      json_object_object_add(methodc,"summary",json_object_new_string(_(vMap->value)));
+	    vMap=getMapArray(tmpMaps->content,"secured",i);
+	    if(vMap!=NULL){
+	      json_object *poSecurity=json_object_new_array();
+	      json_object *poScopes=json_object_new_array();
+	      map* pmSMap=getMapArray(tmpMaps->content,"scopes",i);
+	      char *pcSaveptr;
+	      char *pcTmps = strtok_r (tmpMap->value, ",", &pcSaveptr);
+	      while(pcTmps!=NULL){
+		json_object_array_add(poScopes,json_object_new_string(pcTmps));
+		pcTmps = strtok_r (NULL, ",", &pcSaveptr);
+	      }
+	      json_object *poSecurityItem=json_object_new_object();
+	      json_object_object_add(poSecurityItem,vMap->value,poScopes);
+	      json_object_array_add(poSecurity,poSecurityItem);
+	      json_object_object_add(methodc,"security",poSecurity);
+	    }
 	    vMap=getMapArray(tmpMaps->content,"abstract",i);
 	    if(vMap!=NULL)
 	      json_object_object_add(methodc,"description",json_object_new_string(_(vMap->value)));
@@ -2703,18 +2837,25 @@ extern "C" {
 	    json_object *responses=json_object_new_object();
 	    json_object *cc3=json_object_new_object();
 	    map* pmUseContent=getMapFromMaps(conf,"openapi","use_content");
+	    map* pmCode=getMapArray(tmpMaps->content,"code",i);
 	    vMap=getMapArray(tmpMaps->content,"schema",i);
 	    if(vMap!=NULL){
 	      map* tMap=getMapArray(tmpMaps->content,"type",i);
-	      addResponse(pmUseContent,cc3,vMap,tMap,"200","successful operation");
+	      if(pmCode!=NULL)
+		addResponse(pmUseContent,cc3,vMap,tMap,pmCode->value,"successful operation");
+	      else
+		addResponse(pmUseContent,cc3,vMap,tMap,"200","successful operation");
 	      vMap=getMapArray(tmpMaps->content,"eschema",i);
-	      if(vMap!=NULL && cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
+	      if(pmCode==NULL && vMap!=NULL && cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
 		addResponse(pmUseContent,cc3,vMap,tMap,"201","successful operation");
 	    }else{
 	      map* tMap=getMapFromMaps(conf,tmps,"type");
 	      map* pMap=createMap("ok","true");
-	      addResponse(pMap,cc3,vMap,tMap,"200","successful operation");
-	      if(cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
+	      if(pmCode!=NULL)
+		addResponse(pMap,cc3,vMap,tMap,pmCode->value,"successful operation");
+	      else
+		addResponse(pMap,cc3,vMap,tMap,"200","successful operation");
+	      if(pmCode==NULL && cMap!=NULL && strncasecmp(cMap->value,"post",4)==0)
 		addResponse(pmUseContent,cc3,vMap,tMap,"201","successful operation");
 	      freeMap(&pMap);
 	      free(pMap);
@@ -2761,130 +2902,161 @@ extern "C" {
 	      json_object_object_add(methodc,"parameters",cc2);
 	    }
 	    if(/*i==1 && */cMap!=NULL && strncasecmp(cMap->value,"post",4)==0){
-	      maps* tmpMaps1=getMaps(conf,"requestBody");
-	      if(tmpMaps1!=NULL){
-		vMap=getMap(tmpMaps1->content,"schema");
-		if(vMap!=NULL){
-		  json_object *cc=json_object_new_object();
-		  json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
-		  json_object *cc0=json_object_new_object();
-		  json_object_object_add(cc0,"schema",cc);
-		  // Add examples from here
-		  map* pmExample=getMap(tmpMaps->content,"examples");
-		  if(pmExample!=NULL){
-		    int iCnt=0;
-		    char* saveptr;
-		    map* pmExamplesPath=getMapFromMaps(conf,"openapi","examplesPath");
-		    json_object* prop5=json_object_new_object();
-		    char *tmps = strtok_r (pmExample->value, ",", &saveptr);
-		    while(tmps!=NULL && strlen(tmps)>0){
-		      json_object* prop6=json_object_new_object();
-		      json_object* pjoExempleItem=json_object_new_object();
-		      char* pcaExempleFile=NULL;
-		      if(pmName!=NULL){
-			pcaExempleFile=(char*)malloc((strlen(pmExamplesPath->value)+strlen(pmName->value)+strlen(tmps)+3)*sizeof(char));
-			sprintf(pcaExempleFile,"%s/%s/%s",pmExamplesPath->value,pmName->value,tmps);
-		      }else{
-			pcaExempleFile=(char*)malloc((strlen(pmExamplesPath->value)+strlen(tmps)+2)*sizeof(char));
-			sprintf(pcaExempleFile,"%s/%s",pmExamplesPath->value,tmps);
-		      }
-		      char actmp[10];
-		      sprintf(actmp,"%d",iCnt);
-		      char* pcaTmp;
-		      map* pmSummary=getMapArray(tmpMaps->content,"examples_summary",iCnt);
-		      if(pmSummary!=NULL){
-			pcaTmp=(char*)malloc((strlen(actmp)+strlen(pmSummary->value)+strlen(_("Example "))+3)*sizeof(char));
-			sprintf(pcaTmp,"%s%s: %s",_("Example "),actmp,pmSummary->value);		
-		      }
-		      else{
-			pcaTmp=(char*)malloc((strlen(actmp)+strlen(_("Example "))+3)*sizeof(char));
-			sprintf(pcaTmp,"%s%s",_("Example "),actmp);
-		      }
-		      json_object* pjoValue=json_readFile(conf,pcaExempleFile);
-		      json_object_object_add(pjoExempleItem,"summary",json_object_new_string(pcaTmp));
-		      json_object_object_add(pjoExempleItem,"value",pjoValue);
-		      json_object_object_add(prop5,actmp,pjoExempleItem);
-		      tmps = strtok_r (NULL, ",", &saveptr);
-		      iCnt++;
+	      int len=1;
+	      map* pmRequestBodyLength=getMapArray(tmpMaps->content,"requestBody_length",i);
+	      if(pmRequestBodyLength!=NULL)
+		len=atoi(pmRequestBodyLength->value);
+	      char* pcaKey0=getMapArrayKey(tmpMaps->content,"requestBody",i);
+	      int iCnt=0;
+	      int iCounter=0;
+	      json_object *cc1=NULL;
+	      json_object *cc2=NULL;
+	      for(;iCounter<len;iCounter++){
+		map* pmRequestBodyName=getMapArray(tmpMaps->content,pcaKey0,iCounter);
+		maps* tmpMaps1=getMaps(conf,(pmRequestBodyName==NULL?"requestBody":pmRequestBodyName->value));
+		if(tmpMaps1!=NULL){
+		  vMap=getMap(tmpMaps1->content,"schema");
+		  if(vMap!=NULL){
+		    int iIsRef=-1;
+		    json_object *cc=json_object_new_object();
+		    json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
+		    json_object *cc0=json_object_new_object();
+		    json_object_object_add(cc0,"schema",cc);
+		    // Add examples from here
+		    char* pcaKey1=getMapArrayKey(tmpMaps->content,"examples",i);
+		    map* pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
+		    if(pmExample==NULL){
+		      free(pcaKey1);
+		      pcaKey1=getMapArrayKey(tmpMaps->content,"examples_ref",i);
+		      pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
+		      iIsRef=1;
 		    }
-		    json_object_object_add(cc0,"examples",prop5);
+		    if(pmExample!=NULL){
+		      char* saveptr;
+		      map* pmExamplesPath=getMapFromMaps(conf,"openapi","examplesPath");
+		      json_object* prop5=json_object_new_object();
+		      char *tmps = strtok_r (pmExample->value, ",", &saveptr);
+		      while(tmps!=NULL && strlen(tmps)>0){
+			json_object* prop6=json_object_new_object();
+			json_object* pjoExempleItem=json_object_new_object();
+			char* pcaExempleFile=NULL;
+			if(iIsRef<0)
+			  if(pmName!=NULL){
+			    pcaExempleFile=(char*)malloc((strlen(pmExamplesPath->value)+strlen(pmName->value)+strlen(tmps)+3)*sizeof(char));
+			    sprintf(pcaExempleFile,"%s/%s/%s",pmExamplesPath->value,pmName->value,tmps);
+			  }else{
+			    pcaExempleFile=(char*)malloc((strlen(pmExamplesPath->value)+strlen(tmps)+2)*sizeof(char));
+			    sprintf(pcaExempleFile,"%s/%s",pmExamplesPath->value,tmps);
+			  }
+			char actmp[10];
+			sprintf(actmp,"%d",iCnt);
+			char* pcaTmp;
+			char* pcaKey2=getMapArrayKey(tmpMaps->content,"examples_summary",i);
+			map* pmSummary=getMapArray(tmpMaps->content,pcaKey2,iCnt);
+			if(pmSummary!=NULL){
+			  pcaTmp=(char*)malloc((strlen(actmp)+strlen(pmSummary->value)+strlen(_("Example "))+3)*sizeof(char));
+			  sprintf(pcaTmp,"%s%s: %s",_("Example "),actmp,pmSummary->value);
+			}
+			else{
+			  pcaTmp=(char*)malloc((strlen(actmp)+strlen(_("Example "))+3)*sizeof(char));
+			  sprintf(pcaTmp,"%s%s",_("Example "),actmp);
+			}
+			free(pcaKey2);
+			json_object_object_add(pjoExempleItem,"summary",json_object_new_string(pcaTmp));
+			if(iIsRef<0){
+			  json_object* pjoValue=json_readFile(conf,pcaExempleFile);
+			  json_object_object_add(pjoExempleItem,"value",pjoValue);
+			}else{
+			  json_object_object_add(pjoExempleItem,"externalValue",json_object_new_string(tmps));
+			}
+			json_object_object_add(prop5,actmp,pjoExempleItem);
+			tmps = strtok_r (NULL, ",", &saveptr);
+			iCnt++;
+		      }
+		      json_object_object_add(cc0,"examples",prop5);
+		    }
+		    free(pcaKey1);
+		    if(iCounter==0)
+		      cc1=json_object_new_object();
+		    map* tmpMap3=getMap(tmpMaps1->content,"type");
+		    if(tmpMap3!=NULL)
+		      json_object_object_add(cc1,tmpMap3->value,cc0);
+		    else
+		      json_object_object_add(cc1,"application/json",cc0);
+		    if(iCounter==0)
+		      cc2=json_object_new_object();
+		    if(iCounter+1==len){
+		      json_object_object_add(cc2,"content",cc1);
+		      vMap=getMap(tmpMaps1->content,"abstract");
+		      if(vMap!=NULL)
+			json_object_object_add(cc2,"description",json_object_new_string(vMap->value));
+		      json_object_object_add(cc2,"required",json_object_new_boolean(true));
+		      json_object_object_add(methodc,"requestBody",cc2);
+		    }
 		  }
-		  
-		  json_object *cc1=json_object_new_object();
-		  map* tmpMap3=getMap(tmpMaps->content,"type");
-		  if(tmpMap3!=NULL)
-		    json_object_object_add(cc1,tmpMap3->value,cc0);
-		  else
-		    json_object_object_add(cc1,"application/json",cc0);
-		  json_object *cc2=json_object_new_object();
-		  json_object_object_add(cc2,"content",cc1);
-		  vMap=getMap(tmpMaps1->content,"abstract");
-		  if(vMap!=NULL)
-		    json_object_object_add(cc2,"description",json_object_new_string(vMap->value));
-		  json_object_object_add(cc2,"required",json_object_new_boolean(true));
-
-		  
-		  json_object_object_add(methodc,"requestBody",cc2);
-
-		}		
-	      }
-	      tmpMaps1=getMaps(conf,"callbacks");
-	      if(tmpMaps1!=NULL){
-		map* pmTmp2=getMap(tmpMaps1->content,"length");
-		int iLen=atoi(pmTmp2->value);
-		json_object *pajRes=json_object_new_object();
-		for(int i=0;i<iLen;i++){
-		  map* pmState=getMapArray(tmpMaps1->content,"state",i);
-		  map* pmUri=getMapArray(tmpMaps1->content,"uri",i);
-		  map* pmSchema=getMapArray(tmpMaps1->content,"schema",i);
-		  map* pmType=getMapArray(tmpMaps1->content,"type",i);
-		  map* pmTitle=getMapArray(tmpMaps1->content,"title",i);
-		  json_object *pajSchema=json_object_new_object();
-		  if(pmSchema!=NULL)
-		    json_object_object_add(pajSchema,"$ref",json_object_new_string(pmSchema->value));
-		  json_object *pajType=json_object_new_object();
-		  json_object_object_add(pajType,"schema",pajSchema);
-		  json_object *pajContent=json_object_new_object();
-		  if(pmType!=NULL)
-		    json_object_object_add(pajContent,pmType->value,pajType);
-		  else		  
-		    json_object_object_add(pajContent,"application/json",pajType);
-		  json_object *pajRBody=json_object_new_object();
-		  json_object_object_add(pajRBody,"content",pajContent);
-		  
-		  json_object *pajDescription=json_object_new_object();
-		  json_object *pajPost=json_object_new_object();
-		  if(pmTitle!=NULL){
-		    json_object_object_add(pajDescription,"description",json_object_new_string(_(pmTitle->value)));
-		    json_object_object_add(pajPost,"summary",json_object_new_string(_(pmTitle->value)));
-		  }
-		  json_object *pajResponse=json_object_new_object();
-		  json_object_object_add(pajResponse,"200",pajDescription);
-
-		  json_object_object_add(pajPost,"requestBody",pajRBody);
-		  json_object_object_add(pajPost,"responses",pajResponse);
-		  if(pmName!=NULL){
-		    char* pcaOperationId=(char*)malloc((strlen(pmState->value)+strlen(pmName->value)+1)*sizeof(char));
-		    sprintf(pcaOperationId,"%s%s",pmState->value,pmName->value);
-		    json_object_object_add(pajPost,"operationId",json_object_new_string(pcaOperationId));
-		    free(pcaOperationId);
-		  }
-		  else
-		    json_object_object_add(pajPost,"operationId",json_object_new_string(pmState->value));
-		  
-		  json_object *pajMethod=json_object_new_object();
-		  json_object_object_add(pajMethod,"post",pajPost);
-
-		  
-		  char* pacUri=(char*) malloc((strlen(pmUri->value)+29)*sizeof(char));
-		  sprintf(pacUri,"{$request.body#/subscriber/%s}",pmUri->value);
-
-		  json_object *pajFinal=json_object_new_object();
-		  json_object_object_add(pajFinal,pacUri,pajMethod);
-		  json_object_object_add(pajRes,pmState->value,pajFinal);
-
 		}
-		json_object_object_add(methodc,"callbacks",pajRes);
+	      }
+	      free(pcaKey0);
+	      map* pmCallbacksReference=getMapArray(tmpMaps->content,"callbacksReference",i);
+	      if(pmCallbacksReference!=NULL){
+		tmpMaps1=getMaps(conf,pmCallbacksReference->value);
+		if(tmpMaps1!=NULL){
+		  map* pmTmp2=getMap(tmpMaps1->content,"length");
+		  int iLen=atoi(pmTmp2->value);
+		  json_object *pajRes=json_object_new_object();
+		  for(int i=0;i<iLen;i++){
+		    map* pmState=getMapArray(tmpMaps1->content,"state",i);
+		    map* pmUri=getMapArray(tmpMaps1->content,"uri",i);
+		    map* pmSchema=getMapArray(tmpMaps1->content,"schema",i);
+		    map* pmType=getMapArray(tmpMaps1->content,"type",i);
+		    map* pmTitle=getMapArray(tmpMaps1->content,"title",i);
+		    json_object *pajSchema=json_object_new_object();
+		    if(pmSchema!=NULL)
+		      json_object_object_add(pajSchema,"$ref",json_object_new_string(pmSchema->value));
+		    json_object *pajType=json_object_new_object();
+		    json_object_object_add(pajType,"schema",pajSchema);
+		    json_object *pajContent=json_object_new_object();
+		    if(pmType!=NULL)
+		      json_object_object_add(pajContent,pmType->value,pajType);
+		    else
+		      json_object_object_add(pajContent,"application/json",pajType);
+		    json_object *pajRBody=json_object_new_object();
+		    json_object_object_add(pajRBody,"content",pajContent);
+		  
+		    json_object *pajDescription=json_object_new_object();
+		    json_object *pajPost=json_object_new_object();
+		    if(pmTitle!=NULL){
+		      json_object_object_add(pajDescription,"description",json_object_new_string(_(pmTitle->value)));
+		      json_object_object_add(pajPost,"summary",json_object_new_string(_(pmTitle->value)));
+		    }
+		    json_object *pajResponse=json_object_new_object();
+		    json_object_object_add(pajResponse,"200",pajDescription);
+
+		    json_object_object_add(pajPost,"requestBody",pajRBody);
+		    json_object_object_add(pajPost,"responses",pajResponse);
+		    if(pmName!=NULL){
+		      char* pcaOperationId=(char*)malloc((strlen(pmState->value)+strlen(pmName->value)+1)*sizeof(char));
+		      sprintf(pcaOperationId,"%s%s",pmState->value,pmName->value);
+		      json_object_object_add(pajPost,"operationId",json_object_new_string(pcaOperationId));
+		      free(pcaOperationId);
+		    }
+		    else
+		      json_object_object_add(pajPost,"operationId",json_object_new_string(pmState->value));
+		  
+		    json_object *pajMethod=json_object_new_object();
+		    json_object_object_add(pajMethod,"post",pajPost);
+
+		  
+		    char* pacUri=(char*) malloc((strlen(pmUri->value)+29)*sizeof(char));
+		    sprintf(pacUri,"{$request.body#/subscriber/%s}",pmUri->value);
+
+		    json_object *pajFinal=json_object_new_object();
+		    json_object_object_add(pajFinal,pacUri,pajMethod);
+		    json_object_object_add(pajRes,pmState->value,pajFinal);
+
+		  }
+		  json_object_object_add(methodc,"callbacks",pajRes);
+		}
 	      }
 	    }
 	    map* mMap=getMapArray(tmpMaps->content,"method",i);

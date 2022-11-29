@@ -501,7 +501,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
 
-  if(memUse!=NULL && strcasecmp(memUse->value,"load")==0)
+  if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
     ldwFlags=INTERNET_FLAG_NO_CACHE_WRITE;
   
   switch(ldwFlags)
@@ -533,19 +533,27 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 #ifdef ULINET_DEBUG
   fprintf(stderr,"URL (%s)\nBODY (%s)\n",lpszUrl,lpszHeaders);
 #endif
+  map* pmMethod=getMapFromMaps((maps*)conf,"lenv","callback_request_method");
+  if(pmMethod!=NULL && strcasecmp(pmMethod->value,"DELETE")==0)
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_CUSTOMREQUEST, "DELETE");
   if(lpszHeaders!=NULL && strlen(lpszHeaders)>0){
 #ifdef MSG_LAF_VERBOSE
     fprintf(stderr,"FROM ULINET !!");
     fprintf(stderr,"HEADER : [%s] %d\n",lpszHeaders,dwHeadersLength);
 #endif
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
+    map* pmMethod=getMapFromMaps((maps*)conf,"lenv","callback_request_method");
+    if(pmMethod!=NULL && strcasecmp(pmMethod->value,"PUT")==0)
+	curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_PUT,1);
+    else{
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
+    }
+    hInternet->ihandle[hInternet->nb].post=zStrdup(lpszHeaders);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
 #ifdef ULINET_DEBUG
     fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
 #endif
-    hInternet->ihandle[hInternet->nb].post=zStrdup(lpszHeaders);
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
   }
   if(hInternet->ihandle[hInternet->nb].header!=NULL)
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);

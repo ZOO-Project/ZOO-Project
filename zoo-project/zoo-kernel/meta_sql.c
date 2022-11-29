@@ -124,12 +124,12 @@ iotype* getIoType(OGRFeature* f,const char** fields){
  * @param dref the description identifier
  * @return the number of metadata field found
  */
-int fillAdditionalParameters(maps* conf,map** ap,const char* dref){
+int fillAdditionalParameters(int iDbId,maps* conf,map** ap,const char* dref){
   int res=0;
   char* ioQuery=(char*)malloc((META_SERVICES_AP_FROM_ANYTHING_LENGTH+strlen(dref)+1)*sizeof(char));
   sprintf(ioQuery,META_SERVICES_AP_FROM_ANYTHING,dref);
   OGRFeature  *meta = NULL;
-  OGRLayer *metas=fetchSql(conf,0,ioQuery);
+  OGRLayer *metas=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
   int cnt=0;
   char fields[3][255]={
@@ -152,17 +152,17 @@ int fillAdditionalParameters(maps* conf,map** ap,const char* dref){
     char* apQuery=(char*)malloc((META_SERVICES_AP_FROM_AP_LENGTH+strlen(dref)+1)*sizeof(char));
     sprintf(apQuery,META_SERVICES_AP_FROM_AP,meta->GetFieldAsString(0));
     OGRFeature  *adp = NULL;
-    OGRLayer *adps=fetchSql(conf,0,apQuery);
+    OGRLayer *adps=fetchSql(conf,iDbId-1,apQuery);
     free(apQuery);
     while( (adp = adps->GetNextFeature()) != NULL ){
       addToMap(*ap,adp->GetFieldAsString(0),adp->GetFieldAsString(1));
       OGRFeature::DestroyFeature( adp );
     }
-    cleanFetchSql(conf,0,adps);
+    cleanFetchSql(conf,iDbId-1,adps);
     res++;
     OGRFeature::DestroyFeature( meta );
   }
-  cleanFetchSql(conf,0,metas);
+  cleanFetchSql(conf,iDbId-1,metas);
   return res;
 }
 
@@ -174,12 +174,12 @@ int fillAdditionalParameters(maps* conf,map** ap,const char* dref){
  * @param dref the description identifier
  * @return the number of metadata field found
  */
-int fillMetadata(maps* conf,map** metadata,const char* dref){
+int fillMetadata(int iDbId,maps* conf,map** metadata,const char* dref){
   int res=0;
   char* ioQuery=(char*)malloc((META_SERVICES_META_FROM_ANYTHING_LENGTH+strlen(dref)+1)*sizeof(char));
   sprintf(ioQuery,META_SERVICES_META_FROM_ANYTHING,dref);
   OGRFeature  *meta = NULL;
-  OGRLayer *metas=fetchSql(conf,0,ioQuery);
+  OGRLayer *metas=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
   int cnt=0;
   char fields[3][255]={
@@ -200,7 +200,7 @@ int fillMetadata(maps* conf,map** metadata,const char* dref){
     res++;
     OGRFeature::DestroyFeature( meta );
   }
-  cleanFetchSql(conf,0,metas);
+  cleanFetchSql(conf,iDbId-1,metas);
   return res;
 }
 
@@ -214,12 +214,12 @@ int fillMetadata(maps* conf,map** metadata,const char* dref){
  * @param ltype the element type ("Input" or "Output")
  * @return the number of default/supported definition found
  */
-int fillLiteralData(maps* conf,elements* in,OGRFeature  *input,const char* ltype){
+int fillLiteralData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const char* ltype){
   int res=0;
   char* ioQuery=(char*)malloc((META_SERVICES_LIST_LITERAL_FROM_IO_LENGTH+(strlen(ltype)*2)+strlen(input->GetFieldAsString( 0 ))+1)*sizeof(char));
   sprintf(ioQuery,META_SERVICES_LIST_LITERAL_FROM_IO,ltype,ltype,input->GetFieldAsString( 0 ));
   OGRFeature  *io = NULL;
-  OGRLayer *ios=fetchSql(conf,0,ioQuery);
+  OGRLayer *ios=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
   int ioCnt=0;
   const char* fields[5]={"dataType","value","uom","AllowedValues",NULL};
@@ -242,7 +242,7 @@ int fillLiteralData(maps* conf,elements* in,OGRFeature  *input,const char* ltype
     res++;
     OGRFeature::DestroyFeature( io );
   }
-  cleanFetchSql(conf,0,ios);
+  cleanFetchSql(conf,iDbId-1,ios);
   return res;
 }
 
@@ -256,12 +256,12 @@ int fillLiteralData(maps* conf,elements* in,OGRFeature  *input,const char* ltype
  * @param ltype the element type ("Input" or "Output")
  * @return the number of default/supported definition found
  */
-int fillComplexData(maps* conf,elements* in,OGRFeature  *input,const char* ltype){
+int fillComplexData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const char* ltype){
   int res=0;
   char* ioQuery=(char*)malloc((META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH+(strlen(ltype)*2)+strlen(input->GetFieldAsString( 0 ))+1)*sizeof(char));
   sprintf(ioQuery,META_SERVICES_LIST_FORMATS_FROM_IO,ltype,ltype,input->GetFieldAsString( 0 ));
   OGRFeature  *io = NULL;
-  OGRLayer *ios=fetchSql(conf,0,ioQuery);
+  OGRLayer *ios=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
   int ioCnt=0;
   const char* fields[6]={"mimeType","ecoding","schema","maximumMegabytes","useMapserver","msStyle"};
@@ -284,7 +284,7 @@ int fillComplexData(maps* conf,elements* in,OGRFeature  *input,const char* ltype
     res++;
     OGRFeature::DestroyFeature( io );
   }
-  cleanFetchSql(conf,0,ios);
+  cleanFetchSql(conf,iDbId-1,ios);
   return res;
 }
 
@@ -295,39 +295,39 @@ int fillComplexData(maps* conf,elements* in,OGRFeature  *input,const char* ltype
  * @param input the OGRFeature pointing to an input
  * @return a new elements* corresponding to the current input
  */
-elements* extractInput(maps* conf,OGRFeature *input){
+elements* extractInput(int iDbId,maps* conf,OGRFeature *input){
   elements* res=createElements(input->GetFieldAsString( 1 ));
   res->content=createMap("title",input->GetFieldAsString( 2 ));
   addToMap(res->content,"abstract",input->GetFieldAsString( 3 ));
   addToMap(res->content,"minOccurs",input->GetFieldAsString( 4 ));
   addToMap(res->content,"maxOccurs",input->GetFieldAsString( 5 ));
   // Extract metadata
-  fillMetadata(conf,&res->metadata,input->GetFieldAsString( 0 ));
+  fillMetadata(iDbId,conf,&res->metadata,input->GetFieldAsString( 0 ));
   res->additional_parameters=NULL;
-  fillAdditionalParameters(conf,&res->additional_parameters,input->GetFieldAsString( 0 ));
+  fillAdditionalParameters(iDbId,conf,&res->additional_parameters,input->GetFieldAsString( 0 ));
   res->defaults=NULL;
   res->supported=NULL;
   res->child=NULL;
   res->next=NULL;
   // Extract iotypes
-  int ioCnt=fillLiteralData(conf,res,input,"Input");
+  int ioCnt=fillLiteralData(iDbId,conf,res,input,"Input");
   if(ioCnt==0){
-    ioCnt=fillComplexData(conf,res,input,"Input");
+    ioCnt=fillComplexData(iDbId,conf,res,input,"Input");
   }
   if(ioCnt==0){
     char* nestedInputsQuery=(char*)malloc((META_SERVICES_LIST_INPUTS_FROM_INPUT_LENGTH+strlen(input->GetFieldAsString( 0 ))+1)*sizeof(char));
     sprintf(nestedInputsQuery,META_SERVICES_LIST_INPUTS_FROM_INPUT,input->GetFieldAsString( 0 ));
     OGRFeature  *ninput = NULL;
-    OGRLayer *ninputs=fetchSql(conf,0,nestedInputsQuery);
+    OGRLayer *ninputs=fetchSql(conf,iDbId-1,nestedInputsQuery);
     free(nestedInputsQuery);
     while( (ninput = ninputs->GetNextFeature()) != NULL ){
-      elements* nin=extractInput(conf,ninput);
+      elements* nin=extractInput(iDbId,conf,ninput);
       addToElements(&res->child,nin);
       freeElements(&nin);
       free(nin);
       OGRFeature::DestroyFeature( ninput );
     }
-    cleanFetchSql(conf,0,ninputs);
+    cleanFetchSql(conf,iDbId-1,ninputs);
   }
   return res;
 }
@@ -339,28 +339,28 @@ elements* extractInput(maps* conf,OGRFeature *input){
  * @param output the OGRFeature pointing to an output
  * @return a new elements* corresponding to the current output
  */
-elements* extractOutput(maps* conf,OGRFeature *output){
+elements* extractOutput(int iDbId,maps* conf,OGRFeature *output){
   elements* res=createElements(output->GetFieldAsString( 1 ));
   res->content=createMap("title",output->GetFieldAsString( 2 ));
   addToMap(res->content,"abstract",output->GetFieldAsString( 3 ));
-  fillMetadata(conf,&res->metadata,output->GetFieldAsString( 0 ));
-  fillAdditionalParameters(conf,&res->additional_parameters,output->GetFieldAsString( 0 ));
-  int ioCnt=fillLiteralData(conf,res,output,"Output");
+  fillMetadata(iDbId,conf,&res->metadata,output->GetFieldAsString( 0 ));
+  fillAdditionalParameters(iDbId,conf,&res->additional_parameters,output->GetFieldAsString( 0 ));
+  int ioCnt=fillLiteralData(iDbId,conf,res,output,"Output");
   if(ioCnt==0)
-    ioCnt=fillComplexData(conf,res,output,"Output");
+    ioCnt=fillComplexData(iDbId,conf,res,output,"Output");
   char* nestedOutputsQuery=(char*)malloc((META_SERVICES_LIST_OUTPUTS_FROM_OUTPUT_LENGTH+strlen(output->GetFieldAsString( 0 ))+1)*sizeof(char));
   sprintf(nestedOutputsQuery,META_SERVICES_LIST_OUTPUTS_FROM_OUTPUT,output->GetFieldAsString( 0 ));
   OGRFeature  *noutput = NULL;
-  OGRLayer *noutputs=fetchSql(conf,0,nestedOutputsQuery);
+  OGRLayer *noutputs=fetchSql(conf,iDbId-1,nestedOutputsQuery);
   free(nestedOutputsQuery);
   while( (noutput = noutputs->GetNextFeature()) != NULL ){
-    elements* nout=extractOutput(conf,noutput);
+    elements* nout=extractOutput(iDbId,conf,noutput);
     addToElements(&res->child,nout);
     freeElements(&nout);
     free(nout);
     OGRFeature::DestroyFeature( noutput );
   }
-  cleanFetchSql(conf,0,noutputs);
+  cleanFetchSql(conf,iDbId-1,noutputs);
   return res;
 }
 
@@ -374,12 +374,27 @@ elements* extractOutput(maps* conf,OGRFeature *output){
  */
 service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
   OGRFeature  *poFeature = NULL;
+  int iDbId=getCurrentId(conf);
   char* tmpQuery=(char*)malloc((META_SERVICES_LIST_ALL_LENGTH+strlen(serviceName)+21)*sizeof(char));
-  sprintf(tmpQuery,"%s WHERE identifier='%s'",META_SERVICES_LIST_ALL,serviceName);  
-  OGRLayer *res=fetchSql(conf,0,tmpQuery);
+  sprintf(tmpQuery,"%s WHERE identifier='%s'",META_SERVICES_LIST_ALL,serviceName);
+  maps* pmsTmp=getMaps(conf,"sqlenv");
+  int iLen=0;
+  if(getMapFromMaps(conf,"sqlenv","lastQuery")!=NULL){
+    map* pmTmp=getMapFromMaps(conf,"sqlenv","length");
+    if(pmTmp!=NULL)
+      iLen=atoi(pmTmp->value);
+    setMapArray(pmsTmp->content,"lastQuery",iLen,tmpQuery);
+  }
+  else{
+    setMapInMaps(conf,"sqlenv","lastQuery",tmpQuery);
+    pmsTmp=getMaps(conf,"sqlenv");
+  }
+  OGRLayer *res=fetchSql(conf,iDbId-1,tmpQuery);
   free(tmpQuery);
   if(res!=NULL){
     while( (poFeature = res->GetNextFeature()) != NULL ){
+      setMapArray(pmsTmp->content,"lastResult",iLen,"Succeeded");
+      //setMapInMaps(conf,"lenv","lastResult","Succeeded");
       service* s = (service*) malloc(SERVICE_SIZE);
       s->name = strdup(poFeature->GetFieldAsString( 1 ));
       s->content = createMap("title",poFeature->GetFieldAsString( 2 ));
@@ -389,23 +404,25 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       addToMap(s->content,"confId",poFeature->GetFieldAsString( 6 ));
       addToMap(s->content,"fromDb","true");
       s->metadata=NULL;
-      fillMetadata(conf,&s->metadata,poFeature->GetFieldAsString( 0 ));
+      fillMetadata(iDbId,conf,&s->metadata,poFeature->GetFieldAsString( 0 ));
       s->additional_parameters=NULL;
-      fillAdditionalParameters(conf,&s->additional_parameters,poFeature->GetFieldAsString( 0 ));
+      fillAdditionalParameters(iDbId,conf,&s->additional_parameters,poFeature->GetFieldAsString( 0 ));
       s->inputs=NULL;
       s->outputs=NULL;
       if(minimal==1){
 	OGRFeature::DestroyFeature( poFeature );
-	cleanFetchSql(conf,0,res);
+	cleanFetchSql(conf,iDbId-1,res);
 	return s;
       }
       char* inputsQuery=(char*)malloc((META_SERVICES_LIST_INPUTS_FROM_PROCESS_LENGTH+strlen(poFeature->GetFieldAsString( 0 ))+1)*sizeof(char));
       sprintf(inputsQuery,META_SERVICES_LIST_INPUTS_FROM_PROCESS,poFeature->GetFieldAsString( 0 ));
       OGRFeature  *input = NULL;
-      OGRLayer *inputs=fetchSql(conf,0,inputsQuery);
+      OGRLayer *inputs=fetchSql(conf,iDbId-1,inputsQuery);
+      setMapArray(pmsTmp->content,"lastQuery",iLen+1,inputsQuery);
       free(inputsQuery);
       while( (input = inputs->GetNextFeature()) != NULL ){
-	elements* in=extractInput(conf,input);
+	setMapArray(pmsTmp->content,"lastResult",iLen+1,"Succeeded");
+	elements* in=extractInput(iDbId,conf,input);
 	if(in!=NULL){
 	  addToElements(&s->inputs,in);
 	  freeElements(&in);
@@ -413,15 +430,17 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
 	}
 	OGRFeature::DestroyFeature( input );
       }
-      cleanFetchSql(conf,0,inputs);
+      cleanFetchSql(conf,iDbId-1,inputs);
       char* outputsQuery=(char*)malloc((META_SERVICES_LIST_OUTPUTS_FROM_PROCESS_LENGTH+strlen(poFeature->GetFieldAsString( 0 ))+1)*sizeof(char));
       sprintf(outputsQuery,META_SERVICES_LIST_OUTPUTS_FROM_PROCESS,poFeature->GetFieldAsString( 0 ));
       OGRFeature  *output = NULL;
-      OGRLayer *outputs=fetchSql(conf,0,outputsQuery);
+      OGRLayer *outputs=fetchSql(conf,iDbId-1,outputsQuery);
+      setMapArray(pmsTmp->content,"lastQuery",iLen+2,outputsQuery);
       free(outputsQuery);
       s->outputs=NULL;
       while( (output = outputs->GetNextFeature()) != NULL ){
-	elements* in=extractOutput(conf,output);
+	setMapArray(pmsTmp->content,"lastResult",iLen+2,"Succeeded");
+	elements* in=extractOutput(iDbId,conf,output);
 	if(in!=NULL){
 	  addToElements(&s->outputs,in);
 	  freeElements(&in);
@@ -429,13 +448,14 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
 	}
 	OGRFeature::DestroyFeature( output );
       }
-      cleanFetchSql(conf,0,outputs);
+      cleanFetchSql(conf,iDbId-1,outputs);
       OGRFeature::DestroyFeature( poFeature );
-      cleanFetchSql(conf,0,res);
+      cleanFetchSql(conf,iDbId-1,res);
       return s;
     }
   }
-  cleanFetchSql(conf,0,res);
+  setMapArray(pmsTmp->content,"lastResult",iLen,"Failed");
+  cleanFetchSql(conf,iDbId-1,res);
   return NULL;
 }
 
@@ -455,30 +475,33 @@ int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
   int result=0;
   xmlDocPtr doc=(xmlDocPtr) doc0;
   xmlNodePtr n=(xmlNodePtr) n0;
-  result=_init_sql(conf,"metadb");
+  int iDbId=_init_sql(conf,"metadb");
   if(getMapFromMaps(conf,"lenv","dbIssue")!=NULL || result < 0)
     return -1;
   // Fetch every services
-  OGRLayer *res=fetchSql(conf,0,META_SERVICES_LIST_ALL);
+  OGRLayer *res=fetchSql(conf,iDbId-1,META_SERVICES_LIST_ALL);
   if(res!=NULL){
     OGRFeature  *poFeature = NULL;
     const char *tmp1;
     poFeature = res->GetNextFeature();
     while( poFeature != NULL ){
-      service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
+      if(compareCnt(conf,"serviceCntSkip","eupper") && compareCnt(conf,"serviceCntLimit","lower")){
+	service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
 #ifdef USE_HPC
-      addNestedOutputs(&s);
+	addNestedOutputs(&s);
 #endif
-      func(reg,conf,doc,n,s);
-      freeService(&s);
-      free(s);
+	func(reg,conf,doc,n,s);
+	freeService(&s);
+	free(s);
+      }
       OGRFeature::DestroyFeature( poFeature );
       poFeature = res->GetNextFeature();
       result++;
     }
-    cleanFetchSql(conf,0,res);
+    cleanFetchSql(conf,iDbId-1,res);
   }
-  return result;
+  close_sql(conf,iDbId-1);
+  return result-1;
 }
 
 #endif

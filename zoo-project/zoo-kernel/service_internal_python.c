@@ -114,13 +114,12 @@ PyMODINIT_FUNC init_zoo(){
   struct module_state *st = GETSTATE(module);
 
   d = PyModule_GetDict(module);
-  tmp = PyInt_FromLong(3);
-  PyDict_SetItemString(d, "SERVICE_SUCCEEDED", tmp);
-  Py_DECREF(tmp);
-
-  tmp = PyInt_FromLong(4);
-  PyDict_SetItemString(d, "SERVICE_FAILED", tmp);
-  Py_DECREF(tmp);
+  int iCnt=0;
+  for(;ZOO_STATUS[iCnt]!=NULL;iCnt++){
+    tmp = PyInt_FromLong(iCnt);
+    PyDict_SetItemString(d, ZOO_STATUS[iCnt], tmp);
+    Py_DECREF(tmp);
+  }
 
   tmp = PyString_FromString(ZOO_VERSION);
   PyDict_SetItemString(d, "VERSION", tmp);
@@ -220,13 +219,13 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #endif
 	map* home = NULL;
 // knut: also set PYTHONHOME environment variable so that Python can load standard modules
-#ifndef WIN32	
+#ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);  
   //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
 	  setenv("PYTHONHOME", home->value, 1); // overwrite
   }
-#else	
+#else
   SetEnvironmentVariable("PYTHONPATH",pythonpath);
   char* toto=(char*)malloc((strlen(pythonpath)+12)*sizeof(char));
   sprintf(toto,"PYTHONPATH=%s",pythonpath);
@@ -236,7 +235,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  SetEnvironmentVariable("PYTHONHOME", home->value);
   }
   char buffer[128];
-#endif  
+#endif
   if(hasToClean>0)
     free(python_path);
   free(pythonpath);
@@ -368,7 +367,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
-  if(PyString_Check(trace)){
+  if(trace!=NULL && PyString_Check(trace)){
     pbt=(char*)malloc((8+strlen(PyString_AsString(trace)))*sizeof(char));
     sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
   }
@@ -376,9 +375,8 @@ void PythonZooReport(maps* m,const char* module,int load){
     fprintf(stderr,"EMPTY TRACE ?");
 
   trace=NULL;
-  
   trace=PyObject_Str(ptype);
-  if(PyString_Check(trace)){
+  if(trace!=NULL && PyString_Check(trace) && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
     if(pbt!=NULL)
       free(pbt);
@@ -389,7 +387,7 @@ void PythonZooReport(maps* m,const char* module,int load){
   else
     fprintf(stderr,"EMPTY TRACE ?");
   
-  if(ptraceback!=NULL){
+  if(ptraceback!=NULL && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
     pName = PyString_FromString("traceback");
     pModule = PyImport_Import(pName);
@@ -415,14 +413,19 @@ void PythonZooReport(maps* m,const char* module,int load){
     }
     free(tpbt);
   }
-  if(load>0){
+  if(load>0 && pbt!=NULL){
     char *tmpS=(char*)malloc((strlen(tmp0)+strlen(module)+strlen(pbt)+1)*sizeof(char));
     sprintf(tmpS,tmp0,module,pbt);
     errorException(m,tmpS,"NoApplicableCode",NULL);
     free(tmpS);
-  }else
-    errorException(m,pbt,"NoApplicableCode",NULL);
-  free(pbt);
+  }else{
+    if(pbt!=NULL)
+      errorException(m,pbt,"NoApplicableCode",NULL);
+    else
+      errorException(m,_("Something went wrong but, no Python traceback can be fecthed."),"NoApplicableCode",NULL);
+  }
+  if(pbt!=NULL)
+    free(pbt);
 }
 
 /**
@@ -467,56 +470,57 @@ PyDictObject* PyDict_FromMaps(maps* t){
  */
 PyDictObject* PyDict_FromMap(map* t){
   PyObject* res=PyDict_New( );
-  map* tmp=t;
+  map* pmTmp=t;
   int hasSize=0;
-  map* isArray=getMap(tmp,"isArray");
-  map* size=getMap(tmp,"size");
-  map* useFile=getMap(tmp,"use_file");
-  map* cacheFile=getMap(tmp,"cache_file");
-  map* tmap=getMapType(tmp);
-  while(tmp!=NULL){
-    PyObject* name=PyString_FromString(tmp->name);
-    if(strcasecmp(tmp->name,"value")==0) {
-      if(isArray!=NULL){
-	map* len=getMap(tmp,"length");
-	int cnt=atoi(len->value);
+  map* pmIsArray=getMap(pmTmp,"isArray");
+  map* pmSize=getMap(pmTmp,"size");
+  map* pmUseFile=getMap(pmTmp,"use_file");
+  map* pmCacheFile=getMap(pmTmp,"cache_file");
+  map* pmType=getMapType(pmTmp);
+  while(pmTmp!=NULL){
+    PyObject* name=PyString_FromString(pmTmp->name);
+    if(strcasecmp(pmTmp->name,"value")==0) {
+      if(pmIsArray!=NULL){
+	map* len=getMap(pmTmp,"length");
+	int cnt=1;
+	if(len!=NULL)
+	  cnt=atoi(len->value);
 	PyObject* value=PyList_New(cnt);
 	PyObject* mvalue=PyList_New(cnt);
 	PyObject* svalue=PyList_New(cnt);
 	PyObject* cvalue=PyList_New(cnt);
 
 	for(int i=0;i<cnt;i++){
-	  
-	  map* vMap=getMapArray(t,"value",i);
-	  map* uMap=getMapArray(t,"use_file",i);
-	  map* sMap=getMapArray(t,"size",i);
-	  map* cMap=getMapArray(t,"cache_file",i);
 
-	  if(vMap!=NULL){
+	  map* pmValue=getMapArray(t,"value",i);
+	  pmUseFile=getMapArray(t,"use_file",i);
+	  pmSize=getMapArray(t,"size",i);
+	  pmCacheFile=getMapArray(t,"cache_file",i);
+
+	  if(pmValue!=NULL){
 	    
 	    PyObject* lvalue;
 	    PyObject* lsvalue;
 	    PyObject* lcvalue;
-	    if(sMap==NULL || uMap!=NULL){
-	      lvalue=PyString_FromString(vMap->value);
+	    if(pmSize==NULL || pmUseFile!=NULL){
+	      lvalue=PyString_FromString(pmValue->value);
 	    }
 	    else{
-	      if(strlen(vMap->value)>0)
-		lvalue=PyString_FromStringAndSize(vMap->value,atoi(sMap->value));
+	      if(pmSize!=NULL && strlen(pmValue->value)>0)
+		lvalue=PyString_FromStringAndSize(pmValue->value,atoi(pmSize->value));
 	      else
 		lvalue=Py_None;
 	    }
-	    if(sMap!=NULL){
-	      lsvalue=PyString_FromString(sMap->value);
+	    if(pmSize!=NULL){
+	      lsvalue=PyString_FromString(pmSize->value);
 	      hasSize=1;
 	    }
 	    else
 	      lsvalue=Py_None;
-	    if(uMap!=NULL){
-	      lcvalue=PyString_FromString(cMap->value);;
+	    if(pmCacheFile!=NULL){
+	      lcvalue=PyString_FromString(pmCacheFile->value);;
 	    }else
 	      lcvalue=Py_None;
-
 	    if(PyList_SetItem(value,i,lvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
@@ -531,25 +535,27 @@ PyDictObject* PyDict_FromMap(map* t){
 	    }
 	  }
 	  
-	  PyObject* lmvalue;
-	  map* mMap=getMapArray(tmp,tmap->name,i);
-	  if(mMap!=NULL){
-	    lmvalue=PyString_FromString(mMap->value);
-	  }else
-	    lmvalue=Py_None;
+	  if(pmType!=NULL){
+	    PyObject* lmvalue;
+	    map* mMap=getMapArray(pmTmp,pmType->name,i);
+	    if(mMap!=NULL){
+	      lmvalue=PyString_FromString(mMap->value);
+	    }else
+	      lmvalue=Py_None;
 	  
-	  if(PyList_SetItem(mvalue,i,lmvalue)<0){
+	    if(PyList_SetItem(mvalue,i,lmvalue)<0){
 	      fprintf(stderr,"Unable to set key value pair...");
 	      return NULL;
-	  } 
-	  
+	    }
+	  }
 	}
 
 	if(PyDict_SetItem(res,name,value)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
-	if(PyDict_SetItem(res,PyString_FromString(tmap->name),mvalue)<0){
+
+	if(pmType!=NULL && PyDict_SetItem(res,PyString_FromString(pmType->name),mvalue)<0){
 	  fprintf(stderr,"Unable to set key value pair...");
 	  return NULL;
 	}
@@ -563,10 +569,10 @@ PyDictObject* PyDict_FromMap(map* t){
 	    return NULL;
 	  }
       }
-      else if(size!=NULL && useFile==NULL){
+      else if(pmSize!=NULL && pmUseFile==NULL){
 	PyObject* value;
-	if(strlen(tmp->value)>0)
-	  value=PyString_FromStringAndSize(tmp->value,atoi(size->value));
+	if(strlen(pmTmp->value)>0)
+	  value=PyString_FromStringAndSize(pmTmp->value,atoi(pmSize->value));
 	else
 	  value=Py_None;
 	if(PyDict_SetItem(res,name,value)<0){
@@ -577,7 +583,7 @@ PyDictObject* PyDict_FromMap(map* t){
 	Py_DECREF(value);
       }
       else{
-	PyObject* value=PyString_FromString(tmp->value);
+	PyObject* value=PyString_FromString(pmTmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);
 	  fprintf(stderr,"Unable to set key value pair...");
@@ -588,7 +594,7 @@ PyDictObject* PyDict_FromMap(map* t){
     }
     else{
       if(PyDict_GetItem(res,name)==NULL){
-	PyObject* value=PyString_FromString(tmp->value);
+	PyObject* value=PyString_FromString(pmTmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);
 	  fprintf(stderr,"Unable to set key value pair...");
@@ -598,7 +604,7 @@ PyDictObject* PyDict_FromMap(map* t){
       }
     }
     Py_DECREF(name);
-    tmp=tmp->next;
+    pmTmp=pmTmp->next;
   }
   return (PyDictObject*) res;
 }
@@ -638,13 +644,11 @@ maps* mapsFromPyDict(PyDictObject* t){
 #ifdef DEBUG
     dumpMap(cursor->content);
 #endif
-    cursor->next=NULL;
     if(res==NULL)
       res=dupMaps(&cursor);
     else
       addMapsToMaps(&res,cursor);
-    freeMap(&cursor->content);
-    free(cursor->content);
+    freeMaps(&cursor);
     free(cursor);
 #ifdef DEBUG
     dumpMaps(res);
@@ -673,6 +677,10 @@ maps* _mapsFromPyDict(PyDictObject* t){
 	}
 
 	maps* ptr = (maps*) malloc(MAPS_SIZE);
+	ptr->content = NULL;
+	ptr->child = NULL;
+	ptr->next = NULL;
+
 	maps* res = ptr;	
 	
 	PyObject* key;

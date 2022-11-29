@@ -265,7 +265,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fo=fopen(fname,"w+");
       char* origin=getProvenance(conf,request);
 #ifdef DEBUG
-      fprintf(stderr,"ORIGIN: %s\n",mimeType);
+      fprintf(stderr,"ORIGIN: %s\n",origin);
 #endif
       fwrite(origin,sizeof(char),strlen(origin),fo);
       fclose(fo);
@@ -428,6 +428,12 @@ char* isInCache(maps* conf,char* request){
 
 /**
  * Read the downloaded file for a specific input
+ *
+ * The map defining the input's metadata should contains, at least, the
+ * following fields:
+ *
+ *  - Reference: pointing to the URL to acces the resource
+ *  - Order: couter (starting at 1)
  *
  * @param m the maps containing the settings of the main.cfg file
  * @param in the input
@@ -722,6 +728,9 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
 	mimeType[f_status.st_size]=0;
 	fclose(f);
 	unlockFile(*m,lck);
+	if(mimeType!=NULL){
+	  addToMap(*content,"fmimeType",mimeType);
+	}
       }
       cached[strlen(cached)-1]='p';
       s=zStat(cached, &f_status);
@@ -732,23 +741,21 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
 	origin=(char*)malloc(sizeof(char)*(f_status.st_size+1));
 	FILE* f=fopen(cached,"rb");
 	fread(origin,f_status.st_size,1,f);
-	mimeType[f_status.st_size]=0;
+	origin[f_status.st_size]=0;
 	fclose(f);
 	unlockFile(*m,lck);
+	if(origin!=NULL){
+	  addToMap(*content,"origin",origin);
+	  free(origin);
+	}
       }
-    }    
+    }
   }else{    
     addRequestToQueue(m,hInternet,url,true);
     return 0;
   }
   if(fsize==0){
     return errorException(*m, _("Unable to download the file."), "InternalError",NULL);
-  }
-  if(mimeType!=NULL){
-    addToMap(*content,"fmimeType",mimeType);
-  }
-  if(origin!=NULL){
-    addToMap(*content,"origin",origin);
   }
 
   map* tmpMap=getMapOrFill(content,"value","");
@@ -793,8 +800,6 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     free(mimeType);
   if(cached!=NULL)
     free(cached);
-  if(origin!=NULL)
-    free(origin);
 
   return 0;
 }
