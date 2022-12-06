@@ -598,8 +598,15 @@ To support security from your OpenAPI, you can add an optional section
  * ``realm``: the realm to use when returning 401 WWW-Authenticate response header (optional)
  * ``passwd``: the htpassword file used to authenticate users (only used for Basic scheme, optional)
 
-Then to secure a given path and request method couple, you should add
-the optional secured key and set it to the name used in the
+Associated with this ``osecurity`` section, you can add two optional
+sections, ``filter_in`` and ``filter_out``, to define one or more
+filters to be applied before handling the request and after, respectively. 
+You can use an array of filters if you need to execute more than a
+single service before or after the request treatment. The ZOO-Kernel
+will invoke the services in the same order as they are in the array.
+
+Then to secure an operation (meaning a path and request method couple), you should add
+the optional ``secured`` key and set it to the name used in the
 components' security schemes.
 
 Below is an example of ``oas.cfg`` file for securing the execution of
@@ -622,16 +629,19 @@ the HelloPy processes.
      eschema=http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteAsync.yaml
     
      [osecurity]
-     name=BasicAuth
-     module_path=/opt/securityServices
-     module_name_in=securityIn
-     module_name_out=securityOut
      type=http
      scheme=basic
      realm=Secured section
      charset=utf-8
      passwd=/tmp/htpasswords
 
+     [filter_in]
+     path=/opt/securityServices
+     service=securityIn
+
+     [filter_out]
+     path=/opt/securityServices
+     service=securityOut
 
 In the example, we used the demonstration `securityIn and securityOut
 services

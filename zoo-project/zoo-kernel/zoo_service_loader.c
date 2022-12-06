@@ -1991,48 +1991,63 @@ void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
  * @param pcType the string defining the process to execute ('in' or 'out')
  * @return 0 in case of success, 1 in case or error
  */
-int ensureSecured(maps* pmsConf,const char* pcType){
-    int eres=0;
-    service* psaService=NULL;
-    maps* pmsOsecurity=getMaps(pmsConf,"osecurity");
-    map* pmPath=NULL;
-    map* pmName=NULL;
-    char* pcaName=(char*)malloc((strlen(pcType)+13)*sizeof(char));
-    sprintf(pcaName,"module_name_%s",pcType);
-    if(pmsOsecurity!=NULL &&
-       ((pmPath=getMap(pmsOsecurity->content,"module_path"))!=NULL) &&
-       ((pmName=getMap(pmsOsecurity->content,pcaName))!=NULL)){
+int ensureFiltered(maps* pmsConf,const char* pcType){
+  int eres=0;
+  service* psaService=NULL;
+  maps* pmsOsecurity=getMaps(pmsConf,"osecurity");
+  map* pmPath=NULL;
+  map* pmName=NULL;
+  map* pmRun=NULL;
+  int iLen=1;
+  char* pcaName=(char*)malloc((strlen(pcType)+8)*sizeof(char));
+  sprintf(pcaName,"filter_%s",pcType);
+  maps* pmsSection=getMaps(pmsConf,pcaName);
+  if(pmsSection==NULL){
+    free(pcaName);
+    return 0;
+  }
+  map* pmLength=getMap(pmsSection->content,"length");
+  if(pmLength!=NULL)
+    iLen=atoi(pmLength->value);
+  for(int iCnt=0;iCnt<iLen;iCnt++){
+    if(pmsSection!=NULL &&
+       ((pmRun=getMapFromMaps(pmsConf,"lenv",pcaName))==NULL) &&
+       ((pmPath=getMapArray(pmsSection->content,"path",iCnt))!=NULL) &&
+       ((pmName=getMapArray(pmsSection->content,"service",iCnt))!=NULL)){
       if(fetchService(NULL,pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
 	fprintf(stderr,"ERROR fetching the service %s %d \n",__FILE__,__LINE__);
 	free(pcaName);
 	return 1;
       }
-      free(pcaName);
       maps* pmsInputs=NULL;
       maps* pmsOutputs=NULL;
       loadServiceAndRun (&pmsConf, psaService, NULL,
 			 &pmsInputs,
 			 &pmsOutputs, &eres);
-      dumpMaps(getMaps(pmsConf,"auth_env"));
       freeService(&psaService);
       free(psaService);
-      if(eres==SERVICE_SUCCEEDED)
-	return 0;
-      else
+      psaService=NULL;
+      if(eres!=SERVICE_SUCCEEDED){
+	setMapInMaps(pmsConf,"lenv",pcaName,"true");
+	free(pcaName);
 	return 1;
+      }
     }
-    return 0;
+  }
+  setMapInMaps(pmsConf,"lenv",pcaName,"true");
+  free(pcaName);
+  return 0;
 }
 
 /**
- * Invoke the ensureSecured then printExceptionReportResponseJ functions
+ * Invoke the ensureFiltered then printExceptionReportResponseJ functions
  *
  * @param pmsConf the maps containing the settings of the main.cfg file
  * @param pmError the map containing the text,code,locator keys (or a map array)
- * @see printExceptionReportResponseJ,ensureSecured
+ * @see printExceptionReportResponseJ,ensureFiltered
  */
 void localPrintExceptionJ(maps* pmsConf,map* pmError){
-  ensureSecured(pmsConf,"out");
+  ensureFiltered(pmsConf,"out");
   printExceptionReportResponseJ(pmsConf,pmError);
 }
 
@@ -2153,16 +2168,16 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   SetEnvironmentVariable ("CONTENT_LENGTH", TEXT (clen));
 
   // ref. https://msdn.microsoft.com/en-us/library/windows/desktop/ms684863%28v=vs.85%29.aspx
-  if (!CreateProcess (NULL,     // No module name (use command line)
+  if (!CreateProcess (NULL,             // No module name (use command line)
                       TEXT (tmp),       // Command line
-                      NULL,     // Process handle not inheritable
-                      NULL,     // Thread handle not inheritable
-                      FALSE,    // Set handle inheritance to FALSE
+                      NULL,             // Process handle not inheritable
+                      NULL,             // Thread handle not inheritable
+                      FALSE,            // Set handle inheritance to FALSE
                       CREATE_NO_WINDOW, // Apache won't wait until the end
-                      NULL,     // Use parent's environment block
-                      NULL,     // Use parent's starting directory 
-                      &si,      // Pointer to STARTUPINFO struct
-                      &pi)      // Pointer to PROCESS_INFORMATION struct
+                      NULL,             // Use parent's environment block
+                      NULL,             // Use parent's starting directory 
+                      &si,              // Pointer to STARTUPINFO struct
+                      &pi)              // Pointer to PROCESS_INFORMATION struct
     )
     {
 #ifdef DEBUG
@@ -2573,7 +2588,7 @@ runRequest (map ** inputs)
     initAllEnvironment(m,request_inputs,ntmp,"jrequest");
     setSecurityFlags(m,pcaCgiQueryString);
     // In case security is activated, then execute the security module
-    if(ensureSecured(m,"in")!=0){
+    if(ensureFiltered(m,"in")!=0){
       maps* pmsTmp=getMaps(m,"lenv");
       localPrintExceptionJ(m,pmsTmp->content);
       // TODO: cleanup memory
@@ -3303,7 +3318,7 @@ runRequest (map ** inputs)
 	      if(strlen(jobId)==36){
 		if(res!=NULL)
 		  json_object_put(res);
-		ensureSecured(m,"out");
+		ensureFiltered(m,"out");
 		res=printJobStatus(m,jobId);
 		if(res==NULL)
 		  fflush(stdout);
@@ -3389,7 +3404,7 @@ runRequest (map ** inputs)
 						     strlen(jobId)+8)*sizeof(char));
 			  sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
 			  setMapInMaps(m,"headers","Location",Url0);
-			  ensureSecured(m,"out");
+			  ensureFiltered(m,"out");
 			}
 			if(pjoTmp!=NULL)
 			  json_object_put(pjoTmp);
@@ -3431,7 +3446,7 @@ runRequest (map ** inputs)
 
 		    }else{
 		      free(Url0);
-		      ensureSecured(m,"out");
+		      ensureFiltered(m,"out");
 		      runGetStatus(m,jobId,"GetResult");
 		      free(jobId);
 		      free(sid);
@@ -4074,9 +4089,7 @@ runRequest (map ** inputs)
 	}
 
     }
-
-    ensureSecured(m,"out");
-
+    ensureFiltered(m,"out");
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
       if(pmHasPrinted=getMapFromMaps(m,"lenv","no-headers"))==NULL ||  strncasecmp(pmHasPrinted->value,"false",5)==0){
