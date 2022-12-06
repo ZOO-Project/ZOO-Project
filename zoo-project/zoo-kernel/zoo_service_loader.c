@@ -1123,7 +1123,7 @@ int loadHttpRequests(maps* conf,maps* inputs){
 }
 #endif
 
-int ensureSecured(maps* pmsConf,const char* pcType);
+int ensureFiltered(maps* pmsConf,const char* pcType);
 
 /**
  * Initialize environment sections, load env, and populate lenv and renv.
@@ -2725,7 +2725,9 @@ runRequest (map ** inputs)
 #ifndef USE_AMQP
 	setMapInMaps(m,"lenv","noRunSql","false");
 #endif
-
+	map* pmWValue=getMapFromMaps(m,"request","w");
+	if(pmWValue!=NULL)
+	  setMapInMaps(m,"lenv","workflow_id",pmWValue->value);
 	if(strncasecmp(cgiRequestMethod,"PUT",3)==0){
 	  setMapInMaps(m,"lenv","request_method","POST");
 	  setMapInMaps(m,"lenv","orequest_method","PUT");
@@ -3967,7 +3969,7 @@ runRequest (map ** inputs)
 		const char* jsonStr=json_object_to_json_string_ext(res5,JSON_C_TO_STRING_NOSLASHESCAPE);
 		setMapInMaps(m,"lenv","no-headers","false");
 		// In case security is activated, then execute the security module
-		if(ensureSecured(m,"out")!=0){
+		if(ensureFiltered(m,"out")!=0){
 		  maps* pmsTmp=getMaps(m,"lenv");
 		  printExceptionReportResponseJ(m,pmsTmp->content);
 		  // TODO: cleanup memory
@@ -4020,14 +4022,14 @@ runRequest (map ** inputs)
 		if(pmTmp!=NULL && strcmp(pmTmp->value,undeployServiceProvider->value)==0){
 		  unlink(pcaFileName);
 		  setMapInMaps(m,"headers","Status","204 No Content");
-		  ensureSecured(m,"out");
+		  ensureFiltered(m,"out");
 		  printHeaders(m);
 		  setMapInMaps(m,"lenv","hasPrinted","true");
 		  res=NULL;
 		}
 	      free(pcaFileName);
 	    }else{
-	      ensureSecured(m,"out");
+	      ensureFiltered(m,"out");
 	      handleDRUError(m);
 	      fflush(stdout);
 	    }
