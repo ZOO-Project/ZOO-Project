@@ -2732,6 +2732,7 @@ runRequest (map ** inputs)
 	  setMapInMaps(m,"lenv","request_method","POST");
 	  setMapInMaps(m,"lenv","orequest_method","PUT");
 	  setMapInMaps(m,"lenv","toDeploy",strstr(cgiQueryString,"/processes/")+11);
+	  setMapInMaps(m,"lenv","workflow_id",strstr(cgiQueryString,"/processes/")+11);
 	  map* pmToDeploy=getMapFromMaps(m,"lenv","toDeploy");
 	  if(pmToDeploy!=NULL){
 	    setMapInMaps(m,"lenv","requestType","GetCapabilities");
