@@ -604,6 +604,9 @@ filters to be applied before handling the request and after, respectively.
 You can use an array of filters if you need to execute more than a
 single service before or after the request treatment. The ZOO-Kernel
 will invoke the services in the same order as they are in the array.
+In both ``filter_in`` and ``filter_out`` section, you should add the
+``path`` and ``service`` keys used to define the location of the
+service to run.
 
 Then to secure an operation (meaning a path and request method couple), you should add
 the optional ``secured`` key and set it to the name used in the
