@@ -1662,7 +1662,7 @@ extern "C" {
       if(dirp!=NULL){
 	while ((dp = readdir (dirp)) != NULL){
 	  char* extn = strstr(dp->d_name, ".json");
-	  if(extn!=NULL){
+	  if(extn!=NULL && strstr(dp->d_name,"_status")==NULL){
 	    if(cnt>=skip && cnt<limit+skip){
 	      char* tmpStr=zStrdup(dp->d_name);
 	      tmpStr[strlen(dp->d_name)-5]=0;
@@ -2107,9 +2107,12 @@ extern "C" {
     json_object* res=json_object_new_array();
     map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
-    if(sessId==NULL){
+    if(sessId!=NULL){
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-    }
+      if(sessId==NULL)
+	sessId = getMapFromMaps (conf, "lenv", "usid");
+    }else
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     char *Url0=(char*) malloc((strlen(tmpPath->value)+
 			       strlen(sessId->value)+18)*sizeof(char));
     int needResult=-1;
@@ -2361,6 +2364,21 @@ extern "C" {
 	if(pcaTmp!=NULL && strncmp(pcaTmp,"-1",2)==0)
 	  free(pcaTmp);
       }
+#else
+      json_object_object_add(res,statusFields[0],json_object_new_string("process"));
+      map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+      char* pcaLenvPath=(char*)malloc((strlen(sessId->value)+strlen(pmTmpPath->value)+11)*sizeof(char));
+      sprintf(pcaLenvPath,"%s/%s_lenv.cfg",pmTmpPath->value,sessId->value);
+      maps *pmsLenv = (maps *) malloc (MAPS_SIZE);
+      pmsLenv->content = NULL;
+      pmsLenv->child = NULL;
+      pmsLenv->next = NULL;
+      conf_read(pcaLenvPath,pmsLenv);
+      map* pmPid=getMapFromMaps(pmsLenv,"lenv","Identifier");
+      json_object_object_add(res,statusFields[1],json_object_new_string(pmPid->value));
+      freeMaps(&pmsLenv);
+      free(pmsLenv);
+      pmsLenv=NULL;
 #endif
     }
     json_object_object_add(res,"status",json_object_new_string(rstatus));

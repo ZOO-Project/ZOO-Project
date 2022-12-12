@@ -3042,8 +3042,6 @@ runRequest (map ** inputs)
 	  }else{
 	    free(pcaClauseFinal);
 	  }
-	  maps* pmsTmp=getMaps(m,"lenv");
-	  dumpMap(pmsTmp->content);
 	  if(res!=NULL)
 	    json_object_put(res);
 	  res=printJobList(m);
