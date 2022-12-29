@@ -2814,6 +2814,7 @@ runRequest (map ** inputs)
 	    if(pmTmp!=NULL){
 	      char *saveptr;
 	      char *tmps = strtok_r(pmTmp->value, ",", &saveptr);
+	      int iCnt=0;
 	      while (tmps != NULL){
 		for(int l=0;l<3;l++){
 		  if(strcmp(tmps,oapipStatus[l])==0){
@@ -2821,16 +2822,20 @@ runRequest (map ** inputs)
 		    break;
 		  }
 		}
+		maps* pmsLenv=getMaps(m,"lenv");
 		if(pcaClause==NULL){
 		  pcaClause=(char*)malloc((strlen(statusSearchFieldsReal[k])+strlen(tmps)+10)*sizeof(char));
 		  sprintf(pcaClause," (%s=$q$%s$q$",statusSearchFieldsReal[k],tmps);
+		  setMapArray(pmsLenv->content,"servicePidFilter",iCnt,tmps);
 		}else{
 		  char* pcaTmp=zStrdup(pcaClause);
 		  pcaClause=(char*)realloc(pcaClause,strlen(statusSearchFieldsReal[k])+strlen(tmps)+strlen(pcaTmp)+12);
 		  sprintf(pcaClause,"%s OR %s=$q$%s$q$",pcaTmp,statusSearchFieldsReal[k],tmps);
+		  setMapArray(pmsLenv->content,"servicePidFilter",iCnt,tmps);
 		  free(pcaTmp);
 		}
 		tmps = strtok_r (NULL, ",", &saveptr);
+		iCnt++;
 	      }
 	      char* pcaTmp=zStrdup(pcaClause);
 	      pcaClause=(char*)realloc(pcaClause,strlen(pcaTmp)+3);
