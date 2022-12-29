@@ -293,7 +293,7 @@ ARG RUN_DEPS=" \
     libapache2-mod-fcgid \
     python3-setuptools \
     #Uncomment the line below to add vi editor \
-    vim \
+    #vim \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
