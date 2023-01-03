@@ -3873,7 +3873,7 @@ runRequest (map ** inputs)
 			     &request_output_real_format,&eres);
 	  if(res!=NULL){
 	    json_object_put(res);
-	    res=NULL
+	    res=NULL;
 	  }
 
 	  // Fetch infromations from main.cfg again after execution
@@ -4095,7 +4095,7 @@ runRequest (map ** inputs)
     ensureFiltered(m,"out");
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
-      if(pmHasPrinted=getMapFromMaps(m,"lenv","no-headers"))==NULL ||  strncasecmp(pmHasPrinted->value,"false",5)==0){
+      if((pmHasPrinted=getMapFromMaps(m,"lenv","no-headers"))==NULL ||  strncasecmp(pmHasPrinted->value,"false",5)==0){
         printHeaders(m);
         if(getMapFromMaps(m,"headers","Status")==NULL)
           if (eres == 7){
