@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 22.04 with updates and external packages
 #
-FROM ubuntu:jammy-20220801 AS base
+FROM ubuntu:jammy-20221130 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \

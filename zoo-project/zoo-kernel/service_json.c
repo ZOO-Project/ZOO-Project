@@ -1577,8 +1577,9 @@ extern "C" {
    * Print the jobs status info
    * cf. 
    *
-   * @param conf the maps containing the settings of the main.cfg file
-   * @return the JSON object pointer to the jobs list
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param pcJobId the char pointer to the jobid
+   * @return the JSON object pointer to the statusInfo
    */
   json_object* printJobStatus(maps* pmsConf,char* pcJobId){
     json_object* pjoRes=NULL;
@@ -1607,6 +1608,37 @@ extern "C" {
 	    pjoRes=createStatus(pmsConf,SERVICE_FAILED);
     }
     return pjoRes;
+  }
+
+  /**
+   * Veirify if the process identified by pccPid is part of the processID filters, 
+   * if any.
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param pccPid the const char pointer to the processID
+   * @return true in case the filter is empty or in case the processId pccPid 
+   * is one of the filtered processID, false in other case.
+   */
+  bool isFilteredPid(maps* pmsConf,const char* pccPid){
+#ifndef RELY_ON_DB
+    maps* pmsLenv=getMaps(pmsConf,"lenv");
+    map* pmCurrent=getMap(pmsLenv->content,"servicePidFilter");
+    if(pmCurrent==NULL)
+      return true;
+    map* pmLength=getMapFromMaps(pmsConf,"lenv","length");
+    int iLimit=1;
+    if(pmLength!=NULL)
+      iLimit=atoi(pmLength->value);
+    for(int iCnt=0;iCnt<iLimit;iCnt++){
+      map* pmCurrent=getMapArray(pmsLenv->content,"servicePidFilter",iCnt);
+      if(pmCurrent!=NULL && strcmp(pccPid,pmCurrent->value)==0){
+	return true;
+      }
+    }
+    return false;
+#else
+    return true;
+#endif
   }
   
   /**
@@ -1662,16 +1694,50 @@ extern "C" {
       if(dirp!=NULL){
 	while ((dp = readdir (dirp)) != NULL){
 	  char* extn = strstr(dp->d_name, ".json");
-	  if(extn!=NULL){
-	    if(cnt>=skip && cnt<limit+skip){
-	      char* tmpStr=zStrdup(dp->d_name);
-	      tmpStr[strlen(dp->d_name)-5]=0;
-	      json_object* cjob=printJobStatus(conf,tmpStr);
-	      json_object_array_add(res,cjob);
+	  if(extn!=NULL && strstr(dp->d_name,"_status")==NULL){
+	    char* tmpStr=zStrdup(dp->d_name);
+	    tmpStr[strlen(dp->d_name)-5]=0;
+#ifndef RELY_ON_DB
+	    map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+	    char* pcaLenvPath=(char*)malloc((strlen(tmpStr)+strlen(pmTmpPath->value)+11)*sizeof(char));
+	    sprintf(pcaLenvPath,"%s/%s_lenv.cfg",pmTmpPath->value,tmpStr);
+	    maps *pmsLenv = (maps *) malloc (MAPS_SIZE);
+	    pmsLenv->content = NULL;
+	    pmsLenv->child = NULL;
+	    pmsLenv->next = NULL;
+	    map* pmPid=NULL;
+	    if(conf_read(pcaLenvPath,pmsLenv) !=2){
+	      map *pmTmp=getMapFromMaps(pmsLenv,"lenv","Identifier");
+	      if(pmTmp!=NULL){
+		pmPid=createMap("value",pmTmp->value);
+	      }
+	      if(pmPid==NULL)
+		pmPid=createMap("toRemove","true");
+	      else
+		addToMap(pmPid,"toRemove","true");
+	      freeMaps(&pmsLenv);
+	      free(pmsLenv);
+	    }else{
+	      pmPid=createMap("toRemove","true");
 	    }
-	    if(cnt==limit+skip)
-	      setMapInMaps(conf,"lenv","serviceCntNext","true");
-	    cnt++;
+	    free(pcaLenvPath);
+#else
+	    map* pmPid=createMap("toRemove","true");
+#endif
+	    if(isFilteredPid(conf,pmPid->value)){
+	      if(cnt>=skip && cnt<limit+skip){
+		json_object* cjob=printJobStatus(conf,tmpStr);
+		json_object_array_add(res,cjob);
+	      }
+	      if(cnt==limit+skip)
+		setMapInMaps(conf,"lenv","serviceCntNext","true");
+	      cnt++;
+	    }
+	    if(pmPid!=NULL && getMap(pmPid,"toRemove")!=NULL){
+	      freeMap(&pmPid);
+	      free(pmPid);
+	    }
+	    free(tmpStr);
 	  }
 	}
 	closedir (dirp);
@@ -2107,9 +2173,12 @@ extern "C" {
     json_object* res=json_object_new_array();
     map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
     map *sessId = getMapFromMaps (conf, "lenv", "usid");
-    if(sessId==NULL){
+    if(sessId!=NULL){
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-    }
+      if(sessId==NULL)
+	sessId = getMapFromMaps (conf, "lenv", "usid");
+    }else
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     char *Url0=(char*) malloc((strlen(tmpPath->value)+
 			       strlen(sessId->value)+18)*sizeof(char));
     int needResult=-1;
@@ -2361,6 +2430,23 @@ extern "C" {
 	if(pcaTmp!=NULL && strncmp(pcaTmp,"-1",2)==0)
 	  free(pcaTmp);
       }
+#else
+      json_object_object_add(res,statusFields[0],json_object_new_string("process"));
+      map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+      char* pcaLenvPath=(char*)malloc((strlen(sessId->value)+strlen(pmTmpPath->value)+11)*sizeof(char));
+      sprintf(pcaLenvPath,"%s/%s_lenv.cfg",pmTmpPath->value,sessId->value);
+      maps *pmsLenv = (maps *) malloc (MAPS_SIZE);
+      pmsLenv->content = NULL;
+      pmsLenv->child = NULL;
+      pmsLenv->next = NULL;
+      if (conf_read (pcaLenvPath,pmsLenv) != 2){
+	map* pmPid=getMapFromMaps(pmsLenv,"lenv","Identifier");
+	json_object_object_add(res,statusFields[1],json_object_new_string(pmPid->value));
+	freeMaps(&pmsLenv);
+	free(pmsLenv);
+	pmsLenv=NULL;
+      }
+      free(pcaLenvPath);
 #endif
     }
     json_object_object_add(res,"status",json_object_new_string(rstatus));

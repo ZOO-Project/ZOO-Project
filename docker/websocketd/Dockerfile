@@ -1,4 +1,4 @@
-FROM alpine:3.11
+FROM alpine:3.15
 ADD . /websocketd
 RUN    apk update && apk add --no-cache unzip curl python3 \
     && if [ ! -e /usr/bin/python ]; then ln -sf python3 /usr/bin/python ; fi \
