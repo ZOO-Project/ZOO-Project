@@ -1,4 +1,8 @@
 Version 2.0.0
+  * Add support for MapServer 8.0 (actually 7.7-dev) including
+  returning result as OGC API -Features
+  * Integrate downloading MapServer 8.0 and building from the
+  dedicated Dockerfile-MS8
   * Include basicAuth build instructions in the Dockefile
   * Add basicAuth service illustrating how to secure access to OGC API
   - Processes using Basic Authentication
