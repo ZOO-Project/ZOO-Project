@@ -306,13 +306,13 @@ ARG RUN_DEPS=" \
     locales \
     libapache2-mod-fcgid \
     python3-setuptools \
-    #Uncomment the line below to add vi editor \
-    vim \
-    #Uncomment the lines below to add debuging \
-    valgrind \
-    gdb \
     libotbapplicationengine-8.1 \
-    strace \
+    #Uncomment the line below to add vi editor \
+    #vim \
+    #Uncomment the lines below to add debuging \
+    #valgrind \
+    #gdb \
+    #strace \
 "
 ARG BUILD_DEPS=" \
     make \
