@@ -7,8 +7,8 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
-      - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
+      - ./docker/main.cfg1:/usr/lib/cgi-bin/main.cfg
+      - ./docker/oas.cfg1:/usr/lib/cgi-bin/oas.cfg
       - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
@@ -30,8 +30,8 @@ services:
     platform: linux/amd64
     image: djayzen/zookernel:latest
     volumes:
-      - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
-      - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
+      - ./docker/main.cfg1:/usr/lib/cgi-bin/main.cfg
+      - ./docker/oas.cfg1:/usr/lib/cgi-bin/oas.cfg
       - ./docker/tmp:/tmp/zTmp
       - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/com:/usr/com/zoo-project
