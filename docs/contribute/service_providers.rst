@@ -29,6 +29,7 @@ GatewayGeo
        :width: 200px
        :align: top	       
        :alt: GatewayGeo logo
+       :class: provider-logo
 
 GeoLabs
 .......
@@ -39,3 +40,5 @@ GeoLabs
        :width: 200px
        :align: top	       
        :alt: GeoLabs logo
+       :class: provider-logo
+
