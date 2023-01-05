@@ -27,4 +27,4 @@ ul.simple li{margin-bottom:10px;margin-left: 20px;list-style: circle;}
 p.rubric{color:#c0b8a0;}
 span.zoo{display:block !important;margin-top:5px;color:orange;}
 .ctnr{width:33%;}
-.provider-logo{text-align: baseline}
+.provider-logo{vertical-align: baseline}
