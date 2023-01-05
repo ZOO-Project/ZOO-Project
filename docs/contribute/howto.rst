@@ -29,6 +29,15 @@ Licensing
 `ZOO-Project <http://zoo-project.org>`__ documentation is open source and made available under the `Creative Commons Attribution-ShareAlike 4.0 International Public License
 <https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__ . You must agree to the terms of that same license when creating, submiting and releasing a new documentation file.
 
+Service Providers
+.................
+
+ZOO-Project service providers (core development, support, training)
+can be found on the `Service Providers page <./service_providers.html>`__.
+
+Service providers are also listed on the `OSGeo Service Provider
+Directory <https://www.osgeo.org/service-providers>`__.
+
 Available media
 -------------------
 
@@ -55,9 +64,9 @@ Join the **#zoo-project** channel on `LiberaChat <https://web.libera.chat/#zoo-p
 Tracker
 ......................................
 
-Bug reports and code patches should be shared using the `ZOO-Project <http://zoo-project.org>`__ bug tracking system, as specified in the :ref:`contribute-code` section. 
+Bug reports and code patches should be shared using the `ZOO-Project bug tracking system <https://github.com/ZOO-Project/ZOO-Project/issues>`__, as specified in the :ref:`contribute-code` section. 
 
 Wiki
 ......................................
 
-Wiki pages can also be created by registered users. They can be used in order to describe any concept, contribution and or action that benefits or is related to the project.
+`Wiki pages <https://github.com/ZOO-Project/ZOO-Project/wiki/NewPage>`__ can also be created by registered users. They can be used in order to describe any concept, contribution and or action that benefits or is related to the project.
