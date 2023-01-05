@@ -30,9 +30,12 @@ GatewayGeo
        :align: top	       
        :alt: GatewayGeo logo
 
-|geolabs| `GeoLabs <http://geolabs.fr/>`__ (France) is a high-tech SME leading the development of numerous Open Source geospatial projects, including the ZOO-Project. GeoLabs develops and provides support for the MapMint software, allowing you to quickly organize, publish, and edit your GIS data on the web using Open Standards defined by the OGC and having the ZOO-Kernel handling every processing.
+GeoLabs
+.......
 
-.. |geolabs| image:: https://zoo-project.github.io/workshops/_images/geolabs-logo.png
+|geolabs| `GeoLabs <http://geolabs.fr/>`__ (France) is a high-tech SME leading the development of numerous Open Source geospatial projects, including the ZOO-Project. GeoLabs develops and provides support for the MapMint software, allowing you to quickly organize, publish, and edit your GIS datasets on the web using Open Standards defined by the OGC and having the ZOO-Kernel handling every processing.
+
+.. |geolabs| image:: http://geolabs.fr/img/geolabs.png
        :width: 200px
        :align: top	       
        :alt: GeoLabs logo
