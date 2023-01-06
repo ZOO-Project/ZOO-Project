@@ -30,6 +30,7 @@ GatewayGeo
        :align: top	       
        :alt: GatewayGeo logo
        :class: provider-logo
+       :target: https://gatewaygeomatics.com
 
 GeoLabs
 .......
@@ -41,4 +42,5 @@ GeoLabs
        :align: top	       
        :alt: GeoLabs logo
        :class: provider-logo
+       :target: http://www.geolabs.fr
 
