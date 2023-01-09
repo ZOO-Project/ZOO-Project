@@ -3,10 +3,11 @@
 Service Providers
 =================
 
-ZOO-Project is developed and supported by a number of businesses, organizations and individuals around the world.
+ZOO-Project is developed and supported by a number of businesses, organizations 
+and individuals around the world.
 
 Using a service provider is a great way to get started with ZOO-Project and 
-contributes to the ongoing sustainability of the project. Services include 
+also contributes to the ongoing sustainability of the project. Services include 
 (but are not limited to):
 
  * training
@@ -19,7 +20,7 @@ contributes to the ongoing sustainability of the project. Services include
  * documentation
 
 The section below provides a list of service providers who can help you in 
-getting the best out of your pygeoapi investment.
+getting the best out of your ZOO-Project investment.
 
 If you are a service provider and would like to be listed on this page, 
 please feel free to `add yourself to the service provider list <https://github.com/ZOO-Project/ZOO-Project/blob/main/docs/contribute/service_providers.rst>`__.
