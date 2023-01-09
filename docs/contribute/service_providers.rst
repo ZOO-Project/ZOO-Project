@@ -62,3 +62,24 @@ Standards defined by the OGC and having the ZOO-Kernel handling every processing
        :class: provider-logo
        :target: http://www.geolabs.fr
 
+
+i-bitz
+.......
+
+|i-bitz| `i-bitz <https://i-bitz.co.th/>`__ which has highly
+experienced in geoinformatics technology and geographic information
+system based in Bangkok, Thailand. We have professional staff to
+provide inventive and innovative geographic solutions to solve your
+immediate problems related to geoinformatics technology. Vallaris Maps
+Platform is our key product, as  Geospatial data platform that
+provides tools for stored, analysis and visualize through a web
+browser. Moreover, Vallaris is following OGC Standard especially OGC
+API series and Open Data scheme.
+
+.. |i-bitz| image:: ../_static/i-bitz-logo.png
+       :width: 200px
+       :align: top	       
+       :alt: i-bitz logo
+       :class: provider-logo
+       :target: https://i-bitz.co.th/
+
