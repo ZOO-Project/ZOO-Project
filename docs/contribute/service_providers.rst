@@ -31,11 +31,12 @@ GatewayGeo
 |gatewaygeo| `GatewayGeo <https://gatewaygeomatics.com/>`__ (Canada) is a company 
 on the East Coast of Canada that has long specialized in assisting organizations 
 to publish, discover and share their geospatial data through openness : OGC 
-services, leveraging FOSS4G software. GatewayGeo is known for its longtime 
-participation in the MapServer project, as well as being the company who gave 
-the initial pycsw metadata publishing workshop back in 2013. GatewayGeo's popular 
-product, MS4W, is freely available and comes pre-configured with various OGC 
-services running out-of-the-box.
+services & leveraging FOSS4G software. GatewayGeo is known for its longtime 
+participation in the MapServer project, has been involved in ZOO-Project development, 
+documentation, packaging, and training for a very long time (including providing much
+of the initial documentation & workshop materials). GatewayGeo's popular product, 
+`MS4W <https://ms4w.com/>`__, is freely available and comes pre-configured with 
+various OGC services running out-of-the-box, including WPS through ZOO-Project.
 
 .. |gatewaygeo| image:: https://gatewaygeomatics.com/images/gatewaygeo-logo.png
        :width: 200px
