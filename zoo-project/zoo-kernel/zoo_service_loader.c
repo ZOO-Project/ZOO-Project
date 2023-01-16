@@ -348,6 +348,7 @@ int addServicesNamespaceToMap(maps* conf){
 			      free(_tmpMaps);
 			      _tmpMaps=NULL;
                             }
+			    closedir(dir);
 			  } else {
                             map* error=createMap("code","BadRequest");
                             addToMap(error,"message",_("The resource is not available"));
@@ -657,7 +658,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 
     strcpy(conf_dir2,ntmp);
     getServicesNamespacePath(m,ntmp,conf_dir2,1024);
-    strcpy(ntmp,conf_dir2);
+    strcpy(tmps1,conf_dir2);
 
     snprintf (tmps1, 1024, "%s/%s.zcfg", ntmp, cIdentifier);
 #ifdef DEBUG
@@ -2796,8 +2797,25 @@ runRequest (map ** inputs)
     json_object *res=json_object_new_object();
     setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
 
-    /* - Root url */
-
+    if((strstr(pcaCgiQueryString,"/processes")!=NULL && strncasecmp(pcaCgiQueryString,"/processes",10)!=0) ||
+       (strstr(pcaCgiQueryString,"/jobs")!=NULL && strncasecmp(pcaCgiQueryString,"/jobs",5)!=0) ){
+	map* error=createMap("code","BadRequest");
+	addToMap(error,"message",_("The resource is not available"));
+	localPrintExceptionJ(m,error);
+	freeMaps (&m);
+	free (m);
+	free (REQUEST);
+	json_object_put(res);
+	freeMap (inputs);
+	free (*inputs);
+	*inputs=NULL;
+	freeMap (&error);
+	free (error);
+	free(pcaCgiQueryString);
+	xmlCleanupParser ();
+	zooXmlCleanupNs ();
+	return 1;
+    }
     if((strncasecmp(cgiRequestMethod,"post",4)==0 &&
 	(strstr(pcaCgiQueryString,"/processes/")==NULL ||
 	 strlen(pcaCgiQueryString)<=11))
@@ -2822,6 +2840,7 @@ runRequest (map ** inputs)
       return 1;
     }
     else if(cgiContentLength==1){
+      /* - Root url */
       if(strncasecmp(cgiRequestMethod,"GET",3)!=0){
 	setMapInMaps(m,"lenv","status_code","405");
 	map* pmaError=createMap("code","InvalidMethod");
@@ -4043,7 +4062,8 @@ runRequest (map ** inputs)
 	}
       }//else error
       else
-	if(strstr(pcaCgiQueryString,"/jobs")==NULL && strstr(pcaCgiQueryString,"/jobs/")==NULL){
+	if(strstr(pcaCgiQueryString,"/jobs")==NULL && strstr(pcaCgiQueryString,"/jobs/")==NULL
+	   && strstr(pcaCgiQueryString,"/processes/")!=NULL && (strstr(pcaCgiQueryString,"/processes/")+11)!=NULL){
 	  /* - /processes/{processId}/ */
 	  //DIR *dirp = opendir (ntmp);
 	  json_object *res3=json_object_new_object();
