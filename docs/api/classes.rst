@@ -1,7 +1,7 @@
 .. _api-classes:
 
 ZOO-API Classes
-=============
+===============
 
 The following classes are available in the ZOO API:
 

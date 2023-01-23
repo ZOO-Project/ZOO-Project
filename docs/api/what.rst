@@ -1,13 +1,14 @@
 .. _api-what:
 
 What is ZOO-API ?
-==============
+=================
 
-ZOO-API is a server-side Javascript library for creating and chaining :ref:`services_index`. It lets you script on the server-side to execute WPS *Processes*, and thus to use common JavaScript controls and logic for WPS chaining.
-
+ZOO-API is a server-side Javascript library for creating and chaining :ref:`services_index`. 
+It lets you script on the server-side to execute WPS *Processes*, and thus to use 
+common JavaScript controls and logic for WPS chaining.
 
 Server-side JavaScript WPS
----------------------
+--------------------------
 
 ZOO-API  :ref:`js-support`  works on the server-side using the Mozilla foundation `JavaScript <https://developer.mozilla.org/en/JavaScript>`__
 engine,  `SpiderMonkey <https://developer.mozilla.org/en/SpiderMonkey>`__. 

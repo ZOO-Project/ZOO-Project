@@ -43,10 +43,8 @@ returned value. In the case it succeeded, the ZOO-Kernel then parse
 the third arguments containing the result and produce the output in
 the desired format.
 
-
-
 Compliant
-........................................................
+.........
 
 ZOO-Kernel implements and complies with the `WPS 1.0.0
 <http://www.opengeospatial.org/standards/wps/>`_ and the `WPS 2.0.0
@@ -70,12 +68,13 @@ specification, such as:
 
 ZOO-Kernel compliancy and performances can be tested using the
 following tools:
- * `cptesting <https://github.com/WPS-Benchmarking/cptesting>`_ 
- * WPS Test Suite provided by the `OGC compliancy program <http://cite.opengeospatial.org/>`_
- * XML responses validity can also be simply tested using `XMLint <http://xmlsoft.org/xmllint.html/>`_.
+
+* `cptesting <https://github.com/WPS-Benchmarking/cptesting>`_ 
+* WPS Test Suite provided by the `OGC compliancy program <http://cite.opengeospatial.org/>`_
+* XML responses validity can also be simply tested using `XMLint <http://xmlsoft.org/xmllint.html/>`_.
 
 Polyglot
-........................................................
+........
 
 ZOO-Kernel is a **polyglot**. The software is written in a valid form
 of multiple programming languages, which performs the same operations
