@@ -17,7 +17,7 @@ version = '1.9.0'
 release = '1.9.0'
 license = 'This work is released under a Creative Commons Attribution-ShareAlike 4.0 International Public License'
 authors = 'ZOO-Project team'
-copyright = '2009-2022, ' + authors+ '. '+ license
+copyright = '2009-2023, ' + authors+ '. '+ license
 show_authors = True
 
 # Options for HTML output

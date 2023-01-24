@@ -1,7 +1,7 @@
 .. _services-available:
 
 Available ZOO-Services
-================
+======================
 
 `ZOO-Project <http://zoo-project.org>`__ includes some ready-to-use WPS Services based on reliable open source libraries such as such as `GDAL <http://gdal.org>`_, `CGAL <http://gcal.org>`_, `GRASS GIS <http://grass.osgeo.org>`_, `OrfeoToolbox <http://orfeo-toolbox.org>`__ and `SAGA GIS <https://www.orfeo-toolbox.org>`__.
 
@@ -9,7 +9,7 @@ Available ZOO-Services
 
 
 Based on GDAL 
-------------------------
+-------------
 
 .. note:: 
 
@@ -39,7 +39,7 @@ Based on GDAL
     `Base-vect-ops <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/ogr/base-vect-ops-py>`__,Provides tools for single and multiple geometries vector-based spatial analysis ,Python
     
 Based on CGAL
-------------------------
+-------------
 
 .. note:: 
 
@@ -59,7 +59,7 @@ Based on CGAL
     `Ggal_Voronoi <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-services/cgal/voronoi.c>`__,Computes the edges of Voronoi diagram for a set of data points,C
     
 Based on GRASS GIS 
----------------------------
+------------------
 
 .. note:: 
 
@@ -83,7 +83,7 @@ Based on GRASS GIS
 
     
 Based on Orfeo Toolbox 
------------------------
+----------------------
 
 .. note:: 
 
@@ -101,7 +101,7 @@ Based on Orfeo Toolbox
 using the :ref:`kernel-orfeotoolbox`.
 
 Based on SAGA GIS
----------------------------
+-----------------
 
 .. note:: 
 

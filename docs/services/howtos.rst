@@ -1,7 +1,7 @@
 .. _services-create:
 
 Create your own ZOO-Services
-=========================
+============================
 
 :ref:`services_index` are quite easy to create once you have installed the ZOO Kernel and have 
 chosen code (in the language of your choice) to turn into a ZOO service. Here are some 
@@ -13,7 +13,7 @@ HelloWorlds in Python, PHP, Java, C#  and JavaScript with links to their corresp
 
 
 General information
-----------------------
+-------------------
 
 The function of the process for each programming language take three arguments: the main
 configuration, inputs and outputs.
@@ -76,7 +76,7 @@ The three parameters of the function are passed to the Python module as dictiona
 Following you'll find an example for each parameters
 
 Main configuration
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 Main configuration contains several informations, some of them are really useful to develop your service.
 Following an example ::
 
@@ -121,7 +121,7 @@ Following an example ::
   }
 
 Inputs
-^^^^^^^^^^^^
+^^^^^^
 The inputs are somethings like this ::
 
   {
@@ -138,7 +138,7 @@ The access to the value you have to require for the ``value`` parameter, somethi
   yourVariable = inputs['variable_name']['value']
 
 Outputs
-^^^^^^^^^^^^^
+^^^^^^^
 The outputs data as a structure really similar to the inputs one ::
 
   {
@@ -195,7 +195,7 @@ void zoo_UpdateStatus(Array conf,string message,int pourcent)
     update the status of the running service
 
 PHP ZCFG requirements
-**********************************
+*********************
 
 The ZCFG file should contain the following :
 
@@ -205,13 +205,13 @@ serviceProvider
     The name of the php script (ie. service.php) to use as a ZOO Service Provider.
 
 PHP Data Structure used
-********************************
+***********************
 
 The three parameters are passed to the PHP function as 
 `Arrays <php.net/manual/language.types.array.php>`__.
 
 Sample ZOO PHP Services Provider
-******************************************
+********************************
 
 .. code-block:: php
 
@@ -297,7 +297,7 @@ The ZOO-API provides the following functions:
 
 
 Java ZCFG requirements
-**********************************
+**********************
 
 .. Note:: For each Service provided by your ZOO Java Services Provider
           (your corresponding Java class), the ZCFG File should have
@@ -314,7 +314,7 @@ serviceProvider
     named ``HelloJava.class`` then you should use ``HelloJava``.
 
 Java Data Structure used
-********************************
+************************
 
 The three parameters are passed to the Java function as 
 `java.util.HashMap <http://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html>`__.
@@ -339,7 +339,7 @@ Sample ZOO Java Services Provider
   }
 
 C#
-----
+--
 
 Specifically for the C# support, you should add the following
 section to your ``main.cfg`` file.
@@ -386,7 +386,7 @@ The ZOO-API provides the following static functions:
 
 
 C# ZCFG requirements
-**********************************
+********************
 
 .. Note:: For each Service provided by your ZOO Mono Services Provider
           (your corresponding Mono class), the ZCFG File should have
@@ -406,14 +406,14 @@ serviceClass
     The name of the C# class containing the ZOO-Service Provider definition.
 
 C# Data Structure used
-********************************
+**********************
 
 The three parameters of the function are passed to the Mono static
 function as ``ZMaps`` which are basically
 ``Dictionary<String,_ZMaps>``.
 
 Sample ZOO C# Services Provider
-******************************************
+*******************************
 
 .. literalinclude:: ../../zoo-project/zoo-services/hello-mono/test.cs
    :language: csharp
@@ -423,14 +423,14 @@ Javascript
 ----------
 
 ZOO API
-*********
+*******
 
 If you need to use :ref:`ZOO API <api>` in your service, you have first to copy ``zoo-api.js``
 and ``zoo-proj4js.js`` where your services are located (for example in Unix system probably in
 ``/usr/lib/cgi-bin/``
 
 Javascript ZCFG requirements
-**********************************
+****************************
 
 .. Note:: For each Service provided by your ZOO Javascript Services Provider, the ZCFG File 
           must be named the same as the Javascript function name (also the case of
@@ -447,12 +447,12 @@ serviceProvider
 
 
 Javascript Data Structure used
-********************************
+******************************
 
 The three parameters of the function are passed to the JavaScript function as Object.
 
 Sample ZOO Javascript Services Provider
-******************************************
+***************************************
 
 .. code-block:: javascript
 
@@ -465,10 +465,10 @@ Sample ZOO Javascript Services Provider
 
 
 R
-----------
+-
 
 ZOO API
-*********
+*******
 
 For using the R language from the ZOO-Project, you have first to copy
 ``minimal.r`` in the same directory as the ZOO-Kernel.
@@ -495,7 +495,7 @@ The ZOO-API provides the following functions:
 
 
 R ZCFG requirements
-**********************************
+*******************
 
 .. Note:: For each Service provided by your ZOO R Services Provider,
 	  the ZCFG File must be named the same as the R function name
@@ -512,7 +512,7 @@ serviceProvider
 
 
 R Data Structure used
-********************************
+*********************
 
 The three parameters of the function are passed to the R function as
 R dictionaries.
@@ -524,9 +524,9 @@ access outpus by using the global variable as for the main
 configuration dictionary. 
 
 Sample ZOO R Services Provider
-******************************************
+******************************
 
-.. code-block:: javascript
+.. code-block:: guess
 
     source("minimal.r")
 		

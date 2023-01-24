@@ -75,7 +75,7 @@ Run configure with the desired options, for example with the following command:
   ./configure --with-js --with-python
 
 .. note::
-   Refer to the :ref:`installation` section for the full list of available options
+   Refer to the :ref:`install-installation` section for the full list of available options
 
 Compile ZOO-Kernel as follow:
 
@@ -115,15 +115,15 @@ Edit the *main.cfg* file as follow (example configuration):
 
 Test the ZOO-Kernel installation with the following requests:
 
-.. code-block:: guess
+.. code-block::
 
    http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=GetCapabilities&Version=1.0.0
 
-.. code-block:: guess
+.. code-block::
 
    http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=DescribeProcess&Version=1.0.0&Identifier=HelloPy
 
-.. code-block:: guess
+.. code-block::
 
    http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=Execute&Version=1.0.0&Identifier=HelloPy&DataInputs=a=myname
 

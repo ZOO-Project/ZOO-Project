@@ -1,7 +1,7 @@
 .. _contribute_dev:
 
 Committer guidelines
-================================
+====================
 
 This section gathers information to the registered ZOO-Project developers.
 
@@ -37,7 +37,7 @@ A list of all project committers will be kept in the main zoo-project directory 
 
 
 Git Administrators
------------------
+------------------
 
 One member of the Project Steering Committee will be designed the Git Administrator. That person will be responsible for giving git commit access to folks, updating the COMMITTERS file, and other git related management. That person will need a user account to access GitHub of course.
 
