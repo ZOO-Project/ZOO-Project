@@ -5169,7 +5169,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 
 	    if(dumpBackFinalFile(lconf,fbkp,fbkp1)<0)
 	      return -1;
-	    map *pmPid=getMapFromMaps(m,"lenv","file.pid");
+	    map *pmPid=getMapFromMaps(lconf,"lenv","file.pid");
 	    if(pmPid!=NULL)
 	      zUnlink (pmPid->value);
 	    switch(eres){
