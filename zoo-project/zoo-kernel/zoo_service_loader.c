@@ -5092,7 +5092,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      invokeCallback(lconf,NULL,NULL,7,0);
 #endif
 #endif
-	      map *pmPid=getMapFromMaps(m,"lenv","file.pid");
+	      map *pmPid=getMapFromMaps(lconf,"lenv","file.pid");
 	      if(pmPid!=NULL)
 		zUnlink (pmPid->value);
 	      unhandleStatus (conf);
