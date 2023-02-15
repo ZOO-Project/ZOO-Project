@@ -4983,7 +4983,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    addToMap(bmap->content,"sid",tmpm->value);
 	    addIntToMap(bmap->content,"pid",zGetpid());
 
-	    createSPidFile(m,r_inputs->value);
+	    createSPidFile(lconf,r_inputs->value);
 
 	    int iNbChars=7;
 	    if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
@@ -5069,7 +5069,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    map* serviceTypeMap=getMap(s1->content,"serviceType");
 	    if(serviceTypeMap!=NULL)
 	      setMapInMaps (lconf, "lenv", "serviceType", serviceTypeMap->value);
-	    createLenvFile(m,r_inputs->value,usid->value);
+	    createLenvFile(lconf,r_inputs->value,usid->value);
 
 #ifdef USE_CALLBACK
 	    invokeCallback(lconf,request_input_real_format,NULL,1,0);
