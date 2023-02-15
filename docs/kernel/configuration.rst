@@ -19,7 +19,7 @@ ZOO-Kernel general settings are defined in a configuration file called
   Information contained by ``/usr/lib/cgi-bin/main.cfg`` is accessible from WPS Services at runtime, so when *Execute* requests are used.
 
 Default main.cfg
-................
+...............................
 
 An example *main.cfg* file is given here as reference.
 
@@ -68,7 +68,7 @@ An example *main.cfg* file is given here as reference.
 
 
 Main section 
-............
+...............................
 
 The main.cfg ``[main]`` section parameters are explained bellow.
 
@@ -103,6 +103,10 @@ The main.cfg ``[main]`` section parameters are explained bellow.
    service code. In case you do not add handleText or set its value to
    true, you will simply need to use the value as it was provided in
    a single CDATA node provided in the Execute request.
+* ``extra_supported_codes``: if this parameter is present in the main
+  section, then the response codes list given will be considered as
+  valid response code when downloading input data (sample value:
+  ``404,400``).
 
 .. warning:: 
   The ``libPath`` parameter is currently only recognized by services implemented
@@ -118,7 +122,7 @@ In case you have activated the MapServer support, please refer to
 
 
 Identification and Provider 
-...........................
+..........................................
 
 The ``[identification]`` and ``[provider]`` sections are not ZOO-Project
 specific. They provide OGC metadata [#f3]_ and should be set according
@@ -139,13 +143,13 @@ found in this `XML Schema Document
 
 
 Additional sections
--------------------
+--------------------------------
 
 All the additional sections discribed in the following section are
 optional.
 
 Headers section
-...............
+...............................
 
 The ``[headers]`` section can be set in order to define a specific HTTP
 Response header, which will be used for every response. As an example,
@@ -164,7 +168,7 @@ parameters in this section:
     Access-Control-Allow-Headers=content-type
 
 curl section
-............
+...............................
 
 The `[curl]` section is used on windows platform to specify, using the
 `cainfo` parameter, where is located the
@@ -180,7 +184,7 @@ machine. An example bellow is provided to illustrate sur a setting.
 
 
 env section
-...........
+...............................
 
 The ``[env]`` section can be used to store specific environment
 variables to be set prior the loading of *Services Provider* and Service execution.
@@ -199,7 +203,7 @@ In case you have activated the OTB support, please refer to :ref:`this
 specific section <kernel-orfeotoolbox-main.cfg>`.
 
 lenv section
-............
+...............................
 
 The ``lenv`` section is used by the ZOO-Kernel to store runtime informations
 before the execution of a WPS service, it contains the following
@@ -220,7 +224,7 @@ parameters:
    temporary store the final WPS response.
 
 renv section
-............
+...............................
 
 The ``renv`` section is automatically created by the ZOO-Kernel before
 the execution of a WPS service, it contains all the environment
@@ -230,7 +234,7 @@ rfc3875] for more details).
 
 
 senv section
-............
+...............................
 
 The ``senv`` section can be used to store sessions information on the
 server side. Such information can then be accessed automatically from
@@ -258,7 +262,7 @@ request ZOO-Kernel using this cookie, it will automatically load the
 value stored before the Service execution.
 
 Security section
-................
+...............................
 
 The ``[security]`` section can be used to define what headers, the
 ZOO-Kernel has initially received in the request, should be passed
@@ -313,7 +317,7 @@ between users.
 .. _zoo_activate_db_backend:
 
 Database section
-................
+...............................
 
 The database section allows to configure the
 :ref:`ZOO-Kernel optional database support <zoo_install_db_backend>`. 
@@ -348,7 +352,7 @@ to setup the database.
 .. _zoo_activate_metadb:
 
 Metadb section
-..............
+...............................
 
 The metadb section allows to configure the ZOO-Kernel to access :ref:`the
 metadata information about WPS Services <zoo_create_metadb>` by using
@@ -381,7 +385,7 @@ Please refer to this `section <zoo_create_metadb>`_ to learn how
 to setup the database.
 
 Include section
-...............
+...............................
 
 The ``[include]`` section (optional) lists explicitely a set of service configuration files
 the the ZOO-Kernel should parse, e.g.,
@@ -481,7 +485,11 @@ about the open API specification it is referring to.
 The first section to be found in the ``oas.cfg`` file should be the
 ``[openapi]``. It contains the following parameters:
 
- * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API - Processing
+ * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API -
+   Processing (in case the ``rootHost`` and ``rootPath`` are defined,
+   this value will automatically be updated at runtime)
+ * ``rootHost``: the host (ie. http://localhost)
+ * ``rootPath``: the root path to the service (ie. ogc-api)
  * ``links``: the links provided from the root
  * ``paths``: the full paths list
  * ``parameters``: the parameters list defined in paths
@@ -498,6 +506,23 @@ The first section to be found in the ``oas.cfg`` file should be the
    and you want to aknowledge the text/html format in links
  * ``wsUrl``: the WebSocket URL to subscribe client to redis
  * ``publisherUrl``: the URL used to publish status updates
+* ``link_href``: the url to the links.json schema
+* ``tags``: tags lits in the order they will be defined in the OpenAPI
+* ``examplesPath``: the full path to the examples files, if any
+* ``examplesUrl``: the corresponding URL to access the examples files
+  to be exposed within the OpenAPI
+* ``exceptionsUrl``: root URL to the exception
+* ``ensure_type_validation``: set it to true to not allow passing
+  literal value to a complex input, a complex data in place of a
+  literal, respectively
+* ``ensure_type_validation_but_ets``: set it to true to have the type
+  validation as with the previous parameter but on for the literal
+  data (not accepting complex data)
+* ``default_result_as_document``: set it to true in case you want to
+  use raw as the default value for the response parameter.
+* ``use_problem_exception``: set any value only in case you are
+  willing to use application/problem+json (see. `RFC7807
+  <https://datatracker.ietf.org/doc/html/rfc7807>`__).
 
 For any links and paths ``/A`` defined, you will have a corresponding
 ``[/A]`` and ``[A]`` sections. In the ``[/A]`` section you will define

@@ -1,16 +1,16 @@
-[echo]
+[EchoProcess]
  Title = Echo input
  Abstract = Simply echo the value provided as input
  processVersion = 2
  storeSupported = true
  statusSupported = true
- serviceProvider = echo_service
+ serviceProvider = echon52_service
  serviceType = Python
  <MetaData>
    title = Demo
  </MetaData>
  <DataInputs>
-  [a]
+  [literalInput]
    Title = Literal Input (string)
    Abstract = An input string
    minOccurs = 0
@@ -19,7 +19,7 @@
     DataType = string
     <Default />
    </LiteralData>
-  [b]
+  [complexInput]
    Title = Complex Input
    Abstract = A complex input 
    minOccurs = 0
@@ -47,27 +47,16 @@
       CRS = urn:ogc:def:crs:EPSG:6.6:3785
      </Supported>
    </BoundingBoxData>
-  [pause]
-   Title = Literal Input (double)
-   Abstract = An optional input which can be used to specify the number of seconds to pause the service before returning
-   minOccurs = 0
-   maxOccurs = 1
-   <LiteralData>
-    DataType = float
-    <Default>
-     value = 10.0
-    </Default>
-   </LiteralData>
  </DataInputs>
  <DataOutputs>
-  [a]
+  [literalOutput]
    Title = The output a
    Abstract = The output a returned
    <LiteralData>
     DataType = string
     <Default />
    </LiteralData>
-  [b]
+  [complexOutput]
    Title = The output b
    Abstract = The output b returned
    <ComplexData>

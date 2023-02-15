@@ -443,7 +443,6 @@ char* isInCache(maps* conf,char* request){
  * @return 0 in case of success, -1 in case of failure
  */
 int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** error){
-  
   int shouldClean=-1;
   map* tmp1;
   char sindex[5];
@@ -536,7 +535,20 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	  memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
 	}else
 	  addToMap((*in)->content,ufile,"true");
-	if(hInternet->ihandle[*index].code!=200){
+	bool bCodes=true;
+	map* pmCodes=getMapFromMaps(*m,"main","extra_supported_codes");
+	if(pmCodes!=NULL){
+	  char* pcaTmp=zStrdup(pmCodes->value);
+	  char *pcSavePtr, *pcToken;
+	  pcToken=strtok_r(pcaTmp,",",&pcSavePtr);
+	  while(pcToken!=NULL){
+	    bCodes=(hInternet->ihandle[*index].code!=atoi(pcToken));
+	    if(!bCodes)
+	      break;
+	    pcToken=strtok_r(NULL,",",&pcSavePtr);
+	  }
+	}
+	if(hInternet->ihandle[*index].code!=200 && bCodes){
 	  const char *error_rep_str=_("Unable to download the file for the input <%s>, response code was : %d.");
 	  char *error_msg=(char*)malloc((strlen(error_rep_str)+strlen(content->name)+4)*sizeof(char));
 	  sprintf(error_msg,error_rep_str,content->name,hInternet->ihandle[*index].code);

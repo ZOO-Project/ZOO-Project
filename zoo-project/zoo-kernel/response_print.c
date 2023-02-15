@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2020 GeoLabs SARL
+ * Copyright (c) 2009-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -2000,7 +2000,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
 
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
 
     xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
 

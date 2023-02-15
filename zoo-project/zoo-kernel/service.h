@@ -33,6 +33,8 @@
 #define ZOO_DLL_EXPORT 
 #endif
 
+// ISO8601 compatible date format (RFC 3339)
+#define zDateFormat "%Y-%m-%dT%H:%M:%SZ"
  // knut: add bool if necessary
 #ifndef __cplusplus
 #ifndef WIN32

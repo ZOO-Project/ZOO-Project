@@ -2017,7 +2017,6 @@ char* getValueFromMaps(maps* inputs,const char* name){
 	fcontent[flen]=0;
 	fclose(f0);
 	res=zStrdup(fcontent);
-	fprintf(stderr,"%s %d (%s)\n",__FILE__,__LINE__,fcontent);
 	free(fcontent);
       }
     }else{

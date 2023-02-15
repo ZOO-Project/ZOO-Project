@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2017-2022 GeoLabs SARL. All rights reserved.
+ *  Copyright 2017-2023 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1009,7 +1009,8 @@ extern "C" {
       pmTmp=getMapFromMaps(m,"lenv","message");
     if(pmTmp!=NULL)
       json_object_object_add(res,"detail",json_object_new_string(pmTmp->value));
-    //setMapInMaps(m,"headers","Content-Type","application/problem+json;charset=UTF-8");
+    if(getMapFromMaps(m,"openapi","use_problem_exception"))
+      setMapInMaps(m,"headers","Content-Type","application/problem+json;charset=UTF-8");
     return res;
   }
   
@@ -1246,6 +1247,25 @@ extern "C" {
   }
 
   /**
+   * Return an exception response with Status: "400 Bad Request" if inputs are
+   * not in the proper format.
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param  peInput the input causing the issue
+   */
+  void returnBadRequestException(maps* pmsConf,elements* peInput){
+    map* pmError=createMap("code","BadRequest");
+    char tmpS1[1024];
+    sprintf(tmpS1,_("Wrong type used for input %s"),peInput->name);
+    addToMap(pmError,"message",tmpS1);
+    setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
+    printExceptionReportResponseJ(pmsConf,pmError);
+    freeMap(&pmError);
+    free(pmError);
+    return;
+  }
+
+  /**
    * Parse a single input / output entity
    *
    * @param conf the maps containing the settings of the main.cfg file
@@ -1261,16 +1281,43 @@ extern "C" {
     if(strncmp(ioType,"inputs",6)==0) {
       if(json_object_is_type(val,json_type_object)) {
 	// ComplexData
+	elements* peCurrentInput=getElements(cio,cMaps->name);
+	if(getMapFromMaps(conf,"openapi","ensure_type_validation")!=NULL)
+	  if(peCurrentInput!=NULL){
+	    if(peCurrentInput->format!=NULL
+	       && strcasecmp(peCurrentInput->format,"ComplexData")!=0
+	       && strcasecmp(peCurrentInput->format,"BoundingBoxData")!=0){
+	      return returnBadRequestException(conf,peCurrentInput);
+	    }
+	  }
 	if( json_object_object_get_ex(val,"value",&json_cinput) != FALSE ||
 	  json_object_object_get_ex(val,"href",&json_cinput) != FALSE ) {
 	  parseJComplex(conf,val,cio,cMaps,key);
 	} else if( json_object_object_get_ex(val,"bbox",&json_cinput) != FALSE ){
 	  parseJBoundingBox(conf,val,cio,cMaps);
+	}else if(getMapFromMaps(conf,"openapi","ensure_type_validation")!=NULL){
+	  return returnBadRequestException(conf,peCurrentInput);
 	}
       } else if(json_object_is_type(val,json_type_array)){
 	// Need to run detection on each item within the array
       }else{
 	// Basic types
+	if(getMapFromMaps(conf,"openapi","ensure_type_validation")!=NULL
+	   &&
+	   getMapFromMaps(conf,"openapi","ensure_type_validation_but_ets")==NULL){
+	  elements* peCurrentInput=getElements(cio,cMaps->name);
+	  if(peCurrentInput!=NULL){
+	    if(peCurrentInput->format!=NULL && strcasecmp(peCurrentInput->format,"LiteralData")!=0){
+	      map* error=createMap("code","BadRequest");
+	      char tmpS1[1024];
+	      sprintf(tmpS1,_("Wrong type used for input %s"),peCurrentInput->name);
+	      addToMap(error,"message",tmpS1);
+	      setMapInMaps(conf,"lenv","status_code","400 Bad Request");
+	      printExceptionReportResponseJ(conf,error);
+	      return;
+	    }
+	  }
+	}
 	cMaps->content=createMap("value",json_object_get_string(val));
       }
     }
@@ -1543,8 +1590,14 @@ extern "C" {
 	setMapInMaps(conf,"request","response",json_object_get_string(json_io));
       }else{
 	if(getMap(request_inputs,"response")==NULL){
-	  addToMap(request_inputs,"response","raw");
-	  setMapInMaps(conf,"request","response","raw");
+	  // OGC Test Suite requirement (the execute.yaml schema said that it should be raw)
+	  if(getMapFromMaps(conf,"openapi","default_result_as_document")!=NULL){
+	    addToMap(request_inputs,"response","document");
+	    setMapInMaps(conf,"request","response","document");
+	  }else{
+	    addToMap(request_inputs,"response","raw");
+	    setMapInMaps(conf,"request","response","raw");
+	  }
 	}
       }
       json_io=NULL;
@@ -1611,12 +1664,12 @@ extern "C" {
   }
 
   /**
-   * Veirify if the process identified by pccPid is part of the processID filters, 
+   * Verify if the process identified by pccPid is part of the processID filters,
    * if any.
    *
    * @param pmsConf the maps containing the settings of the main.cfg file
    * @param pccPid the const char pointer to the processID
-   * @return true in case the filter is empty or in case the processId pccPid 
+   * @return true in case the filter is empty or in case the processId pccPid
    * is one of the filtered processID, false in other case.
    */
   bool isFilteredPid(maps* pmsConf,const char* pccPid){
@@ -1640,7 +1693,94 @@ extern "C" {
     return true;
 #endif
   }
-  
+
+  /**
+   * Verify if the process identified by pccPid is part of the processID filters,
+   * if any.
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param pccPid the const char pointer to the processID
+   * @return true in case the filter is empty or in case the processId pccPid
+   * is one of the filtered processID, false in other case.
+   */
+  bool isFilteredDMM(maps* pmsConf,const char* pccPid){
+#ifndef RELY_ON_DB
+    maps* pmsRequest=getMaps(pmsConf,"request");
+    if(pmsRequest!=NULL){
+      map* pmTmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
+      map* pmMinDate=getMap(pmsRequest->content,"minDuration");
+      map* pmMaxDate=getMap(pmsRequest->content,"maxDuration");
+      map* pmTimeInterval=getMap(pmsRequest->content,"datetime");
+      if(pmMinDate==NULL && pmMaxDate==NULL && pmTimeInterval==NULL)
+	return true;
+      else{
+	// Find datetime for files <pccPid>.sid
+	zStatStruct zssSid_status;
+	char* pcaSidPath=(char*)malloc((strlen(pccPid)+strlen(pmTmpPath->value)+6)*sizeof(char));
+	sprintf(pcaSidPath,"%s/%s.sid",pmTmpPath->value,pccPid);
+	int iS1=zStat(pcaSidPath, &zssSid_status);
+	if(pmMinDate!=NULL || pmMaxDate!=NULL){
+	  // Find datetime for files <pccPid>_lenv.cfg
+	  int iMin=0,iMax=86400;
+	  zStatStruct zssLenv_status;
+	  char* pcaLenvPath=(char*)malloc((strlen(pccPid)+strlen(pmTmpPath->value)+7)*sizeof(char));
+	  sprintf(pcaLenvPath,"%s/%s.json",pmTmpPath->value,pccPid);
+	  int iS=zStat(pcaLenvPath, &zssLenv_status);
+	  if(iS!=0)
+	    return false;
+	  free(pcaLenvPath);
+	  // Use difftime to get elapsed seconds
+	  double ulElapsedSeconds=0;
+	  if(zssLenv_status.st_mtime!=zssSid_status.st_mtime){
+	    ulElapsedSeconds=(zssLenv_status.st_mtime-zssSid_status.st_mtime);
+	  }
+	  if(pmMinDate!=NULL)
+	    iMin=atoi(pmMinDate->value);
+	  if(pmMaxDate!=NULL)
+	    iMax=atoi(pmMaxDate->value);
+	  if(iMax<ulElapsedSeconds || iMin>ulElapsedSeconds){
+	    return false;
+	  }
+	}
+	if(pmTimeInterval!=NULL){
+	  // Find datetime or interval
+	  struct tm tmaLimits[2];
+	  bool baLimits[2]={false,false};
+	  char* token, *saveptr,*pcaDecodedValue,*pcaDupValue;
+	  int iCnt=0;
+	  pcaDupValue=zStrdup(pmTimeInterval->value);
+	  pcaDecodedValue=url_decode(pcaDupValue);
+	  free(pcaDupValue);
+	  token=strtok_r(pcaDecodedValue,"/",&saveptr);
+	  while(token!=NULL){
+	    if(iCnt<2){
+	      if(strncmp(token,"..",2)!=0 && strstr(token,",")==NULL){
+		char* pcaDup=zStrdup(token);
+		strptime(pcaDup,zDateFormat,&tmaLimits[iCnt]);
+		baLimits[iCnt]=true;
+		free(pcaDup);
+	      }
+	    }
+	    if(strstr(token,",")==NULL)
+	      iCnt++;
+	    token=strtok_r(NULL,"/",&saveptr);
+	  }
+	  free(pcaDecodedValue);
+	  if((baLimits[0] && zssSid_status.st_mtime<mktime(&tmaLimits[0])) ||
+	     (baLimits[1] && zssSid_status.st_mtime>mktime(&tmaLimits[1]))){
+	    return false;
+	  }
+	}
+	return true;
+      }
+    }else
+      return true;
+    return true;
+#else
+    return true;
+#endif
+  }
+
   /**
    * Print the jobs list
    *
@@ -1694,7 +1834,8 @@ extern "C" {
       if(dirp!=NULL){
 	while ((dp = readdir (dirp)) != NULL){
 	  char* extn = strstr(dp->d_name, ".json");
-	  if(extn!=NULL && strstr(dp->d_name,"_status")==NULL){
+	  if(extn!=NULL && strstr(dp->d_name,"_status")==NULL
+	     && strstr(dp->d_name,"_final_")==NULL){
 	    char* tmpStr=zStrdup(dp->d_name);
 	    tmpStr[strlen(dp->d_name)-5]=0;
 #ifndef RELY_ON_DB
@@ -1705,26 +1846,30 @@ extern "C" {
 	    pmsLenv->content = NULL;
 	    pmsLenv->child = NULL;
 	    pmsLenv->next = NULL;
-	    map* pmPid=NULL;
+	    map *pmaPid=NULL, *pmaUsid=NULL;
 	    if(conf_read(pcaLenvPath,pmsLenv) !=2){
 	      map *pmTmp=getMapFromMaps(pmsLenv,"lenv","Identifier");
 	      if(pmTmp!=NULL){
-		pmPid=createMap("value",pmTmp->value);
+		pmaPid=createMap("value",pmTmp->value);
+		addToMap(pmaPid,"toRemove","true");
 	      }
-	      if(pmPid==NULL)
-		pmPid=createMap("toRemove","true");
-	      else
-		addToMap(pmPid,"toRemove","true");
+	      pmTmp=getMapFromMaps(pmsLenv,"lenv","usid");
+	      if(pmTmp!=NULL){
+		pmaUsid=createMap("value",pmTmp->value);
+		addToMap(pmaPid,"toRemove","true");
+	      }
 	      freeMaps(&pmsLenv);
 	      free(pmsLenv);
 	    }else{
-	      pmPid=createMap("toRemove","true");
+	      pmaPid=createMap("toRemove","true");
+	      pmaUsid=createMap("toRemove","true");
 	    }
 	    free(pcaLenvPath);
 #else
-	    map* pmPid=createMap("toRemove","true");
+	    map *pmaPid=NULL, *pmaUsid=NULL;
 #endif
-	    if(isFilteredPid(conf,pmPid->value)){
+	    if(isFilteredPid(conf,pmaPid->value) &&
+	       isFilteredDMM(conf,pmaUsid->value)){
 	      if(cnt>=skip && cnt<limit+skip){
 		json_object* cjob=printJobStatus(conf,tmpStr);
 		json_object_array_add(res,cjob);
@@ -1733,9 +1878,13 @@ extern "C" {
 		setMapInMaps(conf,"lenv","serviceCntNext","true");
 	      cnt++;
 	    }
-	    if(pmPid!=NULL && getMap(pmPid,"toRemove")!=NULL){
-	      freeMap(&pmPid);
-	      free(pmPid);
+	    if(pmaPid!=NULL && getMap(pmaPid,"toRemove")!=NULL){
+	      freeMap(&pmaPid);
+	      free(pmaPid);
+	    }
+	    if(pmaUsid!=NULL && getMap(pmaUsid,"toRemove")!=NULL){
+	      freeMap(&pmaUsid);
+	      free(pmaUsid);
 	    }
 	    free(tmpStr);
 	  }
@@ -2440,8 +2589,29 @@ extern "C" {
       pmsLenv->child = NULL;
       pmsLenv->next = NULL;
       if (conf_read (pcaLenvPath,pmsLenv) != 2){
+	zStatStruct zssLenv_status,zssSid_status;
+	int iS=zStat(pcaLenvPath, &zssLenv_status);
+	char* pcaSidPath=(char*)malloc((strlen(sessId->value)+strlen(pmTmpPath->value)+6)*sizeof(char));
+	sprintf(pcaSidPath,"%s/%s.sid",pmTmpPath->value,sessId->value);
+	int iS1=zStat(pcaSidPath, &zssSid_status);
 	map* pmPid=getMapFromMaps(pmsLenv,"lenv","Identifier");
 	json_object_object_add(res,statusFields[1],json_object_new_string(pmPid->value));
+	char *pcaTime=(char*)malloc((TIME_SIZE+1)*sizeof(char));
+	size_t st_Time=strftime(pcaTime,TIME_SIZE, zDateFormat, localtime(&zssSid_status.st_mtime) );
+	json_object_object_add(res,statusFields[2],json_object_new_string(pcaTime));
+	json_object_object_add(res,statusFields[3],json_object_new_string(pcaTime));
+	if(status==SERVICE_SUCCEEDED || status==SERVICE_FAILED){
+	  char* pcaStatusPath=(char*)malloc((strlen(sessId->value)+strlen(pmTmpPath->value)+6)*sizeof(char));
+	  sprintf(pcaStatusPath,"%s/%s.json",pmTmpPath->value,sessId->value);
+	  zStatStruct zssStatus_status;
+	  int iS2=zStat(pcaStatusPath, &zssStatus_status);
+	  st_Time=strftime(pcaTime,TIME_SIZE, zDateFormat, localtime(&zssStatus_status.st_mtime) );
+	  json_object_object_add(res,statusFields[4],json_object_new_string(pcaTime));
+	  json_object_object_add(res,statusFields[5],json_object_new_string(pcaTime));
+	}else{
+	  st_Time=strftime(pcaTime,TIME_SIZE, zDateFormat, localtime(&zssLenv_status.st_mtime) );
+	  json_object_object_add(res,statusFields[5],json_object_new_string(pcaTime));
+	}
 	freeMaps(&pmsLenv);
 	free(pmsLenv);
 	pmsLenv=NULL;
