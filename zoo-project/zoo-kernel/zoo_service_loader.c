@@ -240,7 +240,7 @@ translateChar (char *str, char toReplace, char toReplaceBy)
  * @param pcExtension the file extension (sid or pid)
  * @param pcValue the value to be stored
  */
-int createXidFile(maps* pmsConf,char* pcPath,char* pcUsid,char* pcExtension,char* pcValue){
+int createXidFile(maps* pmsConf,char* pcPath,char* pcUsid,const char* pcExtension,char* pcValue){
   char* pcaPath =
     (char *)
     malloc ((strlen (pcPath) + strlen (pcUsid) +
@@ -1945,7 +1945,8 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       *eres = -1;
     }
   *myMap = m;
-  *ioutputs = request_output_real_format;  
+  if(request_output_real_format!=NULL)
+    *ioutputs = request_output_real_format;
 }
 
 
@@ -1998,17 +1999,17 @@ void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
  * @param pcType the string defining the process to execute ('in' or 'out')
  * @return 0 in case of success, 1 in case or error
  */
-int ensureFiltered(maps* pmsConf,const char* pcType){
+int ensureFiltered(maps** pmsConf,const char* pcType){
   int eres=0;
   service* psaService=NULL;
-  maps* pmsOsecurity=getMaps(pmsConf,"osecurity");
+  maps* pmsOsecurity=getMaps(*pmsConf,"osecurity");
   map* pmPath=NULL;
   map* pmName=NULL;
   map* pmRun=NULL;
   int iLen=1;
   char* pcaName=(char*)malloc((strlen(pcType)+8)*sizeof(char));
   sprintf(pcaName,"filter_%s",pcType);
-  maps* pmsSection=getMaps(pmsConf,pcaName);
+  maps* pmsSection=getMaps(*pmsConf,pcaName);
   if(pmsSection==NULL){
     free(pcaName);
     return 0;
@@ -2018,30 +2019,30 @@ int ensureFiltered(maps* pmsConf,const char* pcType){
     iLen=atoi(pmLength->value);
   for(int iCnt=0;iCnt<iLen;iCnt++){
     if(pmsSection!=NULL &&
-       ((pmRun=getMapFromMaps(pmsConf,"lenv",pcaName))==NULL) &&
+       ((pmRun=getMapFromMaps(*pmsConf,"lenv",pcaName))==NULL) &&
        ((pmPath=getMapArray(pmsSection->content,"path",iCnt))!=NULL) &&
        ((pmName=getMapArray(pmsSection->content,"service",iCnt))!=NULL)){
-      if(fetchService(NULL,pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
+      if(fetchService(NULL,*pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
 	fprintf(stderr,"ERROR fetching the service %s %d \n",__FILE__,__LINE__);
 	free(pcaName);
 	return 1;
       }
       maps* pmsInputs=NULL;
       maps* pmsOutputs=NULL;
-      loadServiceAndRun (&pmsConf, psaService, NULL,
+      loadServiceAndRun (pmsConf, psaService, NULL,
 			 &pmsInputs,
 			 &pmsOutputs, &eres);
       freeService(&psaService);
       free(psaService);
       psaService=NULL;
       if(eres!=SERVICE_SUCCEEDED){
-	setMapInMaps(pmsConf,"lenv",pcaName,"true");
+	setMapInMaps(*pmsConf,"lenv",pcaName,"true");
 	free(pcaName);
 	return 1;
       }
     }
   }
-  setMapInMaps(pmsConf,"lenv",pcaName,"true");
+  setMapInMaps(*pmsConf,"lenv",pcaName,"true");
   free(pcaName);
   return 0;
 }
@@ -2054,7 +2055,7 @@ int ensureFiltered(maps* pmsConf,const char* pcType){
  * @see printExceptionReportResponseJ,ensureFiltered
  */
 void localPrintExceptionJ(maps* pmsConf,map* pmError){
-  ensureFiltered(pmsConf,"out");
+  ensureFiltered(&pmsConf,"out");
   printExceptionReportResponseJ(pmsConf,pmError);
 }
 
@@ -2585,7 +2586,7 @@ runRequest (map ** inputs)
     initAllEnvironment(m,request_inputs,ntmp,"jrequest");
     setSecurityFlags(m,pcaCgiQueryString);
     // In case security is activated, then execute the security module
-    if(ensureFiltered(m,"in")!=0){
+    if(ensureFiltered(&m,"in")!=0){
       maps* pmsTmp=getMaps(m,"lenv");
       localPrintExceptionJ(m,pmsTmp->content);
       freeMaps(&m);
@@ -3151,7 +3152,7 @@ runRequest (map ** inputs)
 	      if(strlen(jobId)==36){
 		if(res!=NULL)
 		  json_object_put(res);
-		ensureFiltered(m,"out");
+		ensureFiltered(&m,"out");
 		res=printJobStatus(m,jobId);
 		if(res==NULL)
 		  fflush(stdout);
@@ -3237,7 +3238,7 @@ runRequest (map ** inputs)
 						     strlen(jobId)+8)*sizeof(char));
 			  sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
 			  setMapInMaps(m,"headers","Location",Url0);
-			  ensureFiltered(m,"out");
+			  ensureFiltered(&m,"out");
 			}
 			if(pjoTmp!=NULL)
 			  json_object_put(pjoTmp);
@@ -3279,7 +3280,7 @@ runRequest (map ** inputs)
 
 		    }else{
 		      free(Url0);
-		      ensureFiltered(m,"out");
+		      ensureFiltered(&m,"out");
 		      runGetStatus(m,jobId,"GetResult");
 		      free(jobId);
 		      free(sid);
@@ -3721,7 +3722,7 @@ runRequest (map ** inputs)
 	}
 
     }
-    ensureFiltered(m,"out");
+    ensureFiltered(&m,"out");
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL ||
 		     strncasecmp(pmHasPrinted->value,"false",5)==0)){

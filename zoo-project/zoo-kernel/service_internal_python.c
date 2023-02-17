@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2014 GeoLabs SARL
+ * Copyright (c) 2009-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -169,7 +169,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	  libPath = kvp->value;
   }
   else {
-	  libPath = "";
+    libPath = (char*) "";
   }
 
 #ifdef DEBUG
@@ -245,8 +245,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   PyImport_AppendInittab("zoo", init_zoo);  
 #else
   PyEval_InitThreads();
-#endif  
-  Py_Initialize();  
+#endif
+  Py_Initialize();
 #if PY_MAJOR_VERSION >= 3  
   PyEval_InitThreads();
   PyImport_ImportModule("zoo");
@@ -262,7 +262,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #else
   mainstate = PyThreadState_Swap(NULL);
 #endif
-#endif 
+#endif
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   PyObject *pName, *pModule, *pFunc;
@@ -280,7 +280,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       }
       char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
       sprintf(mn,"%s.%s",mps,tmp->value);
-      pName = PyString_FromString(mn);	  
+      pName = PyString_FromString(mn);
       free(mn);
       free(mps);
     }
@@ -312,12 +312,17 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       pValue = PyObject_CallObject(pFunc, pArgs);
       if (pValue != NULL) {
 	res=PyInt_AsLong(pValue);
-	freeMaps(real_outputs);
-	free(*real_outputs);
+	bool isNotNull=false;
+	if(real_outputs!=NULL){
+	  freeMaps(real_outputs);
+	  free(*real_outputs);
+	  isNotNull=true;
+	}
 	freeMaps(main_conf);
 	free(*main_conf);
 	*main_conf=mapsFromPyDict(arg1);
-	*real_outputs=mapsFromPyDict(arg3);	
+	if(isNotNull)
+	  *real_outputs=mapsFromPyDict(arg3);
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
 	dumpMaps(inputs);
@@ -337,7 +342,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   } else{
     PythonZooReport(m,tmp->value,1);
     res=-1;
-  } 
+  }
 #if PY_MAJOR_VERSION < 3
   PyGILState_Release(gstate);
   PyEval_AcquireLock();
@@ -437,6 +442,8 @@ void PythonZooReport(maps* m,const char* module,int load){
  * @warning make sure to free resources returned by this function
  */
 PyDictObject* PyDict_FromMaps(maps* t){
+  /*if(t==NULL)
+    return Py_INCREF(Py_None),(PyDictObject*) Py_None;*/
   PyObject* res=PyDict_New( );
   maps* tmp=t;
   while(tmp!=NULL){
@@ -619,6 +626,8 @@ PyDictObject* PyDict_FromMap(map* t){
 maps* mapsFromPyDict(PyDictObject* t){
   maps* res=NULL;
   maps* cursor=NULL;
+  /*if(t==(PyDictObject*)Py_None)
+    return NULL;*/
   PyObject* list=PyDict_Keys((PyObject*)t);
   int nb=PyList_Size(list);
   int i;
@@ -631,7 +640,8 @@ maps* mapsFromPyDict(PyDictObject* t){
     key=PyList_GetItem(list,i);
     value=PyDict_GetItem((PyObject*)t,key);
 #ifdef DEBUG
-    fprintf(stderr,">> DEBUG VALUES : %s => %s\n",
+    fprintf(stderr,">> %s %d DEBUG VALUES : %s => %s\n",
+	    __FILE__,__LINE__,
 	    PyString_AsString(key),PyString_AsString(value));
 #endif
     cursor=createMaps(PyString_AsString(key));
@@ -651,8 +661,9 @@ maps* mapsFromPyDict(PyDictObject* t){
     freeMaps(&cursor);
     free(cursor);
 #ifdef DEBUG
-    dumpMaps(res);
     fprintf(stderr,">> parsed maps %d\n",i);
+    dumpMaps(res);
+    fprintf(stderr,">> %s %d parsed maps %d\n",__FILE__,__LINE__,i);
 #endif
   }
   Py_DECREF(list);

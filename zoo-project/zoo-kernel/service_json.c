@@ -1834,8 +1834,7 @@ extern "C" {
       if(dirp!=NULL){
 	while ((dp = readdir (dirp)) != NULL){
 	  char* extn = strstr(dp->d_name, ".json");
-	  if(extn!=NULL && strstr(dp->d_name,"_status")==NULL
-	     && strstr(dp->d_name,"_final_")==NULL){
+	  if(extn!=NULL && strlen(dp->d_name)==41){
 	    char* tmpStr=zStrdup(dp->d_name);
 	    tmpStr[strlen(dp->d_name)-5]=0;
 #ifndef RELY_ON_DB
@@ -1913,9 +1912,9 @@ extern "C" {
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
     if(res==SERVICE_FAILED){
-      char* pacTmp=produceErrorMessage(conf);
-      map* pamTmp=createMap("message",pacTmp);
-      free(pacTmp);
+      char* pcaTmp=produceErrorMessage(conf);
+      map* pamTmp=createMap("message",pcaTmp);
+      free(pcaTmp);
       map* pmTmp=getMapFromMaps(conf,"lenv","code");
       if(pmTmp!=NULL)
 	addToMap(pamTmp,"code",pmTmp->value);
@@ -1936,7 +1935,7 @@ extern "C" {
     }else{
       json_object* eres1=json_object_new_object();
       map* pmIOAsArray=getMapFromMaps(conf,"openapi","io_as_array");
-      json_object* eres;
+      json_object* eres=NULL;
       if(pmIOAsArray!=NULL && strncasecmp(pmIOAsArray->value,"true",4)==0)
 	eres=json_object_new_array();
       else
@@ -2035,9 +2034,9 @@ extern "C" {
 		      map* pamError=createMap("code","InvalidParameterValue");
 		      const char* pcTmpErr=json_tokener_error_desc(jerr);
 		      const char* pccErr=_("ZOO-Kernel cannot parse your POST data: %s");
-		      char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
-		      sprintf(pacMessage,pccErr,pcTmpErr);
-		      addToMap(pamError,"message",pacMessage);
+		      char* pcaMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
+		      sprintf(pcaMessage,pccErr,pcTmpErr);
+		      addToMap(pamError,"message",pcaMessage);
 		      printExceptionReportResponseJ(conf,pamError);
 		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 		      json_tokener_free(tok);
@@ -2047,9 +2046,9 @@ extern "C" {
 		      map* pamError=createMap("code","InvalidParameterValue");
 		      const char* pcTmpErr="None";
 		      const char* pccErr=_("ZOO-Kernel cannot parse your POST data: %s");
-		      char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
-		      sprintf(pacMessage,pccErr,pcTmpErr);
-		      addToMap(pamError,"message",pacMessage);
+		      char* pcaMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
+		      sprintf(pcaMessage,pccErr,pcTmpErr);
+		      addToMap(pamError,"message",pcaMessage);
 		      printExceptionReportResponseJ(conf,pamError);
 		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 		      json_tokener_free(tok);
@@ -2060,6 +2059,7 @@ extern "C" {
 		    json_object_object_add(res1,"crs",json_object_new_string(tmpMap0->value));
 		  }
 		  else{
+		    //tmpMap=getMap(resu->content,"value");
 		    if(getMap(resu->content,"mimeType")!=NULL){
 		      map* pmSize=getMap(resu->content,"size");
 		      long len=0;
@@ -2069,8 +2069,10 @@ extern "C" {
 			len=strlen(tmpMap->value);
 		      outputSingleJsonComplexRes(conf,resu,res1,res3,tmpMap->value,len);
 		    }
-		    else
-		      json_object_object_add(res1,"value",json_object_new_string(tmpMap->value));
+		    else{
+		      if(tmpMap!=NULL)
+			json_object_object_add(res1,"value",json_object_new_string(tmpMap->value));
+		    }
 		  }
 		}
 		if(getMapFromMaps(conf,"oas","noformat")!=NULL){
@@ -2155,8 +2157,11 @@ extern "C" {
 	    if(pmDataType==NULL || (pmTransmissionMode!=NULL && strncasecmp(pmTransmissionMode->value,"reference",9)==0) )
 	      json_object_object_add(eres,resu->name,res1);
 	    else{
-	      if(((tmpMap=getMap(resu->content,"value"))!=NULL))
-		json_object_object_add(eres,resu->name,json_object_new_string(tmpMap->value));		
+	      if(((tmpMap=getMap(resu->content,"value"))!=NULL)){
+		if(eres==NULL)
+		  eres=json_object_new_object();
+		json_object_object_add(eres,resu->name,json_object_new_string(tmpMap->value));
+	      }
 	    }
 	  }
 	}
@@ -2167,21 +2172,23 @@ extern "C" {
       map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
       map *cIdentifier = getMapFromMaps (conf, "lenv", "oIdentifier");
       map *sessId = getMapFromMaps (conf, "lenv", "usid");
-      char *pacTmp=(char*)malloc((strlen(tmpPath->value)+strlen(cIdentifier->value)+strlen(sessId->value)+8)*sizeof(char));
-      sprintf(pacTmp,"%s/%s_%s.json",
-	      tmpPath->value,cIdentifier->value,sessId->value);
-      zStatStruct zsFStatus;
-      int iS=zStat(pacTmp, &zsFStatus);
-      if(iS==0 && zsFStatus.st_size>0){
-	map* tmpPath1 = getMapFromMaps (conf, "main", "tmpUrl");
-	char* pacTmpUrl=(char*)malloc((strlen(tmpPath1->value)+strlen(cIdentifier->value)+strlen(sessId->value)+8)*sizeof(char));;
-	sprintf(pacTmpUrl,"%s/%s_%s.json",tmpPath1->value,
-		cIdentifier->value,sessId->value);
-	if(getMapFromMaps(conf,"lenv","gs_location")==NULL)
-	  setMapInMaps(conf,"headers","Location",pacTmpUrl);
-	free(pacTmpUrl);
+      if(tmpPath!=NULL){
+	char *pcaTmp=(char*)malloc((strlen(tmpPath->value)+strlen(cIdentifier->value)+strlen(sessId->value)+8)*sizeof(char));
+	sprintf(pcaTmp,"%s/%s_%s.json",
+		tmpPath->value,cIdentifier->value,sessId->value);
+	zStatStruct zsFStatus;
+	int iS=zStat(pcaTmp, &zsFStatus);
+	if(iS==0 && zsFStatus.st_size>0){
+	  map* tmpPath1 = getMapFromMaps (conf, "main", "tmpUrl");
+	  char* pcaTmpUrl=(char*)malloc((strlen(tmpPath1->value)+strlen(cIdentifier->value)+strlen(sessId->value)+8)*sizeof(char));;
+	  sprintf(pcaTmpUrl,"%s/%s_%s.json",tmpPath1->value,
+		  cIdentifier->value,sessId->value);
+	  if(getMapFromMaps(conf,"lenv","gs_location")==NULL)
+	    setMapInMaps(conf,"headers","Location",pcaTmpUrl);
+	  free(pcaTmpUrl);
+	}
+	free(pcaTmp);
       }
-      free(pacTmp);
       if(res==3){
         map* mode=getMapFromMaps(conf,"request","mode");
         if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
@@ -2203,8 +2210,8 @@ extern "C" {
    * @param resu maps pointer to the output
    * @param res1 json_object pointer to which the value field should be added
    * @param res3 json_object pointer to the format object associated with res1
-   * @param pacValue char pointer to the value to be allocated
-   * @param len length of pacValue
+   * @param accValue char pointer to the value to be allocated
+   * @param len length of apcValue
    */
   void outputSingleJsonComplexRes(maps* conf,maps* resu,json_object* res1,json_object* res3,char* apcValue, long len){
     map* pmMediaType=getMap(resu->content,"mediaType");
@@ -2407,10 +2414,10 @@ extern "C" {
    */
   char* getResultPath(maps* conf,char* jobId){
     map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
-    char *pacUrl=(char*) malloc((strlen(tmpPath->value)+
+    char *pcaUrl=(char*) malloc((strlen(tmpPath->value)+
 				 strlen(jobId)+8)*sizeof(char));
-    sprintf(pacUrl,"%s/%s.json",tmpPath->value,jobId);
-    return pacUrl;
+    sprintf(pcaUrl,"%s/%s.json",tmpPath->value,jobId);
+    return pcaUrl;
   }
 
   /**
@@ -2458,12 +2465,12 @@ extern "C" {
     if(iS==0 && zsFStatus.st_size>0){
       FILE* cdat=fopen(filePath,"rb");
       if(cdat!=NULL){
-	char* pacMyString=(char*)malloc((zsFStatus.st_size+1)*sizeof(char));
-	fread(pacMyString,1,zsFStatus.st_size,cdat);
-	pacMyString[zsFStatus.st_size]=0;
+	char* pcaMyString=(char*)malloc((zsFStatus.st_size+1)*sizeof(char));
+	fread(pcaMyString,1,zsFStatus.st_size,cdat);
+	pcaMyString[zsFStatus.st_size]=0;
 	fclose(cdat);
-	pajObj=parseJson(conf,pacMyString);
-	free(pacMyString);
+	pajObj=parseJson(conf,pcaMyString);
+	free(pcaMyString);
       }
       else
 	return NULL;
@@ -2537,9 +2544,9 @@ extern "C" {
       {
 	map* pmTmp=getMapFromMaps(conf,"lenv","force");
 	if(pmTmp==NULL || strncasecmp(pmTmp->value,"false",5)==0){
-	  char* pacTmp=json_getStatusFilePath(conf);
-	  json_object* pjoStatus=json_readFile(conf,pacTmp);
-	  free(pacTmp);
+	  char* pcaTmp=json_getStatusFilePath(conf);
+	  json_object* pjoStatus=json_readFile(conf,pcaTmp);
+	  free(pcaTmp);
 	  if(pjoStatus!=NULL){
 	    json_object* pjoMessage=NULL;
 	    if(json_object_object_get_ex(pjoStatus,"message",&pjoMessage)!=FALSE){
@@ -2891,10 +2898,10 @@ extern "C" {
     char *saveptr12;
     char *tmps12 = strtok_r (tmpMap2->value, ",", &saveptr12);
     while(tmps12!=NULL){
-      char* pacId=(char*) malloc((strlen(tmps12)+3)*sizeof(char));
-      sprintf(pacId,"{%s}",tmps12);
-      addParameter(conf,pacId,tmps12,"path",res9);
-      free(pacId);
+      char* pcaId=(char*) malloc((strlen(tmps12)+3)*sizeof(char));
+      sprintf(pcaId,"{%s}",tmps12);
+      addParameter(conf,pcaId,tmps12,"path",res9);
+      free(pcaId);
       tmps12 = strtok_r (NULL, ",", &saveptr12);
     }    
     tmpMap2=getMapFromMaps(conf,"openapi","header_parameters");
@@ -2902,9 +2909,9 @@ extern "C" {
       char *saveptr13;
       char *tmps13 = strtok_r (tmpMap2->value, ",", &saveptr13);
       while(tmps13!=NULL){
-	char* pacId=zStrdup(tmps13);
-	addParameter(conf,pacId,pacId,"header",res9);
-	free(pacId);
+	char* pcaId=zStrdup(tmps13);
+	addParameter(conf,pcaId,pcaId,"header",res9);
+	free(pcaId);
 	tmps13 = strtok_r (NULL, ",", &saveptr13);
       }
     }
@@ -2939,8 +2946,14 @@ extern "C" {
     maps* pmsTmp=getMaps(pmsConf,"osecurity");
     // Get type
     map* pmTmp=getMap(pmsTmp->content,"type");
-    if(pmTmp!=NULL)
+    if(pmTmp!=NULL){
       json_object_object_add(poJsonObject,"type",json_object_new_string(pmTmp->value));
+      if(strcasecmp(pmTmp->value,"openIdConnect")==0){
+	pmTmp=getMap(pmsTmp->content,"openIdConnectUrl");
+	if(pmTmp!=NULL)
+	  json_object_object_add(poJsonObject,"openIdConnectUrl",json_object_new_string(pmTmp->value));
+      }
+    }
     // Get scheme if any
     pmTmp=getMap(pmsTmp->content,"scheme");
     if(pmTmp!=NULL)
@@ -3303,11 +3316,11 @@ extern "C" {
 		    json_object_object_add(pajMethod,"post",pajPost);
 
 		  
-		    char* pacUri=(char*) malloc((strlen(pmUri->value)+29)*sizeof(char));
-		    sprintf(pacUri,"{$request.body#/subscriber/%s}",pmUri->value);
+		    char* pcaUri=(char*) malloc((strlen(pmUri->value)+29)*sizeof(char));
+		    sprintf(pcaUri,"{$request.body#/subscriber/%s}",pmUri->value);
 
 		    json_object *pajFinal=json_object_new_object();
-		    json_object_object_add(pajFinal,pacUri,pajMethod);
+		    json_object_object_add(pajFinal,pcaUri,pajMethod);
 		    json_object_object_add(pajRes,pmState->value,pajFinal);
 
 		  }

@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2015-2019 GeoLabs SARL
+ * Copyright (c) 2015-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -928,25 +928,20 @@ void addMapsToMaps(maps** ppmsOut,maps* pmIn){
   while(pmsTmp!=NULL){
     if(pmsCursor==NULL){
       *ppmsOut=dupMaps(&pmIn);
+      return;
     }
     else{
       maps* pmsTmp1=getMaps(*ppmsOut,pmsTmp->name);
       if(pmsTmp1==NULL){
 	while(pmsCursor->next!=NULL)
 	  pmsCursor=pmsCursor->next;
-	pmsCursor->next=dupMaps(&pmsTmp);
-	if(pmsTmp->child!=NULL)
-	  pmsCursor->next->child=dupMaps(&pmsTmp->child);
-	else
-	  pmsCursor->next->child=NULL;
+	addMapsToMaps(&pmsCursor->next,pmsTmp);
 	return;
       }
       else{
 	addMapToMap(&pmsTmp1->content,pmsTmp->content);
 	if(pmsTmp->child!=NULL)
-	  pmsTmp1->child=dupMaps(&pmsTmp->child);
-	else
-	  pmsTmp1->child=NULL;
+	  addMapsToMaps(&pmsTmp1->child,pmsTmp->child);
       }
       pmsCursor=*ppmsOut;
     }
