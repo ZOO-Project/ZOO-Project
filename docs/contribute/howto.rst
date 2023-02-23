@@ -26,6 +26,10 @@ Licensing
 `ZOO-Project <http://zoo-project.org>`__ source code is open source and made available under the `MIT/X-11 <http://opensource.org/licenses/MITlicense>`__  `license
 <http://zoo-project.org/trac/browser/trunk/zoo-project/LICENSE>`__. You must agree to the terms of that same license when creating, submiting and releasing new source code.
 
+ZOO-Services contributions must conform to MIT/X-11 License.
+
+External software tools used in implementing ZOO-Services must be compliant with OSI (https://opensource.org/licenses/) certified Open Source Licenses.
+
 `ZOO-Project <http://zoo-project.org>`__ documentation is open source and made available under the `Creative Commons Attribution-ShareAlike 4.0 International Public License
 <https://creativecommons.org/licenses/by-sa/4.0/legalcode>`__ . You must agree to the terms of that same license when creating, submiting and releasing a new documentation file.
 
