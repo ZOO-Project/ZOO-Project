@@ -33,6 +33,17 @@
 -- CREATE SCHEMA processdb;
 -- SET search_path TO processdb;
 --------------------------------------------------------------------------------
+-- Users table 
+-- Used to store the user name provided in case of authentication
+create table users (
+       id serial PRIMARY KEY,
+       name varchar(255),
+       provider varchar(255),
+       creation_time timestamp with time zone default now(),
+       access_time timestamp with time zone default now()
+);
+INSERT INTO users (id,name,provider) VALUES (0,'anonymous','unknown');
+--------------------------------------------------------------------------------
 -- Services table
 -- Used to store information about services running asynchronously
 create table services (
@@ -50,7 +61,8 @@ create table services (
        end_time timestamp with time zone default NULL,
        progress int,
        itype varchar(10),
-       message TEXT
+       message TEXT,
+       user_id int REFERENCES users(id) ON DELETE CASCADE
 );
 --------------------------------------------------------------------------------
 -- Responses table 
@@ -72,7 +84,6 @@ create table files (
        expiration_time timestamp with time zone default now() + interval '48 hours'
 );
 --------------------------------------------------------------------------------
-
 --------------------------------------------------------------------------------
 -- Function to display date respecting the RFC 3339
 CREATE OR REPLACE FUNCTION display_date_rfc3339(param_in timestamp with time zone)

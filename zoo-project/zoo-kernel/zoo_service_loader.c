@@ -1147,6 +1147,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 int loadHttpRequests(maps* conf,maps* inputs){
   // Resolve reference
   // TODO: add error gesture
+  // TODO: add nested processes support
   int eres;
   maps* tmpMaps=getMaps(conf,"http_requests");
   if(tmpMaps!=NULL){
@@ -1167,10 +1168,12 @@ int loadHttpRequests(maps* conf,maps* inputs){
     for(int j=0;j<len;j++){
       map* tmpUrl=getMapArray(tmpMaps->content,"url",j);
       map* tmpInput=getMapArray(tmpMaps->content,"input",j);
-      maps* currentMaps=getMaps(inputs,tmpInput->value);
-      loadRemoteFile(&conf,&currentMaps->content,&hInternet,tmpUrl->value);
-      addIntToMap(currentMaps->content,"Order",hInternet.nb);
-      addToMap(currentMaps->content,"Reference",tmpUrl->value);
+      if(tmpInput!=NULL && tmpUrl!=NULL){
+	maps* currentMaps=getMaps(inputs,tmpInput->value);
+	loadRemoteFile(&conf,&currentMaps->content,&hInternet,tmpUrl->value);
+	addIntToMap(currentMaps->content,"Order",hInternet.nb);
+	addToMap(currentMaps->content,"Reference",tmpUrl->value);
+      }
     }
     if(len>0){
       map* error=NULL;
@@ -3085,8 +3088,14 @@ runRequest (map ** inputs)
 	    }
 	    free(pcaClauseDate);
 	  }
+	  // Filter jobs list based on the potential user_id
+	  filterJobByUser(m,&pcaClauseFinal,pcaClauseDate);
+	  ZOO_DEBUG(pcaClauseFinal);
 	  if(pcaClauseFinal==NULL){
 	    pcaClauseFinal=zStrdup("true");
+	  }else{
+	    fprintf(stderr,"%s %d %s \n",__FILE__,__LINE__,pcaClauseFinal);
+	    fflush(stderr);
 	  }
 	  map *schema=getMapFromMaps(m,"database","schema");
 	  if(pcaClauseFinal!=NULL && schema!=NULL){
@@ -3126,6 +3135,8 @@ runRequest (map ** inputs)
 	else{
 	  char* tmpUrl=strstr(pcaCgiQueryString,"/jobs/");
 	  if(tmpUrl!=NULL && strlen(tmpUrl)>6){
+	    // TODO: verify that the user is allowed to access the jobId
+	    // invoke filterJobByUser?
 	    if(strncasecmp(cgiRequestMethod,"DELETE",6)==0){
 	      char* jobId=zStrdup(tmpUrl+6);
 	      setMapInMaps(m,"lenv","gs_usid",jobId);
@@ -3454,6 +3465,12 @@ runRequest (map ** inputs)
       maps* lenv=getMaps(m,"lenv");
       json_object *maps1_obj = mapToJson(lenv->content);
       json_object_object_add(msg_jobj,"main_lenv",maps1_obj);
+
+      maps* pmsRequests=getMaps(m,"http_requests");
+      if(pmsRequests!=NULL){
+	json_object *pjRequests = mapToJson(pmsRequests->content);
+	json_object_object_add(msg_jobj,"main_http_requests",maps1_obj);
+      }
 
       lenv=getMaps(m,"subscriber");
       if(lenv!=NULL){

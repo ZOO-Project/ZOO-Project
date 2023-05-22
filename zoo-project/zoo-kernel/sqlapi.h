@@ -70,6 +70,7 @@ extern "C" {
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
   ZOO_DLL_EXPORT void removeService(maps*,char*);
   ZOO_DLL_EXPORT void end_sql();
+  ZOO_DLL_EXPORT void filterJobByUser(maps*,char**,char*);
 #endif
 
 #ifdef __cplusplus

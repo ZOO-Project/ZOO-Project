@@ -2339,19 +2339,19 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     map *tmpMap=getMap(m->content,"Reference");
     if(tmpMap==NULL){		
       nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-      if(e!=NULL && e->format!=NULL){		  
-		  if (strncasecmp(e->format, "LiteralOutput", strlen(e->format)) == 0)		  			  
-			  nc3 = xmlNewNode(ns_wps, BAD_CAST "LiteralData");		  
+      if(e!=NULL && e->format!=NULL){
+	if (strncasecmp(e->format, "LiteralOutput", strlen(e->format)) == 0)
+	  nc3 = xmlNewNode(ns_wps, BAD_CAST "LiteralData");
 	else
 	  if(strncasecmp(e->format,"ComplexOutput",strlen(e->format))==0)
 	    nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
 	  else if(strncasecmp(e->format,"BoundingBoxOutput",strlen(e->format))==0)
 	    nc3=xmlNewNode(ns_wps, BAD_CAST "BoundingBoxData");
 	  else
-	    nc3=xmlNewNode(ns_wps, BAD_CAST e->format);		  
+	    nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
       }
       else {		  
-	map* tmpV=getMapFromMaps(m,"format","value");	
+	map* tmpV=getMapFromMaps(m,"format","value");
 	if(tmpV!=NULL)
 	  nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
 	else
@@ -2389,7 +2389,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  free(tmpRes);
 	}
       }
-      else {		  
+      else {
 		  //if (e != NULL) {
 		  if (e != NULL && e->defaults != NULL) { // knut: add extra NULL pointer check in case user omits <Default> block in config file			  
 			  tmp = getMap(e->defaults->content, "mimeType");
@@ -2468,7 +2468,8 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	    else                                                     // else	
 	      xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));    //   add text node
 	  }
-	  xmlAddChild(nc2,nc3);
+	  if(vid==0)
+	    xmlAddChild(nc2,nc3);
 	}
 	else {
 	  xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));

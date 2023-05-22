@@ -364,6 +364,119 @@ char* runSqlQuery(maps* conf,char* query){
 }
 
 /**
+ * Filter jobs list based on the potential user_id
+ *
+ * @param pmsConf the conf maps
+ * @param pcaClauseFinal the string to update
+ * @param pcaClauseDate the string containing the filter by date
+ */
+void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
+  map* pmUserName=getMapFromMaps(pmsConf,"auth_env","user");
+  if(pmUserName!=NULL){
+    char* pcaTmp=NULL;
+    if(*pcaClauseFinal!=NULL){
+      pcaTmp=zStrdup(*pcaClauseFinal);
+    }
+    map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
+    if(*pcaClauseFinal!=NULL){
+      *pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
+				    (strlen(pcaTmp)+
+				     strlen(pmSchema->value)+
+				     strlen(pmUserName->value)+
+				     68)*sizeof(char));
+      sprintf(*pcaClauseFinal,"%s AND (user_id=0 or user_id=(SELECT id FROM %s.users WHERE name='%s'))",
+	      pcaTmp,pmSchema->value,pmUserName->value);
+      free(pcaTmp);
+    }else{
+      *pcaClauseFinal=(char*)malloc((strlen(pmSchema->value)+strlen(pmUserName->value)+68)*sizeof(char));
+      sprintf(*pcaClauseFinal,"(user_id=0 or user_id=(SELECT id FROM %s.users WHERE name='%s'))",
+	      pmSchema->value,pmUserName->value);
+    }
+  }else{
+    if(*pcaClauseFinal!=NULL){
+      char* pcaTmp=zStrdup(*pcaClauseFinal);
+      *pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
+				    (strlen(pcaTmp)+strlen(pcaClauseDate)+15)*sizeof(char));
+      sprintf(*pcaClauseFinal,"%s AND user_id=0",
+	      pcaTmp,pcaClauseDate);
+      free(pcaTmp);
+    }else{
+      *pcaClauseFinal=(char*)malloc(10*sizeof(char));
+      sprintf(*pcaClauseFinal,"user_id=0");
+    }
+  }
+  ZOO_DEBUG(*pcaClauseFinal);
+}
+
+/**
+ * Run SQL query to fetch the user identifier
+ * 
+ * @param pmsConf the maps containing the setting of the main.cfg file
+ * @param iZooDsNb the SQL connexion identifier
+ * @return pmSchema the map pointing the database schema
+ */
+int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
+  map* pmUserName=getMapFromMaps(pmsConf,"auth_env","user");
+  if(pmUserName!=NULL){
+    int isCreated=0;
+    char *sqlQuery=(char*)malloc((strlen(pmSchema->value)+
+				  strlen(pmUserName->value)+
+				  34+1)*sizeof(char));
+    sprintf(sqlQuery,"SELECT id from %s.users WHERE name='%s'",pmSchema->value,pmUserName->value);
+    if( iZooDsNb == 0 ){
+      init_sql(pmsConf);
+      isCreated=1;
+      iZooDsNb++;
+    }
+    execSql(pmsConf,iZooDsNb-1,sqlQuery);
+    OGRFeature  *poFeature = NULL;
+    char *tmp1;
+    while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+      for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+	if( poFeature->IsFieldSet( iField ) ){
+	  tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
+	  OGRFeature::DestroyFeature( poFeature );
+	  int res=atoi(tmp1);
+	  free(tmp1);
+	  cleanUpResultSet(pmsConf,iZooDsNb-1);
+	  return res;
+	}
+	else
+	  tmp1=NULL;
+      }
+      OGRFeature::DestroyFeature( poFeature );
+    }
+    free(sqlQuery);
+    cleanUpResultSet(pmsConf,iZooDsNb-1);
+    sqlQuery=(char*)malloc((strlen(pmSchema->value)+
+			    strlen(pmUserName->value)+
+			    50+1)*sizeof(char));
+    sprintf(sqlQuery,"INSERT INTO %s.users (name) VALUES ('%s') RETURNING id",pmSchema->value,pmUserName->value);
+    execSql(pmsConf,iZooDsNb-1,sqlQuery);
+    poFeature = NULL;
+    while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
+      for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
+	if( poFeature->IsFieldSet( iField ) ){
+	  tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
+	  OGRFeature::DestroyFeature( poFeature );
+	  int res=atoi(tmp1);
+	  free(tmp1);
+	  cleanUpResultSet(pmsConf,iZooDsNb-1);
+	  return res;
+	}
+	else
+	  tmp1=NULL;
+      }
+      OGRFeature::DestroyFeature( poFeature );
+    }
+    cleanUpResultSet(pmsConf,iZooDsNb-1);
+    return 0;
+  }
+  else
+    return 0;
+}
+
+/**
  * Insert the reference tuple corresponding to the running service
  * 
  * @param conf the maps containing the setting of the main.cfg file
@@ -383,17 +496,18 @@ void recordServiceStatus(maps* conf){
 				strlen(pmType->value)+
 				strlen(sid->value)+
 				strlen(osid->value)+
-				strlen(wpsStatus[2])+90+1)*sizeof(char));
+				strlen(wpsStatus[2])+99+9+1)*sizeof(char));
   sprintf(sqlQuery,
-	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate,itype) "
-	  "VALUES ('%s','%s','%s','%s','%s','%s');",
+	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate,itype,user_id) "
+	  "VALUES ('%s','%s','%s','%s','%s','%s','%d');",
 	  schema->value,
 	  uusid->value,
 	  pmProcessId->value,
 	  sid->value,
 	  osid->value,
 	  wpsStatus[2],
-	  pmType->value);
+	  pmType->value,
+	  getUserId(conf,zoo_ds_nb,schema));
   if( zoo_ds_nb == 0 ){
     init_sql(conf);
     isCreated=1;

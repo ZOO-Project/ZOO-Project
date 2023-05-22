@@ -82,6 +82,7 @@ please feel free to `add yourself to the service provider list <https://github.c
 
 .. raw:: html
 
+   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
    <script type="text/javascript">
     // Randomize logos
     $.fn.randomize = function(selector){
@@ -113,6 +114,6 @@ please feel free to `add yourself to the service provider list <https://github.c
 
         return this;
     };
-    $('#service-provider').randomize('div.service-providers');
-    $("<div />", {class:"clearer"}).insertAfter('#service-provider .service-providers');
+    $('#service-providers').randomize('div.service-provider');
+    $("<div />", {class:"clearer"}).insertAfter('#service-providers .service-provider');
   </script>
