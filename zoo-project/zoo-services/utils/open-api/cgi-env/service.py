@@ -32,3 +32,23 @@ def display(conf,inputs,outputs):
     t = Template(file=conf["main"]["templatesPath"]+"/index.html",searchList=nameSpace)
     outputs["Result"]["value"]=t.__str__()
     return zoo.SERVICE_SUCCEEDED
+
+def securityIn(conf,inputs,outputs):
+    import sys,os,shutil
+    print("securityIn!",file=sys.stderr)
+    rPath=conf["servicesNamespace"]["path"]+"/"
+    for i in conf["renv"]:
+        if i.count("SERVICES_NAMESPACE"):
+            rPath+=conf["renv"][i]
+            break
+    if not(os.path.isdir(rPath)):
+        os.mkdir(rPath)
+        rFiles=["DeployProcess.py","DeployProcess.zcfg","UndeployProcess.py","UndeployProcess.zcfg","service.py","security_service.zo","securityOut.zcfg","deploy_util.py","securityIn.zcfg"]
+        for i in range(len(rFiles)):
+            shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
+    return zoo.SERVICE_SUCCEEDED
+
+def securityOut(conf,inputs,outputs):
+    import sys
+    print("securityOut!",file=sys.stderr)
+    return zoo.SERVICE_SUCCEEDED

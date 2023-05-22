@@ -201,6 +201,11 @@ extern "C" {
 #define SERVICE_UNDEPLOYED 7
 
 /**
+ * The ZOO_DEBUG macro print message with function name, file name and line number
+ */
+#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++----++ %s %s %d: ",__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
+
+/**
  * The memory size to create an elements
  */
 #define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*3)+sizeof(char*)+((sizeof(map*) + sizeof(iotype*))*2)+(2*sizeof(elements*)))

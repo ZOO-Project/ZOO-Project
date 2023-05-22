@@ -361,15 +361,20 @@ char* isInCache(maps* conf,char* request){
   map* tmpM=getMapFromMaps(conf,"main","cacheDir");
   if(tmpM==NULL)
     tmpM=getMapFromMaps(conf,"main","tmpPath");
-  if(strstr(request,tmpUrl->value)!=NULL){
+  ZOO_DEBUG("isInCache");
+  if(tmpUrl!=NULL && strstr(request,tmpUrl->value)!=NULL){
+    ZOO_DEBUG("isInCache");
     map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
     char* tmpStr=strstr(request,tmpUrl->value);
     char* tmpStr1=zStrdup(tmpStr+strlen(tmpUrl->value));
     char* res=(char*) malloc((strlen(tmpPath->value)+strlen(tmpStr1)+2)*sizeof(char));
     sprintf(res,"%s/%s",tmpPath->value,tmpStr1);
+    ZOO_DEBUG("isInCache");
     free(tmpStr1);
+    ZOO_DEBUG("isInCache");
     return res;
   }
+  ZOO_DEBUG("isInCache");
 #ifdef MS_FORCE_LOCAL_FILE_USE
   map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
   if(msUrl!=NULL && strstr(request,msUrl->value)!=NULL){
@@ -407,22 +412,30 @@ char* isInCache(maps* conf,char* request){
   }
   else{
     char* myRequest=getFilenameForRequest(conf,request);
+    ZOO_DEBUG("isInCache");
     char* md5str=getMd5(myRequest);
+    ZOO_DEBUG("isInCache");
     free(myRequest);
 #ifdef DEBUG
     fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
 #endif
+    ZOO_DEBUG("isInCache");
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
     sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
+    ZOO_DEBUG("isInCache");
     zStatStruct f_status;
     int s=zStat(fname, &f_status);
     if(s==0 && f_status.st_size>0){
+    ZOO_DEBUG("isInCache");
       free(md5str);
       return fname;
     }
+    ZOO_DEBUG("isInCache");
     free(md5str);
+    ZOO_DEBUG("isInCache");
     free(fname);
   }
+    ZOO_DEBUG("isInCache");
   return NULL;
 }
 
@@ -536,7 +549,21 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	  memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
 	}else
 	  addToMap((*in)->content,ufile,"true");
-	if(hInternet->ihandle[*index].code!=200){
+	
+	bool bCodes=true;
+	map* pmCodes=getMapFromMaps(*m,"main","extra_supported_codes");
+	if(pmCodes!=NULL){
+	  char* pcaTmp=zStrdup(pmCodes->value);
+	  char *pcSavePtr, *pcToken;
+	  pcToken=strtok_r(pcaTmp,",",&pcSavePtr);
+	  while(pcToken!=NULL){
+	    bCodes=(hInternet->ihandle[*index].code!=atoi(pcToken));
+	    if(!bCodes)
+	      break;
+	    pcToken=strtok_r(NULL,",",&pcSavePtr);
+	  }
+	}
+	if(hInternet->ihandle[*index].code!=200 && bCodes){
 	  const char *error_rep_str=_("Unable to download the file for the input <%s>, response code was : %d.");
 	  char *error_msg=(char*)malloc((strlen(error_rep_str)+strlen(content->name)+4)*sizeof(char));
 	  sprintf(error_msg,error_rep_str,content->name,hInternet->ihandle[*index].code);
@@ -573,9 +600,11 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	      sprintf(tmpStr,"%s%s",tmpStr2,tmp2->value);
 	      free(tmpStr2);
 	    }
-	    md5str=getMd5(tmpStr);
+	    char *myRequest=getFilenameForRequest(*m,tmpStr);
+	    md5str=getMd5(myRequest);
 	    request=zStrdup(tmpStr);
 	    free(tmpStr);
+	    free(myRequest);
 	  }else{
 	    char *myRequest=getFilenameForRequest(*m,tmp1->value);
 	    md5str=getMd5(myRequest);
