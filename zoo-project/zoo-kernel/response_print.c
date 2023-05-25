@@ -2368,8 +2368,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  if(vid==0)
 	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 	  else{
-	    if(strcasecmp(tmp->name,"datatype")==0)
-	      xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    if(strcasecmp(tmp->name,"datatype")==0){
+	      if(getMap(m->content,"mimeType")==NULL)
+	        xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    }
 	    else
 	      if(strcasecmp(tmp->name,"uom")!=0)
 		xmlNewProp(nc2,BAD_CAST tmp->name,BAD_CAST tmp->value);
@@ -2498,8 +2500,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	   strcasecmp(tmp->name,"datatype")==0 ||
 	   strcasecmp(tmp->name,"uom")==0){
 	  
-	  if(strcasecmp(tmp->name,"datatype")==0)
-	    xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+          if(strcasecmp(tmp->name,"datatype")==0){
+            if(getMap(m->content,"mimeType")==NULL)
+              xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+          }
 	  else
 	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 	}
@@ -3094,6 +3098,8 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	  else
 	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
 	map* pmTransmissionMode=getMap(pmsOut->content,"transmissionMode");
+	if(pmTransmissionMode==NULL)
+	  pmTransmissionMode=getMap(pmsOut->content,"transmission");
 	if(pmTransmissionMode!=NULL && strcasecmp(pmTransmissionMode->value,"reference")==0){
 	  char *pcaFileUrl=produceFileUrl(s,conf,pmsOut,NULL,itn);
 	  printf("%s",mime);
