@@ -1,4 +1,5 @@
 Version 2.0.0
+  * Integrate the TeamEngine and ETS for OGC API - Processes
   * Add JWT parser in security_service.py as filter_in to allocate
   resources per authenticated user
   * Update support to filter the job list using the user_id
