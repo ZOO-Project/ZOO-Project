@@ -1,4 +1,4 @@
-name: Docker Image CI (Ubuntu Jammy)
+name: Docker Image CI (ML4EO)
 
 on:
   push:
