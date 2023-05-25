@@ -33,7 +33,7 @@ jobs:
         context: .
         push: true
         file: Dockerfile-OTBTF
-        tags: zooproject/zooproject:ml4eo-${{ github.sha }}
+        tags: zooproject/zoo-project:ml4eo-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-ml4eo-cache
         cache-to: type=local,dest=/tmp/.buildx-ml4eo-cache-new,mode=max
     - name: Move cache
@@ -46,6 +46,6 @@ jobs:
         context: .
         push: true
         file: Dockerfile-OTBTF
-        tags: zooproject/zooproject:ml4eo-latest
+        tags: zooproject/zoo-project:ml4eo-latest
         cache-from: type=local,src=/tmp/.buildx-ml4eo-cache
         cache-to: type=local,dest=/tmp/.buildx-ml4eo-cache-new,mode=max
