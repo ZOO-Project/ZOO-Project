@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2018 GeoLabs SARL
+ * Copyright (c) 2022 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

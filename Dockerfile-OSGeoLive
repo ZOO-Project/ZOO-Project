@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 22.04 with updates and external packages
 #
-FROM ubuntu:jammy-20220801 AS base
+FROM ubuntu:jammy-20221130 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -17,6 +17,7 @@ ARG RUN_DEPS=" \
     \
     saga \
     libsaga-api-7.3.0 \
+    libotbapplicationengine-8.1 \
     libotb \
     otb-bin \
     \
@@ -118,17 +119,20 @@ RUN set -ex \
     #&& cd .. \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
-    && find /usr -name otbWrapperApplication.h \
-    && ls \
+    #&& find /usr -name otbWrapperApplication.h \
+    #&& find /usr -name tool_library.h \
+    #&& find /usr -name module_library.h \
+    #&& ls \
     #&& touch config.guess config.sub \
-    && echo UNAME $(uname -m) \
-    && find / -name config.guess \
+    #&& echo UNAME $(uname -m) \
+    #&& find / -name config.guess \
+    #&& cat /usr/include/mapserver/mapserver-version.h \
     && autoreconf --install \
-    && find / -name itkCommand.h \
+    #&& find / -name itkCommand.h \
     #&& automake \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=8.0 --with-itk-version=4.13 --with-saga=/usr --with-saga-version=7.3 --with-wx-config=/usr/bin/wx-config \
-    && echo "ZOOMakefile.opts content:"\
-    && cat ZOOMakefile.opts \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=8.1 --with-itk-version=4.13 --with-saga=/usr --with-saga-version=8 --with-wx-config=/usr/bin/wx-config \
+    #&& echo "ZOOMakefile.opts content:"\
+    #&& cat ZOOMakefile.opts \
     && make -j4 \
     && make install \
     \
@@ -180,6 +184,11 @@ RUN set -ex \
     #Comment lines below from here if no SAGA \
     && cd .. \
     && make -C ../../../thirds/saga2zcfg \
+    && find /usr/lib/x86_64-linux-gnu/saga/ \
+    && find /usr/lib/ -name "*saga*" \
+    && apt-get remove -y libsaga-api-7.3.0 \
+    && apt-get install -y libsaga-api8 \
+    #&& cp ../../../thirds/saga2zcfg/saga2zcfg /usr/lib/cgi-bin \
     && mkdir zcfgs \
     && cd zcfgs \
     #&& dpkg -L saga \
@@ -297,12 +306,13 @@ ARG RUN_DEPS=" \
     locales \
     libapache2-mod-fcgid \
     python3-setuptools \
+    libotbapplicationengine-8.1 \
     #Uncomment the line below to add vi editor \
-    vim \
+    #vim \
     #Uncomment the lines below to add debuging \
-    valgrind \
-    gdb \
-    strace \
+    #valgrind \
+    #gdb \
+    #strace \
 "
 ARG BUILD_DEPS=" \
     make \
@@ -392,8 +402,10 @@ RUN set -ex \
     && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project \
     && chmod 755 /startUp.sh \
     \
-    # remove invalid zcfgs \
-    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg  /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg /usr/lib/cgi-bin/OTB/TrainRegression.zcfg \
+    # SAGA remove invalid zcfgs \
+    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg  \
+    # OTB remove invalid zcfgs \
+    && rm /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg /usr/lib/cgi-bin/OTB/TrainRegression.zcfg \
     # Update SAGA zcfg
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \

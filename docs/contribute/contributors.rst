@@ -1,12 +1,12 @@
 .. _contribute_contributors:
 
 List of contributors
-================================
+====================
 
 .. _zoo_founder:
  
 ZOO-Project founders
-------------------
+--------------------
 
 The ZOO-Project concept, architecture and source code implementation was initiated in 2008 by the following individuals:
 
@@ -70,7 +70,7 @@ agree to adhere to them. The ZOO-Project commiters are listed here by alphabetic
    * Angelos TZOTSOS (aka kalxas)
 
 Other contributors
-----------------
+------------------
 
 The following individuals have also contributed to the ZOO-Project
 source code or documentation.

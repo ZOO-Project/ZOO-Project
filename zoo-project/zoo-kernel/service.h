@@ -33,6 +33,8 @@
 #define ZOO_DLL_EXPORT 
 #endif
 
+// ISO8601 compatible date format (RFC 3339)
+#define zDateFormat "%Y-%m-%dT%H:%M:%SZ"
  // knut: add bool if necessary
 #ifndef __cplusplus
 #ifndef WIN32
@@ -191,6 +193,11 @@ extern "C" {
  * The global dismissed status for a service
  */
 #define SERVICE_DISMISSED 5
+
+/**
+ * The ZOO_DEBUG macro print message with function name, file name and line number
+ */
+#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++----++ %s %s %d: ",__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
 
 /**
  * The memory size to create an elements

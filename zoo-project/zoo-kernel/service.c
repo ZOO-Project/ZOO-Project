@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2015-2019 GeoLabs SARL
+ * Copyright (c) 2015-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -910,7 +910,8 @@ maps* dupMaps(maps** ppmsOut){
     if(pmsChild!=NULL){
       pmRes->child=dupMaps(&pmsChild);
     }
-    pmRes->next=dupMaps(&pmsCursor->next);
+    if(pmsCursor->next!=NULL)
+      pmRes->next=dupMaps(&pmsCursor->next);
   }
   return pmRes;
 }
@@ -928,25 +929,20 @@ void addMapsToMaps(maps** ppmsOut,maps* pmIn){
   while(pmsTmp!=NULL){
     if(pmsCursor==NULL){
       *ppmsOut=dupMaps(&pmIn);
+      return;
     }
     else{
       maps* pmsTmp1=getMaps(*ppmsOut,pmsTmp->name);
       if(pmsTmp1==NULL){
 	while(pmsCursor->next!=NULL)
 	  pmsCursor=pmsCursor->next;
-	pmsCursor->next=dupMaps(&pmsTmp);
-	if(pmsTmp->child!=NULL)
-	  pmsCursor->next->child=dupMaps(&pmsTmp->child);
-	else
-	  pmsCursor->next->child=NULL;
+	addMapsToMaps(&pmsCursor->next,pmsTmp);
 	return;
       }
       else{
 	addMapToMap(&pmsTmp1->content,pmsTmp->content);
 	if(pmsTmp->child!=NULL)
-	  pmsTmp1->child=dupMaps(&pmsTmp->child);
-	else
-	  pmsTmp1->child=NULL;
+	  addMapsToMaps(&pmsTmp1->child,pmsTmp->child);
       }
       pmsCursor=*ppmsOut;
     }
@@ -2017,7 +2013,6 @@ char* getValueFromMaps(maps* inputs,const char* name){
 	fcontent[flen]=0;
 	fclose(f0);
 	res=zStrdup(fcontent);
-	fprintf(stderr,"%s %d (%s)\n",__FILE__,__LINE__,fcontent);
 	free(fcontent);
       }
     }else{

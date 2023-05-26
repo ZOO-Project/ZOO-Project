@@ -27,7 +27,7 @@ what is about. The first is about the status of the process (can be ``ZOO.SERVIC
 look at the maps internal data structure used by ZOO Kernel in ``service.h``).
 
 ZOO.UpdateStatus example
------------------------
+------------------------
 
 ::
 

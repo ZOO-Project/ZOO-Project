@@ -13,7 +13,7 @@
   [a]
    Title = Literal Input (string)
    Abstract = An input string
-   minOccurs = 1
+   minOccurs = 0
    maxOccurs = 1
    <LiteralData>
     DataType = string
@@ -22,7 +22,7 @@
   [b]
    Title = Complex Input
    Abstract = A complex input 
-   minOccurs = 1
+   minOccurs = 0
    maxOccurs = 1
    <ComplexData>
     <Default>
@@ -37,7 +37,7 @@
   [c]
    Title = BoundingBox Input 
    Abstract = A boundingbox input 
-   minOccurs = 1
+   minOccurs = 0
    maxOccurs = 1
    <BoundingBoxData>
      <Default>

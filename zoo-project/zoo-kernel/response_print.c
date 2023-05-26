@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2020 GeoLabs SARL
+ * Copyright (c) 2009-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -2000,7 +2000,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
 
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
 
     xmlNewProp(nc,BAD_CAST "creationTime",BAD_CAST tmp1);
 
@@ -2339,19 +2339,19 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     map *tmpMap=getMap(m->content,"Reference");
     if(tmpMap==NULL){		
       nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
-      if(e!=NULL && e->format!=NULL){		  
-		  if (strncasecmp(e->format, "LiteralOutput", strlen(e->format)) == 0)		  			  
-			  nc3 = xmlNewNode(ns_wps, BAD_CAST "LiteralData");		  
+      if(e!=NULL && e->format!=NULL){
+	if (strncasecmp(e->format, "LiteralOutput", strlen(e->format)) == 0)
+	  nc3 = xmlNewNode(ns_wps, BAD_CAST "LiteralData");
 	else
 	  if(strncasecmp(e->format,"ComplexOutput",strlen(e->format))==0)
 	    nc3=xmlNewNode(ns_wps, BAD_CAST "ComplexData");
 	  else if(strncasecmp(e->format,"BoundingBoxOutput",strlen(e->format))==0)
 	    nc3=xmlNewNode(ns_wps, BAD_CAST "BoundingBoxData");
 	  else
-	    nc3=xmlNewNode(ns_wps, BAD_CAST e->format);		  
+	    nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
       }
       else {		  
-	map* tmpV=getMapFromMaps(m,"format","value");	
+	map* tmpV=getMapFromMaps(m,"format","value");
 	if(tmpV!=NULL)
 	  nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
 	else
@@ -2368,8 +2368,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  if(vid==0)
 	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 	  else{
-	    if(strcasecmp(tmp->name,"datatype")==0)
-	      xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    if(strcasecmp(tmp->name,"datatype")==0){
+	      if(getMap(m->content,"mimeType")==NULL)
+	        xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    }
 	    else
 	      if(strcasecmp(tmp->name,"uom")!=0)
 		xmlNewProp(nc2,BAD_CAST tmp->name,BAD_CAST tmp->value);
@@ -2389,7 +2391,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  free(tmpRes);
 	}
       }
-      else {		  
+      else {
 		  //if (e != NULL) {
 		  if (e != NULL && e->defaults != NULL) { // knut: add extra NULL pointer check in case user omits <Default> block in config file			  
 			  tmp = getMap(e->defaults->content, "mimeType");
@@ -2468,7 +2470,8 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	    else                                                     // else	
 	      xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));    //   add text node
 	  }
-	  xmlAddChild(nc2,nc3);
+	  if(vid==0)
+	    xmlAddChild(nc2,nc3);
 	}
 	else {
 	  xmlAddChild((vid==0?nc3:nc2),xmlNewText(BAD_CAST tmp3->value));
@@ -2497,8 +2500,10 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	   strcasecmp(tmp->name,"datatype")==0 ||
 	   strcasecmp(tmp->name,"uom")==0){
 	  
-	  if(strcasecmp(tmp->name,"datatype")==0)
-	    xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+          if(strcasecmp(tmp->name,"datatype")==0){
+            if(getMap(m->content,"mimeType")==NULL)
+              xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+          }
 	  else
 	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 	}
@@ -3093,6 +3098,8 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	  else
 	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
 	map* pmTransmissionMode=getMap(pmsOut->content,"transmissionMode");
+	if(pmTransmissionMode==NULL)
+	  pmTransmissionMode=getMap(pmsOut->content,"transmission");
 	if(pmTransmissionMode!=NULL && strcasecmp(pmTransmissionMode->value,"reference")==0){
 	  char *pcaFileUrl=produceFileUrl(s,conf,pmsOut,NULL,itn);
 	  printf("%s",mime);

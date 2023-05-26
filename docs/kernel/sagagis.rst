@@ -1,7 +1,7 @@
 .. _kernel-sagagis:
     
 Optional SAGA GIS support
-======================
+=========================
 
 `SAGA GIS <http://www.saga-gis.org/>`_ provides a comprehensive set of geoscientific methods and spatial algorithms. The optional SAGA GIS support is available since `ZOO-Project 1.5 <http://zoo-project.org>`__. It allows to execute the `SAGA Modules <http://www.saga-gis.org/saga_module_doc/2.1.4/index.html>`_ directly as ZOO WPS Services thanks to a :ref:`kernel_index` specific internal mechanism which is detailed in this section.
 
@@ -23,13 +23,13 @@ Installation and configuration
 Follow the step described bellow in order to activate the ZOO-Project optional SAGA GIS support.
 
 Prerequisites
-.....................
+.............
 
    * latest `ZOO-Kernel <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel>`_ trunk version
    * `SAGA GIS  <http://saga-gis.org>`_  (7.2.0)
 
 Installation steps
-...........................
+..................
 
 Compile ZOO-Kernel using the configuration options as shown bellow:
 
@@ -52,7 +52,7 @@ And copy the newly created zoo_loader.cgi to ``/usr/lib/cgi-bin``.
      cp zoo_loader.cgi /usr/lib/cgi-bin
 
 Configuration steps
-...............................
+...................
 
 Services configuration file
 ****************************
@@ -79,7 +79,7 @@ The following commands will then generate all the needed zcfg files for the avai
 
 
 Test requests
-*****************
+*************
 
 The SAGA-GIS Modules should be listed as available WPS Services when
 runing a GetCapabilities request, as follow:

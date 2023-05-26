@@ -12,6 +12,7 @@ open source software project and help making it better.
    :maxdepth: 2
 
    howto
+   service_providers
    code
    doc
    dev

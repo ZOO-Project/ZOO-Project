@@ -1,7 +1,7 @@
 .. _services_index:
 
 ZOO-Services 
-==========
+============
 
 This section will guide you for creating your own WPS
 Services using the `ZOO-Project <http://zoo-project.org>`__

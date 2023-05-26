@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 18.04 with updates and external packages
 #
-FROM ubuntu:bionic-20201119 AS base
+FROM ubuntu:bionic-20230308 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -315,7 +315,7 @@ ARG RUN_DEPS=" \
     libapache2-mod-fcgid \
     python3-setuptools \
     #Uncomment the line below to add vi editor \
-    vim \
+    #vim \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
