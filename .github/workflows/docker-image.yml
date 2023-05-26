@@ -40,7 +40,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: zooproject/zoo-project-node:${{ github.sha }}
+        tags: zooproject/zoo-project:node-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Move cache
@@ -52,7 +52,15 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel-node:latest
+        tags: ${{secrets.DOCKER_USER}}/zookernel:node-latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+    - name: Build and push latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: zooproject/zoo-project:node-latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Build TeamEngine and the ETS for OGC API - Processes and add it to the docker-compose
