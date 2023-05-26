@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Docker Image CI (libmozjs)
 
 on:
   push:
@@ -32,15 +32,17 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel-node:${{ github.sha }}
+        file: Dockerfile-MOZJS
+        tags: ${{secrets.DOCKER_USER}}/zookernel:${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-    - name: Build and push Official image
+    - name: Build and push (official image)
       uses: docker/build-push-action@v4
       with:
         context: .
         push: true
-        tags: zooproject/zoo-project-node:${{ github.sha }}
+        file: Dockerfile-MOZJS
+        tags: zooproject/zoo-project:${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Move cache
@@ -52,7 +54,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel-node:latest
+        tags: ${{secrets.DOCKER_USER}}/zookernel:latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Build TeamEngine and the ETS for OGC API - Processes and add it to the docker-compose
