@@ -28,7 +28,7 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Build and push
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         context: .
         push: true
@@ -41,7 +41,7 @@ jobs:
         rm -rf /tmp/.buildx-ml4eo-cache
         mv /tmp/.buildx-ml4eo-cache-new /tmp/.buildx-ml4eo-cache
     - name: Build and push ml4eo-latest
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         context: .
         push: true
