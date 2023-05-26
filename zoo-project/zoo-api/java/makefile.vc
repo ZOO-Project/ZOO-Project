@@ -16,6 +16,9 @@ MS_FILE=..\..\zoo-kernel/$(MS_FILE)
 !IFDEF JS_FILE
 JS_FILE=..\..\zoo-kernel/$(JS_FILE)
 !ENDIF
+!IFDEF NODEJS_FILE
+NODEJS_FILE=..\..\zoo-kernel/$(NODEJS_FILE)
+!ENDIF
 
 all:  libZOO.dll
 
@@ -29,7 +32,7 @@ zoo-api.o: zoo-api.c ZOO.h
 	$(CPP) /c $(CFLAGS) zoo-api.c -I../../zoo-kernel/ -I../../../thirds/cgic206/ 
 
 libZOO.dll: zoo-api.o
-	link /dll /out:libZOO.dll zoo-api.obj ..\..\zoo-kernel\libzoo_service.lib ..\..\zoo-kernel\server_internal.obj ..\..\zoo-kernel\caching.obj ..\..\zoo-kernel\ulinet.obj ..\..\zoo-kernel\response_print.obj ..\..\zoo-kernel\service_json.obj ..\..\zoo-kernel\main_conf_read.tab.obj ..\..\zoo-kernel\service_conf.tab.obj ..\..\zoo-kernel\lex.cr.obj ..\..\zoo-kernel\lex.sr.obj $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(JSONC_LIB) $(LDFLAGS) /FORCE:MULTIPLE
+	link /dll /out:libZOO.dll zoo-api.obj ..\..\zoo-kernel\libzoo_service.lib ..\..\zoo-kernel\server_internal.obj ..\..\zoo-kernel\caching.obj ..\..\zoo-kernel\ulinet.obj ..\..\zoo-kernel\response_print.obj ..\..\zoo-kernel\service_json.obj ..\..\zoo-kernel\main_conf_read.tab.obj ..\..\zoo-kernel\service_conf.tab.obj ..\..\zoo-kernel\lex.cr.obj ..\..\zoo-kernel\lex.sr.obj $(JAVA_FILE) $(MS_FILE) $(JS_FILE) $(NODEJS_FILE) $(JSONC_LIB) $(LDFLAGS) /FORCE:MULTIPLE
 
 clean:
 	erase -f *dll *lib *o *.h *class

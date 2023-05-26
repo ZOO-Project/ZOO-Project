@@ -48,8 +48,6 @@ extern "C" int crlex ();
 #include "service_internal_python.h"
 #endif
 
-#include "cgic.h"
-
 #include <libxml/tree.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
@@ -92,6 +90,10 @@ extern "C" int crlex ();
 
 #ifdef USE_JS
 #include "service_internal_js.h"
+#endif
+
+#ifdef USE_NODEJS
+#include "service_internal_nodejs.h"
 #endif
 
 #ifdef USE_RUBY
@@ -152,10 +154,11 @@ extern "C" int crlex ();
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
 
+#include "cgic.h"
+
 #ifndef WIN32
 extern char **environ;
 #endif
-
 
 #ifdef WIN32
 extern "C"
@@ -1913,6 +1916,16 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
     {
       *eres =
         zoo_js_support (&m, request_inputs, s1, &request_input_real_format,
+                        &request_output_real_format);
+    }
+  else
+#endif
+
+#ifdef USE_NODEJS
+  if (strncasecmp (r_inputs->value, "NODEJS", 2) == 0)
+    {
+      *eres =
+        zoo_nodejs_support (&m, request_inputs, s1, &request_input_real_format,
                         &request_output_real_format);
     }
   else
