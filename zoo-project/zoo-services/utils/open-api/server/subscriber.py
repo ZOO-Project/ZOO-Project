@@ -1,5 +1,13 @@
 #!/usr/bin/python3
+#
 # cf. https://github.com/joewalnes/websocketd/wiki/Simple-Python-Duplex-Example
+#
+# Author: Gérald Fenoy
+#
+# Copyright (c) 2020-2023 GeoLabs SARL
+#
+# Use of this source code is governed by a BSD-style
+# license that can be found in the https://github.com/joewalnes/websocketd/blob/master/LICENSE file.
 #
 # example usage:
 # websocketd --port=4430 --ssl --sslcert /ssl/fullchain.pem --sslkey /ssl/privkey.pem subscriber.py --devconsole
@@ -64,5 +72,4 @@ t0 = threading.Thread(target=receive)
 t0.start()
 
 t0.join()
-#for i in range(len(mThreads)):
-#    mThreads[i].join()
+
