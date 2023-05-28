@@ -49,6 +49,15 @@ jobs:
         tags: ${{secrets.DOCKER_USER}}/zookernel:osgeolive-latest
         cache-from: type=local,src=/tmp/.buildx-osgeolive-cache
         cache-to: type=local,dest=/tmp/.buildx-osgeolive-cache-new,mode=max
+    - name: Build and push osgeolive-latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        file: Dockerfile-OSGeoLive
+        tags: zooproject/zoo-project:osgeolive-latest
+        cache-from: type=local,src=/tmp/.buildx-osgeolive-cache
+        cache-to: type=local,dest=/tmp/.buildx-osgeolive-cache-new,mode=max
     - name: Start the test env
       run: mkdir docker/tmp; chmod 777 -R docker ; sed "s=djayzen/zookernel:latest=djayzen/zookernel:osgeolive-latest=g" -i docker-compose.yml ; docker-compose up -d
     - name: Install required package
