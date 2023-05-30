@@ -1971,6 +1971,69 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   *ioutputs = request_output_real_format;
 }
 
+#define localPrintExceptionJ localPrintException
+
+/**
+ * Invoke the execution of the security module in case security is activated
+ *
+ * @param pmsConf the maps pointing to the main.cfg file content
+ * @param pcType the string defining the process to execute ('in' or 'out')
+ * @return 0 in case of success, 1 in case or error
+ */
+int ensureFiltered(maps** pmsConf,const char* pcType){
+  int eres=0;
+  service* psaService=NULL;
+  maps* pmsOsecurity=getMaps(*pmsConf,"osecurity");
+  map* pmPath=NULL;
+  map* pmName=NULL;
+  map* pmRun=NULL;
+  int iLen=1;
+  char* pcaName=(char*)malloc((strlen(pcType)+8)*sizeof(char));
+  sprintf(pcaName,"filter_%s",pcType);
+  maps* pmsSection=getMaps(*pmsConf,pcaName);
+  if(pmsSection==NULL){
+    free(pcaName);
+    return 0;
+  }
+  map* pmLength=getMap(pmsSection->content,"length");
+  if(pmLength!=NULL)
+    iLen=atoi(pmLength->value);
+  if(strcasecmp(pcType,"out")==0){
+    fflush(stdout);
+    fflush(stderr);
+  }
+  for(int iCnt=0;iCnt<iLen;iCnt++){
+    if(pmsSection!=NULL &&
+       ((pmRun=getMapFromMaps(*pmsConf,"lenv",pcaName))==NULL) &&
+       ((pmPath=getMapArray(pmsSection->content,"path",iCnt))!=NULL) &&
+       ((pmName=getMapArray(pmsSection->content,"service",iCnt))!=NULL)){
+      ZOO_DEBUG("fetchService");
+      if(fetchService(NULL,*pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
+	fprintf(stderr,"ERROR fetching the service %s %d \n",__FILE__,__LINE__);
+	free(pcaName);
+	return 1;
+      }
+      maps* pmsInputs=NULL;
+      maps* pmsOutputs=NULL;
+      ZOO_DEBUG("loadServiceAndRun");
+      loadServiceAndRun (pmsConf, psaService, NULL,
+			 &pmsInputs,
+			 &pmsOutputs, &eres);
+      ZOO_DEBUG("loadServiceAndRun end");
+      freeService(&psaService);
+      free(psaService);
+      psaService=NULL;
+      if(eres!=SERVICE_SUCCEEDED){
+	setMapInMaps(*pmsConf,"lenv",pcaName,"true");
+	free(pcaName);
+	return 1;
+      }
+    }
+  }
+  setMapInMaps(*pmsConf,"lenv",pcaName,"true");
+  free(pcaName);
+  return 0;
+}
 
 /**
  * Set the security flag for the current request.
@@ -2013,76 +2076,6 @@ void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
     setMapInMaps(pmsConf,"lenv","secured_url","false");
 }
 
-
-/**
- * Invoke the execution of the security module in case security is activated
- *
- * @param pmsConf the maps pointing to the main.cfg file content
- * @param pcType the string defining the process to execute ('in' or 'out')
- * @return 0 in case of success, 1 in case or error
- */
-int ensureFiltered(maps** pmsConf,const char* pcType){
-  int eres=0;
-  service* psaService=NULL;
-  maps* pmsOsecurity=getMaps(*pmsConf,"osecurity");
-  map* pmPath=NULL;
-  map* pmName=NULL;
-  map* pmRun=NULL;
-  int iLen=1;
-  char* pcaName=(char*)malloc((strlen(pcType)+8)*sizeof(char));
-  sprintf(pcaName,"filter_%s",pcType);
-  maps* pmsSection=getMaps(*pmsConf,pcaName);
-  if(pmsSection==NULL){
-    free(pcaName);
-    return 0;
-  }
-  map* pmLength=getMap(pmsSection->content,"length");
-  if(pmLength!=NULL)
-    iLen=atoi(pmLength->value);
-  for(int iCnt=0;iCnt<iLen;iCnt++){
-    if(pmsSection!=NULL &&
-       ((pmRun=getMapFromMaps(*pmsConf,"lenv",pcaName))==NULL) &&
-       ((pmPath=getMapArray(pmsSection->content,"path",iCnt))!=NULL) &&
-       ((pmName=getMapArray(pmsSection->content,"service",iCnt))!=NULL)){
-      ZOO_DEBUG("fetchService");
-      if(fetchService(NULL,*pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
-	fprintf(stderr,"ERROR fetching the service %s %d \n",__FILE__,__LINE__);
-	free(pcaName);
-	return 1;
-      }
-      maps* pmsInputs=NULL;
-      maps* pmsOutputs=NULL;
-      ZOO_DEBUG("loadServiceAndRun");
-      loadServiceAndRun (pmsConf, psaService, NULL,
-			 &pmsInputs,
-			 &pmsOutputs, &eres);
-      ZOO_DEBUG("loadServiceAndRun end");
-      freeService(&psaService);
-      free(psaService);
-      psaService=NULL;
-      if(eres!=SERVICE_SUCCEEDED){
-	setMapInMaps(*pmsConf,"lenv",pcaName,"true");
-	free(pcaName);
-	return 1;
-      }
-    }
-  }
-  setMapInMaps(*pmsConf,"lenv",pcaName,"true");
-  free(pcaName);
-  return 0;
-}
-
-/**
- * Invoke the ensureFiltered then printExceptionReportResponseJ functions
- *
- * @param pmsConf the maps containing the settings of the main.cfg file
- * @param pmError the map containing the text,code,locator keys (or a map array)
- * @see printExceptionReportResponseJ,ensureFiltered
- */
-void localPrintExceptionJ(maps* pmsConf,map* pmError){
-  ensureFiltered(&pmsConf,"out");
-  printExceptionReportResponseJ(pmsConf,pmError);
-}
 
 
 #ifdef WIN32
@@ -2652,6 +2645,7 @@ runRequest (map ** inputs)
     ZOO_DEBUG("AddServiceNamespace end");
 
 
+    // Routes to OGC API - Processes - Part 2: Deploy, Replace, Undeploy
     // retrieves the deploy service provider from main.cfg
     map* deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
     map* undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
@@ -2767,6 +2761,8 @@ runRequest (map ** inputs)
 	  return 1;
 	}
 	ZOO_DEBUG("Deploy / Replace");
+	// TODO: validate that the service is not yet deployed
+	ZOO_DEBUG("Deploy / Replace verify if already deployed");
 	free(pcaCgiQueryString);
 	pcaCgiQueryString=(char*)malloc((strlen(deployServiceProvider->value)+22)*sizeof(char));
 	sprintf(pcaCgiQueryString,"/processes/%s/execution",deployServiceProvider->value);
@@ -3963,7 +3959,32 @@ runRequest (map ** inputs)
 	       ||
 	       (undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ) ){
 	    ZOO_DEBUG("SERVICE_DEPLOYED  / SERVICE_UNDEPLOYED");
-	    res=printJResult(m,s1,request_output_real_format,eres);
+	    if( (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)!=0)
+		||
+		(undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ){
+	      map* pmError=createMap("code","DuplicateProcess");
+	      addToMap(pmError,"message",_("The process is already deployed."));
+	      localPrintExceptionJ(m,pmError);
+	      setMapInMaps(m,"lenv","no-headers","true");
+	      setMapInMaps(m,"lenv","hasPrinted","true");
+	      ZOO_DEBUG("HANDLED ERRROR HERE should return!");
+	      // TODO: cleanup memory
+	      freeMap(&pmError);
+	      free(pmError);
+	      freeMaps(&m);
+	      free(m);
+	      freeMaps (&request_input_real_format);
+	      free (request_input_real_format);
+	      freeMaps (&request_output_real_format);
+	      free (request_output_real_format);
+	      json_object_put(res);
+	      free(pcaCgiQueryString);
+	      freeService (&s1);
+	      free(s1);
+	      return 1;
+	    }
+	    else
+	      res=printJResult(m,s1,request_output_real_format,eres);
 	  }
 	}
 	freeService (&s1);

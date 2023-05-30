@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2020 GeoLabs SARL
+ * Copyright (c) 2009-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,8 @@
 #include "mimetypes.h"
 #include "service_json.h"
 
+extern int ensureFiltered(maps**,const char*);
+  
 /**
  * Add prefix to the service name.
  * 
@@ -2724,6 +2726,26 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   return n;
 }
 
+
+/**
+ * Invoke the ensureFiltered then printExceptionReportResponseJ functions
+ *
+ * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param pmError the map containing the text,code,locator keys (or a map array)
+ * @see printExceptionReportResponseJ,ensureFiltered
+ */
+void localPrintException(maps* pmsConf,map* pmError){
+  ZOO_DEBUG("ensureFiltered");
+  ensureFiltered(&pmsConf,"out");
+  ZOO_DEBUG("ensureFiltered end");
+  map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
+  if(pmExecutionType!=NULL && strcasecmp(pmExecutionType->value,"json")==0)
+    printExceptionReportResponseJ(pmsConf,pmError);
+  else
+    printExceptionReportResponse(pmsConf,pmError);
+  ZOO_DEBUG("printError end");
+}
+
 /**
  * Print an OWS ExceptionReport.
  * 
@@ -2736,17 +2758,19 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
 {
   map* pmExectionType=getMapFromMaps(m,"main","executionType");
   map* errormap = createMap("text", message);
+  ZOO_DEBUG("Invoke localPrintException");
   addToMap(errormap,"code", errorcode);
   if(locator!=NULL)
     addToMap(errormap,"locator", locator);
   else
     addToMap(errormap,"locator", "NULL");
   if(pmExectionType!=NULL && strncasecmp(pmExectionType->value,"xml",3)==0)
-    printExceptionReportResponse(m,errormap);
+    localPrintException(m,errormap);
   else{
-    printExceptionReportResponseJ(m,errormap);
+    localPrintException(m,errormap);
     setMapInMaps(m,"lenv","no-headers","true");
   }
+  ZOO_DEBUG("Invoke localPrintException end");
   freeMap(&errormap);
   free(errormap);
   return -1;

@@ -203,7 +203,7 @@ extern "C" {
 /**
  * The ZOO_DEBUG macro print message with function name, file name and line number
  */
-#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++----++ %s %s %d: ",__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
+#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++- %d -++ %s %s %d: ",getpid(),__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
 
 /**
  * The memory size to create an elements
@@ -416,18 +416,20 @@ extern "C" {
 	"InternalServerError",
 	"NoSuchJob",
 	"ResultNotReady",
-	"InvalidQueryParameterValue"
+	"InvalidQueryParameterValue",
+	"DuplicateProcess"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[4][2] = {
+  static const int OAPIPCorrespondances[5][2] = {
     {9,0},
     {20,1},
     {21,2},
-    {22,3}
+    {22,3},
+    {23,4}
   };
 
   /**
@@ -438,7 +440,8 @@ extern "C" {
 	"no-such-process",
 	"no-such-job",
 	"result-not-ready",
-	"invalid-query-parameter-value"
+	"invalid-query-parameter-value",
+	"duplicate-process"
   };
 
   /**

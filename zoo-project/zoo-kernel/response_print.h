@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2013 GeoLabs SARL
+ * Copyright (c) 2009-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -267,6 +267,7 @@ extern "C" {
   char* produceFileUrl(service*,maps*,maps*,const char*, int);
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
+  void localPrintException(maps*,map*);
   int errorException(maps *, const char *, const char *, const char*);
 
   xmlNodePtr soapEnvelope(maps*,xmlNodePtr);
