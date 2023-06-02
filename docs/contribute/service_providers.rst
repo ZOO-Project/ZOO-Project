@@ -113,6 +113,6 @@ please feel free to `add yourself to the service provider list <https://github.c
 
         return this;
     };
-    $('#service-provider').randomize('div.service-providers');
-    $("<div />", {class:"clearer"}).insertAfter('#service-provider .service-providers');
+    $('#service-providers').randomize('div.service-provider');
+    $("<div />", {class:"clearer"}).insertAfter('#service-providers .service-provider');
   </script>

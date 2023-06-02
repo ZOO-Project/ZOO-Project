@@ -1,0 +1,51 @@
+name: Docker Image CI (ML4EO)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: docker/setup-buildx-action@v2
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-osgeolive-cache
+        key: ${{ runner.os }}-buildx-ml4eo-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-buildx-ml4eo-
+    - name: docker login
+      env:
+        DOCKER_USER: ${{secrets.DOCKER_USER}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        file: Dockerfile-OTBTF
+        tags: zooproject/zoo-project:ml4eo-${{ github.sha }}
+        cache-from: type=local,src=/tmp/.buildx-ml4eo-cache
+        cache-to: type=local,dest=/tmp/.buildx-ml4eo-cache-new,mode=max
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-ml4eo-cache
+        mv /tmp/.buildx-ml4eo-cache-new /tmp/.buildx-ml4eo-cache
+    - name: Build and push ml4eo-latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        file: Dockerfile-OTBTF
+        tags: zooproject/zoo-project:ml4eo-latest
+        cache-from: type=local,src=/tmp/.buildx-ml4eo-cache
+        cache-to: type=local,dest=/tmp/.buildx-ml4eo-cache-new,mode=max

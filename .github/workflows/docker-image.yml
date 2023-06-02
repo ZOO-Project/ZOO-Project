@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: docker/setup-buildx-action@v1
+    - uses: actions/checkout@v3
+    - uses: docker/setup-buildx-action@v2
     - name: Cache Docker layers
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -28,11 +28,19 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Build and push
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         context: .
         push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel:${{ github.sha }}
+        tags: ${{secrets.DOCKER_USER}}/zookernel:node-${{ github.sha }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+    - name: Build and push Official image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: zooproject/zoo-project:node-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
     - name: Move cache
@@ -40,17 +48,29 @@ jobs:
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
     - name: Build and push latest
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         context: .
         push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel:latest
+        tags: ${{secrets.DOCKER_USER}}/zookernel:node-latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+    - name: Build and push latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: zooproject/zoo-project:node-latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+    - name: Build TeamEngine and the ETS for OGC API - Processes and add it to the docker-compose
+      run: docker/ets-ogcapi-processes/build.sh && cat docker/ets-ogcapi-processes/docker-compose-ets-part.yml >> docker-compose.yml
     - name: Start the test env
       run: mkdir docker/tmp; chmod 777 -R docker ; docker-compose up -d
     - name: Install required package
       run: docker exec zoo-project_zookernel_1 /bin/bash -c "apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get -y install lynx;"
+    - name: Run the ETS for OGC API - Processes (see test-run-props.xml for settings)
+      run: docker-compose exec -T teamengine /root/test.sh
     - name: Run GetCapabilities tests version 1.0.0
       run: docker exec zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"GetCapabilities\" 0 0 > outputGC.html 2> log; lynx -dump outputGC.html"
     - name: Run DescribeProcess tests version 1.0.0

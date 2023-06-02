@@ -1155,12 +1155,86 @@ extern "C" {
       }
     }
   }
-  
+
   /**
-   * Parse ComplexData value
+   * Add a http reques to the queue
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   * @param pccValue the URL to fetch
+   * @param name the name of the input
+   */
+  void addToJRequests(maps** pmsConf,const char* pccValue,const char* name){
+    int len=0;
+    int createdStr=0;
+    char *tmpStr=(char*)"url";
+    char *tmpStr1=(char*)"input";
+    maps* conf=*pmsConf;
+    if(getMaps(conf,"http_requests")==NULL){
+      maps* tmpMaps=createMaps("http_requests");
+      tmpMaps->content=createMap("length","1");
+      addMapsToMaps(&conf,tmpMaps);
+      freeMaps(&tmpMaps);
+      free(tmpMaps);
+    }else{
+      map* tmpMap=getMapFromMaps(conf,"http_requests","length");
+      int len=atoi(tmpMap->value);
+      createdStr=1;
+      tmpStr=(char*) malloc((12)*sizeof(char));
+      sprintf(tmpStr,"%d",len+1);
+      setMapInMaps(conf,"http_requests","length",tmpStr);
+      sprintf(tmpStr,"url_%d",len);
+      tmpStr1=(char*) malloc((14)*sizeof(char));
+      sprintf(tmpStr1,"input_%d",len);
+    }
+    setMapInMaps(conf,"http_requests",tmpStr,pccValue);
+    setMapInMaps(conf,"http_requests",tmpStr1,name);
+    if(createdStr>0){
+      free(tmpStr);
+      free(tmpStr1);
+    }
+  }
+
+  /**
+   * Parse nested process json object
+   *
    * @param conf the maps containing the settings of the main.cfg file
    * @param req json_object pointing to the input/output
-   * @param element
+   * @param element the metadata for this input
+   * @param output the maps to set current json structure
+   * @param name the name of the request from http_requests
+   */
+  void parseNestedProcess(maps* conf,json_object* req,elements* element,maps* output,const char* name){
+    // Parse and execute nested processes handling
+    json_object* json_value=NULL;
+    if(json_object_object_get_ex(req,"process",&json_value)!=FALSE){
+      // Need to store the request body and the proper url to fetch
+      ZOO_DEBUG("Nested process execution invocation");
+      const char* pccTmp=json_object_get_string(json_value);
+      // Build URL
+      char *pcaTmp=(char*)malloc((strlen(pccTmp)+11)*sizeof(char));
+      sprintf(pcaTmp,"%s/execution",pccTmp);
+      output->content=createMap("xlink:href",pcaTmp);
+      // Add body and content-type header
+      const char* pccBody=json_object_to_json_string_ext(req,JSON_C_TO_STRING_NOSLASHESCAPE);
+      addToMap(output->content,"Body",pccBody);
+      addToMap(output->content,"Headers","Content-Type: application/json");
+      addToJRequests(&conf,pcaTmp,name);
+      map* pmTmp=getMapFromMaps(conf,"http_requests","length");
+      if(pmTmp!=NULL){
+	maps* pmsRequests=getMaps(conf,"http_requests");
+	setMapArray(pmsRequests->content,"body",atoi(pmTmp->value)-1, pccBody);
+	setMapArray(pmsRequests->content,"Headers",atoi(pmTmp->value)-1, "Content-Type: application/json");
+      }
+      free(pcaTmp);
+    }
+  }
+
+  /**
+   * Parse ComplexData value
+   *
+   * @param conf the maps containing the settings of the main.cfg file
+   * @param req json_object pointing to the input/output
+   * @param element the metadata
    * @param output the maps to set current json structure
    * @param name the name of the request from http_requests
    */
@@ -1173,33 +1247,7 @@ extern "C" {
       json_object* json_value=NULL;
       if(json_object_object_get_ex(req,"href",&json_value)!=FALSE){
 	output->content=createMap("xlink:href",json_object_get_string(json_value));
-	int len=0;
-	int createdStr=0;
-	char *tmpStr=(char*)"url";
-	char *tmpStr1=(char*)"input";
-	if(getMaps(conf,"http_requests")==NULL){
-	  maps* tmpMaps=createMaps("http_requests");
-	  tmpMaps->content=createMap("length","1");
-	  addMapsToMaps(&conf,tmpMaps);
-	  freeMaps(&tmpMaps);
-	  free(tmpMaps);
-	}else{
-	  map* tmpMap=getMapFromMaps(conf,"http_requests","length");
-	  int len=atoi(tmpMap->value);
-	  createdStr=1;
-	  tmpStr=(char*) malloc((12)*sizeof(char));
-	  sprintf(tmpStr,"%d",len+1);
-	  setMapInMaps(conf,"http_requests","length",tmpStr);
-	  sprintf(tmpStr,"url_%d",len);
-	  tmpStr1=(char*) malloc((14)*sizeof(char));
-	  sprintf(tmpStr1,"input_%d",len);
-	}
-	setMapInMaps(conf,"http_requests",tmpStr,json_object_get_string(json_value));
-	setMapInMaps(conf,"http_requests",tmpStr1,name);
-	if(createdStr>0){
-	  free(tmpStr);
-	  free(tmpStr1);
-	}
+	addToJRequests(&conf,json_object_get_string(json_value),name);
       }
     }
     if(json_object_object_get_ex(req,"format",&json_cinput)!=FALSE){
@@ -1219,7 +1267,7 @@ extern "C" {
    * Parse BoundingBox value
    * @param conf the maps containing the settings of the main.cfg file
    * @param req json_object pointing to the input/output
-   * @param element
+   * @param element the metadata
    * @param output the maps to set current json structure
    */
   void parseJBoundingBox(maps* conf,json_object* req,elements* element,maps* output){
@@ -1282,20 +1330,25 @@ extern "C" {
       if(json_object_is_type(val,json_type_object)) {
 	// ComplexData
 	elements* peCurrentInput=getElements(cio,cMaps->name);
+	// TODO: review if this is required as now a process can be the value
+	// for everything (including LiteralData)
 	if(getMapFromMaps(conf,"openapi","ensure_type_validation")!=NULL)
 	  if(peCurrentInput!=NULL){
 	    if(peCurrentInput->format!=NULL
+	       && strcasecmp(peCurrentInput->format,"LiteralData")!=0
 	       && strcasecmp(peCurrentInput->format,"ComplexData")!=0
 	       && strcasecmp(peCurrentInput->format,"BoundingBoxData")!=0){
 	      return returnBadRequestException(conf,peCurrentInput);
 	    }
 	  }
-	if( json_object_object_get_ex(val,"value",&json_cinput) != FALSE ||
-	  json_object_object_get_ex(val,"href",&json_cinput) != FALSE ) {
+	if(json_object_object_get_ex(val,"process",&json_cinput) != FALSE){
+	  parseNestedProcess(conf,val,cio,cMaps,key);
+	} else if(json_object_object_get_ex(val,"value",&json_cinput)!= FALSE ||
+		  json_object_object_get_ex(val,"href",&json_cinput) != FALSE ){
 	  parseJComplex(conf,val,cio,cMaps,key);
-	} else if( json_object_object_get_ex(val,"bbox",&json_cinput) != FALSE ){
+	} else if( json_object_object_get_ex(val,"bbox",&json_cinput)!= FALSE ){
 	  parseJBoundingBox(conf,val,cio,cMaps);
-	}else if(getMapFromMaps(conf,"openapi","ensure_type_validation")!=NULL){
+	} else if(getMapFromMaps(conf,"openapi","ensure_type_validation")!=NULL){
 	  return returnBadRequestException(conf,peCurrentInput);
 	}
       } else if(json_object_is_type(val,json_type_array)){
@@ -2952,6 +3005,11 @@ extern "C" {
 	pmTmp=getMap(pmsTmp->content,"openIdConnectUrl");
 	if(pmTmp!=NULL)
 	  json_object_object_add(poJsonObject,"openIdConnectUrl",json_object_new_string(pmTmp->value));
+      }else{
+	if(strcasecmp(pmTmp->value,"oauth2")==0){
+	  pmTmp=getMap(pmsTmp->content,"authorizationUrl");
+	  // TODO: continue integration of oauth2 security scheme
+	}
       }
     }
     // Get scheme if any

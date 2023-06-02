@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build the Documentation using sphinx Docker image
       run: |
         docker run --rm -v $(pwd)/docs:/docs sphinxdoc/sphinx make html ;
@@ -34,7 +34,7 @@ jobs:
         cd ../../../../.. ;
         sudo cp -r zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
     - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@4.1.5
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
         repository-name: ZOO-Project/docs
         branch: gh-pages

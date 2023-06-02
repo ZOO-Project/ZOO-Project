@@ -419,7 +419,7 @@ Sample ZOO C# Services Provider
    :language: csharp
    :lines: 24-100
 
-Javascript
+Javascript (SpiderMonkey)
 ----------
 
 ZOO API
@@ -463,6 +463,73 @@ Sample ZOO Javascript Services Provider
      return Array(3,outputs);
   }
 
+Javascript (Node.js)
+----------
+
+Environment 
+*********
+
+The Node.js services environment offers a fully functional Node.js environment.
+The ``gdal-async``, ``proj4`` and ``wps-js-52-north`` modules are supported
+out of the box and can be imported/required. Loading of external CJS and ES6
+modules installed from the NPM registry in a ``node_modules`` sub-directory is
+also supported when this directory is present in the same directory as the
+service JavaScript file.
+
+
+Javascript ZCFG requirements
+**********************************
+
+.. Note:: For each Service provided by your ZOO Javascript Services Provider, the ZCFG File 
+          must be named the same as the exported Javascript function name (also the case of
+          characters is important).
+
+The ZCFG file should contain the following :
+
+serviceType
+    NodeJS 
+serviceProvider
+    The name of the JavaScript file to use as a ZOO Service Provider. For instance, if your
+    script, located in the same directory as your ZOO Kernel, was named ``my_module.js`` then
+    you should use ``my_module.js``.
+jsModuleType (optional, default is ``CJS``)
+    The module type used, ``CJS`` for CommonJS or ``ES6`` for ECMAScript 6 modules. CommonJS
+    modules should contain a ``modules.export = { serviceName: entryFunction }`` while
+    ECMAScript 6 modules should contain ``export serviceName``.
+inspector (optional, default ``false``)
+    Enables the built-in debugger. When enabled the service won't run until a V8 Inspector
+    Protocol has connected to port 9229.
+
+
+Javascript Data Structure used
+********************************
+
+The three parameters of the function are passed to the JavaScript function as Object. The main
+entry point function should return one of the predefined values: ``SERVICE_ACCEPTED``,
+``SERVICE_STARTED``, ``SERVICE_PAUSED``, ``SERVICE_SUCCEEDED`` or ``SERVICE_FAILED``.
+
+Sample ZOO Node.js Javascript Services Provider
+***********************************************
+
+.. code-block:: javascript
+
+  function hellojs(conf,inputs,outputs){
+     outputs["result"]["value"]="Hello "+inputs["S"]["value"]+" from JS World !";
+     return SERVICE_SUCCEEDED;
+  }
+
+  module.exports = hellojs;
+
+Using the Integrated Remote Debugger
+************************************
+
+The Node.js runtime supports debugging of Javascript services directly in their
+normal execution environment. The debugger is enabled by setting ``inspector`` to ``true``
+in the service configuration file. Once enabled, the debugger will automatically pause
+the service upon launching it and it will wait for a V8 Inspector Protocol compliant client
+to connect to port 9229. The Chrome browser includes one such client that is accessible
+by typing ``chrome://inspect`` in the URL bar. Another popular debugging client is
+Visual Studio Code.
 
 R
 -

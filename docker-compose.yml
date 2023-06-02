@@ -10,10 +10,10 @@ services:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
       - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
+      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
+      #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
-      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
-      # - ./zoo-project/zoo-services/echo-py/:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
       - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/usr/lib/cgi-bin/subscriber.py
       - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
@@ -37,6 +37,10 @@ services:
       - ./docker/tmp:/tmp/zTmp
       - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/com:/usr/com/zoo-project
+      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
+      #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
     depends_on:
       - rabbitmq
       - pgbouncer
@@ -79,8 +83,6 @@ services:
       MAX_DB_CONNECTIONS: 100
       DEFAULT_POOL_SIZE: 100
       POOL_MODE: transaction
-    ports:
-      - "5432:5432"
     depends_on:
       - pg
   redis:
@@ -89,6 +91,3 @@ services:
     image: rabbitmq:3.8.9-management-alpine
     volumes:
       - ./docker/definitions.json:/etc/rabbitmq/definitions.json
-    ports:
-      - "15672:15672"
-      - "5672:5672"

@@ -2096,6 +2096,12 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
         for(int i=0;i<llen;i++){
           map* body=getMapArray(curs->content,"Body",i);
           if(body!=NULL){
+	    map* pmHeaders=getMap(curs->content,"Headers");
+	    if(pmHeaders!=NULL){
+	      // TODO: handle multiple headers with , as separator
+	      hInternet->ihandle[iCnt].header =
+		curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
+	    }
             addRequestToQueue(&conf,hInternet,(char *) href->value,false);
             InternetOpenUrl (hInternet,
                              href->value,
@@ -2111,6 +2117,12 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
       }else{
         map* body=getMap(curs->content,"Body");
         if(body!=NULL){
+	  map* pmHeaders=getMap(curs->content,"Headers");
+	  if(pmHeaders!=NULL){
+	    // TODO: handle multiple headers with , as separator
+	    hInternet->ihandle[iCnt].header =
+	      curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
+	  }
           addRequestToQueue(&conf,hInternet,(char *) href->value,false);
           InternetOpenUrl (hInternet,
                            href->value,

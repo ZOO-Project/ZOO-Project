@@ -910,7 +910,8 @@ maps* dupMaps(maps** ppmsOut){
     if(pmsChild!=NULL){
       pmRes->child=dupMaps(&pmsChild);
     }
-    pmRes->next=dupMaps(&pmsCursor->next);
+    if(pmsCursor->next!=NULL)
+      pmRes->next=dupMaps(&pmsCursor->next);
   }
   return pmRes;
 }
