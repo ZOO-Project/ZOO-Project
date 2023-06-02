@@ -46,7 +46,7 @@ RUN set -ex \
     && apt-get install -y --no-install-recommends $BUILD_DEPS  \
     && apt-cache search nlohmann \
     \
-    && add-apt-repository ppa:ubuntugis/ppa \
+    #&& add-apt-repository ppa:ubuntugis/ppa \
     \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y $RUN_DEPS \
     \
@@ -135,16 +135,25 @@ RUN set -ex \
     && autoreconf --install && autoconf && autoreconf --install \
     && find / -name proj.h \
     && cat $(find / -name proj.h) \
-    # Comment the line bellow if you don't want to use rabbitmq
-    && ./configure --with-proj=/opt/otbtf --with-run-path=/opt/otbtf/lib --with-gdal-config=/opt/otbtf/bin/gdal-config --with-mapserver=/opt/otbtf --with-ms-version=7 --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/opt/otbtf --with-itk=/usr --with-otb-version=9.0 --with-itk-version=4.13 \
-    # Uncomment the line bellow if you don't want to use rabbitmq
-    #&& ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    # Comments below
+    # Issue with GDALAllRegister available from the container
+    # It generate a segmentation violation
+    # TODO: investigate?
+    && ./configure --with-proj=/opt/otbtf \
+       --with-run-path=/opt/otbtf/lib \
+       --with-gdal-config=/opt/otbtf/bin/gdal-config \
+       --with-mapserver=/opt/otbtf --with-ms-version=7 \
+       --with-python=/usr --with-pyvers=3.10 \
+       --with-json=/usr \
+       --with-r=/usr \
+       --prefix=/usr \
+       --with-otb=/opt/otbtf --with-itk=/usr --with-otb-version=9.0 --with-itk-version=4.13 \
     && find /opt/otbtf -name mapserver.h \
     && make -j4 \
     && sudo make install \
     \
     # TODO: why not copied by 'make'?
-    && sudo cp zoo_loader_fpm zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
+    #&& sudo cp zoo_loader_fpm zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && sudo cp zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && sudo cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && sudo cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
@@ -230,7 +239,7 @@ ARG BUILD_DEPS=" \
     gcc \
     libc-dev \
     libfcgi-dev \
-    libgdal-dev \
+    #libgdal-dev \
     libxml2-dev \
     libxslt1-dev \
     libcgal-dev \

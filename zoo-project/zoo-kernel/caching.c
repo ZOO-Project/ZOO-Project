@@ -699,29 +699,52 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   char* fcontent = NULL;
   maps* pmsRequests=getMaps(*m,"http_requests");
   char *pcUrl=NULL;
+  int iCurrentIndex=0;
+  int iIsInit=0;
+
   if(pmsRequests!=NULL){
     map* pmLength=getMap(pmsRequests->content,"length");
     int iLen=1;
+    int iPreviousIndex=0;
+    map *pmPreviousName=NULL;
     if(pmLength!=NULL)
       iLen=atoi(pmLength->value);
     for(int iI=0;iI<iLen;iI++){
+      map *pmName=getMapArray(pmsRequests->content,"input",iI);
+      iIsInit=0;
+      if(pmPreviousName==NULL){
+	pmPreviousName=getMapArray(pmsRequests->content,"input",iI);
+	iIsInit=1;
+      }else{
+	if(pmPreviousName!=NULL && pmName!=NULL &&
+	   strcmp(pmPreviousName->value,pmName->value)!=0){
+	  iPreviousIndex=iI;
+	  iCurrentIndex=0;
+	  iIsInit=1;
+	  pmPreviousName=getMapArray(pmsRequests->content,"input",iI);
+	}
+      }
       map *pmUrl=getMapArray(pmsRequests->content,"url",iI);
       map *pmBody=getMapArray(pmsRequests->content,"body",iI);
       map *pmHeaders=getMapArray(pmsRequests->content,"headers",iI);
-      if(pmUrl!=NULL && pmBody!=NULL && strcasecmp(pmUrl->value,url)==0){
-	if(pmHeaders!=NULL){
-	  pcUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+strlen(pmHeaders->value)+1)*sizeof(char));
-	  sprintf(pcUrl,"%s%s%s",url,pmBody->value,pmHeaders->value);
+      if(pmUrl!=NULL && strcasecmp(pmUrl->value,url)==0){
+	if(pmBody!=NULL){
+	  if(pmHeaders!=NULL){
+	    pcUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+strlen(pmHeaders->value)+1)*sizeof(char));
+	    sprintf(pcUrl,"%s%s%s",url,pmBody->value,pmHeaders->value);
+	  }
+	  else{
+	    pcUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+1)*sizeof(char));
+	    sprintf(pcUrl,"%s%s",url,pmBody->value);
+	  }
 	}
-	else{
-	  pcUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+1)*sizeof(char));
-	  sprintf(pcUrl,"%s%s",url,pmBody->value);
-	}
-      }else{
-	if(iI+1>=iLen)
-	  pcUrl=zStrdup(url);
+	if(iIsInit==0)
+	  iCurrentIndex=iI-iPreviousIndex;
+	break;
       }
     }
+    if(pcUrl==NULL)
+      pcUrl=zStrdup(url);
   }else
     pcUrl=zStrdup(url);
   char* cached=isInCache(*m,pcUrl);
@@ -754,7 +777,10 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
 	  fclose(f);
 	}
       }
-      addToMap(*content,"cache_file",cached);
+      if(iCurrentIndex==0)
+	addToMap(*content,"cache_file",cached);
+      else
+	setMapArray(*content,"cache_file",iCurrentIndex,cached);
       unlockFile(*m,lck);
     }
     map* isLocalFile=getMapFromMaps(*m,"lenv",cached);
@@ -812,6 +838,12 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
 	addRequestToQueue(m,hInternet,url,true);
     }else
       addRequestToQueue(m,hInternet,url,true);
+    if(pmsRequests!=NULL){
+      if(iCurrentIndex==0)
+	addIntToMap (pmsRequests->content, "Order", hInternet->nb);
+      else
+	addIntToMapArray (pmsRequests->content, "Order", iCurrentIndex, hInternet->nb);
+    }
     return 0;
   }
   if(fsize==0){

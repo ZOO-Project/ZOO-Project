@@ -285,6 +285,13 @@ int createSPidFile(maps* pmsConf,char* pcPath){
   return 0;
 }
 
+#ifndef RELY_ON_DB
+// TODO: implement this function in service_internal.c
+// Implement user filtering when not relying on DB 
+void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
+}
+#endif
+
 /**
  * Create a _lenv.cfg file containing the lenv map
  *
@@ -1156,6 +1163,8 @@ int loadHttpRequests(maps* conf,maps* inputs){
   if(tmpMaps!=NULL){
     map* lenMap=getMap(tmpMaps->content,"length");
     int len=0;
+    int iArrayIndex=0;
+    char *pcaPreviousInputName=NULL;
     if(lenMap!=NULL){
       len=atoi(lenMap->value);
     }
@@ -1173,9 +1182,27 @@ int loadHttpRequests(maps* conf,maps* inputs){
       map* tmpInput=getMapArray(tmpMaps->content,"input",j);
       if(tmpInput!=NULL && tmpUrl!=NULL){
 	maps* currentMaps=getMaps(inputs,tmpInput->value);
+	if(pcaPreviousInputName==NULL)
+	  pcaPreviousInputName=zStrdup(tmpInput->value);
+	else if(strcmp(pcaPreviousInputName,tmpInput->value)!=0){
+	  free(pcaPreviousInputName);
+	  pcaPreviousInputName=zStrdup(tmpInput->value);
+	  iArrayIndex=0;
+	}
 	loadRemoteFile(&conf,&currentMaps->content,&hInternet,tmpUrl->value);
-	addIntToMap(currentMaps->content,"Order",hInternet.nb);
-	addToMap(currentMaps->content,"Reference",tmpUrl->value);
+	if(getMap(currentMaps->content,"length")!=NULL){
+	  if(iArrayIndex==0){
+	    addIntToMap(currentMaps->content,"Order",hInternet.nb);
+	    addToMap(currentMaps->content,"Reference",tmpUrl->value);
+	  }else{
+	    addIntToMapArray(currentMaps->content,"Order",iArrayIndex,hInternet.nb);
+	    setMapArray(currentMaps->content,"Reference",iArrayIndex,tmpUrl->value);
+	  }
+	  iArrayIndex++;
+	}else{
+	  addIntToMap(currentMaps->content,"Order",hInternet.nb);
+	  addToMap(currentMaps->content,"Reference",tmpUrl->value);
+	}
       }
     }
     if(len>0){
