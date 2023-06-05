@@ -1,0 +1,8 @@
+  teamengine:
+    image: zooproject/ets-ogcapi-processes10:latest
+    volumes:
+      - ./docker/ets-ogcapi-processes/test-run-props.xml:/root/test-run-props.xml
+      - ./docker/ets-ogcapi-processes/src1/ets-ogcapi-processes10/src/main/config/teamengine/config.xml:/root/teamengine/config.xml
+      - ./docker/ets-ogcapi-processes/test.sh:/root/test.sh
+    ports:
+      - "8080:8080"

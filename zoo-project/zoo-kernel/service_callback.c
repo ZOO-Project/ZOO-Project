@@ -318,7 +318,7 @@ extern "C" {
     now = time ( NULL );
     tm = localtime ( &now );
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
     fprintf(stderr,"************************* From thread %d %s %d: REQUEST PARAMETERS cStep %d %d\n",pthread_self(),__FILE__,__LINE__,cStep,isOngoing);
     fprintf(stderr," * JSON: [%s] \n",jsonStr);
     fprintf(stderr," * URL: %s/ \n\n",hInternet.waitingRequests[0]);
@@ -344,7 +344,7 @@ extern "C" {
     tm = localtime ( &now );
     
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
 
 #ifdef CALLBACK_DEBUG    
     fprintf(stderr,"************************* From thread %d %s %d: REQUEST START (%s)\n",pthread_self(),__FILE__,__LINE__,tmp1);
@@ -364,7 +364,7 @@ extern "C" {
     now = time ( NULL );
     tm = localtime ( &now );
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
     
 #ifdef CALLBACK_DEBUG    
     fprintf(stderr,"************************* From thread %d %s %d: REQUEST END (%s)\n\n",pthread_self(),__FILE__,__LINE__,tmp1);
@@ -394,7 +394,7 @@ extern "C" {
     now = time ( NULL );
     tm = localtime ( &now );
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%I:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
     fprintf(stderr,"************************* From thread %d %s %d: RESPONSE CONTENT (%s)\n",pthread_self(),__FILE__,__LINE__,tmp1);
     for(i=0;i<7;i++){
       fprintf(stderr,"%d) %d %d\n",i,steps[i][0],steps[i][1]);
@@ -458,7 +458,7 @@ extern "C" {
     tm = localtime ( &now );
 
     tmp1 = (char*)malloc((TIME_SIZE+1)*sizeof(char));
-    len = strftime ( tmp1, TIME_SIZE, "%Y-%m-%dT%H:%M:%SZ", tm );
+    len = strftime ( tmp1, TIME_SIZE, zDateFormat, tm );
     json_object *jsStr0=json_object_new_string(tmp1);
     json_object_object_add(res,"datetime",jsStr0);
     free(tmp1);

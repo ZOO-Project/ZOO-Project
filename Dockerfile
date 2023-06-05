@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 18.04 with updates and external packages
 #
-FROM ubuntu:bionic-20201119 AS base
+FROM ubuntu:bionic-20230308 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -30,6 +30,7 @@ ARG RUN_DEPS=" \
     python3 \
     r-base \
     python3-pip\
+    libnode93 \
 "
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS  \
@@ -39,6 +40,7 @@ RUN set -ex \
     && add-apt-repository ppa:ubuntugis/ppa \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
     && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' \
+    && add-apt-repository ppa:mmomtchev/libnode \
     \
     && apt-get install -y $RUN_DEPS \
     \
@@ -94,12 +96,16 @@ ARG BUILD_DEPS=" \
     librabbitmq-dev \
     libkrb5-dev \
     nlohmann-json-dev \
+    libnode-dev \
+    node-addon-api \
+    nodejs \
     libaprutil1-dev\
 "
 WORKDIR /zoo-project
 COPY . .
 
 RUN set -ex \
+    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && make -C ./thirds/cgic206 libcgic.a \
@@ -114,7 +120,12 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 \
+              --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
+              --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
+              --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 \
+              --with-itk-version=4.12 --with-saga=/usr \
+              --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
@@ -125,6 +136,8 @@ RUN set -ex \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-js/cgi-env/* /usr/lib/cgi-bin/ \
+    && cp -r ../zoo-services/hello-nodejs/cgi-env/* /usr/lib/cgi-bin/ \
+    && cp ../zoo-services/linestringDem/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-r/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-api/r/minimal.r /usr/lib/cgi-bin/ \
@@ -142,6 +155,11 @@ RUN set -ex \
          msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
        done  \
     \
+    && npm -g install gdal-async --build-from-source --shared_gdal \
+    && npm -g install proj4 \
+    && npm -g install bower \
+    && npm -g install wps-js-52-north \
+    && ( cd /usr/lib/cgi-bin/hello-nodejs && npm install ) \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\
        find ../zoo-services/ -name "${lang}*" ; \
@@ -209,6 +227,8 @@ ARG BUILD_DEPS=" \
     libxml2-dev \
     libxslt1-dev \
     libcgal-dev \
+    libnode-dev \
+    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
@@ -226,6 +246,9 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/sqlapi.h /zoo-project/z
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service.h /zoo-project/zoo-project/zoo-kernel/service.h
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service_internal.h /zoo-project/zoo-project/zoo-kernel/service_internal.h
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/version.h /zoo-project/zoo-project/zoo-kernel/version.h
+
+# Node.js global node_modules
+COPY --from=builder1 /usr/lib/node_modules/ /usr/lib/node_modules/
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
@@ -292,10 +315,11 @@ ARG RUN_DEPS=" \
     libapache2-mod-fcgid \
     python3-setuptools \
     #Uncomment the line below to add vi editor \
-    vim \
+    #vim \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
+    libnode93 \
 "
 ARG BUILD_DEPS=" \
     make \
@@ -303,6 +327,8 @@ ARG BUILD_DEPS=" \
     gcc \
     libgdal-dev \
     python3-dev \
+    libnode-dev \
+    node-addon-api \
 "
 # For Azure use, uncomment bellow
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
@@ -336,6 +362,9 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-services/undeploy-py/cgi-env/ 
 COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess
 COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
+
+# Node.js global node_modules
+COPY --from=builder1 /usr/lib/node_modules/ /usr/lib/node_modules/
 
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/

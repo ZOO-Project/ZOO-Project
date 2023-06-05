@@ -551,19 +551,20 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
 #ifdef ULINET_DEBUG
-    fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
+    fprintf(stderr,"** (%s) %d %s %d **\n",lpszHeaders,dwHeadersLength,__FILE__,__LINE__);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
 #endif
   }
-  if(hInternet->ihandle[hInternet->nb].header!=NULL)
+  if(hInternet->ihandle[hInternet->nb].header!=NULL){
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
+  }
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
   hInternet->ihandle[hInternet->nb].url = zStrdup(lpszUrl);
 
   curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
   
-  hInternet->ihandle[hInternet->nb].header=NULL;
+  //hInternet->ihandle[hInternet->nb].header=NULL;
   ++hInternet->nb;
   hInternet->ihandle[hInternet->nb].header=NULL;
 

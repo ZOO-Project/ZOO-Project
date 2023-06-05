@@ -103,6 +103,10 @@ The main.cfg ``[main]`` section parameters are explained bellow.
    service code. In case you do not add handleText or set its value to
    true, you will simply need to use the value as it was provided in
    a single CDATA node provided in the Execute request.
+* ``extra_supported_codes``: if this parameter is present in the main
+  section, then the response codes list given will be considered as
+  valid response code when downloading input data (sample value:
+  ``404,400``).
 
 .. warning:: 
   The ``libPath`` parameter is currently only recognized by services implemented
@@ -481,7 +485,11 @@ about the open API specification it is referring to.
 The first section to be found in the ``oas.cfg`` file should be the
 ``[openapi]``. It contains the following parameters:
 
- * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API - Processing
+ * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API -
+   Processing (in case the ``rootHost`` and ``rootPath`` are defined,
+   this value will automatically be updated at runtime)
+ * ``rootHost``: the host (ie. http://localhost)
+ * ``rootPath``: the root path to the service (ie. ogc-api)
  * ``links``: the links provided from the root
  * ``paths``: the full paths list
  * ``parameters``: the parameters list defined in paths
@@ -498,6 +506,23 @@ The first section to be found in the ``oas.cfg`` file should be the
    and you want to aknowledge the text/html format in links
  * ``wsUrl``: the WebSocket URL to subscribe client to redis
  * ``publisherUrl``: the URL used to publish status updates
+* ``link_href``: the url to the links.json schema
+* ``tags``: tags lits in the order they will be defined in the OpenAPI
+* ``examplesPath``: the full path to the examples files, if any
+* ``examplesUrl``: the corresponding URL to access the examples files
+  to be exposed within the OpenAPI
+* ``exceptionsUrl``: root URL to the exception
+* ``ensure_type_validation``: set it to true to not allow passing
+  literal value to a complex input, a complex data in place of a
+  literal, respectively
+* ``ensure_type_validation_but_ets``: set it to true to have the type
+  validation as with the previous parameter but on for the literal
+  data (not accepting complex data)
+* ``default_result_as_document``: set it to true in case you want to
+  use raw as the default value for the response parameter.
+* ``use_problem_exception``: set any value only in case you are
+  willing to use application/problem+json (see. `RFC7807
+  <https://datatracker.ietf.org/doc/html/rfc7807>`__).
 
 For any links and paths ``/A`` defined, you will have a corresponding
 ``[/A]`` and ``[A]`` sections. In the ``[/A]`` section you will define
@@ -604,6 +629,9 @@ filters to be applied before handling the request and after, respectively.
 You can use an array of filters if you need to execute more than a
 single service before or after the request treatment. The ZOO-Kernel
 will invoke the services in the same order as they are in the array.
+In both ``filter_in`` and ``filter_out`` section, you should add the
+``path`` and ``service`` keys used to define the location of the
+service to run.
 
 Then to secure an operation (meaning a path and request method couple), you should add
 the optional ``secured`` key and set it to the name used in the

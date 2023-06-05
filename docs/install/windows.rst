@@ -5,10 +5,10 @@
 
 	     
 Installation on Windows |trade|
-====================
+===============================
 
 Install ZOO-Project binaries
--------------------------------
+----------------------------
 
 .. note::
    The content of the ZOO-Project Windows-Binaries is based on
@@ -40,7 +40,7 @@ installer has been run, simply access the following link:
 http://localhost/zoo-demo/ to access your local demo application.
 
 Install by hand
-...................
+...............
 
 Prior to run the ZOO-Project-Installer, please make sure you have IIS
 and `Python <https://www.python.org/downloads/windows/>`__ setup on
@@ -380,7 +380,7 @@ running ``nmake /f makefile.vc``:
 
 
 Optionally Compile Individual Services
-.............................................................
+......................................
 
 An example could be the *OGR base-vect-ops* provider located in the ``zoo-project\zoo-services\ogr\base-vect-ops`` directory.  
 

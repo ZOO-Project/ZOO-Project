@@ -152,6 +152,7 @@ A ``symbols.sym`` file is required in this directory. Create it and add the foll
 The ZOO-Project optional MapServer support is activated at this step. Don't forget to add the ``mapserverAddress`` and  ``msOgcVersion`` parameters to the ``main.cfg`` file in order to  to specify the path to MapServer and the OGC WebService version used by the Services.
 
 .. code-block:: guess
+
      mapserverAddress=http://localhost/cgi-bin/mapserv.cgi
      msOgcVersion=1.0.0
 
@@ -322,25 +323,25 @@ simple *HelloPy* Service is used in the following example requests.
 
 Accessing a remote Zipped Shapefile as WFS GetFeatures Request:
 
-.. code-block:: guess
+.. code-block::
 
      http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=HelloPy&DataInputs=a=Reference@xlink:href=http://localhost/data/data.zip&ResponseDocument=Result@asReference=true@mimetype=text/xml
 
 Accessing a remote Zipped Shapefile as WMS GetMap Request:
 
-.. code-block:: guess
+.. code-block::
 
      http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=HelloPy&DataInputs=a=Reference@xlink:href=http://localhost/data/data.zip&ResponseDocument=Result@asReference=true@mimetype=image/png
 
 Accessing a remote tiff as WMS GetMap Request:
 
-.. code-block:: guess
+.. code-block::
 
      http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=HelloPy&DataInputs=a=Reference@xlink:href=http://localhost/data/data.tiff&ResponseDocument=Result@asReference=true@mimetype=image/png
 
 Accessing a remote tiff as WCS GetMap Request:
 
-.. code-block:: guess
+.. code-block::
 
      http://localhost/cgi-bin/zoo_loader.cgi?request=Execute&service=WPS&version=1.0.0&Identifier=HelloPy&DataInputs=a=Reference@xlink:href=http://localhost/data/data.tiff&ResponseDocument=Result@asReference=true@mimetype=image/tiff
 

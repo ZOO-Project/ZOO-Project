@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  *
  * See Ref: http://hg.orfeo-toolbox.org/OTB/ Copyright
- * Some parts of this code are derived from ITK. See ITKCopyright.txt for 
+ * Some parts of this code are derived from ITK. See ITKCopyright.txt for
  * details.
  */
 

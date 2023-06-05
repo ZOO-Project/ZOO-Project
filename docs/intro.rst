@@ -6,7 +6,7 @@ This is an introduction to  the `ZOO-Project
 
 
 What is ZOO-Project ?
--------------------
+---------------------
 
 `ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and  `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`__ (OGC).
 
@@ -31,9 +31,9 @@ The `ZOO-Project <http://zoo-project.org>`__ platform is made up of the followin
   
 
 Open Source
--------------------
+-----------
 
-`ZOO-Project <http://zoo-project.org>`__  is open source and released under the terms of the `MIT/X-11 <http://opensource.org/licenses/MITlicense>`__  `license <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/LICENSE>`__ . ZOO-Project activities are directed by the Project Steering Committee (PSC) and the software itself is being developed, maintained and documented by an international community of users and developers (aka `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe>`_).
+`ZOO-Project <http://zoo-project.org>`__  is open source and released under the terms of the `MIT/X-11 <http://opensource.org/licenses/MITlicense>`__  `license <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/LICENSE>`__ . ZOO-Project activities are directed by the Project Steering Committee (PSC) and the software itself is being developed, maintained and documented by an international community of users and developers (aka `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe>`_). ZOO-Project API and services used external software tools that are available under their respective OSI (https://opensource.org/licenses/) certified open source licenses.
 
 Please refer to the ZOO-Project :ref:`contribute_index` if you want to participate and contribute. It is easy to :ref:`get involved <contribute_index>`  on source code, documentation or translation. Everybody is welcome to join the `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe/>`__.
 

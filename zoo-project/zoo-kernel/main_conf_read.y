@@ -75,11 +75,6 @@ miscetoile
  : {}
  ;
 
-Attributeetoile
- : Attributeetoile  {}
- | 	                          {/* Epsilon */}
- ;
-
 contentetoile
 : contentetoile NEWLINE {}
  | contentetoile pair {}

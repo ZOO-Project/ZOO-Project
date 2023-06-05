@@ -35,6 +35,11 @@
 #include "response_print.h"
 #include "caching.h"
 
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+// Not exposed yet from the MapServer C-API
+extern void writeHashTable(FILE *stream, int indent, const char *title, hashTableObj *table);
+#endif
+
 /**
  * Get a list of configuration keys having a corresponding mandatory ows_*.
  * Map composed by a main.cfg maps name as key and the corresponding 
@@ -171,11 +176,12 @@ void setReferenceUrl(maps* m,maps* tmpI){
   map* versionMap=getMapArray(tmpI->content,"msOgcVersion",imyIndex);
   map* datatype=getMapArray(tmpI->content,"geodatatype",imyIndex);
   map* layerName=getMapArray(tmpI->content,"msLayer",imyIndex);
-  char options[4][5][25]={
+  char options[5][5][25]={
     {"WMS","1.3.0","GetMap","layers=%s","wms_extent"},
     {"WFS","1.0.0","GetFeature","typename=%s","wcs_extent"},
     {"WCS","2.0.0","GetCoverage","coverageid=%s","wcs_extent"},
-    {"WCS","1.0.0","GetCoverage","coverage=%s","wcs_extent"}
+    {"WCS","1.0.0","GetCoverage","coverage=%s","wcs_extent"},
+    {"OAPIF","1.0","collections","collections/%s","wcs_extent"}
   };
   map *nbElements=getMapArray(tmpI->content,"nb_features",imyIndex);
   if(nbElements==NULL)
@@ -213,8 +219,11 @@ void setReferenceUrl(maps* m,maps* tmpI){
   if(strncasecmp(rformat->value,"image/tiff",10)==0 ||
      strncasecmp(rformat->value,"image/geotiff",10)==0)
     proto=2;
+  if(strncasecmp(rformat->value,"application/json",8)==0)
+    proto=4;
   int hasFormat=-1;
   if(protoMap!=NULL){
+    dumpMap(protoMap);
     hasFormat=1;
     if(strncasecmp(protoMap->value,"WMS",3)==0){
       proto=0;
@@ -238,7 +247,6 @@ void setReferenceUrl(maps* m,maps* tmpI){
     if(versionMap!=NULL)
       protoVersion=versionMap->value;
   }
-
 
   map* extent=getMapArray(tmpI->content,options[proto][4],imyIndex);
   map* crs=getMapArray(tmpI->content,"crs",imyIndex);
@@ -278,7 +286,12 @@ void setReferenceUrl(maps* m,maps* tmpI){
         rformat=createMap("mimeType","image/tiff");
 	hasFormat=1;
 	finalProto=1;
-      }
+      }else
+	if(proto==4){
+	  rformat=createMap("mimeType","application/json");
+	  hasFormat=1;
+	  finalProto=1;
+	}
   }
   
   char* webService_url=(char*)malloc((strlen(msUrl->value)+strlen(rformat->value)+strlen(tmpI->name)+strlen(width->value)+strlen(height->value)+strlen(extent->value)+256)*sizeof(char));
@@ -287,31 +300,41 @@ void setReferenceUrl(maps* m,maps* tmpI){
   if(proto>0){
     if(proto==2)
       finalProto=1;
-    sprintf(webService_url,
-	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
-	    msUrl->value,
-	    dataPath->value,
-	    tmpI->name,
-	    imyIndex,
-	    sid->value,
-	    options[proto][2],
-	    options[proto][0],
-	    protoVersion,
-	    layers,
-	    rformat->value,
-	    extent->value,
-	    crs->value
-	    );
-    if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
-      setMapArray(tmpI->content,"ref_wcs_link",imyIndex,webService_url);
+    if(proto!=4){
+      sprintf(webService_url,
+	      "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	      msUrl->value,
+	      dataPath->value,
+	      tmpI->name,
+	      imyIndex,
+	      sid->value,
+	      options[proto][2],
+	      options[proto][0],
+	      protoVersion,
+	      layers,
+	      rformat->value,
+	      extent->value,
+	      crs->value
+	      );
+      if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
+	setMapArray(tmpI->content,"ref_wcs_link",imyIndex,webService_url);
+      }
+      else{
+	setMapArray(tmpI->content,"ref_wfs_link",imyIndex,webService_url);
+      }
+      proto=0;
+      freeMap(&rformat);
+      free(rformat);
+      rformat=createMap("mimeType","image/png");
     }
     else{
-      setMapArray(tmpI->content,"ref_wfs_link",imyIndex,webService_url);
+      sprintf(webService_url,"%s/%s_%d_%s/ogcapi/%s",
+	      msUrl->value,
+	      tmpI->name,
+	      imyIndex,
+	      sid->value,
+	      layers);
     }
-    proto=0;
-    freeMap(&rformat);
-    free(rformat);
-    rformat=createMap("mimeType","image/png");
   }
   else{
     sprintf(webService_url,
@@ -354,21 +377,23 @@ void setReferenceUrl(maps* m,maps* tmpI){
   if(proto>0){
     if(proto==2)
       finalProto=1;
-    sprintf(webService_url,
-	    "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
-	    msUrl->value,
-	    dataPath->value,
-	    tmpI->name,
-	    imyIndex,
-	    sid->value,
-	    options[proto][2],
-	    options[proto][0],
-	    protoVersion,
-	    layers,
-	    rformat->value,
-	    extent->value,
-	    crs->value
-	    );
+    if(proto!=4)
+      sprintf(webService_url,
+	      "%s?map=%s/%s_%d_%s.map&request=%s&service=%s&version=%s&%s&format=%s&bbox=%s&crs=%s",
+	      msUrl->value,
+	      dataPath->value,
+	      tmpI->name,
+	      imyIndex,
+	      sid->value,
+	      options[proto][2],
+	      options[proto][0],
+	      protoVersion,
+	      layers,
+	      rformat->value,
+	      extent->value,
+	      crs->value
+	      );
+
     if(datatype!=NULL && strncasecmp(datatype->value,"raster",6)==0){
       setMapArray(tmpI->content,"ref_wcs_link",imyIndex,webService_url);
     }
@@ -402,7 +427,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
     protoVersion=options[proto][1];
     extent=getMapArray(tmpI->content,options[proto][4],imyIndex);
     memset(webService_url,0,strlen(webService_url));
-     freeMap(&rformat);
+    freeMap(&rformat);
     free(rformat);
     rformat=createMap("value","image/tiff");
     sprintf(webService_url,
@@ -791,9 +816,15 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
     myLayer->data = zStrdup(OGR_L_GetName(poLayer));
     myLayer->connection = zStrdup(pszDataSource);
     myLayer->index = m->numlayers;
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
     myLayer->dump = MS_TRUE;
+#endif
     myLayer->status = MS_ON;
     msConnectLayer(myLayer,MS_OGR,pszDataSource);
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+    // TODO: define myLayer->template=VOID; ??
+    msUpdateLayerFromString(myLayer,"LAYER TEMPLATE VOID END");
+#endif
 
     addIntToMapArray(output->content,"nb_features",imyIndex,OGR_L_GetFeatureCount(poLayer,1));
 
@@ -912,7 +943,11 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
         }
       }
       if(tmpMap!=NULL)
-	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value,0);
+	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
+				,0
+#endif
+				);
       else{
 	/**
 	 * Set style
@@ -1005,7 +1040,9 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   myLayer->tileitem=NULL;
   myLayer->data = zStrdup(pszFilename);
   myLayer->index = m->numlayers;
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
   myLayer->dump = MS_TRUE;
+#endif
   myLayer->status = MS_ON;
   myLayer->type = MS_LAYER_RASTER;
 
@@ -1265,7 +1302,11 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     msLayerAddProcessing(myLayer,"RESAMPLE=BILINEAR");
   
   if(styleMap!=NULL && strlen(styleMap->value)>9){
-    msUpdateLayerFromString(myLayer,styleMap->value,MS_FALSE);
+    msUpdateLayerFromString(myLayer,styleMap->value
+#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
+			    ,MS_FALSE
+#endif
+			    );
   }
   
   m->layerorder[m->numlayers] = m->numlayers;
@@ -1291,7 +1332,9 @@ void outputMapfile(maps* conf,maps* outputs){
    */
   int imyIndex=getPublishedId(outputs);
   map* mime=getMapArray(outputs->content,"mimeType",imyIndex);
+  maps* pmTmp=getMaps(conf,"main");
   map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
+  map* pmMsConfig=getMapFromMaps(conf,"main","msConfig");
   map* dataPath=getMapFromMaps(conf,"main","dataPath");
   char *ext="data";
   if(mime!=NULL)
@@ -1324,9 +1367,15 @@ void outputMapfile(maps* conf,maps* outputs){
 
   /*
    * Create an empty map, set name, default size and extent
-   */
+   */  
   map* mapfileTemplate=getMapArray(outputs->content,"msInclude",imyIndex);
   mapObj *myMap=NULL;
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+  configObj* config = NULL;
+  if(pmMsConfig!=NULL){
+    config = msLoadConfig(pmMsConfig->value);
+  }
+#endif
   if(mapfileTemplate==NULL){
     myMap=msNewMapObj();
   }
@@ -1335,13 +1384,19 @@ void outputMapfile(maps* conf,maps* outputs){
     map* sid=getMapFromMaps(conf,"lenv","sid");
     char *mapfileTemplatePath=(char*)malloc(((strlen(dataPath->value)+strlen(sid->value)+strlen(outputs->name)+10)*sizeof(char)));
     sprintf(mapfileTemplatePath,"%s/%s_%s.map",dataPath->value,outputs->name,sid->value);
-    myMap=msLoadMap(mapfileTemplate->value,mapfileTemplatePath);
+    myMap=msLoadMap(mapfileTemplate->value,mapfileTemplatePath
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+		    ,config
+#endif
+		    );
     if(myMap==NULL){
       setMapInMaps(conf,"lenv","message",_("Unable to open your template mapfile!"));
       return ;
     }
   }
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
   free(myMap->name);
+#endif
   myMap->name=zStrdup("ZOO-Project_WXS_Server");
   msMapSetSize(myMap,2048,2048);
   msMapSetExtent(myMap,-1,-1,1,1);
@@ -1353,51 +1408,86 @@ void outputMapfile(maps* conf,maps* outputs){
   myMap->web.imagepath=zStrdup(tmp1->value);
   tmp1=getMapFromMaps(conf,"main","tmpUrl");
   myMap->web.imageurl=zStrdup(tmp1->value);
-  
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+  msApplyDefaultOutputFormats(myMap);
+#endif
+
   /*
    * Define supported output formats
    */
-  outputFormatObj *o1=msCreateDefaultOutputFormat(NULL,"AGG/PNG","png");
-  o1->imagemode=MS_IMAGEMODE_RGBA;
-  o1->transparent=MS_TRUE;
-  o1->inmapfile=MS_TRUE;
-  msAppendOutputFormat(myMap,msCloneOutputFormat(o1));
-  msFreeOutputFormat(o1);
+  outputFormatObj *o1=msCreateDefaultOutputFormat(NULL,"AGG/PNG","png"
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+						  ,"image/png"
+#endif
+						  );
+  if(!o1)
+    fprintf(stderr,"Unable to create the image/png output format!\n");
+  else{
+    o1->imagemode=MS_IMAGEMODE_RGBA;
+    o1->transparent=MS_TRUE;
+    o1->inmapfile=MS_TRUE;
+    msAppendOutputFormat(myMap,msCloneOutputFormat(o1));
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
+    msFreeOutputFormat(o1);
+#endif
+  }
 
 #ifdef USE_KML
-  outputFormatObj *o2=msCreateDefaultOutputFormat(NULL,"KML","kml");
+  outputFormatObj *o2=msCreateDefaultOutputFormat(NULL,"KML","kml"
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+						  ,"application/vnd.google-earth.kml+xml"
+#endif
+						  );
   if(!o2){
     perror("Unable to initialize KML driver");
     fprintf(stderr,"Unable to initialize KML driver !\n");
   }else{
     o2->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o2));
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o2);
+#endif
   }
 #endif
 
-  outputFormatObj *o3=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","tiff");
+  outputFormatObj *o3=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","tiff"
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+						  ,"image/tiff"
+#endif
+						  );
   if(!o3)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
     o3->imagemode=MS_IMAGEMODE_INT16;
     o3->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o3));
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o3);
+#endif
   }
 
-  outputFormatObj *o4=msCreateDefaultOutputFormat(NULL,"GDAL/AAIGRID","grd");
+  outputFormatObj *o4=msCreateDefaultOutputFormat(NULL,"GDAL/AAIGRID","grd"
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+						  ,"image/x-aaigrid"
+#endif
+						  );
   if(!o4)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
     o4->imagemode=MS_IMAGEMODE_BYTE;
     o4->inmapfile=MS_TRUE;  
     msAppendOutputFormat(myMap,msCloneOutputFormat(o4));
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o4);
+#endif
   }
 
 #ifdef USE_CAIRO
-  outputFormatObj *o5=msCreateDefaultOutputFormat(NULL,"CAIRO/PNG","cairopng");
+  outputFormatObj *o5=msCreateDefaultOutputFormat(NULL,"CAIRO/PNG","cairopng"
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+						  ,"image/png"
+#endif
+						  );
   if(!o5)
     fprintf(stderr,"Unable to initialize CAIRO driver !\n");
   else{
@@ -1405,12 +1495,18 @@ void outputMapfile(maps* conf,maps* outputs){
     o5->transparent=MS_TRUE;
     o5->inmapfile=MS_TRUE;
     msAppendOutputFormat(myMap,msCloneOutputFormat(o5));
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o5);
+#endif
   }
 #endif
 
   
-  outputFormatObj *o6=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","geotiff");
+  outputFormatObj *o6=msCreateDefaultOutputFormat(NULL,"GDAL/GTiff","geotiff"
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+						  ,"image/tiff; application=geotiff "
+#endif
+						  );
   if(!o6)
     fprintf(stderr,"Unable to initialize GDAL driver !\n");
   else{
@@ -1418,16 +1514,19 @@ void outputMapfile(maps* conf,maps* outputs){
     o6->mimetype=strdup("image/geotiff");
     o6->inmapfile=MS_TRUE;
     msAppendOutputFormat(myMap,msCloneOutputFormat(o6));
+#if MS_VERSION_MINOR < 7 && MS_VERSION_MAJOR <= 7
     msFreeOutputFormat(o6);
+#endif
   }
-
   
   /*
    * Set default projection to EPSG:4326
    */
   msLoadProjectionStringEPSG(&myMap->projection,"EPSG:4326");
+#if MS_VERSION_MINOR < 6  && MS_VERSION_MAJOR <= 7
   myMap->transparent=1;
-
+#endif
+  
   /*
    * Set mapserver PROJ_LIB/GDAL_DATA or any other config parameter from 
    * the main.cfg [mapserver] section if any
@@ -1498,9 +1597,13 @@ void outputMapfile(maps* conf,maps* outputs){
   free(correspondance);
 
   map* sid=getMapFromMaps(conf,"lenv","usid");
+  char *pcaMapName = (char*)malloc((14+strlen(sid->value)+strlen(outputs->name))*sizeof(char));
+  sprintf(pcaMapName,"%s_%d_%s",outputs->name,imyIndex,sid->value);
   char *mapPath=
     (char*)malloc((14+strlen(sid->value)+strlen(outputs->name)+strlen(dataPath->value))*sizeof(char));
   sprintf(mapPath,"%s/%s_%d_%s.map",dataPath->value,outputs->name,imyIndex,sid->value);
+  char *pcaApiRootUrl=(char*) malloc((strlen(msUrl->value)+strlen(pcaMapName)+10)*sizeof(char));
+  sprintf(pcaApiRootUrl,"%s/%s/ogcapi/",msUrl->value,pcaMapName);
   char *mapUrl=
     (char*)malloc((6+strlen(mapPath)+strlen(msUrl->value))*sizeof(char));
   sprintf(mapUrl,"%s?map=%s",msUrl->value,mapPath);
@@ -1511,6 +1614,20 @@ void outputMapfile(maps* conf,maps* outputs){
 #endif
     return;
   }
+  if (msInsertHashTable(&(myMap->web.metadata), "oga_onlineresource", pcaApiRootUrl) == NULL){
+#ifdef DEBUGMS
+    fprintf(stderr,"Unable to add metadata");
+#endif
+    return;
+  }
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+  if (msInsertHashTable(&(config->maps), pcaMapName, mapPath) == NULL){
+#ifdef DEBUGMS
+    fprintf(stderr,"Unable to add metadata");
+#endif
+    return;
+  }
+#endif
 
   if(tryOgr(conf,outputs,myMap)<0)
     if(tryGdal(conf,outputs,myMap)<0)
@@ -1521,13 +1638,18 @@ void outputMapfile(maps* conf,maps* outputs){
   msInitSymbolSet(&myMap->symbolset);
   myMap->symbolset.filename=zStrdup(tmpPath);
   free(tmpPath);
-
+#if ( MS_VERSION_MINOR > 6 && MS_VERSION_MAJOR <= 7 ) || MS_VERSION_MAJOR >= 8
+  if(pmMsConfig!=NULL){
+    msSaveConfig(config,pmMsConfig->value);
+  }
+#endif
   msSaveMap(myMap,mapPath);
   saveMapNames(conf,outputs,mapPath);
   free(mapPath);
   //free(myMap->symbolset.filename);
   //msFreeSymbolSet(&myMap->symbolset);
   msFreeMap(myMap);
+  // TODO: msFreeConfig()
   //msFree(myMap);
   //msGDALCleanup();
 }

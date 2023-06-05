@@ -6,6 +6,7 @@ AC_CONFIG_MACRO_DIR([macros])
 AC_PROG_YACC
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_CXXCPP
 AC_PROG_SED
 AC_PROG_AWK
 
@@ -540,6 +541,10 @@ AC_ARG_WITH([ms-version],
        [AS_HELP_STRING([--with-ms-version=VERSION], [Specifies the MapServer version to build against])], 
        [MS_VERSION="$withval"], [MS_VERSION=""])
 
+AC_ARG_WITH([ms-force-linkage],
+       [AS_HELP_STRING([--with-ms-force-linkage=yes], [Specifies if the MapServer version should be force linked])], 
+       [MS_FORCE_LINKAGE="$withval"], [MS_FORCE_LINKAGE=""])
+
 if test -z $MS_SRC_PATH;
 then
 	MS_CPPFLAGS=""
@@ -555,6 +560,10 @@ else
 	if test "x$MS_VERSION" = "x7";
 	then
 		MS_LDFLAGS="-L$MS_SRC_PATH/lib -lmapserver"
+		if test "x$MS_FORCE_LINKAGE" = "xyes";
+		then
+			MS_LDFLAGS="$MS_LDFLAGS -Wl,-rpath,$MS_SRC_PATH/lib/"
+		fi
 		MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include/mapserver "
                	AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
         else
@@ -740,6 +749,55 @@ fi
 
 AC_SUBST([JS_ENABLED])
 AC_SUBST([JS_FILE])
+
+# ===========================================================================
+# Detect if libnode is installed
+# ===========================================================================
+
+AC_ARG_WITH([nodejs], 
+	[AS_HELP_STRING([--with-nodejs=PATH], [Specifies --with-libnode=path-to-libnode to enable Node.js support, specify --with-libnode on linux debian like, Node.js support is disabled by default ])], 
+	[NODEJS_HOME="$withval";NODEJS_ENABLED="-DUSE_NODEJS"], [NODEJS_ENABLED=""])
+
+if test -z "$NODEJS_ENABLED"
+then
+	NODEJS_FILE=""
+else
+	AC_LANG_PUSH([C++])
+	NODEJS_FILE="service_internal_nodejs.o"
+	if test "$NODEJS_HOME" = "yes"
+	then
+		NODEJS_HOME=/usr
+		NODEJS_CPPFLAGS="`pkg-config --cflags node` `pkg-config --cflags node-addon-api`"
+		NODEJS_LDFLAGS=`pkg-config --libs node`
+	else
+		NODEJS_CPPFLAGS="-I$NODEJS_HOME/include/libnode/ -I$NODEJS_HOME/include/node/"
+		NODEJS_LDFLAGS="-L$NODEJS_HOME/lib -lnode -lm"
+	fi 
+	NODEJS_LIB="node"
+
+	CPPFLAGS_SAVE="$CPPFLAGS"
+    CPPFLAGS="$NODEJS_CPPFLAGS"
+
+	AC_CHECK_HEADERS([node.h],
+        [], [AC_MSG_ERROR([could not find headers include related to libnode])])
+
+	AC_CHECK_HEADERS([napi.h],
+        [], [AC_MSG_ERROR([could not find headers include related to node-addon-api])])
+
+	LIBS_SAVE="$LIBS"
+    LIBS="$NODEJS_LDFLAGS"
+
+    AC_CHECK_LIB([$NODEJS_LIB], [napi_create_environment],
+		[], [AC_MSG_ERROR([could not find $NODEJS_LIB])], [])
+	LIBS="$LIBS_SAVE"
+	AC_LANG_POP([C++])
+	
+    AC_SUBST([NODEJS_CPPFLAGS])
+    AC_SUBST([NODEJS_LDFLAGS])
+fi
+
+AC_SUBST([NODEJS_ENABLED])
+AC_SUBST([NODEJS_FILE])
 
 # ===========================================================================
 # Detect if php is installed
@@ -1126,7 +1184,7 @@ else
 	fi
 	WX_ISSUE="-D_WX_WXCRTVARARG_H_"
 	SAGA_DEFS="-D_SAGA_LINUX -D_TYPEDEF_BYTE -D_TYPEDEF_WORD -DMODULE_LIBRARY_PATH=\\\"$SAGAPATH/lib/saga\\\""
-	SAGA_CPPFLAGS="-DSAGA_VERSION=${SAGAVERS} -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ -I$SAGAPATH/include/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
+	SAGA_CPPFLAGS="-DSAGA_VERSION=${SAGAVERS} -fPIC -I$SAGAPATH/include/saga/saga_core/saga_api/ -I$SAGAPATH/include/saga_api/ -I$SAGAPATH/include/saga/saga_api/ `$WXCFG --unicode=yes --static=no --cxxflags` -D_SAGA_UNICODE $SAGA_DEFS $WX_ISSUE"
 	SAGA_LDFLAGS="-fPIC `$WXCFG --unicode=yes --static=no --libs` -lsaga_api"
 	SAGA_ENABLED="-DUSE_SAGA"
 	SAGA_FILE="service_internal_saga.o"
@@ -1156,6 +1214,11 @@ AC_SUBST([SAGA_CPPFLAGS])
 AC_SUBST([SAGA_LDFLAGS])
 AC_SUBST([SAGA_FILE])
 AC_SUBST([SAGA_ENABLED])
+
+AC_SUBST([CFLAGS])
+AC_SUBST([CXXFLAGS])
+AC_SUBST([CPPFLAGS])
+AC_SUBST([LDFLAGS])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([ZOOMakefile.opts])

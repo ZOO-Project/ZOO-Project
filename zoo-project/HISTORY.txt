@@ -1,4 +1,20 @@
 Version 2.0.0
+  * Integrate the TeamEngine and ETS for OGC API - Processes
+  * Add JWT parser in security_service.py as filter_in to allocate
+  resources per authenticated user
+  * Integrate the work done during GSoC 2022 to support Node.js
+  ZOO-Services (cf. updated documentation for NodeJS)
+  * Update support to filter the jobs list using the user_id
+  * Add support for nested processes n OGC API - Processes - Part 3: 
+  Workflows & Chaining
+  * Add filter_in and filter_out service array to be invoked previously
+  of andd after the service run
+  * Add trivial support for OpenAPI security, basicAuth / openId, add
+  sample services implementation
+  * Add support for MapServer 8.0 (actually 7.7-dev) including
+  returning result as OGC API -Features
+  * Integrate downloading MapServer 8.0 and building from the
+  dedicated Dockerfile-MS8
   * Include basicAuth build instructions in the Dockefile
   * Add basicAuth service illustrating how to secure access to OGC API
   - Processes using Basic Authentication
