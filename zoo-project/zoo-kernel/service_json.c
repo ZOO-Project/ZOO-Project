@@ -3475,6 +3475,7 @@ extern "C" {
     json_object_object_add(res,"servers",res3);
   }
 
+#ifdef DRU_ENABLED
   /**
    * Print exception report in case Deploy or Undeploy failed to execute
    *
@@ -3583,6 +3584,7 @@ extern "C" {
     fflush(stderr);
     return 0;
   }
+#endif // DRU_ENABLED
 
 #ifdef __cplusplus
 }

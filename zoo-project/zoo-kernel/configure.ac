@@ -264,6 +264,18 @@ LIBS="$LIBS_SAVE"
 AC_SUBST([FCGI_CPPFLAGS])
 AC_SUBST([FCGI_LDFLAGS])
 
+AC_ARG_WITH([dru],
+        [AS_HELP_STRING([--with-dru=yes], [Activates the metadata database support])],
+        [WITHDRU="$withval"], [WITHDRU=""])
+
+if test "x$WITHDRU" = "xyes"; then
+   	DRU_ENABLED="-DDRU_ENABLED"
+else
+   	DRU_ENABLED=""
+fi
+
+AC_SUBST([DRU_ENABLED])
+
 AC_ARG_WITH([metadb],
         [AS_HELP_STRING([--with-metadb=yes], [Activates the metadata database support])],
         [WITHMETADB="$withval"], [WITHMETADB=""])

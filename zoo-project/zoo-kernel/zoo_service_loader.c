@@ -2745,25 +2745,27 @@ runRequest (map ** inputs)
     ZOO_DEBUG("ensureFiltered end");
 
 
-  int i = addServicesNamespaceToMap(m);
-  if(i) {
+    int i = addServicesNamespaceToMap(m);
+    if(i) {
       map* error=createMap("code","BadRequest");
-			    ZOO_DEBUG("BadRequest");
+      ZOO_DEBUG("BadRequest");
       addToMap(error,"message",_("The resource is not available"));
-	localPrintExceptionJ(m,error);
+      localPrintExceptionJ(m,error);
       //printExceptionReportResponseJ(m,error);
       setMapInMaps(m,"lenv","status_code","404 Bad Request");
       return 1;
-  }
+    }
     ZOO_DEBUG("AddServiceNamespace end");
 
 
+#ifdef DRU_ENABLED
     // Routes to OGC API - Processes - Part 2: Deploy, Replace, Undeploy
     // retrieves the deploy service provider from main.cfg
     map* deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
     map* undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
-
+#endif
     setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
+#ifdef DRU_ENABLED
     //Change REQUEST_TYPE in case of Deploy/Undeploy of a Process
     if(strncasecmp(cgiRequestMethod,"DELETE",6)==0
        && strstr(cgiQueryString,"/processes/")!=NULL){
@@ -2927,6 +2929,7 @@ runRequest (map ** inputs)
 	}
 	//dumpMap(request_inputs);
       }
+#endif
     map* pmCgiRequestMethod=getMapFromMaps(m,"lenv","request_method");
 	ZOO_DEBUG("Deploy / Replace");
 
@@ -3721,7 +3724,11 @@ runRequest (map ** inputs)
 	  return 1;
 	}
 	setMapInMaps(m,"request","Content-Type",cgiContentType);
+#ifdef DRU_ENABLED
 	json_object *jobj = convertCwlToOGCAppPkg(m,request_inputs);
+#else
+	json_object *jobj = NULL;
+#endif
 	if(jobj==NULL){
 	  const char *mystring = NULL;
 	  int slen = 0;
@@ -3759,18 +3766,24 @@ runRequest (map ** inputs)
 
 	  json_tokener_free(tok);
 	}
+#ifdef DRU_ENABLED
 	convertOGCAppPkgToExecute(m,request_inputs,&jobj);
+#endif
 	json_object* json_io=NULL;
 	char* cIdentifier=NULL;
 	if(json_object_object_get_ex(jobj,"id",&json_io)!=FALSE){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
-	} else if(strstr(pcaCgiQueryString,"/processes/")!=NULL && strlen(pcaCgiQueryString)>11){
-	    cIdentifier=zStrdup(strstr(pcaCgiQueryString,"/processes/")+11);
-	    if(strstr(cIdentifier,"execution")!=NULL)
-	      cIdentifier[strlen(cIdentifier)-10]=0;
-	} else if( deployServiceProvider!=NULL ) {
+	}
+	else if(strstr(pcaCgiQueryString,"/processes/")!=NULL && strlen(pcaCgiQueryString)>11){
+	  cIdentifier=zStrdup(strstr(pcaCgiQueryString,"/processes/")+11);
+	  if(strstr(cIdentifier,"execution")!=NULL)
+	    cIdentifier[strlen(cIdentifier)-10]=0;
+	}
+#ifdef DRU_ENABLED
+	else if( deployServiceProvider!=NULL ) {
           cIdentifier = deployServiceProvider->value;
 	}
+#endif
 	if(cIdentifier!=NULL)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
 	if(fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,localPrintExceptionJ)!=0){
@@ -4062,6 +4075,7 @@ runRequest (map ** inputs)
 	    res=NULL;
 	  }
 
+#ifdef DRU_ENABLED
 	  // Fetch infromations from main.cfg again after execution
 	  deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
 	  undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
@@ -4102,13 +4116,17 @@ runRequest (map ** inputs)
 	      return 1;
 	    }
 	    else
+#endif
 	      res=printJResult(m,s1,request_output_real_format,eres);
+#ifdef DRU_ENABLED
 	  }
 	  if(getMapFromMaps(m,"openapi","ensure_storing_result_every_execute")!=NULL)
 	    setMapInMaps(m,"lenv","output_response","true");
+#endif
 	}
 	freeService (&s1);
 	free(s1);
+#ifdef DRU_ENABLED
 	if(deployServiceProvider!=NULL && undeployServiceProvider!=NULL){
 	  //map* pmTmp=getMapFromMaps(m,"lenv","Identifier");
 	  map* pmTmp=getMap(request_inputs,"Identifier");
@@ -4261,6 +4279,7 @@ runRequest (map ** inputs)
 	    }
 	  }
 	}
+#endif
       }//else error
       else
 	if(strstr(pcaCgiQueryString,"/jobs")==NULL && strstr(pcaCgiQueryString,"/jobs/")==NULL
