@@ -40,6 +40,7 @@ def securityIn(conf,inputs,outputs):
     for i in conf["renv"]:
         if i.count("SERVICES_NAMESPACE"):
             rPath+=conf["renv"][i]
+            conf["auth_env"]={"user": conf["renv"][i]}
             break
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)

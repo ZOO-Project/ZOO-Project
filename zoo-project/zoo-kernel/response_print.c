@@ -2568,6 +2568,9 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
 	if(aapccStatusCodes[iI][iJ]==NULL)
 	  break;
 	else{
+	  ZOO_DEBUG(aapccStatusCodes[iI][iJ]);
+	  dumpMap(pmCode);
+	  ZOO_DEBUG(aapccStatusCodes[iI][iJ]);
 	  if(strcmp(aapccStatusCodes[iI][iJ],pmCode->value)==0)
 	    return aapccStatusCodes[iI][0];
 	}
@@ -2577,6 +2580,7 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
   else{
     return aapccStatusCodes[3][0];
   }
+  return aapccStatusCodes[3][0];
 }
 
 /**

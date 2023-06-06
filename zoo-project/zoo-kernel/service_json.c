@@ -3256,16 +3256,16 @@ extern "C" {
 	       (strncasecmp(cMap->value,"post",4)==0
 		||
 		strncasecmp(cMap->value,"put",3)==0)){
-	      int len=1;
+	      int iLen=1;
 	      map* pmRequestBodyLength=getMapArray(tmpMaps->content,"requestBody_length",i);
 	      if(pmRequestBodyLength!=NULL)
-		len=atoi(pmRequestBodyLength->value);
+		iLen=atoi(pmRequestBodyLength->value);
 	      char* pcaKey0=getMapArrayKey(tmpMaps->content,"requestBody",i);
 	      int iCnt=0;
 	      int iCounter=0;
 	      json_object *cc1=NULL;
 	      json_object *cc2=NULL;
-	      for(;iCounter<len;iCounter++){
+	      for(;iCounter<iLen;iCounter++){
 		map* pmRequestBodyName=getMapArray(tmpMaps->content,pcaKey0,iCounter);
 		maps* tmpMaps1=getMaps(conf,(pmRequestBodyName==NULL?"requestBody":pmRequestBodyName->value));
 		if(tmpMaps1!=NULL){
@@ -3273,11 +3273,16 @@ extern "C" {
 		  if(vMap!=NULL){
 		    int iIsRef=-1;
 		    json_object *cc=json_object_new_object();
-		    json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
+		    if(strcasecmp(vMap->value,"string")!=0)
+		      json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
+		    else
+		      json_object_object_add(cc,"type",json_object_new_string(vMap->value));
 		    json_object *cc0=json_object_new_object();
 		    json_object_object_add(cc0,"schema",cc);
 		    // Add examples from here
 		    char* pcaKey1=getMapArrayKey(tmpMaps->content,"examples",i);
+		    char actmp0[10];
+		    sprintf(actmp0,"%d",iCounter);
 		    map* pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
 		    if(pmExample==NULL){
 		      free(pcaKey1);
@@ -3285,7 +3290,7 @@ extern "C" {
 		      pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
 		      iIsRef=1;
 		    }
-		    if(pmExample!=NULL){
+		    if(pmExample!=NULL) {
 		      char* saveptr;
 		      map* pmExamplesPath=getMapFromMaps(conf,"openapi","examplesPath");
 		      json_object* prop5=json_object_new_object();
@@ -3318,8 +3323,31 @@ extern "C" {
 			free(pcaKey2);
 			json_object_object_add(pjoExempleItem,"summary",json_object_new_string(pcaTmp));
 			if(iIsRef<0){
-			  json_object* pjoValue=json_readFile(conf,pcaExempleFile);
-			  json_object_object_add(pjoExempleItem,"value",pjoValue);
+			  // Apply filter by Content-Type
+			  if(strstr(pcaExempleFile,"cwl")==NULL){
+			    json_object* pjoValue=json_readFile(conf,pcaExempleFile);
+			    json_object_object_add(pjoExempleItem,"value",pjoValue);
+			  }else{
+			    // Read the cwl and insert it as example item
+			    zStatStruct zssStatus;
+			    int iStat=zStat(pcaExempleFile, &zssStatus);
+			    if(iStat==0){
+			      char* pcaFcontent = NULL;
+			      long long llFsize=0;
+			      FILE* f=fopen(pcaExempleFile,"rb");
+			      if(f!=NULL){
+				pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
+				fread(pcaFcontent,zssStatus.st_size,1,f);
+				pcaFcontent[zssStatus.st_size]=0;
+				fclose(f);
+				char* pcaCurrentValue=(char*)malloc((zssStatus.st_size+4)*sizeof(char));
+				sprintf(pcaCurrentValue,"|-\n%s",pcaFcontent);
+				json_object_object_add(pjoExempleItem,"value",json_object_new_string(pcaFcontent));
+				free(pcaFcontent);
+				free(pcaCurrentValue);
+			      }
+			    }
+			  }
 			}else{
 			  json_object_object_add(pjoExempleItem,"externalValue",json_object_new_string(tmps));
 			}
@@ -3339,7 +3367,7 @@ extern "C" {
 		      json_object_object_add(cc1,"application/json",cc0);
 		    if(iCounter==0)
 		      cc2=json_object_new_object();
-		    if(iCounter+1==len){
+		    if(iCounter+1==iLen){
 		      json_object_object_add(cc2,"content",cc1);
 		      vMap=getMap(tmpMaps1->content,"abstract");
 		      if(vMap!=NULL)

@@ -395,10 +395,17 @@ void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
   }else{
     if(*pcaClauseFinal!=NULL){
       char* pcaTmp=zStrdup(*pcaClauseFinal);
-      *pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
-				    (strlen(pcaTmp)+strlen(pcaClauseDate)+15)*sizeof(char));
-      sprintf(*pcaClauseFinal,"%s AND user_id=0",
-	      pcaTmp,pcaClauseDate);
+      if(pcaClauseDate!=NULL){
+	*pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
+				       (strlen(pcaTmp)+strlen(pcaClauseDate)+15)*sizeof(char));
+	sprintf(*pcaClauseFinal,"%s AND %s AND user_id=0",
+		pcaTmp,pcaClauseDate);
+      }else{
+	*pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
+				       (strlen(pcaTmp)+15)*sizeof(char));
+	sprintf(*pcaClauseFinal,"%s AND user_id=0",
+		pcaTmp);
+      }
       free(pcaTmp);
     }else{
       *pcaClauseFinal=(char*)malloc(10*sizeof(char));

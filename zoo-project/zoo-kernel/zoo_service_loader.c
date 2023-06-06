@@ -2190,53 +2190,6 @@ int ensureFiltered(maps** pmsConf,const char* pcType){
   return 0;
 }
 
-/**
- * Set the security flag for the current request.
- * Set [lenv] secured_url to true in case the access should be secured,
- * false in other cases.
- *
- * @param pmsConf the maps pointing to the main.cfg file content
- * @param pcCgiQueryString the string containing the request
- */
-void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
-  maps* pmsCurrentPath=getMaps(pmsConf,(strlen(pcCgiQueryString)>1?(pcCgiQueryString+1):"root"));
-  int isSet=-1;
-  if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"execution")!=NULL)
-    pmsCurrentPath=getMaps(pmsConf,"processes/{processId}/execution");
-  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"processes/")!=NULL)
-    pmsCurrentPath=getMaps(pmsConf,"processes/{processId}");
-  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"results")!=NULL)
-    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobID}/results");
-  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"jobs/")!=NULL)
-    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobID}");
-  if(pmsCurrentPath!=NULL){
-    map* pmLength=getMap(pmsCurrentPath->content,"length");
-    int iLength=1;
-    int iCnt=0;
-    if(pmLength!=NULL)
-      iLength=atoi(pmLength->value);
-    for(;iCnt<iLength;iCnt++){
-      map* pmCurrentElement=getMapArray(pmsCurrentPath->content,"method",iCnt);
-      if(pmCurrentElement!=NULL && strcasecmp(pmCurrentElement->value,cgiRequestMethod)==0){
-	map* pmSecured=getMapArray(pmsCurrentPath->content,"secured",iCnt);
-	if(pmSecured!=NULL)
-	  setMapInMaps(pmsConf,"lenv","secured_url","true");
-	else
-	  setMapInMaps(pmsConf,"lenv","secured_url","false");
-	return;
-      }
-    }
-  }
-  if(isSet==-1)
-    setMapInMaps(pmsConf,"lenv","secured_url","false");
-}
-
-void localPrintExceptionJ(maps* pmsConf,map* pmError){
-  ensureFiltered(&pmsConf,"out");
-  printExceptionReportResponseJ(pmsConf,pmError);
-}
-
-
 
 #ifdef WIN32
 /**
@@ -4123,6 +4076,10 @@ runRequest (map ** inputs)
 	    if( (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)!=0)
 		||
 		(undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ){
+	      // TODO: use the correct type
+	      // http://www.opengis.net/def/exceptions/ogcapi-processes-2/1.0/duplicated-process
+	      // And correct response code (409 Conflict)
+	      setMapInMaps(m,"headers","Status","409 Conflict");
 	      map* pmError=createMap("code","DuplicateProcess");
 	      addToMap(pmError,"message",_("The process is already deployed."));
 	      localPrintExceptionJ(m,pmError);
@@ -4183,7 +4140,7 @@ runRequest (map ** inputs)
 	      char newPath[1024];
 	      getServicesNamespacePath(m,ntmp,newPath,1024);
 	      char* pcaFileName=(char*)malloc((strlen(newPath)+strlen(pmDeployed->value)+7)*sizeof(char));
-	      map* pmContentType=getMapFromMaps(m,"lenv","Content-Type");
+	      map* pmContentType=getMapFromMaps(m,"request","Content-Type");
 	      if(pmContentType!=NULL && strstr(pmContentType->value,"json")!=NULL)
 		sprintf(pcaFileName,"%s/%s.json",newPath,pmDeployed->value);
 	      else
@@ -4371,13 +4328,6 @@ runRequest (map ** inputs)
       }
       const char* jsonStr=
 	json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
-      printf(jsonStr);
-      printf("\n");
-      fflush(stdout);
-      if(getMapFromMaps(m,"lenv","output_response")!=NULL){
-	createStatusFile(m,eres);
-      }
-    }
 
       if(getMapFromMaps(m,"lenv","output_response")!=NULL) {
 	map* pmTmpPath=getMapFromMaps(m,"main","tmpPath");
@@ -4439,8 +4389,6 @@ runRequest (map ** inputs)
 	  free(pcaPath);
 	  free(pcaLink);
 	}
-      }
-
       }
       printf(jsonStr);
       printf("\n");

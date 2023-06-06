@@ -41,7 +41,7 @@
 #include "service_internal_hpc.h"
 #endif
 #define META_SERVICES_LIST_ALL \
-  "select id,identifier,title,abstract,service_type,service_provider,conf_id,mutable"\
+  "select id,identifier,title,abstract,service_type,service_provider,conf_id,mutable,user_id"\
   " from ows_process"
 #define META_SERVICES_LIST_ALL_LENGTH strlen(META_SERVICES_LIST_ALL)
 
@@ -375,8 +375,13 @@ elements* extractOutput(int iDbId,maps* conf,OGRFeature *output){
 service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
   OGRFeature  *poFeature = NULL;
   int iDbId=getCurrentId(conf);
-  char* tmpQuery=(char*)malloc((META_SERVICES_LIST_ALL_LENGTH+strlen(serviceName)+21)*sizeof(char));
-  sprintf(tmpQuery,"%s WHERE identifier='%s'",META_SERVICES_LIST_ALL,serviceName);
+  char* pcaClause=(char*)malloc((strlen(serviceName)+14)*sizeof(char));
+  char* pcEmpty=NULL;
+  sprintf(pcaClause,"identifier='%s'",serviceName);
+  filterJobByUser(conf,&pcaClause,pcEmpty);
+  char* tmpQuery=(char*)malloc((META_SERVICES_LIST_ALL_LENGTH+strlen(pcaClause)+21)*sizeof(char));
+  sprintf(tmpQuery,"%s WHERE %s",META_SERVICES_LIST_ALL,pcaClause);
+  free(pcaClause);
   maps* pmsTmp=getMaps(conf,"sqlenv");
   int iLen=0;
   if(getMapFromMaps(conf,"sqlenv","lastQuery")!=NULL){
@@ -403,6 +408,7 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       addToMap(s->content,"serviceProvider",poFeature->GetFieldAsString( 5 ));
       addToMap(s->content,"confId",poFeature->GetFieldAsString( 6 ));
       addToMap(s->content,"mutable",poFeature->GetFieldAsString( 7 ));
+      addToMap(s->content,"user_id",poFeature->GetFieldAsString( 8 ));
       addToMap(s->content,"fromDb","true");
       s->metadata=NULL;
       fillMetadata(iDbId,conf,&s->metadata,poFeature->GetFieldAsString( 0 ));
@@ -477,10 +483,18 @@ int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
   xmlDocPtr doc=(xmlDocPtr) doc0;
   xmlNodePtr n=(xmlNodePtr) n0;
   int iDbId=_init_sql(conf,"metadb");
-  if(getMapFromMaps(conf,"lenv","dbIssue")!=NULL || result < 0)
+  if(getMapFromMaps(conf,"lenv","dbIssue")!=NULL || result < 0){
+    map* pmTmp=getMapFromMaps(conf,"lenv","dbIssue");
     return -1;
+  }
   // Fetch every services
-  OGRLayer *res=fetchSql(conf,iDbId-1,META_SERVICES_LIST_ALL);
+  char* pcaClause=NULL;
+  char* pcEmpty=NULL;
+  filterJobByUser(conf,&pcaClause,pcEmpty);
+  char* pcaQuery=(char*)malloc((META_SERVICES_LIST_ALL_LENGTH+strlen(pcaClause)+21)*sizeof(char));
+  sprintf(pcaQuery,"%s WHERE %s",META_SERVICES_LIST_ALL,pcaClause);
+  OGRLayer *res=fetchSql(conf,iDbId-1,pcaQuery);
+  free(pcaQuery);
   if(res!=NULL){
     OGRFeature  *poFeature = NULL;
     const char *tmp1;
@@ -502,7 +516,7 @@ int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
     cleanFetchSql(conf,iDbId-1,res);
   }
   close_sql(conf,iDbId-1);
-  return result-1;
+  return result;
 }
 
 #endif
