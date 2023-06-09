@@ -1,0 +1,34 @@
+[UndeployProcess]
+	Title = Undeploy Process
+	Abstract = This method will undeploy a deployed processing service.
+	processVersion = 1.0.0
+	storeSupported = true
+	statusSupported = true
+	serviceType = Python
+	serviceProvider = UndeployProcess
+	mutable = false
+<DataInputs>
+	[applicationPackage]
+	Title = Service Identifier
+	Abstract = Id of the service to remove 
+	minOccurs = 1
+	maxOccurs = 1
+	<LiteralData>
+		DataType = string
+	</LiteralData>
+ </DataInputs>
+
+<DataOutputs>
+	[Result]
+	Title = UnDeploy Result
+	Abstract = The server's response to undeploying a process. A successful response will contain a summary of the removed process.
+   <ComplexData>
+    mimeType = application/json
+	encoding = UTF-8
+   </ComplexData>
+</DataOutputs>
+
+
+
+
+
