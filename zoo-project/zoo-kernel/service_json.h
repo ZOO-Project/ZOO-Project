@@ -152,6 +152,7 @@ extern "C" {
   void handleDRUError(maps*);
   int convertOGCAppPkgToExecute(maps*,map*,json_object**);
   json_object* convertCwlToOGCAppPkg(maps*,map*);
+  bool serviceIsDRU(maps*,char*);
 #endif
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);
 #ifdef __cplusplus

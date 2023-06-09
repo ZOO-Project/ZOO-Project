@@ -612,8 +612,6 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 			 tmps1);
 #endif
 		t = readServiceFile (m, tmps1, &s1, tmpsn);
-		free (tmpsn);
-		tmpsn=NULL;
 		if (t < 0)
 		  {
 		    map *tmp00 = getMapFromMaps (m, "lenv", "message");
@@ -633,6 +631,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		    errorException (m, tmp01, "InternalError", NULL);
 		    freeService (&s1);
 		    free (s1);
+		    free (tmpsn);
 		    return -1;
 		  }
 #ifdef DEBUG
@@ -647,8 +646,26 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		free (s1);
 	      }
               scount++;
-	      updateCnt(m,"serviceCnt","incr");
-	      updateCnt(m,"serviceCounter","incr");
+#ifdef DRU_ENABLED
+	      bool bIsDeployUndeployService=serviceIsDRU(m,tmpsn);
+	      /*
+	      map* pmDeployService=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
+	      if(pmDeployService!=NULL && strstr(pmDeployService->value,tmpsn)!=NULL)
+		bIsDeployUndeployService=true;
+	      else{
+		pmDeployService=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
+		if(pmDeployService!=NULL && strstr(pmDeployService->value,tmpsn)!=NULL)
+		  bIsDeployUndeployService=true;
+		  }*/
+	      free (tmpsn);
+	      tmpsn=NULL;
+	      if(!bIsDeployUndeployService){
+#endif
+		updateCnt(m,"serviceCnt","incr");
+		updateCnt(m,"serviceCounter","incr");
+#ifdef DRU_ENABLED
+	      }
+#endif
 	      if(compareCnt(m,"serviceCntLimit","equal")){
 		// In case we are willing to count the number of services, we
 		// can still continue and not return any value bellow

@@ -816,7 +816,10 @@ extern "C" {
       res=json_object_new_object();
     else
       res=(json_object*) nc0;
-      
+#ifdef DRU_ENABLED
+    if(serviceIsDRU(m,serv->name))
+      return;
+#endif
     map* tmpMap0=getMapFromMaps(m,"lenv","level");
     char* rUrl=serv->name;
     if(tmpMap0!=NULL && atoi(tmpMap0->value)>0){
@@ -3572,6 +3575,27 @@ extern "C" {
       json_object_put(pjRes);
     }
     return 0;
+  }
+
+  /**
+   * Verify that a service name correspond to the Deploy or Undeploy service
+   * name
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pcService the service name
+   * @return true if the service name correspond to deploy or undeploy, 
+   * false otherwise
+   */
+  bool serviceIsDRU(maps* pmsConf,char* pcService){
+    map* pmDeployService=getMapFromMaps(pmsConf,"servicesNamespace","deploy_service_provider");
+    if(pmDeployService!=NULL && strstr(pmDeployService->value,pcService)!=NULL)
+      return true;
+    else{
+      pmDeployService=getMapFromMaps(pmsConf,"servicesNamespace","undeploy_service_provider");
+      if(pmDeployService!=NULL && strstr(pmDeployService->value,pcService)!=NULL)
+	return true;
+    }
+    return false;
   }
 
   /**
