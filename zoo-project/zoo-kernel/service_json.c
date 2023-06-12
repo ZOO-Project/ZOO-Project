@@ -1001,7 +1001,7 @@ extern "C" {
       json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       int hasType=-1;
-      for(i=0;i<4;i++){
+      for(i=0;i<5;i++){
 	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
 	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
 	  char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
@@ -1042,8 +1042,9 @@ extern "C" {
    */
   void printExceptionReportResponseJ(maps* m,map* s){
     map* pmHasprinted=getMapFromMaps(m,"lenv","hasExceptionPrinted");
-    if(pmHasprinted!=NULL && strncasecmp(pmHasprinted->value,"true",4)==0)
+    if(pmHasprinted!=NULL && strncasecmp(pmHasprinted->value,"true",4)==0){
       return;
+    }
     pmHasprinted=getMapFromMaps(m,"lenv","hasPrinted");
     int buffersize;
     //json_object *res=json_object_new_object();
@@ -1085,11 +1086,9 @@ extern "C" {
 	}
       }
     }
-    
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
     if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
       setMapInMaps(m,"lenv","jsonStr",jsonStr);
-
     if(pmHasprinted==NULL || strncasecmp(pmHasprinted->value,"false",5)==0){
       printf(jsonStr);
       if(m!=NULL){

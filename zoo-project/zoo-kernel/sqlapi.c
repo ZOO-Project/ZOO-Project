@@ -412,7 +412,6 @@ void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
       sprintf(*pcaClauseFinal,"user_id=0");
     }
   }
-  ZOO_DEBUG(*pcaClauseFinal);
 }
 
 /**

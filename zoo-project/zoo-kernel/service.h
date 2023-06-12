@@ -419,7 +419,7 @@ extern "C" {
 	"NoSuchJob",
 	"ResultNotReady",
 	"InvalidQueryParameterValue",
-	"DuplicateProcess"
+	"DuplicatedProcess"
   };
 
   /**

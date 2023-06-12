@@ -367,12 +367,9 @@ char* isInCache(maps* conf,char* request){
     char* tmpStr1=zStrdup(tmpStr+strlen(tmpUrl->value));
     char* res=(char*) malloc((strlen(tmpPath->value)+strlen(tmpStr1)+2)*sizeof(char));
     sprintf(res,"%s/%s",tmpPath->value,tmpStr1);
-    ZOO_DEBUG("isInCache");
     free(tmpStr1);
-    ZOO_DEBUG("isInCache");
     return res;
   }
-  ZOO_DEBUG("isInCache");
 #ifdef MS_FORCE_LOCAL_FILE_USE
   map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
   if(msUrl!=NULL && strstr(request,msUrl->value)!=NULL){
@@ -410,30 +407,22 @@ char* isInCache(maps* conf,char* request){
   }
   else{
     char* myRequest=getFilenameForRequest(conf,request);
-    ZOO_DEBUG("isInCache");
     char* md5str=getMd5(myRequest);
-    ZOO_DEBUG("isInCache");
     free(myRequest);
 #ifdef DEBUG
     fprintf(stderr,"MD5STR : (%s)\n\n",md5str);
 #endif
-    ZOO_DEBUG("isInCache");
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmpM->value)+strlen(md5str)+6));
     sprintf(fname,"%s/%s.zca",tmpM->value,md5str);
-    ZOO_DEBUG("isInCache");
     zStatStruct f_status;
     int s=zStat(fname, &f_status);
     if(s==0 && f_status.st_size>0){
-    ZOO_DEBUG("isInCache");
       free(md5str);
       return fname;
     }
-    ZOO_DEBUG("isInCache");
     free(md5str);
-    ZOO_DEBUG("isInCache");
     free(fname);
   }
-    ZOO_DEBUG("isInCache");
   return NULL;
 }
 

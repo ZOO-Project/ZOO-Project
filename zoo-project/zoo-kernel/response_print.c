@@ -2568,9 +2568,6 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
 	if(aapccStatusCodes[iI][iJ]==NULL)
 	  break;
 	else{
-	  ZOO_DEBUG(aapccStatusCodes[iI][iJ]);
-	  dumpMap(pmCode);
-	  ZOO_DEBUG(aapccStatusCodes[iI][iJ]);
 	  if(strcmp(aapccStatusCodes[iI][iJ],pmCode->value)==0)
 	    return aapccStatusCodes[iI][0];
 	}
@@ -2744,15 +2741,12 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
  * @see printExceptionReportResponseJ,ensureFiltered
  */
 void localPrintException(maps* pmsConf,map* pmError){
-  ZOO_DEBUG("ensureFiltered");
   ensureFiltered(&pmsConf,"out");
-  ZOO_DEBUG("ensureFiltered end");
   map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
   if(pmExecutionType!=NULL && strcasecmp(pmExecutionType->value,"json")==0)
     printExceptionReportResponseJ(pmsConf,pmError);
   else
     printExceptionReportResponse(pmsConf,pmError);
-  ZOO_DEBUG("printError end");
 }
 
 /**
@@ -2767,7 +2761,6 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
 {
   map* pmExectionType=getMapFromMaps(m,"main","executionType");
   map* errormap = createMap("text", message);
-  ZOO_DEBUG("Invoke localPrintException");
   addToMap(errormap,"code", errorcode);
   if(locator!=NULL)
     addToMap(errormap,"locator", locator);
@@ -2779,7 +2772,6 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
     localPrintException(m,errormap);
     setMapInMaps(m,"lenv","no-headers","true");
   }
-  ZOO_DEBUG("Invoke localPrintException end");
   freeMap(&errormap);
   free(errormap);
   return -1;

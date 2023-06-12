@@ -30,7 +30,9 @@ def securityIn(conf,inputs,outputs):
     for i in conf["renv"]:
         if i.count("SERVICES_NAMESPACE"):
             rPath+=conf["renv"][i]
-            conf["auth_env"]={"user": conf["renv"][i]}
+            conf["auth_env"]={"user": conf["renv"][i],"cwd": rPath}
+            conf["lenv"]["fpm_user"]=conf["renv"][i]
+            conf["lenv"]["fpm_cwd"]=rPath
             break
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)
@@ -43,3 +45,4 @@ def securityOut(conf,inputs,outputs):
     import sys
     print("securityOut!",file=sys.stderr)
     return zoo.SERVICE_SUCCEEDED
+

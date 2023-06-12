@@ -432,7 +432,6 @@ int addServicesNamespaceToMap(maps* conf){
 			    closedir(dir);
 			  } else {
                             map* error=createMap("code","BadRequest");
-			    ZOO_DEBUG("BadRequest");
                             addToMap(error,"message",_("The resource is not available"));
                             printExceptionReportResponseJ(conf,error);
                             ret = 1;
@@ -601,7 +600,6 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		service *s1 = createService();
 		if (s1 == NULL)
 		  {
-		    ZOO_DEBUG("zDup2");
 		    zDup2 (saved_stdout, fileno (stdout));
 		    errorException (m, _("Unable to allocate memory"),
 				    "InternalError", NULL);
@@ -624,9 +622,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 			       dp->d_name);
 		    fflush(stderr);
 		    fflush(stdout);
-		    ZOO_DEBUG("zDup2");
 		    zDup2 (saved_stdout, fileno (stdout));
-		    ZOO_DEBUG("zClose");
 		    zClose(saved_stdout);
 		    errorException (m, tmp01, "InternalError", NULL);
 		    freeService (&s1);
@@ -648,15 +644,6 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
               scount++;
 #ifdef DRU_ENABLED
 	      bool bIsDeployUndeployService=serviceIsDRU(m,tmpsn);
-	      /*
-	      map* pmDeployService=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
-	      if(pmDeployService!=NULL && strstr(pmDeployService->value,tmpsn)!=NULL)
-		bIsDeployUndeployService=true;
-	      else{
-		pmDeployService=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
-		if(pmDeployService!=NULL && strstr(pmDeployService->value,tmpsn)!=NULL)
-		  bIsDeployUndeployService=true;
-		  }*/
 	      free (tmpsn);
 	      tmpsn=NULL;
 	      if(!bIsDeployUndeployService){
@@ -833,13 +820,9 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 		    "InternalError", NULL);*/
       }
 
-    ZOO_DEBUG("zDup");
     int saved_stdout = zDup (fileno (stdout));
-    ZOO_DEBUG("zDup2");
     zDup2 (fileno (stderr), fileno (stdout));
-    ZOO_DEBUG("zDup2 end");
     int t = readServiceFile (m, tmps1, spService, cIdentifier);
-    ZOO_DEBUG("ReadServiceFile");
     if(t>=0){
       inheritance(zooRegistry,spService);
 #ifdef USE_HPC
@@ -850,15 +833,10 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
       freeRegistry(&zooRegistry);
       free(zooRegistry);
     }
-    ZOO_DEBUG("ReadServiceFile");
     fflush(stderr);
-    ZOO_DEBUG("ReadServiceFile");
     fflush (stdout);
-    ZOO_DEBUG("zDup2");
     zDup2 (saved_stdout, fileno (stdout));
-    ZOO_DEBUG("zClose");
     zClose (saved_stdout);
-    ZOO_DEBUG("ReadServiceFile");
     if (t < 0)
       {
 	r_inputs = getMapFromMaps (m, "lenv", "oIdentifier");
@@ -916,7 +894,6 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 				void (funcError) (maps*, map*) ){
   char *orig = zStrdup (r_inputs);
   service* s1=NULL;
-  ZOO_DEBUG("zDup");
   int saved_stdout = zDup (fileno (stdout));
   int t;
   int scount = 0;
@@ -926,7 +903,6 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
   getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
 
 
-  ZOO_DEBUG("zDup2");
   zDup2 (fileno (stderr), fileno (stdout));  
   if (strcasecmp ("all", orig) == 0)
     {
@@ -957,9 +933,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
       if (int res =
 	  recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
 			  func) < 0){
-	ZOO_DEBUG("zDup2");
 	zDup2 (saved_stdout, fileno (stdout));
-	ZOO_DEBUG("zDup2");
 	return res;
       }
 #ifdef META_DB
@@ -995,7 +969,6 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 
 		if (t < 0) // failure reading zcfg
 		  {
-		    ZOO_DEBUG("zDup2");
 		    zDup2 (saved_stdout, fileno (stdout));
 #ifdef META_DB
 		    close_sql(m,metadb_id-1);
@@ -1043,7 +1016,6 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      t = readServiceFile (m, buff1, &s1, tmpMapI->value);
 	      if (t < 0)
 		{
-		  ZOO_DEBUG("zDup2");
 		  zDup2 (saved_stdout, fileno (stdout));
 		  exitAndCleanUp(zooRegistry, m,
 				 tmps,"InvalidParameterValue","identifier",
@@ -1111,9 +1083,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			  {
 			    fflush (stdout);
 			    fflush (stderr);
-			    ZOO_DEBUG("zDup2");
 			    zDup2 (saved_stdout, fileno (stdout));
-			    ZOO_DEBUG("zClose");
 			    zClose(saved_stdout);
 			    map* errormap = createMap("text", _("Unable to allocate memory"));
 			    addToMap(errormap,"code", "InternalError");
@@ -1138,9 +1108,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			  {
 			    fflush (stdout);
 			    fflush (stderr);
-			    ZOO_DEBUG("zDup2");
 			    zDup2 (saved_stdout, fileno (stdout));
-			    ZOO_DEBUG("zClose");
 			    zClose(saved_stdout);
 			    exitAndCleanUp(zooRegistry, m,
 					   buff,"InternalError","NULL",
@@ -1173,9 +1141,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	    {
 	      fflush (stdout);
 	      fflush (stderr);
-	      ZOO_DEBUG("zDup2");
 	      zDup2 (saved_stdout, fileno (stdout));
-	      ZOO_DEBUG("zClose");
 	      zClose(saved_stdout);
 	      exitAndCleanUp(zooRegistry, m,
 			     buff,"InvalidParameterValue","Identifier",
@@ -1196,9 +1162,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
     }
   fflush (stdout);
   fflush (stderr);
-  ZOO_DEBUG("zDup2");
   zDup2 (saved_stdout, fileno (stdout));
-  ZOO_DEBUG("zClose");
   zClose(saved_stdout);
   free (orig);
   return 0;
@@ -1429,17 +1393,13 @@ void initAllEnvironment(maps* conf,map* request_inputs,
 	  int istat = stat (session_file_path, &file_status);
 	  if (istat == 0 && file_status.st_size > 0)
 	    {
-	      ZOO_DEBUG("zDup");
 	      int saved_stdout = zDup (fileno (stdout));
-	      ZOO_DEBUG("zDup2");
 	      zDup2 (fileno (stderr), fileno (stdout));
 	      conf_read (session_file_path, tmpSess);
 	      addMapsToMaps (&conf, tmpSess);
 	      freeMaps (&tmpSess);
 	      fflush(stdout);
-	      ZOO_DEBUG("zDup2");
 	      zDup2 (saved_stdout, fileno (stdout));
-	      ZOO_DEBUG("zClose");
 	      zClose(saved_stdout);
 	    }
 	  free (tmpSess);
@@ -1878,7 +1838,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
             {
 #ifdef DEBUG
 #ifdef WIN32
-			  errstr = getLastErrorMessage();
+	      errstr = getLastErrorMessage();
               fprintf (stderr, "Function %s failed to load because of %s\n",
                        r_inputs->value, errstr);
 #endif
@@ -1898,7 +1858,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               if (execute == NULL)
                 {
 #ifdef WIN32
-				  errstr = getLastErrorMessage();
+		  errstr = getLastErrorMessage();
 #else
                   errstr = dlerror ();
 #endif
@@ -1920,7 +1880,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 
 #ifdef DEBUG
 #ifdef WIN32
-			  errstr = getLastErrorMessage();
+	      errstr = getLastErrorMessage();
 #else
               errstr = dlerror ();
 #endif
@@ -1953,9 +1913,9 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
        */
           char tmps[1024];
 #ifdef WIN32
-		  errstr = getLastErrorMessage();
+	  errstr = getLastErrorMessage();
 #else
-	      errstr = dlerror ();
+	  errstr = dlerror ();
 #endif
           sprintf (tmps, _("Unable to load C Library %s"), errstr);
 	  errorException(m,tmps,"InternalError",NULL);
@@ -2191,10 +2151,11 @@ int ensureFiltered(maps** pmsConf,const char* pcType){
       loadServiceAndRun (pmsConf, psaService, NULL,
 			 &pmsInputs,
 			 &pmsOutputs, &eres);
-      ZOO_DEBUG("loadServiceAndRun end");
       freeService(&psaService);
       free(psaService);
       psaService=NULL;
+      fprintf(stderr,"eres: %d\n",eres);
+      fflush(stderr);
       if(eres!=SERVICE_SUCCEEDED){
 	setMapInMaps(*pmsConf,"lenv",pcaName,"true");
 	free(pcaName);
@@ -2630,16 +2591,13 @@ runRequest (map ** inputs)
   registry* zooRegistry=NULL;
   if(reg!=NULL){
 #ifndef WIN32
-    ZOO_DEBUG("zDup");
     int saved_stdout = zDup (fileno (stdout));
-    ZOO_DEBUG("zDup2");
     zDup2 (fileno (stderr), fileno (stdout));
 #endif
     if(createRegistry (m,&zooRegistry,reg->value)<0){
       map *message=getMapFromMaps(m,"lenv","message");
       map *type=getMapFromMaps(m,"lenv","type");
 #ifndef WIN32
-      ZOO_DEBUG("zDup2");
       zDup2 (saved_stdout, fileno (stdout));
 #endif
       errorException (m, message->value,
@@ -2647,9 +2605,7 @@ runRequest (map ** inputs)
       return 0;
     }
 #ifndef WIN32
-    ZOO_DEBUG("zDup2");
     zDup2 (saved_stdout, fileno (stdout));
-    ZOO_DEBUG("zClose");
     zClose(saved_stdout);
 #endif
   }
@@ -2738,12 +2694,18 @@ runRequest (map ** inputs)
     free(m1);
     initAllEnvironment(m,request_inputs,ntmp,"jrequest");
     setSecurityFlags(m,pcaCgiQueryString);
-    ZOO_DEBUG("ensureFiltered");
     // In case security is activated, then execute the security module
     if(ensureFiltered(&m,"in")!=0){
       maps* pmsTmp=getMaps(m,"lenv");
-      localPrintExceptionJ(m,pmsTmp->content);
-      // TODO: cleanup memory
+      map *pmError=NULL;
+      if(pmsTmp!=NULL){
+	addMapToMap(&pmError,pmsTmp->content);
+      }
+      if(pmError!=NULL)
+	localPrintExceptionJ(m,pmError);
+      else
+	localPrintExceptionJ(m,pmsTmp->content);
+      // Cleanup memory
       freeMaps(&m);
       free(m);
       free (REQUEST);
@@ -2759,36 +2721,29 @@ runRequest (map ** inputs)
       free(pcaCgiQueryString);
       return 1;
     }
-    ZOO_DEBUG("ensureFiltered end");
 
 
     int i = addServicesNamespaceToMap(m);
     if(i) {
       map* error=createMap("code","BadRequest");
-      ZOO_DEBUG("BadRequest");
       addToMap(error,"message",_("The resource is not available"));
       localPrintExceptionJ(m,error);
       //printExceptionReportResponseJ(m,error);
       setMapInMaps(m,"lenv","status_code","404 Bad Request");
       return 1;
     }
-    ZOO_DEBUG("AddServiceNamespace end");
 
 
+    setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
 #ifdef DRU_ENABLED
     // Routes to OGC API - Processes - Part 2: Deploy, Replace, Undeploy
     // retrieves the deploy service provider from main.cfg
     map* deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
     map* undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
-#endif
-    setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
-#ifdef DRU_ENABLED
     //Change REQUEST_TYPE in case of Deploy/Undeploy of a Process
     if(strncasecmp(cgiRequestMethod,"DELETE",6)==0
        && strstr(cgiQueryString,"/processes/")!=NULL){
-      ZOO_DEBUG("DELETE /processes/");
       if(undeployServiceProvider==NULL){
-	ZOO_DEBUG("No undeploy!");
 	setMapInMaps(m,"lenv","status_code","501");
 	map* error=createMap("code","NotImplemented");
 	addToMap(error,"message",_("The request method used to access the current path is not supported (no service available to undeploy)."));
@@ -2805,7 +2760,6 @@ runRequest (map ** inputs)
 	free(pcaCgiQueryString);
 	return 1;
       }
-      ZOO_DEBUG("Ok undeploy service available!");
       free(pcaCgiQueryString);
       pcaCgiQueryString=(char*)malloc((strlen(undeployServiceProvider->value)+22)*sizeof(char));
       sprintf(pcaCgiQueryString,"/processes/%s/execution",undeployServiceProvider->value);
@@ -2838,7 +2792,6 @@ runRequest (map ** inputs)
 	    fread(pcaTmp,1,f_status.st_size,pfRequest);
 	    pcaTmp[f_status.st_size]=0;
 	    addToMap(request_inputs,"jrequest",pcaTmp);
-	    dumpMap(request_inputs);
 	    setMapInMaps(m,"renv","jrequest",pcaTmp);
 	    free(pcaTmp);
 	    if(strstr(pcaFileName,"cwl")!=NULL){
@@ -2892,13 +2845,10 @@ runRequest (map ** inputs)
 	  free(pcaCgiQueryString);
 	  return 1;
 	}
-	ZOO_DEBUG("Deploy / Replace");
 	// TODO: validate that the service is not yet deployed
-	ZOO_DEBUG("Deploy / Replace verify if already deployed");
 	free(pcaCgiQueryString);
 	pcaCgiQueryString=(char*)malloc((strlen(deployServiceProvider->value)+22)*sizeof(char));
 	sprintf(pcaCgiQueryString,"/processes/%s/execution",deployServiceProvider->value);
-	ZOO_DEBUG("Deploy / Replace");
 #ifndef USE_AMQP
 	setMapInMaps(m,"lenv","noRunSql","false");
 #endif
@@ -2944,14 +2894,11 @@ runRequest (map ** inputs)
 	    }
 	  }
 	}
-	//dumpMap(request_inputs);
       }
 #endif
     map* pmCgiRequestMethod=getMapFromMaps(m,"lenv","request_method");
-	ZOO_DEBUG("Deploy / Replace");
 
     setRootUrlMap(m);
-	ZOO_DEBUG("Deploy / Replace");
     // Redirect using HTTP Status 301 (cf. rfc2616) in case full_html_support is
     // set to true
     map* pmTmp0=getMapFromMaps(m,"openapi","full_html_support");
@@ -2979,7 +2926,6 @@ runRequest (map ** inputs)
     if((strstr(pcaCgiQueryString,"/processes")!=NULL && strncasecmp(pcaCgiQueryString,"/processes",10)!=0) ||
        (strstr(pcaCgiQueryString,"/jobs")!=NULL && strncasecmp(pcaCgiQueryString,"/jobs",5)!=0) ){
 	map* error=createMap("code","BadRequest");
-			    ZOO_DEBUG("BadRequest");
 	addToMap(error,"message",_("The resource is not available"));
 	localPrintExceptionJ(m,error);
 	freeMaps (&m);
@@ -3167,9 +3113,7 @@ runRequest (map ** inputs)
       if(pmTmp!=NULL)
 	setMapInMaps(m,"lenv","serviceCntSkip",pmTmp->value);
       json_object *res3=json_object_new_array();
-      ZOO_DEBUG("zDup");
       int saved_stdout = zDup (fileno (stdout));
-      ZOO_DEBUG("zDup2");
       zDup2 (fileno (stderr), fileno (stdout));
       if (int res0 =
           recursReaddirF (m, NULL, res3, NULL, ntmp, NULL, saved_stdout, 0,
@@ -3177,7 +3121,6 @@ runRequest (map ** inputs)
       }else{
 	fflush(stderr);
 	fflush(stdout);
-	ZOO_DEBUG("zDup2");
 	zDup2 (saved_stdout, fileno (stdout));
       }
       zClose(saved_stdout);
@@ -3461,7 +3404,6 @@ runRequest (map ** inputs)
 	  }
 	  // Filter jobs list based on the potential user_id
 	  filterJobByUser(m,&pcaClauseFinal,pcaClauseDate);
-	  ZOO_DEBUG(pcaClauseFinal);
 	  if(pcaClauseFinal==NULL){
 	    pcaClauseFinal=zStrdup("true");
 	  }else{
@@ -3699,7 +3641,6 @@ runRequest (map ** inputs)
       int t=0;
       if(strstr(pcaCgiQueryString,"/processes")==NULL && strstr(pcaCgiQueryString,"/processes/")==NULL){
 	map* error=createMap("code","BadRequest");
-			    ZOO_DEBUG("BadRequest");
 	addToMap(error,"message",_("The resource is not available"));
 	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
 	localPrintExceptionJ(m,error);
@@ -3825,6 +3766,15 @@ runRequest (map ** inputs)
 	json_object_put(jobj);
 	map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
 	map* mode=getMap(request_inputs,"mode");
+#ifdef DRU_ENABLED
+	map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
+	bool isAlreadyDeployed=false;
+	if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)==0){
+	  eres=SERVICE_DEPLOYED;
+	  isAlreadyDeployed=true;
+	  goto printDescription;
+	}
+#endif
 	if((preference!=NULL && strstr(preference->value,"respond-async")!=NULL) ||
 	   (mode!=NULL && strncasecmp(mode->value,"async",5)==0)) {
 	  if(mode==NULL){
@@ -4082,11 +4032,9 @@ runRequest (map ** inputs)
 	  loadHttpRequests(m,request_input_real_format);
 	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
 	    return -1;
-	  ZOO_DEBUG("loadServiceAndRun");
 	  loadServiceAndRun (&m,s1,request_inputs,
 			     &request_input_real_format,
 			     &request_output_real_format,&eres);
-	  ZOO_DEBUG("loadServiceAndRun end");
 	  if(res!=NULL){
 	    json_object_put(res);
 	    res=NULL;
@@ -4097,13 +4045,11 @@ runRequest (map ** inputs)
 	  deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
 	  undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
 
-	  ZOO_DEBUG("SERVICE_DEPLOYED  / SERVICE_UNDEPLOYED");
 	  if(eres!=SERVICE_DEPLOYED && eres!=SERVICE_UNDEPLOYED &&
 	     ( deployServiceProvider==NULL || undeployServiceProvider==NULL ||
 	       (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)!=0)
 	       ||
 	       (undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ) ){
-	    ZOO_DEBUG("SERVICE_DEPLOYED  / SERVICE_UNDEPLOYED");
 	    if( (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)!=0)
 		||
 		(undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ){
@@ -4116,7 +4062,6 @@ runRequest (map ** inputs)
 	      localPrintExceptionJ(m,pmError);
 	      setMapInMaps(m,"lenv","no-headers","true");
 	      setMapInMaps(m,"lenv","hasPrinted","true");
-	      ZOO_DEBUG("HANDLED ERRROR HERE should return!");
 	      // TODO: cleanup memory
 	      freeMap(&pmError);
 	      free(pmError);
@@ -4145,6 +4090,7 @@ runRequest (map ** inputs)
 	free(s1);
 #ifdef DRU_ENABLED
 	if(deployServiceProvider!=NULL && undeployServiceProvider!=NULL){
+	printDescription:
 	  //map* pmTmp=getMapFromMaps(m,"lenv","Identifier");
 	  map* pmTmp=getMap(request_inputs,"Identifier");
 	  if(pmTmp==NULL)
@@ -4182,26 +4128,29 @@ runRequest (map ** inputs)
 		sprintf(pcaFileName,"%s/%s.cwl",newPath,pmDeployed->value);
 	      if(strcmp(pmTmp->value,deployServiceProvider->value)==0){
 #ifdef USE_AMQP
-		setMapInMaps(m,"lenv","noRunSql","true");
-		maps* pmsOutputsBis=NULL;
-		maps* pmsItem=request_output_real_format;
-		while(pmsItem!=NULL){
-		  maps* pmsCurrent=createMaps(pmsItem->name);
-		  map* pmContent=pmsItem->content;
-		  while(pmContent!=NULL){
-		    if(strcasecmp(pmContent->name,"value")!=0 &&
-		       strcasecmp(pmContent->name,"size")!=0 )
-		      if(pmsCurrent->content==NULL)
-			pmsCurrent->content=createMap(pmContent->name,pmContent->value);
-		      else
-			addToMap(pmsCurrent->content,pmContent->name,pmContent->value);
-		    pmContent=pmContent->next;
+		map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
+		if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)!=0){
+		  setMapInMaps(m,"lenv","noRunSql","true");
+		  maps* pmsOutputsBis=NULL;
+		  maps* pmsItem=request_output_real_format;
+		  while(pmsItem!=NULL){
+		    maps* pmsCurrent=createMaps(pmsItem->name);
+		    map* pmContent=pmsItem->content;
+		    while(pmContent!=NULL){
+		      if(strcasecmp(pmContent->name,"value")!=0 &&
+			 strcasecmp(pmContent->name,"size")!=0 )
+			if(pmsCurrent->content==NULL)
+			  pmsCurrent->content=createMap(pmContent->name,pmContent->value);
+			else
+			  addToMap(pmsCurrent->content,pmContent->name,pmContent->value);
+		      pmContent=pmContent->next;
+		    }
+		    pmsItem=pmsItem->next;
 		  }
-		  pmsItem=pmsItem->next;
+		  publish_amqp_msg(m,&eres,request_inputs,request_input_real_format,pmsOutputsBis);
+		  freeMaps(&pmsOutputsBis);
+		  free(pmsOutputsBis);
 		}
-		publish_amqp_msg(m,&eres,request_inputs,request_input_real_format,pmsOutputsBis);
-		freeMaps(&pmsOutputsBis);
-		free(pmsOutputsBis);
 #endif
 		setMapInMaps(m,"lenv","no-headers","true");
 		FILE*  pfRequest=fopen(pcaFileName,"wb+");
@@ -4247,6 +4196,13 @@ runRequest (map ** inputs)
 		map* pmORequestMethod=getMapFromMaps(m,"lenv","orequest_method");
 		if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0)
 		  setMapInMaps(m,"headers","Status","204 No Content");
+		// Refresh pmRootUrl and pmDeployed from the m maps pmDeployed
+		// by the ensureFiltered invocation
+		maps* pmsTmp1=getMaps(m,"openapi");
+		pmRootUrl=getMap(pmsTmp1->content,"rootUrl");
+		pmsTmp1=getMaps(m,"lenv");
+		pmDeployed=getMap(pmsTmp1->content,"deployedServiceId");
+		// Go back to normal handling
 		char* pcaLocation=(char*)malloc((strlen(pmRootUrl->value)+strlen(pmDeployed->value)+12)*sizeof(char));
 		sprintf(pcaLocation,"%s/processes/%s",pmRootUrl->value,pmDeployed->value);
 		setMapInMaps(m,"headers","Location",pcaLocation);
@@ -4584,9 +4540,7 @@ runRequest (map ** inputs)
 	 * Here we need to close stdout to ensure that unsupported chars 
 	 * has been found in the zcfg and then printed on stdout
 	 */
-	ZOO_DEBUG("zDup");
 	int saved_stdout = zDup (fileno (stdout));
-	ZOO_DEBUG("zDup2");
 	zDup2 (fileno (stderr), fileno (stdout));
 
 	maps* imports = getMaps(m, IMPORTSERVICE);
@@ -4626,7 +4580,6 @@ runRequest (map ** inputs)
 	    return res;
 	  }
 	fflush (stdout);
-	ZOO_DEBUG("zDup2 (no close)");
 	zDup2 (saved_stdout, fileno (stdout));
 #ifdef META_DB
 	fetchServicesFromDb(zooRegistry,m,doc,n,printGetCapabilitiesForProcess,1);
@@ -5032,7 +4985,6 @@ runRequest (map ** inputs)
       eres = SERVICE_ACCEPTED;
 
       map* usid = getMapFromMaps (m, "lenv", "uusid");
-      ZOO_DEBUG("zDup");
       int saved_stdout = zDup (fileno (stdout));
       map* r_inputs1 = createMap("ServiceName", s1->name);
       r_inputs = getMapFromMaps (m, "main", "tmpPath");
@@ -5060,7 +5012,6 @@ runRequest (map ** inputs)
 	fflush (stdout);
 	recordResponse(m,fbkp);
       }
-      ZOO_DEBUG("zDup2");
       zDup2 (saved_stdout, fileno (stdout));
 
 #else
@@ -5448,6 +5399,19 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    setMapInMaps(lconf,"lenv","metapath","");
 	    maps* pmsTmp=getMaps(lconf,"lenv");
 
+	    // Define auth_env section in case we fpm_user in the lenv map
+	    // coming from the message received
+	    map* pmUserEnv=getMap(*lenv,"fpm_user");
+	    if(pmUserEnv!=NULL){
+	      maps* pmsaUserEnv=createMaps("auth_env");
+	      pmsaUserEnv->content=createMap("user",pmUserEnv->value);
+	      pmUserEnv=getMap(*lenv,"fpm_cwd");
+	      if(pmUserEnv!=NULL)
+		addToMap(pmsaUserEnv->content,"cwd",pmUserEnv->value);
+	      addMapsToMaps(&lconf,pmsaUserEnv);
+	      freeMaps(&pmsaUserEnv);
+	      free(pmsaUserEnv);
+	    }
 	    // Determine the executionType for this run
 	    if(getMap(request_inputs,"jrequest")!=NULL){
 	      setMapInMaps(lconf,"main","executionType","json");
@@ -5503,25 +5467,20 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    registry* zooRegistry=NULL;
 	    if(reg!=NULL){
 #ifndef WIN32
-	      ZOO_DEBUG("zDup");
 	      int saved_stdout = zDup (fileno (stdout));
-	      ZOO_DEBUG("zDup2");
 	      zDup2 (fileno (stderr), fileno (stdout));
 #endif
 	      if(createRegistry (lconf,&zooRegistry,reg->value)<0){
 		map *message=getMapFromMaps(lconf,"lenv","message");
 		map *type=getMapFromMaps(lconf,"lenv","type");
 #ifndef WIN32
-		ZOO_DEBUG("zDup2 (no close)");
 		zDup2 (saved_stdout, fileno (stdout));
 #endif
 		return errorException (lconf, message->value,
 				       type->value, NULL);
 	      }
 #ifndef WIN32
-	      ZOO_DEBUG("zDup2");
 	      zDup2 (saved_stdout, fileno (stdout));
-	      ZOO_DEBUG("zClose");
 	      zClose(saved_stdout);
 #endif
 	    }
