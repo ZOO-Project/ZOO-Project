@@ -243,6 +243,7 @@ class DeployService(object):
                 yaml.dump(self.cwl_content, file)
 
             shutil.move(path, self.zooservices_folder)
+            os.popen("chown www-data:www-data -R %s" % self.zooservices_folder).read()
 
             shutil.rmtree(self.service_tmp_folder)
 
