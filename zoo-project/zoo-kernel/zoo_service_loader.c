@@ -4129,7 +4129,9 @@ runRequest (map ** inputs)
 	      if(strcmp(pmTmp->value,deployServiceProvider->value)==0){
 #ifdef USE_AMQP
 		map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
-		if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)!=0){
+		if(pmIsDeployed!=NULL)
+		  dumpMap(pmIsDeployed);
+		if(pmIsDeployed==NULL || strncasecmp(pmIsDeployed->value,"true",4)!=0){
 		  setMapInMaps(m,"lenv","noRunSql","true");
 		  maps* pmsOutputsBis=NULL;
 		  maps* pmsItem=request_output_real_format;
@@ -5405,6 +5407,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    if(pmUserEnv!=NULL){
 	      maps* pmsaUserEnv=createMaps("auth_env");
 	      pmsaUserEnv->content=createMap("user",pmUserEnv->value);
+	      setMapInMaps(lconf,"zooServicesNamespace","namespace",pmUserEnv->value);
 	      pmUserEnv=getMap(*lenv,"fpm_cwd");
 	      if(pmUserEnv!=NULL)
 		addToMap(pmsaUserEnv->content,"cwd",pmUserEnv->value);

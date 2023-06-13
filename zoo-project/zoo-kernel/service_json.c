@@ -1980,7 +1980,6 @@ extern "C" {
    * @return the JSON object pointer to the result
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
-
     if(res==SERVICE_FAILED){
       char* pcaTmp=produceErrorMessage(conf);
       map* pamTmp=createMap("message",pcaTmp);
@@ -1993,6 +1992,11 @@ extern "C" {
       free(pamTmp);
       return NULL;
     }
+#ifdef DRU_ENABLED
+    if(res==SERVICE_DEPLOYED){
+      return NULL;
+    }
+#endif
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
       // raw response
