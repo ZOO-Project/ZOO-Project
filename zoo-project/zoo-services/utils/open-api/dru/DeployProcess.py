@@ -99,7 +99,8 @@ class DeployService(object):
 
         self.process_id = self.conf["lenv"]["usid"]
 
-        self.service_tmp_folder = self.create_service_tmp_folder()
+        if "noRunSql" in self.conf["lenv"]:
+            self.service_tmp_folder = self.create_service_tmp_folder()
 
         self.cwl_content = self.get_application_package()
 
