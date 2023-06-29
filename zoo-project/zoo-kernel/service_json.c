@@ -92,6 +92,16 @@ extern "C" {
   }
 
   /**
+   * Trivial verification, check if a json_bool is equal to FALSE
+   *
+   * @param jbValue json_bool value to verify if null
+   * @return bool result of the test (jbValue==FALSE)
+   */
+  bool jsonIsFalse(json_bool value){
+    return (value==FALSE);
+  }
+
+  /**
    * Convert a map to a json object
    * @param myMap the map to be converted into json object
    * @return a json_object pointer to the created json_object
@@ -1980,6 +1990,7 @@ extern "C" {
    * @return the JSON object pointer to the result
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
+
     if(res==SERVICE_FAILED){
       char* pcaTmp=produceErrorMessage(conf);
       map* pamTmp=createMap("message",pcaTmp);
@@ -1992,11 +2003,6 @@ extern "C" {
       free(pamTmp);
       return NULL;
     }
-#ifdef DRU_ENABLED
-    if(res==SERVICE_DEPLOYED){
-      return NULL;
-    }
-#endif
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
       // raw response
@@ -3576,6 +3582,14 @@ extern "C" {
 	setMapInMaps(conf,"lenv","jrequest",jsonStr);
       }
       json_object_put(pjRes);
+    }else{
+      json_object* pjInputs=json_object_new_object();
+      json_object_object_add(pjInputs,"applicationPackage",json_object_get(*pjRequest));
+      json_object_object_add(pjRes,"inputs",pjInputs);
+      json_object_put(*pjRequest);
+      *pjRequest=json_object_get(pjRes);
+      const char* jsonStr=json_object_to_json_string_ext(*pjRequest,JSON_C_TO_STRING_NOSLASHESCAPE);
+      setMapInMaps(conf,"lenv","jrequest",jsonStr);
     }
     return 0;
   }

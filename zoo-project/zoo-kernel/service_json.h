@@ -148,6 +148,7 @@ extern "C" {
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
+  bool jsonIsFalse(json_bool);
 #ifdef DRU_ENABLED
   void handleDRUError(maps*);
   int convertOGCAppPkgToExecute(maps*,map*,json_object**);

@@ -56,7 +56,7 @@ caching.o: caching.c
 	$(CXX) -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} -c caching.c
 
 service_internal_amqp.o: service_internal_amqp.c
-	$(CXX) ${CFLAGS} -c service_internal_amqp.c
+	$(CXX) ${CFLAGS} ${XML2CFLAGS} ${JSON_CFLAGS} -c service_internal_amqp.c
 
 response_print.o: response_print.c response_print.h
 	$(CXX) -fPIC ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${HPC_ENABLED} -c response_print.c

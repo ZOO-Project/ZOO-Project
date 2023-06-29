@@ -36,9 +36,10 @@ def securityIn(conf,inputs,outputs):
             break
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)
-        rFiles=["DeployProcess.py","DeployProcess.zcfg","UndeployProcess.py","UndeployProcess.zcfg","service.py","security_service.zo","securityOut.zcfg","deploy_util.py","securityIn.zcfg"]
+        rFiles=["DeployProcess.py","DeployProcess.zcfg","UndeployProcess.py","UndeployProcess.zcfg","service.py","security_service.py","securityOut.zcfg","deploy_util.py","securityIn.zcfg"]
         for i in range(len(rFiles)):
             shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
+    print("Ok exit from securityIn!",file=sys.stderr)
     return zoo.SERVICE_SUCCEEDED
 
 def securityOut(conf,inputs,outputs):

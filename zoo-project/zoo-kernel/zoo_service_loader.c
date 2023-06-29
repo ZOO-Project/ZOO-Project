@@ -115,6 +115,7 @@ extern "C" int crlex ();
 #ifdef USE_JSON
 #include "service_json.h"
 #include "json_tokener.h"
+#include "json_object.h"
 #include "json.h"
 #endif
 
@@ -385,108 +386,127 @@ int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
  * Checks if the env variable SERVICES_NAMESPACE is set;
  * if it is, the zooServicesNamespace map will be added to the conf map
  *
- * @param conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  */
-int addServicesNamespaceToMap(maps* conf){
+int addServicesNamespaceToMap(maps* pmsConf){
     int ret=0;
     int ei = 1;
     char **orig = environ;
     char *s=*orig;
-    char* namespaceName=NULL;
+    char* pcNamespaceName=NULL;
 
     if(orig!=NULL)
-        for (; s; ei++ ) {
-            // retrieving service workspace
-            if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
-                if (strstr(s,"SERVICES_NAMESPACE")!=NULL){
-                    char* baseU=strchr(s,'=');
-                    if (strlen(baseU)>1) {
-                        namespaceName = ++baseU;
+      for (; s; ei++ ) {
+	// retrieving service workspace
+	if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
+	  if (strstr(s,"SERVICES_NAMESPACE")!=NULL){
+	    char* baseU=strchr(s,'=');
+	    if (strlen(baseU)>1) {
+	      pcNamespaceName = ++baseU;
 #ifdef DEBUG
-                        fprintf(stderr,"zooServicesNamespace: %s\n",namespaceName);
+	      fprintf(stderr,"zooServicesNamespace: %s\n",pcNamespaceName);
 #endif
 
-                        // checking if namespace folder exists
-                        char *namespaceFolder = (char *) malloc(1024);
-                        memset(namespaceFolder, '\0', 1024);
-                        map *servicesNamespaceParentFolder = getMapFromMaps(conf, "servicesNamespace", "path");
-			if(servicesNamespaceParentFolder!=NULL){
-			  sprintf(namespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, namespaceName);
-			  DIR *dir = opendir(namespaceFolder);
-			  if (dir) {
-                            // creating a zooServicesNamespace map
-                            // the map will contain the namespace name
-                            maps *_tmpMaps = createMaps("zooServicesNamespace");
-                            if (_tmpMaps->content == NULL)
-			      _tmpMaps->content = createMap("namespace", namespaceName);
-                            else
-			      addToMap(_tmpMaps->content, "namespace", namespaceName);
+	      // checking if namespace folder exists
+	      char *pcaNamespaceFolder = (char *) malloc(1024);
+	      memset(pcaNamespaceFolder, '\0', 1024);
+	      map *servicesNamespaceParentFolder = getMapFromMaps(pmsConf, "servicesNamespace", "path");
+	      if(servicesNamespaceParentFolder!=NULL){
+		sprintf(pcaNamespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, pcNamespaceName);
+		DIR *dir = opendir(pcaNamespaceFolder);
+		if (dir) {
+		  // creating a zooServicesNamespace map
+		  // the map will contain the namespace name
+		  maps *_tmpMaps = createMaps("zooServicesNamespace");
+		  if (_tmpMaps->content == NULL)
+		    _tmpMaps->content = createMap("namespace", pcNamespaceName);
+		  else
+		    addToMap(_tmpMaps->content, "namespace", pcNamespaceName);
 
-                            // adding the zooServicesNamespace map to the other maps
-                            if (conf) {
-			      addMapsToMaps(&conf, _tmpMaps);
-			      freeMaps(&_tmpMaps);
-			      free(_tmpMaps);
-			      _tmpMaps=NULL;
-                            }
-			    closedir(dir);
-			  } else {
-                            map* error=createMap("code","BadRequest");
-                            addToMap(error,"message",_("The resource is not available"));
-                            printExceptionReportResponseJ(conf,error);
-                            ret = 1;
-                            freeMap(&error);
-                            free(error);
-			  }
-			}
-                    }
-                }
-            }
-            s = *(orig+ei);
-        }
-
+		  // adding the zooServicesNamespace map to the other maps
+		  if (pmsConf!=NULL) {
+		    addMapsToMaps(&pmsConf, _tmpMaps);
+		    freeMaps(&_tmpMaps);
+		    free(_tmpMaps);
+		    _tmpMaps=NULL;
+		  }
+		  closedir(dir);
+		} else {
+		  map* error=createMap("code","BadRequest");
+		  addToMap(error,"message",_("The resource is not available"));
+		  printExceptionReportResponseJ(pmsConf,error);
+		  ret = 1;
+		  freeMap(&error);
+		  free(error);
+		}
+		free(pcaNamespaceFolder);
+	      }
+	    }
+	  }
+	}
+	s = *(orig+ei);
+      }
     return ret;
 }
 
 /***
- * Updates the rootUrl property in the map m by concatenating the rootHost, the namespace and the rootPath
+ * Updates the rootUrl property in the map m by concatenating the rootHost, the
+ * namespace and the rootPath.
+ *
  * @param m the conf maps containing the main.cfg and oas.cfg settings
  */
-void setRootUrlMap(maps* m){
-    char *rootUrl= " ";
-    map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
-    map* rootHost=getMapFromMaps(m,"openapi","rootHost");
-    map* rootPath=getMapFromMaps(m,"openapi","rootPath");
-
+void setRootUrlMap(maps* pmConf){
+    char *pcaRootUrl= NULL;
+    map *zooServicesNamespaceMap = getMapFromMaps (pmConf,
+						   "zooServicesNamespace",
+						   "namespace");
+    map* pmRootHost=getMapFromMaps(pmConf,"openapi","rootHost");
+    map* pmRootPath=getMapFromMaps(pmConf,"openapi","rootPath");
 #ifdef DEBUG
-    fprintf (stderr, "zooServicesNamespaceMap: %s\n", zooServicesNamespaceMap->value);
-    fprintf (stderr, "rootHost: %s\n", rootHost->value);
-    fprintf (stderr, "rootPath: %s\n", rootPath->value);
+    fprintf (stderr, "zooServicesNamespaceMap: %s\n",
+	     zooServicesNamespaceMap->value);
+    fprintf (stderr, "rootHost: %s\n", pmRootHost->value);
+    fprintf (stderr, "rootPath: %s\n", pmRootPath->value);
 #endif
-
-    if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && strcmp(zooServicesNamespaceMap->value,"generalNamespace") != 0 ){
-      if(rootHost!=NULL){
-        rootUrl=(char*) malloc((strlen(rootHost->value)+(strlen(rootPath->value)+ strlen(zooServicesNamespaceMap->value)+13)*sizeof(char)));
-        sprintf(rootUrl,"%s/%s/%s",rootHost->value, zooServicesNamespaceMap->value, rootPath->value);
-      }else{
-        rootUrl=(char*) malloc(((strlen(rootPath->value)+ strlen(zooServicesNamespaceMap->value)+13)*sizeof(char)));
-        sprintf(rootUrl,"%s/%s",zooServicesNamespaceMap->value, rootPath->value);
-      }
+    if (zooServicesNamespaceMap!=NULL && zooServicesNamespaceMap->value &&
+	strcmp(zooServicesNamespaceMap->value,"generalNamespace") != 0 ){
+      if(pmRootHost!=NULL && pmRootPath!=NULL){
+        pcaRootUrl=(char*)
+	  malloc((strlen(pmRootHost->value)+
+		  strlen(pmRootPath->value)+
+		  strlen(zooServicesNamespaceMap->value)+13)*sizeof(char));
+        sprintf(pcaRootUrl,"%s/%s/%s",
+		pmRootHost->value,
+		zooServicesNamespaceMap->value,
+		pmRootPath->value);
+      }else
+	if(pmRootPath!=NULL){
+	  pcaRootUrl=(char*)
+	    malloc(((strlen(pmRootPath->value)+
+		     strlen(zooServicesNamespaceMap->value)+13)*sizeof(char)));
+	  sprintf(pcaRootUrl,"%s/%s",
+		  zooServicesNamespaceMap->value, pmRootPath->value);
+	}
     } else {
-      if(rootHost!=NULL){
-        rootUrl=(char*) malloc((strlen(rootHost->value)+(strlen(rootPath->value)+13)*sizeof(char)));
-        sprintf(rootUrl,"%s/%s",rootHost->value, rootPath->value);
-      }else{
-        rootUrl=(char*) malloc(((strlen(rootPath->value)+13)*sizeof(char)));
-	sprintf(rootUrl, "/%s",rootPath->value);
+      if(pmRootHost!=NULL && pmRootPath!=NULL){
+        pcaRootUrl=(char*)
+	  malloc((strlen(pmRootHost->value)+
+		  strlen(pmRootPath->value)+13)*sizeof(char));
+        sprintf(pcaRootUrl,"%s/%s",pmRootHost->value, pmRootPath->value);
+      }else
+	if(pmRootPath!=NULL){
+	  pcaRootUrl=(char*)
+	    malloc(((strlen(pmRootPath->value)+13)*sizeof(char)));
+	  sprintf(pcaRootUrl, "/%s",pmRootPath->value);
       }
     }
-
+    if(pcaRootUrl!=NULL){
 #ifdef DEBUG
-    fprintf (stderr, "rootUrl: %s\n", rootUrl);
+      fprintf (stderr, "rootUrl: %s\n", pcaRootUrl);
 #endif
-    setMapInMaps(m,"openapi","rootUrl",rootUrl);
-    free(rootUrl);
+      setMapInMaps(pmConf,"openapi","rootUrl",pcaRootUrl);
+      free(pcaRootUrl);
+    }
 }
 
 /**
@@ -745,9 +765,9 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
     char conf_dir2[1024*2];
     memset(conf_dir2,0,1024*2);
 
-    strcpy(conf_dir2,ntmp);
+    //strcpy(conf_dir2,ntmp);
     getServicesNamespacePath(m,ntmp,conf_dir2,1024);
-    strcpy(tmps1,conf_dir2);
+    strcpy(ntmp,conf_dir2);
 
     snprintf (tmps1, 1024, "%s/%s.zcfg", ntmp, cIdentifier);
 #ifdef DEBUG
@@ -1300,8 +1320,6 @@ void initAllEnvironment(maps* conf,map* request_inputs,
       }
   }
 
-	    
-
   int eres = SERVICE_STARTED;
   int cpid = zGetpid ();
 
@@ -1631,56 +1649,6 @@ void register_signals(void (func)(int)){
   signal (SIGABRT, func);
 #endif
 }
-
-#ifdef USE_AMQP
-/**
- * Publish a message in RabbitMQ
- *
- * @param pmsConf the maps pointing to the main configuration file
- * @param pmRequest the request as it has been parsed till now
- * @param pmsInpuits the inputs maps
- * @param pmsOutpuits the outputs maps
- */
-void publish_amqp_msg(maps* pmsConf,int* eres,map* pmRequest,maps* pmsInputs,maps* pmsOututs){
-  // Publish message in RabbitMQ
-  // m: the main configuration file
-  // ** Not used ** s1: the service to execute
-  // request_inputs: the request as it has been parsed till now
-  // request_input_real_format: input maps
-  // request_output_real_format: output maps
-
-  init_amqp(pmsConf);
-  *eres = SERVICE_ACCEPTED;
-  json_object *poMsg = json_object_new_object();
-
-  maps* lenv=getMaps(pmsConf,"lenv");
-  json_object *maps1_obj = mapToJson(lenv->content);
-  json_object_object_add(poMsg,"main_lenv",maps1_obj);
-
-  lenv=getMaps(pmsConf,"subscriber");
-  if(lenv!=NULL){
-    json_object *maps1_obj = mapToJson(lenv->content);
-    json_object_object_add(poMsg,"main_subscriber",maps1_obj);
-  }
-
-  json_object *req_format_jobj = mapsToJson(pmsInputs);
-  json_object_object_add(poMsg,"request_input_real_format",req_format_jobj);
-
-  json_object *req_jobj = mapToJson(pmRequest);
-  json_object_object_add(poMsg,"request_inputs",req_jobj);
-
-  json_object *outputs_jobj = mapsToJson(pmsOututs);
-  json_object_object_add(poMsg,"request_output_real_format",outputs_jobj);
-
-  bind_amqp();
-  init_confirmation();
-  if ( (send_msg(json_object_to_json_string_ext(poMsg,JSON_C_TO_STRING_PLAIN),"application/json") != 0) ){
-    *eres = SERVICE_FAILED;
-  }
-  close_amqp();
-  json_object_put(poMsg);
-}
-#endif
 
 /**
  * Load a service provider and run the service function.
@@ -2154,8 +2122,9 @@ int ensureFiltered(maps** pmsConf,const char* pcType){
       freeService(&psaService);
       free(psaService);
       psaService=NULL;
-      fprintf(stderr,"eres: %d\n",eres);
-      fflush(stderr);
+      // Make sure to refresh pmsSection from the pmsConf updated from
+      // the previous loadServiceAndRun invocation
+      pmsSection=getMaps(*pmsConf,pcaName);
       if(eres!=SERVICE_SUCCEEDED){
 	setMapInMaps(*pmsConf,"lenv",pcaName,"true");
 	free(pcaName);
@@ -2723,6 +2692,7 @@ runRequest (map ** inputs)
     }
 
 
+    ZOO_DEBUG("addServicesNamespaceToMap");
     int i = addServicesNamespaceToMap(m);
     if(i) {
       map* error=createMap("code","BadRequest");
@@ -3540,8 +3510,8 @@ runRequest (map ** inputs)
 			json_object* pjoCode=NULL;
 			json_object* pjoMessage=NULL;
 			if(pjoTmp!=NULL &&
-			   json_object_object_get_ex(pjoTmp,"code",&pjoCode)!=FALSE &&
-			   json_object_object_get_ex(pjoTmp,"description",&pjoMessage)!=FALSE){
+			   !jsonIsFalse(json_object_object_get_ex(pjoTmp,"code",&pjoCode)) &&
+			   !jsonIsFalse(json_object_object_get_ex(pjoTmp,"description",&pjoMessage)) ){
 			  map* error=createMap("code",json_object_get_string(pjoCode));
 			  addToMap(error,"message",json_object_get_string(pjoMessage));
 			  localPrintExceptionJ(m,error);
@@ -3662,6 +3632,7 @@ runRequest (map ** inputs)
 	/* - /processes/{processId}/execution Execution (POST) */
 	eres = SERVICE_STARTED;
 	map* req=getMapFromMaps(m,"renv","jrequest");
+	bool bBypassed=false;
 	if(req==NULL){
 	  map* error=createMap("code","BadRequest");
 	  addToMap(error,"message",_("The request body is empty"));
@@ -3693,7 +3664,7 @@ runRequest (map ** inputs)
 	  enum json_tokener_error jerr;
 	  struct json_tokener* tok=json_tokener_new();
 	  do {
-	    mystring = req->value;  // get JSON string, e.g. read from file, etc...
+	    mystring = req->value;
 	    slen = strlen(mystring);
 	    jobj = json_tokener_parse_ex(tok, mystring, slen);
 	  } while ((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
@@ -3721,7 +3692,6 @@ runRequest (map ** inputs)
 	    json_tokener_free(tok);
 	    return 1;
 	  }
-
 	  json_tokener_free(tok);
 	}
 #ifdef DRU_ENABLED
@@ -3729,7 +3699,7 @@ runRequest (map ** inputs)
 #endif
 	json_object* json_io=NULL;
 	char* cIdentifier=NULL;
-	if(json_object_object_get_ex(jobj,"id",&json_io)!=FALSE){
+	if(!jsonIsFalse(json_object_object_get_ex(jobj,"id",&json_io))){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
 	}
 	else if(strstr(pcaCgiQueryString,"/processes/")!=NULL && strlen(pcaCgiQueryString)>11){
@@ -3772,6 +3742,7 @@ runRequest (map ** inputs)
 	if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)==0){
 	  eres=SERVICE_DEPLOYED;
 	  isAlreadyDeployed=true;
+	  bBypassed=true;
 	  goto printDescription;
 	}
 #endif
@@ -3789,50 +3760,7 @@ runRequest (map ** inputs)
 	  //setMapInMaps(m,"lenv","no-headers","true");
 #ifdef USE_AMQP
 
-      // Publish message in RabbitMQ
-      // m: the main configuration file
-      // s1: the service to execute
-      // request_inputs: the request as it has been parsed till now
-      // request_input_real_format: input maps
-      // request_output_real_format: output maps
-
-      init_amqp(m);
-      eres = SERVICE_ACCEPTED;
-      json_object *msg_jobj = json_object_new_object();
-
-      maps* lenv=getMaps(m,"lenv");
-      json_object *maps1_obj = mapToJson(lenv->content);
-      json_object_object_add(msg_jobj,"main_lenv",maps1_obj);
-
-      maps* pmsRequests=getMaps(m,"http_requests");
-      if(pmsRequests!=NULL){
-	json_object *pjRequests = mapToJson(pmsRequests->content);
-	json_object_object_add(msg_jobj,"main_http_requests",maps1_obj);
-      }
-
-      lenv=getMaps(m,"subscriber");
-      if(lenv!=NULL){
-	json_object *maps1_obj = mapToJson(lenv->content);
-	json_object_object_add(msg_jobj,"main_subscriber",maps1_obj);
-      }
-
-      json_object *req_format_jobj = mapsToJson(request_input_real_format);
-      json_object_object_add(msg_jobj,"request_input_real_format",req_format_jobj);
-
-      json_object *req_jobj = mapToJson(request_inputs);
-      json_object_object_add(msg_jobj,"request_inputs",req_jobj);
-
-      json_object *outputs_jobj = mapsToJson(request_output_real_format);
-      json_object_object_add(msg_jobj,"request_output_real_format",outputs_jobj);
-
-      bind_amqp();
-      init_confirmation();
-      if ( (send_msg(json_object_to_json_string_ext(msg_jobj,JSON_C_TO_STRING_PLAIN),"application/json") != 0) ){
-        eres = SERVICE_FAILED;
-      }
-      close_amqp();
-      json_object_put(msg_jobj);
-
+	  publish_amqp_msg(m,&eres,request_inputs,request_input_real_format,request_output_real_format);
 
 #ifdef RELY_ON_DB
       init_sql(m);
@@ -4044,44 +3972,48 @@ runRequest (map ** inputs)
 	  // Fetch infromations from main.cfg again after execution
 	  deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
 	  undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
-
+	  bool bIsDeploy=(deployServiceProvider!=NULL &&
+			  strcmp(deployServiceProvider->value,s1->name)==0);
+	  bool bIsUndeploy=(undeployServiceProvider!=NULL &&
+			    strcmp(undeployServiceProvider->value,s1->name)==0);
 	  if(eres!=SERVICE_DEPLOYED && eres!=SERVICE_UNDEPLOYED &&
-	     ( deployServiceProvider==NULL || undeployServiceProvider==NULL ||
-	       (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)!=0)
-	       ||
-	       (undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ) ){
-	    if( (deployServiceProvider!=NULL && strcmp(deployServiceProvider->value,s1->name)!=0)
-		||
-		(undeployServiceProvider!=NULL && strcmp(undeployServiceProvider->value,s1->name)!=0) ){
-	      // TODO: use the correct type
-	      // http://www.opengis.net/def/exceptions/ogcapi-processes-2/1.0/duplicated-process
-	      // And correct response code (409 Conflict)
+	     ( bIsDeploy || bIsUndeploy) ){
+	    // TODO: use the correct type
+	    // http://www.opengis.net/def/exceptions/ogcapi-processes-2/1.0/duplicated-process
+	    // And correct response code (409 Conflict)
+	    map* pmError=NULL;
+	    if(bIsDeploy){
 	      setMapInMaps(m,"headers","Status","409 Conflict");
 	      map* pmError=createMap("code","DuplicateProcess");
 	      addToMap(pmError,"message",_("The process is already deployed."));
-	      localPrintExceptionJ(m,pmError);
-	      setMapInMaps(m,"lenv","no-headers","true");
-	      setMapInMaps(m,"lenv","hasPrinted","true");
-	      // TODO: cleanup memory
-	      freeMap(&pmError);
-	      free(pmError);
-	      freeMaps(&m);
-	      free(m);
-	      freeMaps (&request_input_real_format);
-	      free (request_input_real_format);
-	      freeMaps (&request_output_real_format);
-	      free (request_output_real_format);
-	      json_object_put(res);
-	      free(pcaCgiQueryString);
-	      freeService (&s1);
-	      free(s1);
-	      return 1;
+	    }else{
+	      pmError=createMap("code","InternalError");
+	      addToMap(pmError,"message",_("An error occured when trying to undeploy your service."));
+	      maps* pmsTmp=getMaps(m,"lenv");
+	      dumpMap(pmsTmp->content);
 	    }
-	    else
+	    localPrintExceptionJ(m,pmError);
+	    setMapInMaps(m,"lenv","no-headers","true");
+	    setMapInMaps(m,"lenv","hasPrinted","true");
+	    // TODO: cleanup memory
+	    freeMap(&pmError);
+	    free(pmError);
+	    freeMaps(&m);
+	    free(m);
+	    freeMaps (&request_input_real_format);
+	    free (request_input_real_format);
+	    freeMaps (&request_output_real_format);
+	    free (request_output_real_format);
+	    json_object_put(res);
+	    free(pcaCgiQueryString);
+	    freeService (&s1);
+	    free(s1);
+	    return 1;
+	  }else
+	    if(!bIsDeploy && !bIsUndeploy)
 #endif
 	      res=printJResult(m,s1,request_output_real_format,eres);
 #ifdef DRU_ENABLED
-	  }
 	  if(getMapFromMaps(m,"openapi","ensure_storing_result_every_execute")!=NULL)
 	    setMapInMaps(m,"lenv","output_response","true");
 #endif
@@ -4091,7 +4023,11 @@ runRequest (map ** inputs)
 #ifdef DRU_ENABLED
 	if(deployServiceProvider!=NULL && undeployServiceProvider!=NULL){
 	printDescription:
-	  //map* pmTmp=getMapFromMaps(m,"lenv","Identifier");
+	  if(bBypassed){
+	    // Fetch informations from main.cfg again after execution
+	    deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
+	    undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
+	  }
 	  map* pmTmp=getMap(request_inputs,"Identifier");
 	  if(pmTmp==NULL)
 	    pmTmp=getMapFromMaps(m,"lenv","Identifier");
@@ -4129,9 +4065,7 @@ runRequest (map ** inputs)
 	      if(strcmp(pmTmp->value,deployServiceProvider->value)==0){
 #ifdef USE_AMQP
 		map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
-		if(pmIsDeployed!=NULL)
-		  dumpMap(pmIsDeployed);
-		if(pmIsDeployed==NULL || strncasecmp(pmIsDeployed->value,"true",4)!=0){
+		if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)!=0){
 		  setMapInMaps(m,"lenv","noRunSql","true");
 		  maps* pmsOutputsBis=NULL;
 		  maps* pmsItem=request_output_real_format;
@@ -4248,7 +4182,7 @@ runRequest (map ** inputs)
 	      fflush(stdout);
 	    }
 	  }else{
-	    if((strcmp(pmTmp->value,deployServiceProvider->value)==0 || strcmp(pmTmp->value,undeployServiceProvider->value)==0) ){
+	    if(pmTmp!=NULL && (strcmp(pmTmp->value,deployServiceProvider->value)==0 || strcmp(pmTmp->value,undeployServiceProvider->value)==0) ){
 	      handleDRUError(m);
 	      res=NULL;
 	    }
@@ -4948,73 +4882,43 @@ runRequest (map ** inputs)
 
 #ifdef USE_AMQP
 
-      // Publish message in RabbitMQ
-      // m: the main configuration file
-      // s1: the service to execute
-      // request_inputs: the request as it has been parsed till now
-      // request_input_real_format: input maps
-      // request_output_real_format: output maps
-
-      init_amqp(m);
-      eres = SERVICE_ACCEPTED;
-      json_object *msg_jobj = json_object_new_object();
-
-      maps* lenv=getMaps(m,"lenv");
-      json_object *maps1_obj = mapToJson(lenv->content);
-      json_object_object_add(msg_jobj,"main_lenv",maps1_obj);
-
-      json_object *req_format_jobj = mapsToJson(request_input_real_format);
-      json_object_object_add(msg_jobj,"request_input_real_format",req_format_jobj);
-
-      json_object *req_jobj = mapToJson(request_inputs);
-      json_object_object_add(msg_jobj,"request_inputs",req_jobj);
-
-      json_object *outputs_jobj = mapsToJson(request_output_real_format);
-      json_object_object_add(msg_jobj,"request_output_real_format",outputs_jobj);
-
-      bind_amqp();
-      init_confirmation();
-      if ( (send_msg(json_object_to_json_string_ext(msg_jobj,JSON_C_TO_STRING_PLAIN),"application/json") != 0) ){
-        eres = SERVICE_FAILED;
-      }
-      close_amqp();
-      json_object_put(msg_jobj);
+	publish_amqp_msg(m,&eres,request_inputs,request_input_real_format,request_output_real_format);
 
 #ifdef RELY_ON_DB
-      init_sql(m);
-      recordServiceStatus(m);
+	init_sql(m);
+	recordServiceStatus(m);
 #endif
-      eres = SERVICE_ACCEPTED;
+	eres = SERVICE_ACCEPTED;
 
-      map* usid = getMapFromMaps (m, "lenv", "uusid");
-      int saved_stdout = zDup (fileno (stdout));
-      map* r_inputs1 = createMap("ServiceName", s1->name);
-      r_inputs = getMapFromMaps (m, "main", "tmpPath");
-      fbkp =
-	(char *)
-	malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-		 strlen (usid->value) + 7) * sizeof (char));
-      sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
-	       usid->value);
+	map* usid = getMapFromMaps (m, "lenv", "uusid");
+	int saved_stdout = zDup (fileno (stdout));
+	map* r_inputs1 = createMap("ServiceName", s1->name);
+	r_inputs = getMapFromMaps (m, "main", "tmpPath");
+	fbkp =
+	  (char *)
+	  malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
+		   strlen (usid->value) + 7) * sizeof (char));
+	sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
+		 usid->value);
 
-      f0 = freopen (fbkp, "w+", stdout);
+	f0 = freopen (fbkp, "w+", stdout);
 #ifdef USE_CALLBACK
-      invokeCallback(m,NULL,NULL,0,0);
+	invokeCallback(m,NULL,NULL,0,0);
 #endif
-      if(vid==0){
-	//
-	// set status to SERVICE_STARTED and flush stdout to ensure full
-	// content was outputed (the file used to store the ResponseDocument).
-	// Then, rewind stdout to restart writing from the begining of the file.
-	// This way, the data will be updated at the end of the process run.
-	//
-	printProcessResponse (m, request_inputs, -1, s1, r_inputs1->value,
-			      SERVICE_STARTED, request_input_real_format,
-			      request_output_real_format);
-	fflush (stdout);
-	recordResponse(m,fbkp);
-      }
-      zDup2 (saved_stdout, fileno (stdout));
+	if(vid==0){
+	  //
+	  // set status to SERVICE_STARTED and flush stdout to ensure full
+	  // content was outputed (the file used to store the ResponseDocument).
+	  // Then, rewind stdout to restart writing from the begining of the file.
+	  // This way, the data will be updated at the end of the process run.
+	  //
+	  printProcessResponse (m, request_inputs, -1, s1, r_inputs1->value,
+				SERVICE_STARTED, request_input_real_format,
+				request_output_real_format);
+	  fflush (stdout);
+	  recordResponse(m,fbkp);
+	}
+	zDup2 (saved_stdout, fileno (stdout));
 
 #else
 
@@ -5407,7 +5311,6 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    if(pmUserEnv!=NULL){
 	      maps* pmsaUserEnv=createMaps("auth_env");
 	      pmsaUserEnv->content=createMap("user",pmUserEnv->value);
-	      setMapInMaps(lconf,"zooServicesNamespace","namespace",pmUserEnv->value);
 	      pmUserEnv=getMap(*lenv,"fpm_cwd");
 	      if(pmUserEnv!=NULL)
 		addToMap(pmsaUserEnv->content,"cwd",pmUserEnv->value);

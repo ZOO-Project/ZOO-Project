@@ -99,8 +99,7 @@ class DeployService(object):
 
         self.process_id = self.conf["lenv"]["usid"]
 
-        if "noRunSql" in self.conf["lenv"]:
-            self.service_tmp_folder = self.create_service_tmp_folder()
+        self.service_tmp_folder = self.create_service_tmp_folder()
 
         self.cwl_content = self.get_application_package()
 
@@ -229,7 +228,7 @@ class DeployService(object):
             if "metadb" not in self.conf:
                 os.remove(zcfg_file)
 
-        if not("noRunSql" in self.conf["lenv"] and self.conf["lenv"]["noRunSql"] != "false"):
+        if "meradb" in self.conf and not("noRunSql" in self.conf["lenv"] and self.conf["lenv"]["noRunSql"] != "false"):
             rSql=self.service_configuration.run_sql(self.conf)
             if not(rSql):
                 return False
@@ -244,7 +243,6 @@ class DeployService(object):
                 yaml.dump(self.cwl_content, file)
 
             shutil.move(path, self.zooservices_folder)
-            os.popen("chown www-data:www-data -R %s" % self.zooservices_folder).read()
 
             shutil.rmtree(self.service_tmp_folder)
 

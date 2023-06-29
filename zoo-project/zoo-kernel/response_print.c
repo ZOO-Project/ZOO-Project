@@ -3080,7 +3080,7 @@ int getNumberOfOutputs(maps* conf,maps* outputs){
  * @param conf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
+void printRawdataOutputs(maps* conf,service* s,maps* outputs){
   maps* pmsOut=outputs;
   if(pmsOut!= NULL && pmsOut->next!=NULL && getNumberOfOutputs(conf,outputs)>1){
     map* pmUsid=getMapFromMaps(conf,"lenv","usid");
@@ -3146,7 +3146,7 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
 	      setMapInMaps(conf,"lenv","message",tmpMsg);
 	    }
-	    return NULL;
+	    return ;
 	  }
 	  printf("%s",mime);
 	  map* rs=getMap(pmsOut->content,"size");
@@ -3174,7 +3174,7 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
  * @param conf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void* printRawdataOutput(maps* conf,maps* outputs){
+void printRawdataOutput(maps* conf,maps* outputs){
   map *gfile=getMap(outputs->content,"generated_file");
   if(gfile!=NULL){
     gfile=getMap(outputs->content,"expected_generated_file");
@@ -3195,28 +3195,35 @@ void* printRawdataOutput(maps* conf,maps* outputs){
       setMapInMaps(conf,"lenv","code","InvalidParameterValue");
       setMapInMaps(conf,"lenv","message",tmpMsg);
     }
-    return NULL;
+    return ;
   }
   map* pmHeaders=getMapFromMaps(conf,"lenv","no-headers");
   map* rs=getMapFromMaps(outputs,outputs->name,"size");
   if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
     if(rs!=NULL)
       printf("Content-Length: %s\r\n",rs->value);
-    char mime[1024];
+    char* pcaMimeType=NULL;
     map* mi=getMap(outputs->content,"mimeType");
     map* en=getMap(outputs->content,"encoding");
-    if(mi!=NULL && en!=NULL)
-      sprintf(mime,
+    if(mi!=NULL && en!=NULL){
+      pcaMimeType=(char*)malloc((strlen(mi->value)+strlen(en->value)+30)*sizeof(char));
+      sprintf(pcaMimeType,
 	      "Content-Type: %s; charset=%s\r\n",
 	      mi->value,en->value);
+    }
     else
-      if(mi!=NULL)
-	sprintf(mime,
+      if(mi!=NULL){
+	pcaMimeType=(char*)malloc((strlen(mi->value)+32)*sizeof(char));
+	sprintf(pcaMimeType,
 		"Content-Type: %s; charset=UTF-8\r\n",
 		mi->value);
-      else
-	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\n");
-    printf("%s",mime);
+      }
+      else{
+	pcaMimeType=(char*)malloc(42*sizeof(char));
+	sprintf(pcaMimeType,"Content-Type: text/plain; charset=utf-8\r\n");
+      }
+    printf("%s",pcaMimeType);
+    free(pcaMimeType);
     // checking if the deploy service has returned the service id
     // if it did we add the service url to the location header
     map* location = getMapFromMaps(conf,"lenv","deployedServiceId");
