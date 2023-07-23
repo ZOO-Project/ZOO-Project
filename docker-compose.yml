@@ -11,7 +11,7 @@ services:
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
       - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
       # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
-      #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
+      - ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
       - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
@@ -38,7 +38,7 @@ services:
       - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/com:/usr/com/zoo-project
       # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
-      #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
+      - ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
     depends_on:
@@ -91,3 +91,11 @@ services:
     image: rabbitmq:3.8.9-management-alpine
     volumes:
       - ./docker/definitions.json:/etc/rabbitmq/definitions.json
+  teamengine:
+    image: zooproject/ets-ogcapi-processes10:latest
+    volumes:
+      - ./docker/ets-ogcapi-processes/test-run-props.xml:/root/test-run-props.xml
+      - ./docker/ets-ogcapi-processes/src1/ets-ogcapi-processes10/src/main/config/teamengine/config.xml:/root/teamengine/config.xml
+      - ./docker/ets-ogcapi-processes/test.sh:/root/test.sh
+    ports:
+      - "8080:8080"
