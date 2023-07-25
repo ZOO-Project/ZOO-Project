@@ -205,7 +205,7 @@ extern "C" {
     },
     {
       "400 Bad request",
-      "MissingParameterValue"
+      "MissingParameterValue",
       "InvalidParameterValue",
       "InvalidUpdateSequence",
       "OptionNotSupported",
