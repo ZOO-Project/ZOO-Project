@@ -37,3 +37,4 @@ cd ../../..
 docker build . -f docker/ets-ogcapi-processes/Dockerfile --progress plain -t zooproject/ets-ogcapi-processes10:latest
 
 sed "s/localhost/zookernel/g" -i docker/*.cfg
+sed "s=<organization>=<config><organization>=g;s=</organization>=</organization></config>=g" -i docker/ets-ogcapi-processes/src1/ets-ogcapi-processes10/src/main/config/teamengine/config.xml
