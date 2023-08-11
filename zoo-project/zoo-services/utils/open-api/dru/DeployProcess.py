@@ -228,7 +228,7 @@ class DeployService(object):
             if "metadb" not in self.conf:
                 os.remove(zcfg_file)
 
-        if "meradb" in self.conf and not("noRunSql" in self.conf["lenv"] and self.conf["lenv"]["noRunSql"] != "false"):
+        if "metadb" in self.conf and not("noRunSql" in self.conf["lenv"] and self.conf["lenv"]["noRunSql"] != "false"):
             rSql=self.service_configuration.run_sql(self.conf)
             if not(rSql):
                 return False

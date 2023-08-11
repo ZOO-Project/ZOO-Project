@@ -358,28 +358,29 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
  * @param maxSize maximum number of bytes to be used in the newPath buffer.
  */
 int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
-    map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
-    map *servicesNamespaceParentPath = getMapFromMaps (m, "servicesNamespace", "path");
-    memset(newPath,0,maxSize);
+  map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
+  map *servicesNamespaceParentPath = getMapFromMaps (m, "servicesNamespace", "path");
+  memset(newPath,0,maxSize);
 
-    if (zooServicesNamespaceMap && strcmp(zooServicesNamespaceMap->value,"anonymous") == 0 ){
-        if (oldPath){
-            snprintf (newPath,maxSize, "%s", oldPath);
-        }
-    } else if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && servicesNamespaceParentPath && servicesNamespaceParentPath->value){
-
-        char path[1024];
-        snprintf (path,maxSize, "%s/%s", servicesNamespaceParentPath->value,zooServicesNamespaceMap->value);
-        if (strstr(oldPath,path)) {
-            snprintf (newPath,maxSize, "%s", oldPath);
-        } else {
-            snprintf(newPath, maxSize, path);
-        }
-    } else {
-        if (oldPath)
-            snprintf (newPath,maxSize, "%s", oldPath);
+  if (zooServicesNamespaceMap && strcmp(zooServicesNamespaceMap->value,"anonymous") == 0 ){
+    if (oldPath){
+      snprintf (newPath,maxSize, "%s", oldPath);
     }
-    return 0;
+  } else if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && servicesNamespaceParentPath && servicesNamespaceParentPath->value){
+
+    char *path=(char*)malloc(1024*sizeof(char));
+    snprintf (path,maxSize, "%s/%s", servicesNamespaceParentPath->value,zooServicesNamespaceMap->value);
+    if (strstr(oldPath,path)) {
+      snprintf (newPath,maxSize, "%s", oldPath);
+    } else {
+      snprintf(newPath, maxSize, path);
+    }
+    free(path);
+  } else {
+    if (oldPath)
+      snprintf (newPath,maxSize, "%s", oldPath);
+  }
+  return 0;
 }
 
 /***
@@ -388,65 +389,64 @@ int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
  *
  * @param pmsConf the conf maps containing the main.cfg settings
  */
-int addServicesNamespaceToMap(maps* pmsConf){
-    int ret=0;
-    int ei = 1;
-    char **orig = environ;
-    char *s=*orig;
-    char* pcNamespaceName=NULL;
+int addServicesNamespaceToMap(maps** pmsConf){
+  int ret=0;
+  int ei = 1;
+  char **orig = environ;
+  char *s=*orig;
+  char* pcNamespaceName=NULL;
 
-    if(orig!=NULL)
-      for (; s; ei++ ) {
-	// retrieving service workspace
-	if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
-	  if (strstr(s,"SERVICES_NAMESPACE")!=NULL){
-	    char* baseU=strchr(s,'=');
-	    if (strlen(baseU)>1) {
-	      pcNamespaceName = ++baseU;
+  if(orig!=NULL)
+    for (; s; ei++ ) {
+      // retrieving service workspace
+      if(strstr(s,"=")!=NULL && strlen(strstr(s,"="))>1){
+	if (strstr(s,"SERVICES_NAMESPACE")!=NULL){
+	  char* baseU=strchr(s,'=');
+	  if (strlen(baseU)>1) {
+	    pcNamespaceName = ++baseU;
 #ifdef DEBUG
-	      fprintf(stderr,"zooServicesNamespace: %s\n",pcNamespaceName);
+	    fprintf(stderr,"zooServicesNamespace: %s\n",pcNamespaceName);
 #endif
 
-	      // checking if namespace folder exists
-	      char *pcaNamespaceFolder = (char *) malloc(1024);
-	      memset(pcaNamespaceFolder, '\0', 1024);
-	      map *servicesNamespaceParentFolder = getMapFromMaps(pmsConf, "servicesNamespace", "path");
-	      if(servicesNamespaceParentFolder!=NULL){
-		sprintf(pcaNamespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, pcNamespaceName);
-		DIR *dir = opendir(pcaNamespaceFolder);
-		if (dir) {
-		  // creating a zooServicesNamespace map
-		  // the map will contain the namespace name
-		  maps *_tmpMaps = createMaps("zooServicesNamespace");
-		  if (_tmpMaps->content == NULL)
-		    _tmpMaps->content = createMap("namespace", pcNamespaceName);
-		  else
-		    addToMap(_tmpMaps->content, "namespace", pcNamespaceName);
-
-		  // adding the zooServicesNamespace map to the other maps
-		  if (pmsConf!=NULL) {
-		    addMapsToMaps(&pmsConf, _tmpMaps);
-		    freeMaps(&_tmpMaps);
-		    free(_tmpMaps);
-		    _tmpMaps=NULL;
-		  }
-		  closedir(dir);
-		} else {
-		  map* error=createMap("code","BadRequest");
-		  addToMap(error,"message",_("The resource is not available"));
-		  printExceptionReportResponseJ(pmsConf,error);
-		  ret = 1;
-		  freeMap(&error);
-		  free(error);
+	    // checking if namespace folder exists
+	    char *pcaNamespaceFolder = (char *) malloc(1024*sizeof(char));
+	    //memset(pcaNamespaceFolder, '\0', 1024);
+	    map *servicesNamespaceParentFolder = getMapFromMaps(*pmsConf, "servicesNamespace", "path");
+	    if(servicesNamespaceParentFolder!=NULL){
+	      sprintf(pcaNamespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, pcNamespaceName);
+	      DIR *dir = opendir(pcaNamespaceFolder);
+	      if (dir) {
+		// creating a zooServicesNamespace map
+		// the map will contain the namespace name
+		if(getMaps(*pmsConf,"zooServicesNamespace")==NULL){
+		  maps *pmsTmp = createMaps("zooServicesNamespace");
+		  pmsTmp->content = createMap ("namespace", pcNamespaceName);
+		  addMapsToMaps(pmsConf, pmsTmp);
+		  freeMaps(&pmsTmp);
+		  free(pmsTmp);
+		  pmsTmp=NULL;
+		}else{
+		  //setMapInMaps(*pmsConf,"lenv","namespace",pcNamespaceName);
+		  setMapInMaps(*pmsConf,"zooServicesNamespace","namespace",pcNamespaceName);
 		}
-		free(pcaNamespaceFolder);
+		//setMapInMaps(pmsConf,"zooServicesNamespace","path",pcaNamespaceFolder);
+		closedir(dir);
+	      } else {
+		map* error=createMap("code","BadRequest");
+		addToMap(error,"message",_("The resource is not available"));
+		printExceptionReportResponseJ(*pmsConf,error);
+		ret = 1;
+		freeMap(&error);
+		free(error);
 	      }
+	      free(pcaNamespaceFolder);
 	    }
 	  }
 	}
-	s = *(orig+ei);
       }
-    return ret;
+      s = *(orig+ei);
+    }
+  return ret;
 }
 
 /***
@@ -535,7 +535,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
   // point to the namespace services path else it will point to
   // the default service path
   char conf_dir[1024];
-    getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
+  getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
 
 
   struct dirent *dp;
@@ -762,14 +762,11 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
     setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
   } 
   else {
-    char conf_dir2[1024*2];
-    memset(conf_dir2,0,1024*2);
-
-    //strcpy(conf_dir2,ntmp);
+    char conf_dir2[1024];
+    memset(conf_dir2,0,1024);
     getServicesNamespacePath(m,ntmp,conf_dir2,1024);
-    strcpy(ntmp,conf_dir2);
 
-    snprintf (tmps1, 1024, "%s/%s.zcfg", ntmp, cIdentifier);
+    snprintf (tmps1, 1024, "%s/%s.zcfg", conf_dir2, cIdentifier);
 #ifdef DEBUG
     fprintf (stderr, "Trying to load %s\n", tmps1);
 #endif
@@ -777,7 +774,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
       {
 	setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
 	char *identifier = zStrdup (cIdentifier);
-	parseIdentifier (m, ntmp, identifier, tmps1);
+	parseIdentifier (m, conf_dir2, identifier, tmps1);
 	map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
 	if (tmpMap != NULL)
 	  addToMap (request_inputs, "metapath", tmpMap->value);
@@ -805,7 +802,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
   }
   if(s1!=NULL){
     inheritance(zooRegistry,spService);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
     addNestedOutputs(spService);
 #endif
     if(zooRegistry!=NULL){
@@ -845,7 +842,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
     int t = readServiceFile (m, tmps1, spService, cIdentifier);
     if(t>=0){
       inheritance(zooRegistry,spService);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
       addNestedOutputs(spService);
 #endif
     }
@@ -939,7 +936,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      continue;
 	    }
 	    inheritance(zooRegistry, &svc);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
 	    addNestedOutputs(&svc);
 #endif
 
@@ -1005,7 +1002,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 		dumpService (s1);
 #endif
 		inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
 		addNestedOutputs(&s1);
 #endif
 		func (zooRegistry, m, doc, n, s1);
@@ -1049,7 +1046,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      dumpService (s1);
 #endif
 	      inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
 	      addNestedOutputs(&s1);
 #endif
 	      func (zooRegistry, m, doc, n, s1);
@@ -1075,7 +1072,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      }
 	      if(s2!=NULL){
 		inheritance(zooRegistry,&s2);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
 		addNestedOutputs(&s2);
 #endif
 		func (zooRegistry,m, doc, n, s2);
@@ -1142,7 +1139,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			dumpService (s1);
 #endif
 			inheritance(zooRegistry,&s1);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
 			addNestedOutputs(&s1);
 #endif
 			func (zooRegistry,m, doc, n, s1);
@@ -1664,8 +1661,6 @@ void
 loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                    maps ** inputs, maps ** ioutputs, int *eres)
 {
-  char serviceNamespacePath[1024];
-  char tmps1[1024];
   char ntmp[1024];
   maps *m = *myMap;
   maps *request_output_real_format = *ioutputs;
@@ -1673,16 +1668,18 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   /**
    * Extract serviceType to know what kind of service should be loaded
    */
+  char *serviceNamespacePath=NULL;
+  if(request_output_real_format!=NULL){
+    serviceNamespacePath=(char*)malloc(1024*sizeof(char));
+    //memset(serviceNamespacePath,'\0',1024);
+    map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
+    map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
 
-  memset(serviceNamespacePath,'\0',1024);
-  map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
-  map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
-
-  if( zooServicesNamespaceMap && strlen(zooServicesNamespaceMap->value)>0 && zooServicesNamespacePathMap && strlen(zooServicesNamespacePathMap->value)>0){
-    sprintf(serviceNamespacePath,"%s/%s",zooServicesNamespacePathMap->value,zooServicesNamespaceMap->value);
-    setMapInMaps(m, "lenv","cwd", serviceNamespacePath);
+    if( zooServicesNamespaceMap && strlen(zooServicesNamespaceMap->value)>0 && zooServicesNamespacePathMap && strlen(zooServicesNamespacePathMap->value)>0){
+      sprintf(serviceNamespacePath,"%s/%s",zooServicesNamespacePathMap->value,zooServicesNamespaceMap->value);
+      setMapInMaps(m, "lenv","cwd", serviceNamespacePath);
+    }
   }
-
   map *r_inputs = NULL;
   map* cwdMap=getMapFromMaps(m,"main","servicePath");
   if(cwdMap!=NULL){
@@ -1705,6 +1702,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
   if (r_inputs!=NULL && strlen (r_inputs->value) == 1
       && strncasecmp (r_inputs->value, "C", 1) == 0)
   {
+    char *tmps1=(char*)malloc(1024*sizeof(char));
       if (libp != NULL && libp->value != NULL) {
           r_inputs = getMap (s1->content, "ServiceProvider");
           sprintf (tmps1, "%s/%s", libp->value, r_inputs->value);
@@ -1717,7 +1715,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
           else
               sprintf (tmps1, "%s/", ntmp);
 
-          char *altPath = zStrdup ( strlen(serviceNamespacePath)>0?serviceNamespacePath:tmps1);
+          char *altPath = zStrdup ( (serviceNamespacePath!=NULL)?serviceNamespacePath:tmps1);
 
           r_inputs = getMap (s1->content, "ServiceProvider");
           sprintf (tmps1, "%s/%s", altPath, r_inputs->value);
@@ -1741,6 +1739,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #ifdef DEBUG
 	  fprintf (stderr, "%s loaded (%s) \n", tmps1, errstr);
 #endif
+	  free(tmps1);
       if (so != NULL)
         {
 #ifdef DEBUG
@@ -2136,6 +2135,7 @@ int ensureFiltered(maps** pmsConf,const char* pcType){
   free(pcaName);
   return 0;
 }
+
 
 
 #ifdef WIN32
@@ -2553,7 +2553,7 @@ runRequest (map ** inputs)
 
    getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
 #ifdef DEBUG
-  fprintf (stderr, "conf_dir: %s\n", conf_dir);
+  fprintf (stderr, "conf_dir: %s\n", conf_dir_);
   fprintf (stderr, "new conf_dir: %s\n", conf_dir);
 #endif
   map* reg = getMapFromMaps (m, "main", "registry");
@@ -2691,9 +2691,9 @@ runRequest (map ** inputs)
       return 1;
     }
 
-
-    ZOO_DEBUG("addServicesNamespaceToMap");
-    int i = addServicesNamespaceToMap(m);
+    // Why don't we do that directly from the securityIn Python service??
+    /*ZOO_DEBUG("addServicesNamespaceToMap");
+    int i = addServicesNamespaceToMap(&m);
     if(i) {
       map* error=createMap("code","BadRequest");
       addToMap(error,"message",_("The resource is not available"));
@@ -2701,12 +2701,12 @@ runRequest (map ** inputs)
       //printExceptionReportResponseJ(m,error);
       setMapInMaps(m,"lenv","status_code","404 Bad Request");
       return 1;
-    }
+      }*/
 
 
     setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
 #ifdef DRU_ENABLED
-    // Routes to OGC API - Processes - Part 2: Deploy, Replace, Undeploy
+    // Routes to OGC API - Processes - Part 2: Deploy, Replace, Undeploy (DRU)
     // retrieves the deploy service provider from main.cfg
     map* deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
     map* undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
@@ -5305,8 +5305,8 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    setMapInMaps(lconf,"lenv","metapath","");
 	    maps* pmsTmp=getMaps(lconf,"lenv");
 
-	    // Define auth_env section in case we fpm_user in the lenv map
-	    // coming from the message received
+	    // Define auth_env section in case we find fpm_user in the lenv
+	    // map coming from the message received
 	    map* pmUserEnv=getMap(*lenv,"fpm_user");
 	    if(pmUserEnv!=NULL){
 	      maps* pmsaUserEnv=createMaps("auth_env");

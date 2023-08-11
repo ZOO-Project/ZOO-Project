@@ -33,6 +33,7 @@ def securityIn(conf,inputs,outputs):
             conf["auth_env"]={"user": conf["renv"][i],"cwd": rPath}
             conf["lenv"]["fpm_user"]=conf["renv"][i]
             conf["lenv"]["fpm_cwd"]=rPath
+            conf["zooServicesNamespace"]={"namespace": conf["renv"][i],"cwd": rPath}
             break
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)

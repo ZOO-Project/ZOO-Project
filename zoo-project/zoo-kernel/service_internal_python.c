@@ -313,16 +313,15 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       if (pValue != NULL) {
 	res=PyInt_AsLong(pValue);
 	bool isNotNull=false;
-	if(real_outputs!=NULL){
+	freeMaps(&m);
+	free(m);
+	*main_conf=mapsFromPyDict(arg1);
+	if(*real_outputs!=NULL && arg3!=(PyDictObject*) Py_None){
 	  freeMaps(real_outputs);
 	  free(*real_outputs);
 	  isNotNull=true;
-	}
-	freeMaps(main_conf);
-	free(*main_conf);
-	*main_conf=mapsFromPyDict(arg1);
-	if(isNotNull)
 	  *real_outputs=mapsFromPyDict(arg3);
+	}
 #ifdef DEBUG
 	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
 	dumpMaps(inputs);
@@ -442,8 +441,8 @@ void PythonZooReport(maps* m,const char* module,int load){
  * @warning make sure to free resources returned by this function
  */
 PyDictObject* PyDict_FromMaps(maps* t){
-  /*if(t==NULL)
-    return Py_INCREF(Py_None),(PyDictObject*) Py_None;*/
+  if(t==NULL)
+    return Py_INCREF(Py_None),(PyDictObject*) Py_None;
   PyObject* res=PyDict_New( );
   maps* tmp=t;
   while(tmp!=NULL){
@@ -600,7 +599,7 @@ PyDictObject* PyDict_FromMap(map* t){
       }
     }
     else{
-      if(PyDict_GetItem(res,name)==NULL){
+      if(PyDict_GetItem(res,name)==NULL && pmTmp!=NULL && pmTmp->value!=NULL){
 	PyObject* value=PyString_FromString(pmTmp->value);
 	if(PyDict_SetItem(res,name,value)<0){
 	  Py_DECREF(value);
@@ -626,8 +625,8 @@ PyDictObject* PyDict_FromMap(map* t){
 maps* mapsFromPyDict(PyDictObject* t){
   maps* res=NULL;
   maps* cursor=NULL;
-  /*if(t==(PyDictObject*)Py_None)
-    return NULL;*/
+  if(t==(PyDictObject*) Py_None)
+    return NULL;
   PyObject* list=PyDict_Keys((PyObject*)t);
   int nb=PyList_Size(list);
   int i;
@@ -723,6 +722,8 @@ maps* _mapsFromPyDict(PyDictObject* t){
 map* mapFromPyDict(PyDictObject* t){
   map* res=NULL;
   PyObject* list=PyDict_Keys((PyObject*)t);
+  if(list==(PyObject*) Py_None)
+    return NULL;
   int nb=PyList_Size(list);
   int i;
   PyObject* key;
