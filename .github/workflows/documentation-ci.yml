@@ -18,21 +18,21 @@ jobs:
     - name: Build the Documentation using sphinx Docker image
       run: |
         docker run --rm -v $(pwd)/docs:/docs sphinxdoc/sphinx:6.2.0 make html ;
-        sudo touch docs/_build/html/.nojekyll ;
-        sudo cp docs/_config.yml docs/_build/html/
+        touch docs/_build/html/.nojekyll ;
+        cp docs/_config.yml docs/_build/html/
     - name: Build the Documentation using doxygen Docker image
       run: |
         docker run --rm -v $(pwd)/zoo-project/zoo-kernel:/data hrektts/doxygen doxygen  ;
-        sudo cp -r zoo-project/zoo-kernel/html docs/_build/html/C_API
+        cp -r zoo-project/zoo-kernel/html docs/_build/html/C_API
     - name: Build documentation using JSDoc
       run: |
         npm install -g jsdoc ;
         npm install -g ink-docstrap ;
         npm install -g taffydb ;
         cd zoo-project/zoo-client/lib/js/wps-client ;
-        sudo jsdoc *js -R ../../../../../README.md -t /usr/local/lib/node_modules/ink-docstrap/template  ;
+        jsdoc *js -R ../../../../../README.md -t /usr/local/lib/node_modules/ink-docstrap/template  ;
         cd ../../../../.. ;
-        sudo cp -r zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
+        cp -r zoo-project/zoo-client/lib/js/wps-client/out docs/_build/html/JS_API
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@v4
       with:
