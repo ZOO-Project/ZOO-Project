@@ -3984,8 +3984,8 @@ runRequest (map ** inputs)
 	    map* pmError=NULL;
 	    if(bIsDeploy){
 	      setMapInMaps(m,"headers","Status","409 Conflict");
-	      map* pmError=createMap("code","DuplicateProcess");
-	      addToMap(pmError,"message",_("The process is already deployed."));
+	      map* pmError=createMap("code","DuplicatedProcess");
+	      addToMap(pmError,"message",_("A service with the same identifier is already deployed"));
 	    }else{
 	      pmError=createMap("code","InternalError");
 	      addToMap(pmError,"message",_("An error occured when trying to undeploy your service."));
@@ -4013,10 +4013,8 @@ runRequest (map ** inputs)
 	    if(!bIsDeploy && !bIsUndeploy)
 #endif
 	      res=printJResult(m,s1,request_output_real_format,eres);
-#ifdef DRU_ENABLED
 	  if(getMapFromMaps(m,"openapi","ensure_storing_result_every_execute")!=NULL)
 	    setMapInMaps(m,"lenv","output_response","true");
-#endif
 	}
 	freeService (&s1);
 	free(s1);

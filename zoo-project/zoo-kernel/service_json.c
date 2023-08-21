@@ -1007,13 +1007,21 @@ extern "C" {
   json_object *createExceptionJ(maps* m,map* s){
     json_object *res=json_object_new_object();
     map* pmTmp=getMap(s,"code");
+    if(pmTmp==NULL)
+      pmTmp=getMapFromMaps(m,"lenv","code");
     if(pmTmp!=NULL){
       json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       int hasType=-1;
-      for(i=0;i<5;i++){
+      for(i=0;i<6;i++){
 	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
 	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
+	  // Use OGC API - Processes - Part 2: Deploy, Replace, Undeploy
+	  // exceptions
+	  // cf. /req/deploy-replace-undeploy/deploy/response-duplicate
+	  // cf. /req/deploy-replace-undeploy/deploy/response-immutable
+	  if(i>=4)
+	    pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl_1");
 	  char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
 	  sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
 	  json_object_object_add(res,"type",json_object_new_string(pcaTmp));

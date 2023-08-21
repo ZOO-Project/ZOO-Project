@@ -419,19 +419,21 @@ extern "C" {
 	"NoSuchJob",
 	"ResultNotReady",
 	"InvalidQueryParameterValue",
-	"DuplicatedProcess"
+	"DuplicatedProcess",
+	"ImmutableProcess"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[5][2] = {
+  static const int OAPIPCorrespondances[6][2] = {
     {9,0},
     {20,1},
     {21,2},
     {22,3},
-    {23,4}
+    {23,4},
+    {24,5}
   };
 
   /**
@@ -443,7 +445,8 @@ extern "C" {
 	"no-such-job",
 	"result-not-ready",
 	"invalid-query-parameter-value",
-	"duplicate-process"
+	"duplicated-process",
+	"immutable-process"
   };
 
   /**
