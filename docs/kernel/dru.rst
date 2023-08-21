@@ -37,17 +37,13 @@ optional DRU support.
 Be sure you have all the prerequisistes setup before starting the
 installation.
 
-For deploying the ZOO-Project in production on a Kubernetes cluster
-(e.g. commercial providers), please proceed to the section [Install on
-a Kubernetes Cluster](Install on a Kubernetes Cluster).
-
 For deploying the ZOO-Project for developing and testing purposes
-(e.g. on local machine), please proceed to the section [Install on a
-Minikube Cluster](Install on a Minikube Cluster)
+(e.g. on local machine), please proceed to the section
+:ref:`Installation on a Minikube Cluster`.
 
 For building the ZOO-Project docker image using the project source
-code, please proceed to the section [Build from source](Build from
-source) 
+code, please proceed to the section :ref:`Building the docker image
+(for developper)`.
 
 Prerequisites
 .....................
@@ -56,6 +52,8 @@ Prerequisites
    * latest `ZOO-Kernel
      <https://github.com/ZOO-Project/ZOO-Project/tree/main/zoo-project/zoo-kernel>`_
      trunk version
+
+.. _Installation on a Minikube Cluster:
 
 Installation on a Minikube Cluster
 .................................
@@ -78,7 +76,7 @@ By default, the ZOO-Project uses Longhorn storage class for
 instantiating Kubernetes volumes. Minikube does not support Longhorn,
 therefor we highly recommend to use the standard storage class.
 
-To configure Minikube standard storage class please use the
+To configure Minikube standard storage class, please use the
 parameters defined in the `chart/ades/mycharts/values_minikube.yaml
 <https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
 file.
@@ -192,6 +190,8 @@ Get the application URL by running these commands:
 At this step, the ZOO-Project-DRU deployment using helm chart should
 be accesible from this address:
 http://127.0.0.1:8080/ogc-api/api.html.
+
+.. _Building the docker image (for developper):
 
 Building the docker image (for developper)
 ##########################################
