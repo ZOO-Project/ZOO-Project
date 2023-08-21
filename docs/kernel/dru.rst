@@ -4,21 +4,22 @@ Optional DRU support
 ====================
 
 The optional ZOO-Kernel DRU support gives you the opportunity to use
-OGC API - Processes - Part 2: Deploy, Replace, Undeploy extention. It
+`OGC API - Processes - Part 2: Deploy, Replace, Undeploy
+<https://docs.ogc.org/DRAFTS/20-044.html>`_ draft specificatoin. It
 means that your server will provide new end-points to setup a new
 process, update an existing one, or delete a deployed (mutable)
 process.
 
 The DRU support is designed to perform the processing function on a
 `Kubernetes <https://kubernetes.io/>`_ cluster using the `Calrissian
-<https://github.com/Duke-GCB/calrissian>`_, a `Common Workflow Language
-runner <https://www.commonwl.org/>`_ for Kubernetes. Calrissian uses
-CWL, an open standard defining Command Line Tools and Workflow
-classes, over Kubernetes that enables the implementation of each step
-in a workflow as a container. It provides simple, flexible mechanisms
-for specifying constraints between the steps in a workflow and
-artifact management for linking the output of any step as an input to
-subsequent steps.
+<https://github.com/Duke-GCB/calrissian>`_, a `Common Workflow
+Language runner <https://www.commonwl.org/>`_ for
+Kubernetes. Calrissian uses CWL, an open standard defining Command
+Line Tools and Workflow classes, over Kubernetes that enables the
+implementation of each step in a workflow as a container. It provides
+simple, flexible mechanisms for specifying constraints between the
+steps in a workflow and artifact management for linking the output of
+any step as an input to subsequent steps.
 
 .. |slurm| image:: https://slurm.schedmd.com/slurm_logo.png
        :height: 100px
@@ -77,74 +78,10 @@ By default, the ZOO-Project uses Longhorn storage class for
 instantiating Kubernetes volumes. Minikube does not support Longhorn,
 therefor we highly recommend to use the standard storage class.
 
-To configure Minikube standard storage class please modify the
-following parameters in the `chart/ades/mycharts/values_minikube.yaml
+To configure Minikube standard storage class please use the
+parameters defined in the `chart/ades/mycharts/values_minikube.yaml
 <https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
 file.
-
-**ades-longhorn.enabled**
-
-from:
-
-.. code-block:: guess
-
-     ades-longhorn:
-       enabled: true
-
-to:
-
-.. code-block:: guess
-
-     ades-longhorn:
-       enabled: false
-
-
-**workflowExecutor.processingStorageClass**
-
-from:
-
-.. code-block:: guess
-
-     processingStorageClass: longhorn
-
-to:
-
-.. code-block:: guess
-
-     processingStorageClass: standard
-
-**persistence.storageClass**
-
-from:
-
-.. code-block:: guess
-
-     storageClass: longhorn
-
-to:
-
-.. code-block:: guess
-
-     storageClass: standard
-
-
-Storage endpoint configuration
-##############################
-
-To configure the S3 compatible object storage where the processing
-results will be stored, uncomment and modify the STAGEOUT parameters
-in the `chart/ades/mycharts/values_minikube.yaml
-<https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
-file as bellow:
-
-.. code-block:: guess
-
-      STAGEOUT_AWS_SERVICEURL: https://mys3repositoryendpoint.com
-      STAGEOUT_AWS_ACCESS_KEY_ID: myAccesKeyId 
-      STAGEOUT_AWS_SECRET_ACCESS_KEY: mySecretAccessKey
-      STAGEOUT_AWS_REGION: RegionOne 
-      STAGEOUT_OUTPUT: s3://processingresults
-
 
 
 Setup a Minio S3 Object Storage on Kubernetes (optional)
@@ -179,16 +116,19 @@ Now run the commands bellow.
 
 Access the Minio dashboard from your browser at the address
 http://localhost:9000/minio. Using the dashboard, create a bucket
-called **processingresults**. Now, you can configure the stageout
-storage endpoint in the values.yaml file with the following values:
+called **processingresults**. Now, you can configure the storage
+endpoint in the `chart/ades/mycharts/values_minikube.yaml
+<https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
+file with the following values:
 
 .. code-block:: guess
 
-      STAGEOUT_AWS_SERVICEURL: http://my-minio-fs.minio.svc.cluster.local:9000  
-      STAGEOUT_AWS_ACCESS_KEY_ID: minio  
-      STAGEOUT_AWS_SECRET_ACCESS_KEY: minio123  
-      STAGEOUT_AWS_REGION: RegionOne  
+      AWS_SERVICEURL: http://my-minio-fs.minio.svc.cluster.local:9000  
+      AWS_ACCESS_KEY_ID: minio  
+      AWS_SECRET_ACCESS_KEY: minio123  
+      AWS_REGION: RegionOne  
       STAGEOUT_OUTPUT: s3://processingresults
+      
 
 Create a dedicated namespace for the ZOO-Project
 ################################################
@@ -208,8 +148,8 @@ For instance, let's create a `zoo-project-dru` namespace.
 Deploy using Helm
 #################
 
-The ZOO-Project is setup via helm specifying an optional "release
-name".
+The ZOO-Project with DRU support is setup via helm specifying an
+optional "release name".
 
 For instance, we will install the ZOO-Project with the name `zoo-project-dru`.
 
