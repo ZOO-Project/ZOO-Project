@@ -1,0 +1,22 @@
+name: ades-dev
+channels:
+  - anaconda
+  - conda-forge
+  - terradue
+  - eoepca
+  - terradue/label/dev
+dependencies:
+  - python=3.8
+  - jinja2
+  - cookiecutter=1.7.2
+  - boto3
+  - pycalrissian
+  - zoo-calrissian-runner=0.1.7
+  - python-kubernetes
+  - cwl-wrapper=0.10.1
+  - coverage
+  - pip
+  - pip:
+    - cwl_utils==0.14
+    - cheetah3
+    - psycopg2-binary

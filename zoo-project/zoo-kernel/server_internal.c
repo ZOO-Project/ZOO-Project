@@ -531,8 +531,7 @@ char *base64(const char *input, int length)
 char *base64d(const char *input, int length,int* red)
 {
   BIO *b64, *bmem;
-
-  char *buffer = (char *)malloc(length);
+  char *buffer = (char *)malloc(length+1);
   if(buffer){
     memset(buffer, 0, length);
     b64 = BIO_new(BIO_f_base64());

@@ -193,11 +193,19 @@ extern "C" {
  * The global dismissed status for a service
  */
 #define SERVICE_DISMISSED 5
+/**
+ * The global deployed status for a service
+ */
+#define SERVICE_DEPLOYED 6
+/**
+ * The global undelployed status for a service
+ */
+#define SERVICE_UNDEPLOYED 7
 
 /**
  * The ZOO_DEBUG macro print message with function name, file name and line number
  */
-#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++----++ %s %s %d: ",__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
+#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++- %d -++ %s %s %d: ",getpid(),__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
 
 /**
  * The memory size to create an elements
@@ -342,6 +350,8 @@ extern "C" {
     "SERVICE_SUCCEEDED",
     "SERVICE_FAILED",
     "SERVICE_DISMISSED",
+    "SERVICE_DEPLOYED",
+    "SERVICE_UNDEPLOYED",
     NULL
   };
 
@@ -408,18 +418,22 @@ extern "C" {
 	"InternalServerError",
 	"NoSuchJob",
 	"ResultNotReady",
-	"InvalidQueryParameterValue"
+	"InvalidQueryParameterValue",
+	"DuplicatedProcess",
+	"ImmutableProcess"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[4][2] = {
+  static const int OAPIPCorrespondances[6][2] = {
     {9,0},
     {20,1},
     {21,2},
-    {22,3}
+    {22,3},
+    {23,4},
+    {24,5}
   };
 
   /**
@@ -430,7 +444,9 @@ extern "C" {
 	"no-such-process",
 	"no-such-job",
 	"result-not-ready",
-	"invalid-query-parameter-value"
+	"invalid-query-parameter-value",
+	"duplicated-process",
+	"immutable-process"
   };
 
   /**

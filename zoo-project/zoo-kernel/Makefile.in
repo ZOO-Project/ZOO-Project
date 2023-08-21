@@ -56,7 +56,7 @@ caching.o: caching.c
 	$(CXX) -fPIC ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} -c caching.c
 
 service_internal_amqp.o: service_internal_amqp.c
-	$(CXX) ${CFLAGS} -c service_internal_amqp.c
+	$(CXX) ${CFLAGS} ${XML2CFLAGS} ${JSON_CFLAGS} -c service_internal_amqp.c
 
 response_print.o: response_print.c response_print.h
 	$(CXX) -fPIC ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${HPC_ENABLED} -c response_print.c
@@ -134,8 +134,9 @@ zoo_loader.cgi: version.h libzoo_service.${EXT} zoo_loader.c zoo_service_loader.
 
 
 zoo_loader_fpm: version.h libzoo_service.${EXT} zoo_loader_fpm.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o request_parser.o response_print.o server_internal.o caching.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${NODEJS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${R_FILE} ${SAGA_FILE} ${HPC_FILES} ${METADB_FILE} ${JSON_FILE} ${CALLBACK_FILE}  ${RABBITMQ_FILE}
-	$(CXX) -g -O2 ${JSON_CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${JSON_CPPFLAGS} ${GDAL_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${CFLAGS} -c zoo_loader_fpm.c  -fno-common -DPIC -o zoo_loader_fpm.o
-	$(CXX) ${JSON_CFLAGS}  ${JSCFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader_fpm.o zoo_service_loader.o ${RABBITMQ_FILE} ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${NODEJS_FILE} ${JAVA_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} ${HPC_FILES} ${METADB_FILE} ${JSON_FILE} ${R_FILE} ${CALLBACK_FILE} ${IRODS_FILE} response_print.o server_internal.o caching.o request_parser.o ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader_fpm -L. ${LDFLAGS}
+	$(CXX) -g -O2 ${JSON_CFLAGS} ${JSCFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${JSON_CPPFLAGS} ${GDAL_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${CFLAGS} -c zoo_loader_fpm.c  -fno-common -DPIC -o zoo_loader_fpm.o
+	$(CXX) ${JSON_CFLAGS}  ${JSCFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${PHPCFLAGS} ${PERLCFLAGS} ${JAVACFLAGS} ${PYTHONCFLAGS} ${CFLAGS} zoo_loader_fpm.o zoo_service_loader.o ${RABBITMQ_FILE} ${MS_FILE} ${PYTHON_FILE}  ${PERL_FILE} ${PHP_FILE}  ${JS_FILE} ${NODEJS_FILE}  ${JAVA_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} ${HPC_FILES} ${METADB_FILE} ${JSON_FILE} ${R_FILE} ${CALLBACK_FILE} ${IRODS_FILE} response_print.o server_internal.o caching.o request_parser.o ulinet.o lex.cr.o lex.sr.o service_conf.tab.o main_conf_read.tab.o -o zoo_loader_fpm -L. -rdynamic ${LDFLAGS} 
+
 
 
 zcfg2yaml: zcfg2yaml.c service.h lex.sr.o service_conf.tab.o service_conf.y main_conf_read.tab.o lex.cr.o response_print.o server_internal.o service_internal.o ${MS_FILE} ${YAML_FILE} 

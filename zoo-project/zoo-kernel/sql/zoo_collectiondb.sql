@@ -255,11 +255,13 @@ create table CollectionDB.ows_Process (
     abstract text,
     identifier varchar(255),
     availability boolean,
+    mutable boolean,
     process_description_xml text,
-    private_metadata_id int references CollectionDB.zoo_PrivateMetadata(id) ON DELETE CASCADE
+    private_metadata_id int references CollectionDB.zoo_PrivateMetadata(id) ON DELETE CASCADE,
+    user_id int REFERENCES public.users(id) ON DELETE CASCADE
 ); -- inherits (CollectionDB.Descriptions);
 alter table CollectionDB.ows_Process add constraint codb_process_id unique (id);
-alter table CollectionDB.ows_Process add constraint codb_process_identifier unique (identifier);
+alter table CollectionDB.ows_Process add constraint codb_process_identifier unique (identifier,user_id);
 CREATE TRIGGER ows_Process_proc AFTER INSERT ON CollectionDB.ows_Process FOR EACH ROW EXECUTE PROCEDURE update_Description();
 
 create table CollectionDB.InputInputAssignment (
@@ -345,7 +347,9 @@ CREATE OR REPLACE VIEW public.ows_process AS
 	(SELECT service_type FROM CollectionDB.zoo_ServiceTypes WHERE id = (SELECT service_type_id FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id)))) as service_type,
 	(SELECT executable_name FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as service_provider,
 	(SELECT configuration_identifier FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as conf_id,
-	availability
+	mutable,
+	availability,
+	user_id
 	FROM CollectionDB.ows_Process
 	WHERE
 	 availability

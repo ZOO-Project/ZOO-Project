@@ -590,6 +590,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	    md5str=getMd5(myRequest);
 	    request=zStrdup(tmpStr);
 	    free(tmpStr);
+	    free(myRequest);
 	  }else{
 	    char *myRequest=getFilenameForRequest(*m,tmp1->value);
 	    md5str=getMd5(myRequest);

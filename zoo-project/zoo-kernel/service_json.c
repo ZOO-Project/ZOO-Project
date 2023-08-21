@@ -92,6 +92,16 @@ extern "C" {
   }
 
   /**
+   * Trivial verification, check if a json_bool is equal to FALSE
+   *
+   * @param jbValue json_bool value to verify if null
+   * @return bool result of the test (jbValue==FALSE)
+   */
+  bool jsonIsFalse(json_bool value){
+    return (value==FALSE);
+  }
+
+  /**
    * Convert a map to a json object
    * @param myMap the map to be converted into json object
    * @return a json_object pointer to the created json_object
@@ -816,7 +826,10 @@ extern "C" {
       res=json_object_new_object();
     else
       res=(json_object*) nc0;
-      
+#ifdef DRU_ENABLED
+    if(serviceIsDRU(m,serv->name))
+      return;
+#endif
     map* tmpMap0=getMapFromMaps(m,"lenv","level");
     char* rUrl=serv->name;
     if(tmpMap0!=NULL && atoi(tmpMap0->value)>0){
@@ -870,6 +883,15 @@ extern "C" {
       if(tmpMap!=NULL){
 	json_object_object_add(res,"description",json_object_new_string(_ss(tmpMap->value)));
       }
+      tmpMap=getMap(serv->content,"mutable");
+      if(tmpMap==NULL)
+	json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
+      else{
+	if(strcmp(tmpMap->value,"false")==0)
+	  json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
+	else
+	  json_object_object_add(res,"mutable",json_object_new_boolean(TRUE));
+      }
       tmpMap=getMap(serv->content,"processVersion");
       if(tmpMap!=NULL){
 	if(strlen(tmpMap->value)<5){
@@ -891,6 +913,11 @@ extern "C" {
 	printJAdditionalParameters(m,serv->additional_parameters,res);
       }
       map* sType=getMap(serv->content,"serviceType");
+      map* pmMutable=getMap(serv->content,"mutable");
+      if(pmMutable==NULL || strncasecmp(pmMutable->value,"true",4)==0){
+	i=2;
+	limit=6;
+      }
       for(;i<limit;i+=2){
 	json_object *res2=json_object_new_array();
 	char *saveptr;
@@ -980,13 +1007,21 @@ extern "C" {
   json_object *createExceptionJ(maps* m,map* s){
     json_object *res=json_object_new_object();
     map* pmTmp=getMap(s,"code");
+    if(pmTmp==NULL)
+      pmTmp=getMapFromMaps(m,"lenv","code");
     if(pmTmp!=NULL){
       json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       int hasType=-1;
-      for(i=0;i<4;i++){
+      for(i=0;i<6;i++){
 	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
 	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
+	  // Use OGC API - Processes - Part 2: Deploy, Replace, Undeploy
+	  // exceptions
+	  // cf. /req/deploy-replace-undeploy/deploy/response-duplicate
+	  // cf. /req/deploy-replace-undeploy/deploy/response-immutable
+	  if(i>=4)
+	    pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl_1");
 	  char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
 	  sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
 	  json_object_object_add(res,"type",json_object_new_string(pcaTmp));
@@ -1025,8 +1060,9 @@ extern "C" {
    */
   void printExceptionReportResponseJ(maps* m,map* s){
     map* pmHasprinted=getMapFromMaps(m,"lenv","hasExceptionPrinted");
-    if(pmHasprinted!=NULL && strncasecmp(pmHasprinted->value,"true",4)==0)
+    if(pmHasprinted!=NULL && strncasecmp(pmHasprinted->value,"true",4)==0){
       return;
+    }
     pmHasprinted=getMapFromMaps(m,"lenv","hasPrinted");
     int buffersize;
     //json_object *res=json_object_new_object();
@@ -1068,11 +1104,9 @@ extern "C" {
 	}
       }
     }
-    
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
     if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
       setMapInMaps(m,"lenv","jsonStr",jsonStr);
-
     if(pmHasprinted==NULL || strncasecmp(pmHasprinted->value,"false",5)==0){
       printf(jsonStr);
       if(m!=NULL){
@@ -1964,6 +1998,7 @@ extern "C" {
    * @return the JSON object pointer to the result
    */
   json_object* printJResult(maps* conf,service* s,maps* result,int res){
+
     if(res==SERVICE_FAILED){
       char* pcaTmp=produceErrorMessage(conf);
       map* pamTmp=createMap("message",pcaTmp);
@@ -1978,7 +2013,14 @@ extern "C" {
     }
     map* pmMode=getMapFromMaps(conf,"request","response");
     if(pmMode!=NULL && strncasecmp(pmMode->value,"raw",3)==0){
+      // raw response
       maps* resu=result;
+
+      // when the response is SERVICE DEPLOYED
+      // we want to return a 201 status code
+      if (res == SERVICE_DEPLOYED){
+          setMapInMaps(conf,"headers","Status","201 Service Deployed");
+      }
       printRawdataOutputs(conf,s,resu);
       map* pmError=getMapFromMaps(conf,"lenv","error");
       if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
@@ -1986,6 +2028,7 @@ extern "C" {
       }
       return NULL;
     }else{
+      // not raw response
       json_object* eres1=json_object_new_object();
       map* pmIOAsArray=getMapFromMaps(conf,"openapi","io_as_array");
       json_object* eres=NULL;
@@ -2244,13 +2287,14 @@ extern "C" {
       }
       if(res==3){
         map* mode=getMapFromMaps(conf,"request","mode");
-        if(mode!=NULL && strncasecmp(mode->value,"async",5)==0)
-	  setMapInMaps(conf, "headers", "Status", "201 Created");
-        else
-	  setMapInMaps(conf, "headers", "Status", "200 Ok");
-      }
-      else{
-	setMapInMaps(conf,"headers","Status","500 Issue running your service");
+        if(mode!=NULL && strncasecmp(mode->value,"async",5)==0) {
+            setMapInMaps(conf, "headers", "Status", "201 Created");
+        }
+        else {
+            setMapInMaps(conf, "headers", "Status", "200 Ok");
+        }
+      } else{
+        setMapInMaps(conf,"headers","Status","500 Issue running your service");
       }
       return eres;
     }
@@ -3228,17 +3272,20 @@ extern "C" {
 	      }
 	      json_object_object_add(methodc,"parameters",cc2);
 	    }
-	    if(/*i==1 && */cMap!=NULL && strncasecmp(cMap->value,"post",4)==0){
-	      int len=1;
+	    if(/*i==1 && */cMap!=NULL &&
+	       (strncasecmp(cMap->value,"post",4)==0
+		||
+		strncasecmp(cMap->value,"put",3)==0)){
+	      int iLen=1;
 	      map* pmRequestBodyLength=getMapArray(tmpMaps->content,"requestBody_length",i);
 	      if(pmRequestBodyLength!=NULL)
-		len=atoi(pmRequestBodyLength->value);
+		iLen=atoi(pmRequestBodyLength->value);
 	      char* pcaKey0=getMapArrayKey(tmpMaps->content,"requestBody",i);
 	      int iCnt=0;
 	      int iCounter=0;
 	      json_object *cc1=NULL;
 	      json_object *cc2=NULL;
-	      for(;iCounter<len;iCounter++){
+	      for(;iCounter<iLen;iCounter++){
 		map* pmRequestBodyName=getMapArray(tmpMaps->content,pcaKey0,iCounter);
 		maps* tmpMaps1=getMaps(conf,(pmRequestBodyName==NULL?"requestBody":pmRequestBodyName->value));
 		if(tmpMaps1!=NULL){
@@ -3246,11 +3293,16 @@ extern "C" {
 		  if(vMap!=NULL){
 		    int iIsRef=-1;
 		    json_object *cc=json_object_new_object();
-		    json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
+		    if(strcasecmp(vMap->value,"string")!=0)
+		      json_object_object_add(cc,"$ref",json_object_new_string(vMap->value));
+		    else
+		      json_object_object_add(cc,"type",json_object_new_string(vMap->value));
 		    json_object *cc0=json_object_new_object();
 		    json_object_object_add(cc0,"schema",cc);
 		    // Add examples from here
 		    char* pcaKey1=getMapArrayKey(tmpMaps->content,"examples",i);
+		    char actmp0[10];
+		    sprintf(actmp0,"%d",iCounter);
 		    map* pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
 		    if(pmExample==NULL){
 		      free(pcaKey1);
@@ -3258,7 +3310,7 @@ extern "C" {
 		      pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
 		      iIsRef=1;
 		    }
-		    if(pmExample!=NULL){
+		    if(pmExample!=NULL) {
 		      char* saveptr;
 		      map* pmExamplesPath=getMapFromMaps(conf,"openapi","examplesPath");
 		      json_object* prop5=json_object_new_object();
@@ -3291,8 +3343,31 @@ extern "C" {
 			free(pcaKey2);
 			json_object_object_add(pjoExempleItem,"summary",json_object_new_string(pcaTmp));
 			if(iIsRef<0){
-			  json_object* pjoValue=json_readFile(conf,pcaExempleFile);
-			  json_object_object_add(pjoExempleItem,"value",pjoValue);
+			  // Apply filter by Content-Type
+			  if(strstr(pcaExempleFile,"cwl")==NULL){
+			    json_object* pjoValue=json_readFile(conf,pcaExempleFile);
+			    json_object_object_add(pjoExempleItem,"value",pjoValue);
+			  }else{
+			    // Read the cwl and insert it as example item
+			    zStatStruct zssStatus;
+			    int iStat=zStat(pcaExempleFile, &zssStatus);
+			    if(iStat==0){
+			      char* pcaFcontent = NULL;
+			      long long llFsize=0;
+			      FILE* f=fopen(pcaExempleFile,"rb");
+			      if(f!=NULL){
+				pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
+				fread(pcaFcontent,zssStatus.st_size,1,f);
+				pcaFcontent[zssStatus.st_size]=0;
+				fclose(f);
+				char* pcaCurrentValue=(char*)malloc((zssStatus.st_size+4)*sizeof(char));
+				sprintf(pcaCurrentValue,"|-\n%s",pcaFcontent);
+				json_object_object_add(pjoExempleItem,"value",json_object_new_string(pcaFcontent));
+				free(pcaFcontent);
+				free(pcaCurrentValue);
+			      }
+			    }
+			  }
 			}else{
 			  json_object_object_add(pjoExempleItem,"externalValue",json_object_new_string(tmps));
 			}
@@ -3312,7 +3387,7 @@ extern "C" {
 		      json_object_object_add(cc1,"application/json",cc0);
 		    if(iCounter==0)
 		      cc2=json_object_new_object();
-		    if(iCounter+1==len){
+		    if(iCounter+1==iLen){
 		      json_object_object_add(cc2,"content",cc1);
 		      vMap=getMap(tmpMaps1->content,"abstract");
 		      if(vMap!=NULL)
@@ -3419,7 +3494,147 @@ extern "C" {
     json_object_array_add(res3,res4);
     json_object_object_add(res,"servers",res3);
   }
-  
+
+#ifdef DRU_ENABLED
+  /**
+   * Print exception report in case Deploy or Undeploy failed to execute
+   *
+   * @param conf the main configuration maps pointer
+   */
+  void handleDRUError(maps* conf){
+    map* pmError=getMapFromMaps(conf,"lenv","jsonStr");
+    setMapInMaps(conf,"lenv","hasPrinted","false");
+    setMapInMaps(conf,"lenv","no-headers","false");
+    setMapInMaps(conf,"headers","Status","500 Internal Server Error");
+    setMapInMaps(conf,"lenv","status_code","500 Internal Server Error");
+    if(pmError!=NULL){
+      printHeaders(conf);
+      printf("\r\n");
+      printf(pmError->value);
+      printf("\n");
+    }else{
+      pmError=createMap("code","InternalError");
+      map* pmMessage=getMapFromMaps(conf,"lenv","message");
+      map* pmORequestMethod=getMapFromMaps(conf,"lenv","orequest_method");
+      if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0){
+	if(pmMessage!=NULL){
+	  char* pcaMessage=(char*)malloc((strlen(pmMessage->value)+strlen(_("Failed to update the process!"))+1)*sizeof(char));
+	  sprintf(pcaMessage,"%s %s",_("Failed to update the process!"),pmMessage->value);
+	  addToMap(pmError,"message",pcaMessage);
+	  free(pcaMessage);
+	}else
+	  addToMap(pmError,"message",_("Failed to update the process!"));
+      }
+      else{
+	if(pmMessage!=NULL){
+	  char* pcaMessage=(char*)malloc((strlen(pmMessage->value)+strlen(_("Failed to deploy process!"))+1)*sizeof(char));
+	  sprintf(pcaMessage,"%s %s",_("Failed to deploy process!"),pmMessage->value);
+	  addToMap(pmError,"message",pcaMessage);
+	  free(pcaMessage);
+	}else
+	  addToMap(pmError,"message",_("Failed to deploy process!"));
+      }
+      printExceptionReportResponseJ(conf,pmError);
+      freeMap(&pmError);
+      free(pmError);
+    }
+    setMapInMaps(conf,"lenv","no-headers","true");
+    setMapInMaps(conf,"lenv","hasPrinted","true");
+  }
+
+  /**
+   * Convert a CWL to OGC Application Package format
+   *
+   * @param conf the main configuration maps pointer
+   * @param request_inputs map containing the request inputs
+   * @param pjRequest the json_object corresponding to the initial payload
+   */
+  json_object* convertCwlToOGCAppPkg(maps* conf,map* request_inputs){
+    json_object* pjRes=NULL;
+    map* pmJRequest=getMap(request_inputs,"jrequest");
+    map* pmCgiContentType=getMapFromMaps(conf,"request","Content-Type");
+    if(pmJRequest!=NULL && pmCgiContentType!=NULL && strstr(pmCgiContentType->value,"cwl")!=NULL){
+      pjRes=json_object_new_object();
+      json_object *pjExecutionUnit=json_object_new_object();
+      json_object *pjExecutionUnitFormat=json_object_new_object();
+      json_object_object_add(pjExecutionUnitFormat,"mediaType",json_object_new_string("application/cwl"));
+      json_object_object_add(pjExecutionUnit,"value",json_object_new_string(pmJRequest->value));
+      json_object_object_add(pjExecutionUnit,"format",pjExecutionUnitFormat);
+      json_object* pjExecutionUnits=json_object_new_array();
+      json_object_array_add(pjExecutionUnits,pjExecutionUnit);
+      json_object_object_add(pjRes,"executionUnit",pjExecutionUnits);
+    }
+    return pjRes;
+  }
+
+  /**
+   * Convert an OGC Application Package into a standard execute payload
+   *
+   * @param conf the main configuration maps pointer
+   * @param request_inputs map containing the request inputs
+   * @param pjRequest the json_object corresponding to the initial payload
+   * @return 0 in case of success.
+   */
+  int convertOGCAppPkgToExecute(maps* conf,map* request_inputs,json_object** pjRequest){
+    json_object* pjRes=json_object_new_object();
+    json_object* pjProcessDescription=NULL;
+    json_object* pjExecutionUnit=NULL;
+    if(json_object_object_get_ex(*pjRequest, "processDescription", &pjProcessDescription)==FALSE){
+      if(json_object_object_get_ex(*pjRequest, "executionUnit", &pjExecutionUnit)!=FALSE){
+	json_object* pjInputs=json_object_new_object();
+	json_object_object_add(pjInputs,"applicationPackage",json_object_get(pjExecutionUnit));
+	json_object_object_add(pjRes,"inputs",pjInputs);
+	json_object_put(*pjRequest);
+	*pjRequest=json_object_get(pjRes);
+	const char* jsonStr=json_object_to_json_string_ext(*pjRequest,JSON_C_TO_STRING_NOSLASHESCAPE);
+	setMapInMaps(conf,"lenv","jrequest",jsonStr);
+      }
+      json_object_put(pjRes);
+    }else{
+      json_object* pjInputs=json_object_new_object();
+      json_object_object_add(pjInputs,"applicationPackage",json_object_get(*pjRequest));
+      json_object_object_add(pjRes,"inputs",pjInputs);
+      json_object_put(*pjRequest);
+      *pjRequest=json_object_get(pjRes);
+      const char* jsonStr=json_object_to_json_string_ext(*pjRequest,JSON_C_TO_STRING_NOSLASHESCAPE);
+      setMapInMaps(conf,"lenv","jrequest",jsonStr);
+    }
+    return 0;
+  }
+
+  /**
+   * Verify that a service name correspond to the Deploy or Undeploy service
+   * name
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pcService the service name
+   * @return true if the service name correspond to deploy or undeploy, 
+   * false otherwise
+   */
+  bool serviceIsDRU(maps* pmsConf,char* pcService){
+    map* pmDeployService=getMapFromMaps(pmsConf,"servicesNamespace","deploy_service_provider");
+    if(pmDeployService!=NULL && strstr(pmDeployService->value,pcService)!=NULL)
+      return true;
+    else{
+      pmDeployService=getMapFromMaps(pmsConf,"servicesNamespace","undeploy_service_provider");
+      if(pmDeployService!=NULL && strstr(pmDeployService->value,pcService)!=NULL)
+	return true;
+    }
+    return false;
+  }
+
+  /**
+   * Print exception report in case Deploy or Undeploy failed to execute
+   *
+   * @param conf the main configuration maps pointer
+   */
+  int parseProcessDescription(maps* conf){
+    fprintf(stderr,"Should parse process description %s %d \n",__FILE__,__LINE__);
+    fflush(stderr);
+    return 0;
+  }
+#endif // DRU_ENABLED
+
 #ifdef __cplusplus
 }
 #endif

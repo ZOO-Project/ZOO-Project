@@ -42,6 +42,8 @@
 #include "mimetypes.h"
 #include "service_json.h"
 
+extern int ensureFiltered(maps**,const char*);
+  
 /**
  * Add prefix to the service name.
  * 
@@ -2575,6 +2577,7 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
   else{
     return aapccStatusCodes[3][0];
   }
+  return aapccStatusCodes[3][0];
 }
 
 /**
@@ -2729,6 +2732,23 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   return n;
 }
 
+
+/**
+ * Invoke the ensureFiltered then printExceptionReportResponseJ functions
+ *
+ * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param pmError the map containing the text,code,locator keys (or a map array)
+ * @see printExceptionReportResponseJ,ensureFiltered
+ */
+void localPrintException(maps* pmsConf,map* pmError){
+  ensureFiltered(&pmsConf,"out");
+  map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
+  if(pmExecutionType!=NULL && strcasecmp(pmExecutionType->value,"json")==0)
+    printExceptionReportResponseJ(pmsConf,pmError);
+  else
+    printExceptionReportResponse(pmsConf,pmError);
+}
+
 /**
  * Print an OWS ExceptionReport.
  * 
@@ -2747,9 +2767,9 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
   else
     addToMap(errormap,"locator", "NULL");
   if(pmExectionType!=NULL && strncasecmp(pmExectionType->value,"xml",3)==0)
-    printExceptionReportResponse(m,errormap);
+    localPrintException(m,errormap);
   else{
-    printExceptionReportResponseJ(m,errormap);
+    localPrintException(m,errormap);
     setMapInMaps(m,"lenv","no-headers","true");
   }
   freeMap(&errormap);
@@ -3060,7 +3080,7 @@ int getNumberOfOutputs(maps* conf,maps* outputs){
  * @param conf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
+void printRawdataOutputs(maps* conf,service* s,maps* outputs){
   maps* pmsOut=outputs;
   if(pmsOut!= NULL && pmsOut->next!=NULL && getNumberOfOutputs(conf,outputs)>1){
     map* pmUsid=getMapFromMaps(conf,"lenv","usid");
@@ -3126,7 +3146,7 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
 	      setMapInMaps(conf,"lenv","message",tmpMsg);
 	    }
-	    return NULL;
+	    return ;
 	  }
 	  printf("%s",mime);
 	  map* rs=getMap(pmsOut->content,"size");
@@ -3154,7 +3174,7 @@ void* printRawdataOutputs(maps* conf,service* s,maps* outputs){
  * @param conf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void* printRawdataOutput(maps* conf,maps* outputs){
+void printRawdataOutput(maps* conf,maps* outputs){
   map *gfile=getMap(outputs->content,"generated_file");
   if(gfile!=NULL){
     gfile=getMap(outputs->content,"expected_generated_file");
@@ -3175,31 +3195,46 @@ void* printRawdataOutput(maps* conf,maps* outputs){
       setMapInMaps(conf,"lenv","code","InvalidParameterValue");
       setMapInMaps(conf,"lenv","message",tmpMsg);
     }
-    return NULL;
+    return ;
   }
   map* pmHeaders=getMapFromMaps(conf,"lenv","no-headers");
   map* rs=getMapFromMaps(outputs,outputs->name,"size");
   if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
-    map* fname=getMapFromMaps(outputs,outputs->name,"filename");
-    if(fname!=NULL)
-      printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
     if(rs!=NULL)
       printf("Content-Length: %s\r\n",rs->value);
-    char mime[1024];
+    char* pcaMimeType=NULL;
     map* mi=getMap(outputs->content,"mimeType");
     map* en=getMap(outputs->content,"encoding");
-    if(mi!=NULL && en!=NULL)
-      sprintf(mime,
+    if(mi!=NULL && en!=NULL){
+      pcaMimeType=(char*)malloc((strlen(mi->value)+strlen(en->value)+30)*sizeof(char));
+      sprintf(pcaMimeType,
 	      "Content-Type: %s; charset=%s\r\n",
 	      mi->value,en->value);
+    }
     else
-      if(mi!=NULL)
-	sprintf(mime,
+      if(mi!=NULL){
+	pcaMimeType=(char*)malloc((strlen(mi->value)+32)*sizeof(char));
+	sprintf(pcaMimeType,
 		"Content-Type: %s; charset=UTF-8\r\n",
 		mi->value);
-      else
-	sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\n");
-    printf("%s",mime);
+      }
+      else{
+	pcaMimeType=(char*)malloc(42*sizeof(char));
+	sprintf(pcaMimeType,"Content-Type: text/plain; charset=utf-8\r\n");
+      }
+    printf("%s",pcaMimeType);
+    free(pcaMimeType);
+    // checking if the deploy service has returned the service id
+    // if it did we add the service url to the location header
+    map* location = getMapFromMaps(conf,"lenv","deployedServiceId");
+    if(location!=NULL){
+      map* rootUrl=getMapFromMaps(conf,"openapi","rootUrl");
+      char* locationUrlHeader=NULL;
+      locationUrlHeader=(char*)malloc((strlen(rootUrl->value)+strlen(location->value)+12)*sizeof(char));
+      sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
+      printf("Location: %s\r\n",locationUrlHeader);
+    }
+
     map* pmStatus = getMapFromMaps(conf,"headers","Status");
     if(pmStatus!=NULL){
       printf("Status: %s;\r\n\r\n",pmStatus->value);
@@ -3207,6 +3242,8 @@ void* printRawdataOutput(maps* conf,maps* outputs){
       printf("Status: 200 OK;\r\n\r\n");
     }
   }
+
+
   if(rs!=NULL)
     fwrite(toto->value,1,atoi(rs->value),stdout);
   else

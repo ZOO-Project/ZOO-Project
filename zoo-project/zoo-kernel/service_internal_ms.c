@@ -944,7 +944,7 @@ int tryOgr(maps* conf,maps* output,mapObj* m){
       }
       if(tmpMap!=NULL)
 	msUpdateStyleFromString(myLayer->CLASS[myLayer->numclasses]->styles[myLayer->CLASS[myLayer->numclasses]->numstyles],tmpMap->value
-#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
+#if MS_VERSION_MINOR <= 6 && MS_VERSION_MAJOR <= 7
 				,0
 #endif
 				);
@@ -1303,7 +1303,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   
   if(styleMap!=NULL && strlen(styleMap->value)>9){
     msUpdateLayerFromString(myLayer,styleMap->value
-#if MS_VERSION_MINOR < 6 && MS_VERSION_MAJOR <= 7
+#if MS_VERSION_MINOR <= 6 && MS_VERSION_MAJOR <= 7
 			    ,MS_FALSE
 #endif
 			    );
