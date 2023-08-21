@@ -250,22 +250,31 @@ class DeployService(object):
 
         return True
 
+def duplicateMessage(conf,deploy_process):
+    sLocation=conf["openapi"]["rootUrl"]+"/processes/"+deploy_process.service_configuration.identifier
+    if "headers" in conf:
+        conf["headers"]["Location"]=sLocation
+    else:
+        conf["headers"]={"Location": sLocation }
+    conf["lenv"]["code"]="DuplicatedProcess"
+    conf["lenv"]["message"]=zoo._("A service with the same identifier is already deployed")
+    return zoo.SERVICE_FAILED
 
 def DeployProcess(conf, inputs, outputs):
     try:
-        print("OK", file=sys.stderr)
         if "applicationPackage" in inputs.keys() and "isArray" in inputs["applicationPackage"].keys() and inputs["applicationPackage"]["isArray"]=="true":
             for i in range(int(inputs["applicationPackage"]["length"])):
                 lInputs = {"applicationPackage": {"value": inputs["applicationPackage"]["value"][i]}}
                 lInputs["applicationPackage"]["mimeType"] = inputs["applicationPackage"]["mimeType"][i]
                 deploy_process = DeployService(conf, lInputs, outputs)
-                deploy_process.generate_service()
+                res=deploy_process.generate_service()
+                if not(res):
+                    return duplicateMessage(conf,deploy_process)
         else:
             deploy_process = DeployService(conf, inputs, outputs)
             res=deploy_process.generate_service()
             if not(res):
-                conf["lenv"]["message"]=zoo._("A service with the same identifier is already deployed")
-                return zoo.SERVICE_FAILED
+                return duplicateMessage(conf,deploy_process)
 
         response_json = {
             "message": f"Service {deploy_process.service_configuration.identifier} version {deploy_process.service_configuration.version} successfully deployed.",
@@ -274,8 +283,6 @@ def DeployProcess(conf, inputs, outputs):
         }
         outputs["Result"]["value"] = json.dumps(response_json)
         return zoo.SERVICE_DEPLOYED
-        #conf["lenv"]["message"]=json.dumps(response_json)
-        #return zoo.SERVICE_FAILED
     except Exception as e:
         print("Exception in Python service",file=sys.stderr)
         print(e,file=sys.stderr)
