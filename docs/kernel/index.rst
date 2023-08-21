@@ -14,3 +14,4 @@ This section provides information on **ZOO-Kernel** , the `ZOO-Project <http://z
    orfeotoolbox
    sagagis
    hpc
+   dru
