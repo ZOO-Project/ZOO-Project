@@ -914,7 +914,7 @@ extern "C" {
       }
       map* sType=getMap(serv->content,"serviceType");
       map* pmMutable=getMap(serv->content,"mutable");
-      if(pmMutable==NULL || strncasecmp(pmMutable->value,"true",4)==0){
+      if(pmMutable!=NULL && strncasecmp(pmMutable->value,"true",4)==0){
 	i=2;
 	limit=6;
       }

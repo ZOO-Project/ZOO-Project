@@ -3939,7 +3939,7 @@ runRequest (map ** inputs)
 	}else{
 	  // request is synchronous
 	  map* pmMutable=getMap(s1->content,"mutable");
-	  if(pmMutable==NULL || strncasecmp(pmMutable->value,"true",4)==0){
+	  if(pmMutable!=NULL && strncasecmp(pmMutable->value,"true",4)==0){
 	    map* pmError=createMap("code","None");
 	    addToMap(pmError,"message",_("The synchronous mode is not allowed for mutable services."));
 	    localPrintExceptionJ(m,pmError);
