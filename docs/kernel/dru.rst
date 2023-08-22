@@ -48,10 +48,13 @@ code, please proceed to the section :ref:`Building the docker image
 Prerequisites
 .....................
 
+   * `Docker <https://docs.docker.com/get-docker/>`_
+   * `Kubectl <https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/>`_
+   * `Helm <https://helm.sh/docs/intro/install/>`_
    * `Minikube <https://minikube.sigs.k8s.io/docs/start/>`_
-   * latest `ZOO-Kernel
-     <https://github.com/ZOO-Project/ZOO-Project/tree/main/zoo-project/zoo-kernel>`_
-     trunk version
+   * latest `ZOO-Project
+     <https://github.com/ZOO-Project/ZOO-Project/>`_
+     version
 
 .. _Installation on a Minikube Cluster:
 
