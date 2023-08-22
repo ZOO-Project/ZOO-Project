@@ -23,25 +23,13 @@
 # THE SOFTWARE.
 #
 
-java -jar $(find /root -name "ets-ogcapi-processes10-*aio.jar") -o /tmp /root/test-run-props.xml
+java -jar $(find /root -name "ets-ogcapi-processes10-*aio.jar") -o /tmp /root/test-run-ogcapi-processes-1.xml
 cat $(find /tmp -name "*results.xml")
 echo Success: $(grep PASS $(find /tmp -name "*results.xml") | wc -l)
 echo Failed: $(grep FAIL $(find /tmp -name "*results.xml") | grep -v FAILURE | wc -l)
 
-echo '<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties version="1.0">
-    <comment>WPS 2.0 Sample Test Run Arguments</comment>
-    <entry key="IUT">http://zookernel/cgi-bin/zoo_loader.cgi</entry>
-    <!-- BEGIN OF ARGUMENTS DEFINITION -->
-    <entry key="SERVICE_URL">http://zookernel/cgi-bin/zoo_loader.cgi</entry>
-    <entry key="ECHO_PROCESS_ID">echo</entry>
-    <!-- END OF ARGUMENTS DEFINITION -->
-</properties>
-' >  /root/test-run-props1.xml
-
 mkdir /tmp/tmp
-java -jar $(find /root -name "ets-wps20-*aio.jar") -o /tmp/tmp /root/test-run-props1.xml
+java -jar $(find /root -name "ets-wps20-*aio.jar") -o /tmp/tmp /root/test-run-wps20.xml
 cat $(find /tmp/tmp -name "*results.xml")
-echo Success: $(grep PASS $(find /tmp -name "*results.xml") | wc -l)
-echo Failed: $(grep FAIL $(find /tmp -name "*results.xml") | grep -v FAILURE | wc -l)
+echo Success: $(grep PASS $(find /tmp/tmp -name "*results.xml") | wc -l)
+echo Failed: $(grep FAIL $(find /tmp/tmp -name "*results.xml") | grep -v FAILURE | wc -l)
