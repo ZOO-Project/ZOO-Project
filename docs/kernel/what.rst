@@ -94,7 +94,7 @@ Ruby 	     Script File 	 `Hash`_	           integer
 Fortran      Shared Library      CHARACTER*(1024) M(10,30) integer
 R	     Script file 	 `R List`_	           integer
 JavaScript   Script file 	 `Object`_ or Array	   Object/Array
-Node.js      Script file 	  `Object`_	   Integer
+Node.js      Script file 	  `Object`_	           Integer
 ============ =================== ========================= ============
 
 .. _`HashMap`: http://download.oracle.com/javase/6/docs/api/java/util/HashMap.html
