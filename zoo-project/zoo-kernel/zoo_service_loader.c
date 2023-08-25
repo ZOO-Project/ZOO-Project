@@ -3949,9 +3949,11 @@ runRequest (map ** inputs)
 	      if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
 		setMapInMaps(m,"lenv","jsonStr",jsonStr0);
 	      invokeBasicCallback(m,eres);
+#ifdef DRU_ENABLED
 	      // Fetch infromations from main.cfg again after execution
 	      deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
 	      undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
+#endif
 	    }
 #endif
 	}else{
