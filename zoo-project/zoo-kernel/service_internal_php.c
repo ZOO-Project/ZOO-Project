@@ -190,7 +190,7 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 
   map* tmp=getMap(s->content,"serviceProvider");
   if (tmp == NULL || tmp->value == NULL) {
-	  return errorException(m, "Missing serviceProvider (library file)", "NoApplicableCode", NULL);
+	  return errorException(main_conf, "Missing serviceProvider (library file)", "NoApplicableCode", NULL);
   }
   
   map* cwd=getMapFromMaps(m,"lenv","cwd");
@@ -224,7 +224,7 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     char tmp1[1024];
     sprintf(tmp1,_("Unable to load the PHP file %s"),tmp->value);
     free(scriptName);
-    return errorException(m,tmp1,"NoApplicableCode",NULL);
+    return errorException(main_conf,tmp1,"NoApplicableCode",NULL);
   }
   iscript.handle.fd=fileno(temp);
 
@@ -256,12 +256,12 @@ int zoo_php_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     }else{
       free(scriptName);
       fclose(temp);
-      return errorException(m,"Unable to process.","NoApplicableCode",NULL);;
+      return errorException(main_conf,"Unable to process.","NoApplicableCode",NULL);;
     }
   } zend_catch { 
     free(scriptName);
     fclose(temp);
-    return errorException(m,"Unable to process.","NoApplicableCode",NULL);;
+    return errorException(main_conf,"Unable to process.","NoApplicableCode",NULL);;
   } zend_end_try();
   free(scriptName);
   fclose(temp);

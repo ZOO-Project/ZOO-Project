@@ -87,7 +87,7 @@ int zoo_ruby_support(maps** main_conf,map* request,service* s,maps **real_inputs
   else{
     map* err=createMap("text","Unable to parse serviceProvider please check your zcfg file.");
     addToMap(err,"code","NoApplicableCode");
-    printExceptionReportResponse(m,err);
+    printExceptionReportResponse(main_conf,err);
     return -1;
   }
   int res=SERVICE_FAILED;
@@ -129,7 +129,7 @@ int zoo_ruby_support(maps** main_conf,map* request,service* s,maps **real_inputs
     char tmpS[1024];
     sprintf(tmpS, "Cannot find the %s function in the %s file.\n", s->name, tmp->value);
     map* tmps=createMap("text",tmpS);
-    printExceptionReportResponse(m,tmps);
+    printExceptionReportResponse(main_conf,tmps);
     res=-1;
   }
   ruby_finalize();
@@ -200,7 +200,7 @@ void ruby_trace_error(maps* m){
     }
   map* err=createMap("text",trace);
   addToMap(err,"code","NoApplicableCode");
-  printExceptionReportResponse(m,err);
+  printExceptionReportResponse(&m,err);
 }
 
 /**

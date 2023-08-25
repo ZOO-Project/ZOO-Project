@@ -570,7 +570,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   struct stat js_stat;
   if (stat(full_path.c_str(), &js_stat) != 0) {
     std::string err = "Failed opening " + full_path;
-    errorException(*main_conf, full_path.c_str(), "NoApplicableCode", nullptr);
+    errorException(main_conf, full_path.c_str(), "NoApplicableCode", nullptr);
     return -1;
   }
 
@@ -590,7 +590,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
     argv[argc++] = const_cast<char *>(full_path.c_str());
 
     if (napi_create_platform(argc, argv, 0, nullptr, nullptr, 0, &platform) != napi_ok) {
-      errorException(*main_conf, "Failed initializing Node.js/V8", "NoApplicableCode", nullptr);
+      errorException(main_conf, "Failed initializing Node.js/V8", "NoApplicableCode", nullptr);
       return -1;
     }
   }
@@ -608,7 +608,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
   napi_env _env;
 
   if (napi_create_environment(platform, nullptr, bootstrap, &_env) != napi_ok) {
-    errorException(*main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
+    errorException(main_conf, "Failed creating environment", "NoApplicableCode", nullptr);
     return -1;
   }
 
@@ -632,7 +632,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
             modulePromise, {Napi::Function::New(env, [main_conf, s, &ref](const Napi::CallbackInfo &info) {
               Napi::HandleScope scope(info.Env());
               if (!info[0].IsObject()) {
-                errorException(*main_conf, "ES6 export is not an object", "NoApplicableCode", nullptr);
+                errorException(main_conf, "ES6 export is not an object", "NoApplicableCode", nullptr);
                 return;
               }
               // Here we are in a completely foreign context and we cannot simply
@@ -646,14 +646,14 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
               Napi::HandleScope scope(info.Env());
               if (!info[0].IsNull()) {
                 std::string err = "Failed importing module: " + info[0].As<Napi::Error>().Message();
-                errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+                errorException(main_conf, err.c_str(), "NoApplicableCode", nullptr);
                 return;
               }
             })});
         // Run the environment - this will trigger the execution of one
         // of the above two lambdas
         if (napi_run_environment(_env) != napi_ok) {
-          errorException(*main_conf, "Failed resolving ES6 Promise", "NoApplicableCode", nullptr);
+          errorException(main_conf, "Failed resolving ES6 Promise", "NoApplicableCode", nullptr);
           return ret;
         }
         // Retrieve the resolved value from the persistent reference
@@ -663,7 +663,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
         Napi::Value exports = require.Call({Napi::String::New(env, full_path)});
         if (!exports.IsObject()) {
           std::string err = "Export of " + std::string(s->name) + " is not an object";
-          errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+          errorException(main_conf, err.c_str(), "NoApplicableCode", nullptr);
           return ret;
         }
         moduleExport = exports.ToObject().Get(s->name);
@@ -671,7 +671,7 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
 
       if (!moduleExport.IsFunction()) {
         std::string err = full_path + " does not export a function named " + std::string(s->name);
-        errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+        errorException(main_conf, err.c_str(), "NoApplicableCode", nullptr);
         return ret;
       }
       Napi::Function jsFn = moduleExport.As<Napi::Function>();
@@ -697,16 +697,16 @@ extern "C" int zoo_nodejs_support(maps **main_conf, map *request, service *s, ma
         ret = status.ToNumber().Int32Value();
       } else {
         std::string err = "Service returned a non-number value: " + status.ToString().Utf8Value();
-        errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+        errorException(main_conf, err.c_str(), "NoApplicableCode", nullptr);
       }
     } catch (const Napi::Error &e) {
       std::string err = "Caught a JS exception: " + e.Message();
-      errorException(*main_conf, err.c_str(), "NoApplicableCode", nullptr);
+      errorException(main_conf, err.c_str(), "NoApplicableCode", nullptr);
     }
   }
 
   if (napi_destroy_environment(_env, nullptr) != napi_ok) {
-    errorException(*main_conf, "Failed destroying JS environment", "NoApplicableCode", nullptr);
+    errorException(main_conf, "Failed destroying JS environment", "NoApplicableCode", nullptr);
   }
 
   return ret;

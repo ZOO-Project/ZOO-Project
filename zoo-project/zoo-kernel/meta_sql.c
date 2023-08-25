@@ -502,7 +502,7 @@ int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
     while( poFeature != NULL ){
       if(compareCnt(conf,"serviceCntSkip","eupper") && compareCnt(conf,"serviceCntLimit","lower")){
 	service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
-#ifdef USE_HPC
+#ifdef USE_HPC_NESTEDOUTPUTS
 	addNestedOutputs(&s);
 #endif
 	func(reg,conf,doc,n,s);

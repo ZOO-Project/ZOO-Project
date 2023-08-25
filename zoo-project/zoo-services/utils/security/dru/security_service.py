@@ -25,7 +25,18 @@ import zoo
 
 def securityIn(conf,inputs,outputs):
     import sys,os,shutil
-    print("securityIn!",file=sys.stderr)
+    if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
+        print("securityIn!",file=sys.stderr)
+    try:
+        if "has_jwt_service" in conf["servicesNamespace"] and conf["servicesNamespace"]["has_jwt_service"]=="true":
+            import jwts.security_service as s
+            res=s.securityIn(conf,inputs,outputs)
+            s.addHeader(conf,"dru.securityIn")
+            if res==zoo.SERVICE_FAILED:
+                return res
+    except Exception as e:
+        if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
+            print("No JWT service available: "+str(e),file=sys.stderr)
     rPath=conf["servicesNamespace"]["path"]+"/"
     for i in conf["renv"]:
         if i.count("SERVICES_NAMESPACE"):
@@ -33,18 +44,26 @@ def securityIn(conf,inputs,outputs):
             conf["auth_env"]={"user": conf["renv"][i],"cwd": rPath}
             conf["lenv"]["fpm_user"]=conf["renv"][i]
             conf["lenv"]["fpm_cwd"]=rPath
+            #conf["lenv"]["cwd"]=rPath
             conf["zooServicesNamespace"]={"namespace": conf["renv"][i],"cwd": rPath}
             break
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)
-        rFiles=["DeployProcess.py","DeployProcess.zcfg","UndeployProcess.py","UndeployProcess.zcfg","service.py","security_service.py","securityOut.zcfg","deploy_util.py","securityIn.zcfg"]
+        rFiles=conf["servicesNamespace"]["required_files"].split(',')
         for i in range(len(rFiles)):
             shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
-    print("Ok exit from securityIn!",file=sys.stderr)
     return zoo.SERVICE_SUCCEEDED
 
 def securityOut(conf,inputs,outputs):
     import sys
-    print("securityOut!",file=sys.stderr)
+    try:
+        if "has_jwt_service" in conf["servicesNamespace"] and conf["servicesNamespace"]["has_jwt_service"]=="true":
+            import jwts.security_service as s
+            s.addHeader(conf,"dru.securityOut")
+    except Exception as e:
+        if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
+            print("No JWT service available: "+str(e),file=sys.stderr)
+    if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
+        print("securityOut!",file=sys.stderr)
     return zoo.SERVICE_SUCCEEDED
 

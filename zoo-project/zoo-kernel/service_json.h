@@ -133,7 +133,7 @@ extern "C" {
   json_object* serviceToJson(service*);
   void printLiteralValueJ(maps*,map*,map*,json_object*,const char*);
   void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
-  void printExceptionReportResponseJ(maps*,map*);
+  void printExceptionReportResponseJ(maps**,map*);
   void parseJRequest(maps*,service*,json_object*,map*,maps**,maps**);
   json_object*  printJResult(maps*,service*,maps*,int);
   json_object* printJobStatus(maps*,char*);

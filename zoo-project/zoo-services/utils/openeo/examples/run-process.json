@@ -1,0 +1,10 @@
+{
+  "inputs": {
+    "f": 92
+  },
+  "outputs": {
+    "result": {
+      "transmissionMode": "value"
+    }
+  }
+}

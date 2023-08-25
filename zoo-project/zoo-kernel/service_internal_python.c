@@ -289,8 +289,8 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     }
   }
   else{
-    errorException (m, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
-    exit(-1);
+    errorException (main_conf, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
+    return -1;
   } 
 
   pModule = PyImport_Import(pName);
@@ -328,18 +328,18 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 	dumpMaps(*real_outputs);
 #endif
       }else{
-	PythonZooReport(m,tmp->value,0);
+	PythonZooReport(main_conf,tmp->value,0);
 	res=-1;
       }
     }
     else{
       char tmpS[1024];
       sprintf(tmpS, "Cannot find the %s function in the %s file.\n", s->name, tmp->value);
-      errorException(m,tmpS,"NoApplicableCode",NULL);
+      errorException(main_conf,tmpS,"NoApplicableCode",NULL);
       res=-1;
     }
   } else{
-    PythonZooReport(m,tmp->value,1);
+    PythonZooReport(main_conf,tmp->value,1);
     res=-1;
   }
 #if PY_MAJOR_VERSION < 3
@@ -355,11 +355,12 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
  * Report Python error which may occur on loading the Python module or at 
  * runtime.
  * 
- * @param m the conf maps containing the main.cfg settings
+ * @param main_conf the conf maps containing the main.cfg settings
  * @param module the service name
  * @param load 1 if the Python module was not loaded yet
  */
-void PythonZooReport(maps* m,const char* module,int load){
+void PythonZooReport(maps** main_conf,const char* module,int load){
+  maps* m=*main_conf;
   PyObject *pName, *pModule, *pFunc;
   PyObject *ptype, *pvalue, *ptraceback,*pValue,*pArgs;
   PyErr_Fetch(&ptype, &pvalue, &ptraceback);
@@ -420,13 +421,13 @@ void PythonZooReport(maps* m,const char* module,int load){
   if(load>0 && pbt!=NULL){
     char *tmpS=(char*)malloc((strlen(tmp0)+strlen(module)+strlen(pbt)+1)*sizeof(char));
     sprintf(tmpS,tmp0,module,pbt);
-    errorException(m,tmpS,"NoApplicableCode",NULL);
+    errorException(main_conf,tmpS,"NoApplicableCode",NULL);
     free(tmpS);
   }else{
     if(pbt!=NULL)
-      errorException(m,pbt,"NoApplicableCode",NULL);
+      errorException(main_conf,pbt,"NoApplicableCode",NULL);
     else
-      errorException(m,_("Something went wrong but, no Python traceback can be fecthed."),"NoApplicableCode",NULL);
+      errorException(main_conf,_("Something went wrong but, no Python traceback can be fecthed."),"NoApplicableCode",NULL);
   }
   if(pbt!=NULL)
     free(pbt);
@@ -771,7 +772,7 @@ map* mapFromPyDict(PyDictObject* t){
 #endif
 	  char* lvalue=PyString_AsString(value);
 	if(res!=NULL){
-	  if(PyString_Size(value)>0)
+	  if(PyUnicode_GetLength(value)>0)
 	    addToMap(res,lkey,lvalue);
 	}
 	else{

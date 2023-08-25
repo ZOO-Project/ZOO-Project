@@ -210,8 +210,12 @@ extern "C" {
    * This service is used to inform a ZOO-Kernel waiting for the end of the
    * execution of a HPC service
    *
-   * format="AllocCPUS"; for i in $(sacct -e) ; do format="$format,$i"; done; format="$(echo $format | sed "s:AllocCPUS,::")" ; echo $format; sacct --format=$format -p | grep "997f-11e8-9f78-0050569320d2" 
+   * format="AllocCPUS"; for i in $(sacct -e) ; do format="$format%30,$i%30"; done; format="$(echo $format | sed "s:AllocCPUS,::")" ; echo $format; sacct --format=$format -p | grep "997f-11e8-9f78-0050569320d2" 
    *
+   * 2023-08-05
+   * Account,AdminComment,AllocCPUS,AllocNodes,AllocTRES,AssocID,AveCPU,AveCPUFreq,AveDiskRead,AveDiskWrite,AvePages,AveRSS,AveVMSize,BlockID,Cluster,Comment,Constraints,ConsumedEnergy,ConsumedEnergyRaw,Container,CPUTime,CPUTimeRAW,DBIndex,DerivedExitCode,Elapsed,ElapsedRaw,Eligible,End,ExitCode,Extra,FailedNode,Flags,GID,Group,JobID,JobIDRaw,JobName,Layout,Licenses,MaxDiskRead,MaxDiskReadNode,MaxDiskReadTask,MaxDiskWrite,MaxDiskWriteNode,MaxDiskWriteTask,MaxPages,MaxPagesNode,MaxPagesTask,MaxRSS,MaxRSSNode,MaxRSSTask,MaxVMSize,MaxVMSizeNode,MaxVMSizeTask,McsLabel,MinCPU,MinCPUNode,MinCPUTask,NCPUS,NNodes,NodeList,NTasks,Partition,Planned,PlannedCPU,PlannedCPURAW,Priority,QOS,QOSRAW,Reason,ReqCPUFreq,ReqCPUFreqGov,ReqCPUFreqMax,ReqCPUFreqMin,ReqCPUS,ReqMem,ReqNodes,ReqTRES,Reservation,ReservationId,Start,State,Submit,SubmitLine,Suspended,SystemComment,SystemCPU,Timelimit,TimelimitRaw,TotalCPU,TRESUsageInAve,TRESUsageInMax,TRESUsageInMaxNode,TRESUsageInMaxTask,TRESUsageInMin,TRESUsageInMinNode,TRESUsageInMinTask,TRESUsageInTot,TRESUsageOutAve,TRESUsageOutMax,TRESUsageOutMaxNode,TRESUsageOutMaxTask,TRESUsageOutMin,TRESUsageOutMinNode,TRESUsageOutMinTask,TRESUsageOutTot,UID,User,UserCPU,WCKey,WCKeyID,WorkDir
+   *
+   * OLD
    * AllocCPUS,AllocGRES,AllocNodes,AllocTRES,Account,AssocID,AveCPU,AveCPUFreq,AveDiskRead,AveDiskWrite,AvePages,AveRSS,AveVMSize,BlockID,Cluster,Comment,ConsumedEnergy,ConsumedEnergyRaw,CPUTime,CPUTimeRAW,DerivedExitCode,Elapsed,Eligible,End,ExitCode,GID,Group,JobID,JobIDRaw,JobName,Layout,MaxDiskRead,MaxDiskReadNode,MaxDiskReadTask,MaxDiskWrite,MaxDiskWriteNode,MaxDiskWriteTask,MaxPages,MaxPagesNode,MaxPagesTask,MaxRSS,MaxRSSNode,MaxRSSTask,MaxVMSize,MaxVMSizeNode,MaxVMSizeTask,MinCPU,MinCPUNode,MinCPUTask,NCPUS,NNodes,NodeList,NTasks,Priority,Partition,QOS,QOSRAW,ReqCPUFreq,ReqCPUFreqMin,ReqCPUFreqMax,ReqCPUFreqGov,ReqCPUS,ReqGRES,ReqMem,ReqNodes,ReqTRES,Reservation,ReservationId,Reserved,ResvCPU,ResvCPURAW,Start,State,Submit,Suspended,SystemCPU,Timelimit,TotalCPU,UID,User,UserCPU,WCKey,WCKeyID
    * 28||1|cpu=28,node=1|geosud|258|||||||||cluster||||00:00:56|56|0:0|00:00:02|2018-08-06T15:48:13|2018-08-06T15:48:16|0:0|1019|geosud|883299|883299|ZOO-Project_5bd1c32b-997f-11e8-9f78-0050569320d2_GSDBandMath_6_2_005||||||||||||||||||||28|1|muse044||4294360886|defq|qos_geosud|20|Unknown|Unknown|Unknown|Unknown|1||0n|1|cpu=1,node=1|||00:00:01|00:00:01|1|2018-08-06T15:48:14|COMPLETED|2018-08-06T15:48:13|00:00:00||UNLIMITED|00:00:00|1229|geosudwps|||0|
    * 
@@ -330,7 +334,8 @@ extern "C" {
     sprintf(logPath,"%s/exec_status_%s",tmpPath->value,jobid->value);
     dumpMapsToFile(tmpMaps,logPath,0);
     char *sname=(char*)malloc((strlen(tmpPath->value)+strlen(jobid->value)+21));
-    sprintf(sname,"%s/.wait_socket_%s.sock",tmpPath->value,jobid->value);
+    //sprintf(sname,"%s/.wait_socket_%s.sock",tmpPath->value,jobid->value);
+    sprintf(sname,"/tmp/.wait_socket_%s.sock",jobid->value);
     if ( (fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
       perror("socket error");
       setMapInMaps(conf,"lenv","message",_("Socket error"));

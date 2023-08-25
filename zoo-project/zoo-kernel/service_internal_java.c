@@ -310,7 +310,7 @@ void displayStack(JNIEnv *env,maps* main_conf){
   if(new_stdout==NULL){
     map* err=createMap("text","Unable to run your service, no debug information can be provided (please verify privileges on tmpPath)");
     addToMap(err,"code","InternalError");
-    printExceptionReportResponse(main_conf,err);
+    printExceptionReportResponse(&main_conf,err);
     freeMap(&err);
     free(err);
     return;
@@ -334,7 +334,7 @@ void displayStack(JNIEnv *env,maps* main_conf){
   tmps1[flen]=0;
   map* err=createMap("text",tmps1);
   addToMap(err,"code","InternalError");
-  printExceptionReportResponse(main_conf,err);
+  printExceptionReportResponse(&main_conf,err);
   freeMap(&err);
   free(err);
 }

@@ -163,7 +163,7 @@ void printSessionHeaders(maps* pmsConf){
     if(teste==NULL){
       char tmpMsg[1024];
       sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
-      errorException(pmsConf,tmpMsg,"InternalError",NULL);
+      errorException(&pmsConf,tmpMsg,"InternalError",NULL);
       return;
     }
     else{
@@ -177,10 +177,10 @@ void printSessionHeaders(maps* pmsConf){
  * Add a land attribute to a XML node
  *
  * @param n the XML node to add the attribute
- * @param m the map containing the language key to add as xml:lang
+ * @param pmsConf the map containing the language key to add as xml:lang
  */
-void addLangAttr(xmlNodePtr n,maps *m){
-  map *tmpLmap=getMapFromMaps(m,"main","language");
+void addLangAttr(xmlNodePtr n,maps *pmsConf){
+  map *tmpLmap=getMapFromMaps(pmsConf,"main","language");
   if(tmpLmap!=NULL)
     xmlNewProp(n,BAD_CAST "xml:lang",BAD_CAST tmpLmap->value);
   else
@@ -352,7 +352,7 @@ xmlNodePtr soapEnvelope(maps* conf,xmlNodePtr n){
  * @return the generated wps:rname xmlNodePtr (can be wps: Capabilities, 
  *  wps:ProcessDescriptions,wps:ExecuteResponse)
  */
-xmlNodePtr printWPSHeader(xmlDocPtr doc,maps* m,const char* req,const char* rname,const char* version,int reqId){
+xmlNodePtr printWPSHeader(xmlDocPtr doc,maps* pmsConf,const char* req,const char* rname,const char* version,int reqId){
 
   xmlNsPtr ns,ns_xsi;
   xmlNodePtr n;
@@ -376,8 +376,8 @@ xmlNodePtr printWPSHeader(xmlDocPtr doc,maps* m,const char* req,const char* rnam
     xmlNewProp(n,BAD_CAST "version",BAD_CAST schemas[vid][0]);
   }
   if(vid==0)
-    addLangAttr(n,m);
-  xmlNodePtr fn=soapEnvelope(m,n);
+    addLangAttr(n,pmsConf);
+  xmlNodePtr fn=soapEnvelope(pmsConf,n);
   xmlDocSetRootElement(doc, fn);
   return n;
 }
@@ -450,14 +450,14 @@ void addLanguageNodes(maps* conf,xmlNodePtr n,xmlNsPtr ns,xmlNsPtr ns_ows){
  * @param m the conf maps containing the main.cfg settings
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version="1.0.0"){
+xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* pmsConf,const char* version="1.0.0"){
 
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc,nc1,nc2,nc3,nc4,nc5,nc6;
-  n = printWPSHeader(doc,m,"GetCapabilities","Capabilities",version,0);
-  maps* toto1=getMaps(m,"main");
+  n = printWPSHeader(doc,pmsConf,"GetCapabilities","Capabilities",version,0);
+  maps* toto1=getMaps(pmsConf,"main");
   char tmp[256];
-  map* v=getMapFromMaps(m,"main","rversion");
+  map* v=getMapFromMaps(pmsConf,"main","rversion");
   int vid=getVersionId(v->value);
 
   int wpsId=zooXmlAddNs(NULL,schemas[vid][2],"wps");
@@ -468,7 +468,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
   ns_ows=usedNs[owsId];
 
   nc = xmlNewNode(ns_ows, BAD_CAST "ServiceIdentification");
-  maps* tmp4=getMaps(m,"identification");
+  maps* tmp4=getMaps(pmsConf,"identification");
   if(tmp4!=NULL){
     map* tmp2=tmp4->content;
     const char *orderedFields[5];
@@ -520,7 +520,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
 	    xmlAddChild(nc2,xmlNewText(BAD_CAST "WPS"));
 	    xmlAddChild(nc,nc2);
 	    nc2 = xmlNewNode(ns_ows, BAD_CAST "ServiceTypeVersion");
-	    map* tmpv=getMapFromMaps(m,"main","rversion");
+	    map* tmpv=getMapFromMaps(pmsConf,"main","rversion");
 	    xmlAddChild(nc2,xmlNewText(BAD_CAST tmpv->value));
 	    xmlAddChild(nc,nc2);
 	  }
@@ -538,7 +538,7 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
   nc4 = xmlNewNode(ns_ows, BAD_CAST "ContactInfo");
   nc5 = xmlNewNode(ns_ows, BAD_CAST "Phone");
   nc6 = xmlNewNode(ns_ows, BAD_CAST "Address");
-  tmp4=getMaps(m,"provider");
+  tmp4=getMaps(pmsConf,"provider");
   if(tmp4!=NULL){
     map* tmp2=tmp4->content;
     const char *tmpAddress[6];
@@ -693,14 +693,14 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
   xmlAddChild(n,nc);
 
   if(vid==1)
-    addLanguageNodes(m,n,ns,ns_ows);
+    addLanguageNodes(pmsConf,n,ns,ns_ows);
   free(SERVICE_URL);
 
   nc = xmlNewNode(ns, BAD_CAST root_nodes[vid][0]);
   xmlAddChild(n,nc);
 
   if(vid==0)
-    addLanguageNodes(m,n,ns,ns_ows);
+    addLanguageNodes(pmsConf,n,ns,ns_ows);
 
   return nc;
 }
@@ -715,12 +715,12 @@ xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr doc,maps* m,const char* version=
  * @param serv the service structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printGetCapabilitiesForProcess(registry *reg, maps* m,void* doc0,void* nc0,service* serv){
+void printGetCapabilitiesForProcess(registry *reg, maps* pmsConf,void* doc0,void* nc0,service* serv){
   xmlNsPtr ns,ns_ows,ns_xml,ns_xlink;
   xmlDocPtr doc=(xmlDocPtr) doc0;
   xmlNodePtr nc=(xmlNodePtr) nc0;
   xmlNodePtr n=NULL,nc1,nc2,nc3;
-  map* version=getMapFromMaps(m,"main","rversion");
+  map* version=getMapFromMaps(pmsConf,"main","rversion");
   int vid=getVersionId(version->value);
   // Initialize or get existing namespaces
   int wpsId=zooXmlAddNs(NULL,schemas[vid][2],"wps");
@@ -765,8 +765,8 @@ void printGetCapabilitiesForProcess(registry *reg, maps* m,void* doc0,void* nc0,
 	}
       }
     }
-    map* tmp3=getMapFromMaps(m,"lenv","level");
-    addPrefix(m,tmp3,serv);
+    map* tmp3=getMapFromMaps(pmsConf,"lenv","level");
+    addPrefix(pmsConf,tmp3,serv);
     printDescription(nc1,ns_ows,serv->name,serv->content,vid);
     tmp1=serv->metadata;
 
@@ -1081,13 +1081,13 @@ void addInheritedMetadata(xmlNodePtr n,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,registr
  * @param serv the servive structure created from the zcfg file
  * @return the generated wps:ProcessOfferings xmlNodePtr 
  */
-void printDescribeProcessForProcess(registry *reg, maps* m,void* doc0,void* nc0,service* serv){
+void printDescribeProcessForProcess(registry *reg, maps* pmsConf,void* doc0,void* nc0,service* serv){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr n,nc1;
   xmlDocPtr doc=(xmlDocPtr) doc0;
   xmlNodePtr nc=(xmlNodePtr) nc0;
   xmlNodePtr nc2 = NULL;
-  map* version=getMapFromMaps(m,"main","rversion");
+  map* version=getMapFromMaps(pmsConf,"main","rversion");
   int vid=getVersionId(version->value);
   int fromDb=-1;
   map* serviceType=getMap(serv->content,"serviceType");
@@ -1131,8 +1131,8 @@ void printDescribeProcessForProcess(registry *reg, maps* m,void* doc0,void* nc0,
       nc = xmlNewNode(ns, BAD_CAST "Process");
   }
   
-  tmp1=getMapFromMaps(m,"lenv","level");
-  addPrefix(m,tmp1,serv);
+  tmp1=getMapFromMaps(pmsConf,"lenv","level");
+  addPrefix(pmsConf,tmp1,serv);
   printDescription(nc,ns_ows,serv->name,serv->content,vid);
 
   if(vid==0){
@@ -1150,7 +1150,7 @@ void printDescribeProcessForProcess(registry *reg, maps* m,void* doc0,void* nc0,
   }else{
     tmp1=serv->metadata;
     addMetadata(tmp1,doc,nc,ns_ows,ns_xlink,vid);
-    addInheritedMetadata(nc,ns_ows,ns_xlink,reg,m,serv);
+    addInheritedMetadata(nc,ns_ows,ns_xlink,reg,pmsConf,serv);
     tmp1=serv->additional_parameters;
     if(vid!=0)
       addAdditionalParameters(tmp1,doc,nc,ns_ows,ns_xlink,fromDb);
@@ -1877,7 +1877,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
  * @param inputs the inputs provided
  * @param outputs the outputs generated by the service
  */
-void printProcessResponse(maps* m,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){	
+void printProcessResponse(maps* pmsConf,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr nr,n,nc,nc1=NULL,nc3;
   xmlDocPtr doc;
@@ -1886,9 +1886,9 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
   nr=NULL;
 
   doc = xmlNewDoc(BAD_CAST "1.0");
-  map* version=getMapFromMaps(m,"main","rversion");
+  map* version=getMapFromMaps(pmsConf,"main","rversion");
   int vid=getVersionId(version->value);
-  n = printWPSHeader(doc,m,"Execute",root_nodes[vid][2],(version!=NULL?version->value:"1.0.0"),2);
+  n = printWPSHeader(doc,pmsConf,"Execute",root_nodes[vid][2],(version!=NULL?version->value:"1.0.0"),2);
   int wpsId=zooXmlAddNs(NULL,schemas[vid][2],"wps");
   ns=usedNs[wpsId];
   int owsId=zooXmlAddNs(NULL,schemas[vid][1],"ows");
@@ -1904,7 +1904,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     char url[1024];
     memset(tmp,0,256);
     memset(url,0,1024);
-    maps* tmp_maps=getMaps(m,"main");
+    maps* tmp_maps=getMaps(pmsConf,"main");
     if(tmp_maps!=NULL && tmp_maps->content!=NULL){
       map* tmpm1=getMap(tmp_maps->content,"serverAddress");
       /**
@@ -1914,7 +1914,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
        * percentCompleted attribute). 
        * Else fallback to the initial method using the xml file to write in ...
        */
-      map* cwdMap=getMapFromMaps(m,"main","servicePath");
+      map* cwdMap=getMapFromMaps(pmsConf,"main","servicePath");
       struct stat myFileInfo;
       int statRes;
       char file_path[1024];
@@ -1934,7 +1934,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	char currentSid[128];
 	map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
 	map *tmp_lenv=NULL;
-	tmp_lenv=getMapFromMaps(m,"lenv","usid");
+	tmp_lenv=getMapFromMaps(pmsConf,"lenv","usid");
 	if(tmp_lenv==NULL)
 	  sprintf(currentSid,"%i",pid);
 	else
@@ -1952,7 +1952,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	}
       }else{
 	int lpid;
-	map* tmpm2=getMapFromMaps(m,"lenv","usid");
+	map* tmpm2=getMapFromMaps(pmsConf,"lenv","usid");
 	map* tmpm3=getMap(tmp_maps->content,"tmpUrl");
 	if(tmpm1!=NULL && tmpm3!=NULL){
 	  if( strncasecmp( tmpm3->value, "http://", 7) == 0 ||
@@ -1966,8 +1966,8 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	sprintf(tmp,"%s",tmpm1->value);
       }
       int lpid;
-      map* tmpm2=getMapFromMaps(m,"lenv","usid");
-      tmpm1=getMapFromMaps(m,"main","TmpPath");
+      map* tmpm2=getMapFromMaps(pmsConf,"lenv","usid");
+      tmpm1=getMapFromMaps(pmsConf,"main","TmpPath");
       sprintf(stored_path,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
     }
 
@@ -1985,7 +1985,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
     else
       xmlNewNsProp(nc,ns,BAD_CAST "processVersion",BAD_CAST "1");
   
-    map* tmpI=getMapFromMaps(m,"lenv","oIdentifier");
+    map* tmpI=getMapFromMaps(pmsConf,"lenv","oIdentifier");
     printDescription(nc,ns_ows,tmpI->value,serv->content,0);
 
     xmlAddChild(n,nc);
@@ -2016,7 +2016,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       break;
     case SERVICE_STARTED:
       nc1 = xmlNewNode(ns, BAD_CAST "ProcessStarted");
-      tmpStatus=getMapFromMaps(m,"lenv","status");
+      tmpStatus=getMapFromMaps(pmsConf,"lenv","status");
       xmlNewProp(nc1,BAD_CAST "percentCompleted",BAD_CAST tmpStatus->value);
       sprintf(sMsg,_("The ZOO service \"%s\" is currently running. Please reload this document to get the up-to-date status of the service."),serv->name);
       nc3=xmlNewText(BAD_CAST sMsg);
@@ -2032,17 +2032,17 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       nc1 = xmlNewNode(ns, BAD_CAST "ProcessFailed");
       map *errorMap;
       map *te;
-      te=getMapFromMaps(m,"lenv","code");
+      te=getMapFromMaps(pmsConf,"lenv","code");
       if(te!=NULL)
 	errorMap=createMap("code",te->value);
       else
 	errorMap=createMap("code","NoApplicableCode");
-      te=getMapFromMaps(m,"lenv","message");
+      te=getMapFromMaps(pmsConf,"lenv","message");
       if(te!=NULL)
 	addToMap(errorMap,"text",_ss(te->value));
       else
 	addToMap(errorMap,"text",_("No more information available"));
-      nc3=createExceptionReportNode(m,errorMap,0);
+      nc3=createExceptionReportNode(pmsConf,errorMap,0);
       freeMap(&errorMap);
       free(errorMap);
       xmlAddChild(nc1,nc3);
@@ -2135,10 +2135,10 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 #endif
      ){
 #ifndef RELY_ON_DB
-    semid lid=acquireLock(m);//,1);
+    semid lid=acquireLock(pmsConf);//,1);
     if(lid<0){
       /* If the lock failed */
-      errorException(m,_("Lock failed."),"InternalError",NULL);
+      errorException(&pmsConf,_("Lock failed."),"InternalError",NULL);
       xmlFreeDoc(doc);
       xmlCleanupParser();
       zooXmlCleanupNs();
@@ -2153,7 +2153,7 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
 	char tmpMsg[1024];
 	sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the ExecuteResponse."),stored_path);
 
-	errorException(m,tmpMsg,"InternalError",NULL);
+	errorException(&pmsConf,tmpMsg,"InternalError",NULL);
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	zooXmlCleanupNs();
@@ -2173,16 +2173,16 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
       fprintf(stderr,"UNLOCK %s %d !\n",__FILE__,__LINE__);
 #endif
       unlockShm(lid);
-      map* v=getMapFromMaps(m,"lenv","sid");
+      map* v=getMapFromMaps(pmsConf,"lenv","sid");
       // Remove the lock when running as a normal task
       if(getpid()==atoi(v->value)){
-	removeShmLock (m, 1);
+	removeShmLock (pmsConf, 1);
       }
     }
 #endif
   }
 
-  printDocument(m,doc,pid);
+  printDocument(pmsConf,doc,pid);
 
   xmlCleanupParser();
   zooXmlCleanupNs();
@@ -2195,10 +2195,10 @@ void printProcessResponse(maps* m,map* request, int pid,service* serv,const char
  * @param doc the XML document
  * @param pid the process identifier linked to a service
  */
-void printDocument(maps* m, xmlDocPtr doc,int pid){
-  char *encoding=getEncoding(m);
+void printDocument(maps* pmsConf, xmlDocPtr doc,int pid){
+  char *encoding=getEncoding(pmsConf);
   if(pid==getpid()){
-    printHeaders(m);
+    printHeaders(pmsConf);
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
   }
   xmlChar *xmlbuff;
@@ -2230,7 +2230,7 @@ void printDocument(maps* m, xmlDocPtr doc,int pid){
  * @param m the conf maps containing the main.cfg settings
  * @param type the type (unused)
  */
-void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* m,const char* type){
+void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,elements* e,maps* pmsConf,const char* type){
   xmlNodePtr nc1;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;  
@@ -2256,7 +2256,7 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
 
   tmp=e->content;
 
-  printDescription(nc1,ns_ows,m->name,e->content,0);
+  printDescription(nc1,ns_ows,pmsConf->name,e->content,0);
 
   xmlAddChild(nc,nc1);
 
@@ -2274,20 +2274,20 @@ void printOutputDefinitions(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr
  * @param m the conf maps containing the main.cfg settings
  * @param type the type
  */
-void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* m,const char* type,int vid){	
+void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xmlNsPtr ns_xlink,elements* e,maps* pmsConf,const char* type,int vid){
   xmlNodePtr nc1,nc2,nc3;
   nc1=xmlNewNode(ns_wps, BAD_CAST type);
   map *tmp=NULL;
   if(e!=NULL)
     tmp=e->content;
   else
-    tmp=m->content;  
+    tmp=pmsConf->content;
   if(vid==0){
     nc2=xmlNewNode(ns_ows, BAD_CAST "Identifier");
     if(e!=NULL)
       nc3=xmlNewText(BAD_CAST e->name);
     else
-      nc3=xmlNewText(BAD_CAST m->name);
+      nc3=xmlNewText(BAD_CAST pmsConf->name);
     
     xmlAddChild(nc2,nc3);
     xmlAddChild(nc1,nc2);
@@ -2297,7 +2297,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     if(e!=NULL)
       tmp=getMap(e->content,"Title");
     else
-      tmp=getMap(m->content,"Title");
+      tmp=getMap(pmsConf->content,"Title");
     
     if(tmp!=NULL){
       nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
@@ -2309,23 +2309,23 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
     if(e!=NULL)
       tmp=getMap(e->content,"Abstract");
     else
-      tmp=getMap(m->content,"Abstract");
+      tmp=getMap(pmsConf->content,"Abstract");
 
     if(tmp!=NULL){
       nc2=xmlNewNode(ns_ows, BAD_CAST tmp->name);
       nc3=xmlNewText(BAD_CAST _ss(tmp->value));
-      xmlAddChild(nc2,nc3);  
+      xmlAddChild(nc2,nc3);
       xmlAddChild(nc1,nc2);
       xmlAddChild(nc,nc1);
     }
   }else{
-    xmlNewProp(nc1,BAD_CAST "id",BAD_CAST (e!=NULL?e->name:m->name));
+    xmlNewProp(nc1,BAD_CAST "id",BAD_CAST (e!=NULL?e->name:pmsConf->name));
   }
   
   // IO type nested outputs
-  if(m->child!=NULL){	  
-    maps* curs=m->child;
-    elements* ecurs=getElements(e,(e!=NULL?e->name:m->name));
+  if(pmsConf->child!=NULL){
+    maps* curs=pmsConf->child;
+    elements* ecurs=getElements(e,(e!=NULL?e->name:pmsConf->name));
     ecurs=ecurs->child;
     while(curs!=NULL/* && ecurs!=NULL*/){
       ecurs=getElements(ecurs,(curs->name));
@@ -2333,13 +2333,13 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       if(inRequest!=NULL && strncasecmp(inRequest->value,"true",4)==0)
 	printIOType(doc,nc1,ns_wps,ns_ows,ns_xlink,ecurs,curs,type,vid);
       curs=curs->next;
-      ecurs=getElements(e,(e!=NULL?e->name:m->name));
+      ecurs=getElements(e,(e!=NULL?e->name:pmsConf->name));
       ecurs=ecurs->child;
     }
   }
-  else{	  
-    map *tmpMap=getMap(m->content,"Reference");
-    if(tmpMap==NULL){		
+  else{
+    map *tmpMap=getMap(pmsConf->content,"Reference");
+    if(tmpMap==NULL){
       nc2=xmlNewNode(ns_wps, BAD_CAST "Data");
       if(e!=NULL && e->format!=NULL){
 	if (strncasecmp(e->format, "LiteralOutput", strlen(e->format)) == 0)
@@ -2352,26 +2352,26 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	  else
 	    nc3=xmlNewNode(ns_wps, BAD_CAST e->format);
       }
-      else {		  
-	map* tmpV=getMapFromMaps(m,"format","value");
+      else {
+	map* tmpV=getMapFromMaps(pmsConf,"format","value");
 	if(tmpV!=NULL)
 	  nc3=xmlNewNode(ns_wps, BAD_CAST tmpV->value);
 	else
 	  nc3=xmlNewNode(ns_wps, BAD_CAST "LiteralData");
       } 
-      tmp=m->content;	  
+      tmp=pmsConf->content;
 
       while(tmp!=NULL){
 	if(strcasecmp(tmp->name,"mimeType")==0 ||
 	   strcasecmp(tmp->name,"encoding")==0 ||
 	   strcasecmp(tmp->name,"schema")==0 ||
 	   strcasecmp(tmp->name,"datatype")==0 ||
-	   strcasecmp(tmp->name,"uom")==0) {	
+	   strcasecmp(tmp->name,"uom")==0) {
 	  if(vid==0)
 	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
 	  else{
 	    if(strcasecmp(tmp->name,"datatype")==0){
-	      if(getMap(m->content,"mimeType")==NULL)
+	      if(getMap(pmsConf->content,"mimeType")==NULL)
 	        xmlNewProp(nc2,BAD_CAST "mimeType",BAD_CAST "text/plain");
 	    }
 	    else
@@ -2385,7 +2385,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	tmp=tmp->next;	
       }
       if(e!=NULL && e->format!=NULL && strcasecmp(e->format,"BoundingBoxData")==0) {
-	map* bb=getMap(m->content,"value");
+	map* bb=getMap(pmsConf->content,"value");
 	if(bb!=NULL) {
 	  map* tmpRes=parseBoundingBox(bb->value);
 	  printBoundingBox(ns_ows,nc3,tmpRes);
@@ -2400,9 +2400,9 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 		  }
 	else
 	  tmp=NULL;	
-	map* tmp1=getMap(m->content,"encoding");
-	map* tmp2=getMap(m->content,"mimeType");
-	map* tmp3=getMap(m->content,"value");
+	map* tmp1=getMap(pmsConf->content,"encoding");
+	map* tmp2=getMap(pmsConf->content,"mimeType");
+	map* tmp3=getMap(pmsConf->content,"value");
 	int hasValue=1;
 	if(tmp3==NULL){
 	  tmp3=createMap("value","");
@@ -2426,7 +2426,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 				strstr(tmp2->value,"google-earth.kml") == NULL							)
 	      )
 	    ) { 	                                                 // then	
-	  map* rs=getMap(m->content,"size");                       // obtain size
+	  map* rs=getMap(pmsConf->content,"size");                       // obtain size
 	  bool isSized=true;
 	  if(rs==NULL){
 	    char tmp1[1024];
@@ -2486,7 +2486,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       }
     }
     else { // Reference
-      tmpMap=getMap(m->content,"Reference");
+      tmpMap=getMap(pmsConf->content,"Reference");
       nc3=nc2=xmlNewNode(ns_wps, BAD_CAST "Reference");
       /* Special case to avoid failing to validate against the WPS 2.0 schema */
       if(strcasecmp(type,"Output")==0 && vid==0)
@@ -2494,7 +2494,7 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
       else
 	xmlNewNsProp(nc3,ns_xlink,BAD_CAST "href",BAD_CAST tmpMap->value);
       
-      tmp=m->content;
+      tmp=pmsConf->content;
       while(tmp!=NULL) {
 	if(strcasecmp(tmp->name,"mimeType")==0 ||
 	   strcasecmp(tmp->name,"encoding")==0 ||
@@ -2503,8 +2503,9 @@ void printIOType(xmlDocPtr doc,xmlNodePtr nc,xmlNsPtr ns_wps,xmlNsPtr ns_ows,xml
 	   strcasecmp(tmp->name,"uom")==0){
 	  
           if(strcasecmp(tmp->name,"datatype")==0){
-            if(getMap(m->content,"mimeType")==NULL)
+            if(getMap(pmsConf->content,"mimeType")==NULL){
               xmlNewProp(nc3,BAD_CAST "mimeType",BAD_CAST "text/plain");
+	    }
           }
 	  else
 	    xmlNewProp(nc3,BAD_CAST tmp->name,BAD_CAST tmp->value);
@@ -2588,7 +2589,7 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
  * @param m the maps containing the settings of the main.cfg file
  * @param s the map containing the text,code,locator keys (or a map array of the same keys)
  */
-void _printExceptionReportResponse(maps* m,map* s){
+void _printExceptionReportResponse(maps* pmsConf,map* s){
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
@@ -2596,33 +2597,33 @@ void _printExceptionReportResponse(maps* m,map* s){
 
   zooXmlCleanupNs();
   doc = xmlNewDoc(BAD_CAST "1.0");
-  maps* tmpMap=getMaps(m,"main");
+  maps* tmpMap=getMaps(pmsConf,"main");
   char *encoding=getEncoding(tmpMap);
   const char *exceptionCode;
   
   map* tmp=getMap(s,"code");
-  exceptionCode=produceStatusString(m,tmp);
-  tmp=getMapFromMaps(m,"lenv","status_code");
+  exceptionCode=produceStatusString(pmsConf,tmp);
+  tmp=getMapFromMaps(pmsConf,"lenv","status_code");
   if(tmp!=NULL)
     exceptionCode=tmp->value;
   if(exceptionCode==NULL)
     exceptionCode=aapccStatusCodes[3][0];
-  if(m!=NULL){
-    map *tmpSid=getMapFromMaps(m,"lenv","sid");
+  if(pmsConf!=NULL){
+    map *tmpSid=getMapFromMaps(pmsConf,"lenv","sid");
     if(tmpSid!=NULL){
       if( getpid()==atoi(tmpSid->value) ){
-	printHeaders(m);
+	printHeaders(pmsConf);
 	printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
       }
     }
     else{
-      printHeaders(m);
+      printHeaders(pmsConf);
       printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
     }
   }else{
     printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
   }
-  n=createExceptionReportNode(m,s,1);
+  n=createExceptionReportNode(pmsConf,s,1);
   xmlDocSetRootElement(doc, n);
   xmlDocDumpFormatMemoryEnc(doc, &xmlbuff, &buffersize, encoding, 1);
   printf("%s",xmlbuff);
@@ -2631,8 +2632,8 @@ void _printExceptionReportResponse(maps* m,map* s){
   xmlFree(xmlbuff);
   xmlCleanupParser();
   zooXmlCleanupNs();
-  if(m!=NULL)
-    setMapInMaps(m,"lenv","hasPrinted","true");  
+  if(pmsConf!=NULL)
+    setMapInMaps(pmsConf,"lenv","hasPrinted","true");
 }
 
 /**
@@ -2642,12 +2643,12 @@ void _printExceptionReportResponse(maps* m,map* s){
  * @param pmsConf the maps containing the settings of the main.cfg file
  * @param pmError the map containing the text,code,locator keys (or a map array)
  */
-void printExceptionReportResponse(maps* pmsConf,map* pmError){
-  if(getMapFromMaps(pmsConf,"lenv","hasPrinted")!=NULL)
+void printExceptionReportResponse(maps** pmsConf,map* pmError){
+  if(getMapFromMaps(*pmsConf,"lenv","hasPrinted")!=NULL)
     return;
-  map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
+  map* pmExecutionType=getMapFromMaps(*pmsConf,"main","executionType");
   if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-    _printExceptionReportResponse(pmsConf,pmError);
+    _printExceptionReportResponse(*pmsConf,pmError);
   else
     printExceptionReportResponseJ(pmsConf,pmError);
 }
@@ -2661,7 +2662,7 @@ void printExceptionReportResponse(maps* pmsConf,map* pmError){
  *  ows:ExceptionReport node respectively
  * @return the ExceptionReport/ows:ExceptionReport node
  */
-xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
+xmlNodePtr createExceptionReportNode(maps* pmsConf,map* s,int use_ns){
   
   xmlNsPtr ns,ns_xsi;
   xmlNodePtr n,nc,nc1;
@@ -2672,7 +2673,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
     ns=NULL;
   }
   n = xmlNewNode(ns, BAD_CAST "ExceptionReport");
-  map* version=getMapFromMaps(m,"main","rversion");
+  map* version=getMapFromMaps(pmsConf,"main","rversion");
   int vid=-1;
   if(version!=NULL)
     vid=getVersionId(version->value);
@@ -2688,7 +2689,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
   }
 
 
-  addLangAttr(n,m);
+  addLangAttr(n,pmsConf);
   xmlNewProp(n,BAD_CAST "version",BAD_CAST schemas[vid][6]);
   
   int length=1;
@@ -2721,7 +2722,7 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
       xmlNodePtr txt=xmlNewText(BAD_CAST tmp->value);
       xmlAddChild(nc1,txt);
       if(cnt==0)
-	setMapInMaps(m,"lenv","message",tmp->value);
+	setMapInMaps(pmsConf,"lenv","message",tmp->value);
     }
     else{
       xmlNodeSetContent(nc1, BAD_CAST _("No debug message available"));
@@ -2740,9 +2741,9 @@ xmlNodePtr createExceptionReportNode(maps* m,map* s,int use_ns){
  * @param pmError the map containing the text,code,locator keys (or a map array)
  * @see printExceptionReportResponseJ,ensureFiltered
  */
-void localPrintException(maps* pmsConf,map* pmError){
-  ensureFiltered(&pmsConf,"out");
-  map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
+void localPrintException(maps** pmsConf,map* pmError){
+  ensureFiltered(pmsConf,"out");
+  map* pmExecutionType=getMapFromMaps(*pmsConf,"main","executionType");
   if(pmExecutionType!=NULL && strcasecmp(pmExecutionType->value,"json")==0)
     printExceptionReportResponseJ(pmsConf,pmError);
   else
@@ -2751,15 +2752,15 @@ void localPrintException(maps* pmsConf,map* pmError){
 
 /**
  * Print an OWS ExceptionReport.
- * 
- * @param m the conf maps
- * @param message the error message 
+ *
+ * @param pmsConf the conf maps
+ * @param message the error message
  * @param errorcode the error code
  * @param locator the potential locator
  */
-int errorException(maps *m, const char *message, const char *errorcode, const char *locator) 
+int errorException(maps **pmsConf, const char *message, const char *errorcode, const char *locator)
 {
-  map* pmExectionType=getMapFromMaps(m,"main","executionType");
+  map* pmExectionType=getMapFromMaps(*pmsConf,"main","executionType");
   map* errormap = createMap("text", message);
   addToMap(errormap,"code", errorcode);
   if(locator!=NULL)
@@ -2767,10 +2768,10 @@ int errorException(maps *m, const char *message, const char *errorcode, const ch
   else
     addToMap(errormap,"locator", "NULL");
   if(pmExectionType!=NULL && strncasecmp(pmExectionType->value,"xml",3)==0)
-    localPrintException(m,errormap);
+    localPrintException(pmsConf,errormap);
   else{
-    localPrintException(m,errormap);
-    setMapInMaps(m,"lenv","no-headers","true");
+    localPrintException(pmsConf,errormap);
+    setMapInMaps(*pmsConf,"lenv","no-headers","true");
   }
   freeMap(&errormap);
   free(errormap);
@@ -2839,7 +2840,7 @@ char* produceFileUrl(service* psService,maps* pmsConf,maps* pmsOutputs,const cha
 	      pcaFileName,pmsOutputs->name);
       map* pmError=createMap("code","InternalError");
       addToMap(pmError,"message",acTmpMsg);
-      printExceptionReportResponseJ(pmsConf,pmError);
+      printExceptionReportResponseJ(&pmsConf,pmError);
       free(pcaFileName);
       free(pcaFilePath);
       return NULL;
@@ -2853,7 +2854,7 @@ char* produceFileUrl(service* psService,maps* pmsConf,maps* pmsOutputs,const cha
 	      pmsOutputs->name);
       map* pmError=createMap("code","InternalError");
       addToMap(pmError,"message",acTmpMsg);
-      printExceptionReportResponseJ(pmsConf,pmError);
+      printExceptionReportResponseJ(&pmsConf,pmError);
       fclose(pfOfile);
       free(pcaFileName);
       free(pcaFilePath);
@@ -2884,11 +2885,11 @@ char* produceFileUrl(service* psService,maps* pmsConf,maps* pmsOutputs,const cha
  * @param request_outputs the outputs updated by the service execution
  * @param request_inputs1 the map containing the HTTP request
  * @param cpid the process identifier attached to a service execution
- * @param m the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param res the value returned by the service execution
  */
 void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
-		    map* request_inputs1,int cpid,maps* m,int res){
+		    map* request_inputs1,int cpid,maps* pmsConf,int res){
 #ifdef DEBUG
   dumpMaps(request_inputs);
   dumpMaps(request_outputs);
@@ -2898,35 +2899,35 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   int asRaw=0;
   if(pmRawData!=NULL)
     asRaw=1;
-  map* version=getMapFromMaps(m,"main","rversion");
+  map* version=getMapFromMaps(pmsConf,"main","rversion");
   int vid=getVersionId(version->value);
-  printSessionHeaders(m);
+  printSessionHeaders(pmsConf);
   if(res==SERVICE_FAILED){
-    char* tmp0=produceErrorMessage(m);
-    errorException(m,tmp0,"InternalError",NULL);
+    char* tmp0=produceErrorMessage(pmsConf);
+    errorException(&pmsConf,tmp0,"InternalError",NULL);
     free(tmp0);
     return;
   }
 
   if(res==SERVICE_ACCEPTED && vid==1){
     map* statusInfo=createMap("Status","Accepted");
-    map *usid=getMapFromMaps(m,"lenv","usid");
+    map *usid=getMapFromMaps(pmsConf,"lenv","usid");
     addToMap(statusInfo,"JobID",usid->value);
-    printStatusInfo(m,statusInfo,(char*)"Execute");
+    printStatusInfo(pmsConf,statusInfo,(char*)"Execute");
     freeMap(&statusInfo);
     free(statusInfo);
     return;
   }
 
   if(res!=SERVICE_SUCCEEDED){	  
-    printProcessResponse(m,request_inputs1,cpid,
+    printProcessResponse(pmsConf,request_inputs1,cpid,
                          s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
                          request_inputs,
                          request_outputs);
     return;
   }
       
-  map *tmp1=getMapFromMaps(m,"main","tmpPath");
+  map *tmp1=getMapFromMaps(pmsConf,"main","tmpPath");
   if(asRaw==0){
 #ifdef DEBUG
     fprintf(stderr,"REQUEST_OUTPUTS FINAL\n");
@@ -2934,7 +2935,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #endif
     maps* tmpI=request_outputs;
     maps* stmpI=NULL;
-    map* usid=getMapFromMaps(m,"lenv","usid");
+    map* usid=getMapFromMaps(pmsConf,"lenv","usid");
     int itn=0;
     int error=-1;
   NESTED0:
@@ -2953,7 +2954,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	if(gfile==NULL){
 	  gfile=getMap(tmpI->content,"generated_file");
 	}
-	readGeneratedFile(m,tmpI->content,gfile->value);
+	readGeneratedFile(pmsConf,tmpI->content,gfile->value);
 	file_name=zStrdup((gfile->value)+strlen(tmp1->value));
 	}*/
       char *pcaFileUrl=NULL;
@@ -2983,7 +2984,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	      addToMap(tmpI->content,"encoding","UTF-8");
 	      addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
 	    }
-	    pcaFileUrl=produceFileUrl(s,m,tmpI,format,itn);
+	    pcaFileUrl=produceFileUrl(s,pmsConf,tmpI,format,itn);
 	    itn++;
 	    if(pcaFileUrl==NULL)
 	      return;
@@ -2993,8 +2994,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 	else{
 	  if(testMap!=NULL){
 	    map* nbFeatures;
-	    setMapInMaps(m,"lenv","state","out");
-	    setReferenceUrl(m,tmpI);
+	    setMapInMaps(pmsConf,"lenv","state","out");
+	    setReferenceUrl(pmsConf,tmpI);
 	    nbFeatures=getMap(tmpI->content,"nb_features");
 	    geodatatype=getMap(tmpI->content,"geodatatype");
 	    if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
@@ -3019,19 +3020,19 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     }    
 #ifdef DEBUG
     fprintf(stderr,"SERVICE : %s\n",s->name);
-    dumpMaps(m);
+    dumpMaps(pmsConf);
 #endif	
     if(error<0)
-      printProcessResponse(m,request_inputs1,cpid,
+      printProcessResponse(pmsConf,request_inputs1,cpid,
 			   s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
 			   request_inputs,
 			   request_outputs);
     else{
-      maps* tmpMaps=getMaps(m,"lenv");
+      maps* tmpMaps=getMaps(pmsConf,"lenv");
 #ifdef USE_CALLBACK
-      invokeCallback(m,NULL,NULL,7,0);
+      invokeCallback(pmsConf,NULL,NULL,7,0);
 #endif
-      printExceptionReportResponse(m,tmpMaps->content);
+      printExceptionReportResponse(&pmsConf,tmpMaps->content);
     }
   }
   else{
@@ -3049,9 +3050,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 
     elements* e=getElements(s->outputs,tmpI->name);
     if(e!=NULL && strcasecmp(e->format,"BoundingBoxData")==0){
-      printBoundingBoxDocument(m,tmpI,NULL);
+      printBoundingBoxDocument(pmsConf,tmpI,NULL);
     }else{
-      printRawdataOutput(m,tmpI);
+      printRawdataOutput(pmsConf,tmpI);
     }
   }
 }
@@ -3077,13 +3078,13 @@ int getNumberOfOutputs(maps* conf,maps* outputs){
 /**
  * Print all outputs as raw
  *
- * @param conf the main configuration maps
+ * @param pmsConf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void printRawdataOutputs(maps* conf,service* s,maps* outputs){
+void printRawdataOutputs(maps* pmsConf,service* s,maps* outputs){
   maps* pmsOut=outputs;
-  if(pmsOut!= NULL && pmsOut->next!=NULL && getNumberOfOutputs(conf,outputs)>1){
-    map* pmUsid=getMapFromMaps(conf,"lenv","usid");
+  if(pmsOut!= NULL && pmsOut->next!=NULL && getNumberOfOutputs(pmsConf,outputs)>1){
+    map* pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
     char* pcaBoundary=(char*)malloc(strlen(pmUsid->value)+2+1);
     sprintf(pcaBoundary,"--%s",pmUsid->value);
     map* mi=getMap(pmsOut->content,"mimeType");
@@ -3121,7 +3122,7 @@ void printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	if(pmTransmissionMode==NULL)
 	  pmTransmissionMode=getMap(pmsOut->content,"transmission");
 	if(pmTransmissionMode!=NULL && strcasecmp(pmTransmissionMode->value,"reference")==0){
-	  char *pcaFileUrl=produceFileUrl(s,conf,pmsOut,NULL,itn);
+	  char *pcaFileUrl=produceFileUrl(s,pmsConf,pmsOut,NULL,itn);
 	  printf("%s",mime);
 	  printf("Content-Location: %s\r\n",pcaFileUrl);
 	  itn++;
@@ -3132,19 +3133,19 @@ void printRawdataOutputs(maps* conf,service* s,maps* outputs){
 	    if(gfile==NULL){
 	      gfile=getMap(pmsOut->content,"generated_file");
 	    }
-	    readGeneratedFile(conf,pmsOut->content,gfile->value);
+	    readGeneratedFile(pmsConf,pmsOut->content,gfile->value);
 	  }
 	  map* pmValue=getMap(pmsOut->content,"value");
 	  if(pmValue==NULL){
 	    char tmpMsg[1024];
 	    sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
-	    map* pmExecutionType=getMapFromMaps(conf,"main","executionType");
+	    map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
 	    if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-	      errorException(conf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+	      errorException(&pmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
 	    else{
-	      setMapInMaps(conf,"lenv","error","true");
-	      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
-	      setMapInMaps(conf,"lenv","message",tmpMsg);
+	      setMapInMaps(pmsConf,"lenv","error","true");
+	      setMapInMaps(pmsConf,"lenv","code","InvalidParameterValue");
+	      setMapInMaps(pmsConf,"lenv","message",tmpMsg);
 	    }
 	    return ;
 	  }
@@ -3165,39 +3166,39 @@ void printRawdataOutputs(maps* conf,service* s,maps* outputs){
     }
     printf("--%s--\r\n",pcaBoundary);
   }
-  else printRawdataOutput(conf,outputs);
+  else printRawdataOutput(pmsConf,outputs);
 }
 
 /**
  * Print one outputs as raw
  * 
- * @param conf the main configuration maps
+ * @param pmsConf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void printRawdataOutput(maps* conf,maps* outputs){
+void printRawdataOutput(maps* pmsConf,maps* outputs){
   map *gfile=getMap(outputs->content,"generated_file");
   if(gfile!=NULL){
     gfile=getMap(outputs->content,"expected_generated_file");
     if(gfile==NULL){
       gfile=getMap(outputs->content,"generated_file");
     }
-    readGeneratedFile(conf,outputs->content,gfile->value);
+    readGeneratedFile(pmsConf,outputs->content,gfile->value);
   }
   map* toto=getMap(outputs->content,"value");
   if(toto==NULL){
     char tmpMsg[1024];
     sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
-    map* pmExecutionType=getMapFromMaps(conf,"main","executionType");
+    map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
     if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-      errorException(conf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+      errorException(&pmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
     else{
-      setMapInMaps(conf,"lenv","error","true");
-      setMapInMaps(conf,"lenv","code","InvalidParameterValue");
-      setMapInMaps(conf,"lenv","message",tmpMsg);
+      setMapInMaps(pmsConf,"lenv","error","true");
+      setMapInMaps(pmsConf,"lenv","code","InvalidParameterValue");
+      setMapInMaps(pmsConf,"lenv","message",tmpMsg);
     }
     return ;
   }
-  map* pmHeaders=getMapFromMaps(conf,"lenv","no-headers");
+  map* pmHeaders=getMapFromMaps(pmsConf,"lenv","no-headers");
   map* rs=getMapFromMaps(outputs,outputs->name,"size");
   if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
     if(rs!=NULL)
@@ -3226,16 +3227,16 @@ void printRawdataOutput(maps* conf,maps* outputs){
     free(pcaMimeType);
     // checking if the deploy service has returned the service id
     // if it did we add the service url to the location header
-    map* location = getMapFromMaps(conf,"lenv","deployedServiceId");
+    map* location = getMapFromMaps(pmsConf,"lenv","deployedServiceId");
     if(location!=NULL){
-      map* rootUrl=getMapFromMaps(conf,"openapi","rootUrl");
+      map* rootUrl=getMapFromMaps(pmsConf,"openapi","rootUrl");
       char* locationUrlHeader=NULL;
       locationUrlHeader=(char*)malloc((strlen(rootUrl->value)+strlen(location->value)+12)*sizeof(char));
       sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
       printf("Location: %s\r\n",locationUrlHeader);
     }
 
-    map* pmStatus = getMapFromMaps(conf,"headers","Status");
+    map* pmStatus = getMapFromMaps(pmsConf,"headers","Status");
     if(pmStatus!=NULL){
       printf("Status: %s;\r\n\r\n",pmStatus->value);
     } else {
@@ -3363,7 +3364,7 @@ map* parseBoundingBox(const char* value){
  * @param file the file to print the BoundingBox (if NULL then print on stdout)
  * @see parseBoundingBox, printBoundingBox
  */
-void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
+void printBoundingBoxDocument(maps* pmsConf,maps* boundingbox,FILE* file){
   if(file==NULL)
     rewind(stdout);
   xmlNodePtr n;
@@ -3371,11 +3372,11 @@ void printBoundingBoxDocument(maps* m,maps* boundingbox,FILE* file){
   xmlNsPtr ns_ows,ns_xsi;
   xmlChar *xmlbuff;
   int buffersize;
-  char *encoding=getEncoding(m);
+  char *encoding=getEncoding(pmsConf);
   map *tmp;
   if(file==NULL){
     int pid=0;
-    tmp=getMapFromMaps(m,"lenv","sid");
+    tmp=getMapFromMaps(pmsConf,"lenv","sid");
     if(tmp!=NULL)
       pid=atoi(tmp->value);
     if(pid==getpid()){

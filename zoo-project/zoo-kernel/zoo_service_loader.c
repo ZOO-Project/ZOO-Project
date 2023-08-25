@@ -164,19 +164,19 @@ extern char **environ;
 #ifdef WIN32
 extern "C"
 {
-  __declspec (dllexport) char *strcasestr (char const *a, char const *b)
+  __declspec (dllexport) char *strcasestr (char const *pccA, char const *pccB)
 #ifndef USE_MS
   {
-    char *x = zStrdup (a);
-    char *y = zStrdup (b);
+    char *pcX = zStrdup (pccA);
+    char *pcY = zStrdup (pccB);
 
-      x = _strlwr (x);
-      y = _strlwr (y);
-    char *pos = strstr (x, y);
-    char *ret = pos == NULL ? NULL : (char *) (a + (pos - x));
-      free (x);
-      free (y);
-      return ret;
+    pcX = _strlwr (pcX);
+    pcY = _strlwr (pcY);
+    char *pcPos = strstr (pcX, pcY);
+    char *pcRet = pcPos == NULL ? NULL : (char *) (pccA + (pos - pcX));
+    free (pcX);
+    free (pcY);
+    return pcRet;
   };
 #else
    ;
@@ -219,18 +219,18 @@ void cleanUpSql(maps* pmsConf){
 /**
  * Replace a char by another one in a string
  *
- * @param str the string to update
- * @param toReplace the char to replace
- * @param toReplaceBy the char that will be used
+ * @param pcOrigin the string to update
+ * @param cToReplace the char to replace
+ * @param cToReplaceBy the char that will be used
  */
 void
-translateChar (char *str, char toReplace, char toReplaceBy)
+translateChar (char *pcOrigin, char cToReplace, char cToReplaceBy)
 {
-  int i = 0, len = strlen (str);
+  int i = 0, len = strlen (pcOrigin);
   for (i = 0; i < len; i++)
     {
-      if (str[i] == toReplace)
-        str[i] = toReplaceBy;
+      if (pcOrigin[i] == cToReplace)
+        pcOrigin[i] = cToReplaceBy;
     }
 }
 
@@ -314,15 +314,15 @@ int createLenvFile(maps* pmsConf,char* pcPath,char* pcUsid){
 /**
  * Dump back the final file fbkp1 to fbkp
  *
- * @param m the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param fbkp the string corresponding to the name of the file
  * @param fbkp1 the string corresponding to the name of the file
  */
-int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
+int dumpBackFinalFile(maps* pmsConf,char* fbkp,char* fbkp1)
 {
   FILE *f2 = fopen (fbkp1, "rb");
 #ifndef RELY_ON_DB
-  semid lid = getShmLockId (m, 1);
+  semid lid = getShmLockId (pmsConf, 1);
   if (lid < 0)
     return -1;
   lockShm (lid);
@@ -352,14 +352,14 @@ int dumpBackFinalFile(maps* m,char* fbkp,char* fbkp1)
  * Checks if the zooServicesNamespace map is present in the m map;
  * if it is, the path to the directory where the ZOO-kernel should search for service providers will be updated.
  *
- * @param m the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param oldPath default location where the ZOO-kernel should search for service providers
  * @param newPath location where the ZOO-kernel should search for service providers considering the namespace
  * @param maxSize maximum number of bytes to be used in the newPath buffer.
  */
-int getServicesNamespacePath(maps* m,char* oldPath,char* newPath,int maxSize){
-  map *zooServicesNamespaceMap = getMapFromMaps (m, "zooServicesNamespace", "namespace");
-  map *servicesNamespaceParentPath = getMapFromMaps (m, "servicesNamespace", "path");
+int getServicesNamespacePath(maps* pmsConf,char* oldPath,char* newPath,int maxSize){
+  map *zooServicesNamespaceMap = getMapFromMaps (pmsConf, "zooServicesNamespace", "namespace");
+  map *servicesNamespaceParentPath = getMapFromMaps (pmsConf, "servicesNamespace", "path");
   memset(newPath,0,maxSize);
 
   if (zooServicesNamespaceMap && strcmp(zooServicesNamespaceMap->value,"anonymous") == 0 ){
@@ -434,7 +434,7 @@ int addServicesNamespaceToMap(maps** pmsConf){
 	      } else {
 		map* error=createMap("code","BadRequest");
 		addToMap(error,"message",_("The resource is not available"));
-		printExceptionReportResponseJ(*pmsConf,error);
+		printExceptionReportResponseJ(pmsConf,error);
 		ret = 1;
 		freeMap(&error);
 		free(error);
@@ -621,7 +621,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		if (s1 == NULL)
 		  {
 		    zDup2 (saved_stdout, fileno (stdout));
-		    errorException (m, _("Unable to allocate memory"),
+		    errorException (&m, _("Unable to allocate memory"),
 				    "InternalError", NULL);
 		    return -1;
 		  }
@@ -644,7 +644,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 		    fflush(stdout);
 		    zDup2 (saved_stdout, fileno (stdout));
 		    zClose(saved_stdout);
-		    errorException (m, tmp01, "InternalError", NULL);
+		    errorException (&m, tmp01, "InternalError", NULL);
 		    freeService (&s1);
 		    free (s1);
 		    free (tmpsn);
@@ -704,7 +704,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 void exitAndCleanUp(registry* zooRegistry, maps* m,
 		    const char* zcfg,const char* code,const char* locator,
 		    char* orig,char* corig,
-		    void (funcError) (maps*, map*)){
+		    void (funcError) (maps**, map*)){
   map *tmp00 = getMapFromMaps (m, "lenv", "message");
   char tmp01[1024];
   if (tmp00 != NULL)
@@ -724,7 +724,7 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
 
   addToMap(errormap,"code", errorCode);
   addToMap(errormap,"locator", locator);
-  funcError(m,errormap);
+  funcError(&m,errormap);
   if(zooRegistry!=NULL){
     freeRegistry(&zooRegistry);
     free(zooRegistry);
@@ -750,7 +750,7 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
  * @param cIdentifier the service identifier
  * @param funcError the error function to be used in case of error
  */
-int fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* ntmp,char* cIdentifier,void (funcError) (maps*, map*)){
+int fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* ntmp,char* cIdentifier,void (funcError) (maps**, map*)){
   char tmps1[1024];
   map *r_inputs=NULL;
   service* s1=*spService;
@@ -830,10 +830,10 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 	}
 
 	setMapInMaps(m,"lenv","status_code","404 Bad Request");
-	funcError(m,error);
+	funcError(&m,error);
 	freeMap(&error);
 	free(error);
-	return 1; /*errorException (m, _("Unable to allocate memory"),
+	return 1; /*errorException (&m, _("Unable to allocate memory"),
 		    "InternalError", NULL);*/
       }
 
@@ -873,9 +873,9 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 	    addToMap(error,"message",tmpMsg);
 	  }
 	  //setMapInMaps(conf,"lenv","status_code","404 Bad Request");
-	  funcError(m,error);
+	  funcError(&m,error);
 	  
-	  //errorException (m, tmpMsg, "InvalidParameterValue", "identifier");
+	  //errorException (&m, tmpMsg, "InvalidParameterValue", "identifier");
 	  free (tmpMsg);
 	  free (*spService);
 	  freeMap(&error);
@@ -908,7 +908,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 				void (func) (registry *, maps *, void*, void*, service *),
 				void* doc, void* n, char *conf_dir_, map* request_inputs,
-				void (funcError) (maps*, map*) ){
+				void (funcError) (maps**, map*) ){
   char *orig = zStrdup (r_inputs);
   service* s1=NULL;
   int saved_stdout = zDup (fileno (stdout));
@@ -1105,7 +1105,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			    map* errormap = createMap("text", _("Unable to allocate memory"));
 			    addToMap(errormap,"code", "InternalError");
 			    addToMap(errormap,"locator", "NULL");
-			    funcError(m,errormap);
+			    funcError(&m,errormap);
 			    if(dirp!=NULL)
 			      closedir (dirp);
 			    freeMap(&errormap);
@@ -1617,7 +1617,7 @@ void json_sig_handler (int sig){
   maps* tmpMaps=createMaps("lenv");
   setMapInMaps(tmpMaps,"lenv","message",tmp);
   setMapInMaps(tmpMaps,"lenv","status","failed");
-  printExceptionReportResponseJ(tmpMaps,tmpMap);
+  printExceptionReportResponseJ(&tmpMaps,tmpMap);
   //errorException (NULL, tmp, "InternalError", NULL);
 #ifdef DEBUG
   fprintf (stderr, "Not this time!\n");
@@ -1835,7 +1835,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                            _
                            ("Error occurred while running the %s function: %s"),
                            r_inputs->value, errstr);
-                  errorException (m, tmpMsg, "InternalError", NULL);
+                  errorException (&m, tmpMsg, "InternalError", NULL);
                   free (tmpMsg);
 #ifdef DEBUG
                   fprintf (stderr, "Function %s error %s\n", r_inputs->value,
@@ -1885,7 +1885,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 	  errstr = dlerror ();
 #endif
           sprintf (tmps, _("Unable to load C Library %s"), errstr);
-	  errorException(m,tmps,"InternalError",NULL);
+	  errorException(&m,tmps,"InternalError",NULL);
           *eres = -1;
         }
     }
@@ -2022,7 +2022,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
                _
                ("Programming Language (%s) set in ZCFG file is not currently supported by ZOO Kernel.\n"),
                r_inputs->value);
-      errorException (m, tmpv, "InternalError", NULL);
+      errorException (&m, tmpv, "InternalError", NULL);
       *eres = -1;
     }
   *myMap = m;
@@ -2190,17 +2190,17 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
     char* kvp = (char*) malloc((FILENAME_MAX + strlen(key))*sizeof(char));
     char* filepath = kvp + strlen(key);
     strncpy(kvp, key, strlen(key));
-    addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value), 
+    addToCache(m, tmpReq->value, tmpReq->value, "text/xml", strlen(tmpReq->value),
 	       filepath, FILENAME_MAX);
     if (filepath == NULL) {
-      errorException( m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);  
+      errorException( &m, _("Unable to cache HTTP POST Execute request."), "InternalError", NULL);
       return;
-    }	
+    }
     sprintf(tmp,"\"metapath=%s&%s&cgiSid=%s&usid=%s\"",
 	    r_inputs1->value,kvp,sid->value,usid->value);
     sprintf(tmpq,"metapath=%s&%s",
 	    r_inputs1->value,kvp);
-    free(kvp);	
+    free(kvp);
   }
   else if (r_inputs2 != NULL)
     {
@@ -2211,7 +2211,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
       sprintf (tmpq,
                "metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s&%s=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
-               r_inputs2->name, dataOutputsKVP);		   
+               r_inputs2->name, dataOutputsKVP);
     }
   else
     {
@@ -2222,7 +2222,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
       sprintf (tmpq,
                "metapath=%s&request=%s&service=WPS&version=1.0.0&Identifier=%s&DataInputs=%s",
                r_inputs1->value, req->value, id->value, dataInputsKVP,
-               sid->value);   
+               sid->value);
     }
 
   if (hasIn > 0)
@@ -2231,7 +2231,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
       free (r_inputs1);
     }
   char *tmp1 = zStrdup (tmp);
-  sprintf (tmp, "\"%s\" %s \"%s\"", PROGRAMNAME, tmp1, sid->value);  
+  sprintf (tmp, "\"%s\" %s \"%s\"", PROGRAMNAME, tmp1, sid->value);
   free (dataInputsKVP);
   free (dataOutputsKVP);
 #ifdef DEBUG
@@ -2244,7 +2244,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   }
   SetEnvironmentVariable ("CGISID", TEXT (sid->value));
   SetEnvironmentVariable ("QUERY_STRING", TEXT (tmpq));
-  // knut: Prevent REQUEST_METHOD=POST in background process call to cgic:main 
+  // knut: Prevent REQUEST_METHOD=POST in background process call to cgic:main
   // (process hangs when reading cgiIn):
   SetEnvironmentVariable("REQUEST_METHOD", "GET");
   SetEnvironmentVariable("CONTENT_TYPE", "text/plain");
@@ -2261,7 +2261,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
                       FALSE,            // Set handle inheritance to FALSE
                       CREATE_NO_WINDOW, // Apache won't wait until the end
                       NULL,             // Use parent's environment block
-                      NULL,             // Use parent's starting directory 
+                      NULL,             // Use parent's starting directory
                       &si,              // Pointer to STARTUPINFO struct
                       &pi)              // Pointer to PROCESS_INFORMATION struct
     )
@@ -2274,7 +2274,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
       }
       if (tmpq != NULL) {
         free(tmpq);
-      }		
+      }
       return;
     }
   else
@@ -2286,14 +2286,14 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
     }
   CloseHandle (pi.hProcess);
   CloseHandle (pi.hThread);
-  
+
   if (tmp != NULL) {
     free(tmp);
   }
   if (tmpq != NULL) {
     free(tmpq);
   }
-  
+
 #ifdef DEBUG
   fprintf (stderr, "CreateProcess finished !\n");
 #endif
@@ -2303,7 +2303,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 /**
  * Process the request.
  *
- * @param inputs the request parameters map 
+ * @param inputs the request parameters map
  * @return 0 on sucess, other value on failure
  * @see conf_read,recursReaddirF
  */
@@ -2429,7 +2429,7 @@ runRequest (map ** inputs)
                    _
                    ("The value %s is not supported for the <language> parameter"),
                    r_inputs->value);
-          errorException (m, tmp, "InvalidParameterValue", "language");
+          errorException (&m, tmp, "InvalidParameterValue", "language");
           freeMaps (&m);
           free (m);
           free (REQUEST);
@@ -2569,7 +2569,7 @@ runRequest (map ** inputs)
 #ifndef WIN32
       zDup2 (saved_stdout, fileno (stdout));
 #endif
-      errorException (m, message->value,
+      errorException (&m, message->value,
 		      type->value, NULL);
       return 0;
     }
@@ -2594,7 +2594,7 @@ runRequest (map ** inputs)
     // OGC API - Processes starts here
     //
 #ifndef USE_JSON
-    errorException (m, _("OGC API - Processes is not supported by this ZOO-Kernel, please contact the service provider."), "InternalError", NULL);
+    errorException (&m, _("OGC API - Processes is not supported by this ZOO-Kernel, please contact the service provider."), "InternalError", NULL);
     return 1;
 #else
 #ifndef USE_GDB
@@ -2643,7 +2643,6 @@ runRequest (map ** inputs)
     if(pcaCgiQueryString==NULL)
       pcaCgiQueryString=zStrdup(cgiQueryString);
 
-    //dumpMap(request_inputs);
     r_inputs = getMapOrFill (&request_inputs, "metapath", "");
     char conf_file1[10240];
     maps* m1 = (maps *) malloc (MAPS_SIZE);
@@ -2671,9 +2670,9 @@ runRequest (map ** inputs)
 	addMapToMap(&pmError,pmsTmp->content);
       }
       if(pmError!=NULL)
-	localPrintExceptionJ(m,pmError);
+	localPrintExceptionJ(&m,pmError);
       else
-	localPrintExceptionJ(m,pmsTmp->content);
+	localPrintExceptionJ(&m,pmsTmp->content);
       // Cleanup memory
       freeMaps(&m);
       free(m);
@@ -2691,18 +2690,12 @@ runRequest (map ** inputs)
       return 1;
     }
 
-    // Why don't we do that directly from the securityIn Python service??
-    /*ZOO_DEBUG("addServicesNamespaceToMap");
-    int i = addServicesNamespaceToMap(&m);
-    if(i) {
-      map* error=createMap("code","BadRequest");
-      addToMap(error,"message",_("The resource is not available"));
-      localPrintExceptionJ(m,error);
-      //printExceptionReportResponseJ(m,error);
-      setMapInMaps(m,"lenv","status_code","404 Bad Request");
-      return 1;
-      }*/
-
+    map* pmsResponse=getMapFromMaps(m,"lenv","response");
+    if(pmsResponse!=NULL){
+      printHeaders(m);
+      printf(pmsResponse->value);
+      return 0;
+    }
 
     setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
 #ifdef DRU_ENABLED
@@ -2717,7 +2710,7 @@ runRequest (map ** inputs)
 	setMapInMaps(m,"lenv","status_code","501");
 	map* error=createMap("code","NotImplemented");
 	addToMap(error,"message",_("The request method used to access the current path is not supported (no service available to undeploy)."));
-	localPrintExceptionJ(m,error);
+	localPrintExceptionJ(&m,error);
 	// TODO: cleanup memory
 	freeMaps(&m);
 	free(m);
@@ -2778,7 +2771,7 @@ runRequest (map ** inputs)
 	  map* error=createMap("code","NoSuchProcess");
 	  addToMap(error,"message",_("The process is not yet deployed."));
 	  setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
-	  localPrintExceptionJ(m,error);
+	  localPrintExceptionJ(&m,error);
 	  //json_object_put(res);
 	  // TODO: cleanup memory
 	  freeMaps(&m);
@@ -2802,7 +2795,7 @@ runRequest (map ** inputs)
 	  setMapInMaps(m,"lenv","status_code","501");
 	  map* error=createMap("code","NotImplemented");
 	  addToMap(error,"message",_("The request method used to access the current path is not supported."));
-	  localPrintExceptionJ(m,error);
+	  localPrintExceptionJ(&m,error);
 	  // TODO: cleanup memory
 	  freeMaps(&m);
 	  free(m);
@@ -2849,7 +2842,7 @@ runRequest (map ** inputs)
 	    if(res5==NULL){
 	      map* pmError=createMap("code","NoSuchProcess");
 	      addToMap(pmError,"message",_("The process failed to be updated."));
-	      localPrintExceptionJ(m,pmError);
+	      localPrintExceptionJ(&m,pmError);
 	      // TODO: cleanup memory
 	      json_object_put(res4);
 	      json_object_put(res3);
@@ -2897,7 +2890,7 @@ runRequest (map ** inputs)
        (strstr(pcaCgiQueryString,"/jobs")!=NULL && strncasecmp(pcaCgiQueryString,"/jobs",5)!=0) ){
 	map* error=createMap("code","BadRequest");
 	addToMap(error,"message",_("The resource is not available"));
-	localPrintExceptionJ(m,error);
+	localPrintExceptionJ(&m,error);
 	freeMaps (&m);
 	free (m);
 	free (REQUEST);
@@ -2921,7 +2914,7 @@ runRequest (map ** inputs)
       setMapInMaps(m,"lenv","status_code","405");
       map* pmaError=createMap("code","InvalidMethod");
       addToMap(pmaError,"message",_("The request method used to access the current path is not supported."));
-      localPrintExceptionJ(m,pmaError);
+      localPrintExceptionJ(&m,pmaError);
       json_object_put(res);
       // TODO: cleanup memory
       freeMaps(&m);
@@ -2942,7 +2935,7 @@ runRequest (map ** inputs)
 	map* pmaError=createMap("code","InvalidMethod");
 	const char* pccErr=_("This API does not support the method.");
 	addToMap(pmaError,"message",pccErr);
-	localPrintExceptionJ(m,pmaError);
+	localPrintExceptionJ(&m,pmaError);
 	// TODO: cleanup memory
 	freeMaps(&m);
 	free(m);
@@ -3124,7 +3117,7 @@ runRequest (map ** inputs)
 	  runDismiss(m,jobId);
 	  map* pmError=getMapFromMaps(m,"lenv","error");
 	  if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-	    localPrintExceptionJ(m,getMapFromMaps(m,"lenv","code"));
+	    localPrintExceptionJ(&m,getMapFromMaps(m,"lenv","code"));
 	    register_signals(donothing);
 	    freeService (&s1);
 	    free(s1);
@@ -3427,7 +3420,7 @@ runRequest (map ** inputs)
 	      runDismiss(m,jobId);
 	      map* pmError=getMapFromMaps(m,"lenv","error");
 	      if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-		localPrintExceptionJ(m,getMapFromMaps(m,"lenv","code"));
+		localPrintExceptionJ(&m,getMapFromMaps(m,"lenv","code"));
 		freeMaps(&m);
 		free(m);
 		json_object_put(res);
@@ -3458,7 +3451,7 @@ runRequest (map ** inputs)
 		if(sid==NULL){
 		  map* error=createMap("code","NoSuchJob");
 		  addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
-		  localPrintExceptionJ(m,error);
+		  localPrintExceptionJ(&m,error);
 		  free(jobId);
 		  freeMap(&error);
 		  free(error);
@@ -3481,7 +3474,7 @@ runRequest (map ** inputs)
 		  if(isRunning(m,jobId)>0){
 		    map* error=createMap("code","ResultNotReady");
 		    addToMap(error,"message",_("The job is still running."));
-		    localPrintExceptionJ(m,error);
+		    localPrintExceptionJ(&m,error);
 		    free(jobId);
 		    freeMap(&error);
 		    free(error);
@@ -3514,7 +3507,7 @@ runRequest (map ** inputs)
 			   !jsonIsFalse(json_object_object_get_ex(pjoTmp,"description",&pjoMessage)) ){
 			  map* error=createMap("code",json_object_get_string(pjoCode));
 			  addToMap(error,"message",json_object_get_string(pjoMessage));
-			  localPrintExceptionJ(m,error);
+			  localPrintExceptionJ(&m,error);
 			  free(jobId);
 			  freeMap(&error);
 			  free(error);
@@ -3561,7 +3554,7 @@ runRequest (map ** inputs)
 			}
 			map* error=createMap("code","NoApplicableCode");
 			addToMap(error,"message",_("The service failed to execute."));
-			localPrintExceptionJ(m,error);
+			localPrintExceptionJ(&m,error);
 			free(jobId);
 			freeMap(&error);
 			free(error);
@@ -3613,7 +3606,7 @@ runRequest (map ** inputs)
 	map* error=createMap("code","BadRequest");
 	addToMap(error,"message",_("The resource is not available"));
 	//setMapInMaps(conf,"lenv","status_code","404 Bad Request");
-	localPrintExceptionJ(m,error);
+	localPrintExceptionJ(&m,error);
 	freeMaps (&m);
 	free (m);
 	free (REQUEST);
@@ -3637,7 +3630,7 @@ runRequest (map ** inputs)
 	  map* error=createMap("code","BadRequest");
 	  addToMap(error,"message",_("The request body is empty"));
 	  setMapInMaps(m,"lenv","status_code","400 Bad Request");
-	  localPrintExceptionJ(m,error);
+	  localPrintExceptionJ(&m,error);
 	  freeMaps (&m);
 	  free (m);
 	  free (REQUEST);
@@ -3675,7 +3668,7 @@ runRequest (map ** inputs)
 	    char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
 	    sprintf(pacMessage,pccErr,pcTmpErr);
 	    addToMap(pamError,"message",pacMessage);
-	    localPrintExceptionJ(m,pamError);
+	    localPrintExceptionJ(&m,pamError);
 	    fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 	    json_tokener_free(tok);
 	    return 1;
@@ -3687,7 +3680,7 @@ runRequest (map ** inputs)
 	    char* pacMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
 	    sprintf(pacMessage,pccErr,pcTmpErr);
 	    addToMap(pamError,"message",pacMessage);
-	    localPrintExceptionJ(m,pamError);
+	    localPrintExceptionJ(&m,pamError);
 	    fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 	    json_tokener_free(tok);
 	    return 1;
@@ -3697,8 +3690,10 @@ runRequest (map ** inputs)
 #ifdef DRU_ENABLED
 	convertOGCAppPkgToExecute(m,request_inputs,&jobj);
 #endif
-	json_object* json_io=NULL;
 	char* cIdentifier=NULL;
+	map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
+	map* mode=getMap(request_inputs,"mode");
+	json_object* json_io=NULL;
 	if(!jsonIsFalse(json_object_object_get_ex(jobj,"id",&json_io))){
 	  cIdentifier=zStrdup(json_object_get_string(json_io));
 	}
@@ -3710,6 +3705,14 @@ runRequest (map ** inputs)
 #ifdef DRU_ENABLED
 	else if( deployServiceProvider!=NULL ) {
           cIdentifier = deployServiceProvider->value;
+	}
+	map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
+	bool isAlreadyDeployed=false;
+	if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)==0){
+	  eres=SERVICE_DEPLOYED;
+	  isAlreadyDeployed=true;
+	  bBypassed=true;
+	  goto printDescription;
 	}
 #endif
 	if(cIdentifier!=NULL)
@@ -3734,16 +3737,32 @@ runRequest (map ** inputs)
 	free(cIdentifier);
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
-	map* preference=getMapFromMaps(m,"renv","HTTP_PREFER");
-	map* mode=getMap(request_inputs,"mode");
 #ifdef DRU_ENABLED
-	map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
-	bool isAlreadyDeployed=false;
-	if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)==0){
-	  eres=SERVICE_DEPLOYED;
-	  isAlreadyDeployed=true;
-	  bBypassed=true;
-	  goto printDescription;
+	if(s1!= NULL && s1->content!=NULL){
+	  map* pmOpenEOGraph=getMap(s1->content,"serviceSubType");
+	  if(pmOpenEOGraph!=NULL){
+	    // Only support OpenEO UDP
+	    map* pmPwd=getMapFromMaps(m,"auth_env","cwd");
+	    fflush(stderr);
+	    if(pmPwd!=NULL){
+	      // Add a graph extra input and update the serviceProvider
+	      char *pcaReference=(char*)malloc((strlen(pmPwd->value)+strlen(s1->name)+13)*sizeof(char));
+	      sprintf(pcaReference,"%s/%s_graph.json",pmPwd->value,s1->name);
+	      maps *pmaOpenEo=createMaps("OpenEOGraph");
+	      pmaOpenEo->content=createMap("cache_file",pcaReference);
+	      free(pcaReference);
+	      addToMap(pmaOpenEo->content,"mimeType","application/openeo");
+	      addMapsToMaps(&request_input_real_format,pmaOpenEo);
+	      freeMaps(&pmaOpenEo);
+	      free(pmaOpenEo);
+	      // Update the service serviceProvider here
+	      map* pmServiceProvider=getMap(s1->content,"serviceProvider");
+	      free(pmServiceProvider->value);
+	      pmServiceProvider->value=zStrdup("OpenEO");
+	      free(s1->name);
+	      s1->name=zStrdup("run");
+	    }
+	  }
 	}
 #endif
 	if((preference!=NULL && strstr(preference->value,"respond-async")!=NULL) ||
@@ -3759,29 +3778,26 @@ runRequest (map ** inputs)
 #endif
 	  //setMapInMaps(m,"lenv","no-headers","true");
 #ifdef USE_AMQP
-
 	  publish_amqp_msg(m,&eres,request_inputs,request_input_real_format,request_output_real_format);
-
 #ifdef RELY_ON_DB
-      init_sql(m);
-      recordServiceStatus(m);
+	  init_sql(m);
+	  recordServiceStatus(m);
 #endif
 #ifdef USE_CALLBACK
-      invokeCallback(m,NULL,NULL,0,0);
+	  invokeCallback(m,NULL,NULL,0,0);
 #endif
 
-      eres = SERVICE_ACCEPTED;
-      createStatusFile(m,eres);
-      if(preference!=NULL)
-	setMapInMaps(m,"headers","Preference-Applied",preference->value);
-      setMapInMaps(m,"headers","Status","201 Created");
-      map* pmTmp=getMapFromMaps(m,"lenv","usid");
-      if(pmTmp!=NULL){
-	if(res!=NULL)
-	  json_object_put(res);
-	res=printJobStatus(m,pmTmp->value);
-      }
-
+	  eres = SERVICE_ACCEPTED;
+	  createStatusFile(m,eres);
+	  if(preference!=NULL)
+	    setMapInMaps(m,"headers","Preference-Applied",preference->value);
+	  setMapInMaps(m,"headers","Status","201 Created");
+	  map* pmTmp=getMapFromMaps(m,"lenv","usid");
+	  if(pmTmp!=NULL){
+	    if(res!=NULL)
+	      json_object_put(res);
+	    res=printJobStatus(m,pmTmp->value);
+	  }
 #else
 
 #ifndef WIN32
@@ -3927,22 +3943,24 @@ runRequest (map ** inputs)
 	      fflush(stdout);
 	      rewind(stdout);
 	      if(res!=NULL)
-		json_object_put(res); 
+		json_object_put(res);
 	      res=printJResult(m,s1,request_output_real_format,eres);
 	      const char* jsonStr0=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
 	      if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
 		setMapInMaps(m,"lenv","jsonStr",jsonStr0);
 	      invokeBasicCallback(m,eres);
+	      // Fetch infromations from main.cfg again after execution
+	      deployServiceProvider=getMapFromMaps(m,"servicesNamespace","deploy_service_provider");
+	      undeployServiceProvider=getMapFromMaps(m,"servicesNamespace","undeploy_service_provider");
 	    }
 #endif
-
 	}else{
 	  // request is synchronous
 	  map* pmMutable=getMap(s1->content,"mutable");
 	  if(pmMutable!=NULL && strncasecmp(pmMutable->value,"true",4)==0){
 	    map* pmError=createMap("code","None");
 	    addToMap(pmError,"message",_("The synchronous mode is not allowed for mutable services."));
-	    localPrintExceptionJ(m,pmError);
+	    localPrintExceptionJ(&m,pmError);
 	    freeMap(&pmError);
 	    free(pmError);
 	    freeMaps(&m);
@@ -3978,9 +3996,9 @@ runRequest (map ** inputs)
 			    strcmp(undeployServiceProvider->value,s1->name)==0);
 	  if(eres!=SERVICE_DEPLOYED && eres!=SERVICE_UNDEPLOYED &&
 	     ( bIsDeploy || bIsUndeploy) ){
-	    // TODO: use the correct type
+	    // Use the correct type DuplicatedProcess
 	    // http://www.opengis.net/def/exceptions/ogcapi-processes-2/1.0/duplicated-process
-	    // And correct response code (409 Conflict)
+	    // And set response status to 409 Conflict
 	    map* pmError=NULL;
 	    if(bIsDeploy){
 	      setMapInMaps(m,"headers","Status","409 Conflict");
@@ -3989,10 +4007,8 @@ runRequest (map ** inputs)
 	    }else{
 	      pmError=createMap("code","InternalError");
 	      addToMap(pmError,"message",_("An error occured when trying to undeploy your service."));
-	      maps* pmsTmp=getMaps(m,"lenv");
-	      dumpMap(pmsTmp->content);
 	    }
-	    localPrintExceptionJ(m,pmError);
+	    localPrintExceptionJ(&m,pmError);
 	    setMapInMaps(m,"lenv","no-headers","true");
 	    setMapInMaps(m,"lenv","hasPrinted","true");
 	    // TODO: cleanup memory
@@ -4048,7 +4064,7 @@ runRequest (map ** inputs)
 	      free(pcaFileName);
 	      map* pmError=createMap("code","NoSuchProcess");
 	      addToMap(pmError,"message",_("The process failed to be updated."));
-	      localPrintExceptionJ(m,pmError);
+	      localPrintExceptionJ(&m,pmError);
 	      pmDeployed=NULL;
 	    }
 	    if(pmDeployed!=NULL){
@@ -4108,7 +4124,7 @@ runRequest (map ** inputs)
 		const char* jsonStr=json_object_to_json_string_ext(res5,JSON_C_TO_STRING_NOSLASHESCAPE);
 		setMapInMaps(m,"lenv","no-headers","false");
 		// In case security is activated, then execute the security module
-		if(ensureFiltered(&m,"out")!=0){
+		/*if(*/ensureFiltered(&m,"out");/*!=0){
 		  maps* pmsTmp=getMaps(m,"lenv");
 		  printExceptionReportResponseJ(m,pmsTmp->content);
 		  // TODO: cleanup memory
@@ -4126,7 +4142,7 @@ runRequest (map ** inputs)
 		  }
 		  free(pcaCgiQueryString);
 		  return 1;
-		}
+		  }*/
 		map* pmORequestMethod=getMapFromMaps(m,"lenv","orequest_method");
 		if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0)
 		  setMapInMaps(m,"headers","Status","204 No Content");
@@ -4355,7 +4371,7 @@ runRequest (map ** inputs)
 	map* pmError=createMap("text",pcaMessage);
 	addToMap(pmError,"locator","version");
 	addToMap(pmError,"code","VersionNegotiationFailed");
-	printExceptionReportResponse(m,pmError);
+	printExceptionReportResponse(&m,pmError);
 	freeMap(&pmError);
 	free(pmError);
 	free(pcaMessage);
@@ -4372,7 +4388,7 @@ runRequest (map ** inputs)
     };
     if(err!=NULL){
       checkValidValue(request_inputs,&err,"service",(const char**)vvs,1);
-      printExceptionReportResponse (m, err);
+      printExceptionReportResponse (&m, err);
       freeMap(&err);
       free(err);
       if (count (request_inputs) == 1)
@@ -4431,7 +4447,7 @@ runRequest (map ** inputs)
       }
     }
     if(err!=NULL){
-      printExceptionReportResponse (m, err);
+      printExceptionReportResponse (&m, err);
       freeMap(&err);
       free(err);
       if (count (request_inputs) == 1)
@@ -4572,7 +4588,7 @@ runRequest (map ** inputs)
 	  DIR *dirp = opendir (conf_dir);
 	  if (dirp == NULL)
 	    {
-	      errorException (m, _("The specified path does not exist."),
+	      errorException (&m, _("The specified path does not exist."),
 			      "InternalError", NULL);
 	      freeMaps (&m);
 	      free (m);
@@ -4667,7 +4683,7 @@ runRequest (map ** inputs)
 	      }
 	      char* message=(char*)malloc((61+len)*sizeof(char));
 	      sprintf(message,"The <request> value was not recognized. Allowed values are %s.",tmpStr);
-	      errorException (m,_(message),"InvalidParameterValue", "request");
+	      errorException (&m,_(message),"InvalidParameterValue", "request");
 #ifdef DEBUG
 	      fprintf (stderr, "No request found %s", REQUEST);
 #endif
@@ -4689,9 +4705,9 @@ runRequest (map ** inputs)
 
     map *postRequest = NULL;
     postRequest = getMap (request_inputs, "xrequest");
-  
+
     if(vid==1 && postRequest==NULL){
-      errorException (m,_("Unable to run Execute request using the GET HTTP method"),"InvalidParameterValue", "request");  
+      errorException (&m,_("Unable to run Execute request using the GET HTTP method"),"InvalidParameterValue", "request");
       freeMaps (&m);
       free (m);
       if(zooRegistry!=NULL){
@@ -4776,7 +4792,7 @@ runRequest (map ** inputs)
       if (status != NULL && strcmp (status->value, "true") == 0 &&
 	  store != NULL && strcmp (store->value, "false") == 0)
 	{
-	  errorException (m,
+	  errorException (&m,
 			  _
 			  ("The status parameter cannot be set to true if storeExecuteResponse is set to false. Please modify your request parameters."),
 			  "InvalidParameterValue", "storeExecuteResponse");
@@ -4784,10 +4800,10 @@ runRequest (map ** inputs)
 	  free (s1);
 	  freeMaps (&m);
 	  free (m);
-	
+
 	  freeMaps (&request_input_real_format);
 	  free (request_input_real_format);
-	
+
 	  freeMaps (&request_output_real_format);
 	  free (request_output_real_format);
 
@@ -4806,7 +4822,7 @@ runRequest (map ** inputs)
 	else{
 	  if(mode!=NULL){
 	    // see ref. http://docs.opengeospatial.org/is/14-065/14-065.html#61
-	    errorException (m,_("The process does not permit the desired execution mode."),"NoSuchMode", mode->value);  
+	    errorException (&m,_("The process does not permit the desired execution mode."),"NoSuchMode", mode->value);
 	    fflush (stdout);
 	    freeMaps (&m);
 	    free (m);
@@ -5110,7 +5126,7 @@ runRequest (map ** inputs)
 	     * error response here !!!
 	     */
 	    eres = -1;
-	    errorException (m, _("Unable to run the child process properly"),
+	    errorException (&m, _("Unable to run the child process properly"),
 			    "InternalError", NULL);
 	  }
 #endif
@@ -5380,7 +5396,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #ifndef WIN32
 		zDup2 (saved_stdout, fileno (stdout));
 #endif
-		return errorException (lconf, message->value,
+		return errorException (&lconf, message->value,
 				       type->value, NULL);
 	      }
 #ifndef WIN32

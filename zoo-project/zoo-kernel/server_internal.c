@@ -1004,7 +1004,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+      errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
     else{
       setMapInMaps(conf,"lenv","error","true");
@@ -1016,7 +1016,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
     if(isRunning(conf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
 	if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	  errorException (conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
+	  errorException (&conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
 			  "ResultNotReady", pid);
 	else{
 	  setMapInMaps(conf,"lenv","error","true");
@@ -1067,7 +1067,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  return;
 	}else{
 	  if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	    errorException (conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
+	    errorException (&conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
 			    "ResultNotReady", pid);
 	  else{
 	    setMapInMaps(conf,"lenv","error","true");
@@ -1125,7 +1125,7 @@ void runDismiss(maps* conf,char* pid){
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+      errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
     else{
       setMapInMaps(conf,"lenv","error","true");
@@ -1170,7 +1170,7 @@ void runDismiss(maps* conf,char* pid){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
 	  if(zUnlink(fileName)!=0){
 	    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	      errorException (conf, 
+	      errorException (&conf,
 			      _("The job cannot be removed, a file cannot be removed"),
 			      "NoApplicableCode", NULL);
 	    else{

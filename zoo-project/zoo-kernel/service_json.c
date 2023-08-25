@@ -1055,41 +1055,41 @@ extern "C" {
    * Set hasPrinted value to true in the [lenv] section. 
    * @see createExceptionJ
    * 
-   * @param m the maps containing the settings of the main.cfg file
+   * @param pmsConf the maps containing the settings of the main.cfg file
    * @param s the map containing the text,code,locator keys (or a map array of the same keys)
    */
-  void printExceptionReportResponseJ(maps* m,map* s){
-    map* pmHasprinted=getMapFromMaps(m,"lenv","hasExceptionPrinted");
+  void printExceptionReportResponseJ(maps** pmsConf,map* s){
+    map* pmHasprinted=getMapFromMaps(*pmsConf,"lenv","hasExceptionPrinted");
     if(pmHasprinted!=NULL && strncasecmp(pmHasprinted->value,"true",4)==0){
       return;
     }
-    pmHasprinted=getMapFromMaps(m,"lenv","hasPrinted");
+    pmHasprinted=getMapFromMaps(*pmsConf,"lenv","hasPrinted");
     int buffersize;
     //json_object *res=json_object_new_object();
-    json_object *res=createExceptionJ(m,s);
-    maps* tmpMap=getMaps(m,"main");
+    json_object *res=createExceptionJ(*pmsConf,s);
+    maps* tmpMap=getMaps(*pmsConf,"main");
     const char *exceptionCode;
     map* pmTmp=getMap(s,"code");
-    exceptionCode=produceStatusString(m,pmTmp);
-    map* pmNoHeaders=getMapFromMaps(m,"lenv","no-headers");
+    exceptionCode=produceStatusString(*pmsConf,pmTmp);
+    map* pmNoHeaders=getMapFromMaps(*pmsConf,"lenv","no-headers");
     if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){
-      if(getMapFromMaps(m,"headers","Content-Type")==NULL){
-	map* pmExceptionContentType=getMapFromMaps(m,"openapi","exception_mime_tye");
+      if(getMapFromMaps(*pmsConf,"headers","Content-Type")==NULL){
+	map* pmExceptionContentType=getMapFromMaps(*pmsConf,"openapi","exception_mime_tye");
 	if(pmExceptionContentType!=NULL)
-	  setMapInMaps(m,"headers","Content-Type",pmExceptionContentType->value);
+	  setMapInMaps(*pmsConf,"headers","Content-Type",pmExceptionContentType->value);
 	else
-	  setMapInMaps(m,"headers","Content-Type","application/json;encoding=utf-8");
+	  setMapInMaps(*pmsConf,"headers","Content-Type","application/json;encoding=utf-8");
       }
-      printHeaders(m);
-      if(getMapFromMaps(m,"headers","status")==NULL){
-	pmTmp=getMapFromMaps(m,"lenv","status_code");
+      printHeaders(*pmsConf);
+      if(getMapFromMaps(*pmsConf,"headers","status")==NULL){
+	pmTmp=getMapFromMaps(*pmsConf,"lenv","status_code");
 	if(pmTmp!=NULL)
 	  exceptionCode=pmTmp->value;
 	if(exceptionCode==NULL)
 	  exceptionCode=aapccStatusCodes[3][0];
 	if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){
-	  if(m!=NULL){
-	    map *tmpSid=getMapFromMaps(m,"lenv","sid");
+	  if(pmsConf!=NULL){
+	    map *tmpSid=getMapFromMaps(*pmsConf,"lenv","sid");
 	    if(tmpSid!=NULL){
 	      if( getpid()==atoi(tmpSid->value) ){
 		printf("Status: %s\r\n\r\n",exceptionCode);
@@ -1105,13 +1105,13 @@ extern "C" {
       }
     }
     const char* jsonStr=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
-    if(getMapFromMaps(m,"lenv","jsonStr")==NULL)
-      setMapInMaps(m,"lenv","jsonStr",jsonStr);
+    if(getMapFromMaps(*pmsConf,"lenv","jsonStr")==NULL)
+      setMapInMaps(*pmsConf,"lenv","jsonStr",jsonStr);
     if(pmHasprinted==NULL || strncasecmp(pmHasprinted->value,"false",5)==0){
       printf(jsonStr);
-      if(m!=NULL){
-	setMapInMaps(m,"lenv","hasPrinted","true");
-	setMapInMaps(m,"lenv","hasExceptionPrinted","true");
+      if(pmsConf!=NULL){
+	setMapInMaps(*pmsConf,"lenv","hasPrinted","true");
+	setMapInMaps(*pmsConf,"lenv","hasExceptionPrinted","true");
       }
     }
     json_object_put(res);
@@ -1341,7 +1341,7 @@ extern "C" {
     sprintf(tmpS1,_("Wrong type used for input %s"),peInput->name);
     addToMap(pmError,"message",tmpS1);
     setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
-    printExceptionReportResponseJ(pmsConf,pmError);
+    printExceptionReportResponseJ(&pmsConf,pmError);
     freeMap(&pmError);
     free(pmError);
     return;
@@ -1400,7 +1400,7 @@ extern "C" {
 	      sprintf(tmpS1,_("Wrong type used for input %s"),peCurrentInput->name);
 	      addToMap(error,"message",tmpS1);
 	      setMapInMaps(conf,"lenv","status_code","400 Bad Request");
-	      printExceptionReportResponseJ(conf,error);
+	      printExceptionReportResponseJ(&conf,error);
 	      return;
 	    }
 	  }
@@ -1423,7 +1423,7 @@ extern "C" {
 	  sprintf(tmpS,_("Missing input for %s"),cio->name);
 	  addToMap(error,"message",tmpS);
 	  setMapInMaps(conf,"lenv","status_code","400 Bad Request");
-	  printExceptionReportResponseJ(conf,error);
+	  printExceptionReportResponseJ(&conf,error);
 	  return;
 	}else{
 	  if(json_object_get_type(val)==json_type_string){
@@ -1443,7 +1443,7 @@ extern "C" {
 	      sprintf(tmpS1,_("Issue with input %s"),cio->name);
 	      addToMap(error,"message",tmpS1);
 	      setMapInMaps(conf,"lenv","status_code","400 Bad Request");
-	      printExceptionReportResponseJ(conf,error);
+	      printExceptionReportResponseJ(&conf,error);
 	      return;
 	    }
 	  }
@@ -1479,7 +1479,7 @@ extern "C" {
 	sprintf(tmpS,_("Missing input for %s"),cio->name);
 	addToMap(error,"message",tmpS);
 	setMapInMaps(conf,"lenv","status_code","400 Bad Request");
-	printExceptionReportResponseJ(conf,error);
+	printExceptionReportResponseJ(&conf,error);
 	return;
       }else{
 	if(json_object_get_type(json_cinput)==json_type_string){
@@ -1499,7 +1499,7 @@ extern "C" {
 	    sprintf(tmpS1,_("Issue with input %s"),cio->name);
 	    addToMap(error,"message",tmpS1);
 	    setMapInMaps(conf,"lenv","status_code","400 Bad Request");
-	    printExceptionReportResponseJ(conf,error);
+	    printExceptionReportResponseJ(&conf,error);
 	    return;
 	  }
 	}
@@ -1726,7 +1726,7 @@ extern "C" {
     runGetStatus(pmsConf,pcJobId,(char*)"GetStatus");
     map* pmError=getMapFromMaps(pmsConf,"lenv","error");
     if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-      printExceptionReportResponseJ(pmsConf,getMapFromMaps(pmsConf,"lenv","code"));
+      printExceptionReportResponseJ(&pmsConf,getMapFromMaps(pmsConf,"lenv","code"));
       return NULL;
     }else{
       map* pmStatus=getMapFromMaps(pmsConf,"lenv","status");
@@ -1896,7 +1896,7 @@ extern "C" {
 	map* pmaTmp=createMap("code","InvalidQueryParameterValue");
 	addToMap(pmaTmp,"message","The server was unable to parse one of the query pareter provided");
 	json_object_put(res);
-	printExceptionReportResponseJ(conf,pmaTmp);
+	printExceptionReportResponseJ(&conf,pmaTmp);
 	freeMap(&pmaTmp);
 	free(pmaTmp);
 	return NULL;
@@ -2006,7 +2006,7 @@ extern "C" {
       map* pmTmp=getMapFromMaps(conf,"lenv","code");
       if(pmTmp!=NULL)
 	addToMap(pamTmp,"code",pmTmp->value);
-      printExceptionReportResponseJ(conf,pamTmp);
+      printExceptionReportResponseJ(&conf,pamTmp);
       freeMap(&pamTmp);
       free(pamTmp);
       return NULL;
@@ -2024,7 +2024,7 @@ extern "C" {
       printRawdataOutputs(conf,s,resu);
       map* pmError=getMapFromMaps(conf,"lenv","error");
       if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-	printExceptionReportResponseJ(conf,pmError);
+	printExceptionReportResponseJ(&conf,pmError);
       }
       return NULL;
     }else{
@@ -2133,7 +2133,7 @@ extern "C" {
 		      char* pcaMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
 		      sprintf(pcaMessage,pccErr,pcTmpErr);
 		      addToMap(pamError,"message",pcaMessage);
-		      printExceptionReportResponseJ(conf,pamError);
+		      printExceptionReportResponseJ(&conf,pamError);
 		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 		      json_tokener_free(tok);
 		      return NULL;
@@ -2145,7 +2145,7 @@ extern "C" {
 		      char* pcaMessage=(char*)malloc((strlen(pcTmpErr)+strlen(pccErr)+1)*sizeof(char));
 		      sprintf(pcaMessage,pccErr,pcTmpErr);
 		      addToMap(pamError,"message",pcaMessage);
-		      printExceptionReportResponseJ(conf,pamError);
+		      printExceptionReportResponseJ(&conf,pamError);
 		      fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
 		      json_tokener_free(tok);
 		      return NULL;
@@ -3534,7 +3534,7 @@ extern "C" {
 	}else
 	  addToMap(pmError,"message",_("Failed to deploy process!"));
       }
-      printExceptionReportResponseJ(conf,pmError);
+      printExceptionReportResponseJ(&conf,pmError);
       freeMap(&pmError);
       free(pmError);
     }

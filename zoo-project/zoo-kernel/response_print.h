@@ -243,7 +243,7 @@ extern "C" {
   void zooXmlCleanupDocs();
 
   const char* produceStatusString(maps*,map*);
-  void printExceptionReportResponse(maps*,map*);
+  void printExceptionReportResponse(maps**,map*);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
   void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
@@ -267,8 +267,8 @@ extern "C" {
   char* produceFileUrl(service*,maps*,maps*,const char*, int);
   void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
 
-  void localPrintException(maps*,map*);
-  int errorException(maps *, const char *, const char *, const char*);
+  void localPrintException(maps**,map*);
+  int errorException(maps**, const char *, const char *, const char*);
 
   xmlNodePtr soapEnvelope(maps*,xmlNodePtr);
   int checkForSoapEnvelope(xmlDocPtr);

@@ -29,7 +29,19 @@ import jwt
 import sys
 import json
 
+def addHeader(conf,name):
+    if "headers" not in conf:
+        conf["headers"]={}
+    key="Powered-By"
+    if "X-"+key in conf["headers"]:
+        while "X-"+key in conf["headers"]:
+            key="Also-"+key
+    conf["headers"]["X-"+key]=name
+
 def securityIn(main_conf,inputs,outputs):
+    if "servicesNamespace" in main_conf and "debug" in main_conf["servicesNamespace"]:
+        print("JWT securityIn",file=sys.stderr)
+    addHeader(main_conf,"jwt.securityIn")
     hasAuth=False
     for i in main_conf["renv"].keys():
         if i.count("HTTP_AUTHORIZATION")>0:
@@ -37,13 +49,23 @@ def securityIn(main_conf,inputs,outputs):
             hasAuth=True
             myKeys=list(jsonObj.keys())
             if "preferred_username" in jsonObj.keys():
+                if "osecurity" in main_conf and "allowed_users" in main_conf["osecurity"] and main_conf["osecurity"]["allowed_users"].split(",").count(jsonObj["preferred_username"])==0:
+                    main_conf["lenv"]["message"]=zoo._("You are not authorized to perform the requested operation on the resource (jwt.securityIn).")
+                    main_conf["lenv"]["code"]="Forbidden"
+                    main_conf["lenv"]["status"]="403 Forbidden"
+                    if "headers" in main_conf:
+                        main_conf["headers"]["status"]="403 Forbidden"
+                    else:
+                        main_conf["headers"]={"status":"403 Forbidden"}
+                    return zoo.SERVICE_FAILED
                 main_conf["auth_env"]={"user": jsonObj["preferred_username"]}
             if "email" in jsonObj.keys():
                 main_conf["auth_env"]["email"]=jsonObj["email"]
             for l in range(len(myKeys)):
                 main_conf["auth_env"][myKeys[l]]=str(jsonObj[myKeys[l]])
+            break
     if "auth_env" in main_conf:
-        print(main_conf["auth_env"],file=sys.stderr)
+        main_conf["renv"]["SERVICES_NAMESPACE"]=main_conf["auth_env"]["user"]
     if hasAuth or main_conf["lenv"]["secured_url"]=="false":
         return zoo.SERVICE_SUCCEEDED
     else:

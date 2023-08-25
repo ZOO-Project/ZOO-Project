@@ -1,0 +1,55 @@
+{
+  "processDescription": {
+    "id": "fahrenheit_to_celsius",
+    "title": "",
+    "abstract": "",
+    "version": "0.0.1",
+    "inputs": {
+      "f": {
+        "title": "Degrees Fahrenheit",
+        "description": "Degrees Fahrenheit",
+        "schema": {
+          "type": "number",
+          "default": 10,
+          "format": "double"
+        }
+      }
+    },
+    "outputs": {
+      "result": {
+        "title": "Degrees Celsius",
+        "description": "Degrees Celsius",
+        "schema": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    }
+  },
+  "executionUnit": {
+    "type": "application/openeo",
+    "value": {
+      "process_graph": {
+        "subtract1": {
+          "process_id": "subtract",
+          "arguments": {
+            "x": {
+              "from_parameter": "f"
+            },
+            "y": 32
+          }
+        },
+        "divide1": {
+          "process_id": "divide",
+          "arguments": {
+            "x": {
+              "from_node": "subtract1"
+            },
+            "y": 1.8
+          },
+          "result": true
+        }
+      }
+    }
+  }
+}

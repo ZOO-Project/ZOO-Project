@@ -1,8 +1,20 @@
 Version 2.0.0
+  * Provide an initial Dockefile dedicated to the DRU support with
+  remote HPC execution support
+  * Add a USE_HPC_NESTEDOUTPUTS build option to activate the nested
+  inputs and outputs addition (not supported with OGC API - Processes
+  - Part 1: Core)
+  * Update C-API errorException and printExceptionResponse* signatures
+  to handle properly the main configuration maps memory  
+  *  Build Docker image with DRU supporting OpenEO UDP encoding 
+  * Add support for deploying and executing OpenEO User Defined
+  Processes by using an OpenEO graph for the executionUnit
   * Add support for schema type string for request body, providing a
   way to include CWL example files in the published OpenAPI
   * Integrate the OGC API - Processes - Part 2: Deploy, Replace,
   Undeploy optional support.
+  * Build Docker image based on MDL4EO/OTBTF and the onnx runtime for
+  models sharing
   * Integrate the TeamEngine and ETS for OGC API - Processes
   * Add JWT parser in security_service.py as filter_in to allocate
   resources per authenticated user
