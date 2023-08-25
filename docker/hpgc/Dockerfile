@@ -152,7 +152,7 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
      && sed "s:serviceType = C:serviceType = Python:g;s:serviceProvider = security_service.zo:serviceProvider = service:g" -i /usr/lib/cgi-bin/securityIn.zcfg \
      && curl -o /var/www/html/examples/deployment-job.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-deploy-body.json \
      && curl -o /var/www/html/examples/deployment-job1.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/dNBR/app-deploy-body.json \
-     && cp zoo-project/zoo-services/utils/hpc/examples/deployment-job.json /var/www/html/examples/examples/deployment-job2.json\
+     && cp zoo-project/zoo-services/utils/hpc/examples/deployment-job.json /var/www/html/examples/deployment-job2.json\
      && curl -o /var/www/html/examples/job_order1.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body.json \
      && curl -o /var/www/html/examples/job_order2.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body2.json \
      && curl -o /var/www/html/examples/job_order3.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body3.json \

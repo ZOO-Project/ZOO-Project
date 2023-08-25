@@ -158,7 +158,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
   outputMapfile(m,tmpI);
   map *msUrl=getMapFromMaps(m,"main","mapserverAddress");
   if(msUrl==NULL){
-    errorException (m, _("Unable to find any mapserverAddress defined in the main.cfg file"),
+    errorException (&m, _("Unable to find any mapserverAddress defined in the main.cfg file"),
 		    "InternalError", NULL);
     exit(-1);
   }
@@ -206,7 +206,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
       else
 	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
       if(getMapFromMaps(m,"lenv","state")==NULL)
-	errorException (m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
+	errorException (&m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
     }
     return;
   }
@@ -267,7 +267,7 @@ void setReferenceUrl(maps* m,maps* tmpI){
   if(format==NULL || width==NULL || height==NULL || extent==NULL){
     char tmpStr[1024];
     sprintf(tmpStr,_("Unable to create the mapfile for %s because of missing values."),tmpI->name);
-    errorException (m, tmpStr,
+    errorException (&m, tmpStr,
 		    "InternalError", NULL);
     exit(-1);
     return;
@@ -1165,7 +1165,7 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
   /**
    * Name available Bands
    */
-  char lBands[7];
+  char lBands[15];
   char *nameBands=NULL;
   for( iBand = 0; iBand < nBandsI; iBand++ ){
     memset(&lBands,0,7);
