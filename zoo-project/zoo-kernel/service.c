@@ -1356,7 +1356,7 @@ elements* dupElements(elements* peElem){
   if(peCursor!=NULL && peCursor->name!=NULL){
 #ifdef DEBUG
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-    dumpMap(peCursor->defaults->content);
+    dumpMap(peCursor->content);
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
     peTmp=(elements*)malloc(ELEMENTS_SIZE);
