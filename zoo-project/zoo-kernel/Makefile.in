@@ -87,7 +87,7 @@ service_internal_otb.o: service_internal_otb.c service_internal_otb.h service.h
 	$(CXX) ${XML2CFLAGS} ${OTBCFLAGS} ${CFLAGS} -c service_internal_otb.c
 
 service_internal_hpc.o: service_internal_hpc.c service_internal_hpc.h service.h
-	$(CXX)  ${JSON_CFLAGS} ${XML2CFLAGS} ${HPCCFLAGS} ${CFLAGS} -c service_internal_hpc.c
+	$(CXX) ${GDAL_CFLAGS} ${JSON_CFLAGS} ${XML2CFLAGS} ${HPCCFLAGS} ${CFLAGS} -c service_internal_hpc.c
 
 service_internal_saga.o: service_internal_saga.c service_internal_saga.h service.h
 	$(CXX) ${XML2CFLAGS} ${SAGA_CFLAGS} ${CFLAGS} -c service_internal_saga.c

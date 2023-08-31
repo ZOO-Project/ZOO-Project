@@ -329,7 +329,7 @@ void recordStoredFile(maps* conf,const char* filename,const char* type,const cha
 }
 
 /**
- * Run SQL query to fetch the job list
+ * Run a SQL query
  * 
  * @param conf the maps containing the setting of the main.cfg file
  * @param query the SQL query to run

@@ -205,7 +205,7 @@ extern "C" {
 /**
  * The ZOO_DEBUG macro print message with function name, file name and line number
  */
-#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++- %d -++ %s %s %d: ",getpid(),__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);
+#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++- %d -++ %s %s %d: ",getpid(),__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);fflush(stderr);
 
 /**
  * The memory size to create an elements

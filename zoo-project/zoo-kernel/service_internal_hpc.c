@@ -33,6 +33,9 @@
 #include "service_callback.h"
 #include "mimetypes.h"
 #include <sys/un.h>
+#ifdef USE_AMQP
+#include "sqlapi.h"
+#endif
 
 typedef struct {
   maps* conf;
@@ -850,6 +853,29 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 #endif
 
   // TODO: change to another socket (AF_INET)
+#ifdef USE_AMQP
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr=htonl(INADDR_ANY);
+  // TODO: Do some SQL computation to find an available port
+  int iRes=0;
+  char *pcaSqlResult=runSqlQuery(*main_conf,"SELECT count(*) from workers");
+  if(pcaSqlResult!=NULL)
+    iRes=atoi(pcaSqlResult);
+  addr.sin_port=htons(1024+iRes);
+  int rc, cl, fd = socket(AF_INET, SOCK_STREAM, 0);
+  maps* pmsLenv=getMaps(*main_conf,"lenv");
+  addIntToMap(pmsLenv->content,"listen_port",1024+iRes);
+  // Dump lenv maps again after having set the listen_port ...
+  flenv =
+    (char *) malloc ((strlen (tmpPath->value) +
+		      strlen (uuid->value) + 12) * sizeof (char));
+  sprintf (flenv, "%s/%s_lenv.cfg", tmpPath->value, uuid->value);
+  if(pmsLenv!=NULL)
+    dumpMapsToFile(pmsLenv,flenv,1);
+  free(flenv);
+#else
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;
@@ -860,6 +886,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   // Force use of /tmp directory
   sprintf(sname,"/tmp/.wait_socket_%s.sock",uuid->value);
   strncpy(addr.sun_path, sname, sizeof(addr.sun_path)-1);
+#endif
 
   if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
     perror("bind error");
@@ -967,8 +994,10 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       }
       hasPassed=1;
       res=atoi(buf);
+#ifndef USE_AMQP
       unlink(sname);
       free(sname);
+#endif
       removeReadLocks(main_conf);
 
       if(res==3){

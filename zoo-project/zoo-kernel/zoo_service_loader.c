@@ -1670,7 +1670,6 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
    */
   char *serviceNamespacePath=NULL;
   if(request_output_real_format!=NULL){
-
     //memset(serviceNamespacePath,'\0',1024);
     map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
     map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
@@ -2691,12 +2690,14 @@ runRequest (map ** inputs)
       return 1;
     }
 
+    ZOO_DEBUG("VERIFY IF CONTAIN RESPONSE");
     map* pmsResponse=getMapFromMaps(m,"lenv","response");
     if(pmsResponse!=NULL){
       printHeaders(m);
       printf(pmsResponse->value);
       return 0;
     }
+    ZOO_DEBUG("VERIFY IF CONTAIN RESPONSE END");
 
     setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
 #ifdef DRU_ENABLED
@@ -5322,15 +5323,19 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    setMapInMaps(lconf,"lenv","metapath","");
 	    maps* pmsTmp=getMaps(lconf,"lenv");
 
+	    dumpMap(*lenv);
 	    // Define auth_env section in case we find fpm_user in the lenv
 	    // map coming from the message received
 	    map* pmUserEnv=getMap(*lenv,"fpm_user");
 	    if(pmUserEnv!=NULL){
+	      setMapInMaps(lconf,"env","SERVICES_NAMESPACE",pmUserEnv->value);
+	      setMapInMaps(lconf,"zooServicesNamespace","namespace",pmUserEnv->value);
 	      maps* pmsaUserEnv=createMaps("auth_env");
 	      pmsaUserEnv->content=createMap("user",pmUserEnv->value);
 	      pmUserEnv=getMap(*lenv,"fpm_cwd");
-	      if(pmUserEnv!=NULL)
+	      if(pmUserEnv!=NULL){
 		addToMap(pmsaUserEnv->content,"cwd",pmUserEnv->value);
+	      }
 	      addMapsToMaps(&lconf,pmsaUserEnv);
 	      freeMaps(&pmsaUserEnv);
 	      free(pmsaUserEnv);

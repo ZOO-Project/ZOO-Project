@@ -1,6 +1,6 @@
 {
   "processDescription": {
-    "id": "OTB.BandMath",
+    "id": "BandMath",
     "title": "Outputs a monoband image which is the result of a mathematical operation on several multi-band images.",
     "description": "This application performs a mathematical operation on several multi-band images and outputs the result into a monoband image. The given expression is computed at each pixel position. Evaluation of the mathematical formula is done by the muParser libraries.",
     "version": "1.0.0",

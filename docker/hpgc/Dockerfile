@@ -153,6 +153,8 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
      && curl -o /var/www/html/examples/deployment-job.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-deploy-body.json \
      && curl -o /var/www/html/examples/deployment-job1.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/dNBR/app-deploy-body.json \
      && cp zoo-project/zoo-services/utils/hpc/examples/deployment-job.json /var/www/html/examples/deployment-job2.json\
+     && mkdir -p /var/www/html/examples/BandMath \
+     && cp zoo-project/zoo-services/OTB/examples/OTB.BandMath/sample1.json /var/www/html/examples/BandMath/job_order.json \
      && curl -o /var/www/html/examples/job_order1.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body.json \
      && curl -o /var/www/html/examples/job_order2.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body2.json \
      && curl -o /var/www/html/examples/job_order3.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body3.json \
@@ -160,7 +162,7 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
      && mkdir /opt/zooservices_namespaces \
      && chown www-data:www-data -R /opt/zooservices_namespaces\
      && a2enmod ssl \
-     && sed "s:Listen 80:Listen 8702:g;s:443:8703:g" -i /etc/apache2/ports.conf \
+     #&& sed "s:Listen 80:Listen 8702:g;s:443:8703:g" -i /etc/apache2/ports.conf \
      && cd .. && rm -rf ZOO-Project
 
 #
@@ -168,7 +170,8 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
 #
 RUN git clone --depth 1 https://github.com/swagger-api/swagger-ui.git \
     && mv swagger-ui /var/www/html/swagger-ui \
-    && sed "s=https://petstore.swagger.io/v2/swagger.json=https://testbed19.geolabs.fr:8703/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
+    #&& sed "s=https://petstore.swagger.io/v2/swagger.json=https://testbed19.geolabs.fr:8703/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
+    && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
     && mv /var/www/html/swagger-ui/dist /var/www/html/swagger-ui/oapip
 
 COPY docker/default.conf /etc/apache2/sites-available/000-default.conf
