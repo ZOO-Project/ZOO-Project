@@ -229,14 +229,14 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       fo=fopen(fname,"w+");
       if(fo==NULL){
 #ifdef DEBUG
-	fprintf (stderr, "Failed to open %s for writing: %s\n",fname, strerror(errno));
+	fprintf (stderr, "Failed to open %s for writing\n",fname);
 #endif
 	unlockFile(conf,lck);
 	return;
       }
       if(fi==NULL){
 #ifdef DEBUG
-	fprintf (stderr, "Failed to open %s for reading: %s\n",filename, strerror(errno));
+	fprintf (stderr, "Failed to open %s for reading\n",filename);
 #endif
 	unlockFile(conf,lck);
 	return;
@@ -308,7 +308,7 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
       FILE* fo=fopen(fname,"w+");
       if(fo==NULL){
 #ifdef DEBUG
-	fprintf (stderr, "Failed to open %s for writing: %s\n",fname, strerror(errno));
+	fprintf (stderr, "Failed to open %s for writing\n");
 #endif
 	filepath = NULL;
 	unlockFile(conf,lck);

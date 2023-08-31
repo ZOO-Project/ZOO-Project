@@ -1670,12 +1670,13 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
    */
   char *serviceNamespacePath=NULL;
   if(request_output_real_format!=NULL){
-    serviceNamespacePath=(char*)malloc(1024*sizeof(char));
+
     //memset(serviceNamespacePath,'\0',1024);
     map* zooServicesNamespaceMap= getMapFromMaps(m, "zooServicesNamespace", "namespace");
     map* zooServicesNamespacePathMap=getMapFromMaps(m,"servicesNamespace","path");
 
     if( zooServicesNamespaceMap && strlen(zooServicesNamespaceMap->value)>0 && zooServicesNamespacePathMap && strlen(zooServicesNamespacePathMap->value)>0){
+      serviceNamespacePath=(char*)malloc(1024*sizeof(char));
       sprintf(serviceNamespacePath,"%s/%s",zooServicesNamespacePathMap->value,zooServicesNamespaceMap->value);
       setMapInMaps(m, "lenv","cwd", serviceNamespacePath);
     }
