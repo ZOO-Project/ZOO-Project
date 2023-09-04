@@ -440,7 +440,6 @@ extern "C" {
     map* sname=getMap(lenv->content,"identifier");
     if(sname!=NULL && isProhibited(conf,sname->value))
       return false;
-      
     json_object *res=json_object_new_object();
 
     map* sid=getMapFromMaps(conf,"lenv","usid");
@@ -480,6 +479,8 @@ extern "C" {
       // Save the Execute request on disk 
       map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
       map* req=getMapFromMaps(conf,"renv","xrequest");
+      if(req==NULL)
+	req=getMapFromMaps(conf,"renv","jrequest");
       sid=getMapFromMaps(conf,"lenv","usid");
       char* executePath=(char*)malloc((strlen(tmpPath->value)+strlen(sid->value)+14)*sizeof(char));
       sprintf(executePath,"%s/execute_%s.xml",tmpPath->value,sid->value);

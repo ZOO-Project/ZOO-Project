@@ -26,6 +26,7 @@ services:
       - ./docker/com:/usr/com/zoo-project
       - ./docker/tmp:/tmp/zTmp
       - ./docker/zooservices_ns:/opt/zooservices_namespaces
+      - ./docker/SSH-KEYS:/var/www/.ssh
       #- /home/ubuntu/hpgc-activity/nginx/certbot/conf/archive/testbed19.geolabs.fr:/etc/letsencrypt
       #- ./docker/testbed19.geolabs.fr:/etc/apache2/ssl_rules/testbed19.geolabs.fr
     depends_on:
@@ -51,6 +52,7 @@ services:
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
       - ./docker/zooservices_ns:/opt/zooservices_namespaces
+      - ./docker/SSH-KEYS:/var/www/.ssh
     depends_on:
       - rabbitmq
       - pgbouncer

@@ -108,6 +108,7 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
 	--with-pyvers=$PY_VER \
 	--with-hpc=yes \
 	--with-ssh2=/usr \
+	--with-callback=yes \
 	--with-js=/usr \
 	--with-mapserver=/usr \
 	--with-ms-version=7 \
@@ -126,6 +127,8 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
     \
     # Install Basic Authentication sample
     # TODO: is this still required?
+    && cp ../zoo-services/utils/hpc/examples/callback.py /usr/lib/cgi-bin/ \
+    && chmod 755 /usr/lib/cgi-bin/callback.py \
     && cd ../zoo-services/utils/security/basicAuth \
     && make \
     && cp cgi-env/* /usr/lib/cgi-bin \
