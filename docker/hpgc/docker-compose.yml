@@ -6,8 +6,9 @@ services:
     image: zooproject/zoo-project:hpgc-latest
     #build: .
     ports:
-      - "8702:8702"
-      - "8703:8703"
+      - "80:80"
+    # - "8702:8702"
+    # - "8703:8703"
     volumes:
       - ./docker/hpgc/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/hpgc/oas.cfg:/usr/lib/cgi-bin/oas.cfg

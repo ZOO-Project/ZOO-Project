@@ -26,9 +26,6 @@
  * THE SOFTWARE.
  */
 
-#ifdef USE_CALLBACK
-#include "service_internal_ms.h"
-#endif
 #include <pthread.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
@@ -44,6 +41,9 @@
 #include "service_json.h"
 #include "sqlapi.h"
 #include <ulinet.h>
+#ifdef USE_CALLBACK
+#include "service_internal_ms.h"
+#endif
 
 
 #ifdef __cplusplus
