@@ -73,6 +73,7 @@
   {%- endblock %}
   {%- block extrahead %} {% endblock %}
 
+  <script src="{{ pathto('_static/' + 'jquery.js', 1) }}"></script>
   {# Keep modernizr in head - http://modernizr.com/docs/#installing #}
   <script src="{{ pathto('_static/' + 'js/modernizr.min.js', 1) }}"></script>
   {% if not embedded %}
