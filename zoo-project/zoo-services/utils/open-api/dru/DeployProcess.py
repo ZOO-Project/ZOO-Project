@@ -156,7 +156,10 @@ class DeployService(object):
     def create_service_tmp_folder(self):
         # creating the folder where we will download the applicationPackage
         tmp_path = os.path.join(self.tmp_folder, f"DeployProcess-{self.process_id}")
-        os.makedirs(tmp_path)
+        try:
+            os.makedirs(tmp_path)
+        except Exception as e:
+            print(e,file=sys.stderr)
 
         return tmp_path
 
@@ -275,7 +278,6 @@ def DeployProcess(conf, inputs, outputs):
             res=deploy_process.generate_service()
             if not(res):
                 return duplicateMessage(conf,deploy_process)
-
         response_json = {
             "message": f"Service {deploy_process.service_configuration.identifier} version {deploy_process.service_configuration.version} successfully deployed.",
             "service": deploy_process.service_configuration.identifier,
