@@ -4083,7 +4083,7 @@ runRequest (map ** inputs)
 	      if(strcmp(pmTmp->value,deployServiceProvider->value)==0){
 #ifdef USE_AMQP
 		map* pmIsDeployed=getMapFromMaps(m,"lenv","isDeployed");
-		if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)!=0){
+		if(pmIsDeployed==NULL || strncasecmp(pmIsDeployed->value,"true",4)!=0){
 		  setMapInMaps(m,"lenv","noRunSql","true");
 		  maps* pmsOutputsBis=NULL;
 		  maps* pmsItem=request_output_real_format;
