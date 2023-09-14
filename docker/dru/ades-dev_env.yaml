@@ -11,7 +11,7 @@ dependencies:
   - cookiecutter=1.7.2
   - boto3
   - pycalrissian
-  - zoo-calrissian-runner=0.1.7
+  - zoo-calrissian-runner=0.1.8
   - python-kubernetes
   - cwl-wrapper=0.10.1
   - coverage
