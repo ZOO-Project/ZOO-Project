@@ -95,6 +95,10 @@ class DeployService(object):
             key="templateUrl", section="cookiecutter"
         )
 
+        self.cookiecutter_template_branch = self._get_conf_value_if_exists(
+            key="templateBranch", section="cookiecutter"
+        )
+
         self.tmp_folder = self._get_conf_value("tmpPath")
 
         self.process_id = self.conf["lenv"]["usid"]
@@ -145,6 +149,14 @@ class DeployService(object):
         else:
             raise ValueError(f"{key} not set, check configuration")
 
+    def _get_conf_value_if_exists(self, key, section="main"):
+
+        print(section, file=sys.stderr)
+        if key in self.conf[section].keys():
+            return self.conf[section][key]
+        else:
+            return None
+
     @staticmethod
     def check_write_permissions(folder):
 
@@ -192,10 +204,19 @@ class DeployService(object):
 
                 # checking if template had already been cloned
                 if os.path.isdir(template_folder):
-
                     shutil.rmtree(template_folder)
 
-                os.system(f"git clone {self.cookiecutter_template_url} {template_folder}")
+                # retrieving the branch to clone
+                # if no branch is specified, we will clone the master branch
+                cookiecutter_template_branch = self.cookiecutter_template_branch
+
+                # cloning the template
+                if cookiecutter_template_branch is not None:
+                    os.system(
+                        f"git clone -b {cookiecutter_template_branch} {self.cookiecutter_template_url} {template_folder}"
+                    )
+                else:
+                    os.system(f"git clone {self.cookiecutter_template_url} {template_folder}")
 
             else:
                 raise ValueError(
