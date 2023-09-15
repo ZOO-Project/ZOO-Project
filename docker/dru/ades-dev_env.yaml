@@ -13,7 +13,7 @@ dependencies:
   - pycalrissian
   - zoo-calrissian-runner=0.1.8
   - python-kubernetes
-  - cwl-wrapper=0.10.1
+  - cwl-wrapper=0.12.1
   - coverage
   - pip
   - pip:
