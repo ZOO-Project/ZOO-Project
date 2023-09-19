@@ -35,6 +35,7 @@ COPY docker/dru/ades-dev_env.yaml /tmp/ades-dev_env.yaml
 RUN conda install mamba -n base -c conda-forge && \
     mamba env create --file /tmp/ades-dev_env.yaml &&\
     rm /tmp/ades-dev_env.yaml
+RUN ln -s /usr/miniconda3/envs/ades-dev/bin/kubectl /usr/bin/kubectl
 
 ########################################
 # ZOO_Prerequisites
