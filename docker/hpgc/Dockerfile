@@ -1,9 +1,7 @@
 FROM ubuntu:focal
 
 # to build:
-# docker build --rm -t ades:latest .
-# to run:
-# docker run --rm -ti -p 80:80  ades:latest
+# docker build --rm -t zooproject/zoo-project:hpgc-latest . -f docker/hpgc/Dockerfile
 
 # procadesdev:latest
 ENV DEBIAN_FRONTEND noninteractive
@@ -38,10 +36,11 @@ RUN wget -nv \
     && bash Miniconda3-py39_4.10.3-Linux-x86_64.sh -b -p /usr/miniconda3 \
     && rm -f Miniconda3-py39_4.10.3-Linux-x86_64.sh
 ENV PATH="/usr/miniconda3/envs/ades-dev/bin:/usr/miniconda3/bin:${PATH}"
-COPY docker/dru/ades-dev_env.yaml /tmp/ades-dev_env.yaml
+COPY docker/hpgc/ades-dev_env.yaml /tmp/ades-dev_env.yaml
 RUN conda install mamba -n base -c conda-forge && \
     mamba env create --file /tmp/ades-dev_env.yaml &&\
     rm /tmp/ades-dev_env.yaml
+RUN ln -s /usr/miniconda3/envs/ades-dev/bin/kubectl /usr/bin/kubectl
 
 ########################################
 # ZOO_Prerequisites
@@ -72,6 +71,7 @@ apt-get install -qqy  --no-install-recommends software-properties-common\
 	libxslt1-dev\
 	uuid-dev\
 	libjson-c-dev\
+	mapserver-bin \
 	libmapserver-dev\
 	libgdal-dev\
 	libaprutil1-dev \
@@ -127,6 +127,8 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
     \
     # Install Basic Authentication sample
     # TODO: is this still required?
+    && cp ../zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/ \
+    && cp ../zoo-services/utils/open-api/server/subscriber.py /usr/lib/cgi-bin/ \
     && cp ../zoo-services/utils/hpc/examples/callback.py /usr/lib/cgi-bin/ \
     && chmod 755 /usr/lib/cgi-bin/callback.py \
     && cd ../zoo-services/utils/security/basicAuth \
@@ -163,6 +165,8 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
      && curl -o /var/www/html/examples/job_order3.json https://raw.githubusercontent.com/EOEPCA/proc-ades/master/test/sample_apps/v2/snuggs/app-execute-body3.json \
      && curl -o /var/www/html/examples//app-package.cwl https://raw.githubusercontent.com/EOEPCA/app-snuggs/main/app-package.cwl \
      && mkdir /opt/zooservices_namespaces \
+     && sed "s=/usr/bin/python3=/usr/miniconda3/envs/ades-dev/bin/python=g" -i /usr/lib/cgi-bin/subscriber.py /usr/lib/cgi-bin/publish.py \
+     && ln -s $(which mapserv) /usr/lib/cgi-bin/ \
      && chown www-data:www-data -R /opt/zooservices_namespaces\
      && a2enmod ssl \
      #&& sed "s:Listen 80:Listen 8702:g;s:443:8703:g" -i /etc/apache2/ports.conf \

@@ -17,8 +17,6 @@ services:
       #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
-      - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
-      - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/usr/lib/cgi-bin/subscriber.py
       - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/.htaccess:/var/www/html/.htaccess
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
@@ -46,7 +44,7 @@ services:
       - ./docker/tmp:/tmp/zTmp
       - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/com:/usr/com/zoo-project
-      - ./docker/startUp.sh:/startUp.sh
+      - ./docker/hpgc/startUp.sh:/startUp.sh
       # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
       #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
@@ -65,7 +63,7 @@ services:
     depends_on:
       - redis
     ports:
-      - 8801:8801
+      - 8801:8888
     environment:
       - ZOO_REDIS_HOST=redis
     volumes:

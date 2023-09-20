@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 #
 # Author : Gérald Fenoy
 #
@@ -27,7 +27,10 @@
 import os
 import sys
 import redis
-data = sys.stdin.read();
+try:
+    data = sys.stdin.read();
+except Exception as e:
+    print(e,file=sys.stderr)
 
 print('Content-Type: text/html')
 print('')

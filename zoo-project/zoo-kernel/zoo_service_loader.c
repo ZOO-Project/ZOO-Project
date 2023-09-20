@@ -2690,14 +2690,33 @@ runRequest (map ** inputs)
       return 1;
     }
 
-    ZOO_DEBUG("VERIFY IF CONTAIN RESPONSE");
     map* pmsResponse=getMapFromMaps(m,"lenv","response");
-    if(pmsResponse!=NULL){
+    map* pmsResponseFile=getMapFromMaps(m,"lenv","response_generated_file");
+    if(pmsResponse!=NULL || pmsResponseFile!=NULL){
       printHeaders(m);
-      printf(pmsResponse->value);
+      if(pmsResponseFile!=NULL){
+        FILE* pfResponse=fopen(pmsResponseFile->value,"r");
+        zStatStruct f_status;
+        int s=zStat(pmsResponseFile->value, &f_status);
+        if(s==0 && f_status.st_size>0){
+          char* pcaFcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+          fread(pcaFcontent,f_status.st_size,sizeof(char),pfResponse);
+          fclose(pfResponse);
+          fwrite(pcaFcontent,sizeof(char),f_status.st_size,stdout);
+          fflush(stdout);
+          unlink(pmsResponseFile->value);
+          free(pcaFcontent);
+        }
+      }else{
+        pmsResponseFile=getMapFromMaps(m,"lenv","response_generated_size");
+        if(pmsResponseFile!=NULL){
+          fwrite(pmsResponse->value,sizeof(char),atoi(pmsResponseFile->value),stdout);
+          fflush(stdout);
+        }else
+	  printf(pmsResponse->value);
+      }
       return 0;
     }
-    ZOO_DEBUG("VERIFY IF CONTAIN RESPONSE END");
 
     setMapInMaps(m,"lenv","request_method",cgiRequestMethod);
 #ifdef DRU_ENABLED
@@ -4260,6 +4279,10 @@ runRequest (map ** inputs)
 	}
 
     }
+    if(res!=NULL){
+        const char* pccResult=json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
+        setMapInMaps(m,"lenv","json_response_object",pccResult);
+    }
     ensureFiltered(&m,"out");
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
@@ -4272,75 +4295,75 @@ runRequest (map ** inputs)
               printf("Status: 200 OK \r\n\r\n");
           }
       }
-      const char* jsonStr=
-	json_object_to_json_string_ext(res,JSON_C_TO_STRING_NOSLASHESCAPE);
+      map* pmResponseObject=getMapFromMaps(m,"lenv","json_response_object");
+      if(pmResponseObject!=NULL){
+	if(getMapFromMaps(m,"lenv","output_response")!=NULL) {
+	  map* pmTmpPath=getMapFromMaps(m,"main","tmpPath");
+	  map* pmUuid=getMapFromMaps(m,"lenv","usid");
+	  if(pmTmpPath!=NULL && pmUuid!=NULL){
 
-      if(getMapFromMaps(m,"lenv","output_response")!=NULL) {
-	map* pmTmpPath=getMapFromMaps(m,"main","tmpPath");
-	map* pmUuid=getMapFromMaps(m,"lenv","usid");
-	if(pmTmpPath!=NULL && pmUuid!=NULL){
+	    // Create the filename for the result file (.res)
+	    map* pmSid=getMapFromMaps(m,"lenv","sid");
+	    fbkpres =
+	      (char *)
+	      malloc ((strlen (pmTmpPath->value) +
+		       strlen (pmUuid->value) + 7) * sizeof (char));
+	    sprintf (fbkpres, "%s/%s.res", pmTmpPath->value, pmUuid->value);
+	    bmap = createMaps("status");
+	    bmap->content=createMap("usid",pmUuid->value);
+	    addToMap(bmap->content,"sid",pmSid->value);
+	    addIntToMap(bmap->content,"pid",zGetpid());
+	    switch(eres){
+	    default:
+	    case SERVICE_FAILED:
+	      setMapInMaps(bmap,"status","status",wpsStatus[1]);
+	      setMapInMaps(m,"lenv","fstate",wpsStatus[1]);
+	      break;
+	    case SERVICE_SUCCEEDED:
+	      setMapInMaps(bmap,"status","status",wpsStatus[0]);
+	      setMapInMaps(m,"lenv","fstate",wpsStatus[0]);
+	      break;
+	    }
+	    dumpMapsToFile(bmap,fbkpres,1);
+	    free(fbkpres);
 
-	  // Create the filename for the result file (.res)
-	  map* pmSid=getMapFromMaps(m,"lenv","sid");
-	  fbkpres =
-	    (char *)
-	    malloc ((strlen (pmTmpPath->value) +
-		     strlen (pmUuid->value) + 7) * sizeof (char));
-	  sprintf (fbkpres, "%s/%s.res", pmTmpPath->value, pmUuid->value);
-	  bmap = createMaps("status");
-	  bmap->content=createMap("usid",pmUuid->value);
-	  addToMap(bmap->content,"sid",pmSid->value);
-	  addIntToMap(bmap->content,"pid",zGetpid());
-	  switch(eres){
-	  default:
-	  case SERVICE_FAILED:
-	    setMapInMaps(bmap,"status","status",wpsStatus[1]);
-	    setMapInMaps(m,"lenv","fstate",wpsStatus[1]);
-	    break;
-	  case SERVICE_SUCCEEDED:
-	    setMapInMaps(bmap,"status","status",wpsStatus[0]);
-	    setMapInMaps(m,"lenv","fstate",wpsStatus[0]);
-	    break;
+	    // Only required to produce the .sid file (pid is only required for
+	    // runing services)
+	    createXidFile(m,pmTmpPath->value,pmUuid->value,"sid",pmSid->value);
+	    createLenvFile(m,pmTmpPath->value,pmUuid->value);
+
+	    char* pcaPath =
+	      (char *) malloc ((strlen (pmTmpPath->value) +
+				strlen (pmUuid->value) + 7) * sizeof (char));
+	    sprintf (pcaPath, "%s/%s.json", pmTmpPath->value, pmUuid->value);
+	    FILE* pfResponse=fopen(pcaPath,"w");
+	    if(pfResponse!=NULL){
+	      fwrite ((void*)pmResponseObject->value, 1, strlen(pmResponseObject->value), pfResponse);
+	      fclose(pfResponse);
+	    }
+	    pmTmpPath=getMapFromMaps(m,"main","tmpUrl");
+	    free(pcaPath);
+	    pcaPath =
+	      (char *)
+	      malloc ((strlen (pmTmpPath->value) +
+		       strlen (pmUuid->value) + 14) * sizeof (char));
+	    sprintf (pcaPath, "%s/%s_status.json",
+		     pmTmpPath->value,pmUuid->value);
+	    char* pcaLink =
+	      (char *) malloc ((strlen (pcaPath) + 16) * sizeof (char));
+	    sprintf(pcaLink,"%s; rel=monitor",pcaPath);
+	    setMapInMaps(m,"headers","Link",pcaLink);
+	    setMapInMaps(m,"headers","Status","200 OK");
+	    free(pcaPath);
+	    free(pcaLink);
 	  }
-	  dumpMapsToFile(bmap,fbkpres,1);
-	  free(fbkpres);
-
-	  // Only required to produce the .sid file (pid is only required for
-	  // runing services)
-	  createXidFile(m,pmTmpPath->value,pmUuid->value,"sid",pmSid->value);
-	  createLenvFile(m,pmTmpPath->value,pmUuid->value);
-
-	  char* pcaPath =
-	    (char *) malloc ((strlen (pmTmpPath->value) +
-			      strlen (pmUuid->value) + 7) * sizeof (char));
-	  sprintf (pcaPath, "%s/%s.json", pmTmpPath->value, pmUuid->value);
-	  FILE* pfResponse=fopen(pcaPath,"w");
-	  if(pfResponse!=NULL){
-	    fwrite ((void*)jsonStr, 1, strlen(jsonStr), pfResponse);
-	    fclose(pfResponse);
-	  }
-	  pmTmpPath=getMapFromMaps(m,"main","tmpUrl");
-	  free(pcaPath);
-	  pcaPath =
-	    (char *)
-	    malloc ((strlen (pmTmpPath->value) +
-		     strlen (pmUuid->value) + 14) * sizeof (char));
-	  sprintf (pcaPath, "%s/%s_status.json",
-		   pmTmpPath->value,pmUuid->value);
-	  char* pcaLink =
-	    (char *) malloc ((strlen (pcaPath) + 16) * sizeof (char));
-	  sprintf(pcaLink,"%s; rel=monitor",pcaPath);
-	  setMapInMaps(m,"headers","Link",pcaLink);
-	  setMapInMaps(m,"headers","Status","200 OK");
-	  free(pcaPath);
-	  free(pcaLink);
 	}
-      }
-      printf(jsonStr);
-      printf("\n");
-      fflush(stdout);
-      if(getMapFromMaps(m,"lenv","output_response")!=NULL){
-	createStatusFile(m,eres);
+	printf(pmResponseObject->value);
+	printf("\n");
+	fflush(stdout);
+	if(getMapFromMaps(m,"lenv","output_response")!=NULL){
+	  createStatusFile(m,eres);
+	}
       }
     }
     if(res!=NULL)

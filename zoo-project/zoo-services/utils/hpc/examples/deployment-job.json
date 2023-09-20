@@ -141,6 +141,6 @@
   },
   "executionUnit": {
     "type": "SLURM",
-    "image": "docker://otbtf/4.1.0-cpu"
+    "image": "docker://mdl4eo/otbtf:4.1.0-cpu"
   }
 }

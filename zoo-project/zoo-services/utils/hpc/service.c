@@ -385,5 +385,54 @@ extern "C" {
 
     return SERVICE_SUCCEEDED;
   }
-  
+
+  /**
+   * Service invoked to deploy an OGC Application Package on HPC using 
+   * singularity pull imageName
+   */
+  ZOO_DLL_EXPORT int DeployOnHpc(maps*& conf,maps*& inputs,maps*& outputs){
+    // Retrieve the Docker image name
+    map* pmImageName=getMapFromMaps(inputs,"image","value");
+    map* pmUsid=getMapFromMaps(conf,"lenv","usid");
+    map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+    map* pmPC=getMapFromMaps(conf,"HPC","preview_conf");
+    setMapInMaps(conf,"lenv","configId",pmPC->value);
+    SSHCON *test=ssh_connect(conf);
+
+    // Run singularity pull <IMAGE>
+    char* pcaCommand=(char*)malloc((31+strlen(pmImageName->value))*sizeof(char));
+    sprintf(pcaCommand,"singularity pull %s && echo done",pmImageName->value);
+    if(ssh_exec(conf,pcaCommand,ssh_get_cnt(conf))==0){
+      free(pcaCommand);
+      setMapInMaps(conf,"lenv","message",_("Failed to run singularity pull remotely"));
+      return SERVICE_FAILED;
+    }else{
+      free(pcaCommand);
+      char* pcaLogPath=(char*)malloc((strlen(pmTmpPath->value)+strlen(pmUsid->value)+11)*sizeof(char));
+      sprintf(pcaLogPath,"%s/exec_out_%s",pmTmpPath->value,pmUsid->value);
+      struct stat f_status;
+      int ts=stat(pcaLogPath, &f_status);
+      if(ts==0) {
+	char* pcaFcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+	FILE* pfLog=fopen(pcaLogPath,"rb");
+	fread(pcaFcontent,f_status.st_size,1,pfLog);
+	int fsize=f_status.st_size;
+	pcaFcontent[fsize]=0;
+	fclose(pfLog);
+	free(pcaLogPath);
+	fprintf(stderr,"%s",pcaFcontent);
+	fflush(stderr);
+	setMapInMaps(conf,"lenv","ssh_cmd_log",pcaFcontent);
+	free(pcaFcontent);
+      }else{
+	setMapInMaps(conf,"lenv","message",_("Unable to access the downloaded execution log file"));
+	return SERVICE_FAILED;
+      }
+    }
+
+    setOutputValue(outputs,"Result",(char*)"Singularity container deployed",31);
+
+    return SERVICE_SUCCEEDED;
+  }
+
 }

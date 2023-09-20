@@ -96,6 +96,13 @@ def writeZcfgFromProcessDescription(conf,obj):
         if executionUnit["type"]=="SLURM":
             zcfgFile.write(" serviceType = HPC \n")
             zcfgFile.write(" serviceProvider = "+ processDescription["id"] + "\n")
+            # We should invoke the DeployOnHpc service asynchronously from here
+            # An option would be to use WPS 1.0.0 and the following URL:
+            # zoo_loader.cgi.resquest=Execute&service=WPS&version=1.0.0&\
+            # Identifier=DeployOnHpc&DataInputs=image=executionUnit["image"]&\
+            # storeExecuteReponse=true&status=true
+            # Another option would be to send a message to RabbitMQ to invoke the
+            # execution only on the ZOO-FPM.
         else:
             if executionUnit["type"].count("openeo")>0:
                 zcfgFile.write(" serviceType = Python \n")

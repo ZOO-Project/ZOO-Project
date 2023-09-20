@@ -3196,6 +3196,8 @@ extern "C" {
 	      json_object *cc=json_object_new_array();
 	      json_object_array_add(cc,json_object_new_string(vMap->value));
 	      json_object_object_add(methodc,"tags",cc);
+	      if(pmName==NULL)
+		pmName=getMapArray(tmpMaps->content,"operationId",i);
 	      if(pmName!=NULL){
 		char* pcaOperationId=(char*)malloc((strlen(vMap->value)+strlen(pmName->value)+1)*sizeof(char));
 		sprintf(pcaOperationId,"%s%s",vMap->value,pmName->value);
@@ -3436,6 +3438,8 @@ extern "C" {
 
 		    json_object_object_add(pajPost,"requestBody",pajRBody);
 		    json_object_object_add(pajPost,"responses",pajResponse);
+		    if(pmName==NULL)
+		      pmName=getMapArray(tmpMaps->content,"operationId",i);
 		    if(pmName!=NULL){
 		      char* pcaOperationId=(char*)malloc((strlen(pmState->value)+strlen(pmName->value)+1)*sizeof(char));
 		      sprintf(pcaOperationId,"%s%s",pmState->value,pmName->value);
