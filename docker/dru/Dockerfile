@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20220113
+FROM ubuntu:focal
 
 # to build:
 # docker build --rm -t ades:latest .
