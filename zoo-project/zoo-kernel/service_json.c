@@ -2415,6 +2415,74 @@ extern "C" {
   }
 
   /**
+   * Fetch the current jobid (can be usid or gs_usid in the lenv section).
+   *
+   * @param pmsConf the maps containing the settings of the main.cfg file
+   */
+  map* fetchUsid(maps* pmsConf){
+    map* pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
+    if(pmUsid!=NULL){
+      pmUsid = getMapFromMaps (pmsConf, "lenv", "gs_usid");
+      if(pmUsid==NULL)
+	pmUsid = getMapFromMaps (pmsConf, "lenv", "usid");
+    }else
+      pmUsid = getMapFromMaps (pmsConf, "lenv", "gs_usid");
+    return pmUsid;
+  }
+
+  /**
+   * Detect if there is a _logs.cfg file associated with the execution.
+   * If yes, add the links defined in the section to the standard links associated
+   * with a job statusInfo.
+   *
+   * @param conf the maps containing the settings of the main.cfg file
+   * @param pjoObj  the JSON object pointer to add the links to
+   */
+  void createStatusLinksFromLogs(maps* conf,json_object* pjoObj){
+    map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+    map* pmUsid=fetchUsid(conf);
+    char* pcaLogsPath=(char*)malloc((strlen(pmUsid->value)+strlen(pmTmpPath->value)+11)*sizeof(char));
+    sprintf(pcaLogsPath,"%s/%s_logs.cfg",pmTmpPath->value,pmUsid->value);
+    maps *pmsLogs = (maps *) malloc (MAPS_SIZE);
+    pmsLogs->content = NULL;
+    pmsLogs->child = NULL;
+    pmsLogs->next = NULL;
+    if (conf_read (pcaLogsPath,pmsLogs) != 2){
+      map* pmLength=getMap(pmsLogs->content,"length");
+      int iLen=1;
+      const char* ppccKeys[]={
+	"url",
+	"title",
+	"rel"
+      };
+      if(pmLength!=NULL)
+	iLen=atoi(pmLength->value);
+      for(int iI=0;iI<iLen;iI++){
+	json_object* pjoCurrentLink=json_object_new_object();
+	for(int iJ=0;iJ<3;iJ++){
+	  map* pmValue=getMapArray(pmsLogs->content,ppccKeys[iJ],iI);
+	  if(pmValue!=NULL){
+	    // Add the key to the current link
+	    if(strncmp(ppccKeys[iJ],"url",3)!=0)
+	      json_object_object_add(pjoCurrentLink,ppccKeys[iJ],
+				     json_object_new_string(pmValue->value));
+	    else
+	      json_object_object_add(pjoCurrentLink,"ref",
+				     json_object_new_string(pmValue->value));
+	  }
+	}
+	json_object_object_add(pjoCurrentLink,"type",
+			       json_object_new_string("text/plain"));
+	json_object_array_add(pjoObj,pjoCurrentLink);
+      }
+      freeMaps(&pmsLogs);
+      free(pmsLogs);
+      pmsLogs=NULL;
+    }
+    free(pcaLogsPath);
+  }
+
+  /**
    * Create the status links
    *
    * @param conf the maps containing the settings of the main.cfg file
@@ -2425,13 +2493,7 @@ extern "C" {
   int createStatusLinks(maps* conf,int result,json_object* obj){
     json_object* res=json_object_new_array();
     map *tmpPath = getMapFromMaps (conf, "openapi", "rootUrl");
-    map *sessId = getMapFromMaps (conf, "lenv", "usid");
-    if(sessId!=NULL){
-      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-      if(sessId==NULL)
-	sessId = getMapFromMaps (conf, "lenv", "usid");
-    }else
-      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+    map *sessId = fetchUsid(conf);
     char *Url0=(char*) malloc((strlen(tmpPath->value)+
 			       strlen(sessId->value)+18)*sizeof(char));
     int needResult=-1;
@@ -2473,6 +2535,7 @@ extern "C" {
       json_object_object_add(val1,"href",json_object_new_string(Url0));
       json_object_array_add(res,val1);
     }
+    createStatusLinksFromLogs(conf,res);
     json_object_object_add(obj,"links",res);
     free(Url0);
     return 0;
@@ -2486,14 +2549,7 @@ extern "C" {
    */
   char* json_getStatusFilePath(maps* conf){
     map *tmpPath = getMapFromMaps (conf, "main", "tmpPath");
-    map *sessId = getMapFromMaps (conf, "lenv", "usid");
-    if(sessId!=NULL){
-      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-      if(sessId==NULL)
-	sessId = getMapFromMaps (conf, "lenv", "usid");
-    }else
-      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
-    
+    map *sessId = fetchUsid(conf);
     char *tmp1=(char*) malloc((strlen(tmpPath->value)+
 			       strlen(sessId->value)+14)*sizeof(char));
     sprintf(tmp1,"%s/%s_status.json",

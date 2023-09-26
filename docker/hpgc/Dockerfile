@@ -151,7 +151,7 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
      && cp zoo-project/zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
      && cp zoo-project/zoo-services/utils/security/dru/* /usr/lib/cgi-bin/ \
      && cp -r zoo-project/zoo-services/utils/security/jwt /usr/lib/cgi-bin/jwts \
-     && ln -s /tmp/ /var/www/html/temp \
+     && ln -s /tmp/zTmp /var/www/html/temp \
      && mkdir /var/www/html/examples/ \
      # update the securityIn.zcfg
      && sed "s:serviceType = C:serviceType = Python:g;s:serviceProvider = security_service.zo:serviceProvider = service:g" -i /usr/lib/cgi-bin/securityIn.zcfg \

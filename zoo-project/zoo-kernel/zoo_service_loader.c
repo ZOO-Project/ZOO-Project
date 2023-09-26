@@ -5746,6 +5746,17 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      invokeCallback(lconf,NULL,request_output_real_format,6,0);
 #endif
 #endif
+	    // Detect if there is a service_logs section
+	    maps* pmsLogs=getMaps(lconf,"service_logs");
+	    if(pmsLogs!=NULL){
+	      map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+	      map* pmUsid=getMapFromMaps(conf,"lenv","usid");
+	      char *pcaPath =
+		(char *) malloc ((strlen (pmTmpPath->value) + strlen (pmUsid->value) + 12) * sizeof (char));
+	      sprintf (pcaPath, "%s/%s_logs.cfg", pmTmpPath->value, pmUsid->value);
+	      dumpMapsToFile(pmsLogs,pcaPath,1);
+	      free(pcaPath);
+	    }
 	    freeMaps(&bmap);
 	    free(bmap);
 	    zUnlink (fbkp1);
