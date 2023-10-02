@@ -2467,7 +2467,7 @@ extern "C" {
 	      json_object_object_add(pjoCurrentLink,ppccKeys[iJ],
 				     json_object_new_string(pmValue->value));
 	    else
-	      json_object_object_add(pjoCurrentLink,"ref",
+	      json_object_object_add(pjoCurrentLink,"href",
 				     json_object_new_string(pmValue->value));
 	  }
 	}
