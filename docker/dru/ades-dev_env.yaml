@@ -10,7 +10,7 @@ dependencies:
   - jinja2
   - cookiecutter=2.1.1
   - boto3
-  - pycalrissian
+  - pycalrissian=0.6.4
   - zoo-calrissian-runner=0.1.8
   - python-kubernetes
   - cwl-wrapper=0.12.1
