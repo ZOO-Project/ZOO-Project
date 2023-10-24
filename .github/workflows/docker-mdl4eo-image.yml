@@ -45,7 +45,7 @@ jobs:
       with:
         context: .
         push: true
-        file: Dockerfile-OTBTF
+        file: docker/mdl4eo/Dockerfile
         tags: zooproject/zoo-project:mdl4eo-latest
         cache-from: type=local,src=/tmp/.buildx-mdl4eo-cache
         cache-to: type=local,dest=/tmp/.buildx-mdl4eo-cache-new,mode=max
