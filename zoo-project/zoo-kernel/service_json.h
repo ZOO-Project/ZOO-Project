@@ -155,6 +155,7 @@ extern "C" {
   json_object* convertCwlToOGCAppPkg(maps*,map*);
   bool serviceIsDRU(maps*,char*);
 #endif
+  bool serviceIsFilter(maps*,char*);
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);
 #ifdef __cplusplus
 }

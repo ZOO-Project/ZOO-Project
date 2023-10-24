@@ -225,6 +225,51 @@ extern "C" {
   }
 
   /**
+   * Add a description to one or two json objects using the abstract_file or
+   * abstract value. In case an abstract_file is found, then the ZOO-Kernel will
+   * try to read the provided file path and use its content as the description
+   * value.
+   *
+   * @param pmElement the current map to search for abstract_file/abstract field
+   * @param iIndex the index to use to fetch from the map array
+   * @param output the first json object to add the description
+   * @param output1 the second json object to add the description (optional)
+   */
+  void addDescription(map* pmElement,int iIndex,json_object* output,json_object* output1){
+    if(pmElement==NULL)
+      return ;
+    map* pmCurrent=getMapArray(pmElement,"abstract_file",iIndex);
+    if(pmCurrent!=NULL){
+      FILE* pfData=fopen(pmCurrent->value,"rb");
+      if(pfData!=NULL){
+	zStatStruct f_status;
+	int s=zStat(pmCurrent->value, &f_status);
+	if(f_status.st_size>0){
+	  char* pcaTmp=(char*)malloc((f_status.st_size+1)*sizeof(char));
+	  fread(pcaTmp,1,f_status.st_size,pfData);
+	  pcaTmp[f_status.st_size]=0;
+	  fclose(pfData);
+	  json_object_object_add(output,"description",json_object_new_string(_(pcaTmp)));
+	  if(output1!=NULL)
+	    json_object_object_add(output1,"description",json_object_new_string(_(pcaTmp)));
+	  free(pcaTmp);
+	}
+      }else{
+	  json_object_object_add(output,"description",json_object_new_string(_("Unable to load your file")));
+	  if(output1!=NULL)
+	    json_object_object_add(output1,"description",json_object_new_string(_("Unable to load your file")));
+      }
+    }else{
+      pmCurrent=getMapArray(pmElement,"abstract",iIndex);
+      if(pmCurrent!=NULL){
+	json_object_object_add(output,"description",json_object_new_string(_(pmCurrent->value)));
+	if(output1!=NULL)
+	  json_object_object_add(output1,"description",json_object_new_string(_(pmCurrent->value)));
+      }
+    }
+  }
+
+  /**
    * Add Allowed Range properties to a json_object
    *
    * @param m the main configuration maps pointer
@@ -716,9 +761,7 @@ extern "C" {
       }
       if(tmpMap!=NULL)
 	json_object_object_add(input,"title",json_object_new_string(_ss(tmpMap->value)));
-      tmpMap=getMap(in->content,"abstract");
-      if(tmpMap!=NULL)
-	json_object_object_add(input,"description",json_object_new_string(_ss(tmpMap->value)));
+      addDescription(in->content,0,input,NULL);
       if(strcmp(io,"input")==0){
 	if(pmMin!=NULL && strcmp(pmMin->value,"1")!=0 && strcmp(pmMin->value,"0")!=0)
 	  json_object_object_add(input,"minOccurs",json_object_new_int(atoi(pmMin->value)));
@@ -830,6 +873,8 @@ extern "C" {
     if(serviceIsDRU(m,serv->name))
       return;
 #endif
+    if(serviceIsFilter(m,serv->name))
+      return;
     map* tmpMap0=getMapFromMaps(m,"lenv","level");
     char* rUrl=serv->name;
     if(tmpMap0!=NULL && atoi(tmpMap0->value)>0){
@@ -879,10 +924,7 @@ extern "C" {
       if(tmpMap!=NULL){
 	json_object_object_add(res,"title",json_object_new_string(_ss(tmpMap->value)));
       }
-      tmpMap=getMap(serv->content,"abstract");
-      if(tmpMap!=NULL){
-	json_object_object_add(res,"description",json_object_new_string(_ss(tmpMap->value)));
-      }
+      addDescription(serv->content,0,res,NULL);
       tmpMap=getMap(serv->content,"mutable");
       if(tmpMap==NULL)
 	json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
@@ -2879,11 +2921,8 @@ extern "C" {
 	json_object_object_add(res2,"url",json_object_new_string(tmpMap->value));
       json_object_object_add(res1,"contact",res2);
     }
-    tmpMap=getMapFromMaps(conf,"identification","abstract");
-    if(tmpMap!=NULL){
-      json_object_object_add(res1,"description",json_object_new_string(_(tmpMap->value)));
-      json_object_object_add(res5,"description",json_object_new_string(_(tmpMap->value)));
-    }
+    maps* pmsTmp=getMaps(conf,"identification");
+    addDescription(pmsTmp->content,0,res1,res5);
     tmpMap=getMapFromMaps(conf,"openapi","rootUrl");
     if(tmpMap!=NULL)
       json_object_object_add(res5,"url",json_object_new_string(tmpMap->value));
@@ -2968,9 +3007,7 @@ extern "C" {
 	json_object_object_add(res8,"$ref",json_object_new_string(tmpMap->value));
 	hasSchema=1;
       }
-      tmpMap=getMap(tmpMaps1->content,"abstract");
-      if(tmpMap!=NULL)
-	json_object_object_add(res8,"description",json_object_new_string(_(tmpMap->value)));
+      addDescription(tmpMaps1->content,0,res8,NULL);
       tmpMap=getMap(tmpMaps1->content,"example");
       if(tmpMap!=NULL)
 	json_object_object_add(res8,"example",json_object_new_string(tmpMap->value));
@@ -3244,9 +3281,7 @@ extern "C" {
 	      json_object_array_add(poSecurity,poSecurityItem);
 	      json_object_object_add(methodc,"security",poSecurity);
 	    }
-	    vMap=getMapArray(tmpMaps->content,"abstract",i);
-	    if(vMap!=NULL)
-	      json_object_object_add(methodc,"description",json_object_new_string(_(vMap->value)));
+	    addDescription(tmpMaps->content,i,methodc,NULL);
 	    vMap=getMapArray(tmpMaps->content,"tags",i);
 	    if(vMap!=NULL){
 	      json_object *cc=json_object_new_array();
@@ -3447,9 +3482,7 @@ extern "C" {
 		      cc2=json_object_new_object();
 		    if(iCounter+1==iLen){
 		      json_object_object_add(cc2,"content",cc1);
-		      vMap=getMap(tmpMaps1->content,"abstract");
-		      if(vMap!=NULL)
-			json_object_object_add(cc2,"description",json_object_new_string(vMap->value));
+		      addDescription(tmpMaps1->content,0,cc2,NULL);
 		      json_object_object_add(cc2,"required",json_object_new_boolean(true));
 		      json_object_object_add(methodc,"requestBody",cc2);
 		    }
@@ -3694,6 +3727,45 @@ extern "C" {
     return 0;
   }
 #endif // DRU_ENABLED
+
+  /**
+   * Verify that a service name correspond to the Deploy or Undeploy service
+   * name
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pcService the service name
+   * @return true if the process name corresponds to a filter_in or filter_out;
+   * false otherwise
+   */
+  bool serviceIsFilter(maps* pmsConf,char* pcService){
+    maps* pmsFilterIn=getMaps(pmsConf,"filter_in");
+    if(pcService==NULL)
+      return true;
+    if(pmsFilterIn!=NULL){
+      int len=1;
+      map* pmLength=getMap(pmsFilterIn->content,"length");
+      if(pmLength!=NULL)
+	len=atoi(pmLength->value);
+      for(int i=0;i<len;i++){
+	map* pmFilterService=getMapArray(pmsFilterIn->content,"service",i);
+	if(pmFilterService!=NULL && strstr(pmFilterService->value,pcService)!=NULL)
+	  return true;
+      }
+    }
+    maps* pmsFilterOut=getMaps(pmsConf,"filter_out");
+    if(pmsFilterOut!=NULL){
+      int len=1;
+      map* pmLength=getMap(pmsFilterOut->content,"length");
+      if(pmLength!=NULL)
+	len=atoi(pmLength->value);
+      for(int i=0;i<len;i++){
+	map* pmFilterService=getMapArray(pmsFilterOut->content,"service",i);
+	if(pmFilterService!=NULL && strstr(pmFilterService->value,pcService)!=NULL)
+	  return true;
+      }
+    }
+    return false;
+  }
 
 #ifdef __cplusplus
 }

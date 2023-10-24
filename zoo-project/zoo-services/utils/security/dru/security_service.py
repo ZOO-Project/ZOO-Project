@@ -49,9 +49,10 @@ def securityIn(conf,inputs,outputs):
             break
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)
-        rFiles=conf["servicesNamespace"]["required_files"].split(',')
-        for i in range(len(rFiles)):
-            shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
+        if "required_files" in conf["servicesNamespace"]:
+            rFiles=conf["servicesNamespace"]["required_files"].split(',')
+            for i in range(len(rFiles)):
+                shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
     return zoo.SERVICE_SUCCEEDED
 
 def securityOut(conf,inputs,outputs):

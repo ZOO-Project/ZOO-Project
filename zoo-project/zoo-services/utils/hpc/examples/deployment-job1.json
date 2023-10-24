@@ -1,0 +1,146 @@
+{
+    "processDescription":{
+	"id": "BandMathX",
+	"title": "This application performs mathematical operations on several multiband images.",
+	"description": "This application performs a mathematical operation on several multi-band images and outputs the result into an image (multi- or mono-band, as opposed to the BandMath OTB-application). The mathematical formula is done by the muParserX library.The list of features and the syntax of muParserX is available at [1].As opposed to muParser (and thus the BandMath OTB-application [2]), muParserX supports vector expressions which allows outputting multi-band images.Hereafter is a brief reference of the muParserX syntaxFundamentals------------The formula can be written using:* numerical values ( 2.3, -5, 3.1e4, ...)* variables containing pixel values (please, note the indexing of inputs from 1 to N). Examples for the first input image:  * ``im1`` a pixel from 1st input, made of n components (n bands)  * ``im1b2`` the 2nd component of a pixel from 1st input (band index is 1-based)  * ``im1b2N3x4`` a 3x4 pixels Neighbourhood of a pixel the 2nd component of a pixel from the 1st input  * ``im1PhyX`` horizontal (X-axis) spacing of the 1st input.  * ``im1PhyY`` vertical (Y-axis) spacing of the 1st input input.  * ``im1b2Mean`` mean of the 2nd component of the 1st input (global statistics)  * ``im1b2Mini`` minimum of the 2nd component of the 1st input (global statistics)  * ``im1b2Maxi`` maximum of the 2nd component of the 1st input (global statistics)  * ``im1b2Sum`` sum of the 2nd component of the 1st input (global statistics)  * ``im1b2Var`` variance of the 2nd component of the 1st input (global statistics)  * ``idxX`` and ``idxY`` are the indices of the current pixel (generic variables)* binary operators:  * ``+`` addition, ``-`` subtraction, ``*`` multiplication, ``/`` division  * ``^`` raise x to the power of y  * ``",
+	"version": "1.0.0",
+	"jobControlOptions": [
+	    "sync-execute",
+	    "async-execute",
+	    "dismiss"
+	],
+	"outputTransmission": [
+	    "value",
+	    "reference"
+	],
+	"links": [],
+	"additionalParameters": [
+	    {
+		"name": "entry-point",
+		"value": "singularity exec otbtf_4.1.0-cpu.sif /opt/otbtf/bin/otbcli_BandMathX"
+	    }
+	],
+	"inputs": {
+	    "il": {
+		"title": "Image list to perform computation on.",
+		"description": "Image list to perform computation on.",
+		"maxOccurs": 1024,
+		"additionalParameters": [
+		    {
+			"name": "pattern",
+			"value": "-name value"
+		    },
+		    {
+			"name": "array-pattern",
+			"value": "-name value value"
+		    }
+		],
+		"schema": {
+		    "oneOf": [
+			{
+			    "type": "string",
+			    "contentEncoding": "base64",
+			    "contentMediaType": "image/tiff"
+			},
+			{
+			    "type": "string",
+			    "contentEncoding": "base64",
+			    "contentMediaType": "image/jpeg"
+			},
+			{
+			    "type": "string",
+			    "contentEncoding": "base64",
+			    "contentMediaType": "image/png"
+			}
+		    ]
+		}
+	    },
+	    "out": {
+		"title": "Output image.",
+		"description": "Output image.",
+		"additionalParameters": [
+		    {
+			"name": "pattern",
+			"value": ""
+		    }
+		],
+		"schema": {
+		    "type": "string",
+		    "default": "float",
+		    "enum": [
+			"uint8",
+			"uint16",
+			"int16",
+			"int32",
+			"int32",
+			"float",
+			"double"
+		    ]
+		}
+	    },
+	    "exp": {
+		"title": "Mathematical expression to apply.",
+		"description": "Mathematical expression to apply.",
+		"additionalParameters": [
+		    {
+			"name": "pattern",
+			"value": "-name \"value\""
+		    }
+		],
+		"schema": {
+		    "type": "string"
+		}
+	    },
+	    "ram": {
+		"title": "Available memory for processing (in MB).",
+		"description": "Available memory for processing (in MB).",
+		"additionalParameters": [
+		    {
+			"name": "pattern",
+			"value": "-name value"
+		    }
+		],
+		"schema": {
+		    "type": "integer",
+		    "default": 256,
+		    "nullable": true
+		}
+	    }
+	},
+	"outputs": {
+	    "out": {
+		"title": "Output image.",
+		"description": "Output image.",
+		"additionalParameters": [
+		    {
+			"name": "pattern",
+			"value": "-name value inputs_out_value"
+		    }
+		],
+		"schema": {
+		    "oneOf": [
+			{
+			    "type": "string",
+			    "contentEncoding": "base64",
+			    "contentMediaType": "image/tiff"
+			},
+			{
+			    "type": "string",
+			    "contentEncoding": "base64",
+			    "contentMediaType": "image/jpeg"
+			},
+			{
+			    "type": "string",
+			    "contentEncoding": "base64",
+			    "contentMediaType": "image/png"
+			}
+		    ]
+		}
+	    }
+	}
+    },
+    "executionUnit": {
+	"type": "SLURM",
+	"image": "docker://mdl4eo/otbtf:4.1.0-cpu"
+    }
+}

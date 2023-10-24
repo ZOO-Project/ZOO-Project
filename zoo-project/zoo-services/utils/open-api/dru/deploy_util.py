@@ -472,6 +472,12 @@ class ProcessInput:
 
             if type_name in self.__class__.cwl_type_map:
                 type_name = self.__class__.cwl_type_map[type_name]
+            elif type_name == "File":
+                type_name = "string"
+                self.file_content_type = "text/plain"
+            elif type_name == "Directory":
+                type_name = "string"
+                self.file_content_type = "text/plain"
             else:
                 type_name = None
             self.min_occurs = 1

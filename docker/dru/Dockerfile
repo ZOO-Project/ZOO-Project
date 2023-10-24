@@ -101,6 +101,7 @@ RUN cd ./zoo-project/zoo-kernel \
 	--with-db-backend \
 	--with-rabbitmq=yes \
      && sed -i "s/-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H/-DPROJ_VERSION_MAJOR=8/g" ./ZOOMakefile.opts \
+     #&& sed -i "s:LDFLAGS=:LDFLAGS=-Wl,-rpath,/usr/miniconda3/lib/ :g" ./ZOOMakefile.opts \
      && make -j4\
      && make install \
      && cp main.cfg /usr/lib/cgi-bin \
@@ -126,6 +127,8 @@ RUN cd ./zoo-project/zoo-kernel \
      && cp -r zoo-project/zoo-services/utils/open-api/static /var/www/html/ \
      && cp zoo-project/zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
      && cp zoo-project/zoo-services/utils/security/dru/* /usr/lib/cgi-bin/ \
+     && mkdir /usr/lib/cgi-bin/jwts \
+     && cp zoo-project/zoo-services/utils/security/jwt/cgi-env/security_service.py /usr/lib/cgi-bin/jwts/ \
      && ln -s /tmp/zTmp /var/www/html/temp \
      && mkdir /var/www/html/examples/ \
      # update the securityIn.zcfg
@@ -159,6 +162,7 @@ COPY zoo-project/zoo-services/utils/open-api/dru/deploy_util.py /usr/lib/cgi-bin
 RUN chmod -R 777 /usr/lib/cgi-bin
 
 RUN mkdir /tmp/cookiecutter-templates && \
+    ln -s /usr/miniconda3/envs/ades-dev/lib/libcrypto.so.3 /usr/lib/ && \
     chmod -R 777 /tmp/cookiecutter-templates
 
 EXPOSE 80

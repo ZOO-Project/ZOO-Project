@@ -5,7 +5,7 @@
 # Usage:
 # docker build . -f Dockerfile-OTBTF -t zookernel-ml4eo:latest
 #
-FROM mdl4eo/otbtf:4.0.0-cpu AS base 
+FROM mdl4eo/otbtf:4.2.1-cpu AS base 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -147,7 +147,7 @@ RUN set -ex \
        --with-json=/usr \
        --with-r=/usr \
        --prefix=/usr \
-       --with-otb=/opt/otbtf --with-itk=/usr --with-otb-version=9.0 --with-itk-version=4.13 \
+       --with-otb=/opt/otbtf --with-itk=/usr --with-otb-version=8.1 --with-itk-version=4.13 \
     && find /opt/otbtf -name mapserver.h \
     && make -j4 \
     && sudo make install \
@@ -326,6 +326,7 @@ ARG RUN_DEPS=" \
     gnuplot \
     locales \
     libapache2-mod-fcgid \
+    libssl3 \
     python3-setuptools \
     #Uncomment the line below to add vi editor \
     #vim \
@@ -385,6 +386,8 @@ COPY --from=demos /zoo-project/examples/data/ /usr/com/zoo-project/
 COPY --from=demos /zoo-project/examples/ /var/www/html/
 COPY --from=demos /zoo-project/swagger-ui /var/www/html/swagger-ui
 
+COPY ./docker/mdl4eo/requirements.txt /tmp
+
 
 RUN set -ex \
     && sudo apt-get update && sudo apt-get install -y --no-install-recommends $RUN_DEPS $BUILD_DEPS \
@@ -412,6 +415,7 @@ RUN set -ex \
     #&& sudo python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
     #&& sudo pip3 install GDAL==2.4.2 \
     && sudo pip3 install GDAL Cheetah3 redis spython onnxruntime tensorflow  tf2onnx \
+    && sudo pip3 install -r /tmp/requirements.txt \
     && sudo sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
     \
     # For using another port than 80, uncomment below. \
@@ -426,7 +430,7 @@ RUN set -ex \
     && sudo rm /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
     \
     # Enable apache modules
-    && sudo a2enmod cgi rewrite \
+    && sudo a2enmod cgi rewrite ssl \
     \
     # Cleanup \
     && sudo apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \

@@ -349,7 +349,7 @@ int dumpBackFinalFile(maps* pmsConf,char* fbkp,char* fbkp1)
 }
 
 /**
- * Checks if the zooServicesNamespace map is present in the m map;
+ * Checks if the zooServicesNamespace map is present in the main map;
  * if it is, the path to the directory where the ZOO-kernel should search for service providers will be updated.
  *
  * @param pmsConf the conf maps containing the main.cfg settings
@@ -411,7 +411,7 @@ int addServicesNamespaceToMap(maps** pmsConf){
 	    // checking if namespace folder exists
 	    char *pcaNamespaceFolder = (char *) malloc(1024*sizeof(char));
 	    //memset(pcaNamespaceFolder, '\0', 1024);
-	    map *servicesNamespaceParentFolder = getMapFromMaps(*pmsConf, "servicesNamespace", "path");
+	    map *servicesNamespaceParentFolder = getMapFromMaps(*pmsConf, "servicesN amespace", "path");
 	    if(servicesNamespaceParentFolder!=NULL){
 	      sprintf(pcaNamespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, pcNamespaceName);
 	      DIR *dir = opendir(pcaNamespaceFolder);
@@ -521,27 +521,21 @@ void setRootUrlMap(maps* pmConf){
  * @param saved_stdout the saved stdout identifier
  * @param level the current level (number of sub-directories to reach the
  * current path)
- * @param func a pointer to a function having 4 parameters 
- *  (registry*, maps*, xmlNodePtr and service*).
+ * @param func a pointer to a function having 5 parameters
+ *  (registry*, maps*, xmlDocPtr, xmlNodePtr, and service*).
  * @see inheritance, readServiceFile
  */
 int
-recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
+_recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 		 char *prefix, int saved_stdout, int level,
 		 void (func) (registry *, maps *, void*, void*, service *) )
 {
-
-  // if services namespace is present in the map, conf_dir will
-  // point to the namespace services path else it will point to
-  // the default service path
-  char conf_dir[1024];
-  getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
-
 
   struct dirent *dp;
   int scount = 0;
   xmlDocPtr doc=(xmlDocPtr) doc1;
   xmlNodePtr n=(xmlNodePtr) n1;
+  map* pmContinue=getMapFromMaps(m,"lenv","can_continue");
 
   if (conf_dir == NULL)
     return 1;
@@ -585,7 +579,7 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
             sprintf (levels1, "%d", level + 1);
             setMapInMaps (m, "lenv", "level", levels1);
             res =
-              recursReaddirF (m, r, doc, n, tmp, prefix, saved_stdout, level + 1,
+              _recursReaddirF (m, r, doc, n, tmp, prefix, saved_stdout, level + 1,
                               func);
             sprintf (levels1, "%d", level);
             setMapInMaps (m, "lenv", "level", levels1);
@@ -630,7 +624,8 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
 			 tmps1);
 #endif
 		t = readServiceFile (m, tmps1, &s1, tmpsn);
-		if (t < 0)
+		if ( t < 0 &&
+		     (pmContinue!=NULL && strncasecmp(pmContinue->value,"false",4)==0) )
 		  {
 		    map *tmp00 = getMapFromMaps (m, "lenv", "message");
 		    char tmp01[1024];
@@ -664,14 +659,16 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
               scount++;
 #ifdef DRU_ENABLED
 	      bool bIsDeployUndeployService=serviceIsDRU(m,tmpsn);
-	      free (tmpsn);
-	      tmpsn=NULL;
 	      if(!bIsDeployUndeployService){
 #endif
-		updateCnt(m,"serviceCnt","incr");
-		updateCnt(m,"serviceCounter","incr");
+		if(!serviceIsFilter(m,tmpsn)){
+		  updateCnt(m,"serviceCnt","incr");
+		  updateCnt(m,"serviceCounter","incr");
+		}
 #ifdef DRU_ENABLED
 	      }
+	      free (tmpsn);
+	      tmpsn=NULL;
 #endif
 	      if(compareCnt(m,"serviceCntLimit","equal")){
 		// In case we are willing to count the number of services, we
@@ -689,6 +686,56 @@ recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir_,
   (void) closedir (dirp);
   return 1;
 }
+
+/**
+ * Recursivelly parse zcfg from search path (services namespace and cwd).
+ *
+ * If the main cofiguration maps (pmsConf) get, in the openapi section, a
+ * search_path key taking the value true, then the ZOO-Kernel default
+ * search_path used for searching zcfg files (cwd) is used in addition to the
+ * authenticated user namespace.
+ *
+ * @param pmsConf the conf maps containing the main.cfg settings
+ * @param r the registry containing profiles hierarchy
+ * @param n the root XML Node to add the sub-elements
+ * @param conf_dir the location of the main.cfg file (basically cwd)
+ * @param prefix the current prefix if any, or NULL
+ * @param saved_stdout the saved stdout identifier
+ * @param level the current level (number of sub-directories to reach the
+ * current path)
+ * @param func a pointer to a function having 4 parameters
+ *  (registry*, maps*, xmlNodePtr and service*).
+ * @see recursReaddirF
+ */
+int
+recursReaddirF ( maps * pmsConf, registry *r, void* doc1, void* n1, char *conf_dir_,
+		 char *prefix, int saved_stdout, int level,
+		 void (func) (registry *, maps *, void*, void*, service *) )
+{
+  map* pmHasSearchPath=getMapFromMaps(pmsConf,"main","search_path");
+  // if services namespace is present in the map, conf_dir will
+  // point to the namespace services path else it will point to
+  // the default service path
+  char conf_dir[1024];
+  int res=0;
+  getServicesNamespacePath(pmsConf,conf_dir_,conf_dir,1024);
+  if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
+    setMapInMaps(pmsConf,"lenv","can_continue","true");
+    int res=_recursReaddirF(pmsConf, r, doc1, n1, conf_dir_,prefix, saved_stdout,
+			    level,func);
+    if(strncmp(conf_dir,conf_dir_,strlen(conf_dir))!=0){
+      setMapInMaps(pmsConf,"lenv","can_continue","false");
+      res=_recursReaddirF(pmsConf, r, doc1, n1, conf_dir,prefix, saved_stdout,
+			  level,func);
+    }
+  }else{
+    setMapInMaps(pmsConf,"lenv","can_continue","false");
+    res=_recursReaddirF(pmsConf, r, doc1, n1, conf_dir,prefix, saved_stdout,
+			level,func);
+  }
+  return res;
+}
+
 
 /**
  * When th zcfg file is not found, print error message and cleanup memory
@@ -746,15 +793,16 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
  * @param m the maps pointer to the content of main.cfg file
  * @param spService the pointer to the service pointer to be filled
  * @param request_inputs the map pointer for http request inputs
- * @param ntmp the path where the ZCFG files are stored
+ * @param pcDir the path where the ZCFG files are stored
  * @param cIdentifier the service identifier
  * @param funcError the error function to be used in case of error
  */
-int fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* ntmp,char* cIdentifier,void (funcError) (maps**, map*)){
+int _fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
   char tmps1[1024];
   map *r_inputs=NULL;
   service* s1=*spService;
   map* pmExecutionType=getMapFromMaps(m,"main","executionType");
+  map* pmContinue=getMapFromMaps(m,"lenv","can_continue");
   map* import = getMapFromMaps (m, IMPORTSERVICE, cIdentifier); 
   if (import != NULL && import->value != NULL) { 
     strncpy(tmps1, import->value, 1024);
@@ -762,11 +810,11 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
     setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
   } 
   else {
-    char conf_dir2[1024];
+    /*char conf_dir2[1024];
     memset(conf_dir2,0,1024);
-    getServicesNamespacePath(m,ntmp,conf_dir2,1024);
+    getServicesNamespacePath(m,ntmp,conf_dir2,1024);*/
 
-    snprintf (tmps1, 1024, "%s/%s.zcfg", conf_dir2, cIdentifier);
+    snprintf (tmps1, 1024, "%s/%s.zcfg", pcDir, cIdentifier);
 #ifdef DEBUG
     fprintf (stderr, "Trying to load %s\n", tmps1);
 #endif
@@ -774,7 +822,7 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
       {
 	setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
 	char *identifier = zStrdup (cIdentifier);
-	parseIdentifier (m, conf_dir2, identifier, tmps1);
+	parseIdentifier (m, pcDir, identifier, tmps1);
 	map *tmpMap = getMapFromMaps (m, "lenv", "metapath");
 	if (tmpMap != NULL)
 	  addToMap (request_inputs, "metapath", tmpMap->value);
@@ -854,14 +902,14 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
     fflush (stdout);
     zDup2 (saved_stdout, fileno (stdout));
     zClose (saved_stdout);
-    if (t < 0)
+    if ( t < 0 )
       {
 	r_inputs = getMapFromMaps (m, "lenv", "oIdentifier");
-	if(r_inputs!=NULL){
+	if( r_inputs!=NULL &&
+	    (pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0) ){
 	  char *tmpMsg = (char *) malloc (2048 + strlen (r_inputs->value));
 	  sprintf (tmpMsg,
-		   _
-		   ("The value for <identifier> seems to be wrong (%s). Please specify one of the processes in the list returned by a GetCapabilities request."),
+		   _("The value for <identifier> seems to be wrong (%s). Please specify one of the processes in the list returned by a GetCapabilities request."),
 		   r_inputs->value);
 	  map* error=createMap("code","NoSuchProcess");
 	  if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0){
@@ -884,11 +932,49 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
 	  //free (m);
 	  return 1;
 	}
+	free (*spService);
+	return 1;
       }
 #ifdef META_DB
   }
 #endif
   return 0;
+}
+
+/**
+ * Parse the ZOO-Service ZCFG to fill the service datastructure
+ *
+ * @param zooRegistry the populated registry
+ * @param m the maps pointer to the content of main.cfg file
+ * @param spService the pointer to the service pointer to be filled
+ * @param request_inputs the map pointer for http request inputs
+ * @param pcDir the path where the ZCFG files are stored
+ * @param cIdentifier the service identifier
+ * @param funcError the error function to be used in case of error
+ */
+int fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
+  map* pmHasSearchPath=getMapFromMaps(m,"main","search_path");
+  // if services namespace is present in the map, conf_dir will
+  // point to the namespace services path else it will point to
+  // the default service path
+  char conf_dir[1024];
+  int res=0;
+  getServicesNamespacePath(m,pcDir,conf_dir,1024);
+  if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
+    setMapInMaps(m,"lenv","can_continue","true");
+    res=_fetchService(zooRegistry, m, spService, request_inputs, conf_dir,
+			  cIdentifier, funcError);
+    if(res!=0 && strncmp(conf_dir,pcDir,strlen(pcDir))!=0){
+      setMapInMaps(m,"lenv","can_continue","false");
+      res=_fetchService(zooRegistry, m, spService, request_inputs, pcDir,
+			cIdentifier, funcError);
+    }
+  }else{
+    setMapInMaps(m,"lenv","can_continue","false");
+    res=_fetchService(zooRegistry, m, spService, request_inputs, conf_dir,
+		      cIdentifier, funcError);
+  }
+  return res;
 }
 
 /**
@@ -905,9 +991,9 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
  * @param funcError the function used to print the error back
  * @return 0 in case of success, 1 otherwise
  */
-int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
+int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 				void (func) (registry *, maps *, void*, void*, service *),
-				void* doc, void* n, char *conf_dir_, map* request_inputs,
+				void* doc, void* n, char *conf_dir, map* request_inputs,
 				void (funcError) (maps**, map*) ){
   char *orig = zStrdup (r_inputs);
   service* s1=NULL;
@@ -915,9 +1001,9 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
   int t;
   int scount = 0;
   struct dirent *dp;
-
-  char conf_dir[1024];
-  getServicesNamespacePath(m,conf_dir_,conf_dir,1024);
+  map* pmContinue=getMapFromMaps(m,"lenv","can_continue");
+  /*char conf_dir[1024];
+    getServicesNamespacePath(m,conf_dir_,conf_dir,1024);*/
 
 
   zDup2 (fileno (stderr), fileno (stdout));  
@@ -948,7 +1034,7 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	}            
       }
       if (int res =
-	  recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
+	  _recursReaddirF (m, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
 			  func) < 0){
 	zDup2 (saved_stdout, fileno (stdout));
 	return res;
@@ -990,10 +1076,11 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 #ifdef META_DB
 		    close_sql(m,metadb_id-1);
 #endif
-		    exitAndCleanUp(zooRegistry, m,
-				   tmps,"InvalidParameterValue","identifier",
-				   orig,corig,
-				   funcError);
+		    if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
+		      exitAndCleanUp(zooRegistry, m,
+				     tmps,"InvalidParameterValue","identifier",
+				     orig,corig,
+				     funcError);
 		    if(dirp!=NULL)
 		      closedir (dirp);
                     return 1;
@@ -1031,7 +1118,8 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      */
 	      s1 = createService();
 	      t = readServiceFile (m, buff1, &s1, tmpMapI->value);
-	      if (t < 0)
+	      if (t < 0 &&
+		  (pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0))
 		{
 		  zDup2 (saved_stdout, fileno (stdout));
 		  exitAndCleanUp(zooRegistry, m,
@@ -1127,10 +1215,11 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			    fflush (stderr);
 			    zDup2 (saved_stdout, fileno (stdout));
 			    zClose(saved_stdout);
-			    exitAndCleanUp(zooRegistry, m,
-					   buff,"InternalError","NULL",
-					   orig,corig,
-					   funcError);
+			    if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
+			      exitAndCleanUp(zooRegistry, m,
+					     buff,"InternalError","NULL",
+					     orig,corig,
+					     funcError);
 			    if(dirp!=NULL)
 			      closedir (dirp);
 			    return 1;
@@ -1160,10 +1249,11 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      fflush (stderr);
 	      zDup2 (saved_stdout, fileno (stdout));
 	      zClose(saved_stdout);
-	      exitAndCleanUp(zooRegistry, m,
-			     buff,"InvalidParameterValue","Identifier",
-			     orig,corig,
-			     funcError);
+	      if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
+		exitAndCleanUp(zooRegistry, m,
+			       buff,"InvalidParameterValue","Identifier",
+			       orig,corig,
+			       funcError);
 	      fflush(stdout);
 	      if(dirp!=NULL)
 		closedir (dirp);
@@ -1183,6 +1273,49 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
   zClose(saved_stdout);
   free (orig);
   return 0;
+}
+
+/**
+ * Search services from various possible sources 
+ *
+ * @param zopRegistry the populated registry
+ * @param m the maps pointer to the content of main.cfg file
+ * @param r_inputs the service(s) name(s)
+ * @param func the function used to print the result back
+ * @param doc the xml document or NULL (for json)
+ * @param n the xmlNode of JSON object pointer to the current element
+ * @param conf_dir the directory where the main.cfg has been found
+ * @param request_inputs the map pointer to the request KVP if any
+ * @param funcError the function used to print the error back
+ * @return 0 in case of success, 1 otherwise
+ */
+int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
+				void (func) (registry *, maps *, void*, void*, service *),
+				void* doc, void* n, char *pcDir, map* request_inputs,
+				void (funcError) (maps**, map*) ){
+  map* pmHasSearchPath=getMapFromMaps(m,"main","search_path");
+  // if services namespace is present in the map, conf_dir will
+  // point to the namespace services path else it will point to
+  // the default service path
+  char* pcaConfDir=(char*) malloc(1024*sizeof(char));
+  int res=0;
+  getServicesNamespacePath(m,pcDir,pcaConfDir,1024);
+  if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
+    setMapInMaps(m,"lenv","can_continue","true");
+    res=_fetchServicesForDescription(zooRegistry, m, r_inputs, func, doc,
+					 n, pcaConfDir, request_inputs, funcError);
+    if(res!=0 && strncmp(pcaConfDir,pcDir,strlen(pcDir))!=0){
+      setMapInMaps(m,"lenv","can_continue","false");
+      res=_fetchServicesForDescription(zooRegistry, m, r_inputs, func, doc,
+				       n, pcDir, request_inputs, funcError);
+    }
+  }else{
+    setMapInMaps(m,"lenv","can_continue","false");
+    res=_fetchServicesForDescription(zooRegistry, m, r_inputs, func, doc,
+				     n, pcaConfDir, request_inputs, funcError);
+  }
+  free(pcaConfDir);
+  return res;
 }
 
 #ifdef USE_JSON
@@ -5286,7 +5419,6 @@ runRequest (map ** inputs)
  * @param lenv the lenv map 
  * @param inputs the request parameters map 
  * @return 0 on sucess, other value on failure
- * @see conf_read,recursReaddirF
  */
 int
 runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *msg_obj)
