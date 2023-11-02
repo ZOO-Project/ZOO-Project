@@ -87,7 +87,7 @@ extern "C" {
   static const char* jcapabilities[]={
     "jobControlOptions","sync-execute async-execute dismiss",
     "outputTransmission","value reference",
-    "jobControlOptions","async-execute"
+    "jobControlOptions","async-execute dismiss"
   };
 
   /**

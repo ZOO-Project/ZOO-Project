@@ -925,14 +925,19 @@ extern "C" {
 	json_object_object_add(res,"title",json_object_new_string(_ss(tmpMap->value)));
       }
       addDescription(serv->content,0,res,NULL);
-      tmpMap=getMap(serv->content,"mutable");
-      if(tmpMap==NULL)
+      map* pmMutable=getMap(serv->content,"mutable");
+      int limit=4;
+      int iCnt=0;
+      if(pmMutable==NULL)
 	json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
       else{
-	if(strcmp(tmpMap->value,"false")==0)
+	if(strcmp(pmMutable->value,"false")==0)
 	  json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
-	else
+	else {
+	  i=2;
+	  limit=6;
 	  json_object_object_add(res,"mutable",json_object_new_boolean(TRUE));
+	}
       }
       tmpMap=getMap(serv->content,"processVersion");
       if(tmpMap!=NULL){
@@ -946,8 +951,6 @@ extern "C" {
 	  json_object_object_add(res,"version",json_object_new_string(tmpMap->value));
       }else
 	json_object_object_add(res,"version",json_object_new_string("1.0.0"));
-      int limit=4;
-      int i=0;
       if(serv->metadata!=NULL){
 	printJMetadata(m,serv->metadata,res);
       }
@@ -955,22 +958,17 @@ extern "C" {
 	printJAdditionalParameters(m,serv->additional_parameters,res);
       }
       map* sType=getMap(serv->content,"serviceType");
-      map* pmMutable=getMap(serv->content,"mutable");
-      if(pmMutable!=NULL && strncasecmp(pmMutable->value,"true",4)==0){
-	i=2;
-	limit=6;
-      }
-      for(;i<limit;i+=2){
+      for(;iCnt<limit;iCnt+=2){
 	json_object *res2=json_object_new_array();
 	char *saveptr;
-	char* dupStr=strdup(jcapabilities[i+1]);
+	char* dupStr=strdup(jcapabilities[iCnt+1]);
 	char *tmps = strtok_r (dupStr, " ", &saveptr);
 	while(tmps!=NULL){
 	  json_object_array_add(res2,json_object_new_string(tmps));
 	  tmps = strtok_r (NULL, " ", &saveptr);
 	}
 	free(dupStr);
-	json_object_object_add(res,jcapabilities[i],res2);
+	json_object_object_add(res,jcapabilities[iCnt],res2);
       }
       json_object *res1=json_object_new_array();
       json_object *res2=json_object_new_object();
@@ -1151,7 +1149,7 @@ extern "C" {
       setMapInMaps(*pmsConf,"lenv","jsonStr",jsonStr);
     if(pmHasprinted==NULL || strncasecmp(pmHasprinted->value,"false",5)==0){
       printf(jsonStr);
-      if(pmsConf!=NULL){
+      if(*pmsConf!=NULL){
 	setMapInMaps(*pmsConf,"lenv","hasPrinted","true");
 	setMapInMaps(*pmsConf,"lenv","hasExceptionPrinted","true");
       }
@@ -3194,6 +3192,32 @@ extern "C" {
     produceApiSecuritySchemes(conf,res1);
     json_object_object_add(res,"components",res1);
   }
+
+  /**
+   * Generate an unique operationId attribute for a given endpoints
+   *
+   * @param pmsConf maps pointing to the main confif maps
+   * @param pmsContent the maps containing endpoint's metadata information
+   * @param iIndex the index for map array, 0 otherwise
+   * @param pjoRes the json object to store the operationId attribute
+   */
+  void produceOperationId(maps* pmsConf,maps* pmsContent,int iIndex,json_object* pjoRes){
+    map* pmMethod=getMapArray(pmsContent->content,"method",iIndex);
+    if(pmMethod!=NULL){
+      char *pcaOperationId =
+	(char*) malloc((strlen(pmsContent->name)+
+			strlen(pmMethod->value)+
+			2)*sizeof(char));
+      char* pcaTmp=zStrdup(pmsContent->name);
+      _translateChar(pcaTmp,'/','_');
+      _translateChar(pcaTmp,'{','_');
+      _translateChar(pcaTmp,'}','_');
+      sprintf(pcaOperationId,"%s_%s",pmMethod->value,pcaTmp);
+      json_object_object_add(pjoRes,"operationId",json_object_new_string(pcaOperationId));
+      free(pcaTmp);
+      free(pcaOperationId);
+    }
+  }
   
   /**
    * Produce the JSON object for /api
@@ -3228,16 +3252,26 @@ extern "C" {
       json_object_object_add(res,"openapi",json_object_new_string("3.0.2"));
 
     tmpMap=getMapFromMaps(conf,"openapi","tags");
+    maps* pmsTmp=getMaps(conf,"tags");
     if(tmpMap!=NULL){
       json_object *res5=json_object_new_array();
       char *saveptr;
       char *tmps = strtok_r (tmpMap->value, ",", &saveptr);
+      int iCnt=0;
       while(tmps!=NULL){
 	json_object *res6=json_object_new_object();
 	json_object_object_add(res6,"name",json_object_new_string(tmps));
-	json_object_object_add(res6,"description",json_object_new_string(tmps));
+	if(pmsTmp!=NULL){
+	  map* pmDesc=getMapArray(pmsTmp->content,"value",iCnt);
+	  if(pmDesc!=NULL)
+	    json_object_object_add(res6,"description",json_object_new_string(pmDesc->value));
+	  else
+	    json_object_object_add(res6,"description",json_object_new_string(tmps));
+	}else
+	  json_object_object_add(res6,"description",json_object_new_string(tmps));
 	json_object_array_add(res5,res6);
 	tmps = strtok_r (NULL, ",", &saveptr);
+	iCnt++;
       }
       json_object_object_add(res,"tags",res5);
     }
@@ -3296,7 +3330,7 @@ extern "C" {
 		free(pcaOperationId);
 	      }
 	      else
-		json_object_object_add(methodc,"operationId",json_object_new_string(vMap->value));
+		produceOperationId(conf,tmpMaps,i,methodc);
 	    }
 	    json_object *responses=json_object_new_object();
 	    json_object *cc3=json_object_new_object();
@@ -3497,12 +3531,12 @@ extern "C" {
 		  map* pmTmp2=getMap(tmpMaps1->content,"length");
 		  int iLen=atoi(pmTmp2->value);
 		  json_object *pajRes=json_object_new_object();
-		  for(int i=0;i<iLen;i++){
-		    map* pmState=getMapArray(tmpMaps1->content,"state",i);
-		    map* pmUri=getMapArray(tmpMaps1->content,"uri",i);
-		    map* pmSchema=getMapArray(tmpMaps1->content,"schema",i);
-		    map* pmType=getMapArray(tmpMaps1->content,"type",i);
-		    map* pmTitle=getMapArray(tmpMaps1->content,"title",i);
+		  for(int i/*iCallbackCnt*/=0;i<iLen;i/*iCallbackCnt*/++){
+		    map* pmState=getMapArray(tmpMaps1->content,"state",i/*iCallbackCnt*/);
+		    map* pmUri=getMapArray(tmpMaps1->content,"uri",i/*iCallbackCnt*/);
+		    map* pmSchema=getMapArray(tmpMaps1->content,"schema",i/*iCallbackCnt*/);
+		    map* pmType=getMapArray(tmpMaps1->content,"type",i/*iCallbackCnt*/);
+		    map* pmTitle=getMapArray(tmpMaps1->content,"title",i/*iCallbackCnt*/);
 		    json_object *pajSchema=json_object_new_object();
 		    if(pmSchema!=NULL)
 		      json_object_object_add(pajSchema,"$ref",json_object_new_string(pmSchema->value));
@@ -3528,7 +3562,7 @@ extern "C" {
 		    json_object_object_add(pajPost,"requestBody",pajRBody);
 		    json_object_object_add(pajPost,"responses",pajResponse);
 		    if(pmName==NULL)
-		      pmName=getMapArray(tmpMaps->content,"operationId",i);
+		      pmName=getMapArray(tmpMaps->content,"operationId",i/*iCallbackCnt*/);
 		    if(pmName!=NULL){
 		      char* pcaOperationId=(char*)malloc((strlen(pmState->value)+strlen(pmName->value)+1)*sizeof(char));
 		      sprintf(pcaOperationId,"%s%s",pmState->value,pmName->value);
@@ -3536,7 +3570,7 @@ extern "C" {
 		      free(pcaOperationId);
 		    }
 		    else
-		      json_object_object_add(pajPost,"operationId",json_object_new_string(pmState->value));
+		      produceOperationId(conf,tmpMaps1,i/*iCallbackCnt*/,pajPost);
 		  
 		    json_object *pajMethod=json_object_new_object();
 		    json_object_object_add(pajMethod,"post",pajPost);

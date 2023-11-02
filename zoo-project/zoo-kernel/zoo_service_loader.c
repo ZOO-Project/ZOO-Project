@@ -739,8 +739,10 @@ recursReaddirF ( maps * pmsConf, registry *r, void* doc1, void* n1, char *conf_d
 
 /**
  * When th zcfg file is not found, print error message and cleanup memory
+ * Note this function does free the *ppmsConf memory.
+ *
  * @param zooRegistry the populated registry
- * @param m the maps pointer to the content of main.cfg file
+ * @param ppmsConf the maps pointer address to the content of main.cfg file
  * @param zcfg the zcfg file name
  * @param code the string determining the nature of the error
  * @param locator the string determining which parameter the error refer to
@@ -748,10 +750,11 @@ recursReaddirF ( maps * pmsConf, registry *r, void* doc1, void* n1, char *conf_d
  * @param corig the current service name (in case multiple services was parsed)
  * @param funcError the function used to print the error back
  */
-void exitAndCleanUp(registry* zooRegistry, maps* m,
+void exitAndCleanUp(registry* zooRegistry, maps** ppmsConf,
 		    const char* zcfg,const char* code,const char* locator,
 		    char* orig,char* corig,
 		    void (funcError) (maps**, map*)){
+  maps* m=*ppmsConf;
   map *tmp00 = getMapFromMaps (m, "lenv", "message");
   char tmp01[1024];
   if (tmp00 != NULL)
@@ -783,6 +786,8 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
   zooXmlCleanupNs ();
   freeMap(&errormap);
   free(errormap);
+  freeMaps(&m);
+  free(m);
 }
 
 
@@ -798,7 +803,7 @@ void exitAndCleanUp(registry* zooRegistry, maps* m,
  * @param funcError the error function to be used in case of error
  */
 int _fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
-  char tmps1[1024];
+  char* tmps1=(char*)malloc(1024*sizeof(char));
   map *r_inputs=NULL;
   service* s1=*spService;
   map* pmExecutionType=getMapFromMaps(m,"main","executionType");
@@ -881,6 +886,7 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
 	funcError(&m,error);
 	freeMap(&error);
 	free(error);
+	free(tmps1);
 	return 1; /*errorException (&m, _("Unable to allocate memory"),
 		    "InternalError", NULL);*/
       }
@@ -928,16 +934,19 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
 	  free (*spService);
 	  freeMap(&error);
 	  free(error);
+	  free(tmps1);
 	  //freeMaps (&m);
 	  //free (m);
 	  return 1;
 	}
 	free (*spService);
+	free(tmps1);
 	return 1;
       }
 #ifdef META_DB
   }
 #endif
+  free(tmps1);
   return 0;
 }
 
@@ -990,12 +999,14 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
  * @param request_inputs the map pointer to the request KVP if any
  * @param funcError the function used to print the error back
  * @return 0 in case of success, 1 otherwise
+ * @see exitAndCleanUp
  */
-int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
+int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_inputs,
 				void (func) (registry *, maps *, void*, void*, service *),
 				void* doc, void* n, char *conf_dir, map* request_inputs,
 				void (funcError) (maps**, map*) ){
   char *orig = zStrdup (r_inputs);
+  maps* m=*pmsConf;
   service* s1=NULL;
   int saved_stdout = zDup (fileno (stdout));
   int t;
@@ -1077,7 +1088,7 @@ int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 		    close_sql(m,metadb_id-1);
 #endif
 		    if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
-		      exitAndCleanUp(zooRegistry, m,
+		      exitAndCleanUp(zooRegistry, &m,
 				     tmps,"InvalidParameterValue","identifier",
 				     orig,corig,
 				     funcError);
@@ -1122,7 +1133,7 @@ int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 		  (pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0))
 		{
 		  zDup2 (saved_stdout, fileno (stdout));
-		  exitAndCleanUp(zooRegistry, m,
+		  exitAndCleanUp(zooRegistry, &m,
 				 tmps,"InvalidParameterValue","identifier",
 				 orig,corig,
 				 funcError);
@@ -1216,7 +1227,7 @@ int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 			    zDup2 (saved_stdout, fileno (stdout));
 			    zClose(saved_stdout);
 			    if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
-			      exitAndCleanUp(zooRegistry, m,
+			      exitAndCleanUp(zooRegistry, &m,
 					     buff,"InternalError","NULL",
 					     orig,corig,
 					     funcError);
@@ -1250,7 +1261,7 @@ int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
 	      zDup2 (saved_stdout, fileno (stdout));
 	      zClose(saved_stdout);
 	      if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
-		exitAndCleanUp(zooRegistry, m,
+		exitAndCleanUp(zooRegistry, &m,
 			       buff,"InvalidParameterValue","Identifier",
 			       orig,corig,
 			       funcError);
@@ -1289,10 +1300,11 @@ int _fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
  * @param funcError the function used to print the error back
  * @return 0 in case of success, 1 otherwise
  */
-int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
+int fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_inputs,
 				void (func) (registry *, maps *, void*, void*, service *),
 				void* doc, void* n, char *pcDir, map* request_inputs,
 				void (funcError) (maps**, map*) ){
+  maps* m=*pmsConf;
   map* pmHasSearchPath=getMapFromMaps(m,"main","search_path");
   // if services namespace is present in the map, conf_dir will
   // point to the namespace services path else it will point to
@@ -1302,16 +1314,16 @@ int fetchServicesForDescription(registry* zooRegistry, maps* m, char* r_inputs,
   getServicesNamespacePath(m,pcDir,pcaConfDir,1024);
   if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
     setMapInMaps(m,"lenv","can_continue","true");
-    res=_fetchServicesForDescription(zooRegistry, m, r_inputs, func, doc,
+    res=_fetchServicesForDescription(zooRegistry, &m, r_inputs, func, doc,
 					 n, pcaConfDir, request_inputs, funcError);
     if(res!=0 && strncmp(pcaConfDir,pcDir,strlen(pcDir))!=0){
       setMapInMaps(m,"lenv","can_continue","false");
-      res=_fetchServicesForDescription(zooRegistry, m, r_inputs, func, doc,
+      res=_fetchServicesForDescription(zooRegistry, &m, r_inputs, func, doc,
 				       n, pcDir, request_inputs, funcError);
     }
   }else{
     setMapInMaps(m,"lenv","can_continue","false");
-    res=_fetchServicesForDescription(zooRegistry, m, r_inputs, func, doc,
+    res=_fetchServicesForDescription(zooRegistry, &m, r_inputs, func, doc,
 				     n, pcaConfDir, request_inputs, funcError);
   }
   free(pcaConfDir);
@@ -2985,7 +2997,7 @@ runRequest (map ** inputs)
 	    json_object *res3=json_object_new_object();
 	    json_object *res4=json_object_new_array();
 	    //int saved_stdout = zDup (fileno (stdout));
-	    int t=fetchServicesForDescription(NULL, m, pmToDeploy->value,
+	    int t=fetchServicesForDescription(NULL, &m, pmToDeploy->value,
 					      printGetCapabilitiesForProcessJ,
 					      (void*) res4, (void*) res3, ntmp,
 					      request_inputs,
@@ -3203,10 +3215,10 @@ runRequest (map ** inputs)
       if(strstr(pcaCgiQueryString,".html")==NULL)
 	produceApi(m,res);
       else{
-	char* pacTmp=(char*)malloc(9*sizeof(char));
-	sprintf(pacTmp,"%s",pcaCgiQueryString+1);
-	map* pmTmp=getMapFromMaps(m,pacTmp,"href");
-	free(pacTmp);
+	char* pcaTmp=(char*)malloc(9*sizeof(char));
+	sprintf(pcaTmp,"%s",pcaCgiQueryString+1);
+	map* pmTmp=getMapFromMaps(m,pcaTmp,"href");
+	free(pcaTmp);
 	if(pmTmp!=NULL)
 	  setMapInMaps(m,"headers","Location",pmTmp->value);
       }
@@ -4271,7 +4283,7 @@ runRequest (map ** inputs)
 		setMapInMaps(m,"lenv","oIdentifier",pmDeployed->value);
 		json_object *res3=json_object_new_object();
 		json_object *res4=json_object_new_array();
-		int t=fetchServicesForDescription(NULL, m, pmDeployed->value,
+		int t=fetchServicesForDescription(NULL, &m, pmDeployed->value,
 						  printGetCapabilitiesForProcessJ,
 						  (void*) res4, (void*) res3, ntmp,
 						  request_inputs,
@@ -4371,19 +4383,14 @@ runRequest (map ** inputs)
 	  if(orig[strlen(orig)-1]=='/')
 	    orig[strlen(orig)-1]=0;
 	  setMapInMaps(m,"lenv","requestType","GetCapabilities");
-	  int t=fetchServicesForDescription(NULL, m, orig,
+	  int t=fetchServicesForDescription(NULL, &m, orig,
 					    printGetCapabilitiesForProcessJ,
 					    NULL, (void*) res3, ntmp,
 					    request_inputs,
 					    localPrintExceptionJ);
 	  if(t==1){
-	    /*map* error=createMap("code","BadRequest");
-	      addToMap(error,"message",_("Failed to acces the requested service"));
-	      printExceptionReportResponseJ(m,error);*/
 	    json_object_put(res);
 	    json_object_put(res3);
-	    freeMaps(&m);
-	    free(m);
 	    free(orig);
 	    free(pcaCgiQueryString);
 	    return 1;
@@ -4777,7 +4784,7 @@ runRequest (map ** inputs)
 
 	      r_inputs = getMap (request_inputs, "Identifier");
 
-	      int t=fetchServicesForDescription(zooRegistry, m, r_inputs->value,
+	      int t=fetchServicesForDescription(zooRegistry, &m, r_inputs->value,
 					  printDescribeProcessForProcess,
 					  (void*) doc, (void*) n, conf_dir,
 					  request_inputs,printExceptionReportResponse);

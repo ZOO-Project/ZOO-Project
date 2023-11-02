@@ -568,6 +568,7 @@ extern "C" {
   ZOO_DLL_EXPORT char* allocateMapValue(map* node, size_t num_bytes);
   
   ZOO_DLL_EXPORT char* getValueFromMaps(maps*,const char*);
+  ZOO_DLL_EXPORT void _translateChar (char*, char, char);
 #ifdef __cplusplus
 }
 #endif

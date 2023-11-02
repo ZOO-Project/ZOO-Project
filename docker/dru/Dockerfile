@@ -127,6 +127,7 @@ RUN cd ./zoo-project/zoo-kernel \
      && cp -r zoo-project/zoo-services/utils/open-api/static /var/www/html/ \
      && cp zoo-project/zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
      && cp zoo-project/zoo-services/utils/security/dru/* /usr/lib/cgi-bin/ \
+     && rm /usr/lib/cgi-bin/securityInFailed.zcfg \
      && mkdir /usr/lib/cgi-bin/jwts \
      && cp zoo-project/zoo-services/utils/security/jwt/cgi-env/security_service.py /usr/lib/cgi-bin/jwts/ \
      && ln -s /tmp/zTmp /var/www/html/temp \

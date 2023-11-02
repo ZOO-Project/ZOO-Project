@@ -296,8 +296,10 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   pModule = PyImport_Import(pName);
   Py_DECREF(pName);
   int res=SERVICE_FAILED;
+  char* pcaServiceName=zStrdup(s->name);
+  _translateChar(pcaServiceName,'-','_');
   if (pModule != NULL) {
-    pFunc=PyObject_GetAttrString(pModule,s->name);
+    pFunc=PyObject_GetAttrString(pModule,pcaServiceName);
     if (pFunc && PyCallable_Check(pFunc)){
       PyObject *pValue;
       PyDictObject* arg1=PyDict_FromMaps(m);
@@ -342,6 +344,7 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
     PythonZooReport(main_conf,tmp->value,1);
     res=-1;
   }
+  free(pcaServiceName);
 #if PY_MAJOR_VERSION < 3
   PyGILState_Release(gstate);
   PyEval_AcquireLock();
