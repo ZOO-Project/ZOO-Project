@@ -934,7 +934,7 @@ extern "C" {
 	if(strcmp(pmMutable->value,"false")==0)
 	  json_object_object_add(res,"mutable",json_object_new_boolean(FALSE));
 	else {
-	  i=2;
+	  iCnt=2;
 	  limit=6;
 	  json_object_object_add(res,"mutable",json_object_new_boolean(TRUE));
 	}
