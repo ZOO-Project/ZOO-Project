@@ -2445,6 +2445,7 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
 }
 #endif
 
+
 /**
  * Process the request.
  *
@@ -5420,6 +5421,32 @@ runRequest (map ** inputs)
 
 #ifdef USE_AMQP
 /**
+ * Parse any section from the message sent to the ZOO-FPM at execution time
+ *
+ * @param pmsConf the maps pointer to the main configuration file
+ * @param pcName the name of the section to be added to the message (renamed 
+ * as "main_"+you_section_name within the message)
+ * @param msg_obj the json object to update
+ */
+void* addSectionFromMessage(maps** pmsConf,char* pcName,json_object* msg_obj){
+  maps* lconf=*pmsConf;
+  json_object* joValues;
+  char* pcaKey=(char*)malloc(strlen(pcName)+6);
+  sprintf(pcaKey,"main_%s",pcName);
+  if(json_object_object_get_ex(msg_obj,pcaKey,&joValues)!=FALSE){
+    map* pmaTmp=jsonToMap(joValues);
+    if(pmaTmp!=NULL){
+      maps* pmsaTmp=createMaps(pcName);
+      pmsaTmp->content=pmaTmp;
+      addMapsToMaps(&lconf,pmsaTmp);
+      freeMaps(&pmsaTmp);
+      free(pmsaTmp);
+    }
+  }
+  free(pcaKey);
+}
+
+/**
  * Process the request asyncrhonously.
  *
  * @param conf the main configuration maps 
@@ -5530,14 +5557,14 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 		free(pmsaTmp);
 	      }
 	    }
-	    map* pmListSections=getMapFromMaps(pmsConf,"main","list_sections");
+	    map* pmListSections=getMapFromMaps(lconf,"main","list_sections");
 	    if(pmListSections!=NULL) {
 	      char* pcaListSections=zStrdup(pmListSections->value);
 	      char *saveptr;
 	      char *tmps = strtok_r (pcaListSections, ",", &saveptr);
 	      while(tmps!=NULL){
 		ZOO_DEBUG(tmps);
-		add_to_message(&lonf,tmps)
+		addSectionFromMessage(&lconf,tmps,msg_obj);
 		tmps = strtok_r (NULL, ",", &saveptr);
 	      }
 	      free(pcaListSections);
@@ -5950,23 +5977,5 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
   setMapInMaps(conf,"lenv","ds_nb","-1");
   end_sql();
   return 0;
-}
-
-void add_to_message(maps** pmsConf,char* pcName){
-  map* lconf=*pmsConf;
-  json_object* joValues;
-  char* pcaKey=(char*)malloc(strlen(pcName)+6);
-  sprintf(pcaKey,"main_%s",pcName);
-  if(json_object_object_get_ex(msg_obj,pcaKey,&joValues)!=FALSE){
-    map* pmTmp=jsonToMap(req_subscribers);
-    if(pmTmp!=NULL){
-      maps* pmsaTmp=createMaps(pcName);
-      pmsaTmp->content=pmSubscribers;
-      addMapsToMaps(&lconf,pmsaTmp);
-      freeMaps(&pmsaTmp);
-      free(pmsaTmp);
-    }
-  }
-  free(pcaKey);
 }
 #endif
