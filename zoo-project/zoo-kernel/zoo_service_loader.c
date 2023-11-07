@@ -5530,6 +5530,19 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 		free(pmsaTmp);
 	      }
 	    }
+	    map* pmListSections=getMapFromMaps(pmsConf,"main","list_sections");
+	    if(pmListSections!=NULL) {
+	      char* pcaListSections=zStrdup(pmListSections->value);
+	      char *saveptr;
+	      char *tmps = strtok_r (pcaListSections, ",", &saveptr);
+	      while(tmps!=NULL){
+		ZOO_DEBUG(tmps);
+		add_to_message(&lonf,tmps)
+		tmps = strtok_r (NULL, ",", &saveptr);
+	      }
+	      free(pcaListSections);
+	    }
+
 	    pmsTmp=getMaps(lconf,"lenv");
 #ifdef USE_CALLBACK
 	    invokeCallback(lconf,NULL,NULL,0,0);
@@ -5937,5 +5950,23 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
   setMapInMaps(conf,"lenv","ds_nb","-1");
   end_sql();
   return 0;
+}
+
+void add_to_message(maps** pmsConf,char* pcName){
+  map* lconf=*pmsConf;
+  json_object* joValues;
+  char* pcaKey=(char*)malloc(strlen(pcName)+6);
+  sprintf(pcaKey,"main_%s",pcName);
+  if(json_object_object_get_ex(msg_obj,pcaKey,&joValues)!=FALSE){
+    map* pmTmp=jsonToMap(req_subscribers);
+    if(pmTmp!=NULL){
+      maps* pmsaTmp=createMaps(pcName);
+      pmsaTmp->content=pmSubscribers;
+      addMapsToMaps(&lconf,pmsaTmp);
+      freeMaps(&pmsaTmp);
+      free(pmsaTmp);
+    }
+  }
+  free(pcaKey);
 }
 #endif

@@ -374,6 +374,25 @@ void publish_amqp_msg(maps* pmsConf,int* eres,map* pmRequest,maps* pmsInputs,map
     json_object_object_add(poMsg,"main_http_requests",poRequests);
   }
 
+  map* pmListSections=getMapFromMaps(pmsConf,"main","list_sections");
+  if(pmListSections!=NULL) {
+    char* pcaListSections=zStrdup(pmListSections->value);
+    char *saveptr;
+    char *tmps = strtok_r (pcaListSections, ",", &saveptr);
+    while(tmps!=NULL){
+      ZOO_DEBUG(tmps);
+      maps* pmsTmp=getMaps(pmsConf,tmps);
+      if(pmsTmp!=NULL){
+	json_object *poRequests = mapToJson(pmsTmp->content);
+	char* pcaKey=(char*)malloc((strlen(tmps)+6)*sizeof(char));
+	sprintf(pcaKey,"main_%s",tmps);
+	json_object_object_add(poMsg,pcaKey,poRequests);
+      }
+      tmps = strtok_r (NULL, ",", &saveptr);
+    }
+    free(pcaListSections);
+  }
+
   json_object *req_format_jobj = mapsToJson(pmsInputs);
   json_object_object_add(poMsg,"request_input_real_format",req_format_jobj);
 
