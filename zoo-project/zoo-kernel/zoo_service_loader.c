@@ -624,22 +624,23 @@ _recursReaddirF ( maps * m, registry *r, void* doc1, void* n1, char *conf_dir,
 			 tmps1);
 #endif
 		t = readServiceFile (m, tmps1, &s1, tmpsn);
-		if ( t < 0 &&
-		     (pmContinue!=NULL && strncasecmp(pmContinue->value,"false",4)==0) )
+		if ( t < 0 )
 		  {
-		    map *tmp00 = getMapFromMaps (m, "lenv", "message");
-		    char tmp01[1024];
-		    if (tmp00 != NULL)
-		      sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-			       dp->d_name, tmp00->value);
-		    else
-		      sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
-			       dp->d_name);
 		    fflush(stderr);
 		    fflush(stdout);
 		    zDup2 (saved_stdout, fileno (stdout));
 		    zClose(saved_stdout);
-		    errorException (&m, tmp01, "InternalError", NULL);
+		    if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",4)==0){
+		      map *tmp00 = getMapFromMaps (m, "lenv", "message");
+		      char tmp01[1024];
+		      if (tmp00 != NULL)
+			sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+				 dp->d_name, tmp00->value);
+		      else
+			sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+				 dp->d_name);
+		      errorException (&m, tmp01, "InternalError", NULL);
+		    }
 		    freeService (&s1);
 		    free (s1);
 		    free (tmpsn);
@@ -724,6 +725,7 @@ recursReaddirF ( maps * pmsConf, registry *r, void* doc1, void* n1, char *conf_d
     int res=_recursReaddirF(pmsConf, r, doc1, n1, conf_dir_,prefix, saved_stdout,
 			    level,func);
     if(strncmp(conf_dir,conf_dir_,strlen(conf_dir))!=0){
+
       setMapInMaps(pmsConf,"lenv","can_continue","false");
       res=_recursReaddirF(pmsConf, r, doc1, n1, conf_dir,prefix, saved_stdout,
 			  level,func);
@@ -815,9 +817,6 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
     setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
   } 
   else {
-    /*char conf_dir2[1024];
-    memset(conf_dir2,0,1024);
-    getServicesNamespacePath(m,ntmp,conf_dir2,1024);*/
 
     snprintf (tmps1, 1024, "%s/%s.zcfg", pcDir, cIdentifier);
 #ifdef DEBUG
@@ -1013,8 +1012,6 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
   int scount = 0;
   struct dirent *dp;
   map* pmContinue=getMapFromMaps(m,"lenv","can_continue");
-  /*char conf_dir[1024];
-    getServicesNamespacePath(m,conf_dir_,conf_dir,1024);*/
 
 
   zDup2 (fileno (stderr), fileno (stdout));  
@@ -1129,14 +1126,14 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
 	      */
 	      s1 = createService();
 	      t = readServiceFile (m, buff1, &s1, tmpMapI->value);
-	      if (t < 0 &&
-		  (pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0))
+	      if (t < 0)
 		{
 		  zDup2 (saved_stdout, fileno (stdout));
-		  exitAndCleanUp(zooRegistry, &m,
-				 tmps,"InvalidParameterValue","identifier",
-				 orig,corig,
-				 funcError);
+		  if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
+		    exitAndCleanUp(zooRegistry, &m,
+				   tmps,"InvalidParameterValue","identifier",
+				   orig,corig,
+				   funcError);
 		  if(dirp!=NULL)
 		    closedir (dirp);
 		  return 1;
@@ -5421,32 +5418,6 @@ runRequest (map ** inputs)
 
 #ifdef USE_AMQP
 /**
- * Parse any section from the message sent to the ZOO-FPM at execution time
- *
- * @param pmsConf the maps pointer to the main configuration file
- * @param pcName the name of the section to be added to the message (renamed 
- * as "main_"+you_section_name within the message)
- * @param msg_obj the json object to update
- */
-void* addSectionFromMessage(maps** pmsConf,char* pcName,json_object* msg_obj){
-  maps* lconf=*pmsConf;
-  json_object* joValues;
-  char* pcaKey=(char*)malloc(strlen(pcName)+6);
-  sprintf(pcaKey,"main_%s",pcName);
-  if(json_object_object_get_ex(msg_obj,pcaKey,&joValues)!=FALSE){
-    map* pmaTmp=jsonToMap(joValues);
-    if(pmaTmp!=NULL){
-      maps* pmsaTmp=createMaps(pcName);
-      pmsaTmp->content=pmaTmp;
-      addMapsToMaps(&lconf,pmsaTmp);
-      freeMaps(&pmsaTmp);
-      free(pmsaTmp);
-    }
-  }
-  free(pcaKey);
-}
-
-/**
  * Process the request asyncrhonously.
  *
  * @param conf the main configuration maps 
@@ -5512,7 +5483,6 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    setMapInMaps(lconf,"lenv","metapath","");
 	    maps* pmsTmp=getMaps(lconf,"lenv");
 
-	    dumpMap(*lenv);
 	    // Define auth_env section in case we find fpm_user in the lenv
 	    // map coming from the message received
 	    map* pmUserEnv=getMap(*lenv,"fpm_user");
@@ -5557,15 +5527,27 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 		free(pmsaTmp);
 	      }
 	    }
-	    map* pmListSections=getMapFromMaps(lconf,"main","list_sections");
+	    map* pmListSections=getMapFromMaps(lconf,"servicesNamespace","sections_list");
 	    if(pmListSections!=NULL) {
 	      char* pcaListSections=zStrdup(pmListSections->value);
-	      char *saveptr;
-	      char *tmps = strtok_r (pcaListSections, ",", &saveptr);
-	      while(tmps!=NULL){
-		ZOO_DEBUG(tmps);
-		addSectionFromMessage(&lconf,tmps,msg_obj);
-		tmps = strtok_r (NULL, ",", &saveptr);
+	      char *pcPtr;
+	      char *pcCurrent = strtok_r (pcaListSections, ",", &pcPtr);
+	      while(pcCurrent!=NULL){
+		json_object* pjoValues;
+		char* pcaKey=(char*)malloc(strlen(pcCurrent)+6);
+		sprintf(pcaKey,"main_%s",pcCurrent);
+		if(json_object_object_get_ex(msg_obj,pcaKey,&pjoValues)!=FALSE){
+		  map* pmaTmp=jsonToMap(pjoValues);
+		  if(pmaTmp!=NULL){
+		    maps* pmsaTmp=createMaps(pcCurrent);
+		    pmsaTmp->content=pmaTmp;
+		    addMapsToMaps(&lconf,pmsaTmp);
+		    freeMaps(&pmsaTmp);
+		    free(pmsaTmp);
+		  }
+		}
+		free(pcaKey);
+		pcCurrent = strtok_r (NULL, ",", &pcPtr);
 	      }
 	      free(pcaListSections);
 	    }

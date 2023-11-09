@@ -374,7 +374,7 @@ void publish_amqp_msg(maps* pmsConf,int* eres,map* pmRequest,maps* pmsInputs,map
     json_object_object_add(poMsg,"main_http_requests",poRequests);
   }
 
-  map* pmListSections=getMapFromMaps(pmsConf,"main","list_sections");
+  map* pmListSections=getMapFromMaps(pmsConf,"servicesNamespace","sections_list");
   if(pmListSections!=NULL) {
     char* pcaListSections=zStrdup(pmListSections->value);
     char *saveptr;
