@@ -47,6 +47,7 @@ def openeoFilterIn(conf,inputs,outputs):
         if "jrequest" in conf["request"]:
             import json
             jObj=json.loads(conf["request"]["jrequest"])
+            print("OK STARTUP",file=sys.stderr)
             ret=writeZcfgFromProcessDescription(conf,jObj)
             if ret==zoo.SERVICE_FAILED:
                 print("ERROR OpenEO 2",file=sys.stderr)
@@ -117,10 +118,10 @@ def writeZcfgFromProcessDescription(conf,obj):
     zcfgFile.write(" mutable = true\n")
     if "additionalParameters" in processDescription:
         zcfgFile.write(" <AdditionalParameters>\n")
-        for c in range(len(processDescription["additionalParameters"])):
-            zcfgFile.write("  "+processDescription["additionalParameters"][c]["name"] + \
+        for c in range(len(processDescription["additionalParameters"]["parameters"])):
+            zcfgFile.write("  "+processDescription["additionalParameters"]["parameters"][c]["name"] + \
                                " = "+ \
-                               processDescription["additionalParameters"][c]["value"] \
+                               str(processDescription["additionalParameters"]["parameters"][c]["value"][0]) \
                                +"\n")
         zcfgFile.write(" </AdditionalParameters>\n")
     zcfgFile.write(" <DataInputs>\n")
@@ -154,10 +155,10 @@ def writeZcfgOutputs(zcfgFile,outputs):
             zcfgFile.write(" Abstract = Not provided\n")
         if "additionalParameters" in outputs[id]:
             zcfgFile.write(" <AdditionalParameters>\n")
-            for c in range(len(outputs[id]["additionalParameters"])):
-                zcfgFile.write("  "+outputs[id]["additionalParameters"][c]["name"] + \
+            for c in range(len(outputs[id]["additionalParameters"]["parameters"])):
+                zcfgFile.write("  "+outputs[id]["additionalParameters"]["parameters"][c]["name"] + \
                                 " = "+ \
-                                outputs[id]["additionalParameters"][c]["value"] \
+                                outputs[id]["additionalParameters"]["parameters"][c]["value"][0] \
                                 +"\n")
             zcfgFile.write(" </AdditionalParameters>\n")
         writeZcfgDataType(zcfgFile,outputs[id]["schema"])
@@ -190,10 +191,10 @@ def writeZcfgInputs(zcfgFile,inputs):
                 zcfgFile.write("  maxOccurs = "+ str(inputs[id]["maxOccurs"]) +" \n")
         if "additionalParameters" in inputs[id]:
             zcfgFile.write("  <AdditionalParameters>\n")
-            for c in range(len(inputs[id]["additionalParameters"])):
-                zcfgFile.write("   "+inputs[id]["additionalParameters"][c]["name"] + \
+            for c in range(len(inputs[id]["additionalParameters"]["parameters"])):
+                zcfgFile.write("   "+inputs[id]["additionalParameters"]["parameters"][c]["name"] + \
                                 " = "+ \
-                                inputs[id]["additionalParameters"][c]["value"] \
+                                inputs[id]["additionalParameters"]["parameters"][c]["value"][0] \
                                 +"\n")
             zcfgFile.write("  </AdditionalParameters>\n")
         writeZcfgDataType(zcfgFile,inputs[id]["schema"],prefix=1)

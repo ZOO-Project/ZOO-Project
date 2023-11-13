@@ -677,10 +677,12 @@ extern "C" {
 	 strcasecmp(cmeta->name,"title")!=0 &&
 	 strcasecmp(cmeta->name,"length")!=0 ){
 	json_object_object_add(jcmeta,"name",json_object_new_string(cmeta->name));
+	json_object* pjoValueArray=json_object_new_array();
 	if(strcasecmp(cmeta->name,"title")!=0)
-	  json_object_object_add(jcmeta,"value",json_object_new_string(_(cmeta->value)));
+	  json_object_array_add(pjoValueArray,json_object_new_string(_(cmeta->value)));
 	else
-	  json_object_object_add(jcmeta,"value",json_object_new_string(cmeta->value));
+	  json_object_array_add(pjoValueArray,json_object_new_string(cmeta->value));
+	json_object_object_add(jcmeta,"value",pjoValueArray);
 	json_object_array_add(carr,jcmeta);
 	hasElement++;
       }else{
@@ -690,7 +692,7 @@ extern "C" {
       cmeta=cmeta->next;
     }
     if(hasElement>=0){
-      json_object_object_add(jcaps,"additionalParameter",carr);
+      json_object_object_add(jcaps,"parameters",carr);
       json_object_object_add(doc,"additionalParameters",jcaps);
     }else{
       json_object_put(carr);

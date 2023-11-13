@@ -93,10 +93,12 @@ COPY . /opt/ZOO-Project
 WORKDIR /opt/ZOO-Project
 RUN make -C ./thirds/cgic206 libcgic.a
 RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/download/libssh2-1.11.0/libssh2-1.11.0.tar.bz2 -L \
-    && tar -xvf libssh2-1.11.0.tar.bz2 \
+    && tar -xf libssh2-1.11.0.tar.bz2 \
     && cd libssh2-1.11.0 \
-    && autoconf \
-    && ./configure --prefix=/usr \
+    && autoreconf \
+    && ./configure --with-sysroot=/usr/miniconda3/envs/ades-dev \
+       --with-libssl-prefix=/usr/miniconda3/envs/ades-dev \
+       --prefix=/usr \
     && make \
     && make install \
     && cd ../ \
@@ -120,6 +122,8 @@ RUN curl -o libssh2-1.11.0.tar.bz2 https://github.com/libssh2/libssh2/releases/d
      && sed -i "s/-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H/-DPROJ_VERSION_MAJOR=8/g" ./ZOOMakefile.opts \
      && make -j4\
      && make install \
+     && echo "/usr/miniconda3/envs/ades-dev/lib" > /etc/ld.so.conf.d/zoo-project.conf \
+     && ldconfig \
      && cp main.cfg /usr/lib/cgi-bin \
      && cp zoo_loader.cgi /usr/lib/cgi-bin \
      && cp zoo_loader_fpm /usr/lib/cgi-bin \
