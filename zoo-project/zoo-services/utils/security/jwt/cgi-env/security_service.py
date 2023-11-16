@@ -48,7 +48,10 @@ def securityIn(main_conf,inputs,outputs):
             sToken=main_conf["renv"][i].split(' ')[1]
             print(sToken,file=sys.stderr)
             if sToken.count(".")>=2:
-                jsonObj=jwt.decode(main_conf["renv"][i].split(' ')[1], options={"verify_signature": False,"verify_aud": False})
+                cJWT=main_conf["renv"][i].split(' ')[1]
+                if main_conf["renv"][i].count("oidc/"+main_conf["osecurity"]["realm"]+"/")>0:
+                    cJWT=cJWT.replace("oidc/"+main_conf["osecurity"]["realm"]+"/","")
+                jsonObj=jwt.decode(cJWT, options={"verify_signature": False,"verify_aud": False})
                 hasAuth=True
                 myKeys=list(jsonObj.keys())
                 if "preferred_username" in jsonObj.keys():
@@ -66,6 +69,8 @@ def securityIn(main_conf,inputs,outputs):
                     main_conf["auth_env"]["email"]=jsonObj["email"]
                 for l in range(len(myKeys)):
                     main_conf["auth_env"][myKeys[l]]=str(jsonObj[myKeys[l]])
+                main_conf["auth_env"]["jwt"]=cJWT
+                main_conf["lenv"]["json_user"]=json.dumps(jsonObj)
             else:
                 import base64
                 import requests
