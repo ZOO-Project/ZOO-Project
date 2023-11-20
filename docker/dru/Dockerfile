@@ -59,6 +59,7 @@ apt-get install -qqy  --no-install-recommends software-properties-common\
 	autoconf\
 	apache2\
 	subversion\
+	s3cmd \
 	libmozjs185-dev\
 	python3-dev\
 	python3-setuptools\
