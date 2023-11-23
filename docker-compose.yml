@@ -2,7 +2,7 @@ version: '3'
 services:
   zookernel:
     platform: linux/amd64
-    image: djayzen/zookernel:latest
+    image: zooproject/zoo-project:latest
     #build: .
     ports:
       - "80:80"
@@ -30,7 +30,7 @@ services:
       - ZOO_REDIS_HOST=redis
   zoofpm:
     platform: linux/amd64
-    image: djayzen/zookernel:latest
+    image: zooproject/zoo-project:latest
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
@@ -49,7 +49,9 @@ services:
     command: [ "/startUp.sh" ]
   websocketd:
     #platform: linux/amd64
-    build: ./docker/websocketd
+    build:
+      context: .
+      dockerfile: docker/websocketd/Dockerfile
     depends_on:
       - redis
     ports:

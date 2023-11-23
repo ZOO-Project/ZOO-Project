@@ -18,7 +18,7 @@ jobs:
     - name: Cache Docker layers
       uses: actions/cache@v3
       with:
-        path: /tmp/.buildx-osgeolive-cache
+        path: /tmp/.buildx-mdl4eo-cache
         key: ${{ runner.os }}-buildx-mdl4eo-${{ github.sha }}
         restore-keys: ${{ runner.os }}-buildx-mdl4eo-
     - name: docker login
