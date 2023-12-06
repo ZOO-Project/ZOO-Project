@@ -396,44 +396,46 @@ extern "C" {
    * @see WPSExceptionText
    */
   static const char* const WPSExceptionCode[] = {
-	"StatusOK",
-	"MissingParameterValue",
-	"InvalidParameterValue",
-	"NoApplicableCode",
-	"NotEnoughStorage",
-	"ServerBusy",
-	"FileSizeExceeded",
-	"StorageNotSupported",
-	"VersionNegotiationFailed",
-	"NoSuchProcess",
-	"NoSuchMode",
-	"NoSuchInput",
-	"NoSuchOutput",
-	"DataNotAccessible",
-	"SizeExceeded",
-	"TooManyInputs",
-	"TooManyOutputs",
-	"NoSuchFormat",
-	"WrongInputData",
-	"InternalServerError",
-	"NoSuchJob",
-	"ResultNotReady",
-	"InvalidQueryParameterValue",
-	"DuplicatedProcess",
-	"ImmutableProcess"
+    "StatusOK",
+    "MissingParameterValue",
+    "InvalidParameterValue",
+    "NoApplicableCode",
+    "NotEnoughStorage",
+    "ServerBusy",
+    "FileSizeExceeded",
+    "StorageNotSupported",
+    "VersionNegotiationFailed",
+    "NoSuchProcess",
+    "NoSuchMode",
+    "NoSuchInput",
+    "NoSuchOutput",
+    "DataNotAccessible",
+    "SizeExceeded",
+    "TooManyInputs",
+    "TooManyOutputs",
+    "NoSuchFormat",
+    "WrongInputData",
+    "InternalServerError",
+    "NoSuchJob",
+    "ResultNotReady",
+    "InvalidQueryParameterValue",
+    "DuplicatedProcess",
+    "ImmutableProcess",
+    "UnsupportedContentType"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[6][2] = {
+  static const int OAPIPCorrespondances[7][2] = {
     {9,0},
     {20,1},
     {21,2},
     {22,3},
     {23,4},
-    {24,5}
+    {24,5},
+    {25,6}
   };
 
   /**
@@ -441,12 +443,24 @@ extern "C" {
    * @see WPSExceptionCode, OAPIPCorrespondances
    */
   static const char* const OAPIPExceptionCode[] = {
-	"no-such-process",
-	"no-such-job",
-	"result-not-ready",
-	"invalid-query-parameter-value",
-	"duplicated-process",
-	"immutable-process"
+    "no-such-process",
+    "no-such-job",
+    "result-not-ready",
+    "invalid-query-parameter-value",
+    "duplicated-process",
+    "immutable-process",
+    "unsupported-content-type"
+  };
+
+  /**
+   * OGC API - Processes supported Content-Type list
+   */
+  static const char* const OAPIPSupportedContentTypes[] = {
+    "application/json",
+    "application/cwl",
+    "application/cwl+yaml",
+    "application/ogcapppkg+json",
+    NULL
   };
 
   /**

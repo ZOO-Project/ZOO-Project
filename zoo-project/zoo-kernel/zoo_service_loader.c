@@ -2740,6 +2740,7 @@ runRequest (map ** inputs)
     errorException (&m, _("OGC API - Processes is not supported by this ZOO-Kernel, please contact the service provider."), "InternalError", NULL);
     return 1;
 #else
+
 #ifndef USE_GDB
 #ifndef WIN32
     signal (SIGCHLD, SIG_IGN);
@@ -2822,14 +2823,29 @@ runRequest (map ** inputs)
       free (REQUEST);
       map* pmTest=getMap(request_inputs,"shouldFree");
       if(pmTest!=NULL){
-	freeMap (inputs);
-	free (*inputs);
-	*inputs=NULL;
-	freeMap(&r_inputs);
-	free (r_inputs);
-	r_inputs=NULL;
+        freeMap (inputs);
+        free (*inputs);
+        *inputs=NULL;
+        freeMap(&r_inputs);
+        free (r_inputs);
+        r_inputs=NULL;
       }
       free(pcaCgiQueryString);
+      return 1;
+    }
+
+    bool bIsSupported=true;
+    for(int iCnt=0;OAPIPSupportedContentTypes[iCnt]!=NULL;iCnt++){
+      if(strcmp(cgiContentType,OAPIPSupportedContentTypes[iCnt])==0){
+        bIsSupported=true;
+        break;
+      }
+      else
+        bIsSupported=false;
+    }
+    if(!bIsSupported && strlen(cgiContentType)>0){
+      setMapInMaps(m,"headers","Status","415 Unsupported Media Type");
+      errorException (&m, _("The Content-Type specified in the request is not supported by this ZOO-Kernel, please contact the service provider."), "UnsupportedContentType", "Content-Type");
       return 1;
     }
 
@@ -2932,8 +2948,9 @@ runRequest (map ** inputs)
 	  }
 	  fclose(pfRequest);
 	}else{
-	  map* error=createMap("code","NoSuchProcess");
-	  addToMap(error,"message",_("The process is not yet deployed."));
+	  setMapInMaps(m,"headers","Status","403 Forbidden");
+	  map* error=createMap("code","ImmutableProcess");
+	  addToMap(error,"message",_("The process cannot be modified."));
 	  setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
 	  localPrintExceptionJ(&m,error);
 	  //json_object_put(res);
@@ -4371,8 +4388,8 @@ runRequest (map ** inputs)
 #endif
       }//else error
       else
-	if(strstr(pcaCgiQueryString,"/jobs")==NULL && strstr(pcaCgiQueryString,"/jobs/")==NULL
-	   && strstr(pcaCgiQueryString,"/processes/")!=NULL && (strstr(pcaCgiQueryString,"/processes/")+11)!=NULL){
+	if(strstr(pcaCgiQueryString,"/jobs")==NULL && 
+	   (strstr(pcaCgiQueryString,"/processes/")+11)!=NULL){
 	  /* - /processes/{processId}/ */
 	  //DIR *dirp = opendir (ntmp);
 	  json_object *res3=json_object_new_object();
@@ -4389,6 +4406,17 @@ runRequest (map ** inputs)
 	  if(t==1){
 	    json_object_put(res);
 	    json_object_put(res3);
+	    map* pmMessage=getMapFromMaps(m,"lenv","message");
+	    char* pcaTmp01=(char*)malloc((strlen(orig)+strlen(pmMessage->value)+36)*sizeof(char));
+	    sprintf (pcaTmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+	             orig, pmMessage->value);
+	    map* error=createMap("code","InvalidParameterValue");
+	    addToMap(error,"message",pcaTmp01);
+	    setMapInMaps(m,"headers","Status","404 Bad Request");
+	    free(pcaTmp01);
+	    localPrintExceptionJ(&m,error);
+	    freeMap(&error);
+	    free(error);
 	    free(orig);
 	    free(pcaCgiQueryString);
 	    return 1;

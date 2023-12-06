@@ -1055,24 +1055,26 @@ extern "C" {
       json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       int hasType=-1;
-      for(i=0;i<6;i++){
-	if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
-	  map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
-	  // Use OGC API - Processes - Part 2: Deploy, Replace, Undeploy
-	  // exceptions
-	  // cf. /req/deploy-replace-undeploy/deploy/response-duplicate
-	  // cf. /req/deploy-replace-undeploy/deploy/response-immutable
-	  if(i>=4)
-	    pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl_1");
-	  char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
-	  sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
-	  json_object_object_add(res,"type",json_object_new_string(pcaTmp));
-	  free(pcaTmp);
-	  hasType=0;
-	}
+      for(i=0;i<7;i++){
+        if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
+          map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
+          // Use OGC API - Processes - Part 2: Deploy, Replace, Undeploy
+          // exceptions
+          // cf. /req/deploy-replace-undeploy/deploy/response-duplicate
+          // cf. /req/deploy-replace-undeploy/deploy/response-immutable
+          // cf. /req/deploy-replace-undeploy/unsupported-content-type
+          if(i>=4)
+            pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl_1");
+          char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
+          sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
+          json_object_object_add(res,"type",json_object_new_string(pcaTmp));
+          free(pcaTmp);
+          hasType=0;
+          break;
+        }
       }
       if(hasType<0){
-	json_object_object_add(res,"type",json_object_new_string(pmTmp->value));
+        json_object_object_add(res,"type",json_object_new_string(pmTmp->value));
       }
     }
     else{

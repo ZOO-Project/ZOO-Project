@@ -30,6 +30,9 @@ import osgeo.ogr as ogr
 
 def echo(conf,inputs,outputs):
     print(inputs,file=sys.stderr)
+    if inputs["a"]["inRequest"]=="false" and inputs["a"]["inRequest"]=="false" and inputs["a"]["inRequest"]=="false" :
+        conf["lenv"]["message"]="Unable to handle your request"
+        return zoo.SERVICE_FAILED
     if "a" in inputs:
         if "cache_file" in inputs["a"]:
             inputs["a"]["value"]=open(inputs["a"]["cache_file"],"r").read()
