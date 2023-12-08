@@ -2845,7 +2845,7 @@ runRequest (map ** inputs)
     }
     if(!bIsSupported && strlen(cgiContentType)>0){
       setMapInMaps(m,"headers","Status","415 Unsupported Media Type");
-      errorException (&m, _("The Content-Type specified in the request is not supported by this ZOO-Kernel, please contact the service provider."), "UnsupportedContentType", "Content-Type");
+      errorException (&m, _("The Content-Type specified in the request is not supported by this ZOO-Kernel, please contact the service provider."), "UnsupportedMediaType", "Content-Type");
       return 1;
     }
 
@@ -2887,21 +2887,21 @@ runRequest (map ** inputs)
     if(strncasecmp(cgiRequestMethod,"DELETE",6)==0
        && strstr(cgiQueryString,"/processes/")!=NULL){
       if(undeployServiceProvider==NULL){
-	setMapInMaps(m,"lenv","status_code","501");
-	map* error=createMap("code","NotImplemented");
-	addToMap(error,"message",_("The request method used to access the current path is not supported (no service available to undeploy)."));
-	localPrintExceptionJ(&m,error);
-	// TODO: cleanup memory
-	freeMaps(&m);
-	free(m);
-	free (REQUEST);
-	freeMap(&error);
-	free(error);
-	freeMap (inputs);
-	free (*inputs);
-	*inputs=NULL;
-	free(pcaCgiQueryString);
-	return 1;
+	    setMapInMaps(m,"lenv","status_code","501");
+	    map* error=createMap("code","NotImplemented");
+	    addToMap(error,"message",_("The request method used to access the current path is not supported (no service available to undeploy)."));
+	    localPrintExceptionJ(&m,error);
+	    // TODO: cleanup memory
+	    freeMaps(&m);
+	    free(m);
+	    free (REQUEST);
+	    freeMap(&error);
+	    free(error);
+	    freeMap (inputs);
+	    free (*inputs);
+	    *inputs=NULL;
+	    free(pcaCgiQueryString);
+	    return 1;
       }
       free(pcaCgiQueryString);
       pcaCgiQueryString=(char*)malloc((strlen(undeployServiceProvider->value)+22)*sizeof(char));
@@ -2940,29 +2940,31 @@ runRequest (map ** inputs)
 	    if(strstr(pcaFileName,"cwl")!=NULL){
 	      json_object* pjRes=convertCwlToOGCAppPkg(m,request_inputs);
 	      if(pjRes!=NULL){
-		const char* jsonStr=json_object_to_json_string_ext(pjRes,JSON_C_TO_STRING_NOSLASHESCAPE);
-		setMapInMaps(m,"renv","jrequest",jsonStr);
-		json_object_put(pjRes);
+	        const char* jsonStr=json_object_to_json_string_ext(pjRes,JSON_C_TO_STRING_NOSLASHESCAPE);
+	        setMapInMaps(m,"renv","jrequest",jsonStr);
+	        json_object_put(pjRes);
 	      }
 	    }
 	  }
 	  fclose(pfRequest);
 	}else{
-	  setMapInMaps(m,"headers","Status","403 Forbidden");
-	  map* error=createMap("code","ImmutableProcess");
-	  addToMap(error,"message",_("The process cannot be modified."));
-	  setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
-	  localPrintExceptionJ(&m,error);
-	  //json_object_put(res);
-	  // TODO: cleanup memory
-	  freeMaps(&m);
-	  free(m);
-	  free (REQUEST);
-	  freeMap (inputs);
-	  free (*inputs);
-	  *inputs=NULL;
-	  free(pcaCgiQueryString);
-	  return 1;
+	  //if(strncasecmp(cgiRequestMethod,"DELETE",6)=0){
+      setMapInMaps(m,"headers","Status","403 Forbidden");
+      map* error=createMap("code","ImmutableProcess");
+      addToMap(error,"message",_("The process cannot be modified."));
+      setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
+      localPrintExceptionJ(&m,error);
+      //json_object_put(res);
+      // TODO: cleanup memory
+      freeMaps(&m);
+      free(m);
+      free (REQUEST);
+      freeMap (inputs);
+      free (*inputs);
+      *inputs=NULL;
+      free(pcaCgiQueryString);
+      return 1;
+	  //}
 	}
       }
     } else

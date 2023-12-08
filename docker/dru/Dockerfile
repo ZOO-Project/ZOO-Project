@@ -129,6 +129,8 @@ RUN cd ./zoo-project/zoo-kernel \
      && cp zoo-project/zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
      && cp zoo-project/zoo-services/utils/security/dru/* /usr/lib/cgi-bin/ \
      && rm /usr/lib/cgi-bin/securityInFailed.zcfg \
+     && cp zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg /usr/lib/cgi-bin/ \
+     && cp zoo-project/zoo-services/echo-py/cgi-env/echo_service.py /usr/lib/cgi-bin/ \
      && mkdir /usr/lib/cgi-bin/jwts \
      && cp zoo-project/zoo-services/utils/security/jwt/cgi-env/security_service.py /usr/lib/cgi-bin/jwts/ \
      && ln -s /tmp/zTmp /var/www/html/temp \
@@ -164,6 +166,7 @@ COPY zoo-project/zoo-services/utils/open-api/dru/deploy_util.py /usr/lib/cgi-bin
 RUN chmod -R 777 /usr/lib/cgi-bin
 
 RUN mkdir /tmp/cookiecutter-templates && \
+    pip install GDAL==3.4.3 && \
     ln -s /usr/miniconda3/envs/ades-dev/lib/libcrypto.so.3 /usr/lib/ && \
     chmod -R 777 /tmp/cookiecutter-templates
 

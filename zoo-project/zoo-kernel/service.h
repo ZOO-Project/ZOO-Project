@@ -421,7 +421,7 @@ extern "C" {
     "InvalidQueryParameterValue",
     "DuplicatedProcess",
     "ImmutableProcess",
-    "UnsupportedContentType"
+    "UnsupportedMediaType"
   };
 
   /**
@@ -449,7 +449,7 @@ extern "C" {
     "invalid-query-parameter-value",
     "duplicated-process",
     "immutable-process",
-    "unsupported-content-type"
+    "unsupported-media-type"
   };
 
   /**
