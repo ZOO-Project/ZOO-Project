@@ -42,6 +42,10 @@ RUN conda install mamba -n base -c conda-forge && \
     else \
         echo "Download $PROC_TEMPLATE" ; \
         wget -O /tmp/ades-dev_env.yaml $PROC_TEMPLATE ; \
+        # Should it be done directly in the PROC_TEMPLATE yaml file? \
+        echo "    - psycopg2-binary" >> /tmp/ades-dev_env.yaml ; \
+        echo "    - cheetah3" >> /tmp/ades-dev_env.yaml ; \
+        #cat /tmp/ades-dev_env.yaml ; \
         mamba env create --file /tmp/ades-dev_env.yaml ; \
     fi  &&\
     #ls -ailtr /usr/miniconda3/envs/ades-dev/bin/ && \
