@@ -179,6 +179,8 @@ RUN chmod -R 777 /usr/lib/cgi-bin
 RUN mkdir /tmp/cookiecutter-templates && \
     pip install GDAL==3.4.3 && \
     ln -s /usr/miniconda3/envs/${CONDA_ENV}/lib/libcrypto.so.3 /usr/lib/ && \
+    echo /usr/miniconda3/envs/${CONDA_ENV}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
+    ldconfig && \
     chmod -R 777 /tmp/cookiecutter-templates
 
 EXPOSE 80
