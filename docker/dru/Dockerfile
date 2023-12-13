@@ -7,6 +7,8 @@ FROM ubuntu:focal
 
 # procadesdev:latest
 ENV DEBIAN_FRONTEND noninteractive
+ARG PROC_TEMPLATE=""
+ARG CONDA_ENV=ades-dev
 
 ########################################
 ### DEV TOOLS
@@ -33,9 +35,18 @@ RUN wget -nv \
 ENV PATH="/usr/miniconda3/envs/ades-dev/bin:/usr/miniconda3/bin:${PATH}"
 COPY docker/dru/ades-dev_env.yaml /tmp/ades-dev_env.yaml
 RUN conda install mamba -n base -c conda-forge && \
-    mamba env create --file /tmp/ades-dev_env.yaml &&\
+    echo "$PROC_TEMPLATE" && \
+    if [ -z "$PROC_TEMPLATE" ] ; then \
+        echo "No download required" ;\
+        mamba env create --file /tmp/ades-dev_env.yaml ; \
+    else \
+        echo "Download $PROC_TEMPLATE" ; \
+        wget -O /tmp/ades-dev_env.yaml $PROC_TEMPLATE ; \
+        mamba env create --file /tmp/ades-dev_env.yaml ; \
+    fi  &&\
+    #ls -ailtr /usr/miniconda3/envs/ades-dev/bin/ && \
     rm /tmp/ades-dev_env.yaml
-RUN ln -s /usr/miniconda3/envs/ades-dev/bin/kubectl /usr/bin/kubectl
+RUN ln -s /usr/miniconda3/envs/${CONDA_ENV}/bin/kubectl /usr/bin/kubectl
 
 ########################################
 # ZOO_Prerequisites
@@ -91,7 +102,7 @@ RUN cd ./zoo-project/zoo-kernel \
      && autoconf \
      #&& grep MS_VERSION_ -rni /usr/ \
      && ./configure --with-dru=yes \
-     	--with-python=/usr/miniconda3/envs/ades-dev \
+     	--with-python=/usr/miniconda3/envs/${CONDA_ENV} \
 	--with-pyvers=$PY_VER \
 	--with-js=/usr \
 	--with-mapserver=/usr \
@@ -118,7 +129,7 @@ RUN cd ./zoo-project/zoo-kernel \
     \
      && sed -i "s%http://www.zoo-project.org/zoo/%http://127.0.0.1%g" /usr/lib/cgi-bin/main.cfg \
      && sed -i "s%../tmpPathRelativeToServerAdress/%http://localhost/temp/%g" /usr/lib/cgi-bin/main.cfg \
-     && echo "\n[env]\nPYTHONPATH=/usr/miniconda3/envs/ades-dev/lib/python${PY_VER}/site-packages"\
+     && echo "\n[env]\nPYTHONPATH=/usr/miniconda3/envs/${CONDA_ENV}/lib/python${PY_VER}/site-packages"\
           >> /usr/lib/cgi-bin/main.cfg \
      && a2enmod cgi rewrite \
      && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
@@ -167,7 +178,7 @@ RUN chmod -R 777 /usr/lib/cgi-bin
 
 RUN mkdir /tmp/cookiecutter-templates && \
     pip install GDAL==3.4.3 && \
-    ln -s /usr/miniconda3/envs/ades-dev/lib/libcrypto.so.3 /usr/lib/ && \
+    ln -s /usr/miniconda3/envs/${CONDA_ENV}/lib/libcrypto.so.3 /usr/lib/ && \
     chmod -R 777 /tmp/cookiecutter-templates
 
 EXPOSE 80

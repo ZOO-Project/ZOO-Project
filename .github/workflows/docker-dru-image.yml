@@ -36,7 +36,7 @@ jobs:
         tags: ${{secrets.DOCKER_USER}}/zookernel:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-    - name: Build and push (official image)
+    - name: Build and push (official dru image)
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -45,10 +45,25 @@ jobs:
         tags: zooproject/zoo-project:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+    - name: Build and push (official eoepca image)
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        file: docker/dru/Dockerfile
+        build-args: |
+          CONDA_ENV=env_zoo_calrissian
+          PY_VER=3.10
+          PROC_TEMPLATE=https://raw.githubusercontent.com/EOEPCA/eoepca-proc-service-template/master/.devcontainer/environment.yml
+        tags: zooproject/zoo-project:eoepca-${{ github.sha }}
+        cache-from: type=local,src=/tmp/.buildx-eoepca-cache
+        cache-to: type=local,dest=/tmp/.buildx-eoepca-cache-new,mode=max
     - name: Move cache
       run: |
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+        rm -rf /tmp/.buildx-eoepca-cache
+        mv /tmp/.buildx-eoepca-cache-new /tmp/.buildx-eoepca-cache
     - name: Build and push latest
       uses: docker/build-push-action@v4
       with:
