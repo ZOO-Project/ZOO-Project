@@ -72,18 +72,31 @@ def securityIn(main_conf,inputs,outputs):
                 main_conf["auth_env"]["jwt"]=cJWT
                 main_conf["lenv"]["json_user"]=json.dumps(jsonObj)
             else:
-                import base64
                 import requests
-                try:
-                    b64=base64.b64encode((main_conf["osecurity"]["client_id"]+":"+main_conf["osecurity"]["client_secret"]).encode("ascii")).decode('ascii')
-                except Exception as e:
-                    print(e,file=sys.stderr)
-                headers = {"Authorization" : "Basic "+b64, "Acccept": "application/json","Content-Type": "application/x-www-form-urlencoded"}
-                data= {"token": sToken,"token_type_hint": "access_token"}
-                response=requests.post("https://www.authenix.eu/oauth/tokeninfo",data=data,headers=headers)
-                userObject=json.loads(response.text)
-                if userObject["active"]:
-                    main_conf["auth_env"]={"user": userObject["sub"]}
+                if "userinfoUrl" not in main_conf["osecurity"]:
+                    import base64
+                    try:
+                        b64=base64.b64encode((main_conf["osecurity"]["client_id"]+":"+main_conf["osecurity"]["client_secret"]).encode("ascii")).decode('ascii')
+                    except Exception as e:
+                        print(e,file=sys.stderr)
+                    headers = {"Authorization" : "Basic "+b64, "Acccept": "application/json","Content-Type": "application/x-www-form-urlencoded"}
+                    data= {"token": sToken,"token_type_hint": "access_token"}
+                    response=requests.post("https://www.authenix.eu/oauth/tokeninfo",data=data,headers=headers)
+                    userObject=json.loads(response.text)
+                    if userObject["active"]:
+                        main_conf["auth_env"]={"user": userObject["sub"]}
+                        hasAuth=True
+                else:
+                    headers = {"Authorization" : "Bearer "+sToken, "Acccept": "application/json"}
+                    response=requests.get(main_conf["osecurity"]["userinfoUrl"],headers=headers)
+                    userObject=json.loads(response.text)
+                    main_conf["auth_env"]={"jwt": sToken}
+                    for a in userObject.keys():
+                        main_conf["auth_env"][a]=userObject[a]
+                    if "user_name" not in main_conf["auth_env"]:
+                        main_conf["auth_env"]["user"]=userObject["sub"]
+                    else:
+                        main_conf["auth_env"]["user"]=main_conf["auth_env"]["user_name"]
                     hasAuth=True
             break
     if "auth_env" in main_conf:

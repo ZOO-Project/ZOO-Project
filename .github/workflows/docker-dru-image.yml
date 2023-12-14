@@ -52,9 +52,9 @@ jobs:
         push: true
         file: docker/dru/Dockerfile
         build-args: |
-          CONDA_ENV=env_zoo_calrissian
+          CONDA_ENV_NAME=env_zoo_calrissian
           PY_VER=3.10
-          PROC_TEMPLATE=https://raw.githubusercontent.com/EOEPCA/eoepca-proc-service-template/master/.devcontainer/environment.yml
+          CONDA_ENV_FILE=https://raw.githubusercontent.com/EOEPCA/eoepca-proc-service-template/master/.devcontainer/environment.yml
         tags: zooproject/zoo-project:eoepca-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-eoepca-cache
         cache-to: type=local,dest=/tmp/.buildx-eoepca-cache-new,mode=max

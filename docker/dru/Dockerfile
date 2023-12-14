@@ -7,8 +7,8 @@ FROM ubuntu:focal
 
 # procadesdev:latest
 ENV DEBIAN_FRONTEND noninteractive
-ARG PROC_TEMPLATE=""
-ARG CONDA_ENV=ades-dev
+ARG CONDA_ENV_FILE=""
+ARG CONDA_ENV_NAME=ades-dev
 
 ########################################
 ### DEV TOOLS
@@ -34,15 +34,16 @@ RUN wget -nv \
     && rm -f Miniconda3-py39_4.10.3-Linux-x86_64.sh
 ENV PATH="/usr/miniconda3/envs/ades-dev/bin:/usr/miniconda3/bin:${PATH}"
 COPY docker/dru/ades-dev_env.yaml /tmp/ades-dev_env.yaml
+#ARG CONDA_ENV_NAME=$(cat /tmp/ades-dev_env.yaml | grep 'name:' | awk {'print $2'})
 RUN conda install mamba -n base -c conda-forge && \
-    echo "$PROC_TEMPLATE" && \
-    if [ -z "$PROC_TEMPLATE" ] ; then \
+    echo "$CONDA_ENV_FILE" && \
+    if [ -z "$CONDA_ENV_FILE" ] ; then \
         echo "No download required" ;\
         mamba env create --file /tmp/ades-dev_env.yaml ; \
     else \
-        echo "Download $PROC_TEMPLATE" ; \
-        wget -O /tmp/ades-dev_env.yaml $PROC_TEMPLATE ; \
-        # Should it be done directly in the PROC_TEMPLATE yaml file? \
+        echo "Download $CONDA_ENV_FILE" ; \
+        wget -O /tmp/ades-dev_env.yaml $CONDA_ENV_FILE ; \
+        # Should it be done directly in the CONDA_ENV_FILE yaml file? \
         echo "    - psycopg2-binary" >> /tmp/ades-dev_env.yaml ; \
         echo "    - cheetah3" >> /tmp/ades-dev_env.yaml ; \
         #cat /tmp/ades-dev_env.yaml ; \
@@ -50,7 +51,7 @@ RUN conda install mamba -n base -c conda-forge && \
     fi  &&\
     #ls -ailtr /usr/miniconda3/envs/ades-dev/bin/ && \
     rm /tmp/ades-dev_env.yaml
-RUN ln -s /usr/miniconda3/envs/${CONDA_ENV}/bin/kubectl /usr/bin/kubectl
+RUN ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/bin/kubectl /usr/bin/kubectl
 
 ########################################
 # ZOO_Prerequisites
@@ -106,7 +107,7 @@ RUN cd ./zoo-project/zoo-kernel \
      && autoconf \
      #&& grep MS_VERSION_ -rni /usr/ \
      && ./configure --with-dru=yes \
-     	--with-python=/usr/miniconda3/envs/${CONDA_ENV} \
+       --with-python=/usr/miniconda3/envs/${CONDA_ENV_NAME} \
 	--with-pyvers=$PY_VER \
 	--with-js=/usr \
 	--with-mapserver=/usr \
@@ -133,7 +134,7 @@ RUN cd ./zoo-project/zoo-kernel \
     \
      && sed -i "s%http://www.zoo-project.org/zoo/%http://127.0.0.1%g" /usr/lib/cgi-bin/main.cfg \
      && sed -i "s%../tmpPathRelativeToServerAdress/%http://localhost/temp/%g" /usr/lib/cgi-bin/main.cfg \
-     && echo "\n[env]\nPYTHONPATH=/usr/miniconda3/envs/${CONDA_ENV}/lib/python${PY_VER}/site-packages"\
+     && echo "\n[env]\nPYTHONPATH=/usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/python${PY_VER}/site-packages"\
           >> /usr/lib/cgi-bin/main.cfg \
      && a2enmod cgi rewrite \
      && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
@@ -182,8 +183,8 @@ RUN chmod -R 777 /usr/lib/cgi-bin
 
 RUN mkdir /tmp/cookiecutter-templates && \
     pip install GDAL==3.4.3 && \
-    ln -s /usr/miniconda3/envs/${CONDA_ENV}/lib/libcrypto.so.3 /usr/lib/ && \
-    echo /usr/miniconda3/envs/${CONDA_ENV}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
+    ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/libcrypto.so.3 /usr/lib/ && \
+    echo /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
     ldconfig && \
     chmod -R 777 /tmp/cookiecutter-templates
 
