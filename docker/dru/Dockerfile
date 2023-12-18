@@ -186,6 +186,13 @@ RUN mkdir /tmp/cookiecutter-templates && \
     ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/libcrypto.so.3 /usr/lib/ && \
     echo /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
     ldconfig && \
+    if [ -z "$CONDA_ENV_FILE" ] ; then \
+        echo "No modification required" ; \
+    else \
+        echo "Modify charset_normalizer" ; \
+        sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/api.py ; \
+        sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/cd.py ; \
+    fi && \
     chmod -R 777 /tmp/cookiecutter-templates
 
 EXPOSE 80
