@@ -54,17 +54,18 @@ def securityIn(main_conf,inputs,outputs):
                 jsonObj=jwt.decode(cJWT, options={"verify_signature": False,"verify_aud": False})
                 hasAuth=True
                 myKeys=list(jsonObj.keys())
-                if "preferred_username" in jsonObj.keys():
-                    if "osecurity" in main_conf and "allowed_users" in main_conf["osecurity"] and main_conf["osecurity"]["allowed_users"].split(",").count(jsonObj["preferred_username"])==0:
-                        main_conf["lenv"]["message"]=zoo._("You are not authorized to perform the requested operation on the resource (jwt.securityIn).")
-                        main_conf["lenv"]["code"]="Forbidden"
-                        main_conf["lenv"]["status"]="403 Forbidden"
-                        if "headers" in main_conf:
-                            main_conf["headers"]["status"]="403 Forbidden"
-                        else:
-                            main_conf["headers"]={"status":"403 Forbidden"}
-                        return zoo.SERVICE_FAILED
-                    main_conf["auth_env"]={"user": jsonObj["preferred_username"]}
+                for k in jsonObj.keys():
+                    if k.count("username")>0:
+                        if "osecurity" in main_conf and "allowed_users" in main_conf["osecurity"] and main_conf["osecurity"]["allowed_users"].split(",").count(jsonObj["preferred_username"])==0:
+                            main_conf["lenv"]["message"]=zoo._("You are not authorized to perform the requested operation on the resource (jwt.securityIn).")
+                            main_conf["lenv"]["code"]="Forbidden"
+                            main_conf["lenv"]["status"]="403 Forbidden"
+                            if "headers" in main_conf:
+                                main_conf["headers"]["status"]="403 Forbidden"
+                            else:
+                                main_conf["headers"]={"status":"403 Forbidden"}
+                        main_conf["auth_env"]={"user": jsonObj[k] }
+                        break
                 if "email" in jsonObj.keys():
                     main_conf["auth_env"]["email"]=jsonObj["email"]
                 for l in range(len(myKeys)):
