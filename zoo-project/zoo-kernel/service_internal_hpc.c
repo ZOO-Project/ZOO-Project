@@ -489,6 +489,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 #endif
 
   // Upload data on HPC
+  updateStatus(m,15,_("Upload data on HPC server"));
   if(runUpload(main_conf)==false){
     errorException (main_conf, _("Unable to lock the file for upload!"),
 		    "InternalError", NULL);
@@ -737,6 +738,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 #endif
 
   // Upload the SBATCH File to the remote host
+  updateStatus(m,22,_("Upload SBATCH on HPC server"));
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
@@ -782,6 +784,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     return -1;
   }
   // Execute the SBATCH script remotely
+  updateStatus(m,30,_("Execute SBATCH on HPC server"));
   addReadLocks(main_conf);
   map* subStr=getMapFromMaps(*main_conf,configurationId,"sbatch_substr");
   char *command=(char*)malloc((strlen(targetPath)+strlen(targetPathMap->value)+strlen(subStr->value)+strlen(uuid->value)+137)*sizeof(char));
@@ -999,6 +1002,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       free(sname);
 #endif
       removeReadLocks(main_conf);
+      updateStatus(m,70,_("SBATCH has been executed on HPC server"));
 
       if(res==3){
 #ifdef HPC_DEBUG
@@ -1012,7 +1016,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 	fflush(stderr);
 #endif
-
+  updateStatus(m,70,_("SBATCH has been successfully executed on HPC server"));
 	// Read informations provided by FinalizeHPC as a configuration file
 	// then, remove the file.
 	map* jobid=getMapFromMaps(*main_conf,"lenv","usid");
@@ -1036,6 +1040,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	free(lm);
 
 	input=*real_outputs;
+  updateStatus(m,80,_("Download results from HPC server"));
 	while(input!=NULL){
 	  if(input->child==NULL){
 	    map* generatedFile=getMap(input->content,"generated_file");
@@ -1210,6 +1215,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       return SERVICE_FAILED;
     }
   }
+  updateStatus(m,90,_("Results downloaded from HPC server"));
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
   fflush(stderr);

@@ -5511,6 +5511,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    // Reset metapath
 	    addToMap(request_inputs,"metapath","");
 	    setMapInMaps(lconf,"lenv","metapath","");
+	    setMapInMaps(lconf,"lenv","no-headers","true");
 	    maps* pmsTmp=getMaps(lconf,"lenv");
 
 	    // Define auth_env section in case we find fpm_user in the lenv
