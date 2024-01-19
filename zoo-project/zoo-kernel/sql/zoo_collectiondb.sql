@@ -254,6 +254,7 @@ create table CollectionDB.ows_Process (
     title text,
     abstract text,
     identifier varchar(255),
+    version varchar(50),
     availability boolean,
     mutable boolean,
     process_description_xml text,
@@ -306,7 +307,8 @@ create table CollectionDB.zoo_DeploymentMetadata (
     id serial primary key,
     executable_name varchar,
     configuration_identifier varchar,
-        service_type_id int references CollectionDB.zoo_ServiceTypes(id) ON DELETE CASCADE);
+    service_type_id int references CollectionDB.zoo_ServiceTypes(id) ON DELETE CASCADE
+);
 
 create table CollectionDB.zoo_PrivateProcessInfo (
     id serial primary key
@@ -344,6 +346,7 @@ CREATE OR REPLACE VIEW public.ows_process AS
 	identifier,
 	title,
 	abstract,
+    version,
 	(SELECT service_type FROM CollectionDB.zoo_ServiceTypes WHERE id = (SELECT service_type_id FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id)))) as service_type,
 	(SELECT executable_name FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as service_provider,
 	(SELECT configuration_identifier FROM CollectionDB.zoo_DeploymentMetadata WHERE id = (SELECT deployment_metadata_id FROM CollectionDB.PrivateMetadataDeploymentmetadataAssignment WHERE private_metadata_id=(SELECT id FROM CollectionDB.zoo_PrivateMetadata WHERE id = CollectionDB.ows_Process.private_metadata_id))) as conf_id,

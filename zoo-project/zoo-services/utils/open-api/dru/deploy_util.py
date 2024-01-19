@@ -264,14 +264,15 @@ class Process:
             print(e,file=sys.stderr)
             cur.commit()
         cur.execute(("INSERT INTO CollectionDB.ows_Process"+
-                  "(identifier,title,abstract,user_id,private_metadata_id,mutable,availability)"+
+                  "(identifier,title,abstract,version,user_id,private_metadata_id,mutable,availability)"+
                   "VALUES"+
                   "($q${0}$q$,"+
                   "$q${1}$q$,"+
                   "$q${2}$q$,"+
-                  "(select id from public.users where name=$q${3}$q$),"+
+                  "$q${3}$q$,"+
+                  "(select id from public.users where name=$q${4}$q$),"+
                   "(SELECT last_value FROM CollectionDB.PrivateMetadataDeploymentMetadataAssignment_id_seq),"+
-                  "true,true);").format(self.identifier,self.title,self.description,self.user))
+                  "true,true);").format(self.identifier,self.title,self.description,self.version,self.user))
         cur.execute("CREATE TEMPORARY TABLE pid AS (select last_value as id from CollectionDB.Descriptions_id_seq);")
         # Inputs treatment
         for input in self.inputs:

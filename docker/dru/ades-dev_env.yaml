@@ -24,6 +24,7 @@ dependencies:
     - cheetah3
     - psycopg2-binary
     - redis
+    - kubernetes==28.1.0
     - certifi>=2023.7.22
     - cryptography>=39.0.1
     - wheel>=0.38.1
