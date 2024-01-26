@@ -65,71 +65,13 @@ ZOO-Project DRU Helm chart
 ****************************
 
 The current helm chart is available from here:
-https://github.com/EOEPCA/proc-ades-dev.git. You will need to clone
+https://github.com/ZOO-Project/charts.git. You will need to clone
 this repository and make the following modifications to it.
 
 .. code-block:: guess
 
-     git clone https://github.com/EOEPCA/proc-ades-dev.git
+     git clone https://github.com/ZOO-Project/charts.git
 
-Storage Class configuration
-###########################
-
-By default, the ZOO-Project uses Longhorn storage class for
-instantiating Kubernetes volumes. Minikube does not support Longhorn,
-therefor we highly recommend to use the standard storage class.
-
-To configure Minikube standard storage class, please use the
-parameters defined in the `chart/ades/mycharts/values_minikube.yaml
-<https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
-file.
-
-
-Setup a Minio S3 Object Storage on Kubernetes (optional)
-########################################################
-
-The ZOO-Project stores the processing results on a S3 bucket. For
-simplicity , we recommend using a S3 storage running on an external
-cloud provider such as AWS, but it is also possible to manually setup
-one on your Kubernetes cluster using Minio.
-
-Create a file called my-minio-fs.yaml containing the following
-content:
-
-.. literalinclude:: ../_static/my-minio-fs.yaml 
-
-.. include:: ../_static/my-minio-fs.yaml
-    :code: guess
-
-Now run the commands bellow.
-
-.. code-block:: guess
-
-     # Create a namespace called minio
-     kubectl create ns minio
-     # Deploy Minio
-     kubectl create -f my-minio-fs.yaml -n minio
-     # Make the above deployment accessible from other namespaces
-     kubectl expose deployment/my-minio-fs --type="NodePort" --port 9000 -n minio
-     # Run the port-forwarding of the Minio service
-     kubectl port-forward svc/my-minio-fs 9000:9000 -n minio
-
-
-Access the Minio dashboard from your browser at the address
-http://localhost:9000/minio. Using the dashboard, create a bucket
-called **processingresults**. Now, you can configure the storage
-endpoint in the `chart/ades/mycharts/values_minikube.yaml
-<https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
-file with the following values:
-
-.. code-block:: guess
-
-      AWS_SERVICEURL: http://my-minio-fs.minio.svc.cluster.local:9000  
-      AWS_ACCESS_KEY_ID: minio  
-      AWS_SECRET_ACCESS_KEY: minio123  
-      AWS_REGION: RegionOne  
-      STAGEOUT_OUTPUT: s3://processingresults
-      
 
 Create a dedicated namespace for the ZOO-Project
 ################################################
@@ -142,7 +84,7 @@ For instance, let's create a `zoo-project-dru` namespace.
 
 .. code-block:: guess
 
-       kubectl create ns zoo-project-dru
+       kubectl create ns zoo
 
 .. _Deploy using Helm:
 
@@ -156,7 +98,7 @@ For instance, we will install the ZOO-Project with the name `zoo-project-dru`.
 
 .. code-block:: guess
 
-       helm upgrade --install zoo-project-dru charts/ades/ -f charts/ades/mycharts/values_minikube.yaml -n zoo-project-dru
+       helm upgrade --install zoo-project-dru zoo-project-dru -f zoo-project-dru/values_minikube.yaml -n zoo
        
 
 .. literalinclude:: ../_static/minikube_upgrade_output.txt 
@@ -165,34 +107,55 @@ For instance, we will install the ZOO-Project with the name `zoo-project-dru`.
 .. note::
 
    💡 detailed information of all the chart parameter is available in
-   the `ADES chart README
-   <https://github.com/EOEPCA/proc-ades/blob/develop/charts/ades/README.md>`_
+   the `chart README
+   <https://github.com/ZOO-Project/charts/blob/main/zoo-project-dru/README.md>`_
 
 Check that service is available
 
 .. code-block:: guess
 
-       kubectl get service zoo-project-dru-ades --namespace zoo-project-dru
+       kubectl get service zoo-project-dru-service --namespace zoo
 
 Should return something like:
 
 .. code-block:: guess
 
-       NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-       zoo-project-dru-ades   ClusterIP   10.104.248.111   <none>        80/TCP    8m
+       NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+       zoo-project-dru-service   ClusterIP   10.104.248.111   <none>        80/TCP    8m
 
 Get the application URL by running these commands:
 
 .. code-block:: guess
 
-       export POD_NAME=$(kubectl get pods --namespace zoo-project-dru -l "app.kubernetes.io/name=ades,app.kubernetes.io/instance=zoo-project-dru" -o jsonpath="{.items[0].metadata.name}")
-       export CONTAINER_PORT=$(kubectl get pod --namespace zoo-project-dru $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+       export POD_WS_NAME=$(kubectl get pods --namespace zoo -l "app.kubernetes.io/name=zoo-project-dru-websocketd,app.kubernetes.io/instance=zoo-project-dru-websocketd" -o jsonpath="{.items[0].metadata.name}")
+       export CONTAINER_WS_PORT=$(kubectl get pod --namespace zoo $POD_WS_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+       echo "Visit ws://127.0.0.1:8888 to use your application"
+       kubectl --namespace zoo port-forward $POD_WS_NAME 8888:$CONTAINER_WS_PORT &
+       export POD_NAME=$(kubectl get pods --namespace zoo -l "app.kubernetes.io/name=zoo-project-dru,app.kubernetes.io/instance=zoo-project-dru" -o jsonpath="{.items[0].metadata.name}")
+       export CONTAINER_PORT=$(kubectl get pod --namespace zoo $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
        echo "Visit http://127.0.0.1:8080 to use your application"
-       kubectl --namespace zoo-project-dru port-forward $POD_NAME 8080:$CONTAINER_PORT &
+       kubectl --namespace zoo port-forward $POD_NAME 8080:$CONTAINER_PORT
 
 At this step, the ZOO-Project-DRU deployment using helm chart should
 be accesible from this address:
 http://127.0.0.1:8080/ogc-api/api.html.
+
+
+Remove ZOO-Project-DRU from Minikube
+####################################
+
+In case you want to remove the ZOO-Project-DRU from your Minikube, you
+can use the commands bellow.
+
+.. code-block:: guess
+
+       helm uninstall zoo-project-dru -n zoo && \
+       kubectl delete pvc data-zoo-project-dru-postgresql-0 \
+                          data-zoo-project-dru-rabbitmq-0 \
+                          redis-data-zoo-project-dru-redis-master-0\
+                          redis-data-zoo-project-dru-redis-replicas-0\
+                          -n zoo
+
 
 .. _Building the docker image (for developper):
 
@@ -240,20 +203,3 @@ build the docker image locally.
 
 
 Now you can deploy on Minikube as defined here: :ref:`Deploy using Helm`
-
-Remove ZOO-Project-DRU from Minikube
-####################################
-
-In case you want to remove the ZOO-Project-DRU from your Minikube, you
-can use the commands bellow.
-
-.. code-block:: guess
-
-       helm uninstall zoo-project-dru -n zoo-project-dru && \
-       kubectl delete pvc data-zoo-project-dru-postgresql-0\
-                          data-zoo-project-dru-rabbitmq-0\
-                          redis-data-zoo-project-dru-redis-master-0\
-                          redis-data-zoo-project-dru-redis-replicas-0\
-                          -n zoo-project-dru
-
-
