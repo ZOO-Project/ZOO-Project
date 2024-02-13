@@ -3986,7 +3986,7 @@ runRequest (map ** inputs)
 #else
 
 #ifndef WIN32
-	  pid = fork ();
+	  int pid = fork ();
 #else
 	  if (cgiSid == NULL)
 	    {

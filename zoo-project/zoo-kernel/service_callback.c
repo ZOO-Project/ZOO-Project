@@ -41,7 +41,7 @@
 #include "service_json.h"
 #include "sqlapi.h"
 #include <ulinet.h>
-#ifdef USE_CALLBACK
+#if defined(USE_CALLBACK) || defined(USE_MS)
 #include "service_internal_ms.h"
 #endif
 #include "json_object_iterator.h"
