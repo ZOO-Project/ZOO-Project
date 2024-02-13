@@ -25,6 +25,7 @@
 #include "request_parser.h"
 #include "service_internal.h"
 #include "server_internal.h"
+#include "service_callback.h"
 #include "response_print.h"
 #include "caching.h"
 #include "cgic.h"
@@ -1713,6 +1714,25 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
       InternetCloseHandle (hInternet);
       return -1;
     }
+    // For execute requests that should run asynchronously, we should
+    // wait for the processing to end before continuing
+    maps* pmsInputs=*request_inputs;
+    if(pmsInputs!=NULL){
+      map* pmLength=getMap(pmsInputs->content,"length");
+      int iLength=1;
+      int iJobHanderCnt=0;
+      if(pmLength!=NULL)
+        iLength=atoi(pmLength->value);
+      for(int iCnt=0;iCnt<iLength;iCnt++){
+        map* pmJobStatus=NULL;
+        if((pmJobStatus=getMapArray(pmsInputs->content,"require_job_handler",iCnt))!=NULL){
+          handleJobStatus(*pmsConf,pmsInputs);
+          iJobHanderCnt++;
+        }
+      }
+      pmsInputs=pmsInputs->next;
+    }
+    cleanupJobStatusThreads(request_inputs);
     InternetCloseHandle (hInternet);
   }
 
@@ -2080,15 +2100,15 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
       map* pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
       int iHeaderCnt=0;
       while(pmTmp!=NULL){
-	char* pcaTmpValue=zStrdup(pmTmp->value);
-	hInternet->ihandle[iCnt].header =
-	  curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
-	free(pcaTmpValue);
-	free(pcaHeaders);
-	pcaHeaders=(char *)malloc(33*sizeof(char));
-	iHeaderCnt++;
-	sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
-	pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+        char* pcaTmpValue=zStrdup(pmTmp->value);
+        hInternet->ihandle[iCnt].header =
+          curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
+        free(pcaTmpValue);
+        free(pcaHeaders);
+        pcaHeaders=(char *)malloc(33*sizeof(char));
+        iHeaderCnt++;
+        sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
+        pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
       }
       map* len=getMap(curs->content,"length");
       if(len!=NULL and atoi(len->value)>1){
@@ -2096,12 +2116,18 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
         for(int i=0;i<llen;i++){
           map* body=getMapArray(curs->content,"Body",i);
           if(body!=NULL){
-	    map* pmHeaders=getMap(curs->content,"Headers");
-	    if(pmHeaders!=NULL){
-	      // TODO: handle multiple headers with , as separator
-	      hInternet->ihandle[iCnt].header =
-		curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
-	    }
+            char* apcTmp[2]={
+              "Headers",
+              "Headers_extra"
+            };
+            for(int iCntL=0;iCntL<2;iCntL++){
+              map* pmHeaders=getMapArray(curs->content,apcTmp[iCntL],i);
+              if(pmHeaders!=NULL){
+                // TODO: handle multiple headers with | as separator
+                hInternet->ihandle[iCnt].header =
+                    curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
+              }
+            }
             addRequestToQueue(&conf,hInternet,(char *) href->value,false);
             InternetOpenUrl (hInternet,
                              href->value,
@@ -2117,12 +2143,18 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
       }else{
         map* body=getMap(curs->content,"Body");
         if(body!=NULL){
-	  map* pmHeaders=getMap(curs->content,"Headers");
-	  if(pmHeaders!=NULL){
-	    // TODO: handle multiple headers with , as separator
-	    hInternet->ihandle[iCnt].header =
-	      curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
-	  }
+          char* apcTmp[2]={
+              "Headers",
+              "Headers_extra"
+          };
+          for(int iCntL=0;iCntL<2;iCntL++){
+            map* pmHeaders=getMap(curs->content,apcTmp[iCntL]);
+            if(pmHeaders!=NULL){
+              // TODO: handle multiple headers with | as separator
+              hInternet->ihandle[iCnt].header =
+                curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
+            }
+          }
           addRequestToQueue(&conf,hInternet,(char *) href->value,false);
           InternetOpenUrl (hInternet,
                            href->value,

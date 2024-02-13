@@ -1,11 +1,18 @@
 Version 2.0.0
+  * Update relation type to monitor for the status location.
+  * Add support for the conformance class remote processes from the
+  OGC API - Processes - Part 3: Workflow & chaining. Execution of
+  remote processes is automatically run asyncrhonously in case the
+  root process was invoked asyncrhonously.
+  * Parse the Location header from ulinet and the cookie if any.
+  * Add schemas to the components and support description store in file.
   * Add a trivial DeployOnHpc service for automating the installation
   and the deployment of a singularity container using the image
   parameter provided in the executionUnit used when deploying the
-  process
+  process.
   * Set the key json_response_object with the JSON response that the
   ZOO-Kernel produced for the request, it can be updated from a
-  filter_out process 
+  filter_out process.
   * Update filter_in to support returning a response directly by
   adding a reponse key in the lenv section (binary is supported for
   this response)
@@ -62,6 +69,7 @@ Version 2.0.0
   asynchronous execution  
   * Partial integration of the code from the
   Publicamundi_David_integration01-devel branch
+
 Version 1.9.0
   * Update ZOO-Kernel internal messages natural languages po files
   * Fix issue with synchronous execution from the HTML UI when
@@ -113,6 +121,7 @@ Version 1.9.0
   * Make all demos running within docker (including SAGA and OTB)
   * Deploy demo HTML UI from github from the Dockerfile
   * Add demo ZOO-Services build in the Dockerfile
+
 Version 1.8.0
   * Support raw response in OGC API - Processes
   * Add a ZOO-API section to the howtos documentation
@@ -146,7 +155,8 @@ Version 1.8.0
   complex data node with mimetype="text/*"
   * Fix issue in case JavaScript support is activated
   * Fix issue with GDAL profile service
-  * Fix #172 for https support 
+  * Fix #172 for https support
+
 Version 1.7.0
   * Fix issue with UOM definitions in zcfg2sql
   * Make callback and HPC support independent from each other
@@ -286,7 +296,6 @@ Version 1.3.0-rc2
   * Add COMMITTERS  and LICENSE files
 
 Version 1.3.0-rc1
-
   * Updating ZOO.Class object with the OpenLayers.Class Updating
     ZOO.Class with the (ticket #64)
   * Correct the content of proj4js (ticket #63)
@@ -312,7 +321,6 @@ Version 1.3.0-rc1
   * Add MapServer W*S Support documentation #34
 
 Version 1.2.0-rc3
-
   * add basic SOAP Envelope support (ticket #49)
   * support request when Content-Length header is not set by the
   * client (ticket #57)
@@ -320,8 +328,7 @@ Version 1.2.0-rc3
   * add minimalist cache system (ticket #51)
   * fix Python support (ticket #29)
 
-Verseion 1.2.0-rc2
-
+Version 1.2.0-rc2
   * fix for process to run in background
   * add support for ALL identifier for !DescribeProcess
   * add a small test suite in the testing directory to test ogr base-vect-ops
@@ -330,19 +337,19 @@ Verseion 1.2.0-rc2
   * fastcgi version now support both !GetCapabilities and !DescribeProcess requests
 
 Version 1.2.0-rc1
-
   * add WIN32 support
   * add GRASS support through wps-grass-bridge
   * add languages support using libintl 
   * binary support for inputs and outputs for both JAVA and Python
-  * automatic loading of ZOO-API and proj4js files (if present in the ZOO-Kernel directory) when loading JS Service Provider 
+  * automatic loading of ZOO-API and proj4js files (if present in the 
+  ZOO-Kernel directory) when loading JS Service Provider
   * numerous memory leaks removed
   * add PERL support
-  * enhance speed for JAVA support 
+  * enhance speed for JAVA support
   * enhance POST request support
   * add !BoundingBoxData support
   * Python support is now optional as other languages
-  * add lenv section before running the service to store information runtime specific 
+  * add lenv section before running the service to store information runtime specific
   * add COOKIE support and {{{senv}}} section to store information session specific
   * add {{{USE_GDB}}} compilation flag to remove signal handling for debuging purpose
   * enhance base64 support when included in and XML POST request

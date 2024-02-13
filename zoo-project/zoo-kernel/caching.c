@@ -468,7 +468,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
     char bname[8];
     char hname[11];
     char oname[12];
-    char ufile[12];    
+    char ufile[12];
+    char acLocation[14];
     if(*index>0)
       sprintf(vname1,"value_%d",*index);
     else
@@ -487,6 +488,7 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
       sprintf(hname,"headers_%d",i);
       sprintf(oname,"Order_%d",i);
       sprintf(ufile,"use_file_%d",i);
+      sprintf(acLocation,"location_%d",i);
     }else{
       sprintf(cname,"cache_file");
       sprintf(oriname,"origin");
@@ -499,12 +501,12 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
       sprintf(hname,"headers");
       sprintf(oname,"Order");
       sprintf(ufile,"use_file");
+      sprintf(acLocation,"location");
     }
     
     map* tmap=getMap(content->content,oname);
     sprintf(sindex,"%d",*index+1);
     if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
-
       if(getMap(content->content,icname)==NULL) {
 	if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
 	  fcontent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
@@ -524,7 +526,11 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	  mimeType=zStrdup("none");
 	else
 	  mimeType=zStrdup(hInternet->ihandle[*index].mimeType);	      
-	
+
+	if(hInternet->ihandle[*index].location!=NULL){
+	  addToMap((*in)->content,acLocation,hInternet->ihandle[*index].location);
+	}
+
 	map* tmpMap=getMapOrFill(&(*in)->content,vname,"");
 	if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
 	  free(tmpMap->value);
@@ -547,9 +553,8 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	      break;
 	    pcToken=strtok_r(NULL,",",&pcSavePtr);
 	  }
-	}else
-	  bCodes=true;
-	if(hInternet->ihandle[*index].code!=200 && bCodes){
+	}
+	if(hInternet->ihandle[*index].code!=200 && !bCodes){
 	  const char *error_rep_str=_("Unable to download the file for the input <%s>, response code was : %d.");
 	  char *error_msg=(char*)malloc((strlen(error_rep_str)+strlen(content->name)+4)*sizeof(char));
 	  sprintf(error_msg,error_rep_str,content->name,hInternet->ihandle[*index].code);
@@ -645,18 +650,18 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
     int index=0;
     while(content!=NULL){
       if(content->child!=NULL){
-	maps* cursor=content->child;
-	while(cursor!=NULL){
-	  int red=readCurrentInput(m,&cursor,&index,hInternet,error);
-	  if(red<0)
-	    hasAFailure=red;
-	  cursor=cursor->next;
-	}
+        maps* cursor=content->child;
+        while(cursor!=NULL){
+          int red=readCurrentInput(m,&cursor,&index,hInternet,error);
+          if(red<0)
+            hasAFailure=red;
+          cursor=cursor->next;
+        }
       }
       else{
-	int red=readCurrentInput(m,&content,&index,hInternet,error);
-	if(red<0)
-	  hasAFailure=red;
+        int red=readCurrentInput(m,&content,&index,hInternet,error);
+        if(red<0)
+          hasAFailure=red;
       }
       content=content->next;
     }
@@ -779,9 +784,9 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
 	}
       }
       if(iCurrentIndex==0)
-	addToMap(*content,"cache_file",cached);
+        addToMap(*content,"cache_file",cached);
       else
-	setMapArray(*content,"cache_file",iCurrentIndex,cached);
+        setMapArray(*content,"cache_file",iCurrentIndex,cached);
       unlockFile(*m,lck);
     }
     map* isLocalFile=getMapFromMaps(*m,"lenv",cached);
@@ -825,30 +830,37 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     if(pmsRequests!=NULL){
       map* pmBody=getMapArray(pmsRequests->content,"body",hInternet->nb);
       if(pmBody!=NULL){
-	addRequestToQueue(m,hInternet,url,false);
-	map* pmHeaders=getMapArray(pmsRequests->content,"Headers",hInternet->nb);
-	if(pmHeaders!=NULL){
-	  hInternet->ihandle[hInternet->nb].header = NULL;
-	  hInternet->ihandle[hInternet->nb].header =
-	    curl_slist_append (hInternet->ihandle[hInternet->nb].header,
-			       pmHeaders->value);
-	}
-	HINTERNET res = InternetOpenUrl(hInternet,url,pmBody->value,strlen(pmBody->value),INTERNET_FLAG_NO_CACHE_WRITE,0,*m);
-	addIntToMap (pmsRequests->content, "Order", hInternet->nb);
+        addRequestToQueue(m,hInternet,url,false);
+        char* apcTmp[2]={
+          "Headers",
+          "Headers_extra"
+        };
+        for(int iCnt=0;iCnt<2;iCnt++){
+          map* pmHeaders=getMapArray(pmsRequests->content,apcTmp[iCnt],hInternet->nb);
+          if(pmHeaders!=NULL){
+            if(iCnt==0)
+              hInternet->ihandle[hInternet->nb].header = NULL;
+            hInternet->ihandle[hInternet->nb].header =
+              curl_slist_append (hInternet->ihandle[hInternet->nb].header,
+                    pmHeaders->value);
+          }
+        }
+        HINTERNET res = InternetOpenUrl(hInternet,url,pmBody->value,strlen(pmBody->value),INTERNET_FLAG_NO_CACHE_WRITE,0,*m);
+        addIntToMap (pmsRequests->content, "Order", hInternet->nb);
       }else
-	addRequestToQueue(m,hInternet,url,true);
+          addRequestToQueue(m,hInternet,url,true);
     }else
       addRequestToQueue(m,hInternet,url,true);
     if(pmsRequests!=NULL){
       if(iCurrentIndex==0)
-	addIntToMap (pmsRequests->content, "Order", hInternet->nb);
+        addIntToMap (pmsRequests->content, "Order", hInternet->nb);
       else
-	addIntToMapArray (pmsRequests->content, "Order", iCurrentIndex, hInternet->nb);
+        addIntToMapArray (pmsRequests->content, "Order", iCurrentIndex, hInternet->nb);
     }
     return 0;
   }
   if(fsize==0){
-    return errorException(m, _("Unable to download the file."), "InternalError",NULL);
+    return errorException(m, _("Unable to download the file."), "InternalError", NULL);
   }
 
   map* tmpMap=getMapOrFill(content,"value","");
@@ -869,6 +881,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     else{
       cacheFile(*m,url,mimeType,fsize,hInternet->ihandle[hInternet->nb-1].filename);
       addToMap(*content,"cache_file",hInternet->ihandle[hInternet->nb-1].filename);
+      if(hInternet->ihandle[hInternet->nb-1].location!=NULL)
+        addToMap(*content,"location",hInternet->ihandle[hInternet->nb-1].location);
     }
   }
   else{
@@ -878,14 +892,14 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     if(tmp!=NULL && tmp1==NULL){
       map *c=getMap((*content),"xlink:href");
       if(strncasecmp(c->value,"file://",7)!=0){
-	char *myRequest=getFilenameForRequest(*m,c->value);
-	char* md5str=getMd5(myRequest);
-	free(myRequest);
-	char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
-	sprintf(fname,"%s/%s.zca",tmp->value,md5str);
-	addToMap(*content,"cache_file",fname);
-	free(fname);
-	free(md5str);
+        char *myRequest=getFilenameForRequest(*m,c->value);
+        char* md5str=getMd5(myRequest);
+        free(myRequest);
+        char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
+        sprintf(fname,"%s/%s.zca",tmp->value,md5str);
+        addToMap(*content,"cache_file",fname);
+        free(fname);
+        free(md5str);
       }
     }
   }

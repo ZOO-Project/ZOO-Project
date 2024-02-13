@@ -3918,6 +3918,9 @@ runRequest (map ** inputs)
 	  return -1;
 	}
 	free(cIdentifier);
+	if((preference!=NULL && strstr(preference->value,"respond-async")!=NULL) ||
+	    (mode!=NULL && strncasecmp(mode->value,"async",5)==0))
+	  setMapInMaps(m,"lenv","execute_mode","async");
 	parseJRequest(m,s1,jobj,request_inputs,&request_input_real_format,&request_output_real_format);
 	json_object_put(jobj);
 #ifdef DRU_ENABLED
@@ -3955,7 +3958,6 @@ runRequest (map ** inputs)
 	    addToMap(request_inputs,"mode","async");
 	    mode=getMap(request_inputs,"mode");
 	  }
-	  int pid;
 #ifdef DEBUG
 	  fprintf (stderr, "\nPID : %d\n", cpid);
 #endif
@@ -4408,17 +4410,6 @@ runRequest (map ** inputs)
 	  if(t==1){
 	    json_object_put(res);
 	    json_object_put(res3);
-	    map* pmMessage=getMapFromMaps(m,"lenv","message");
-	    char* pcaTmp01=(char*)malloc((strlen(orig)+strlen(pmMessage->value)+36)*sizeof(char));
-	    sprintf (pcaTmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-	             orig, pmMessage->value);
-	    map* error=createMap("code","InvalidParameterValue");
-	    addToMap(error,"message",pcaTmp01);
-	    setMapInMaps(m,"headers","Status","404 Bad Request");
-	    free(pcaTmp01);
-	    localPrintExceptionJ(&m,error);
-	    freeMap(&error);
-	    free(error);
 	    free(orig);
 	    free(pcaCgiQueryString);
 	    return 1;
@@ -5335,10 +5326,11 @@ runRequest (map ** inputs)
     fflush(stdout);
     rewind(stdout);
 
-    if (eres != -1)
+    if (eres != -1){
       outputResponse (s1, request_input_real_format,
 		      request_output_real_format, request_inputs,
 		      cpid, m, eres);
+	}
     fflush (stdout);
   }
   /**
@@ -5796,6 +5788,15 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	      pmCursor=pmCursor->next;
 	    }
 
+	    map* pmExtraSupportedCodes=getMapFromMaps(lconf,"main","extra_supported_codes");
+	    if(pmExtraSupportedCodes!=NULL){
+	      char* pcaTmp=(char*)malloc((strlen(pmExtraSupportedCodes->value)+5)*sizeof(char));
+	      sprintf(pcaTmp,"%s,201",pmExtraSupportedCodes->value);
+	      setMapInMaps(lconf,"main","extra_supported_codes",pcaTmp);
+	      free(pcaTmp);
+	    }
+	    else
+	      setMapInMaps(lconf,"main","extra_supported_codes","201");
 	    parseInputHttpRequests(lconf,request_input_real_format,&hInternet);
 
 	    fbkp1 =

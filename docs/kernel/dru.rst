@@ -181,8 +181,8 @@ directory by commenting line 83 and uncommenting line 84.
 
 To ensure that helm will use this specific image during the
 deployment, you can change the following values from the
-`chart/ades/mycharts/values_minikube.yaml 
-<https://github.com/EOEPCA/proc-ades-dev/blob/develop/charts/ades/mycharts/values_minikube.yaml>`_
+`zoo-project-dru/values.yaml 
+<https://github.com/ZOO-Project/charts/blob/main/zoo-project-dru/values.yaml>`_
 file.
 
 Replace the following (for both `zookernel` and `zoofpm`):
