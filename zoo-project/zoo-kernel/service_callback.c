@@ -317,14 +317,14 @@ extern "C" {
         if(pmTmp!=NULL){
           FILE* tmpFile=fopen(pmTmp->value,"wb");
           if(tmpFile!=NULL){
-            fwrite(tmp,1,strlen(tmp)*sizeof(char),tmpFile);
+            fwrite(tmp,1,hInternet.ihandle[0].nDataLen*sizeof(char),tmpFile);
             fclose(tmpFile);
           }
         }else{
           setMapArray(arg->input,"value",iCnt,tmp);
         }
         char* tmpStr=(char*)malloc((1024)*sizeof(char));
-        sprintf(tmpStr,"%d",strlen(tmp));
+        sprintf(tmpStr,"%d",hInternet.ihandle[0].nDataLen);
         setMapArray(arg->input,"size",iCnt,tmpStr);
         free(tmpStr);
       }
