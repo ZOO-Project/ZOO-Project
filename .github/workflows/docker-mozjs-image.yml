@@ -45,10 +45,6 @@ jobs:
         tags: zooproject/zoo-project:${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-    - name: Move cache
-      run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
     - name: Build and push latest
       uses: docker/build-push-action@v4
       with:
@@ -57,6 +53,10 @@ jobs:
         tags: ${{secrets.DOCKER_USER}}/zookernel:latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
     - name: Build TeamEngine and the ETS for OGC API - Processes and add it to the docker-compose
       run: docker/ets-ogcapi-processes/build.sh && head -n $(expr $(grep "^networks:" -rn docker-compose.yml | cut -d':' -f1) - 1) docker-compose.yml > docker-compose1.yml && cat docker/ets-ogcapi-processes/docker-compose-ets-part.yml >> docker-compose1.yml && cat docker-compose.yml| grep "^networks" -A10 >> docker-compose1.yml && mv docker-compose1.yml docker-compose.yml
     - name: Start the test env

@@ -246,13 +246,17 @@ extern "C" {
               }
               else
                 zSleep(250);
+              char* pcaMessage=(char*)malloc((25+strlen(pmLocation->value))*sizeof(char));
+              sprintf(pcaMessage,"Polling for job status %s",pmLocation->value);
+              updateStatus(arg->conf,10,pcaMessage);
+              free(pcaMessage);
               _handleJobStatus(args);
             }
           }
           else if(getMapArray(arg->input,"isResult",iCnt)!=NULL){
             map* pmTmp=getMapArray(arg->input,"cache_file",iCnt);
             if(pmTmp!=NULL){
-            FILE* tmpFile=fopen(pmTmp->value,"wb");
+              FILE* tmpFile=fopen(pmTmp->value,"wb");
               if(tmpFile!=NULL){
                 fwrite(tmp,1,strlen(tmp)*sizeof(char),tmpFile);
                 fclose(tmpFile);
@@ -283,8 +287,13 @@ extern "C" {
               }else if(json_object_object_get_ex(val1,"href",&pjoStatus)!=FALSE){
                 // SHOULD Download the href FIELD URL
                 bHasResult=true;
-                setMapArray(arg->input,"location",iCnt,json_object_get_string(pjoStatus));
+                const char* pccTmp=json_object_get_string(pjoStatus);
+                setMapArray(arg->input,"location",iCnt,pccTmp);
                 setMapArray(arg->input,"isResult",iCnt,"true");
+                char* pcaMessage=(char*)malloc((32+strlen(pccTmp))*sizeof(char));
+                sprintf(pcaMessage,"Downloading result from job (%s)",pccTmp);
+                updateStatus(arg->conf,15,pcaMessage);
+                free(pcaMessage);
                 _handleJobStatus((void*)args);
                 break;
               }
