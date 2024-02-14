@@ -2773,6 +2773,9 @@ int errorException(maps **pmsConf, const char *message, const char *errorcode, c
     localPrintException(pmsConf,errormap);
     setMapInMaps(*pmsConf,"lenv","no-headers","true");
   }
+#ifdef LOG_CONSOLE_ENABLED
+    logConsoleMessage(message);
+#endif
   freeMap(&errormap);
   free(errormap);
   return -1;

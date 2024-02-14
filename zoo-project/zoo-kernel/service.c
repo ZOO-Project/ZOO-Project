@@ -1975,6 +1975,43 @@ void logMessage(const char* pccSource, const char* pccFunction, int iLne, const 
   if (pcText != NULL) free(pcText);
 }
 
+#ifdef LOG_CONSOLE_ENABLED
+/**
+ * Print message on console
+ *
+ * @param pccMessage the message to be print
+ */
+void logConsoleMessage(const char* pccMessage) {
+
+  // system time:
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  std::time_t now_t = std::chrono::system_clock::to_time_t(now);
+  std::tm* tm = localtime(&now_t);
+
+  char* pcStr = (char*)malloc(80 * sizeof(char));
+  strftime( pcStr, 80, "%Y-%m-%d %H:%M:%S", tm );
+  if (pccMessage == NULL)
+    return;
+
+  // Remove new line character and ' character in the message
+  int length = strlen(pccMessage);
+  char * pointer;
+  char * consoleMessage = (char *) malloc( sizeof( char) * (length+1) );
+  strcpy(consoleMessage, pccMessage);
+  while (pointer = strchr(consoleMessage, '\n')) {
+      *pointer = ' ';
+  }
+  while (pointer = strchr(consoleMessage, '\'')) {
+        *pointer = '"';
+  }
+
+  fprintf(stderr, "timestamp='%s' pid='%d' event='%s'\n",  pcStr, zGetpid(),  consoleMessage);
+  fflush(stderr);
+  free(pcStr);
+  free(consoleMessage);
+}
+#endif
+
 // knut:
 // Example:
 // zooLog;

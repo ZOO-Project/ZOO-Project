@@ -588,3 +588,7 @@ extern "C" {
 #endif
 
 #endif
+
+#ifdef LOG_CONSOLE_ENABLED
+  void logConsoleMessage(const char*);
+#endif

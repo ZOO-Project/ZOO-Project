@@ -926,8 +926,11 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
 	    addToMap(error,"message",tmpMsg);
 	  }
 	  //setMapInMaps(conf,"lenv","status_code","404 Bad Request");
+#ifdef LOG_CONSOLE_ENABLED
+    logConsoleMessage(tmpMsg);
+#endif
 	  funcError(&m,error);
-	  
+
 	  //errorException (&m, tmpMsg, "InvalidParameterValue", "identifier");
 	  free (tmpMsg);
 	  free (*spService);
@@ -1848,7 +1851,9 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       if (libp != NULL && libp->value != NULL) {
           r_inputs = getMap (s1->content, "ServiceProvider");
           sprintf (tmps1, "%s/%s", libp->value, r_inputs->value);
+#ifdef DEBUG
           fprintf (stderr, "libpath1 + service provider : %s/%s", libp->value, r_inputs->value);
+#endif
       }
       else {
           r_inputs = getMap (request_inputs, "metapath");
@@ -2521,6 +2526,9 @@ runRequest (map ** inputs)
    * Manage our own error log file (usefull to separate standard apache debug
    * messages from the ZOO-Kernel ones but also for IIS users to avoid wrong 
    * headers messages returned by the CGI due to wrong redirection of stderr)
+   *
+   * This default configuration can be changed during the compilation of ZOO-kernel
+   * by passing --with-log-console=yes to force logs of service executions on stderr
    */
   FILE *fstde = NULL;
   map *fstdem = getMapFromMaps (m, "main", "logPath");
@@ -3900,7 +3908,7 @@ runRequest (map ** inputs)
 #endif
 	if(cIdentifier!=NULL)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
-	if(fetchService(zooRegistry,m,&s1,request_inputs,ntmp,cIdentifier,localPrintExceptionJ)!=0){
+	if(fetchService(zooRegistry,m,&s1,request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ)!=0){
 	  // TODO: cleanup memory
 	  register_signals(donothing);
 	  freeService(&s1);
@@ -4068,6 +4076,14 @@ runRequest (map ** inputs)
 	      sprintf (fbkp, "%s/%s.json", r_inputs->value,
 		       usid->value);
 	      setMapInMaps (m, "lenv", "file.responseInit", fbkp);
+#ifdef DEBUG
+	      fprintf (stderr, "RUN IN BACKGROUND MODE \n");
+	      fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
+		       zGetpid ());
+	      fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
+#endif
+
+#ifndef LOG_CONSOLE_ENABLED
 	      flog =
 		(char *)
 		malloc ((strlen (r_inputs->value) + strlen (oid->value) +
@@ -4075,14 +4091,9 @@ runRequest (map ** inputs)
 	      sprintf (flog, "%s/%s_%s_error.log", r_inputs->value,
 		       oid->value, usid->value);
 	      setMapInMaps (m, "lenv", "file.log", flog);
-#ifdef DEBUG
-	      fprintf (stderr, "RUN IN BACKGROUND MODE \n");
-	      fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
-		       zGetpid ());
-	      fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
-#endif
 	      freopen (flog, "w+", stderr);
 	      fflush (stderr);
+#endif
 	      f0 = freopen (fbkp, "w+", stdout);
 	      rewind (stdout);
 #ifndef WIN32
@@ -4404,7 +4415,7 @@ runRequest (map ** inputs)
 	  setMapInMaps(m,"lenv","requestType","GetCapabilities");
 	  int t=fetchServicesForDescription(NULL, &m, orig,
 					    printGetCapabilitiesForProcessJ,
-					    NULL, (void*) res3, ntmp,
+					    NULL, (void*) res3, conf_dir_,
 					    request_inputs,
 					    localPrintExceptionJ);
 	  if(t==1){
@@ -4432,7 +4443,7 @@ runRequest (map ** inputs)
 	      cnt++;
 	    }
 	    fetchService(zooRegistry,m,&s1,
-			 request_inputs,ntmp,cIdentifier,localPrintExceptionJ);
+			 request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ);
 
 	  }
 	}
@@ -4909,7 +4920,7 @@ runRequest (map ** inputs)
 
     r_inputs = getMap (request_inputs, "Identifier");
 
-    if(fetchService(zooRegistry,m,&s1,request_inputs,ntmp,r_inputs->value,printExceptionReportResponse)!=0){
+    if(fetchService(zooRegistry,m,&s1,request_inputs,conf_dir_,r_inputs->value,printExceptionReportResponse)!=0){
       // Service not found clear memory
       freeMaps(&m);
       free(m);
@@ -5186,6 +5197,14 @@ runRequest (map ** inputs)
 	    sprintf (fbkp, "%s/%s_%s.json", r_inputs->value, r_inputs1->value,
 		     usid->value);
 	    setMapInMaps (m, "lenv", "file.responseInit", fbkp);
+
+#ifdef DEBUG
+	    fprintf (stderr, "RUN IN BACKGROUND MODE \n");
+	    fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
+		     zGetpid ());
+	    fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
+#endif
+#ifndef LOG_CONSOLE_ENABLED
 	    flog =
 	      (char *)
 	      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
@@ -5193,14 +5212,9 @@ runRequest (map ** inputs)
 	    sprintf (flog, "%s/%s_%s_error.log", r_inputs->value,
 		     r_inputs1->value, usid->value);
 	    setMapInMaps (m, "lenv", "file.log", flog);
-#ifdef DEBUG
-	    fprintf (stderr, "RUN IN BACKGROUND MODE \n");
-	    fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
-		     zGetpid ());
-	    fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
-#endif
 	    freopen (flog, "w+", stderr);
 	    fflush (stderr);
+#endif
 	    f0 = freopen (fbkp, "w+", stdout);
 	    rewind (stdout);
 #ifndef WIN32
@@ -5397,11 +5411,15 @@ runRequest (map ** inputs)
       map* tMap=getMapFromMaps(m,"main","executionType");
       if(tMap!=NULL && strncasecmp(tMap->value,"xml",3)==0)
 	InternetCloseHandle (&hInternet);
+#ifdef DEBUG
       fprintf (stderr, "RUN IN BACKGROUND MODE %s %d \n",__FILE__,__LINE__);
+#endif
+#ifndef LOG_CONSOLE_ENABLED
       fflush(stderr);
       fclose (stderr);
       zUnlink (flog);
       free (flog);
+#endif
     }
   else{
     //InternetCloseHandle (&hInternet);
@@ -5640,7 +5658,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    // Reset metapath
 	    addToMap(request_inputs,"metapath","");
 	    setMapInMaps(lconf,"lenv","metapath","");
-	    if(fetchService(zooRegistry,lconf,&s1,request_inputs,ntmp,r_inputs->value,printExceptionReportResponse)!=0){
+	    if(fetchService(zooRegistry,lconf,&s1,request_inputs,conf_dir,r_inputs->value,printExceptionReportResponse)!=0){
 	      // TODO: cleanup memory
 	      freeMaps(&lconf);
 	      free(lconf);
@@ -5729,6 +5747,15 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    sprintf (fbkp, "%s/%s_%s.%s", r_inputs->value, r_inputs1->value,
 		     usid->value, pmExecutionType->value);
 	    setMapInMaps (lconf, "lenv", "file.responseInit", fbkp);
+
+#ifdef DEBUG
+	    fprintf (stderr, "RUN IN BACKGROUND MODE \n");
+	    fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
+		     zGetpid ());
+	    fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
+#endif
+
+#ifndef LOG_CONSOLE_ENABLED
 	    flog =
 	      (char *)
 	      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
@@ -5736,14 +5763,9 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    sprintf (flog, "%s/%s_%s_error.log", r_inputs->value,
 		     r_inputs1->value, usid->value);
 	    setMapInMaps (lconf, "lenv", "file.log", flog);
-#ifdef DEBUG
-	    fprintf (stderr, "RUN IN BACKGROUND MODE \n");
-	    fprintf (stderr, "son pid continue (origin %d) %d ...\n", cpid,
-		     zGetpid ());
-	    fprintf (stderr, "\nFILE TO STORE DATA %s\n", r_inputs->value);
-#endif
 	    freopen (flog, "w+", stderr);
 	    fflush (stderr);
+#endif
 	    f0 = freopen (fbkp, "w+", stdout);
 	    rewind (stdout);
 
