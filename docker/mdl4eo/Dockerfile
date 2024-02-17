@@ -250,7 +250,7 @@ COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
 COPY --from=builder1 /opt/otbtf/ /opt/otbtf/
-COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1.8
+COPY --from=builder1 /usr/lib/libzoo_service.so.2.0 /usr/lib/libzoo_service.so.2.0
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 #COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
@@ -358,7 +358,7 @@ COPY ./docker/startUp.sh /
 # From zoo-kernel
 COPY --from=builder1 /opt/otbtf/ /opt/otbtf/
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
-COPY --from=builder1 /usr/lib/libzoo_service.so.1.8 /usr/lib/libzoo_service.so.1.8
+COPY --from=builder1 /usr/lib/libzoo_service.so.2.0 /usr/lib/libzoo_service.so.2.0
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 #COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
 COPY --from=builder1 /usr/include/zoo/ /usr/include/zoo/
