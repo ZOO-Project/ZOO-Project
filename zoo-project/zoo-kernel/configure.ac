@@ -1,4 +1,4 @@
-AC_INIT([ZOO Kernel], [1.9.0], [bugs@zoo-project.org])
+AC_INIT([ZOO Kernel], [2.0.0], [bugs@zoo-project.org])
 
 AC_CONFIG_MACRO_DIR([macros])
 
