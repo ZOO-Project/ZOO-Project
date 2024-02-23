@@ -26,7 +26,7 @@ RUN apt-get update -qqy --no-install-recommends \
  && apt-get install -qqy --no-install-recommends docker-ce-cli && \
  apt-get clean -qqy
 
-ARG PY_VER=3.8
+ARG PY_VER=3.10
 # Miniconda
 RUN wget -nv \
     https://repo.anaconda.com/miniconda/Miniconda3-py39_4.10.3-Linux-x86_64.sh \
