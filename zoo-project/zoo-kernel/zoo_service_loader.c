@@ -1393,6 +1393,8 @@ int loadHttpRequests(maps* conf,maps* inputs){
       runHttpRequests(&conf,&inputs,&hInternet,&error);
       InternetCloseHandle(&hInternet);
     }
+    if(pcaPreviousInputName!=NULL)
+      free(pcaPreviousInputName);
   }
   return 0;
 }
@@ -4127,8 +4129,19 @@ runRequest (map ** inputs)
 	      map* testMap=getMapFromMaps(m,"main","memory");
 	      loadHttpRequests(m,request_input_real_format);
 
-	      if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
-		return -1;
+	      if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0){
+			freeMaps(&m);
+			free(m);
+			freeMaps (&request_input_real_format);
+			free (request_input_real_format);
+			freeMaps (&request_output_real_format);
+			free (request_output_real_format);
+			json_object_put(res);
+			free(pcaCgiQueryString);
+			freeService (&s1);
+			free(s1);
+			return -1;
+		  }
 	      loadServiceAndRun (&m, s1, request_inputs,
 				 &request_input_real_format,
 				 &request_output_real_format, &eres);
@@ -4174,8 +4187,19 @@ runRequest (map ** inputs)
 	    return 1;
 	  }
 	  loadHttpRequests(m,request_input_real_format);
-	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0)
+	  if(validateRequest(&m,s1,request_inputs, &request_input_real_format,&request_output_real_format,NULL)<0){
+	    freeMaps(&m);
+	    free(m);
+	    freeMaps (&request_input_real_format);
+	    free (request_input_real_format);
+	    freeMaps (&request_output_real_format);
+	    free (request_output_real_format);
+	    json_object_put(res);
+	    free(pcaCgiQueryString);
+	    freeService (&s1);
+	    free(s1);
 	    return -1;
+	  }
 	  loadServiceAndRun (&m,s1,request_inputs,
 			     &request_input_real_format,
 			     &request_output_real_format,&eres);

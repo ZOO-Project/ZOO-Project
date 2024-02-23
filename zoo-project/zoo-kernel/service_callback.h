@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
   bool invokeBasicCallback(maps*,int);
-  bool handleJobStatus(maps*,maps*);
+  bool handleJobStatus(maps*,maps*,int);
   void cleanupJobStatusThreads(maps**);
 #ifdef USE_CALLBACK
   bool invokeCallback(maps*,maps*,maps*,int,int);

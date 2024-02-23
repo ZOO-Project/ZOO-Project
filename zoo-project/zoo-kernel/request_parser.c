@@ -1708,16 +1708,18 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
 
   if(hInternet!=NULL){
     map* errI0=NULL;
+    updateStatus(*pmsConf,1,"Downloading inputs / nested processes invocation");
     runHttpRequests (pmsConf, request_inputs, hInternet,&errI0);
     if(errI0!=NULL){
       printExceptionReportResponse (pmsConf, errI0);
       InternetCloseHandle (hInternet);
       return -1;
     }
+    updateStatus(*pmsConf,2,"Inputs downloaded, proceed with job status handling");
     // For execute requests that should run asynchronously, we should
     // wait for the processing to end before continuing
     maps* pmsInputs=*request_inputs;
-    if(pmsInputs!=NULL){
+    while(pmsInputs!=NULL){
       map* pmLength=getMap(pmsInputs->content,"length");
       int iLength=1;
       int iJobHanderCnt=0;
@@ -1726,7 +1728,7 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
       for(int iCnt=0;iCnt<iLength;iCnt++){
         map* pmJobStatus=NULL;
         if((pmJobStatus=getMapArray(pmsInputs->content,"require_job_handler",iCnt))!=NULL){
-          handleJobStatus(*pmsConf,pmsInputs);
+          handleJobStatus(*pmsConf,pmsInputs,iCnt);
           iJobHanderCnt++;
         }
       }
@@ -1734,6 +1736,7 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
     }
     cleanupJobStatusThreads(request_inputs);
     InternetCloseHandle (hInternet);
+    updateStatus(*pmsConf,3,"Inputs downloaded, nested processes execution finalized");
   }
 
   map* errI=NULL;
@@ -1757,10 +1760,10 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
                         ptr->name, tmp1->value, i);
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
-	      printExceptionReportResponse (pmsConf, tmpe);
+              printExceptionReportResponse (pmsConf, tmpe);
               freeMap (&tmpe);
               free (tmpe);
-	      return -1;
+              return -1;
             }
         }
       ptr = ptr->next;
@@ -2091,85 +2094,62 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
   maps* curs=inputs;
   int iCnt=0;
   while(curs!=NULL){
-    map* href=getMap(curs->content,"href");
-    if(href==NULL)
-      href=getMap(curs->content,"xlink:href");
-    if(href!=NULL){
-      char* pcaHeaders=(char *)malloc(22*sizeof(char));
-      sprintf(pcaHeaders,"rb_headers_%d",iCnt);
-      map* pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
-      int iHeaderCnt=0;
-      while(pmTmp!=NULL){
-        char* pcaTmpValue=zStrdup(pmTmp->value);
-        hInternet->ihandle[iCnt].header =
-          curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
-        free(pcaTmpValue);
-        free(pcaHeaders);
-        pcaHeaders=(char *)malloc(33*sizeof(char));
-        iHeaderCnt++;
-        sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
-        pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
-      }
-      map* len=getMap(curs->content,"length");
-      if(len!=NULL and atoi(len->value)>1){
-        int llen=atoi(len->value);
-        for(int i=0;i<llen;i++){
-          map* body=getMapArray(curs->content,"Body",i);
-          if(body!=NULL){
-            char* apcTmp[2]={
-              "Headers",
-              "Headers_extra"
-            };
-            for(int iCntL=0;iCntL<2;iCntL++){
-              map* pmHeaders=getMapArray(curs->content,apcTmp[iCntL],i);
-              if(pmHeaders!=NULL){
-                // TODO: handle multiple headers with | as separator
-                hInternet->ihandle[iCnt].header =
-                    curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
-              }
-            }
-            addRequestToQueue(&conf,hInternet,(char *) href->value,false);
-            InternetOpenUrl (hInternet,
-                             href->value,
-                             body->value,
-                             strlen(body->value),
-                             INTERNET_FLAG_NO_CACHE_WRITE,
-                             0,
-                             conf);
-          }else{
-            addRequestToQueue(&conf,hInternet,(char *) href->value,true);
-          }
-        }
-      }else{
-        map* body=getMap(curs->content,"Body");
+    int iLen=1;
+    map* len=getMap(curs->content,"length");
+    char* pcaHeaders=(char *)malloc(22*sizeof(char));
+    sprintf(pcaHeaders,"rb_headers_%d",iCnt);
+    map* pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+    int iHeaderCnt=0;
+    while(pmTmp!=NULL){
+      char* pcaTmpValue=zStrdup(pmTmp->value);
+      hInternet->ihandle[iCnt].header =
+        curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
+      free(pcaTmpValue);
+      free(pcaHeaders);
+      pcaHeaders=(char *)malloc(33*sizeof(char));
+      iHeaderCnt++;
+      sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
+      pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+    }
+    if(len!=NULL)
+      iLen=atoi(len->value);
+    for(int i=0;i<iLen;i++){
+      map* pmHref=getMapArray(curs->content,"href",i);
+      if(pmHref==NULL)
+        pmHref=getMapArray(curs->content,"xlink:href",i);
+      if(pmHref!=NULL){
+        map* body=getMapArray(curs->content,"Body",i);
         if(body!=NULL){
           char* apcTmp[2]={
-              "Headers",
-              "Headers_extra"
+            "Headers",
+            "Headers_extra"
           };
           for(int iCntL=0;iCntL<2;iCntL++){
-            map* pmHeaders=getMap(curs->content,apcTmp[iCntL]);
+            map* pmHeaders=getMapArray(curs->content,apcTmp[iCntL],i);
             if(pmHeaders!=NULL){
               // TODO: handle multiple headers with | as separator
               hInternet->ihandle[iCnt].header =
                 curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
             }
           }
-          addRequestToQueue(&conf,hInternet,(char *) href->value,false);
+          addRequestToQueue(&conf,hInternet,(char *) pmHref->value,false);
           InternetOpenUrl (hInternet,
-                           href->value,
-                           body->value,
-                           strlen(body->value),
-                           INTERNET_FLAG_NO_CACHE_WRITE,
-                           0,
-                           conf);
+                            pmHref->value,
+                            body->value,
+                            strlen(body->value),
+                            INTERNET_FLAG_NO_CACHE_WRITE,
+                            0,
+                            conf);
         }else{
-          addRequestToQueue(&conf,hInternet,(char *) href->value,true);
+          addRequestToQueue(&conf,hInternet,(char *) pmHref->value,true);
         }
+        char* pcaTmp=(char *)malloc(7*sizeof(char));
+        sprintf(pcaTmp,"%d",iCnt+1);
+        setMapArray(curs->content,"Order",i,pcaTmp);
+        free(pcaTmp);
+        setMapArray(curs->content,"Reference",i,pmHref->value);
+        iCnt++;
       }
-      addIntToMap(curs->content,"Order",iCnt+1);
-      addToMap(curs->content,"Reference",href->value);
-      iCnt++;
     }
     curs=curs->next;
   }

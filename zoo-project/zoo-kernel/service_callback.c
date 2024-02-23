@@ -75,6 +75,10 @@ extern "C" {
    */
   int iNbJobsHandlers=0;
   /**
+   * Number of job handled
+   */
+  int iNbJobsHandled=0;
+  /**
    * Thread array associated with a job handler
    */
   pthread_t* ppJobsHandlers=NULL;
@@ -133,9 +137,9 @@ extern "C" {
       char *tmp=plist->value;
       char *tmpS=strtok(tmp,",");
       while(tmpS!=NULL){
-	if(strcmp(serviceName,tmpS)==0)
-	  return true;
-	tmpS=strtok(NULL,",");
+        if(strcmp(serviceName,tmpS)==0)
+          return true;
+        tmpS=strtok(NULL,",");
       }
     }
     return false;
@@ -162,17 +166,18 @@ extern "C" {
     map *tmpStatus;
 
     isOngoing=1;
-    maps* tmpConf=createMaps("main");
-    tmpConf->content=createMap("memory","load");
+    maps* pmsTmpConf=createMaps("main");
+    pmsTmpConf->content=createMap("memory","load");
 
     int iLen=1;
     map* pmLength=getMap(arg->input,"length");
     if(pmLength!=NULL)
       iLen=atoi(pmLength->value);
-    for(int iCnt=0;iCnt<iLen;iCnt++){
+    for(int iCnt=0;iCnt<iLen;iCnt++)
+      if(arg->id==iCnt){
       map* pmLocation=getMapArray(arg->input,"location",iCnt);
-	  if(pmLocation==NULL)
-	    continue;
+	    if(pmLocation==NULL)
+	      continue;
       hInternet=InternetOpen("ZooWPSClient\0",
 			   INTERNET_OPEN_TYPE_PRECONFIG,
 			   NULL,NULL, 0);
@@ -185,7 +190,7 @@ extern "C" {
                               hInternet.waitingRequests[0],
                               NULL, 0,
                               INTERNET_FLAG_NO_CACHE_WRITE,
-                              0,tmpConf);
+                              0,pmsTmpConf);
       AddHeaderEntries(&hInternet,arg->conf);
 #ifdef CALLBACK_DEBUG
       curl_easy_setopt(hInternet.ihandle[hInternet.nb-1].handle, CURLOPT_VERBOSE, 1);
@@ -193,6 +198,8 @@ extern "C" {
       if(hInternet.ihandle[hInternet.nb-1].header!=NULL)
         curl_easy_setopt(hInternet.ihandle[hInternet.nb-1].handle,CURLOPT_HTTPHEADER,hInternet.ihandle[hInternet.nb-1].header);
       processDownloads(&hInternet);
+      freeMaps(&pmsTmpConf);
+      free(pmsTmpConf);
       char *tmp = (char *) malloc ((hInternet.ihandle[0].nDataLen + 1)
                     * sizeof (char));
       if (tmp == NULL){
@@ -234,7 +241,10 @@ extern "C" {
                   }
                 }
               }
-              _handleJobStatus((void*)arg);
+              InternetCloseHandle(&hInternet);
+              free(tmp);
+              tmp=NULL;
+              return _handleJobStatus(args);
             }else if(strncasecmp(json_object_get_string(pjoStatus),"failed",6)==0){
               // TODO: fetch the error message
               ZOO_DEBUG("FETCH ERROR");
@@ -246,11 +256,14 @@ extern "C" {
               }
               else
                 zSleep(250);
-              char* pcaMessage=(char*)malloc((25+strlen(pmLocation->value))*sizeof(char));
+              /*char* pcaMessage=(char*)malloc((25+strlen(pmLocation->value))*sizeof(char));
               sprintf(pcaMessage,"Polling for job status %s",pmLocation->value);
               updateStatus(arg->conf,10,pcaMessage);
-              free(pcaMessage);
-              _handleJobStatus(args);
+              free(pcaMessage);*/
+              InternetCloseHandle(&hInternet);
+              free(tmp);
+              tmp=NULL;
+              return _handleJobStatus(args);
             }
           }
           else if(getMapArray(arg->input,"isResult",iCnt)!=NULL){
@@ -290,12 +303,15 @@ extern "C" {
                 const char* pccTmp=json_object_get_string(pjoStatus);
                 setMapArray(arg->input,"location",iCnt,pccTmp);
                 setMapArray(arg->input,"isResult",iCnt,"true");
-                char* pcaMessage=(char*)malloc((32+strlen(pccTmp))*sizeof(char));
+                /*char* pcaMessage=(char*)malloc((32+strlen(pccTmp))*sizeof(char));
                 sprintf(pcaMessage,"Downloading result from job (%s)",pccTmp);
                 updateStatus(arg->conf,15,pcaMessage);
-                free(pcaMessage);
-                _handleJobStatus((void*)args);
-                break;
+                free(pcaMessage);*/
+                InternetCloseHandle(&hInternet);
+                free(tmp);
+                tmp=NULL;
+                return _handleJobStatus((void*)args);
+                //break;
               }
               json_object_iter_next(&pjoIt);
             }
@@ -337,12 +353,17 @@ extern "C" {
         setMapArray(arg->input,"size",iCnt,tmpStr);
         free(tmpStr);
       }
-      free(tmp);
-      InternetCloseHandle(&hInternet);
+      if(tmp!=NULL){
+        free(tmp);
+        tmp=NULL;
+        InternetCloseHandle(&hInternet);
+        iNbJobsHandled++;
+      }
+    }
+    if(iNbJobsHandled==iNbJobsHandlers){
+      zSleep(1000);
       isOngoing=0;
     }
-    freeMaps(&tmpConf);
-    free(tmpConf);
     freeMaps(&arg->conf);
     free(arg->conf);
     pthread_exit(NULL);
@@ -355,12 +376,12 @@ extern "C" {
    * @param pmsInputs the inputs defined in the request
    * @return bool true in case of success, false in other cases
    */
-  bool handleJobStatus(maps* pmsConf,maps* pmsInputs){
+  bool handleJobStatus(maps* pmsConf,maps* pmsInputs,int iCnt){
     if(pmsInputs!=NULL){
-      map* pmLocation=getMap(pmsInputs->content,"location");
+      map* pmLocation=getMapArray(pmsInputs->content,"location",iCnt);
       if(pmLocation==NULL)
         return false;
-      addToMap(pmsInputs->content,"name",pmsInputs->name);
+      setMapArray(pmsInputs->content,"name",iCnt,pmsInputs->name);
       if(ppJobsHandlers==NULL)
         ppJobsHandlers=(pthread_t*)malloc((iNbJobsHandlers+1)*sizeof(pthread_t));
       else
@@ -373,7 +394,7 @@ extern "C" {
       job_handler_arguments[iNbJobsHandlers]->conf=dupMaps(&pmsConf);
       job_handler_arguments[iNbJobsHandlers]->input=NULL;
       addMapToMap(&job_handler_arguments[iNbJobsHandlers]->input,pmsInputs->content);
-      job_handler_arguments[iNbJobsHandlers]->id=iNbJobsHandlers;
+      job_handler_arguments[iNbJobsHandlers]->id=iCnt;
       if(pthread_create(&ppJobsHandlers[iNbJobsHandlers], NULL, _handleJobStatus, (void*)job_handler_arguments[iNbJobsHandlers])==-1){
         setMapInMaps(pmsConf,"lenv","message",_("Unable to create a new thread for handling job status"));
         return false;
@@ -388,6 +409,8 @@ extern "C" {
    * Wait for the threads to end then, clean used memory.
    */
   void cleanupJobStatusThreads(maps** pmsInputs){
+    if(iNbJobsHandlers==0)
+      return;
     while( isOngoing>0 ){
       zSleep(100);
     }
