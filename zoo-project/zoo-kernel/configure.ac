@@ -1232,6 +1232,21 @@ AC_SUBST([CXXFLAGS])
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
 
+# ===========================================================================
+# Detect if log to the console
+# ===========================================================================
+AC_ARG_WITH([log-console],
+        [AS_HELP_STRING([--with-log-console=yes], [Specifies that logs will be produced on console])],
+        [LOG_CONSOLE="$withval"], [LOG_CONSOLE=""])
+
+if test "x$LOG_CONSOLE" = "xyes"; then
+   	LOG_CONSOLE_ENABLED="-DLOG_CONSOLE_ENABLED"
+else
+   	LOG_CONSOLE_ENABLED=""
+fi
+
+AC_SUBST([LOG_CONSOLE_ENABLED])
+
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([ZOOMakefile.opts])
 AC_CONFIG_FILES([main.cfg])
