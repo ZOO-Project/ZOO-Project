@@ -1,4 +1,4 @@
-name: Docker Image CI (DRU with HPC abd OGC Application Package support)
+name: Docker Image CI (DRU with HPC and OGC Application Package support)
 
 on:
   push:
