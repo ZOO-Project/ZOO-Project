@@ -1,29 +1,33 @@
 name: ades-dev
 channels:
-  - anaconda
-  - conda-forge
   - terradue
+  - conda-forge
   - eoepca
-  - terradue/label/dev
 dependencies:
-  - python=3.8
-  - jinja2
-  - cookiecutter=2.1.1
-  - boto3
-  - pycalrissian
-  - zoo-calrissian-runner=0.1.9
-  - python-kubernetes
-  - cwl-wrapper=0.12.1
-  - coverage
-  - certifi=2023.7.22
-  - cryptography=39.0.1
-  - wheel=0.38.1
+  - python==3.10
+  - black
+  - pre-commit
+  - isort
+  - flake8
+  - autoflake
+  - pylint
+  - nose2
+  - git
   - pip
+  - cwl-wrapper
+  - pycalrissian
+  - loguru
   - pip:
-    - cwl_utils==0.14
+    - git+https://github.com/EOEPCA/zoo-calrissian-runner.git@b495e83
+    - attrs
+    - cwl-utils==0.14
     - cheetah3
     - psycopg2-binary
-    - redis
-    - certifi>=2023.7.22
-    - cryptography>=39.0.1
-    - wheel>=0.38.1
+    - kubernetes==28.1.0
+    - cookiecutter
+    - boto3
+    - botocore
+    - pystac
+    - python-dotenv
+    - pyjwt
+prefix: /usr/miniconda3/envs/ades-dev
