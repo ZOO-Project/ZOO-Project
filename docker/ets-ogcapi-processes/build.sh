@@ -23,9 +23,9 @@
 # THE SOFTWARE.
 
 cd docker/ets-ogcapi-processes
-curl -L -o 5.5.2.zip https://github.com/opengeospatial/teamengine/archive/refs/tags/5.5.2.zip
-unzip 5.5.2.zip
-mv teamengine-5.5.2 src
+curl -L -o 5.7.zip https://github.com/opengeospatial/teamengine/archive/refs/tags/5.7.zip
+unzip 5.7.zip
+mv teamengine-5.7 src
 
 git clone https://github.com/opengeospatial/ets-common.git src1
 cd src1
@@ -37,5 +37,3 @@ cd ../../..
 docker build . -f docker/ets-ogcapi-processes/Dockerfile --progress plain -t zooproject/ets-ogcapi-processes10:latest
 
 sed "s/localhost/zookernel/g" -i docker/*.cfg
-sed "s=<organization>=<config><organization>=g;s=</organization>=</organization></config>=g" -i docker/ets-ogcapi-processes/src1/ets-ogcapi-processes10/src/main/config/teamengine/config.xml
-sed "s=<organization>=<config><organization>=g;s=</organization>=</organization></config>=g" -i docker/ets-ogcapi-processes/src1/ets-wps20/src/main/config/teamengine/config.xml

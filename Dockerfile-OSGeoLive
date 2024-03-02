@@ -307,6 +307,7 @@ ARG RUN_DEPS=" \
     libapache2-mod-fcgid \
     python3-setuptools \
     libotbapplicationengine-8.1 \
+    libpython3.10-dev \
     #Uncomment the line below to add vi editor \
     #vim \
     #Uncomment the lines below to add debuging \
