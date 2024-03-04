@@ -23,6 +23,7 @@
 # THE SOFTWARE.
 #
 
+export TE_BASE=/root/te_base/
 java -jar $(find /root -name "ets-ogcapi-processes10-*aio.jar") -o /tmp /root/test-run-ogcapi-processes-1.xml
 cat $(find /tmp -name "*results.xml")
 echo Success: $(grep PASS $(find /tmp -name "*results.xml") | wc -l)
