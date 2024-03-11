@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:20.04
 
 # to build:
 # docker build --rm -t zooproject/zoo-project:hpgc-latest . -f docker/hpgc/Dockerfile
