@@ -15,12 +15,11 @@ steps :
 Build cgic
 ----------
 
-Run the following commands from the ``thirds/cgic`` directory to build
+Run the following commands from the ``thirds/cgic206`` directory to build
 the cgic library.
 
 ::
 
-   cd thirds/cgic
    make
 
 The cgic library originaly come from `http://www.boutell.com/cgic
@@ -482,6 +481,21 @@ ZOO-Service translation files.
 .. warning::
     The location of the final ``.mo`` file may vary depending on your
     system setup.
+
+Logs on console  (Optional)
+************************
+
+If needed (typically in case of Docker deployment), it is possible to force the logs
+to be written on the console (stderr) :
+
+::
+
+  $ ./configure --with-log-console=yes
+
+.. warning::
+    Logging all services executions on the console can be tricky to troubleshoot in case
+    of parallel executions. A good solution is to log the job id in the code of the service
+    depending the language chosen.
 
 
 Install ZOO-Services

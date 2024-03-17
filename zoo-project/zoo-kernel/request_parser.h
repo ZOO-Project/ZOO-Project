@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
   xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
-  int appendMapsToMaps (maps*, maps*, maps*, elements*);
+  int appendMapsToMaps (maps**, maps*, maps*, elements*);
   void ensureDecodedBase64(maps**);
   int kvpParseInputs(maps**,service*,map*,maps**,HINTERNET*);
   int xmlParseBoundingBox(maps**,map**,xmlDocPtr);

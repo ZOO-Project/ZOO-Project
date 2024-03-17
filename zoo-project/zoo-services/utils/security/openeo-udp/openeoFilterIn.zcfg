@@ -1,0 +1,20 @@
+[openeoFilterIn]
+ Title = OpenEO UDP support
+ Abstract = This service provides support for deploying OpenEO UDB graph as OGC API - Processes - Part 1: Core
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = Python
+ serviceProvider = openeo_filter
+ <DataInputs>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting string
+   Abstract = Unused string
+   <LiteralData>
+    DataType = string
+    <Default>
+    </Default>	
+   </LiteralData>
+ </DataOutputs>  

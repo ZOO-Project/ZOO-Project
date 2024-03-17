@@ -25,6 +25,7 @@
 #include "request_parser.h"
 #include "service_internal.h"
 #include "server_internal.h"
+#include "service_callback.h"
 #include "response_print.h"
 #include "caching.h"
 #include "cgic.h"
@@ -37,7 +38,7 @@
  * @return xmlXPathObjectPtr containing the resulting nodes set
  */
 xmlXPathObjectPtr
-extractFromDoc (xmlDocPtr doc, const char *search)
+extractFromDoc (xmlDocPtr doc, const char* search)
 {
   xmlXPathContextPtr xpathCtx;
   xmlXPathObjectPtr xpathObj;
@@ -56,7 +57,7 @@ extractFromDoc (xmlDocPtr doc, const char *search)
  * @param elem the elements containing default definitions
  * @return 0 on success, -1 on failure
  */
-int appendMapsToMaps (maps * m, maps * mo, maps * mi, elements * elem){
+int appendMapsToMaps (maps** m, maps* mo, maps* mi, elements* elem){
   maps *tmpMaps = getMaps (mo, mi->name);
   map *tmap = getMapType (tmpMaps->content);
   elements *el = getElements (elem, mi->name);
@@ -194,16 +195,16 @@ void ensureDecodedBase64(maps **in){
 /**
  * Parse inputs provided as KVP and store them in a maps.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param s the service
  * @param request_inputs the map storing KVP raw value 
  * @param request_output the maps to store the KVP pairs 
  * @param hInternet the HINTERNET queue to add potential requests
  * @return 0 on success, -1 on failure
  */
-int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** request_output,HINTERNET* hInternet){
+int kvpParseInputs(maps** pmsConf,service* s,map *request_inputs,maps** request_output,HINTERNET* hInternet){
   // Parsing inputs provided as KVP
-  map* memory=getMapFromMaps(*main_conf,"main","memory");
+  map* memory=getMapFromMaps(*pmsConf,"main","memory");
   maps *tmpmaps = *request_output;
   map* r_inputs = getMap (request_inputs, "DataInputs");
   char* cursor_input;
@@ -222,7 +223,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
     if (inputs_as_text == NULL)
       {
 	free(cursor_input);
-	return errorException (*main_conf, _("Unable to allocate memory"),
+	return errorException (pmsConf, _("Unable to allocate memory"),
 			       "InternalError", NULL);
       }
     int i = 0;
@@ -233,7 +234,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 	if (inputs_as_text[i] == NULL)
 	  {
 	    free(cursor_input);
-	    return errorException (*main_conf, _("Unable to allocate memory"),
+	    return errorException (pmsConf, _("Unable to allocate memory"),
 				   "InternalError", NULL);
 	  }
 	snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
@@ -269,7 +270,7 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		if (tmpmaps == NULL)
 		  {
 		    free(cursor_input);
-		    return errorException (*main_conf,
+		    return errorException (pmsConf,
 					   _("Unable to allocate memory"),
 					   "InternalError", NULL);
 		  }
@@ -326,15 +327,15 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 				 ("Unable to find a valid protocol to download the remote file %s"),
 				 tmpv1 + 1);
 			free(cursor_input);
-			return errorException (*main_conf, emsg, "InternalError", NULL);
+			return errorException (pmsConf, emsg, "InternalError", NULL);
 		      }
 		    addToMap (tmpmaps->content, tmpn1, tmpx2);
 		    {
 		      if (loadRemoteFile
-			  (&*main_conf, &tmpmaps->content, hInternet, tmpx2) < 0)
+			  (&*pmsConf, &tmpmaps->content, hInternet, tmpx2) < 0)
 			{
 			  free(cursor_input);
-			  return errorException (*main_conf, "Unable to fetch any resource", "InternalError", NULL);
+			  return errorException (pmsConf, "Unable to fetch any resource", "InternalError", NULL);
 			}
 		      }
 		    free (tmpx2);
@@ -360,11 +361,11 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 		    if (elem != NULL)
 		      {
 			if (appendMapsToMaps
-			    (*main_conf, *request_output, tmpmaps,
+			    (pmsConf, *request_output, tmpmaps,
 			     elem) < 0)
 			  {
 			    free(cursor_input);
-			    return errorException (*main_conf, "Unable to append maps", "InternalError", NULL);
+			    return errorException (pmsConf, "Unable to append maps", "InternalError", NULL);
 			  }
 		      }
 		  }
@@ -386,12 +387,12 @@ int kvpParseInputs(maps** main_conf,service* s,map *request_inputs,maps** reques
 /**
  * Parse outputs provided as KVP and store them in a maps.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param request_inputs the map storing KVP raw value 
  * @param request_output the maps to store the KVP pairs 
  * @return 0 on success, -1 on failure
  */
-int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
+int kvpParseOutputs(maps** pmsConf,map *request_inputs,maps** request_output){
   /**
    * Parsing outputs provided as KVP
    */
@@ -415,7 +416,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
       if (outputs_as_text == NULL)
 	{
 	  free(cursor_output);
-	  return errorException (*main_conf, _("Unable to allocate memory"),
+	  return errorException (pmsConf, _("Unable to allocate memory"),
 				 "InternalError", NULL);
 	}
       int i = 0;
@@ -426,7 +427,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 	  if (outputs_as_text[i] == NULL)
 	    {
 	      free(cursor_output);
-	      return errorException (*main_conf, _("Unable to allocate memory"),
+	      return errorException (pmsConf, _("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
 	  snprintf (outputs_as_text[i], strlen (pToken) + 1, "%s",
@@ -471,7 +472,7 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 		      if (tmp_output == NULL)
 			{
 			  free(cursor_output);
-			  return errorException (*main_conf,
+			  return errorException (pmsConf,
 						 _
 						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
@@ -516,15 +517,15 @@ int kvpParseOutputs(maps** main_conf,map *request_inputs,maps** request_output){
 /**
  * Create a "missingIdentifier" maps in case it is NULL.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param mymaps the maps to update
  * @return 0 on success, 4 on failure
  */
-int defineMissingIdentifier(maps** main_conf,maps** mymaps){
+int defineMissingIdentifier(maps** pmsConf,maps** mymaps){
   if (*mymaps == NULL){
     *mymaps = createMaps("missingIndetifier");
     if (*mymaps == NULL){
-      return errorException (*main_conf,
+      return errorException (pmsConf,
 			     _("Unable to allocate memory"),
 			     "InternalError", NULL);
     }
@@ -535,7 +536,7 @@ int defineMissingIdentifier(maps** main_conf,maps** mymaps){
 /**
  * Parse inputs from XML nodes and store them in a maps.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param s the service
  * @param request_output the maps to store the KVP pairs 
  * @param doc the xmlDocPtr containing the original request
@@ -543,11 +544,11 @@ int defineMissingIdentifier(maps** main_conf,maps** mymaps){
  * @param hInternet the HINTERNET queue to add potential requests
  * @return 0 on success, -1 on failure
  */
-int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes,HINTERNET* hInternet){
+int xmlParseInputs(maps** pmsConf,service* s,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes,HINTERNET* hInternet){
   int k = 0;
   int l = 0;
-  map* version=getMapFromMaps(*main_conf,"main","rversion");
-  map* memory=getMapFromMaps(*main_conf,"main","memory");
+  map* version=getMapFromMaps(*pmsConf,"main","rversion");
+  map* memory=getMapFromMaps(*pmsConf,"main","memory");
   int vid=getVersionId(version->value);
   for (k=0; k < nodes->nodeNr; k++)
     {
@@ -582,7 +583,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		      tmpmaps = createMaps((char*)val);
 		      if (tmpmaps == NULL)
 			{
-			  return errorException (*main_conf,
+			  return errorException (pmsConf,
 						 _
 						 ("Unable to allocate memory"),
 						 "InternalError", NULL);
@@ -599,7 +600,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		{
 		  xmlChar *val =
 		    xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
-		  defineMissingIdentifier(main_conf,&tmpmaps);
+		  defineMissingIdentifier(pmsConf,&tmpmaps);
 		  if(val!=NULL){
 		    if (tmpmaps->content != NULL)
 		      addToMap (tmpmaps->content,
@@ -619,7 +620,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		  xmlNodeSet *tmps = tmpsptr->nodesetval;
 		  if(tmps!=NULL){
 		    maps* request_output1=NULL;
-		    if(xmlParseInputs(main_conf,s,&request_output1,doc,tmps,hInternet)<0)
+		    if(xmlParseInputs(pmsConf,s,&request_output1,doc,tmps,hInternet)<0)
 		      return -1;
 		    if(tmpmaps->child==NULL)
 		      tmpmaps->child=dupMaps(&request_output1);
@@ -633,7 +634,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		}
 	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Reference") == 0)
 		{
-		  defineMissingIdentifier(main_conf,&tmpmaps);
+		  defineMissingIdentifier(pmsConf,&tmpmaps);
 		  // Get every attribute from a Reference node
 		  // mimeType, encoding, schema, href, method
 		  // Header and Body gesture should be added here
@@ -658,10 +659,10 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 			      if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
 				{
 				  if (loadRemoteFile
-				      (main_conf, &tmpmaps->content, hInternet,
+				      (pmsConf, &tmpmaps->content, hInternet,
 				       (char *) val) != 0)
 				    {
-				      return errorException (*main_conf,
+				      return errorException (pmsConf,
 							     _("Unable to add a request in the queue."),
 							     "InternalError",
 							     NULL);
@@ -715,7 +716,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					    sizeof (char));
 				  if (has == NULL)
 				    {
-				      return errorException (*main_conf,
+				      return errorException (pmsConf,
 							     _
 							     ("Unable to allocate memory"),
 							     "InternalError",
@@ -726,15 +727,15 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					     strlen (key)), "%s: %s", key,
 					    (char *) val);
 #ifdef USE_AMQP
-				  if(getMaps(*main_conf,"rabbitmq")){
+				  if(getMaps(*pmsConf,"rabbitmq")){
 				    char* pcaName=NULL;
 				    pcaName=(char*) malloc((26)*sizeof(char));
 				    sprintf(pcaName,"rb_headers_%d",hInternet->nb);
-				    if(getMapFromMaps(*main_conf,"lenv",pcaName)==NULL){
-				      setMapInMaps(*main_conf,"lenv",pcaName,has);
+				    if(getMapFromMaps(*pmsConf,"lenv",pcaName)==NULL){
+				      setMapInMaps(*pmsConf,"lenv",pcaName,has);
 				    }
 				    else{
-				      maps* pmCurrent=getMaps(*main_conf,"lenv");
+				      maps* pmCurrent=getMaps(*pmsConf,"lenv");
 				      setMapArray(pmCurrent->content,pcaName,iHeaders,has);
 				    }
 				  }
@@ -798,14 +799,14 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				      addToMap (tmpmaps->content, "Body", tmp);
 				      if (btmp != NULL)
 					{
-					  addRequestToQueue(main_conf,hInternet,(char *) btmp->value,false);
+					  addRequestToQueue(pmsConf,hInternet,(char *) btmp->value,false);
 					  InternetOpenUrl (hInternet,
 							   btmp->value,
 							   tmp,
 							   xmlStrlen(btmps),
 							   INTERNET_FLAG_NO_CACHE_WRITE,
 							   0,
-							   *main_conf);
+							   *pmsConf);
 					  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 					}
 				      xmlFree (btmps);
@@ -856,7 +857,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					   1) * sizeof (char));
 				if (tmp == NULL)
 				  {
-				    return errorException (*main_conf,
+				    return errorException (pmsConf,
 							   _
 							   ("Unable to allocate memory"),
 							   "InternalError",
@@ -875,7 +876,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 				  getMap (tmpmaps->content, "href");
 				if (btmp != NULL)
 				  {
-				    addRequestToQueue(main_conf,hInternet,(char *) btmp->value,false);
+				    addRequestToQueue(pmsConf,hInternet,(char *) btmp->value,false);
 
 				    res =
 				      InternetOpenUrl (hInternet,
@@ -884,7 +885,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 						       strlen(tmp),
 						       INTERNET_FLAG_NO_CACHE_WRITE,
 						       0,
-						       *main_conf);
+						       *pmsConf);
 				    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
 				  }
 				free (tmp);
@@ -896,7 +897,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		}
 	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Data") == 0)
 		{
-		  defineMissingIdentifier(main_conf,&tmpmaps);
+		  defineMissingIdentifier(pmsConf,&tmpmaps);
 		  xmlNodePtr cur4 = cur2->children;
 		  if(vid==1){
 		    // Get every dataEncodingAttributes from a Data node:
@@ -1092,7 +1093,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 							"utf-8",0);
 			      addIntToMap (tmpmaps->content, "size",
 					   buffersize);
-			      xmlParseBoundingBox(main_conf,&tmpmaps->content,doc1);
+			      xmlParseBoundingBox(pmsConf,&tmpmaps->content,doc1);
 			    }else{
 			      xmlNodePtr cur5 = cur4->children;
 			      while (cur5 != NULL
@@ -1114,7 +1115,7 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 					       buffersize);
 				}
 			      else if (cur5 != NULL){
-				map* handleText=getMapFromMaps(*main_conf,"main","handleText");
+				map* handleText=getMapFromMaps(*pmsConf,"main","handleText");
 				if(handleText!=NULL && strcasecmp(handleText->value,"true")==0 && ltmp!= NULL && strstr(ltmp->value,"text/")!=NULL){
 				  xmlChar *tmp = xmlNodeListGetRawString (doc,
 									  cur4->xmlChildrenNode,
@@ -1202,9 +1203,9 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
 		if (elem != NULL)
 		  {
 		    if (appendMapsToMaps
-			(*main_conf, testPresence, tmpmaps, elem) < 0)
+			(pmsConf, testPresence, tmpmaps, elem) < 0)
 		      {
-			return errorException (*main_conf,
+			return errorException (pmsConf,
 					       _("Unable to append maps to maps."),
 					       "InternalError",
 					       NULL);
@@ -1234,12 +1235,12 @@ int xmlParseInputs(maps** main_conf,service* s,maps** request_output,xmlDocPtr d
  *  - crs : URI (Reference to definition of the CRS)
  *  - dimensions : int 
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param request_inputs the map storing KVP raw value 
  * @param doc the xmlDocPtr containing the BoudingoxData node
  * @return a map containing all the bounding box keys
  */
-int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc){
+int xmlParseBoundingBox(maps** pmsConf,map** current_input,xmlDocPtr doc){
   xmlNode *root_element = xmlDocGetRootElement(doc);
   for(xmlAttrPtr attr = root_element->properties; NULL != attr; attr = attr->next){
     xmlChar *val = xmlGetProp (root_element, BAD_CAST attr->name);
@@ -1264,7 +1265,7 @@ int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc){
 /**
  * Parse outputs from XML nodes and store them in a maps (WPS version 2.0.0).
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param request_inputs the map storing KVP raw value 
  * @param request_output the maps to store the KVP pairs 
  * @param doc the xmlDocPtr containing the original request
@@ -1272,7 +1273,7 @@ int xmlParseBoundingBox(maps** main_conf,map** current_input,xmlDocPtr doc){
  * @param raw true if the node is RawDataOutput, false in case of ResponseDocument
  * @return 0 on success, -1 on failure
  */
-int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes){
+int xmlParseOutputs2(maps** pmsConf,map** request_inputs,maps** request_output,xmlDocPtr doc,xmlNodeSet* nodes){
   int k = 0;
   int l = 0;
   for (k=0; k < nodes->nodeNr; k++){
@@ -1311,7 +1312,7 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);	    
 	    xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
 	    xmlNodeSet* cnodes = tmpsptr->nodesetval;
-	    xmlParseOutputs2(main_conf,request_inputs,&tmpmaps->child,doc,cnodes);
+	    xmlParseOutputs2(pmsConf,request_inputs,&tmpmaps->child,doc,cnodes);
 	    xmlXPathFreeObject (tmpsptr);
 	    free(xpathExpr);
 	    break;
@@ -1335,7 +1336,7 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
 /**
  * Parse outputs from XML nodes and store them in a maps.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param request_inputs the map storing KVP raw value 
  * @param request_output the maps to store the KVP pairs 
  * @param doc the xmlDocPtr containing the original request
@@ -1343,7 +1344,7 @@ int xmlParseOutputs2(maps** main_conf,map** request_inputs,maps** request_output
  * @param raw true if the node is RawDataOutput, false in case of ResponseDocument
  * @return 0 on success, -1 on failure
  */
-int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,xmlDocPtr doc,xmlNodePtr cur,bool raw){
+int xmlParseOutputs(maps** pmsConf,map** request_inputs,maps** request_output,xmlDocPtr doc,xmlNodePtr cur,bool raw){
   int l=0;
   if( raw == true)
     {
@@ -1354,7 +1355,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	  maps *tmpmaps = createMaps("unknownIdentifier");
 	  if (tmpmaps == NULL)
 	    {
-	      return errorException (*main_conf, _("Unable to allocate memory"),
+	      return errorException (pmsConf, _("Unable to allocate memory"),
 				     "InternalError", NULL);
 	    }
 
@@ -1441,7 +1442,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 				
 	    maps *tmpmaps = createMaps("unknownIdentifier"); // one per Output node
 	    if (tmpmaps == NULL) {
-	      return errorException (*main_conf,
+	      return errorException (pmsConf,
 				     _
 				     ("Unable to allocate memory"),
 				     "InternalError", NULL);
@@ -1525,7 +1526,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 	      *request_output = tmpmaps;
 	    }	
 	    else if (getMaps(*request_output, tmpmaps->name) != NULL) {
-	      return errorException (*main_conf,
+	      return errorException (pmsConf,
 				     _
 				     ("Duplicate <Output> elements in WPS Execute request"),
 				     "InternalError", NULL);
@@ -1547,7 +1548,7 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
 /**
  * Parse XML request and store information in maps.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param post the string containing the XML request
  * @param request_inputs the map storing KVP raw value 
  * @param s the service
@@ -1556,9 +1557,9 @@ int xmlParseOutputs(maps** main_conf,map** request_inputs,maps** request_output,
  * @param hInternet the HINTERNET queue to add potential requests
  * @return 0 on success, -1 on failure
  */
-int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
+int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
 
-  map* version=getMapFromMaps(*main_conf,"main","rversion");
+  map* version=getMapFromMaps(*pmsConf,"main","rversion");
   int vid=getVersionId(version->value);
 
   xmlInitParser ();
@@ -1570,7 +1571,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
   xmlXPathObjectPtr tmpsptr =
     extractFromDoc (doc, (vid==0?"/*/*/*[local-name()='Input']":"/*/*[local-name()='Input']"));
   xmlNodeSet *tmps = tmpsptr->nodesetval;
-  if(tmps==NULL || xmlParseInputs(main_conf,s,inputs,doc,tmps,hInternet)<0){
+  if(tmps==NULL || xmlParseInputs(pmsConf,s,inputs,doc,tmps,hInternet)<0){
     xmlXPathFreeObject (tmpsptr);
     xmlFreeDoc (doc);
     xmlCleanupParser ();
@@ -1616,7 +1617,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
       extractFromDoc (doc, "/*/*[local-name()='Output']");
     tmps = tmpsptr->nodesetval;
     if(tmps->nodeNr > 0){
-      if(xmlParseOutputs2(main_conf,request_inputs,outputs,doc,tmps)<0){
+      if(xmlParseOutputs2(pmsConf,request_inputs,outputs,doc,tmps)<0){
 	xmlXPathFreeObject (tmpsptr);
 	xmlFreeDoc (doc);
 	xmlCleanupParser ();
@@ -1639,7 +1640,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 	asRaw = true;
       }
     if(tmps->nodeNr != 0){
-      if(xmlParseOutputs(main_conf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
+      if(xmlParseOutputs(pmsConf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
 	xmlXPathFreeObject (tmpsptr);
 	xmlFreeDoc (doc);
 	xmlCleanupParser ();
@@ -1656,7 +1657,7 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
 /**
  * Parse request and store information in maps.
  *
- * @param main_conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param post the string containing the XML request
  * @param request_inputs the map storing KVP raw value 
  * @param s the service
@@ -1666,22 +1667,22 @@ int xmlParseRequest(maps** main_conf,const char* post,map** request_inputs,servi
  * @return 0 on success, -1 on failure
  * @see kvpParseOutputs,kvpParseInputs,xmlParseRequest
  */
-int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
+int parseRequest(maps** pmsConf,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
   map *postRequest = NULL;
   postRequest = getMap (*request_inputs, "xrequest");
   if (postRequest == NULLMAP)
     {
-      if(kvpParseOutputs(main_conf,*request_inputs,outputs)<0){
+      if(kvpParseOutputs(pmsConf,*request_inputs,outputs)<0){
 	return -1;
       }
-      if(kvpParseInputs(main_conf,s,*request_inputs,inputs,hInternet)<0){
+      if(kvpParseInputs(pmsConf,s,*request_inputs,inputs,hInternet)<0){
 	return -1;
       }
     }
   else
     {
       //Parse XML request
-      if(xmlParseRequest(main_conf,postRequest->value,request_inputs,s,inputs,outputs,hInternet)<0){
+      if(xmlParseRequest(pmsConf,postRequest->value,request_inputs,s,inputs,outputs,hInternet)<0){
 	return -1;
       }
     }
@@ -1694,7 +1695,7 @@ int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,
  * http requests from the queue in parallel.
  * For optional inputs add default values defined in the ZCFG file.
  * 
- * @param main_conf
+ * @param pmsConf
  * @param s 
  * @param original_request
  * @param request_inputs
@@ -1703,21 +1704,43 @@ int parseRequest(maps** main_conf,map** request_inputs,service* s,maps** inputs,
  * 
  * @see runHttpRequests
  */
-int validateRequest(maps** main_conf,service* s,map* original_request, maps** request_inputs,maps** request_outputs,HINTERNET* hInternet){
+int validateRequest(maps** pmsConf,service* s,map* original_request, maps** request_inputs,maps** request_outputs,HINTERNET* hInternet){
 
   if(hInternet!=NULL){
     map* errI0=NULL;
-    runHttpRequests (main_conf, request_inputs, hInternet,&errI0);
+    updateStatus(*pmsConf,1,"Downloading inputs / nested processes invocation");
+    runHttpRequests (pmsConf, request_inputs, hInternet,&errI0);
     if(errI0!=NULL){
-      printExceptionReportResponse (*main_conf, errI0);
+      printExceptionReportResponse (pmsConf, errI0);
       InternetCloseHandle (hInternet);
       return -1;
     }
+    updateStatus(*pmsConf,2,"Inputs downloaded, proceed with job status handling");
+    // For execute requests that should run asynchronously, we should
+    // wait for the processing to end before continuing
+    maps* pmsInputs=*request_inputs;
+    while(pmsInputs!=NULL){
+      map* pmLength=getMap(pmsInputs->content,"length");
+      int iLength=1;
+      int iJobHanderCnt=0;
+      if(pmLength!=NULL)
+        iLength=atoi(pmLength->value);
+      for(int iCnt=0;iCnt<iLength;iCnt++){
+        map* pmJobStatus=NULL;
+        if((pmJobStatus=getMapArray(pmsInputs->content,"require_job_handler",iCnt))!=NULL){
+          handleJobStatus(*pmsConf,pmsInputs,iCnt);
+          iJobHanderCnt++;
+        }
+      }
+      pmsInputs=pmsInputs->next;
+    }
+    cleanupJobStatusThreads(request_inputs);
     InternetCloseHandle (hInternet);
+    updateStatus(*pmsConf,3,"Inputs downloaded, nested processes execution finalized");
   }
 
   map* errI=NULL;
-  char *dfv = addDefaultValues (request_inputs, s->inputs, *main_conf, 0,&errI);
+  char *dfv = addDefaultValues (request_inputs, s->inputs, *pmsConf, 0,&errI);
 
   maps *ptr = *request_inputs;
   while (ptr != NULL)
@@ -1737,10 +1760,10 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
                         ptr->name, tmp1->value, i);
               addToMap (tmpe, "locator", ptr->name);
               addToMap (tmpe, "text", tmps);
-	      printExceptionReportResponse (*main_conf, tmpe);
+              printExceptionReportResponse (pmsConf, tmpe);
               freeMap (&tmpe);
               free (tmpe);
-	      return -1;
+              return -1;
             }
         }
       ptr = ptr->next;
@@ -1748,7 +1771,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
 
   map* errO=NULL;
   char *dfv1 =
-    addDefaultValues (request_outputs, s->outputs, *main_conf, 1,&errO);
+    addDefaultValues (request_outputs, s->outputs, *pmsConf, 1,&errO);
 
   if (strcmp (dfv1, "") != 0 || strcmp (dfv, "") != 0)
     {
@@ -1800,7 +1823,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
 	    setMapArray (tmpe, "code", nb+ilength , "InvalidParameterValue");
 	  }
 	}
-      printExceptionReportResponse (*main_conf, tmpe);
+      printExceptionReportResponse (pmsConf, tmpe);
       if(errI!=NULL){
 	freeMap(&errI);
 	free(errI);
@@ -1832,7 +1855,7 @@ int validateRequest(maps** main_conf,service* s,map* original_request, maps** re
               char *tmpStr = NULL;
               int size;
               int got, t;
-              map *path = getMapFromMaps (*main_conf, "main", "tmpPath");
+              map *path = getMapFromMaps (*pmsConf, "main", "tmpPath");
               cgiFormFileSize (tmpReqI->name, &size);
               cgiFormFileContentType (tmpReqI->name, contentType,
                                       sizeof (contentType));
@@ -2059,66 +2082,74 @@ void parseCookie(maps** conf,const char* cookie){
  * Parse all the http requests possibily attached to inputs and, add them to the
  * request queue.
  *
+ * Add Reference and Order fields to the input's metadata map.
+ *
  * @param conf maps containing the main configuration file
  * @param inputs maps containing all the inputs
  * @param hInternet an HTINTERNET connection
  * @return 0 in case of success
+ * @see readCurrentInput
  */
 int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
   maps* curs=inputs;
   int iCnt=0;
   while(curs!=NULL){
-    map* href=getMap(curs->content,"href");
-    if(href!=NULL){
-      char* pcaHeaders=(char *)malloc(22*sizeof(char));
-      sprintf(pcaHeaders,"rb_headers_%d",iCnt);
-      map* pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
-      int iHeaderCnt=0;
-      while(pmTmp!=NULL){
-	char* pcaTmpValue=zStrdup(pmTmp->value);
-	hInternet->ihandle[iCnt].header =
-	  curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
-	free(pcaTmpValue);
-	free(pcaHeaders);
-	pcaHeaders=(char *)malloc(33*sizeof(char));
-	iHeaderCnt++;
-	sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
-	pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
-      }
-      map* len=getMap(curs->content,"length");
-      if(len!=NULL and atoi(len->value)>1){
-        int llen=atoi(len->value);
-        for(int i=0;i<llen;i++){
-          map* body=getMapArray(curs->content,"Body",i);
-          if(body!=NULL){
-            addRequestToQueue(&conf,hInternet,(char *) href->value,false);
-            InternetOpenUrl (hInternet,
-                             href->value,
-                             body->value,
-                             strlen(body->value),
-                             INTERNET_FLAG_NO_CACHE_WRITE,
-                             0,
-                             conf);
-          }else{
-            addRequestToQueue(&conf,hInternet,(char *) href->value,true);
-          }
-        }
-      }else{
-        map* body=getMap(curs->content,"Body");
+    int iLen=1;
+    map* len=getMap(curs->content,"length");
+    char* pcaHeaders=(char *)malloc(22*sizeof(char));
+    sprintf(pcaHeaders,"rb_headers_%d",iCnt);
+    map* pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+    int iHeaderCnt=0;
+    while(pmTmp!=NULL){
+      char* pcaTmpValue=zStrdup(pmTmp->value);
+      hInternet->ihandle[iCnt].header =
+        curl_slist_append (hInternet->ihandle[iCnt].header,pcaTmpValue);
+      free(pcaTmpValue);
+      free(pcaHeaders);
+      pcaHeaders=(char *)malloc(33*sizeof(char));
+      iHeaderCnt++;
+      sprintf(pcaHeaders,"rb_headers_%d_%d",iCnt,iHeaderCnt);
+      pmTmp=getMapFromMaps(conf,"lenv",pcaHeaders);
+    }
+    if(len!=NULL)
+      iLen=atoi(len->value);
+    for(int i=0;i<iLen;i++){
+      map* pmHref=getMapArray(curs->content,"href",i);
+      if(pmHref==NULL)
+        pmHref=getMapArray(curs->content,"xlink:href",i);
+      if(pmHref!=NULL){
+        map* body=getMapArray(curs->content,"Body",i);
         if(body!=NULL){
-          addRequestToQueue(&conf,hInternet,(char *) href->value,false);
+          char* apcTmp[2]={
+            "Headers",
+            "Headers_extra"
+          };
+          for(int iCntL=0;iCntL<2;iCntL++){
+            map* pmHeaders=getMapArray(curs->content,apcTmp[iCntL],i);
+            if(pmHeaders!=NULL){
+              // TODO: handle multiple headers with | as separator
+              hInternet->ihandle[iCnt].header =
+                curl_slist_append (hInternet->ihandle[iCnt].header,pmHeaders->value);
+            }
+          }
+          addRequestToQueue(&conf,hInternet,(char *) pmHref->value,false);
           InternetOpenUrl (hInternet,
-                           href->value,
-                           body->value,
-                           strlen(body->value),
-                           INTERNET_FLAG_NO_CACHE_WRITE,
-                           0,
-                           conf);
+                            pmHref->value,
+                            body->value,
+                            strlen(body->value),
+                            INTERNET_FLAG_NO_CACHE_WRITE,
+                            0,
+                            conf);
         }else{
-          addRequestToQueue(&conf,hInternet,(char *) href->value,true);
+          addRequestToQueue(&conf,hInternet,(char *) pmHref->value,true);
         }
+        char* pcaTmp=(char *)malloc(7*sizeof(char));
+        sprintf(pcaTmp,"%d",iCnt+1);
+        setMapArray(curs->content,"Order",i,pcaTmp);
+        free(pcaTmp);
+        setMapArray(curs->content,"Reference",i,pmHref->value);
+        iCnt++;
       }
-      iCnt++;
     }
     curs=curs->next;
   }

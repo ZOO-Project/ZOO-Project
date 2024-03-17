@@ -1,0 +1,103 @@
+version: '3'
+services:
+  zookernel:
+    platform: linux/amd64
+    image: zooproject/zoo-project:mdl4eo-latest
+    #build: .
+    ports:
+      - "8715:8715"
+    volumes:
+      - ./docker/mdl4eo/main.cfg:/usr/lib/cgi-bin/main.cfg
+      - ./docker/mdl4eo/oas.cfg:/usr/lib/cgi-bin/oas.cfg
+      - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
+      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
+      #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
+      - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
+      - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/usr/lib/cgi-bin/subscriber.py
+      - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
+      - ./docker/.htaccess:/var/www/html/.htaccess
+      - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
+      - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
+      - ./docker/com:/usr/com/zoo-project
+      - ./docker/tmp:/tmp/zTmp
+      - ./docker/ports.conf:/etc/apache2/ports.conf
+      - /home/ubuntu/hpgc-activity/nginx/certbot/conf/archive/testbed19.geolabs.fr:/etc/letsencrypt
+      - ./docker/ssl4testbed19.geolabs.fr:/etc/apache2/ssl_rules/testbed19.geolabs.fr
+      - ./docker/models/:/var/www/html/triton/model_repo
+    depends_on:
+      - pgbouncer
+      - redis
+      - rabbitmq
+    environment:
+      - ZOO_REDIS_HOST=redis
+  zoofpm:
+    platform: linux/amd64
+    image: zooproject/zoo-project:mdl4eo-latest
+    volumes:
+      - ./docker/mdl4eo/main.cfg:/usr/lib/cgi-bin/main.cfg
+      - ./docker/mdl4eo/oas.cfg:/usr/lib/cgi-bin/oas.cfg
+      - ./docker/tmp:/tmp/zTmp
+      - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
+      - ./docker/com:/usr/com/zoo-project
+      - ./docker/startUp.sh:/startUp.sh
+      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
+      #- ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
+    depends_on:
+      - rabbitmq
+      - pgbouncer
+    environment:
+      - ZOO_RABBITMQ_HOST=rabbitmq
+    command: [ "/startUp.sh" ]
+  websocketd:
+    #platform: linux/amd64
+    build: ./docker/websocketd
+    depends_on:
+      - redis
+    ports:
+      - 8807:8888
+    environment:
+      - ZOO_REDIS_HOST=redis
+    volumes:
+      - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/shell.py
+    command: ["--port=8888", "/shell.py"]
+  pg:
+    #platform: linux/amd64
+    image: postgres:12.10-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: zoo
+      POSTGRES_PASSWORD: zoo
+      POSTGRES_DB: zoo
+    volumes:
+      # Load the zoo kernel schema
+      - ./zoo-project/zoo-kernel/sql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      # Load the async AMQP schema
+      - ./zoo-project/zoo-kernel/sql/async_amqp.sql:/docker-entrypoint-initdb.d/2-schema.sql
+    depends_on:
+      - rabbitmq
+  pgbouncer:
+    #platform: linux/amd64
+    image: edoburu/pgbouncer:1.12.0
+    environment:
+      DATABASE_URL: "postgres://zoo:zoo@pg/zoo"
+      MAX_CLIENT_CONN: 1000
+      MAX_DB_CONNECTIONS: 100
+      DEFAULT_POOL_SIZE: 100
+      POOL_MODE: transaction
+    depends_on:
+      - pg
+  redis:
+    image: redis:6.0.9
+  rabbitmq:
+    image: rabbitmq:3.8.9-management-alpine
+    volumes:
+      - ./docker/definitions.json:/etc/rabbitmq/definitions.json
+  tritonserver:
+    image: nvcr.io/nvidia/tritonserver:23.06-py3
+    volumes:
+      - ./docker/models/:/models
+    command: [ "tritonserver", "--model-repository=/models" ]

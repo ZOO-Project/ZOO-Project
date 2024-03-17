@@ -2,18 +2,24 @@ version: '3'
 services:
   zookernel:
     platform: linux/amd64
-    image: djayzen/zookernel:latest
+    image: zooproject/zoo-project:latest
     #build: .
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.10
     ports:
       - "80:80"
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
       - ./docker/default.conf:/etc/apache2/sites-available/000-default.conf
+      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
+      - ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
       - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
       - ./zoo-project/zoo-services/utils/open-api/server/publish.py:/usr/lib/cgi-bin/publish.py
       - ./zoo-project/zoo-services/utils/open-api/server/subscriber.py:/usr/lib/cgi-bin/subscriber.py
+      - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/.htaccess:/var/www/html/.htaccess
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
@@ -25,23 +31,42 @@ services:
       - rabbitmq
     environment:
       - ZOO_REDIS_HOST=redis
+      - MAPSERVER_CONFIG_FILE=/mapserver/etc/mapserver.conf
   zoofpm:
     platform: linux/amd64
-    image: djayzen/zookernel:latest
+    image: zooproject/zoo-project:latest
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.11
     volumes:
       - ./docker/main.cfg:/usr/lib/cgi-bin/main.cfg
       - ./docker/oas.cfg:/usr/lib/cgi-bin/oas.cfg
       - ./docker/tmp:/tmp/zTmp
+      - ./docker/mapserver.conf:/mapserver/etc/mapserver.conf
       - ./docker/com:/usr/com/zoo-project
+      # Uncomment below to expose a process named org.n52.javaps.test.EchoProcess
+      - ./zoo-project/zoo-services/echo-py/cgi-env:/usr/lib/cgi-bin/org/n52/javaps/test
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo_service.py:/usr/lib/cgi-bin/echo_service.py
+      - ./zoo-project/zoo-services/echo-py/cgi-env/echo.zcfg:/usr/lib/cgi-bin/echo.zcfg
     depends_on:
       - rabbitmq
       - pgbouncer
+      - zookernel
     environment:
       - ZOO_RABBITMQ_HOST=rabbitmq
+      - MAPSERVER_CONFIG_FILE=/mapserver/etc/mapserver.conf
     command: [ "/startUp.sh" ]
+    extra_hosts:
+      #- "localhost:zookernel"
+      - "localhost:172.16.238.10"
   websocketd:
     #platform: linux/amd64
-    build: ./docker/websocketd
+    build:
+      context: .
+      dockerfile: docker/websocketd/Dockerfile
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.12
     depends_on:
       - redis
     ports:
@@ -55,6 +80,9 @@ services:
     #platform: linux/amd64
     image: postgres:12.10-alpine
     restart: always
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.13
     environment:
       POSTGRES_USER: zoo
       POSTGRES_PASSWORD: zoo
@@ -69,22 +97,33 @@ services:
   pgbouncer:
     #platform: linux/amd64
     image: edoburu/pgbouncer:1.12.0
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.14
     environment:
       DATABASE_URL: "postgres://zoo:zoo@pg/zoo"
       MAX_CLIENT_CONN: 1000
       MAX_DB_CONNECTIONS: 100
       DEFAULT_POOL_SIZE: 100
       POOL_MODE: transaction
-    ports:
-      - "5432:5432"
     depends_on:
       - pg
   redis:
     image: redis:6.0.9
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.15
   rabbitmq:
     image: rabbitmq:3.8.9-management-alpine
+    networks:
+      front-tier:
+        ipv4_address: 172.16.238.16
     volumes:
       - ./docker/definitions.json:/etc/rabbitmq/definitions.json
-    ports:
-      - "15672:15672"
-      - "5672:5672"
+
+networks:
+  front-tier:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.238.0/24"

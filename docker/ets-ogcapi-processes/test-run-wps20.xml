@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties version="1.0">
+    <comment>WPS 2.0 Sample Test Run Arguments</comment>
+    <entry key="IUT">http://zookernel/cgi-bin/zoo_loader.cgi</entry>
+    <!-- BEGIN OF ARGUMENTS DEFINITION -->
+    <entry key="SERVICE_URL">http://zookernel/cgi-bin/zoo_loader.cgi</entry>
+    <entry key="ECHO_PROCESS_ID">echo</entry>
+    <!-- END OF ARGUMENTS DEFINITION -->
+</properties>

@@ -1,0 +1,146 @@
+{
+  "processDescription": {
+    "id": "BandMath",
+    "title": "Outputs a monoband image which is the result of a mathematical operation on several multi-band images.",
+    "description": "This application performs a mathematical operation on several multi-band images and outputs the result into a monoband image. The given expression is computed at each pixel position. Evaluation of the mathematical formula is done by the muParser libraries.",
+    "version": "1.0.0",
+    "jobControlOptions": [
+      "sync-execute",
+      "async-execute",
+      "dismiss"
+    ],
+    "outputTransmission": [
+      "value",
+      "reference"
+    ],
+    "links": [],
+    "additionalParameters": [
+      {
+        "name": "entry-point",
+        "value": "singularity exec otbtf_4.1.0-cpu.sif /opt/otbtf/bin/otbcli_BandMath"
+      }
+    ],
+    "inputs": {
+      "il": {
+        "title": "Image-list of operands to the mathematical expression.",
+        "description": "Image-list of operands to the mathematical expression.",
+        "maxOccurs": 1024,
+        "additionalParameters": [
+          {
+            "name": "pattern",
+            "value": "-name value"
+          },
+          {
+            "name": "array-pattern",
+            "value": "-name value value"
+          }
+        ],
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "contentMediaType": "image/tiff"
+            },
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "contentMediaType": "image/jpeg"
+            },
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "contentMediaType": "image/png"
+            }
+          ]
+        }
+      },
+      "out": {
+        "title": "Output image which is the result of the mathematical expressions on input image-list operands.",
+        "description": "Output image which is the result of the mathematical expressions on input image-list operands.",
+        "additionalParameters": [
+          {
+            "name": "pattern",
+            "value": ""
+          }
+        ],
+        "schema": {
+          "type": "string",
+          "default": "float",
+          "enum": [
+            "uint8",
+            "uint16",
+            "int16",
+            "int32",
+            "int32",
+            "float",
+            "double"
+          ]
+        }
+      },
+      "ram": {
+        "title": "Available memory for processing (in MB)",
+        "description": "Available memory for processing (in MB)",
+        "additionalParameters": [
+          {
+            "name": "pattern",
+            "value": "-name value"
+          }
+        ],
+        "schema": {
+          "type": "integer",
+          "default": 128,
+          "nullable": true
+        }
+      },
+      "exp": {
+        "title": "The muParser mathematical expression to apply on input images.",
+        "description": "The muParser mathematical expression to apply on input images.",
+        "additionalParameters": [
+          {
+            "name": "pattern",
+            "value": "-name \"value\""
+          }
+        ],
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "outputs": {
+      "out": {
+        "title": "Output image which is the result of the mathematical expressions on input image-list operands.",
+        "description": "Output image which is the result of the mathematical expressions on input image-list operands.",
+        "additionalParameters": [
+          {
+            "name": "pattern",
+            "value": "-name value inputs_out_value"
+          }
+        ],
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "contentMediaType": "image/tiff"
+            },
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "contentMediaType": "image/jpeg"
+            },
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "contentMediaType": "image/png"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "executionUnit": {
+    "type": "SLURM",
+    "image": "docker://mdl4eo/otbtf:4.1.0-cpu"
+  }
+}

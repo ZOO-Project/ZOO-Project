@@ -55,6 +55,7 @@ extern "C" {
   ZOO_DLL_EXPORT int _init_sql(maps*,const char*);
   ZOO_DLL_EXPORT OGRLayer *fetchSql(maps*,int,const char*);
   ZOO_DLL_EXPORT void cleanFetchSql(maps*,int,OGRLayer*);
+  ZOO_DLL_EXPORT int getCurrentId(maps*);
 #endif
 #ifdef RELY_ON_DB
   ZOO_DLL_EXPORT int init_sql(maps*);
@@ -69,6 +70,7 @@ extern "C" {
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);
   ZOO_DLL_EXPORT void removeService(maps*,char*);
   ZOO_DLL_EXPORT void end_sql();
+  ZOO_DLL_EXPORT void filterJobByUser(maps*,char**,char*);
 #endif
 
 #ifdef __cplusplus

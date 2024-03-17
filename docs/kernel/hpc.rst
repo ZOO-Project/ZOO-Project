@@ -1,7 +1,7 @@
 .. _kernel-hpc:
     
 Optional HPC support
-======================
+====================
 
 The optional ZOO-Kernel HPC support gives you the opportunity to use
 OGC WPS for invoking remote execution of OTB applications. The current

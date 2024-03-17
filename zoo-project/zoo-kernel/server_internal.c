@@ -432,7 +432,8 @@ void dumpMapsValuesToFiles(maps** main_conf,maps** in){
   int length=0;
   while(inputs!=NULL){
     if(getMap(inputs->content,"mimeType")!=NULL &&
-       getMap(inputs->content,"cache_file")==NULL){
+       getMap(inputs->content,"cache_file")==NULL &&
+       getMap(inputs->content,"value")!=NULL){
       map* cMap=inputs->content;
       if(getMap(cMap,"length")!=NULL){
 	map* tmpLength=getMap(cMap,"length");
@@ -530,8 +531,7 @@ char *base64(const char *input, int length)
 char *base64d(const char *input, int length,int* red)
 {
   BIO *b64, *bmem;
-
-  char *buffer = (char *)malloc(length);
+  char *buffer = (char *)malloc(length+1);
   if(buffer){
     memset(buffer, 0, length);
     b64 = BIO_new(BIO_f_base64());
@@ -638,6 +638,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	  if(atoi(tmpMapMinO->value)>=1){
 	    freeMaps(&tmpMaps2);
 	    free(tmpMaps2);
+	    tmpMaps2=NULL;
 	    if(res==NULL){
 	      res=createMap("value",tmpInputs->name);
 	    }else{
@@ -709,19 +710,20 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
 	    return res;
 	  }
 	}
-
-	if(out1==NULL){
-	  *out=dupMaps(&tmpMaps2);
-	  out1=*out;
-	}
-	else
-	  addMapsToMaps(&out1,tmpMaps2);
-	freeMap(&tmpMaps2->content);
-	free(tmpMaps2->content);
-	tmpMaps2->content=NULL;
-	freeMaps(&tmpMaps2);
-	free(tmpMaps2);
-	tmpMaps2=NULL;
+      }
+      if(tmpMaps2!=NULL){
+        if(out1==NULL){
+          *out=dupMaps(&tmpMaps2);
+          out1=*out;
+        }
+        else
+          addMapsToMaps(&out1,tmpMaps2);
+        freeMap(&tmpMaps2->content);
+        free(tmpMaps2->content);
+        tmpMaps2->content=NULL;
+        freeMaps(&tmpMaps2);
+        free(tmpMaps2);
+        tmpMaps2=NULL;
       }
     }
     else /*toto*/{ 
@@ -878,7 +880,7 @@ char* addDefaultValues(maps** out,elements* in,maps* m,int type,map** err){
     *err=res;
     return result;
   }
-  return "";
+  return (char*)"";
 }
 
 /**
@@ -987,6 +989,13 @@ int isRunning(maps* conf,char* pid){
 /**
  * Run GetStatus requests.
  *
+ * Specifically for the OGC API - Processes - Part 1 - Core support,
+ * in case something wrong happens, the conf maps will get in the lenv section
+ * the following fields:
+ *  - error: "true", indicating that something went wrong
+ *  - code: the OGC error code (such as NoSuchJob)
+ *  - message: the error message o be reported
+ *
  * @param conf the maps containing the setting of the main.cfg file
  * @param pid the service identifier (usid key from the [lenv] section)
  * @param req the request (GetStatus / GetResult)
@@ -997,7 +1006,7 @@ void runGetStatus(maps* conf,char* pid,char* req){
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+      errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
     else{
       setMapInMaps(conf,"lenv","error","true");
@@ -1009,13 +1018,14 @@ void runGetStatus(maps* conf,char* pid,char* req){
     if(isRunning(conf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
 	if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	  errorException (conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
+	  errorException (&conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
 			  "ResultNotReady", pid);
 	else{
 	  setMapInMaps(conf,"lenv","error","true");
 	  setMapInMaps(conf,"lenv","code","ResultNotReady");
 	  setMapInMaps(conf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service is currently running."));
 	}
+	free(sid);
 	return;
       }
       else{
@@ -1043,7 +1053,13 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	char* result=_getStatusFile(conf,pid);
 	if(result!=NULL){
 	  char *encoding=getEncoding(conf);
-	  printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+	  map* pmTmp=getMapFromMaps(conf,"headers","Content-Type");
+	  if(pmTmp!=NULL){
+	    printHeaders(conf);
+	    printf("Status: 200 OK\r\n\r\n");
+	  }
+	  else
+	    printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
 	  printf("%s",result);
 	  fflush(stdout);
 	  free(sid);
@@ -1052,10 +1068,17 @@ void runGetStatus(maps* conf,char* pid,char* req){
 	  free(result);
 	  return;
 	}else{
-	  errorException (conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
-			  "ResultNotReady", pid);
+	  if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+	    errorException (&conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
+			    "ResultNotReady", pid);
+	  else{
+	    setMapInMaps(conf,"lenv","error","true");
+	    setMapInMaps(conf,"lenv","code","ResultNotReady");
+	    setMapInMaps(conf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."));
+	  }
 	  freeMap(&statusInfo);
 	  free(statusInfo);
+	  free(sid);
 	  return;
 	}
       }else
@@ -1104,7 +1127,7 @@ void runDismiss(maps* conf,char* pid){
   char *sid=getStatusId(conf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      errorException (conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+      errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
     else{
       setMapInMaps(conf,"lenv","error","true");
@@ -1149,7 +1172,7 @@ void runDismiss(maps* conf,char* pid){
 	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
 	  if(zUnlink(fileName)!=0){
 	    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	      errorException (conf, 
+	      errorException (&conf,
 			      _("The job cannot be removed, a file cannot be removed"),
 			      "NoApplicableCode", NULL);
 	    else{
@@ -1162,6 +1185,7 @@ void runDismiss(maps* conf,char* pid){
 	  
 	}
       }
+      closedir (dirp);
     }
 #ifdef RELY_ON_DB
     removeService(conf,pid);
@@ -1169,7 +1193,7 @@ void runDismiss(maps* conf,char* pid){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0){
       map* statusInfo=createMap("JobID",pid);
       addToMap(statusInfo,"Status","Dismissed");
-      printStatusInfo(conf,statusInfo,"Dismiss");
+      printStatusInfo(conf,statusInfo,(char*)"Dismiss");
       free(statusInfo);
     }else{
       setMapInMaps(conf,"lenv","error","false");

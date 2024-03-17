@@ -1,0 +1,23 @@
+[securityInFailed]
+ Title = Convert raster data from one format to another. 
+ Abstract = http://www.gdal.org/gdal_translate.html
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = C
+ serviceProvider = security_service.zo
+ <MetaData>
+   title = My Demo
+ </MetaData>
+ <DataInputs>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting converted file
+   Abstract = The file name resulting of the convertion
+   <LiteralData>
+    DataType = string
+    <Default>
+    </Default>	
+   </LiteralData>
+ </DataOutputs>  

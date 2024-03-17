@@ -33,6 +33,8 @@
 #define ZOO_DLL_EXPORT 
 #endif
 
+// ISO8601 compatible date format (RFC 3339)
+#define zDateFormat "%Y-%m-%dT%H:%M:%SZ"
  // knut: add bool if necessary
 #ifndef __cplusplus
 #ifndef WIN32
@@ -191,6 +193,19 @@ extern "C" {
  * The global dismissed status for a service
  */
 #define SERVICE_DISMISSED 5
+/**
+ * The global deployed status for a service
+ */
+#define SERVICE_DEPLOYED 6
+/**
+ * The global undelployed status for a service
+ */
+#define SERVICE_UNDEPLOYED 7
+
+/**
+ * The ZOO_DEBUG macro print message with function name, file name and line number
+ */
+#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++- %d -++ %s %s %d: ",getpid(),__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);fflush(stderr);
 
 /**
  * The memory size to create an elements
@@ -325,6 +340,21 @@ extern "C" {
     struct registry* next; //!< the next registry pointer
   } registry;
 
+  /**
+   * Statuses list
+   */
+  static const char* ZOO_STATUS[] = {
+    "SERVICE_ACCEPTED",
+    "SERVICE_STARTED",
+    "SERVICE_PAUSED",
+    "SERVICE_SUCCEEDED",
+    "SERVICE_FAILED",
+    "SERVICE_DISMISSED",
+    "SERVICE_DEPLOYED",
+    "SERVICE_UNDEPLOYED",
+    NULL
+  };
+
   // knut
   enum WPSException {
 	  /*
@@ -366,40 +396,46 @@ extern "C" {
    * @see WPSExceptionText
    */
   static const char* const WPSExceptionCode[] = {
-	"StatusOK",
-	"MissingParameterValue",
-	"InvalidParameterValue",
-	"NoApplicableCode",
-	"NotEnoughStorage",
-	"ServerBusy",
-	"FileSizeExceeded",
-	"StorageNotSupported",
-	"VersionNegotiationFailed",
-	"NoSuchProcess",
-	"NoSuchMode",
-	"NoSuchInput",
-	"NoSuchOutput",
-	"DataNotAccessible",
-	"SizeExceeded",
-	"TooManyInputs",
-	"TooManyOutputs",
-	"NoSuchFormat",
-	"WrongInputData",
-	"InternalServerError",
-	"NoSuchJob",
-	"ResultNotReady",
-	"InvalidQueryParameterValue"
+    "StatusOK",
+    "MissingParameterValue",
+    "InvalidParameterValue",
+    "NoApplicableCode",
+    "NotEnoughStorage",
+    "ServerBusy",
+    "FileSizeExceeded",
+    "StorageNotSupported",
+    "VersionNegotiationFailed",
+    "NoSuchProcess",
+    "NoSuchMode",
+    "NoSuchInput",
+    "NoSuchOutput",
+    "DataNotAccessible",
+    "SizeExceeded",
+    "TooManyInputs",
+    "TooManyOutputs",
+    "NoSuchFormat",
+    "WrongInputData",
+    "InternalServerError",
+    "NoSuchJob",
+    "ResultNotReady",
+    "InvalidQueryParameterValue",
+    "DuplicatedProcess",
+    "ImmutableProcess",
+    "UnsupportedMediaType"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[4][2] = {
+  static const int OAPIPCorrespondances[7][2] = {
     {9,0},
     {20,1},
     {21,2},
-    {22,3}
+    {22,3},
+    {23,4},
+    {24,5},
+    {25,6}
   };
 
   /**
@@ -407,10 +443,24 @@ extern "C" {
    * @see WPSExceptionCode, OAPIPCorrespondances
    */
   static const char* const OAPIPExceptionCode[] = {
-	"no-such-process",
-	"no-such-job",
-	"result-not-ready",
-	"invalid-query-parameter-value"
+    "no-such-process",
+    "no-such-job",
+    "result-not-ready",
+    "invalid-query-parameter-value",
+    "duplicated-process",
+    "immutable-process",
+    "unsupported-media-type"
+  };
+
+  /**
+   * OGC API - Processes supported Content-Type list
+   */
+  static const char* const OAPIPSupportedContentTypes[] = {
+    "application/json",
+    "application/cwl",
+    "application/cwl+yaml",
+    "application/ogcapppkg+json",
+    NULL
   };
 
   /**
@@ -486,6 +536,7 @@ extern "C" {
   ZOO_DLL_EXPORT maps* dupMaps(maps**);
   ZOO_DLL_EXPORT void addMapsToMaps(maps**,maps*);
   ZOO_DLL_EXPORT map* getMapArray(map*,const char*,int);
+  ZOO_DLL_EXPORT char* getMapArrayKey(map*,const char*,int);
   ZOO_DLL_EXPORT void setMapArray(map*,const char*,int,const char*);
   ZOO_DLL_EXPORT map* getMapType(map*);
   ZOO_DLL_EXPORT int addMapsArrayToMaps(maps**,maps*,char*);
@@ -507,6 +558,9 @@ extern "C" {
   ZOO_DLL_EXPORT void inheritance(registry*,service**);
   ZOO_DLL_EXPORT void mapsToCharXXX(maps*,char***);
   ZOO_DLL_EXPORT void charxxxToMaps(char***,maps**);
+  // OGC-API - Processes - Part 1: Core processes list restriction
+  ZOO_DLL_EXPORT void updateCnt(maps*, const char*, const char*);
+  ZOO_DLL_EXPORT bool compareCnt(maps*, const char*, const char*);
 #if defined(_MSC_VER) && _MSC_VER < 1800
   // snprintf for Visual Studio compiler;
   // it is also used by services (e.g., GetStatus), therefore exported to shared library
@@ -528,8 +582,13 @@ extern "C" {
   ZOO_DLL_EXPORT char* allocateMapValue(map* node, size_t num_bytes);
   
   ZOO_DLL_EXPORT char* getValueFromMaps(maps*,const char*);
+  ZOO_DLL_EXPORT void _translateChar (char*, char, char);
 #ifdef __cplusplus
 }
 #endif
 
+#endif
+
+#ifdef LOG_CONSOLE_ENABLED
+  void logConsoleMessage(const char*);
 #endif

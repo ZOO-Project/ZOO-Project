@@ -37,5 +37,6 @@ uint64_t consumer_amqp(char ** m);
 int send_msg(const char * msg, const char * content_type);
 int close_amqp();
 int consumer_ack_amqp(uint64_t delivery_tag);
+void publish_amqp_msg(maps*,int*,map*,maps*,maps*);
 
 #endif

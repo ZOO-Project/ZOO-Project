@@ -1,0 +1,37 @@
+[DeployPy]
+ Title = Deploys a zoo service from an application package.
+ Abstract = Deploys a zoo service from an application package.
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = deploy_service
+ serviceType = Python
+ <MetaData>
+   title = Service Deploy
+ </MetaData>
+ <DataInputs>
+  [applicationPackage]
+   Title = Input string
+   Abstract = The application package to deploy.
+   minOccurs = 1
+   maxOccurs = 1
+   <MetaData>
+    title = My test
+   </MetaData>
+   <LiteralData>
+    DataType = string
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = Message to display
+   Abstract = The message displayed when the service has been deployed.
+   minOccurs = 0
+   maxOccurs = 1
+   <MetaData>
+    title = Deploy response message
+   </MetaData>
+   <LiteralData>
+    DataType = string
+   </LiteralData>
+ </DataOutputs>

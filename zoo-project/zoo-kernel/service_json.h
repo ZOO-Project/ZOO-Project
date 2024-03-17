@@ -84,9 +84,10 @@ extern "C" {
   /**
    * Name and corresponding attributes depending on the WPS version
    */
-  static const char* jcapabilities[4]={
+  static const char* jcapabilities[]={
     "jobControlOptions","sync-execute async-execute dismiss",
-    "outputTransmission","value reference"
+    "outputTransmission","value reference",
+    "jobControlOptions","async-execute dismiss"
   };
 
   /**
@@ -132,7 +133,7 @@ extern "C" {
   json_object* serviceToJson(service*);
   void printLiteralValueJ(maps*,map*,map*,json_object*,const char*);
   void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
-  void printExceptionReportResponseJ(maps*,map*);
+  void printExceptionReportResponseJ(maps**,map*);
   void parseJRequest(maps*,service*,json_object*,map*,maps**,maps**);
   json_object*  printJResult(maps*,service*,maps*,int);
   json_object* printJobStatus(maps*,char*);
@@ -147,6 +148,14 @@ extern "C" {
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
+  bool jsonIsFalse(json_bool);
+#ifdef DRU_ENABLED
+  void handleDRUError(maps*);
+  int convertOGCAppPkgToExecute(maps*,map*,json_object**);
+  json_object* convertCwlToOGCAppPkg(maps*,map*);
+  bool serviceIsDRU(maps*,char*);
+#endif
+  bool serviceIsFilter(maps*,char*);
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);
 #ifdef __cplusplus
 }

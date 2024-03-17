@@ -229,6 +229,7 @@ int unlockFile(maps* conf,struct zooLock* s){
  * @param conf the maps containing the setting of the main.cfg file
  * @param pid the service identifier (usid key from the [lenv] section)
  * @return the reported status char* (temporary/final result)
+ * @warning make sure to free resources returned by this function
  */
 char* getStatusId(maps* conf,char* pid){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
@@ -237,6 +238,7 @@ char* getStatusId(maps* conf,char* pid){
     malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
   sprintf (fbkpid, "%s/%s.sid", r_inputs->value, pid);
   FILE* f0 = fopen (fbkpid, "r");
+  free(fbkpid);
   if(f0!=NULL){
     long flen;
     char *fcontent;
@@ -363,6 +365,7 @@ char* _getStatusFile(maps* conf,char* pid){
  * @param conf the maps containing the setting of the main.cfg file
  * @param pid the service identifier (usid key from the [lenv] section)
  * @return the reported status char* (MESSAGE|POURCENTAGE)
+ * @warning make sure to free resources returned by this function
  */
 char* _getStatus(maps* conf,char* lid){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
@@ -371,7 +374,7 @@ char* _getStatus(maps* conf,char* lid){
     malloc ((strlen (r_inputs->value) + strlen (lid) + 9) * sizeof (char));
   sprintf (fbkpid, "%s/%s.status", r_inputs->value, lid);
   FILE* f0 = fopen (fbkpid, "r");
-  if(f0!=NULL){    
+  if(f0!=NULL){
     semid lockid = NULL;
     char* stat;
     long flen;

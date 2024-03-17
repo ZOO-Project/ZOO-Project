@@ -458,7 +458,7 @@ ETag
   }
   if(strcmp($3,"DataOutputs")==0){
     current_data=2;
-  }  
+  }
   if(strcmp($3,"AdditionalParameters")==0){
     if(current_content!=NULL){
 #ifdef DEBUG_SERVICE_CONF

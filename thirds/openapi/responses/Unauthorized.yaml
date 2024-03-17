@@ -1,0 +1,8 @@
+description: The server cannot handle the request because valid authentication credentials are missing for the target resource.
+content:
+  application/json:
+    schema:
+      $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/exception.yaml
+  text/html:
+    schema:
+      type: string

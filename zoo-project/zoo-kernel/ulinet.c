@@ -124,8 +124,23 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
       psInternet->cookie=(char*)malloc(sizeof(char)*(strlen(tmp)+1));
       sprintf(psInternet->cookie,"%s",tmp);
     }
-  }
-  return size * nmemb;//write_data_into(buffer,size,nmemb,data,HEADER);
+  }else
+    if(strncasecmp("Location: ",(char*)buffer,10)==0){
+      int i;
+      for(i=0;i<10;i++)
+        buffer++;
+      char* pcLocation=(char*)buffer;
+      _HINTERNET *psInternet=(_HINTERNET *)data;
+      if(pcLocation!=NULL && psInternet!=NULL){
+        psInternet->location=(char*)malloc(sizeof(char)*(strlen(pcLocation)+1));
+        if(pcLocation[strlen(pcLocation)-1]=='\n')
+          pcLocation[strlen(pcLocation)-1]='\0';
+        if(pcLocation[strlen(pcLocation)-1]=='\r')
+          pcLocation[strlen(pcLocation)-1]='\0';
+        snprintf(psInternet->location,"%s",pcLocation,strlen(pcLocation));
+      }
+    }
+  return size * nmemb;
 };
 
 /**
@@ -247,6 +262,7 @@ HINTERNET InternetOpen(char* lpszAgent,int dwAccessType,char* lpszProxyName,char
   ret.ihandle[ret.nb].url = NULL;
   ret.ihandle[ret.nb].mimeType = NULL;
   ret.ihandle[ret.nb].cookie = NULL;
+  ret.ihandle[ret.nb].location = NULL;
   ret.ihandle[ret.nb].nDataLen = 0;
   ret.ihandle[ret.nb].nDataAlloc = 0;
   ret.ihandle[ret.nb].pabyData = NULL;
@@ -433,6 +449,10 @@ void InternetCloseHandle(HINTERNET* handle0){
 	free(handle.cookie);
 	handle.cookie=NULL;
       }
+      if(handle.location!=NULL){
+	free(handle.location);
+	handle.location=NULL;
+      }
       if(handle0->waitingRequests[i]!=NULL){
 	free(handle0->waitingRequests[i]);
 	handle0->waitingRequests[i]=NULL;
@@ -463,7 +483,6 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 
   char filename[255];
   int ldwFlags=INTERNET_FLAG_NEED_FILE;
-  struct MemoryStruct header;
   map* memUse=getMapFromMaps((maps*) conf,"main","memory"); // knut: addad cast to maps*
 
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
@@ -472,6 +491,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   hInternet->ihandle[hInternet->nb].url = NULL;
   hInternet->ihandle[hInternet->nb].mimeType = NULL;
   hInternet->ihandle[hInternet->nb].cookie = NULL;
+  hInternet->ihandle[hInternet->nb].location = NULL;
   hInternet->ihandle[hInternet->nb].nDataLen = 0;
   hInternet->ihandle[hInternet->nb].id = hInternet->nb;
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
@@ -491,17 +511,14 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_FOLLOWLOCATION,1);
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_MAXREDIRS,3);
   
-  header.memory=NULL;
-  header.size = 0;
-
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_HEADERFUNCTION, header_write_data);
-  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEHEADER, (void *)&header);
+  curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEHEADER, (void*)&hInternet->ihandle[hInternet->nb]);
 
 #ifdef MSG_LAF_VERBOSE
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_VERBOSE, 1);
 #endif
 
-  if(memUse!=NULL && strcasecmp(memUse->value,"load")==0)
+  if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
     ldwFlags=INTERNET_FLAG_NO_CACHE_WRITE;
   
   switch(ldwFlags)
@@ -533,29 +550,37 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 #ifdef ULINET_DEBUG
   fprintf(stderr,"URL (%s)\nBODY (%s)\n",lpszUrl,lpszHeaders);
 #endif
+  map* pmMethod=getMapFromMaps((maps*)conf,"lenv","callback_request_method");
+  if(pmMethod!=NULL && strcasecmp(pmMethod->value,"DELETE")==0)
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_CUSTOMREQUEST, "DELETE");
   if(lpszHeaders!=NULL && strlen(lpszHeaders)>0){
 #ifdef MSG_LAF_VERBOSE
     fprintf(stderr,"FROM ULINET !!");
     fprintf(stderr,"HEADER : [%s] %d\n",lpszHeaders,dwHeadersLength);
 #endif
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
-#ifdef ULINET_DEBUG
-    fprintf(stderr,"** (%s) %d **\n",lpszHeaders,dwHeadersLength);
-    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
-#endif
+    map* pmMethod=getMapFromMaps((maps*)conf,"lenv","callback_request_method");
+    if(pmMethod!=NULL && strcasecmp(pmMethod->value,"PUT")==0)
+	curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_PUT,1);
+    else{
+      curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
+    }
     hInternet->ihandle[hInternet->nb].post=zStrdup(lpszHeaders);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDS,hInternet->ihandle[hInternet->nb].post);
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POSTFIELDSIZE,(long)dwHeadersLength);
+#ifdef ULINET_DEBUG
+    fprintf(stderr,"** (%s) %d %s %d **\n",lpszHeaders,dwHeadersLength,__FILE__,__LINE__);
+    curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_VERBOSE,1);
+#endif
   }
-  if(hInternet->ihandle[hInternet->nb].header!=NULL)
+  if(hInternet->ihandle[hInternet->nb].header!=NULL){
     curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_HTTPHEADER,hInternet->ihandle[hInternet->nb].header);
+  }
 
   curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_URL,lpszUrl);
   hInternet->ihandle[hInternet->nb].url = zStrdup(lpszUrl);
 
   curl_multi_add_handle(hInternet->handle,hInternet->ihandle[hInternet->nb].handle);
   
-  hInternet->ihandle[hInternet->nb].header=NULL;
   ++hInternet->nb;
   hInternet->ihandle[hInternet->nb].header=NULL;
 

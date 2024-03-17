@@ -1,0 +1,8 @@
+description: The server received the request, but you do not have the necessary privileges to access the resource.
+content:
+  application/json:
+    schema:
+      $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/exception.yaml
+  text/html:
+    schema:
+      type: string

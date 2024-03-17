@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2015-2019 GeoLabs SARL
+ * Copyright (c) 2015-2023 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -606,25 +606,62 @@ void addToMapA(map* pMap,const char* pccName,const char* pccValue){
     if (hasKey(pMap, pccName) == false) {
       map* pmCursor = pMap;
       while (pmCursor->next != NULL) {
-	pmCursor = pmCursor->next;
+        pmCursor = pmCursor->next;
       }
       pmCursor->next = createMap(pccName, pccValue);
     }
     else {
       map *tmp = getMap(pMap, pccName);
       if (tmp->value != NULL){
-	char* pcaTmp = zStrdup(tmp->value);
-	free(tmp->value);
-	if(strcmp(pcaTmp,pccValue)!=0){
-	  char *pcaRes=(char*) malloc((strlen(pcaTmp)+strlen(pccValue)+2)*sizeof(char));
-	  sprintf(pcaRes,"%s,%s",pcaTmp,pccValue);
-	  tmp->value = zStrdup(pcaRes);
-	  free(pcaRes);
-	}else
-	  tmp->value = zStrdup(pccValue);
-	free(pcaTmp);
+        char* pcaTmp = zStrdup(tmp->value);
+      free(tmp->value);
+      if(strcmp(pcaTmp,pccValue)!=0){
+        char *pcaRes=(char*) malloc((strlen(pcaTmp)+strlen(pccValue)+2)*sizeof(char));
+        sprintf(pcaRes,"%s,%s",pcaTmp,pccValue);
+        tmp->value = zStrdup(pcaRes);
+        free(pcaRes);
       }else
-	tmp->value = zStrdup(pccValue);
+        tmp->value = zStrdup(pccValue);
+        free(pcaTmp);
+      }else
+        tmp->value = zStrdup(pccValue);
+    }
+  }
+}
+
+/**
+ * Add key value pair to an existing map or append the value.
+ * Use the pccSeparator parameter to separate the values.
+ *
+ * @param pMap the map to add the KVP
+ * @param pccName the key to add
+ * @param pccValue the corresponding value to add
+ * @param pccSeparator the separator to use
+ */
+void addToMapAF(map* pMap,const char* pccName,const char* pccValue,const char* pccSeparator){
+  if (pMap != NULL) { // knut: add NULL-pointer check
+    if (hasKey(pMap, pccName) == false) {
+      map* pmCursor = pMap;
+      while (pmCursor->next != NULL) {
+      pmCursor = pmCursor->next;
+      }
+      pmCursor->next = createMap(pccName, pccValue);
+    }
+    else {
+      map *tmp = getMap(pMap, pccName);
+      if (tmp->value != NULL){
+        char* pcaTmp = zStrdup(tmp->value);
+        free(tmp->value);
+        if(strcmp(pcaTmp,pccValue)!=0){
+          char *pcaRes=(char*) malloc((strlen(pcaTmp)+strlen(pccValue)+2)*sizeof(char));
+          sprintf(pcaRes,"%s%s%s",pcaTmp,pccSeparator,pccValue);
+          tmp->value = zStrdup(pcaRes);
+          free(pcaRes);
+        }else
+          tmp->value = zStrdup(pccValue);
+        free(pcaTmp);
+      }else
+        tmp->value = zStrdup(pccValue);
     }
   }
 }
@@ -751,8 +788,10 @@ map* getMapOrFill(map** ppmMap,const char *pccKey,const char* pccValue){
     if(pmTmp!=NULL){
       addToMap((*ppmMap),pccKey,pccValue);
     }
-    else
+    else{
       (*ppmMap)=createMap(pccKey,pccValue);
+      addToMap(*ppmMap,"shouldFree","true");
+    }
     pmTmp1=getMap(*ppmMap,pccKey);
   }
   return pmTmp1;
@@ -838,18 +877,22 @@ void loadMapBinary(map** ppmOut,map* pmIn,int iPos){
     sprintf(tmp,"value_%d",iPos);
     pmTmpVin=getMap(pmIn,tmp);
     pmTmpVout=getMap(pmOut,tmp);
-    free(pmTmpVout->value);
-    pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
-    memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
-    pmTmpVout->value[atoi(pmSize->value)]=0;
-  }else{
-    if(pmSize!=NULL){
-      pmTmpVin=getMap(pmIn,"value");
-      pmTmpVout=getMap(pmOut,"value");
+    if(pmTmpVin!=NULL && pmTmpVout!=NULL){
       free(pmTmpVout->value);
       pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
       memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
       pmTmpVout->value[atoi(pmSize->value)]=0;
+    }
+  }else{
+    if(pmSize!=NULL){
+      pmTmpVin=getMap(pmIn,"value");
+      pmTmpVout=getMap(pmOut,"value");
+      if(pmTmpVin!=NULL && pmTmpVout!=NULL){
+	free(pmTmpVout->value);
+	pmTmpVout->value=(char*)malloc((atoi(pmSize->value)+1)*sizeof(char));
+	memmove(pmTmpVout->value,pmTmpVin->value,atoi(pmSize->value)*sizeof(char));
+	pmTmpVout->value[atoi(pmSize->value)]=0;
+      }
     }
   }
 }
@@ -904,7 +947,8 @@ maps* dupMaps(maps** ppmsOut){
     if(pmsChild!=NULL){
       pmRes->child=dupMaps(&pmsChild);
     }
-    pmRes->next=dupMaps(&pmsCursor->next);
+    if(pmsCursor->next!=NULL)
+      pmRes->next=dupMaps(&pmsCursor->next);
   }
   return pmRes;
 }
@@ -922,25 +966,20 @@ void addMapsToMaps(maps** ppmsOut,maps* pmIn){
   while(pmsTmp!=NULL){
     if(pmsCursor==NULL){
       *ppmsOut=dupMaps(&pmIn);
+      return;
     }
     else{
       maps* pmsTmp1=getMaps(*ppmsOut,pmsTmp->name);
       if(pmsTmp1==NULL){
 	while(pmsCursor->next!=NULL)
 	  pmsCursor=pmsCursor->next;
-	pmsCursor->next=dupMaps(&pmsTmp);
-	if(pmsTmp->child!=NULL)
-	  pmsCursor->next->child=dupMaps(&pmsTmp->child);
-	else
-	  pmsCursor->next->child=NULL;
+	addMapsToMaps(&pmsCursor->next,pmsTmp);
 	return;
       }
       else{
 	addMapToMap(&pmsTmp1->content,pmsTmp->content);
 	if(pmsTmp->child!=NULL)
-	  pmsTmp1->child=dupMaps(&pmsTmp->child);
-	else
-	  pmsTmp1->child=NULL;
+	  addMapsToMaps(&pmsTmp1->child,pmsTmp->child);
       }
       pmsCursor=*ppmsOut;
     }
@@ -975,13 +1014,33 @@ map* getMapArray(map* pmMap,const char* pccKey,int iIndex){
 }
 
 /**
+ * Get the key name for a specific map array element
+ *
+ * @param pmMap the map to search for the key
+ * @param pccKey the key to search in the map
+ * @param iIndex of the MapArray
+ * @return an allocated char pointer containing the key name
+ * @warning make sure to free resources returned by this function
+ */
+char* getMapArrayKey(map* pmMap,const char* pccKey,int iIndex){
+  char* pcaTmp=(char*)malloc((strlen(pccKey)+5)*sizeof(char));
+  if(iIndex>0)
+    sprintf(pcaTmp,"%s_%d",pccKey,iIndex);
+  else
+    sprintf(pcaTmp,"%s",pccKey);
+#ifdef DEBUG
+  fprintf(stderr,"** KEY %s\n",pcaTmp);
+#endif
+  return pcaTmp;
+}
+
+/**
  * Add a key value in a MapArray for a specific index
  *
  * @param pmMap the map to search for the key
  * @param pccKey the key to search in the map
  * @param iIndex the index of the MapArray 
  * @param pccValue the value to set in the MapArray 
- * @return a pointer on the map found or NULL if not found
  */
 void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
   char acTmp[1024];
@@ -999,6 +1058,8 @@ void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
     sprintf(acTmp,"%s",pccKey);
     addToMap(pmMap,"length","1");
   }
+  if(getMap(pmMap,"isArray")==NULL)
+    addToMap(pmMap,"isArray","true");
   pmSize=getMapArray(pmMap,"size",iIndex);
   if(pmSize!=NULL && strncasecmp(pccKey,"value",5)==0){
     map* pmPtr=getMapOrFill(&pmMap,acTmp,(char *)"");
@@ -1332,7 +1393,7 @@ elements* dupElements(elements* peElem){
   if(peCursor!=NULL && peCursor->name!=NULL){
 #ifdef DEBUG
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
-    dumpElements(e);
+    dumpMap(peCursor->content);
     fprintf(stderr,">> %s %i\n",__FILE__,__LINE__);
 #endif
     peTmp=(elements*)malloc(ELEMENTS_SIZE);
@@ -1914,6 +1975,43 @@ void logMessage(const char* pccSource, const char* pccFunction, int iLne, const 
   if (pcText != NULL) free(pcText);
 }
 
+#ifdef LOG_CONSOLE_ENABLED
+/**
+ * Print message on console
+ *
+ * @param pccMessage the message to be print
+ */
+void logConsoleMessage(const char* pccMessage) {
+
+  // system time:
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  std::time_t now_t = std::chrono::system_clock::to_time_t(now);
+  std::tm* tm = localtime(&now_t);
+
+  char* pcStr = (char*)malloc(80 * sizeof(char));
+  strftime( pcStr, 80, "%Y-%m-%d %H:%M:%S", tm );
+  if (pccMessage == NULL)
+    return;
+
+  // Remove new line character and ' character in the message
+  int length = strlen(pccMessage);
+  char * pointer;
+  char * consoleMessage = (char *) malloc( sizeof( char) * (length+1) );
+  strcpy(consoleMessage, pccMessage);
+  while (pointer = strchr(consoleMessage, '\n')) {
+      *pointer = ' ';
+  }
+  while (pointer = strchr(consoleMessage, '\'')) {
+        *pointer = '"';
+  }
+
+  fprintf(stderr, "timestamp='%s' pid='%d' event='%s'\n",  pcStr, zGetpid(),  consoleMessage);
+  fflush(stderr);
+  free(pcStr);
+  free(consoleMessage);
+}
+#endif
+
 // knut:
 // Example:
 // zooLog;
@@ -1989,7 +2087,6 @@ char* getValueFromMaps(maps* inputs,const char* name){
 	fcontent[flen]=0;
 	fclose(f0);
 	res=zStrdup(fcontent);
-	fprintf(stderr,"%s %d (%s)\n",__FILE__,__LINE__,fcontent);
 	free(fcontent);
       }
     }else{
@@ -2000,3 +2097,116 @@ char* getValueFromMaps(maps* inputs,const char* name){
     }
     return res;
 }
+
+/**
+ * Replace a char by another one in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
+void
+_translateChar (char *str, char toReplace, char toReplaceBy)
+{
+  int i = 0, len = strlen (str);
+  for (i = 0; i < len; i++)
+    {
+      if (str[i] == toReplace)
+        str[i] = toReplaceBy;
+    }
+}
+
+/**
+ * Replace all "val" occurence with the corresponding "rep" value in a string
+ *
+ * @param str the string to update
+ * @param toReplace the char to replace
+ * @param toReplaceBy the char that will be used
+ */
+char*
+translateCharMap (const char *str, map* rep)
+{
+  char* res=zStrdup(str);
+  if(rep!=NULL){
+    int i = 0, len=1;
+    map* pmLen=getMap(rep,"length");
+    if(pmLen!=NULL)
+      len=atoi(pmLen->value);
+    for (i = 0; i < len; i++)
+      {
+	map* pmVal=getMapArray(rep,"val",i);
+	map* pmRep=getMapArray(rep,"rep",i);
+	_translateChar(res,pmVal->value[0],pmRep->value[0]);
+      }
+  }
+  return res;
+}
+
+
+/**
+ * Update the counter value (in conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to update (serviceCnt or serviceCounter)
+ * @param type char pointer can be "incr" for incrementing the value by 1, other
+ * will descrement the value by 1
+ */
+void updateCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv",field);
+  if(pmTmp!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    if(strncmp(type,"incr",4)==0)
+      iCnt++;
+    else
+      iCnt--;
+    char* pcaTmp=(char*) malloc((10+1)*sizeof(char));
+    sprintf(pcaTmp,"%d",iCnt);
+    setMapInMaps(conf,"lenv",field,pcaTmp);
+    free(pcaTmp);
+  }
+}
+
+/**
+ * Compare a value with conf / lenv / serviceCnt
+ *
+ * @param conf the conf maps containing the main.cfg settings
+ * @param field the value to compare with (serviceCntLimit or serviceCntSkip)
+ * @param type comparison operator can be : elower, lower, eupper, upper, or
+ * equal
+ * @return boolean resulting of the comparison between the values
+ */
+bool compareCnt(maps* conf, const char* field, const char* type){
+  map* pmTmp=getMapFromMaps(conf,"lenv","serviceCnt");
+  map* pmTmp1=getMapFromMaps(conf,"lenv",field);
+
+  if(pmTmp!=NULL && pmTmp1!=NULL){
+    int iCnt=atoi(pmTmp->value);
+    int iCntOther=atoi(pmTmp1->value);
+    if(strncmp(field,"serviceCntLimit",15)==0){
+      pmTmp1=getMapFromMaps(conf,"lenv","serviceCntSkip");
+      if(pmTmp1!=NULL)
+	iCntOther+=atoi(pmTmp1->value);
+    }
+    if(strncmp(type,"lower",5)==0)
+      return iCnt<iCntOther;
+    else{
+      if(strncmp(type,"elower",6)==0)
+	return iCnt<=iCntOther;
+      else{
+	if(strncmp(type,"eupper",6)==0)
+	  return iCnt>=iCntOther;
+	else{
+	  if(strncmp(type,"upper",5)==0)
+	    return iCnt>iCntOther;
+	  else
+	    return iCnt==iCntOther;
+	}
+      }
+    }
+  }else
+    if(strncmp(type,"equal",5)==0)
+      return false;
+    else
+      return true;
+}
+

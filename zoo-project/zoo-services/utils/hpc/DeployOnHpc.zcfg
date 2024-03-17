@@ -1,0 +1,30 @@
+[DeployOnHpc]
+ Title = Deploy a singularity container
+ Abstract = Remotely deploy a singuularity container using the command singularity pull and the docker image reference passed as input
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = wps_hpc.zo
+ serviceType = C
+ <DataInputs>
+  [image]
+   Title = The docker image to deploy
+   Abstract = The docker image to deploy (ie. docker://mdl4eo/otbtf:4.1.0-cpu)
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    dataType = string
+    <Default>
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting string
+   Abstract = The message returned by the service execution as a string.
+   <LiteralOutput>
+    DataType = string
+    <Default>
+    </Default>
+   </LiteralOutput>
+ </DataOutputs>  

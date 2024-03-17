@@ -115,9 +115,10 @@ Type Of Data Nodes
 The *Type Of Data Nodes* describes data types for inputs and
 outputs. There are three different types which are described in this
 section.
- * :ref:`LiteralData <LiteralData>`
- * :ref:`BoundingBoxData <BoundingBoxData>`
- * :ref:`ComplexData <ComplexData>`
+ 
+* :ref:`LiteralData <LiteralData>`
+* :ref:`BoundingBoxData <BoundingBoxData>`
+* :ref:`ComplexData <ComplexData>`
 
  .. warning:: Every *BoundingBoxData* and *ComplexData* must have at
 	      least one ``<Default>`` node (even empty like ``<Default

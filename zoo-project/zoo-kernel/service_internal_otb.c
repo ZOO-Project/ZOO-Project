@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  *
  * See Ref: http://hg.orfeo-toolbox.org/OTB/ Copyright
- * Some parts of this code are derived from ITK. See ITKCopyright.txt for 
+ * Some parts of this code are derived from ITK. See ITKCopyright.txt for
  * details.
  */
 
@@ -129,7 +129,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     addToMap(tmps,"code","InternalError");
     zDup2 (saved_stdout, fileno (stdout));
     zClose(saved_stdout);
-    printExceptionReportResponse(m,tmps);
+    printExceptionReportResponse(main_conf,tmps);
     freeMap(&tmps);
     free(tmps);
     res=-1;
@@ -147,7 +147,7 @@ int zoo_otb_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  addToMap(tmps,"code","InternalError");
 	  zDup2 (saved_stdout, fileno (stdout));
 	  zClose(saved_stdout);
-	  printExceptionReportResponse(m,tmps);
+	  printExceptionReportResponse(main_conf,tmps);
 	  freeMap(&tmps);
 	  free(tmps);
 	  res=-1;

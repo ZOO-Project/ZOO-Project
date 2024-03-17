@@ -203,7 +203,7 @@ SSHCON *ssh_connect(maps* conf){
   if (!result->session)
     return NULL;
 
-  libssh2_session_set_blocking(result->session, 1);
+  libssh2_trace(result->session, ~0);
 
   while ((rc = libssh2_session_handshake(result->session, result->sock_id))
 	 == LIBSSH2_ERROR_EAGAIN);
@@ -225,6 +225,7 @@ SSHCON *ssh_connect(maps* conf){
       return NULL;
     }
   } else {
+    password="";
     while ((rc = libssh2_userauth_publickey_fromfile(result->session, user,
 						     public_key,
 						     private_key,
@@ -352,7 +353,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
       return false;
     }
     if(!sessions[cnt]->sftp_session)
-      zSleep(10);
+      zSleep(0.1);
   } while (!sessions[cnt]->sftp_session);
 
   do {
@@ -369,7 +370,7 @@ bool ssh_copy(maps* conf,const char* localPath,const char* targetPath,int cnt){
       return false;
     }
     if(!sftp_handle)
-      zSleep(10);
+      zSleep(0.1);
   } while (!sftp_handle);
   start = time(NULL);
   
@@ -433,7 +434,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       return -1;
     }
     if(!sessions[cnt]->sftp_session)
-      zSleep(10);
+      zSleep(0.1);
   } while (!sessions[cnt]->sftp_session);
   do {
     sftp_handle = libssh2_sftp_open(sessions[cnt]->sftp_session, targetPath,   
@@ -448,7 +449,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       }
     }
     if(!sftp_handle)
-      zSleep(10);
+      zSleep(0.1);
   } while (!sftp_handle);
 
   int result=0;
@@ -462,7 +463,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
       }
       free(mem);
       if(counter%25==0)
-	zSleep(10);
+	zSleep(0.1);
     } while (rc > 0);
 
     if(rc != LIBSSH2_ERROR_EAGAIN) {
@@ -489,7 +490,7 @@ int ssh_fetch(maps* conf,const char* localPath,const char* targetPath,int cnt){
     }
 
     if(counter%50==0)
-       zSleep(10);
+       zSleep(0.1);
     counter++;
 
   } while (1);
@@ -532,7 +533,7 @@ int ssh_exec(maps* conf,const char* command,int cnt){
   map* uuid=getMapFromMaps(conf,"lenv","usid");
   char *logPath=(char*)malloc((strlen(tmpPath->value)+strlen(uuid->value)+11)*sizeof(char));
   sprintf(logPath,"%s/exec_out_%s",tmpPath->value,uuid->value);
-  
+
   FILE* logFile=fopen(logPath,"wb");
   free(logPath);
   while(true){

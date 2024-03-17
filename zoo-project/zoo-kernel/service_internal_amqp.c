@@ -1,7 +1,7 @@
 /**
  * Author : David Saggiorato
  *
- *  Copyright 2015-2022 GeoLabs SARL. All rights reserved.
+ *  Copyright 2015-2023 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,10 @@
 
 #include "service.h"
 #include "service_internal_amqp.h"
+#include "service_json.h"
 #include <amqp_tcp_socket.h>
 #include <amqp_framing.h>
+#include "json.h"
 
 /**
  * AMQP connection state
@@ -308,10 +310,10 @@ int send_msg(const char * msg, const char * content_type){
     // Check that frame is on channel 1
     if (frame.frame_type == AMQP_FRAME_METHOD && frame.payload.method.id == AMQP_BASIC_ACK_METHOD)
       {
-	fprintf(stderr," *-* Message successfully delivered (%s %d)\n",__FILE__,__LINE__ );
-	fflush(stderr);
-	return 0;
-	// Message successfully delivered
+        fprintf(stderr," *-* Message successfully delivered (%s %d)\n",__FILE__,__LINE__ );
+        fflush(stderr);
+        return 0;
+        // Message successfully delivered
       }
     else
       {
@@ -342,6 +344,71 @@ int send_msg(const char * msg, const char * content_type){
       }
     
     return ret;
+}
+
+/**
+ * Publish a message in RabbitMQ
+ *
+ * @param pmsConf the maps pointing to the main configuration file
+ * @param pmRequest the request as it has been parsed till now
+ * @param pmsInpuits the inputs maps
+ * @param pmsOutpuits the outputs maps
+ */
+void publish_amqp_msg(maps* pmsConf,int* eres,map* pmRequest,maps* pmsInputs,maps* pmsOututs){
+  init_amqp(pmsConf);
+  *eres = SERVICE_ACCEPTED;
+  json_object *poMsg = json_object_new_object();
+
+  maps* pmsLenv=getMaps(pmsConf,"lenv");
+  json_object *maps1_obj = mapToJson(pmsLenv->content);
+  json_object_object_add(poMsg,"main_lenv",maps1_obj);
+
+  pmsLenv=getMaps(pmsConf,"subscriber");
+  if(pmsLenv!=NULL){
+    json_object *poSubscriber = mapToJson(pmsLenv->content);
+    json_object_object_add(poMsg,"main_subscriber",poSubscriber);
+  }
+  maps* pmsRequests=getMaps(pmsConf,"http_requests");
+  if(pmsRequests!=NULL){
+    json_object *poRequests = mapToJson(pmsRequests->content);
+    json_object_object_add(poMsg,"main_http_requests",poRequests);
+  }
+
+  map* pmListSections=getMapFromMaps(pmsConf,"servicesNamespace","sections_list");
+  if(pmListSections!=NULL) {
+    char* pcaListSections=zStrdup(pmListSections->value);
+    char *saveptr;
+    char *tmps = strtok_r (pcaListSections, ",", &saveptr);
+    while(tmps!=NULL){
+      maps* pmsTmp=getMaps(pmsConf,tmps);
+      if(pmsTmp!=NULL){
+        json_object *poRequests = mapToJson(pmsTmp->content);
+        char* pcaKey=(char*)malloc((strlen(tmps)+6)*sizeof(char));
+        sprintf(pcaKey,"main_%s",tmps);
+        json_object_object_add(poMsg,pcaKey,poRequests);
+      }
+      tmps = strtok_r (NULL, ",", &saveptr);
+    }
+    free(pcaListSections);
+  }
+
+  json_object *req_format_jobj = mapsToJson(pmsInputs);
+  json_object_object_add(poMsg,"request_input_real_format",req_format_jobj);
+
+  json_object *req_jobj = mapToJson(pmRequest);
+  json_object_object_add(poMsg,"request_inputs",req_jobj);
+
+  json_object *outputs_jobj = mapsToJson(pmsOututs);
+  json_object_object_add(poMsg,"request_output_real_format",outputs_jobj);
+
+  bind_amqp();
+  init_confirmation();
+  if ( (send_msg(json_object_to_json_string_ext(poMsg,JSON_C_TO_STRING_PLAIN),
+		   "application/json") != 0) ){
+    *eres = SERVICE_FAILED;
+  }
+  close_amqp();
+  json_object_put(poMsg);
 }
 
 /**

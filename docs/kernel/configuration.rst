@@ -103,6 +103,10 @@ The main.cfg ``[main]`` section parameters are explained bellow.
    service code. In case you do not add handleText or set its value to
    true, you will simply need to use the value as it was provided in
    a single CDATA node provided in the Execute request.
+* ``extra_supported_codes``: if this parameter is present in the main
+  section, then the response codes list given will be considered as
+  valid response code when downloading input data (sample value:
+  ``404,400``).
 
 .. warning:: 
   The ``libPath`` parameter is currently only recognized by services implemented
@@ -472,7 +476,7 @@ OpenAPI Specification configuration file
 
 Since revision 949 of the ZOO-Kernel, you can now activate the OGC
 API - Processing support. In such a case you will need to have an
-``oas.cfg`` file located in tne same directory where the ``main.cfg`` is.
+``oas.cfg`` file located in the same directory where the ``main.cfg`` is.
 
 This ``oas.cfg`` file gets the same syntactic rules than the
 ``main.cfg``. The ZOO-Kernel uses this file to produce information
@@ -481,7 +485,11 @@ about the open API specification it is referring to.
 The first section to be found in the ``oas.cfg`` file should be the
 ``[openapi]``. It contains the following parameters:
 
- * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API - Processing
+ * ``rootUrl``: the URL to access the ZOO-Kernel using OGC API -
+   Processing (in case the ``rootHost`` and ``rootPath`` are defined,
+   this value will automatically be updated at runtime)
+ * ``rootHost``: the host (ie. http://localhost)
+ * ``rootPath``: the root path to the service (ie. ogc-api)
  * ``links``: the links provided from the root
  * ``paths``: the full paths list
  * ``parameters``: the parameters list defined in paths
@@ -498,6 +506,23 @@ The first section to be found in the ``oas.cfg`` file should be the
    and you want to aknowledge the text/html format in links
  * ``wsUrl``: the WebSocket URL to subscribe client to redis
  * ``publisherUrl``: the URL used to publish status updates
+* ``link_href``: the url to the links.json schema
+* ``tags``: tags lits in the order they will be defined in the OpenAPI
+* ``examplesPath``: the full path to the examples files, if any
+* ``examplesUrl``: the corresponding URL to access the examples files
+  to be exposed within the OpenAPI
+* ``exceptionsUrl``: root URL to the exception
+* ``ensure_type_validation``: set it to true to not allow passing
+  literal value to a complex input, a complex data in place of a
+  literal, respectively
+* ``ensure_type_validation_but_ets``: set it to true to have the type
+  validation as with the previous parameter but on for the literal
+  data (not accepting complex data)
+* ``default_result_as_document``: set it to true in case you want to
+  use raw as the default value for the response parameter.
+* ``use_problem_exception``: set any value only in case you are
+  willing to use application/problem+json (see. `RFC7807
+  <https://datatracker.ietf.org/doc/html/rfc7807>`__).
 
 For any links and paths ``/A`` defined, you will have a corresponding
 ``[/A]`` and ``[A]`` sections. In the ``[/A]`` section you will define
@@ -569,7 +594,91 @@ to this `page
 <https://github.com/opengeospatial/wps-rest-binding#overview>`__ or use
 the `Swagger UI <https://swagger.io/tools/swagger-ui/>`__. A live
 instance is available `here <https://demo.mapmint.com/swagger-ui/dist/>`__.
-  
+
+OpenAPI Security
+................
+
+OpenAPI permits the definition of security restrictions to access a
+given path using a specific request method. For more details, please
+consult the `OpenAPI Authentication and Authorization
+<https://swagger.io/docs/specification/authentication/>`__ section.
+
+Since revision `ae34767
+<https://github.com/ZOO-Project/ZOO-Project/commit/ae34767ab5f9127ae654980f00a2e79ec94aeb45>`__,
+the ZOO-Kernel supports OGC API - Processes request filtering. It can
+invoke the execution of other services before and after handling a
+request. So, you can implement your service for security or other
+purposes.
+
+To support security from your OpenAPI, you can add an optional section
+``osecurity`` to the ``oas.cfg`` file. It should contain the following keys:
+
+ * ``name``: the name used in the components' security schemes
+ * ``module_path``: the full path to the location of the service metadata files and processes (can be stored somewhere else to be hidden from the services list)
+ * ``module_name_in``: the process to use before handling the request
+ * ``module_name_out``: the process to use after having handled the request
+ * ``type``: the `scheme type <https://swagger.io/docs/specification/authentication/>`__ (http, apiKey, …)
+ * ``scheme``: the scheme name (Basic, Bearer) `list of possible values <https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml>`__
+ * ``format``: bearer format (used only in case scheme is set to Bearer, can be JWT, optional)
+ * ``realm``: the realm to use when returning 401 WWW-Authenticate response header (optional)
+ * ``passwd``: the htpassword file used to authenticate users (only used for Basic scheme, optional)
+
+Associated with this ``osecurity`` section, you can add two optional
+sections, ``filter_in`` and ``filter_out``, to define one or more
+filters to be applied before handling the request and after, respectively. 
+You can use an array of filters if you need to execute more than a
+single service before or after the request treatment. The ZOO-Kernel
+will invoke the services in the same order as they are in the array.
+In both ``filter_in`` and ``filter_out`` section, you should add the
+``path`` and ``service`` keys used to define the location of the
+service to run.
+
+Then to secure an operation (meaning a path and request method couple), you should add
+the optional ``secured`` key and set it to the name used in the
+components' security schemes.
+
+Below is an example of ``oas.cfg`` file for securing the execution of
+the HelloPy processes.
+
+.. code-block:: guess
+    
+    [processes/HelloPy/execution]
+     rel=http://www.opengis.net/def/rel/ogc/1.0/execute
+     length=1
+     method=post
+     secured=BasicAuth
+     title=execute a job
+     abstract=An execute endpoint.
+     tags=ExecuteEndpoint
+     tags_description=
+     schema=http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteSync.yaml
+     parameters=/components/parameters/processID,/components/parameters/oas-header1
+     ecode=400,404,500
+     eschema=http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteAsync.yaml
+    
+     [osecurity]
+     type=http
+     scheme=basic
+     realm=Secured section
+     charset=utf-8
+     passwd=/tmp/htpasswords
+
+     [filter_in]
+     path=/opt/securityServices
+     service=securityIn
+
+     [filter_out]
+     path=/opt/securityServices
+     service=securityOut
+
+In the example, we used the demonstration `securityIn and securityOut
+services
+<https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/basicAuth/service.c>`__
+for handling HTTP Basic Authentication. 
+
+
+
+
 .. rubric:: Footnotes
 
 .. [#f1] If GET requests are passed through ``xlink:href`` to the ZOO-Kernel , the latter will execute the request the first time and store the result  on disk. The next time the same request is executed, the cached file will be used and this will make your process run much faster. If ``cachedir`` was not specified in the ``main.cfg`` then the ``tmpPath`` value will be used.

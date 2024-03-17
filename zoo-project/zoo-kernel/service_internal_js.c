@@ -224,7 +224,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
     char tmp1[1024];
     sprintf(tmp1,"Unable to load JavaScript file %s",filename);
     free(filename);
-    errorException(*main_conf,tmp1,"NoApplicableCode",NULL);
+    errorException(main_conf,tmp1,"NoApplicableCode",NULL);
     JS_MaybeGC(cx);
     JS_DestroyContext(cx);
     JS_DestroyRuntime(rt);
@@ -268,7 +268,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
 #ifdef JS_DEBUG
     fprintf(stderr,"%s",tmp1);
 #endif
-    errorException(*main_conf,tmp1,"NoApplicableCode",NULL);
+    errorException(main_conf,tmp1,"NoApplicableCode",NULL);
     free(filename);
     JS_MaybeGC(cx);
     JS_DestroyContext(cx);
@@ -332,7 +332,7 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
 #ifdef JS_DEBUG
       fprintf(stderr,"%s",tmp1);
 #endif
-      errorException(*main_conf,tmp1,"NoApplicableCode",NULL);
+      errorException(main_conf,tmp1,"NoApplicableCode",NULL);
       free(filename);
       JS_MaybeGC(cx);
       JS_DestroyContext(cx);

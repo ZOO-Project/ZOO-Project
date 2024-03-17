@@ -87,6 +87,7 @@ extern "C" {
     char *mimeType; //!< the mimeType returned by the server
     char *post; //!< the potential POST XML content
     char* cookie; //!< The potential Cookie returned by the server
+    char* location; //!< The potential Location header returned by the server
   } _HINTERNET;
 
   /**

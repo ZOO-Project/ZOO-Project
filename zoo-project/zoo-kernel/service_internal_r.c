@@ -122,7 +122,7 @@ int zoo_r_support(maps** main_conf,map* request,service* s,maps **real_inputs,ma
     }
   }
   else{
-    errorException (m, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
+    errorException (main_conf, "Unable to parse serviceProvider please check your zcfg file.", "NoApplicableCode", NULL);
     return -1;
   }
   SEXP e;
@@ -178,7 +178,7 @@ int zoo_r_support(maps** main_conf,map* request,service* s,maps **real_inputs,ma
 	setMapInMaps(*main_conf,"lenv","message",tmpStr);
 	char* finalStr=(char*)malloc((strlen(tmpStr)+strlen(_("Unable to run your R service: "))+2)*sizeof(char));
 	sprintf(finalStr,"%s %s",_("Unable to run your R service: "),tmpStr);
-	errorException(*main_conf,finalStr,"NoApplicableCode",NULL);
+	errorException(main_conf,finalStr,"NoApplicableCode",NULL);
 	free(finalStr);
 	result=-1;
       }

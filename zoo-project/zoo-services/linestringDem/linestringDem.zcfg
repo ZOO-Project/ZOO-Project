@@ -1,0 +1,60 @@
+[linestringDem]
+ Title = Terrain Height under a LineString
+ Abstract = Output the terrain height under a given LineString
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = linestringDem.js
+ inspector = false
+ serviceType = NODEJS
+ jsModuleType = CJS
+ <MetaData>
+   title = LineString-DEM
+ </MetaData>
+<DataInputs>
+  [RasterFile]
+   Title = The name of the MNT file
+   Abstract = The file containing elevation model relative to the dataPath defined in the ZOO-Project main configuration file.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default>
+     value = topofr.tif
+    </Default>
+   </LiteralData>
+  [Geometry]
+   Title = The path to calaculate profile
+   Abstract = The input data source name to use as source for convertion.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = application/json
+     encoding = UTF-8
+     extension = js
+     asReference = true	
+    </Default>
+    <Supported>
+     mimeType = application/json
+     encoding = UTF-8
+    </Supported>
+   </ComplexData>
+ </DataInputs>
+ <DataOutputs>
+  [Profile]
+   Title = The resulting profile
+   Abstract = GeoJSON string containing the X Y Z values where (X,Y) is corresponding to the original coordinates and the elevation value. 
+   <ComplexData>
+    <Default>
+     mimeType = application/json
+     encoding = UTF-8
+     extension = js
+    </Default>
+    <Supported>
+     mimeType = application/json
+     encoding = UTF-8
+    </Supported>
+   </ComplexData>
+ </DataOutputs>  

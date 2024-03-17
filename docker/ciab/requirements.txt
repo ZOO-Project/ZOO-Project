@@ -1,0 +1,44 @@
+--extra-index-url https://packages.dea.ga.gov.au/
+aiohttp
+aiobotocore[boto3,awscli]
+pyyaml
+wget
+requests
+datacube
+odc-algo
+odc-aws
+odc-aio
+odc-apps-cloud
+odc-apps-dc-tools
+odc-ui
+odc-index
+# Jupyter components.
+gdal
+scipy
+jupyter==1.0.0
+jupyterlab==3.2.0
+ipyleaflet
+folium
+pandas==2.0.0
+numpy
+xarray[complete]==2023.4.2
+matplotlib==3.4.3
+geopandas
+scikit-image
+tqdm
+click>8.0.0
+python-dateutil>=2.8.0
+sat-search
+pystac_client==0.6
+
+dask[array]>=2022.11.1
+dask
+distributed==2023.5.1
+
+# for tests
+pytest
+testbook
+
+openeo
+openeo-processes-dask==2023.5.1
+openeo-processes-dask[implementations]==2023.5.1
