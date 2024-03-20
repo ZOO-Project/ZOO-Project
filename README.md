@@ -11,11 +11,11 @@ The **ZOO-Project** is an open source processing platform, released under MIT/X1
 It provides the polyglot **ZOO-Kernel**, a server implementation of the **Web Processing Service (WPS)** (1.0.0 and 2.0.0) and the **OGC API - Processes** standards published by the OGC. 
 It contains **ZOO-Services**, a minimal set of ready-to-use services that can be used as a base to create more usefull services.
 It provides the **ZOO-API**, initially only available from the JavaScript service implementation, which exposes ZOO-Kernel variables and functions to the language used to implement the service.
-It contains the **ZOO-Client**, a JavaScript API which can be used from a client application to interract with a WPS server.
+It contains the **ZOO-Client**, a JavaScript API which can be used from a client application to interact with a WPS server.
 
 ### ZOO-Kernel
 
-The ZOO-Kernel is a powerfull processing engine able to handle execution of service that can be implemented in various programming languages: 
+The ZOO-Kernel is a powerful processing engine able to handle execution of service that can be implemented in various programming languages: 
  * C/C++,
  * C#,
  * Fortran,
@@ -50,7 +50,7 @@ The basic ZOO-API is available for every supported programming language.
 
 ### ZOO-Client 
 
-The ZOO-Client is a JavaScript API that can be used on client side to interract with a WPS Server.
+The ZOO-Client is a JavaScript API that can be used on client side to interact with a WPS Server.
 
 ## License
 
