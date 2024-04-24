@@ -72,11 +72,11 @@ Prerequisites
    * latest `ZOO-Kernel <http://zoo-project.org/trac/browser/trunk/zoo-project/zoo-kernel>`__ trunk version
    * `MapServer <http://mapserver/org>`__ version >= 6.0.1
 
-First download the lastest zoo-kernel by checking out the svn. Use the following command from do the directory where your previously checked out (in this example we will use ``$PREV_SVN_CO`` to design this directory).
+First download the lastest zoo-kernel by cloning the GitHub repository. Use the following command from do the directory where you previously cloned the repo (in this example we will use ``$PREV_SVN_CO`` to design this directory).
 
 .. code-block:: guess
 
-    svn checkout http://svn.zoo-project.org/svn/trunk/ $PREV_SVN_CO
+    git clone https://github.com/ZOO-Project/ZOO-Project.git $PREV_SVN_CO
     cd $PREV_SVN_CO
     
 Then uncompress the MapServer archive (ie. ``mapserver-6.0.1.tar.bz2``) into ``/tmp/zoo-ms-src``, and compile it using the following command:
@@ -123,6 +123,8 @@ layer.
       msStylePoly=STYLE COLOR 202 109 19 OUTLINECOLOR 105 105 105 WIDTH 3 END
       msStyleLine=STYLE OUTLINECOLOR 202 109 19 WIDTH 3 END
       msStylePoint=STYLE COLOR 202 109 19 OUTLINECOLOR 105 105 105 SYMBOL 0 SIZE 14 END
+
+You can add a specific ``[ms_web_metadata]`` section for adding parameters and value to the ``WEB METADATA`` block of the produced mapfile (ie. ``wms_allow_getmap_without_styles=true``).
 
 The ``dataPath`` directory is mandatory and must belong to the Apache user.
 
