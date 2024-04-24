@@ -61,7 +61,7 @@ $e
         itemprop="creator"
         itemscope itemtype="https://schema.org/Organization" >
         <a class="navbar-brand" href="#">
-          <img itemprop="logo" src="http://zoo-project.org/img/zoo-sun-logo.png" width="55" height="30" class="d-inline-block align-top" alt="">
+          <img itemprop="logo" src="https://zoo-project.org/img/zoo-sun-logo.png" width="55" height="30" class="d-inline-block align-top" alt="">
            <span itemprop="name">$conf["provider"]["providerName"]</span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -590,14 +590,14 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
 
       <textarea id="collapseJson" class="form-control collapse" ></textarea>
       <script>
-      window.onload = function(){
-      \$("main").find("table").DataTable(
-      #if $conf["main"]["language"]!="en-US"
-      { language: {
-            url: '//cdn.datatables.net/plug-ins/1.11.3/i18n/$(conf["main"]["language"].replace("-","_").lower()).json'
-      } }
-      #end if
-      );
+        window.onload = function(){
+          \$("main").find("table").DataTable(
+          #if $conf["main"]["language"]!="en-US"
+            { language: {
+              url: '//cdn.datatables.net/plug-ins/1.11.3/i18n/$(conf["main"]["language"].replace("-","_").lower()).json'
+            } }
+          #end if
+        );
         var jsContent=\$(".microlight").html();
         var tmpStr=js_beautify(jsContent);
         \$("textarea").last().val(tmpStr);
@@ -634,7 +634,37 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
             form.classList.add('was-validated');
           }, false);
         });
-      
+        #if "osecurity" in $conf["main"]
+        #import configparser
+        #set config = configparser.ConfigParser()
+        #try
+        #set res=$config.read($conf["lenv"]["cwd"]+'/oas.cfg')
+        #except Exception as e
+        <!-- $e -->
+        #end try
+        setTimeout(function(){
+            keycloak = new Keycloak({
+                url: "$config["osecurity"]["url"]",//'https://ospd.geolabs.fr:8100/',
+                realm: "$config["osecurity"]["realm"]",//'ospd',
+                clientId: "$config["osecurity"]["client_id"]"//'OSPD'
+            });
+            try {
+                keycloak.init({flow: "implicit",onLoad: 'check-sso'}).then((authenticated) => {
+                    console.log('authenticated', authenticated)
+                    if(!authenticated){
+                        \$("#navbarCollapse").append('<div class="dropdown"><button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Uknown User</button><div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton"><a class="dropdown-item" href="#" onclick="keycloak.login({redirect_url: \''+window.location+'\'})">Authenticate</a></div></div>');
+                        return;
+                    }
+                    const profile = keycloak.loadUserProfile().then((profile) => {
+                        console.log('Retrieved user profile:', profile);
+                        \$("#navbarCollapse").append('<div class="dropdown"><button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">'+profile["firstName"]+' '+profile["lastName"]+'</button><div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton"><a class="dropdown-item" href="https://orcid.org/'+profile["username"]+'" target="_blank"><img src="https://orcid.org/favicon.ico">&nbsp;ORCID ID</a><a class="dropdown-item" href="#" onclick="keycloak.accountManagement()">Account</a><a class="dropdown-item" href="#" onclick="keycloak.logout()">Logout</a></div></div>');
+		            });
+	            });
+            } catch (error) {
+                console.error('Failed to initialize adapter:', error);
+            }
+        },200);
+        #end if
       }
       </script>
       <hr>
@@ -702,6 +732,7 @@ $printCard({"id": "contact","title": $zoo._("Contact"),"content": $printContact(
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.13.0/beautify.min.js" integrity="sha512-84xqGKD+OW9ElGeIq5RkXhsKveQx+kAjahn9r7f/Vm9J0bDrwEabW3MQNgYdTzLBnwfrTGs0nuPx3pZxh6itNg==" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js" ></script>
+    <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.1/dist/keycloak.min.js"></script>
   </body>
 </html>
 #if "cache_file" in $inputs["tmpl"] and $removeCacheFile

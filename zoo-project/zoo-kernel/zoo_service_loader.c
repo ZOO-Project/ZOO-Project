@@ -5218,7 +5218,7 @@ runRequest (map ** inputs)
 	      (char *)
 	      malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
 		       strlen (usid->value) + 8) * sizeof (char));
-	    sprintf (fbkp, "%s/%s_%s.json", r_inputs->value, r_inputs1->value,
+	    sprintf (fbkp, "%s/%s_%s.xml", r_inputs->value, r_inputs1->value,
 		     usid->value);
 	    setMapInMaps (m, "lenv", "file.responseInit", fbkp);
 

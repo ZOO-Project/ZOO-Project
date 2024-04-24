@@ -67,6 +67,9 @@ server_internal.o: server_internal.c server_internal.h service.h mimetypes.h
 service_internal.o: service_internal.c service_internal.h service.h
 	$(CC) ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c
 
+service_internal_gdal.o: service_internal_gdal.c service_internal_gdal.h service.h
+	$(CC) ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_gdal.c
+
 service_yaml.o: service_yaml.c service.h
 	$(CC) ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
 
@@ -125,8 +128,8 @@ service_loader.o: service_loader.c service.h
 zoo_service_loader.o: zoo_service_loader.c service.h version.h ${MS_FILE} ${R_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${NODEJS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${SAGA_FILE} ${MONO_FILE} ${HPC_FILES} ${METADB_FILE} ${RABBITMQ_FILE}
 	$(CXX) -g -O2 ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${MONO_CFLAGS} ${SAGA_CFLAGS} ${OTBCFLAGS} ${RCFLAGS} ${PYTHONCFLAGS} ${JAVACFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${PERLCFLAGS} ${PHPCFLAGS} ${SAGA_ENABLED} ${OTB_ENABLED} ${HPC_ENABLED} ${PYTHON_ENABLED} ${R_ENABLED} ${JS_ENABLED} ${NODEJS_ENABLED} ${PHP_ENABLED} ${PERL_ENABLED} ${JAVA_ENABLED} ${MONO_ENABLED} ${METADB_ENABLED} -c zoo_service_loader.c  -fno-common -DPIC -o zoo_service_loader.o
 
-libzoo_service.${EXT}: version.h service_internal.o service.o sqlapi.o ${CALLBACK_FILE}
-	$(CXX) -shared  ${GDAL_CFLAGS} ${DEFAULT_OPTS} -fpic -o libzoo_service.${EXT} ${CFLAGS}  service_internal.o service.o sqlapi.o ${CALLBACK_FILE} ${FCGI_LDFLAGS} ${GDAL_LIBS} ${ZOO_LDFLAGS} ${MACOS_LD_FLAGS}
+libzoo_service.${EXT}: version.h service_internal.o service.o sqlapi.o service_internal_gdal.o ${CALLBACK_FILE}
+	$(CXX) -shared  ${GDAL_CFLAGS} ${DEFAULT_OPTS} -fpic -o libzoo_service.${EXT} ${CFLAGS}  service_internal.o service.o sqlapi.o service_internal_gdal.o ${CALLBACK_FILE} ${FCGI_LDFLAGS} ${GDAL_LIBS} ${ZOO_LDFLAGS} ${MACOS_LD_FLAGS}
 
 zoo_loader.cgi: version.h libzoo_service.${EXT} zoo_loader.c zoo_service_loader.o  ulinet.o service.h lex.sr.o service_conf.tab.o service_conf.y ulinet.o main_conf_read.tab.o lex.cr.o request_parser.o response_print.o server_internal.o caching.o ${MS_FILE} ${PYTHON_FILE} ${PHP_FILE} ${JAVA_FILE} ${JS_FILE} ${NODEJS_FILE} ${PERL_FILE} ${RUBY_FILE} ${YAML_FILE} ${OTB_FILE} ${R_FILE} ${SAGA_FILE} ${HPC_FILES} ${METADB_FILE} ${JSON_FILE} 
 	$(CXX) -g -O2 ${JSON_CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${PHPCFLAGS}  ${PERLCFLAGS} ${RUBYCFLAGS}  ${JAVACFLAGS} ${XML2CFLAGS} ${PYTHONCFLAGS} ${CFLAGS} -c zoo_loader.c  -fno-common -DPIC -o zoo_loader.o

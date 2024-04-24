@@ -102,7 +102,11 @@ ARG BUILD_DEPS=" \
     #nlohmann-json-dev \
 "
 WORKDIR /zoo-project
-COPY . .
+COPY ./thirds ./thirds
+COPY ./zoo-project/zoo-kernel ./zoo-project/zoo-kernel
+COPY ./zoo-project/zoo-api ./zoo-project/zoo-api
+COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
+#COPY . .
 
 RUN set -ex \
     && apt-cache search nlohmann libwxgtk \
@@ -243,6 +247,7 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/ZOOMakefile.opts /zoo-p
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/sqlapi.h /zoo-project/zoo-project/zoo-kernel/sqlapi.h
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service.h /zoo-project/zoo-project/zoo-kernel/service.h
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service_internal.h /zoo-project/zoo-project/zoo-kernel/service_internal.h
+COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service_internal_gdal.h /zoo-project/zoo-project/zoo-kernel/service_internal_gdal.h
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/version.h /zoo-project/zoo-project/zoo-kernel/version.h
 
 RUN set -ex \
@@ -263,7 +268,9 @@ RUN set -ex \
     && cd ../.. \
     \
     && cd ../zoo-services/gdal/ \
-    && for i in contour dem grid profile translate warp ; do cd $i ; make && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \
+    && curl -o gdal_utils_priv.h https://raw.githubusercontent.com/OSGeo/gdal/a8846d10a87435b7a9966b784ed3ca10e8382274/apps/gdal_utils_priv.h \
+    && curl -o commonutils.h https://raw.githubusercontent.com/OSGeo/gdal/a8846d10a87435b7a9966b784ed3ca10e8382274/apps/commonutils.h \
+    && for i in mdiminfo mdimtranslate contour dem grid profile translate warp ; do cd $i ; make cgi-env/${i}_service.zo && cp cgi-env/* /usr/lib/cgi-bin/ ; cd .. ; done \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -286,6 +293,7 @@ RUN set -ex \
     && git clone --depth=1 https://github.com/swagger-api/swagger-ui.git \
     && git clone --depth=1 https://github.com/WPS-Benchmarking/cptesting.git /testing \
     && git clone --depth=1 https://www.github.com/singularityhub/singularity-cli.git /singularity-cli \
+    && git clone https://github.com/MapServer/MapServer.git /mapserver \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -349,14 +357,14 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-services/cgal/examples/ /var/w
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/templates/index.html /var/www/index.html
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/static /var/www/html/static
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/echo-py/cgi-env/ /usr/lib/cgi-bin/
-COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess
-COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf
+COPY ./docker/.htaccess /var/www/html/.htaccess
+COPY ./docker/default.conf /000-default.conf
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
 
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
-COPY --from=builder1 /zoo-project/docker/oas.cfg /usr/lib/cgi-bin/
-COPY --from=builder1 /zoo-project/docker/main.cfg /usr/lib/cgi-bin/
+COPY ./docker/oas.cfg /usr/lib/cgi-bin/
+COPY ./docker/main.cfg /usr/lib/cgi-bin/
 COPY --from=builder2 /usr/com/zoo-project/ /usr/com/zoo-project/
 
 # From optional zoo demos
@@ -365,6 +373,7 @@ COPY --from=demos /testing/ /testing/
 COPY --from=demos /zoo-project/examples/data/ /usr/com/zoo-project/
 COPY --from=demos /zoo-project/examples/ /var/www/html/
 COPY --from=demos /zoo-project/swagger-ui /var/www/html/swagger-ui
+COPY --from=demos /mapserver/share /mapserver/share
 
 
 RUN set -ex \
@@ -404,9 +413,17 @@ RUN set -ex \
     && chmod 755 /startUp.sh \
     \
     # SAGA remove invalid zcfgs \
-    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg  \
+    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg \
+          /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg \
+          /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg \
+          /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg \
+          /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg \
+          /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg \
+          /usr/lib/cgi-bin/SAGA/pointcloud_tools/15.zcfg \
+          /usr/lib/cgi-bin/SAGA/grid_filter/7.zcfg \
     # OTB remove invalid zcfgs \
-    && rm /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg /usr/lib/cgi-bin/OTB/TrainRegression.zcfg \
+    && rm /usr/lib/cgi-bin/OTB/TestApplication.zcfg \
+          /usr/lib/cgi-bin/OTB/StereoFramework.zcfg /usr/lib/cgi-bin/OTB/TrainRegression.zcfg \
     # Update SAGA zcfg
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \

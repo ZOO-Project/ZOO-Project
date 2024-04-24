@@ -5,7 +5,7 @@
  storeSupported = true
  statusSupported = true
  serviceType = C
- serviceProvider = gdal_grid_service.zo
+ serviceProvider = grid_service.zo
  <DataInputs>
   [OF]
    Title = Format of the output data

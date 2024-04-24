@@ -66,7 +66,7 @@ extern "C" {
    */
   typedef struct {
     maps *conf;      //!< the main configuration file
-	map *input;     //!< the input maps
+    map *input;     //!< the input maps
     int id;          //!< the job handler identifier
   } job_handlers_params;
 
@@ -338,7 +338,22 @@ extern "C" {
         }
       }else if( getMapArray(arg->input,"hasResult",iCnt) != NULL ||
                 getMapArray(arg->input,"isResult",iCnt)  != NULL ){
+        // Require to store the file with another name (usid+"_"+iCnt.zca)
+        map* pmTmpPath=getMapFromMaps(arg->conf,"main","tmpPath");
+        map* pmUsid=getMapFromMaps(arg->conf,"lenv","usid");
+        if(pmTmpPath==NULL && pmUsid==NULL){
+          setMapInMaps(arg->conf,"lenv","message",_("Unable to find the tmpPath or usid"));
+          setMapInMaps(arg->conf,"lenv","code","InternalError");
+          return NULL;
+        }
+        char* pcaCachePath=(char*)malloc((strlen(pmTmpPath->value)+strlen(pmUsid->value)+14)*sizeof(char));
+        sprintf(pcaCachePath,"%s%s_%d.zca",pmTmpPath->value,pmUsid->value,iCnt);
         map* pmTmp=getMapArray(arg->input,"cache_file",iCnt);
+        if(pmTmp!=NULL){
+          free(pmTmp->value);
+          pmTmp->value=zStrdup(pcaCachePath);
+        }
+        free(pcaCachePath);
         if(pmTmp!=NULL){
           FILE* tmpFile=fopen(pmTmp->value,"wb");
           if(tmpFile!=NULL){
@@ -422,12 +437,13 @@ extern "C" {
       map* pmLength=getMap(job_handler_arguments[i]->input,"length");
       if(pmLength!=NULL)
         iLen=atoi(pmLength->value);
+      map* pmName=getMap(job_handler_arguments[i]->input,"name");
       for(iCnt=0;iCnt<iLen;iCnt++){
+        maps* pmsTmp=getMaps(*pmsInputs,pmName->value);
         map* pmTmp=getMapArray(job_handler_arguments[i]->input,"cache_file",iCnt);
         if(pmTmp==NULL){
           map* pmSize=getMapArray(job_handler_arguments[i]->input,"size",iCnt);
           pmTmp=getMapArray(job_handler_arguments[i]->input,"value",iCnt);
-          maps* pmsTmp=getMaps(*pmsInputs,job_handler_arguments[i]->input->name);
           if(pmTmp!=NULL and pmSize!=NULL){
             if(pmsTmp!=NULL){
               map* pmValue=getMapArray(pmsTmp->content,"value",iCnt);
@@ -443,6 +459,16 @@ extern "C" {
               setMapArray(pmsTmp->content,"value",iCnt,pmTmp->value);
             }
           }
+        }else{
+          // Should update the cache_file value
+          if(pmsTmp!=NULL){
+            map* pmValue=getMapArray(pmsTmp->content,"cache_file",iCnt);
+            if(pmValue!=NULL){
+              free(pmValue->value);
+              pmValue->value=zStrdup(pmTmp->value);
+            }
+          }else
+            ZOO_DEBUG("pmsTmp is NULL");
         }
       }
       freeMap(&job_handler_arguments[i]->input);

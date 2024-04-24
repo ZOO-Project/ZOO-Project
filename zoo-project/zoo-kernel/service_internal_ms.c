@@ -1571,30 +1571,42 @@ void outputMapfile(maps* conf,maps* outputs){
   /**
    * Set metadata extracted from main.cfg file maps
    */
-  maps* cursor=conf;
   map* correspondance=getCorrespondance();
-  while(cursor!=NULL){
-    if(strstr(cursor->name,"_help")==NULL){
-      map* _cursor=cursor->content;
+  const char* apcSectionNames[2]={
+    "identification",
+    "provider"
+  };
+  for(int iCnt=0;iCnt<2;iCnt++){
+    maps* pmSection=getMaps(conf,apcSectionNames[iCnt]);
+    if(pmSection!=NULL){
+      map* _cursor=pmSection->content;
       map* vMap;
       while(_cursor!=NULL){
-	if((vMap=getMap(correspondance,_cursor->name))!=NULL){
-	  if (msInsertHashTable(&(myMap->web.metadata), vMap->value, _cursor->value) == NULL){
+        if((vMap=getMap(correspondance,_cursor->name))!=NULL){
+          if (msInsertHashTable(&(myMap->web.metadata), vMap->value, _cursor->value) == NULL){
 #ifdef DEBUGMS
-	    fprintf(stderr,"Unable to add metadata");
+            fprintf(stderr,"Unable to add metadata");
 #endif
-	    freeMap(&correspondance);
-	    free(correspondance);
-	    return;
-	  }
-	}
-	_cursor=_cursor->next;
+            freeMap(&correspondance);
+            free(correspondance);
+            return;
+          }
+        }
+        _cursor=_cursor->next;
       }
     }
-    cursor=cursor->next;
   }
   freeMap(&correspondance);
   free(correspondance);
+
+  maps *pmsWebMetadata=getMaps(conf,"ms_web_metadata");
+  if(pmsWebMetadata!=NULL){
+    map* pmMetadata=pmsWebMetadata->content;
+    while(pmMetadata!=NULL){
+      msInsertHashTable(&(myMap->web.metadata),pmMetadata->name,pmMetadata->value);
+      pmMetadata=pmMetadata->next;
+    }
+  }
 
   map* sid=getMapFromMaps(conf,"lenv","usid");
   char *pcaMapName = (char*)malloc((14+strlen(sid->value)+strlen(outputs->name))*sizeof(char));

@@ -1,3 +1,6 @@
+Version 2.1.0-dev
+  * Add gdalmdiminfo and gdalmdimtranslate services
+  * Update support for OGC API - Processes - Part 3: Workflows
 Version 2.0.0
   * Update the beta Part 3: Workflow & chaining support
   * Add Configuration option to force stderr in the console rather 

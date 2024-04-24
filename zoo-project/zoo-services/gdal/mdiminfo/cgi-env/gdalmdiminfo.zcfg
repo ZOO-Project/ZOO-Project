@@ -1,0 +1,100 @@
+[gdalmdiminfo]
+ Title = Reports structure and content of a multidimensional dataset.
+ Abstract = gdalmdiminfo program lists various information about a GDAL supported multidimensional raster dataset as JSON output. cf. https://gdal.org/programs/gdalmdiminfo.html
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceType = C
+ serviceProvider = mdiminfo_service.zo
+ <DataInputs>
+  [oo]
+   Title = Open option
+   Abstract = Dataset open option (format specific).
+   minOccurs = 0
+   maxOccurs = 1024
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [arrayoption]
+   Title = Option passed to GDALGroup::GetMDArrayNames() to filter reported arrays.
+   Abstract = Such option is format specific. Consult driver documentation.
+   minOccurs = 0
+   maxOccurs = 1024
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [detailed]
+   Title = Most verbose output.
+   Abstract = Report attribute data types and array values.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default>
+      value = false
+    </Default>
+   </LiteralData>
+  [nopretty]
+   Title = Outputs on a single line without any indentation.
+   Abstract = Outputs on a single line without any indentation.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default>
+      value = false
+    </Default>
+   </LiteralData>
+  [stats]
+   Title = Read and display image statistics.
+   Abstract = Force computation if no statistics are stored in an image.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = boolean
+    <Default>
+      value = false
+    </Default>
+   </LiteralData>
+  [limit]
+   Title = Number of values in each dimension that is used to limit the display of array values.
+   Abstract = Number of values in each dimension that is used to limit the display of array values. By default, unlimited. Only taken into account if used with detailed.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = integer
+    <Default>
+      value = 10
+    </Default>
+   </LiteralData>
+  [array]
+   Title = Name of the array.
+   Abstract = Name of the array used to restrict the output to the specified array.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+  [Input]
+   Title = The input data source name
+   Abstract = The input data source name to use.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = The resulting converted file
+   Abstract = The file name resulting of the convertion
+   <LiteralData>
+    DataType = string
+    <Default>
+    </Default>	
+   </LiteralData>
+ </DataOutputs>  
