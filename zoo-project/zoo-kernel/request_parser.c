@@ -1705,7 +1705,6 @@ int parseRequest(maps** pmsConf,map** request_inputs,service* s,maps** inputs,ma
  * @see runHttpRequests
  */
 int validateRequest(maps** pmsConf,service* s,map* original_request, maps** request_inputs,maps** request_outputs,HINTERNET* hInternet){
-
   if(hInternet!=NULL){
     map* errI0=NULL;
     updateStatus(*pmsConf,1,"Downloading inputs / nested processes invocation");
@@ -1779,58 +1778,57 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
       map *tmpe = NULL;
       if (strcmp (dfv, "") != 0)
         {
-	  tmpe = createMap ("code", "MissingParameterValue");
-	  int nb=0;
-	  int length=1;
-	  map* len=getMap(errI,"length");
-	  if(len!=NULL)
-	    length=atoi(len->value);
-	  for(nb=0;nb<length;nb++){
-	    map* errp=getMapArray(errI,"value",nb);
-	    snprintf (tmps, 1024,
-		      _
-		      ("The <%s> argument was not specified in DataInputs but is required according to the ZOO ServicesProvider configuration file."),
-		      errp->value);
-	    setMapArray (tmpe, "locator", nb , errp->value);
-	    setMapArray (tmpe, "text", nb , tmps);
-	    setMapArray (tmpe, "code", nb , "MissingParameterValue");
-	  }
-	}
-      if (strcmp (dfv1, "") != 0)
-        {
-	  int ilength=0;
-	  if(tmpe==NULL)
-	    tmpe = createMap ("code", "InvalidParameterValue");
-	  else{
-	    map* len=getMap(tmpe,"length");
-	    if(len!=NULL)
-	      ilength=atoi(len->value);
-	  }
-	  int nb=0;
-	  int length=1;
-	  map* len=getMap(errO,"length");
-	  if(len!=NULL)
-	    length=atoi(len->value);
-	  for(nb=0;nb<length;nb++){
-	    map* errp=getMapArray(errO,"value",nb);
-	    snprintf (tmps, 1024,
-		      _
-		      ("The <%s> argument specified as %s identifier was not recognized (not defined in the ZOO Configuration File)."),
-		      errp->value,
-		      ((getMap(original_request,"RawDataOutput")!=NULL)?"RawDataOutput":"ResponseDocument"));
-	    setMapArray (tmpe, "locator", nb+ilength , errp->value);
-	    setMapArray (tmpe, "text", nb+ilength , tmps);
-	    setMapArray (tmpe, "code", nb+ilength , "InvalidParameterValue");
-	  }
-	}
+          tmpe = createMap ("code", "MissingParameterValue");
+          int nb=0;
+          int length=1;
+          map* len=getMap(errI,"length");
+          if(len!=NULL)
+            length=atoi(len->value);
+          for(nb=0;nb<length;nb++){
+            map* errp=getMapArray(errI,"value",nb);
+            snprintf (tmps, 1024,
+              _
+              ("The <%s> argument was not specified in DataInputs but is required according to the ZOO ServicesProvider configuration file."),
+              errp->value);
+            setMapArray (tmpe, "locator", nb , errp->value);
+            setMapArray (tmpe, "text", nb , tmps);
+            setMapArray (tmpe, "code", nb , "MissingParameterValue");
+          }
+        }
+        if (strcmp (dfv1, "") != 0){
+          int ilength=0;
+          if(tmpe==NULL)
+            tmpe = createMap ("code", "InvalidParameterValue");
+          else{
+            map* len=getMap(tmpe,"length");
+            if(len!=NULL)
+              ilength=atoi(len->value);
+          }
+          int nb=0;
+          int length=1;
+          map* len=getMap(errO,"length");
+          if(len!=NULL)
+            length=atoi(len->value);
+          for(nb=0;nb<length;nb++){
+            map* errp=getMapArray(errO,"value",nb);
+            snprintf (tmps, 1024,
+              _
+              ("The <%s> argument specified as %s identifier was not recognized (not defined in the ZOO Configuration File)."),
+              errp->value,
+              ((getMap(original_request,"RawDataOutput")!=NULL)?"RawDataOutput":"ResponseDocument"));
+            setMapArray (tmpe, "locator", nb+ilength , errp->value);
+            setMapArray (tmpe, "text", nb+ilength , tmps);
+            setMapArray (tmpe, "code", nb+ilength , "InvalidParameterValue");
+          }
+        }
       printExceptionReportResponse (pmsConf, tmpe);
       if(errI!=NULL){
-	freeMap(&errI);
-	free(errI);
+        freeMap(&errI);
+        free(errI);
       }
       if(errO!=NULL){
-	freeMap(&errO);
-	free(errO);
+        freeMap(&errO);
+        free(errO);
       }
       freeMap (&tmpe);
       free (tmpe);
@@ -1872,10 +1870,10 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
                       else
                         break;
                     }
-		  fileNameOnServer=(char*)malloc((strlen(name) - t - 1 )*sizeof(char));
+                  fileNameOnServer=(char*)malloc((strlen(name) - t - 1 )*sizeof(char));
                   strcpy (fileNameOnServer, name + t + 1);
 
-		  storageNameOnServer=(char*)malloc((strlen(path->value) + strlen(fileNameOnServer) + 2)*sizeof(char));
+                  storageNameOnServer=(char*)malloc((strlen(path->value) + strlen(fileNameOnServer) + 2)*sizeof(char));
                   sprintf (storageNameOnServer, "%s/%s", path->value,
                            fileNameOnServer);
 #ifdef DEBUG
@@ -1906,8 +1904,8 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
                   addToMap (tmpReqI->content, "lref", storageNameOnServer);
                   cgiFormFileClose (file);
                   zClose (targetFile);
-		  free(fileNameOnServer);
-		  free(storageNameOnServer);
+                  free(fileNameOnServer);
+                  free(storageNameOnServer);
 #ifdef DEBUG
                   fprintf (stderr, "File \"%s\" has been uploaded",
                            fileNameOnServer);

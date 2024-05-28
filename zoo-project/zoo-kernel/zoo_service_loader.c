@@ -321,6 +321,8 @@ int createLenvFile(maps* pmsConf,char* pcPath,char* pcUsid){
 int dumpBackFinalFile(maps* pmsConf,char* fbkp,char* fbkp1)
 {
   FILE *f2 = fopen (fbkp1, "rb");
+  if(f2==NULL)
+    return -1;
 #ifndef RELY_ON_DB
   semid lid = getShmLockId (pmsConf, 1);
   if (lid < 0)
@@ -328,19 +330,13 @@ int dumpBackFinalFile(maps* pmsConf,char* fbkp,char* fbkp1)
   lockShm (lid);
 #endif
   FILE *f3 = fopen (fbkp, "wb+");
-  free (fbkp);
+  if(f3==NULL)
+    return -1;
   fseek (f2, 0, SEEK_END);
   long flen = ftell (f2);
   fseek (f2, 0, SEEK_SET);
   char *tmps1 = (char *) malloc ((flen + 1) * sizeof (char));
   fread (tmps1, flen, 1, f2);
-#ifdef WIN32
-  /* knut: I think this block can be dropped; pchr may be NULL if result is not in XML format
-  char *pchr=strrchr(tmps1,'>');
-  flen=strlen(tmps1)-strlen(pchr)+1;
-  tmps1[flen]=0;
-  */
-#endif
   fwrite (tmps1, 1, flen, f3);
   fclose (f2);
   fclose (f3);
@@ -1261,6 +1257,7 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
 	      zDup2 (saved_stdout, fileno (stdout));
 	      zClose(saved_stdout);
 	      if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
+		  fflush(stderr);
 		exitAndCleanUp(zooRegistry, &m,
 			       buff,"InvalidParameterValue","Identifier",
 			       orig,corig,

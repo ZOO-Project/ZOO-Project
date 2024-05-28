@@ -30,4 +30,4 @@ dependencies:
     - pystac
     - python-dotenv
     - pyjwt
-prefix: /usr/miniconda3/envs/ades-dev
+#prefix: /usr/miniconda3/envs/ades-dev

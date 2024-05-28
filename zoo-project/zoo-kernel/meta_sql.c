@@ -52,10 +52,19 @@
 #define META_SERVICES_KEYWORDS_FROM_PROCESS_LENGTH strlen(META_SERVICES_KEYWORDS_FROM_PROCESS)
 
 #define META_SERVICES_META_FROM_ANYTHING \
-  "SELECT title,role,href FROM CollectionDB.ows_Metadata where id in"\
+  "SELECT id, title, role, href FROM CollectionDB.ows_Metadata where id in"\
   " (SELECT metadata_id FROM CollectionDB.DescriptionsMetadataAssignment"\
   " where descriptions_id=%s) "
 #define META_SERVICES_META_FROM_ANYTHING_LENGTH strlen(META_SERVICES_META_FROM_ANYTHING)
+
+#define META_SERVICES_INNER_NB_META \
+  "SELECT COUNT(*) FROM"\
+  " (SELECT NULL FROM Collectiondb.ows_Metadata where pid=%s group by index) as a"
+#define META_SERVICES_INNER_NB_META_LENGTH strlen(META_SERVICES_INNER_NB_META)
+
+#define META_SERVICES_INNER_META_FROM_ANYTHING \
+  "SELECT id, title, role, href FROM CollectionDB.ows_Metadata where pid=%s and index=%d"
+#define META_SERVICES_INNER_META_FROM_ANYTHING_LENGTH strlen(META_SERVICES_INNER_META_FROM_ANYTHING)
 
 #define META_SERVICES_AP_FROM_ANYTHING \
   "SELECT id,title,role,href FROM CollectionDB.ows_AdditionalParameters where id in"\
@@ -132,7 +141,7 @@ int fillAdditionalParameters(int iDbId,maps* conf,map** ap,const char* dref){
   OGRLayer *metas=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
   int cnt=0;
-  char fields[3][255]={
+  char fields[3][6]={
     "title",
     "role",
     "href"
@@ -142,12 +151,12 @@ int fillAdditionalParameters(int iDbId,maps* conf,map** ap,const char* dref){
     for(i=0;i<3;i++){      
       const char *tmp=meta->GetFieldAsString(i+1);
       if(strlen(tmp)>0)
-	if(*ap==NULL){
-	  (*ap)=createMap(fields[i],tmp);
-	  addToMap(*ap,"fromDb","true");
-	}
-	else
-	  setMapArray(*ap,fields[i],res,tmp);
+        if(*ap==NULL){
+          (*ap)=createMap(fields[i],tmp);
+          addToMap(*ap,"fromDb","true");
+        }
+        else
+          setMapArray(*ap,fields[i],res,tmp);
     }
     char* apQuery=(char*)malloc((META_SERVICES_AP_FROM_AP_LENGTH+strlen(dref)+1)*sizeof(char));
     sprintf(apQuery,META_SERVICES_AP_FROM_AP,meta->GetFieldAsString(0));
@@ -176,31 +185,135 @@ int fillAdditionalParameters(int iDbId,maps* conf,map** ap,const char* dref){
  */
 int fillMetadata(int iDbId,maps* conf,map** metadata,const char* dref){
   int res=0;
-  char* ioQuery=(char*)malloc((META_SERVICES_META_FROM_ANYTHING_LENGTH+strlen(dref)+1)*sizeof(char));
-  sprintf(ioQuery,META_SERVICES_META_FROM_ANYTHING,dref);
+  char* pcaIoQuery=(char*)malloc((META_SERVICES_META_FROM_ANYTHING_LENGTH+strlen(dref)+1)*sizeof(char));
+  sprintf(pcaIoQuery,META_SERVICES_META_FROM_ANYTHING,dref);
   OGRFeature  *meta = NULL;
-  OGRLayer *metas=fetchSql(conf,iDbId-1,ioQuery);
-  free(ioQuery);
+  OGRLayer *metas=fetchSql(conf,iDbId-1,pcaIoQuery);
+  free(pcaIoQuery);
   int cnt=0;
-  char fields[3][255]={
+  char fields[4][255]={
+    "id",
     "title",
     "role",
     "href"
   };
   while( (meta = metas->GetNextFeature()) != NULL ){
     int i=0;
-    for(i=0;i<3;i++){
+    char* pcaLastKey=NULL;
+    for(i=1;i<4;i++){
       const char *tmp=meta->GetFieldAsString(i);
-      if(strlen(tmp)>0)
-	if(*metadata==NULL)
-	  *metadata=createMap(fields[i],tmp);
-	else
-	  addToMap(*metadata,fields[i],tmp);
+      if(strlen(tmp)>0){
+        if(*metadata==NULL)
+          *metadata=createMap(fields[i],tmp);
+        else
+          setMapArray(*metadata,fields[i],res,tmp);
+        if(pcaLastKey!=NULL)
+          free(pcaLastKey);
+        pcaLastKey=getMapArrayKey(*metadata,fields[i],res);
+      }else{
+        // Parse nested metadata
+        if(i==3){
+          // Loop over the array
+          char* pcaNbNestedMetaQuery=(char*)malloc((META_SERVICES_INNER_NB_META_LENGTH+5)*sizeof(char));
+          sprintf(pcaNbNestedMetaQuery,META_SERVICES_INNER_NB_META,meta->GetFieldAsString(0));
+          OGRFeature *nbMeta = NULL;
+          OGRLayer *nbValues=fetchSql(conf,iDbId-1,pcaNbNestedMetaQuery);
+          free(pcaNbNestedMetaQuery);
+          int nbElements=1;
+          while( (nbMeta = nbValues->GetNextFeature()) != NULL ){
+            nbElements=nbMeta->GetFieldAsInteger(0);
+            OGRFeature::DestroyFeature( nbMeta );
+          }
+          cleanFetchSql(conf,iDbId-1,nbValues);
+          for(int iCounter=0;iCounter<nbElements;iCounter++){
+            char* pcaNestedMetaQuery=(char*)malloc((META_SERVICES_INNER_META_FROM_ANYTHING_LENGTH+10)*sizeof(char));
+            sprintf(pcaNestedMetaQuery,META_SERVICES_INNER_META_FROM_ANYTHING,meta->GetFieldAsString(0),iCounter);
+            OGRFeature  *nmeta = NULL;
+            OGRLayer *nmetas=fetchSql(conf,iDbId-1,pcaNestedMetaQuery);
+            free(pcaNestedMetaQuery);
+            int iCount=0;
+            char* pcaPrefix=(char*) malloc(15*sizeof(char));
+            if(iCounter>0)
+              sprintf(pcaPrefix,"%s_%d_%d",fields[2],res,iCounter);
+            else{
+              sprintf(pcaPrefix,"%s_%d",fields[2],res);
+              char* pcaName=(char*) malloc((strlen(pcaPrefix)+9)*sizeof(char));
+              sprintf(pcaName,"%s_elength",pcaPrefix);
+              addIntToMap(*metadata,pcaName,nbElements);
+              free(pcaName);
+            }
+            while( (nmeta = nmetas->GetNextFeature()) != NULL ){
+              for(int iCnt=1;iCnt<4;iCnt++){
+                char* pcaName=(char*) malloc((strlen(pcaPrefix)+strlen(fields[iCnt])+16)*sizeof(char));
+                if(iCount>0)
+                  sprintf(pcaName,"%s_%s_%d",pcaPrefix,fields[iCnt],iCount);
+                else
+                  sprintf(pcaName,"%s_%s",pcaPrefix,fields[iCnt]);
+                const char *tmp=nmeta->GetFieldAsString(iCnt);
+                if(strlen(tmp)>0){
+                  if(*metadata==NULL)
+                    *metadata=createMap(pcaName,tmp);
+                  else
+                    addToMap(*metadata,pcaName,tmp);
+                }
+                free(pcaName);
+              }
+              OGRFeature::DestroyFeature( nmeta );
+              iCount++;
+            }
+            char* pcaName=(char*) malloc((strlen(pcaPrefix)+18)*sizeof(char));
+            sprintf(pcaName,"%s_length",pcaPrefix);
+            addIntToMap(*metadata,pcaName,iCount);
+            cleanFetchSql(conf,iDbId-1,nmetas);
+            free(pcaPrefix);
+            free(pcaName);
+          }
+        }
+      }
     }
     res++;
     OGRFeature::DestroyFeature( meta );
   }
   cleanFetchSql(conf,iDbId-1,metas);
+  return res;
+}
+
+/**
+ * Fill the metadata map with the data extracted from metadb
+ *
+ * @param conf the main configuration maps
+ * @param pmContent the map to fill
+ * @param dref the description identifier
+ * @return the number of metadata field found
+ */
+int fillKeywords(int iDbId,maps* conf,map** pmContent,const char* dref){
+  int res=0;
+  char* pcaIoQuery=(char*)malloc((META_SERVICES_META_FROM_ANYTHING_LENGTH+strlen(dref)+1)*sizeof(char));
+  sprintf(pcaIoQuery,META_SERVICES_KEYWORDS_FROM_PROCESS,dref);
+  OGRFeature  *poKeywordsFeature = NULL;
+  OGRLayer *poKeywordsLayer=fetchSql(conf,iDbId-1,pcaIoQuery);
+  free(pcaIoQuery);
+  char* pcaKeywords=NULL;
+  int cnt=0;
+  while( (poKeywordsFeature = poKeywordsLayer->GetNextFeature()) != NULL ){
+    const char *pccValue=poKeywordsFeature->GetFieldAsString(0);
+    if(pcaKeywords==NULL){
+      pcaKeywords=zStrdup(pccValue);
+    }
+    else{
+      char* pcaTmp=zStrdup(pcaKeywords);
+      pcaKeywords=(char*) realloc(pcaKeywords,(strlen(pcaTmp)+strlen(pccValue)+2)*sizeof(char));
+      sprintf(pcaKeywords,"%s,%s",pcaTmp,pccValue);
+      free(pcaTmp);
+    }
+    res++;
+    OGRFeature::DestroyFeature( poKeywordsFeature );
+  }
+  if(pcaKeywords!=NULL){
+    addToMap(*pmContent,"keywords",pcaKeywords);
+    free(pcaKeywords);
+  }
+  cleanFetchSql(conf,iDbId-1,poKeywordsLayer);
   return res;
 }
 
@@ -411,6 +524,8 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       addToMap(s->content,"mutable",poFeature->GetFieldAsString( 8 ));
       addToMap(s->content,"user_id",poFeature->GetFieldAsString( 9 ));
       addToMap(s->content,"fromDb","true");
+      // Fetch Keywords
+      fillKeywords(iDbId,conf,&s->content,poFeature->GetFieldAsString( 0 ));
       s->metadata=NULL;
       fillMetadata(iDbId,conf,&s->metadata,poFeature->GetFieldAsString( 0 ));
       s->additional_parameters=NULL;
@@ -418,9 +533,9 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       s->inputs=NULL;
       s->outputs=NULL;
       if(minimal==1){
-	OGRFeature::DestroyFeature( poFeature );
-	cleanFetchSql(conf,iDbId-1,res);
-	return s;
+        OGRFeature::DestroyFeature( poFeature );
+        cleanFetchSql(conf,iDbId-1,res);
+        return s;
       }
       char* inputsQuery=(char*)malloc((META_SERVICES_LIST_INPUTS_FROM_PROCESS_LENGTH+strlen(poFeature->GetFieldAsString( 0 ))+1)*sizeof(char));
       sprintf(inputsQuery,META_SERVICES_LIST_INPUTS_FROM_PROCESS,poFeature->GetFieldAsString( 0 ));
@@ -429,14 +544,14 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       setMapArray(pmsTmp->content,"lastQuery",iLen+1,inputsQuery);
       free(inputsQuery);
       while( (input = inputs->GetNextFeature()) != NULL ){
-	setMapArray(pmsTmp->content,"lastResult",iLen+1,"Succeeded");
-	elements* in=extractInput(iDbId,conf,input);
-	if(in!=NULL){
-	  addToElements(&s->inputs,in);
-	  freeElements(&in);
-	  free(in);
-	}
-	OGRFeature::DestroyFeature( input );
+        setMapArray(pmsTmp->content,"lastResult",iLen+1,"Succeeded");
+        elements* in=extractInput(iDbId,conf,input);
+        if(in!=NULL){
+          addToElements(&s->inputs,in);
+          freeElements(&in);
+          free(in);
+        }
+        OGRFeature::DestroyFeature( input );
       }
       cleanFetchSql(conf,iDbId-1,inputs);
       char* outputsQuery=(char*)malloc((META_SERVICES_LIST_OUTPUTS_FROM_PROCESS_LENGTH+strlen(poFeature->GetFieldAsString( 0 ))+1)*sizeof(char));
@@ -447,14 +562,14 @@ service* extractServiceFromDb(maps* conf,const char* serviceName,int minimal){
       free(outputsQuery);
       s->outputs=NULL;
       while( (output = outputs->GetNextFeature()) != NULL ){
-	setMapArray(pmsTmp->content,"lastResult",iLen+2,"Succeeded");
-	elements* in=extractOutput(iDbId,conf,output);
-	if(in!=NULL){
-	  addToElements(&s->outputs,in);
-	  freeElements(&in);
-	  free(in);
-	}
-	OGRFeature::DestroyFeature( output );
+        setMapArray(pmsTmp->content,"lastResult",iLen+2,"Succeeded");
+        elements* in=extractOutput(iDbId,conf,output);
+        if(in!=NULL){
+          addToElements(&s->outputs,in);
+          freeElements(&in);
+          free(in);
+        }
+        OGRFeature::DestroyFeature( output );
       }
       cleanFetchSql(conf,iDbId-1,outputs);
       OGRFeature::DestroyFeature( poFeature );
@@ -502,13 +617,13 @@ int fetchServicesFromDb(registry* reg,maps* conf, void* doc0, void* n0,
     poFeature = res->GetNextFeature();
     while( poFeature != NULL ){
       if(compareCnt(conf,"serviceCntSkip","eupper") && compareCnt(conf,"serviceCntLimit","lower")){
-	service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
+        service* s=extractServiceFromDb(conf,poFeature->GetFieldAsString( 1 ),minimal);
 #ifdef USE_HPC_NESTEDOUTPUTS
-	addNestedOutputs(&s);
+        addNestedOutputs(&s);
 #endif
-	func(reg,conf,doc,n,s);
-	freeService(&s);
-	free(s);
+        func(reg,conf,doc,n,s);
+        freeService(&s);
+        free(s);
       }
       OGRFeature::DestroyFeature( poFeature );
       poFeature = res->GetNextFeature();

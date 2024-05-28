@@ -77,17 +77,17 @@ char* _createInitString(maps* conf,const char* key){
     map* tmp=getMap(cconf->content,keywords[i]);
     if(tmp!=NULL){
       if(res==NULL){
-	res=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+4)*sizeof(char));
-	sprintf(res,"%s='%s'",keywords[i],tmp->value);
-	len+=strlen(res);
+        res=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+4)*sizeof(char));
+        sprintf(res,"%s='%s'",keywords[i],tmp->value);
+        len+=strlen(res);
       }else{
-	char* res1=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
-	sprintf(res1," %s='%s'",keywords[i],tmp->value);
-	res=(char*)realloc(res,(len+strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
-	memcpy(res+len,res1,(strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
-	len+=strlen(res1);
-	res[len]=0;
-	free(res1);
+        char* res1=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
+        sprintf(res1," %s='%s'",keywords[i],tmp->value);
+        res=(char*)realloc(res,(len+strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
+        memcpy(res+len,res1,(strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
+        len+=strlen(res1);
+        res[len]=0;
+        free(res1);
       }
     }
   }

@@ -67,7 +67,9 @@ create table CollectionDB.ows_Metadata (
        id serial primary key,
        title text,
        role text,
-       href text
+       href text,
+       pid int4 references CollectionDB.ows_Metadata(id) ON DELETE CASCADE,
+       index int4
 );
 
 create table CollectionDB.DescriptionsMetadataAssignment(

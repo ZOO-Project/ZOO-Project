@@ -1,4 +1,11 @@
 Version 2.1.0-dev
+  * Add keywords in the process description if any are defined in the
+  service metadata.
+  * Preserve datatype for literal values that should be passed to the
+  cwl runner.
+  * Expose complex metada information such as author and contributor
+  within the process descrition for OGC API - Processes.
+  * Support recording metadata and author for processes deployed from CWL.
   * Add gdalmdiminfo and gdalmdimtranslate services
   * Update support for OGC API - Processes - Part 3: Workflows
 Version 2.0.0

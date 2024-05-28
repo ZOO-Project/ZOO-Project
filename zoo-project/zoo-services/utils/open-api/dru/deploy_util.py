@@ -55,6 +55,7 @@ class Process:
         self.service_type = service_type
         self.service_provider = service_provider
         self.version = version
+        self.metadata = None
         self.inputs = []
         self.outputs = []
 
@@ -113,6 +114,9 @@ class Process:
             description=workflow.doc,
         )
 
+        if workflow.extension_fields:
+            process.metadata=workflow.extension_fields
+
         process.add_inputs_from_cwl(workflow.inputs, len(workflow.id))
         process.add_outputs_from_cwl(workflow.outputs, len(workflow.id))
 
@@ -163,6 +167,52 @@ class Process:
             ),
             file=stream,
         )
+
+        if self.metadata is not None:
+            print("  <MetaData>", file=stream)
+            cnt=0
+            for item in self.metadata:
+                rname="role"
+                hname="href"
+                if cnt > 0:
+                    rname+="_"+str(cnt)
+                    hname+="_"+str(cnt)
+                if isinstance(self.metadata[item],str):
+                    print(rname+" = "+item)
+                    print(hname+" = "+self.metadata[item])
+                    cnt+=1
+                elif isinstance(self.metadata[item],list):
+                    if len(self.metadata[item])>0 and isinstance(self.metadata[item][0],dict):
+                        dcnt=0
+                        print(rname+" = "+item)
+                        cnt+=1
+                        for icnt in len(self.metadata[item]):
+                            srname=rname+"_role"
+                            shname=hname+"_href"
+                            srname1=None
+                            shname1=None
+                            if dcnt>0:
+                                srname1=srname+"_"+str(dcnt+1)
+                                shname1=shname+"_"+str(dcnt+1)
+                                srname+="_"+str(dcnt)
+                                shname+="_"+str(dcnt)
+                            for subitem in self.metadata[item][icnt]:
+                                if subitem=="class":
+                                    print("    "+srname+" = @context")
+                                    print("    "+shname+" = https://schema.org")
+                                    print("    "+srname1+" = @type")
+                                    print("    "+shname1+" = "+self.metadata[item][icnt][subitem].split(":")[1])
+                                    dcnt+=1
+                                else:
+                                    if subitem.count(":")>0:
+                                        print("    "+srname+" = "+subitem.split(":")[1])
+                                    else:
+                                        print("    "+srname+" = "+subitem)
+                                    print("    "+shname+" = "+self.metadata[item][icnt][subitem])
+                                dcnt+=1
+                        print("    "+rname+"_length = "+str(dcnt))
+            print("    length = "+str(cnt))
+            print("  </MetaData>", file=stream)
 
         print("  <DataInputs>", file=stream)
         for input in self.inputs:
@@ -274,6 +324,63 @@ class Process:
                   "(SELECT last_value FROM CollectionDB.PrivateMetadataDeploymentMetadataAssignment_id_seq),"+
                   "true,true);").format(self.identifier,self.title,self.description,self.version,self.user))
         cur.execute("CREATE TEMPORARY TABLE pid AS (select last_value as id from CollectionDB.Descriptions_id_seq);")
+
+        # Main Metadata extraction
+        if self.metadata is not None:
+            for item in self.metadata:
+                if isinstance(self.metadata[item],str):
+                    cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href) "+
+                                "VALUES ($q${0}$q$,$q${1}$q$)".format(item,self.metadata[item]))
+                    cur.execute("INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "+
+                                "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Metadata_id_seq))")
+                elif isinstance(self.metadata[item],list):
+                    # Parse Keywords if any
+                    if len(self.metadata[item])>0 and isinstance(self.metadata[item][0],str):
+                        for icnt in range(len(self.metadata[item])):
+                            res=cur.execute("INSERT INTO CollectionDB.ows_Keywords (keyword) "+
+                                            "VALUES ($q${0}$q$)".format(self.metadata[item][icnt]));
+                            cur.execute("INSERT INTO CollectionDB.DescriptionsKeywordsAssignment (descriptions_id,keywords_id) "+
+                                        "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Keywords_id_seq))")
+                    elif len(self.metadata[item])>0 and isinstance(self.metadata[item][0],dict):
+                        res=cur.execute("INSERT INTO CollectionDB.ows_Metadata (role) "+
+                                        "VALUES ($q${0}$q$) RETURNING id".format(item))
+                        metadata_id=cur.fetchone()
+                        cur.execute("INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "+
+                                    "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Metadata_id_seq))")
+                        for icnt in range(len(self.metadata[item])):
+                            for subitem in self.metadata[item][icnt]:
+                                if subitem=="class":
+                                    cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
+                                                "VALUES ($q$@context$q$,$q$https://schema.org$q$,{0},{1})".format(
+                                                    str(metadata_id[0]),
+                                                    str(icnt)
+                                                ))
+                                    cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
+                                                "VALUES ($q$@type$q$,$q${0}$q$,{1},{2})".format(
+                                                    self.metadata[item][icnt][subitem].split(":")[1]
+                                                    if self.metadata[item][icnt][subitem].count(":")>0
+                                                    else self.metadata[item][icnt][subitem],
+                                                    str(metadata_id[0]),
+                                                    str(icnt)
+                                                ))
+                                else:
+                                    if subitem.count(":")>0:
+                                        cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
+                                                    "VALUES ($q${0}$q$,$q${1}$q$,{2},{3})".format(
+                                                        subitem.split(":")[1],
+                                                        self.metadata[item][icnt][subitem],
+                                                        str(metadata_id[0]),
+                                                        str(icnt)
+                                                    ))
+                                    else:
+                                        cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
+                                                    "VALUES ($q${0}$q$,$q${1}$q$,{2},{3})".format(
+                                                        subitem,
+                                                        self.metadata[item][icnt][subitem],
+                                                        str(metadata_id[0]),
+                                                        str(icnt)
+                                                    ))
+
         # Inputs treatment
         for input in self.inputs:
             if input.is_complex:
@@ -404,8 +511,8 @@ class ProcessInput:
         "boolean": "boolean",
         "int": "integer",
         "long": "integer",
-        "float": "number",
-        "double": "number",
+        "float": "float",
+        "double": "double",
         "string": "string",
         "enum": None,
     }
@@ -464,7 +571,7 @@ class ProcessInput:
                 )
 
             self.type = type_name
-            self.min_occurs = 0 if isinstance(input.type, list) else 1
+            self.min_occurs = 0 #0 if (isinstance(input.type, list) or input.default) else 1
             self.max_occurs = 1
             # 0 means unbounded, TODO: what should be the maxOcccurs value if unbounded is not available?
 
