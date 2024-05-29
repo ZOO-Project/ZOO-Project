@@ -29,12 +29,13 @@ RUN apt-get update -qqy --no-install-recommends \
  && apt-get install -qqy --no-install-recommends docker-ce-cli  \
  && apt-get clean -qqy
 
+ARG MINICONDA=Miniconda3-latest-Linux-x86_64.sh
 ARG PY_VER=3.10
 # Miniconda
 RUN wget -nv \
-    https://repo.anaconda.com/miniconda/Miniconda3-py39_4.10.3-Linux-x86_64.sh \
-    && bash Miniconda3-py39_4.10.3-Linux-x86_64.sh -b -p /usr/miniconda3 \
-    && rm -f Miniconda3-py39_4.10.3-Linux-x86_64.sh
+    https://repo.anaconda.com/miniconda/$MINICONDA \
+    && bash $MINICONDA -b -p /usr/miniconda3 \
+    && rm -f $MINICONDA
 ENV PATH="/usr/miniconda3/envs/ades-dev/bin:/usr/miniconda3/bin:${PATH}"
 COPY docker/hpgc/ades-dev_env.yaml /tmp/ades-dev_env.yaml
 RUN conda install mamba -n base -c conda-forge && \
