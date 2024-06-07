@@ -104,10 +104,11 @@ class Process:
                     version = str(cwl[key])
                     break
             for item in cwl:
-                if item.count("{0}:".format(software_namespace_prefix))>0:
+                search_str="{0}:".format(software_namespace_prefix)
+                if item.count(search_str)>0:
                     if root_metadata is None:
                         root_metadata={}
-                    root_metadata[item]=cwl[item]
+                    root_metadata[item.replace(search_str,"https://schema.org/")]=cwl[item]
 
         id = re.sub(".*#", '', workflow.id)
 
