@@ -82,6 +82,7 @@ class Process:
                 raise Exception("Workflow '{0}' not found".format(workflow_id))
 
         version = 'unknown'
+        root_metadata=None
         if workflow.extension_fields and 'https://schema.org/softwareVersion' in workflow.extension_fields:
             version = workflow.extension_fields['https://schema.org/softwareVersion']
         elif workflow.extension_fields and 'https://schema.org/version' in workflow.extension_fields:
@@ -89,7 +90,6 @@ class Process:
         else:
             # If software version is not specified inside the workflow,
             # get it from the top level (using legacy code)
-
             software_namespace_prefix = None
             if "$namespaces" in cwl and isinstance(cwl["$namespaces"], dict):
                 for (prefix, uri) in cwl["$namespaces"].items():
@@ -98,12 +98,16 @@ class Process:
                         "https://schema.org/",
                     ]:
                         software_namespace_prefix = prefix
-
             for key in ["softwareVersion", "version"]:
                 key = "{0}:{1}".format(software_namespace_prefix, key)
                 if key in cwl:
                     version = str(cwl[key])
                     break
+            for item in cwl:
+                if item.count("{0}:".format(software_namespace_prefix))>0:
+                    if root_metadata is None:
+                        root_metadata={}
+                    root_metadata[item]=cwl[item]
 
         id = re.sub(".*#", '', workflow.id)
 
@@ -114,7 +118,9 @@ class Process:
             description=workflow.doc,
         )
 
-        if workflow.extension_fields:
+        if root_metadata is not None:
+            process.metadata=root_metadata
+        elif workflow.extension_fields:
             process.metadata=workflow.extension_fields
 
         process.add_inputs_from_cwl(workflow.inputs, len(workflow.id))
