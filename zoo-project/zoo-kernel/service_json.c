@@ -1174,6 +1174,8 @@ extern "C" {
     maps* tmpMap=getMaps(*pmsConf,"main");
     const char *exceptionCode;
     map* pmTmp=getMap(s,"code");
+    if(pmTmp==NULL)
+      pmTmp=getMapFromMaps(*pmsConf,"lenv","code");
     exceptionCode=produceStatusString(*pmsConf,pmTmp);
     map* pmNoHeaders=getMapFromMaps(*pmsConf,"lenv","no-headers");
     if(pmNoHeaders==NULL || strncasecmp(pmNoHeaders->value,"false",5)==0){

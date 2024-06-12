@@ -968,18 +968,21 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
   int res=0;
   getServicesNamespacePath(m,pcDir,conf_dir,1024);
   if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
-    setMapInMaps(m,"lenv","can_continue","true");
+    if(strncmp(conf_dir,pcDir,strlen(pcDir))==0)
+      setMapInMaps(m,"lenv","can_continue","false");
+    else
+      setMapInMaps(m,"lenv","can_continue","true");
     res=_fetchService(zooRegistry, m, spService, request_inputs, conf_dir,
-			  cIdentifier, funcError);
+                      cIdentifier, funcError);
     if(res!=0 && strncmp(conf_dir,pcDir,strlen(pcDir))!=0){
       setMapInMaps(m,"lenv","can_continue","false");
       res=_fetchService(zooRegistry, m, spService, request_inputs, pcDir,
-			cIdentifier, funcError);
+                        cIdentifier, funcError);
     }
   }else{
     setMapInMaps(m,"lenv","can_continue","false");
     res=_fetchService(zooRegistry, m, spService, request_inputs, conf_dir,
-		      cIdentifier, funcError);
+                      cIdentifier, funcError);
   }
   return res;
 }
@@ -2894,11 +2897,11 @@ runRequest (map ** inputs)
     if(strncasecmp(cgiRequestMethod,"DELETE",6)==0
        && strstr(cgiQueryString,"/processes/")!=NULL){
       if(undeployServiceProvider==NULL){
-	    setMapInMaps(m,"lenv","status_code","501");
-	    map* error=createMap("code","NotImplemented");
+	    setMapInMaps(m,"lenv","status_code","405");
+	    map* error=createMap("code","InvalidMethod");
 	    addToMap(error,"message",_("The request method used to access the current path is not supported (no service available to undeploy)."));
 	    localPrintExceptionJ(&m,error);
-	    // TODO: cleanup memory
+	    // Cleanup memory
 	    freeMaps(&m);
 	    free(m);
 	    free (REQUEST);
@@ -2961,8 +2964,7 @@ runRequest (map ** inputs)
       addToMap(error,"message",_("The process cannot be modified."));
       setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
       localPrintExceptionJ(&m,error);
-      //json_object_put(res);
-      // TODO: cleanup memory
+      // Cleanup memory
       freeMaps(&m);
       free(m);
       free (REQUEST);
@@ -2971,7 +2973,6 @@ runRequest (map ** inputs)
       *inputs=NULL;
       free(pcaCgiQueryString);
       return 1;
-	  //}
 	}
       }
     } else
@@ -2982,11 +2983,11 @@ runRequest (map ** inputs)
 	  strstr(cgiQueryString,"/processes/")!=NULL &&
 	  strlen(strstr(cgiQueryString,"/processes/"))>11) ){
 	if(deployServiceProvider==NULL){
-	  setMapInMaps(m,"lenv","status_code","501");
-	  map* error=createMap("code","NotImplemented");
+	  setMapInMaps(m,"lenv","status_code","405");
+	  map* error=createMap("code","InvalidMethod");
 	  addToMap(error,"message",_("The request method used to access the current path is not supported."));
 	  localPrintExceptionJ(&m,error);
-	  // TODO: cleanup memory
+	  // Cleanup memory
 	  freeMaps(&m);
 	  free(m);
 	  free (REQUEST);
@@ -3033,7 +3034,7 @@ runRequest (map ** inputs)
 	      map* pmError=createMap("code","NoSuchProcess");
 	      addToMap(pmError,"message",_("The process failed to be updated."));
 	      localPrintExceptionJ(&m,pmError);
-	      // TODO: cleanup memory
+	      // Cleanup memory
 	      json_object_put(res4);
 	      json_object_put(res3);
 	      freeMaps(&m);
@@ -3106,7 +3107,7 @@ runRequest (map ** inputs)
       addToMap(pmaError,"message",_("The request method used to access the current path is not supported."));
       localPrintExceptionJ(&m,pmaError);
       json_object_put(res);
-      // TODO: cleanup memory
+      // Cleanup memory
       freeMaps(&m);
       free(m);
       free (REQUEST);
@@ -3126,7 +3127,7 @@ runRequest (map ** inputs)
 	const char* pccErr=_("This API does not support the method.");
 	addToMap(pmaError,"message",pccErr);
 	localPrintExceptionJ(&m,pmaError);
-	// TODO: cleanup memory
+	// Cleanup memory
 	freeMaps(&m);
 	free(m);
 	free (REQUEST);
@@ -3307,7 +3308,8 @@ runRequest (map ** inputs)
 	  runDismiss(m,jobId);
 	  map* pmError=getMapFromMaps(m,"lenv","error");
 	  if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-	    localPrintExceptionJ(&m,getMapFromMaps(m,"lenv","code"));
+	    maps* pmsLenv=getMaps(m,"lenv");
+	    localPrintExceptionJ(&m,pmsLenv->content);
 	    register_signals(donothing);
 	    freeService (&s1);
 	    free(s1);
@@ -3318,8 +3320,6 @@ runRequest (map ** inputs)
 	    freeMap (inputs);
 	    free (*inputs);
 	    *inputs=NULL;
-	    freeMap (&r_inputs);
-	    free (r_inputs);
 	    free(jobId);
 	    free(pcaCgiQueryString);
 	    xmlCleanupParser ();
@@ -3908,10 +3908,8 @@ runRequest (map ** inputs)
 	if(cIdentifier!=NULL)
 	  addToMap(request_inputs,"Identifier",cIdentifier);
 	if(fetchService(zooRegistry,m,&s1,request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ)!=0){
-	  // TODO: cleanup memory
+	  // Cleanup memory
 	  register_signals(donothing);
-	  freeService(&s1);
-	  free(s1);
 	  freeMaps(&m);
 	  free(m);
 	  free(REQUEST);
@@ -4230,7 +4228,7 @@ runRequest (map ** inputs)
 	    localPrintExceptionJ(&m,pmError);
 	    setMapInMaps(m,"lenv","no-headers","true");
 	    setMapInMaps(m,"lenv","hasPrinted","true");
-	    // TODO: cleanup memory
+	    // Cleanup memory
 	    freeMap(&pmError);
 	    free(pmError);
 	    freeMaps(&m);
@@ -4343,25 +4341,7 @@ runRequest (map ** inputs)
 		const char* jsonStr=json_object_to_json_string_ext(res5,JSON_C_TO_STRING_NOSLASHESCAPE);
 		setMapInMaps(m,"lenv","no-headers","false");
 		// In case security is activated, then execute the security module
-		/*if(*/ensureFiltered(&m,"out");/*!=0){
-		  maps* pmsTmp=getMaps(m,"lenv");
-		  printExceptionReportResponseJ(m,pmsTmp->content);
-		  // TODO: cleanup memory
-		  freeMaps(&m);
-		  free(m);
-		  free (REQUEST);
-		  map* pmTest=getMap(request_inputs,"shouldFree");
-		  if(pmTest!=NULL){
-		    freeMap (inputs);
-		    free (*inputs);
-		    *inputs=NULL;
-		    freeMap(&r_inputs);
-		    free (r_inputs);
-		    r_inputs=NULL;
-		  }
-		  free(pcaCgiQueryString);
-		  return 1;
-		  }*/
+		ensureFiltered(&m,"out");
 		map* pmORequestMethod=getMapFromMaps(m,"lenv","orequest_method");
 		if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0)
 		  setMapInMaps(m,"headers","Status","204 No Content");
@@ -5680,7 +5660,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 	    addToMap(request_inputs,"metapath","");
 	    setMapInMaps(lconf,"lenv","metapath","");
 	    if(fetchService(zooRegistry,lconf,&s1,request_inputs,conf_dir,r_inputs->value,printExceptionReportResponse)!=0){
-	      // TODO: cleanup memory
+	      // Cleanup memory
 	      freeMaps(&lconf);
 	      free(lconf);
 	      return -1;

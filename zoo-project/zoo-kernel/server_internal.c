@@ -1116,6 +1116,46 @@ void runGetStatus(maps* conf,char* pid,char* req){
 }
 
 /**
+ * Remove a directory and its content
+ *
+ * @pmsConf the maps containing the setting of the main.cfg file
+ * @acDirectory the directory to remove
+ */
+void removeSubdirectory(maps* pmsConf,char* acDirectoryName){
+  DIR *poSubDir = opendir(acDirectoryName);
+  struct dirent *poDirent;
+  if(poSubDir!=NULL){
+    char* pcaFilename=NULL;
+    while ((poDirent = readdir(poSubDir)) != NULL)
+      if(strncmp(poDirent->d_name,".",1)!=0 && strncmp(poDirent->d_name,"..",2)!=0){
+        zStatStruct zssStat;
+        pcaFilename=(char*)malloc((strlen(acDirectoryName)+strlen(poDirent->d_name)+2)*sizeof(char));
+        sprintf(pcaFilename,"%s/%s",acDirectoryName,poDirent->d_name);
+        int iStat=zStat(pcaFilename,&zssStat);
+        if(S_ISDIR(zssStat.st_mode)){
+          removeSubdirectory(pmsConf,pcaFilename);
+        }
+        else if(zUnlink(pcaFilename)!=0){
+          map* pmExecutionType = getMapFromMaps (pmsConf, "main", "executionType");
+          if(pmExecutionType==NULL || strncasecmp(pmExecutionType->value,"json",4)!=0)
+            errorException (&pmsConf,
+                _("The job cannot be removed, a file cannot be removed"),
+                "NoApplicableCode", NULL);
+          else{
+            setMapInMaps(pmsConf,"lenv","error","true");
+            setMapInMaps(pmsConf,"lenv","code","NoApplicableCode");
+            setMapInMaps(pmsConf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
+          }
+          return;
+        }
+        free(pcaFilename);
+      }
+    closedir (poSubDir);
+    rmdir(acDirectoryName);
+  }
+}
+
+/**
  * Run Dismiss requests.
  *
  * @param conf the maps containing the setting of the main.cfg file
@@ -1168,22 +1208,26 @@ void runDismiss(maps* conf,char* pid){
     int hasFile=-1;
     if(dirp!=NULL){
       while ((dp = readdir(dirp)) != NULL){
-	if(strstr(dp->d_name,pid)!=0){
-	  sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
-	  if(zUnlink(fileName)!=0){
-	    if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	      errorException (&conf,
-			      _("The job cannot be removed, a file cannot be removed"),
-			      "NoApplicableCode", NULL);
-	    else{
-	            setMapInMaps(conf,"lenv","error","true");
-		    setMapInMaps(conf,"lenv","code","NoApplicableCode");
-		    setMapInMaps(conf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
-	    }
-	    return;
-	  }
-	  
-	}
+        if(strstr(dp->d_name,pid)!=0){
+          zStatStruct zssStat;
+          sprintf(fileName,"%s/%s",r_inputs->value,dp->d_name);
+          int iStat=zStat(fileName,&zssStat);
+          if(!S_ISDIR(zssStat.st_mode) && zUnlink(fileName)!=0){
+            if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+              errorException (&conf,
+                  _("The job cannot be removed, a file cannot be removed"),
+                  "NoApplicableCode", NULL);
+            else{
+              setMapInMaps(conf,"lenv","error","true");
+              setMapInMaps(conf,"lenv","code","NoApplicableCode");
+              setMapInMaps(conf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
+            }
+            return;
+          }
+          else{
+            removeSubdirectory(conf,fileName);
+          }
+        }
       }
       closedir (dirp);
     }
