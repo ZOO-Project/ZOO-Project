@@ -1,0 +1,55 @@
+Statistics by categories (qgis:statisticsbycategories)
+
+This algorithm calculates statistics of fields depending on a parent class.
+
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Input vector layer
+
+	Parameter type:	QgsProcessingParameterFeatureSource
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProcessingFeatureSourceDefinition
+		- QgsProperty
+		- QgsVectorLayer
+
+VALUES_FIELD_NAME: Field to calculate statistics on (if empty, only count is calculated)
+
+	Parameter type:	QgsProcessingParameterField
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+CATEGORIES_FIELD_NAME: Field(s) with categories
+
+	Parameter type:	QgsProcessingParameterField
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+OUTPUT: Statistics by category
+
+	Parameter type:	QgsProcessingParameterFeatureSink
+
+	Accepted data types:
+		- str: destination vector file, e.g. 'd:/test.shp'
+		- str: 'memory:' to store result in temporary memory layer
+		- str: using vector provider ID prefix and destination URI, e.g. 'postgres:…' to store result in PostGIS table
+		- QgsProcessingOutputLayerDefinition
+		- QgsProperty
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputVectorLayer>
+	Statistics by category
