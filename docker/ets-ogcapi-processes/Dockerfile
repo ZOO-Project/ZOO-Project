@@ -22,7 +22,7 @@ RUN apt-get update && \
 #
 # Create the container to be run based on tomcat
 #
-FROM tomcat:7.0-jre8
+FROM tomcat:9.0.89-jre8
 ARG BUILD_DEPS=" \
     unzip \
 "
@@ -37,6 +37,9 @@ COPY --from=build /home/app/src1/ets-wps20/target/ets-wps20-*-ctl.zip /root
 COPY --from=build /home/app/src1/ets-wps20/target/ets-wps20-*-deps.zip /root
 ENV JAVA_OPTS="-Xms1024m -Xmx2048m -DTE_BASE=/root/te_base"
 RUN cd /root && \
+    apt-get update && \
+    apt-get install -y gnupg2 && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 04EE7237B7D453EC 648ACFD622F3D138 0E98404D386FA1D9 EF0F382A1A7B6500 && \
     mkdir te_base && \
     mkdir te_base/scripts && \
     echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list && \
