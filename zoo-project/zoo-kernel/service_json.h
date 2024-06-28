@@ -138,6 +138,7 @@ extern "C" {
   json_object*  printJResult(maps*,service*,maps*,int);
   json_object* printJobStatus(maps*,char*);
   json_object* printJobList(maps*);
+  json_object* printFilteredJobList(maps*,map*);
   int createNextLinks(maps*,json_object*);
   int createStatusFile(maps*,int);
   json_object* createStatus(maps*,int);
@@ -147,6 +148,8 @@ extern "C" {
   char* getResultPath(maps*,char*);
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
+  void produceRoot(maps*,json_object*);
+  void produceConformances(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
   bool jsonIsFalse(json_bool);
 #ifdef DRU_ENABLED

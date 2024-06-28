@@ -1,4 +1,9 @@
 Version 2.1.0-dev
+  * Ensure the mutable processes cannot be executed syncrhonously.
+  * Ensure that the invokeBasicCallback function is used in case the
+  service execution failed.
+  * Fix issue when multiple filters are used to filter the jobs list.
+  * Add support for x-logo in the info object of the OpenAPI.
   * Add keywords in the process description if any are defined in the
   service metadata.
   * Preserve datatype for literal values that should be passed to the

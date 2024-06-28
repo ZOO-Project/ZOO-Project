@@ -372,40 +372,35 @@ char* runSqlQuery(maps* conf,char* query){
  */
 void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
   map* pmUserName=getMapFromMaps(pmsConf,"auth_env","user");
+  char* pcClause=*pcaClauseFinal;
   if(pmUserName!=NULL){
     char* pcaTmp=NULL;
-    if(*pcaClauseFinal!=NULL){
-      pcaTmp=zStrdup(*pcaClauseFinal);
-    }
+    if(pcClause!=NULL){
+      pcaTmp=zStrdup(pcClause);
+    }else
+      pcaTmp=zStrdup("true");
     map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
-    if(*pcaClauseFinal!=NULL){
+    if(pcClause!=NULL){
       *pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
-				    (strlen(pcaTmp)+
-				     strlen(pmSchema->value)+
-				     strlen(pmUserName->value)+
-				     68)*sizeof(char));
+                                      (strlen(pcaTmp)+
+                                      strlen(pmSchema->value)+
+                                      strlen(pmUserName->value)+
+                                      68)*sizeof(char));
       sprintf(*pcaClauseFinal,"%s AND (user_id=0 or user_id=(SELECT id FROM %s.users WHERE name='%s'))",
-	      pcaTmp,pmSchema->value,pmUserName->value);
+        pcaTmp,pmSchema->value,pmUserName->value);
       free(pcaTmp);
     }else{
       *pcaClauseFinal=(char*)malloc((strlen(pmSchema->value)+strlen(pmUserName->value)+68)*sizeof(char));
       sprintf(*pcaClauseFinal,"(user_id=0 or user_id=(SELECT id FROM %s.users WHERE name='%s'))",
-	      pmSchema->value,pmUserName->value);
+        pmSchema->value,pmUserName->value);
     }
   }else{
-    if(*pcaClauseFinal!=NULL){
-      char* pcaTmp=zStrdup(*pcaClauseFinal);
-      if(pcaClauseDate!=NULL){
-	*pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
-				       (strlen(pcaTmp)+strlen(pcaClauseDate)+15)*sizeof(char));
-	sprintf(*pcaClauseFinal,"%s AND %s AND user_id=0",
-		pcaTmp,pcaClauseDate);
-      }else{
-	*pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
-				       (strlen(pcaTmp)+15)*sizeof(char));
-	sprintf(*pcaClauseFinal,"%s AND user_id=0",
-		pcaTmp);
-      }
+    if(pcClause!=NULL){
+      char* pcaTmp=zStrdup(pcClause);
+      *pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
+                  (strlen(pcaTmp)+15)*sizeof(char));
+      sprintf(*pcaClauseFinal,"%s AND user_id=0",
+        pcaTmp);
       free(pcaTmp);
     }else{
       *pcaClauseFinal=(char*)malloc(10*sizeof(char));
