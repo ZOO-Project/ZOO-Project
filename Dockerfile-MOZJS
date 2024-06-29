@@ -406,7 +406,7 @@ RUN set -ex \
 
 
 # service namespaces parent folder
-RUN mkdir -p /opt/zooservices_namespaces && chmod -R 700 /opt/zooservices_namespaces && chown -R www-data /opt/zooservices_namespaces
+RUN mkdir -p /opt/zooservices_namespaces && chmod -R 700 /opt/zooservices_namespaces && chown -R www-data /opt/zooservices_namespaces && chmod 755 -R /usr/lib/cgi-bin
 
 # For using another port than 80, change the value below.
 # remember to also change the ports in docker-compose.yml
