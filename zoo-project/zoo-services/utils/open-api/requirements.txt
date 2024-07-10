@@ -4,3 +4,4 @@ hiredis
 websockets
 Cheetah3
 redis
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
