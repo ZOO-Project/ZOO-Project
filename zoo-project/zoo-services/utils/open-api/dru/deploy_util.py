@@ -391,7 +391,17 @@ class Process:
         # Inputs treatment
         for input in self.inputs:
             if input.is_complex:
-                pass
+                current_content_type = input.file_content_type if input.file_content_type else "text/plain"
+                cur.execute("SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1".
+                            format(current_content_type))
+                val=cur.fetchone()
+                if val is None:
+                    cur.execute("INSERT INTO CollectionDB.PrimitiveFormats (mime_type) VALUES ('{0}')".
+                                format(current_content_type))
+                cur.execute("INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES "+
+                            "(true,(SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1));".
+                            format(current_content_type))
+                cur.execute("INSERT INTO CollectionDB.ows_DataDescription (format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq));")
             else:
                 cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
                           "(true,(SELECT id from CollectionDB.PrimitiveDatatypes where name = $q${0}$q$));".format(input.type))
@@ -399,7 +409,7 @@ class Process:
                     for i in range(len(input.possible_values)):
                         cur.execute("INSERT INTO CollectionDB.AllowedValues (allowed_value) VALUES ($q${0}$q$);".format(input.possible_values[i]))
                         cur.execute("INSERT INTO CollectionDB.AllowedValuesAssignment (literal_data_domain_id,allowed_value_id) VALUES ("+
-                                        "(select last_value as id from CollectionDB.LiteralDataDomain_id_seq)"+
+                                        "(select last_value as id from CollectionDB.ows_DataDescription_id_seq),"+
                                         "(select last_value as id from CollectionDB.AllowedValues_id_seq)"
                                         ");")
                 if input.default_value:
@@ -564,25 +574,56 @@ class ProcessInput:
         # it means the input is optional and of type typename
         if isinstance(input.type, str) or (isinstance(input.type, list) and len(input.type) == 2 and input.type[0] == 'null'):
             type_name = input.type[1] if isinstance(input.type, list) else input.type
+            current_type_is_array=False
+            if isinstance(type_name, cwl_v1_0.InputEnumSchema):
+                self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in type_name.symbols]
+                type_name = "string"
             if type_name in self.__class__.cwl_type_map:
                 type_name = self.__class__.cwl_type_map[type_name]
             elif type_name == "File":
-                type_name = "string"
-                self.file_content_type = "text/plain"
+                if input.format is not None:
+                    self.is_complex = True
+                    self.is_file = True
+                    type_name="File"
+                    self.file_content_type = input.format
+                else:
+                    type_name = "string"
+                    self.file_content_type = "text/plain"
             elif type_name == "Directory":
                 type_name = "string"
                 self.file_content_type = "text/plain"
+            elif isinstance(type_name, cwl_v1_2.InputArraySchema):
+                current_type_is_array=True
+                type_name = type_name.items
+                if type_name in self.__class__.cwl_type_map:
+                    type_name = self.__class__.cwl_type_map[type_name]
+                elif type_name == "File":
+                    if input.format is not None:
+                        self.is_complex = True
+                        self.is_file = True
+                        type_name="File"
+                        self.file_content_type = input.format
+                    else:
+                        type_name = "string"
+                        self.file_content_type = "text/plain"
+                elif type_name == "Directory":
+                    type_name = "string"
+                    self.file_content_type = "text/plain"
+                else:
+                    type_name = None
             else:
                 raise Exception(
-                    "Unsupported type for input '{0}': {1}".format(input.id, type_name)
+                    "Unsupported 0 type for input '{0}': {1}".format(input.id, type_name)
                 )
 
             self.type = type_name
-            self.min_occurs = 0 #0 if (isinstance(input.type, list) or input.default) else 1
-            self.max_occurs = 1
+            self.min_occurs = 0 if (isinstance(input.type, list) or input.default) else 1
+            # How should we set the maximum length of an array for instance?
+            # We currently set the default maximum to 1024
+            self.max_occurs = 1 if not(current_type_is_array) else 1024
             # 0 means unbounded, TODO: what should be the maxOcccurs value if unbounded is not available?
 
-        elif isinstance(input.type, cwl_v1_0.InputArraySchema):
+        elif isinstance(input.type, cwl_v1_2.InputArraySchema):
             type_name = input.type.items
 
             if type_name in self.__class__.cwl_type_map:
@@ -599,11 +640,11 @@ class ProcessInput:
             self.max_occurs = 0
 
             if not type_name:
-                raise Exception("Unsupported type: '{0}'".format(type_name))
+                raise Exception("Unsupported 1 type: '{0}'".format(type_name))
 
             self.type = type_name
 
-        elif isinstance(input.type, cwl_v1_0.InputEnumSchema):
+        elif isinstance(input.type, cwl_v1_2.InputEnumSchema):
             type_name = "string"
             self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in input.type.symbols]
 

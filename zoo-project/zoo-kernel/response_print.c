@@ -43,7 +43,32 @@
 #include "service_json.h"
 
 extern int ensureFiltered(maps**,const char*);
-  
+
+/**
+ * Print a file red as binary
+ *
+ * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param pjoRes the JSON object to populate
+ */
+int printAFile(maps* pmsConf, char* pcFilePath, zStatStruct zssStatus,void (funcError) (maps**, map*)){
+  FILE *pfRequest = fopen (pcFilePath, "rb");
+  if(pfRequest==NULL){
+    map* error=createMap("code","NotFound");
+    addToMap(error,"message",_("The resource is not available"));
+    funcError(&pmsConf,error);
+    return -1;
+  }
+  char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
+  fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+  pcaFcontent[zssStatus.st_size]=0;
+  printHeaders(pmsConf);
+  printf("Status: 200 OK \r\n\r\n");
+  fprintf(stdout,"%s\n",pcaFcontent);
+  fflush(stdout);
+  free(pcaFcontent);
+  return 0;
+}
+
 /**
  * Add prefix to the service name.
  * 

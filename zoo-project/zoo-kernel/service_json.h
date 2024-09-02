@@ -157,6 +157,7 @@ extern "C" {
   int convertOGCAppPkgToExecute(maps*,map*,json_object**);
   json_object* convertCwlToOGCAppPkg(maps*,map*);
   bool serviceIsDRU(maps*,char*);
+  int handlePackage(maps**,char*,char*,char*);
 #endif
   bool serviceIsFilter(maps*,char*);
   //void printIOTypeJ(maps*, const char*, elements*,json_object*,service*);

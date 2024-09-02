@@ -3569,8 +3569,8 @@ extern "C" {
       char *saveptr12;
       char *tmps12 = strtok_r (pmTmp->value, ",", &saveptr12);
       while(tmps12!=NULL){
-	addSecurityScheme(conf,tmps12,res9);
-	tmps12 = strtok_r (NULL, ",", &saveptr12);
+        addSecurityScheme(conf,tmps12,res9);
+        tmps12 = strtok_r (NULL, ",", &saveptr12);
       }
       json_object_object_add(res,"securitySchemes",res9);
     }
@@ -4284,6 +4284,159 @@ extern "C" {
     fprintf(stderr,"Should parse process description %s %d \n",__FILE__,__LINE__);
     fflush(stderr);
     return 0;
+  }
+
+  /**
+   * Search for an application package
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pcFilename the char pointer to the file name
+  * @param pcConfDir the location of the main.cfg file
+   */
+  char* searchForFile(maps* pmsConf,char* pcFilename,char* pcConfDir){
+    map* pmHasSearchPath=getMapFromMaps(pmsConf,"main","search_path");
+    zStatStruct zssStatus;
+    char* pcaFilePath=(char*)malloc((strlen(pcConfDir)+strlen(pcFilename)+2)*sizeof(char));
+    sprintf(pcaFilePath,"%s/%s",pcConfDir,pcFilename);
+    int s=zStat(pcaFilePath, &zssStatus);
+    if(s==0){
+      return pcaFilePath;
+    }else{
+      free(pcaFilePath);
+      if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
+        char* pcaConfDir=(char*) malloc(1024*sizeof(char));
+        getServicesNamespacePath(pmsConf,pcConfDir,pcaConfDir,1024);
+        if(strncmp(pcaConfDir,pcConfDir,strlen(pcConfDir))!=0){
+          pcaFilePath=(char*)malloc((strlen(pcaConfDir)+strlen(pcFilename)+2)*sizeof(char));
+          sprintf(pcaFilePath,"%s/%s",pcaConfDir,pcFilename);
+          s=zStat(pcaFilePath, &zssStatus);
+          free(pcaConfDir);
+          if(s==0){
+            return pcaFilePath;
+          }else{
+            return NULL;
+          }
+        }else{
+          free(pcaConfDir);
+          return NULL;
+        }
+      }else
+        return NULL;
+    }
+  }
+
+  /**
+   * Print the Application Package in various encoding
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pcAccess the Accept header associated with the input HTTP request
+   * @param pcProcessId the process identifier passed as path parameter
+   * @param pcConfDir the location of the main.cfg file
+   * @return 0 in case of success, other value in case of error
+   */
+  int handlePackage(maps** ppmsConf,char* pcAccept,char* pcProcessId,char* pcConfDir){
+    maps* pmsConf=*ppmsConf;
+    if(strstr(pcAccept,"application/ogcapppkg+json")!=NULL){
+      char* pcaFileName=(char*)malloc((strlen(pcProcessId)+6)*sizeof(char));
+      sprintf(pcaFileName,"%s.json",pcProcessId);
+      char* pcaFilePath=searchForFile(pmsConf,pcaFileName,pcConfDir);
+      if(pcaFilePath==NULL){
+        // Search for the CWL version of the application package
+        free(pcaFilePath);
+        free(pcaFileName);
+        pcaFileName=(char*)malloc((strlen(pcProcessId)+5)*sizeof(char));
+        sprintf(pcaFileName,"%s.cwl",pcProcessId);
+        pcaFilePath=searchForFile(pmsConf,pcaFileName,pcConfDir);
+        if(pcaFilePath==NULL){
+          setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+          map* error=createMap("code","NotAcceptable");
+          addToMap(error,"message",_("The resource is not available in the requested encoding"));
+          localPrintException(ppmsConf,error);
+          free(pcaFileName);
+          return 1;
+        }else{
+          zStatStruct zssStatus;
+          int s=zStat(pcaFilePath, &zssStatus);
+          char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
+          FILE *pfRequest = fopen (pcaFilePath, "rb");
+          if(pfRequest!=NULL){
+            fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+            pcaFcontent[zssStatus.st_size]=0;
+            setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent);
+            setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");
+            setMapInMaps(pmsConf,"lenv","require_conversion_to_json","true");
+            setMapInMaps(pmsConf,"lenv","require_conversion_to_ogcapppkg","true");
+            free(pcaFcontent);
+            return 0;
+          }else{
+            setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+            map* error=createMap("code","NotAcceptable");
+            addToMap(error,"message",_("The resource is not available in the requested encoding"));
+            localPrintException(ppmsConf,error);
+            free(pcaFileName);
+            return 1;
+          }
+        }
+      }else{
+        zStatStruct zssStatus;
+        int s=zStat(pcaFilePath, &zssStatus);
+        setMapInMaps(pmsConf,"headers","Content-Type",pcAccept);
+        printAFile(pmsConf,pcaFilePath,zssStatus,localPrintException);
+        free(pcaFileName);
+        free(pcaFilePath);
+        return 0;
+      }
+    }else{
+      if(strstr(pcAccept,"application/cwl")!=NULL){
+        char* pcaFileName=(char*)malloc((strlen(pcConfDir)+strlen(pcProcessId)+5)*sizeof(char));
+        sprintf(pcaFileName,"%s.cwl",pcProcessId);
+        char* pcaFilePath=searchForFile(pmsConf,pcaFileName,pcConfDir);
+        if(pcaFilePath==NULL){
+          setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+          map* error=createMap("code","NotAcceptable");
+          addToMap(error,"message",_("The resource is not available in the requested encoding"));
+          localPrintException(ppmsConf,error);
+          return 1;
+        }else{
+          // Return the CWL content
+          zStatStruct zssStatus;
+          int s=zStat(pcaFilePath, &zssStatus);
+          map* pmConvertionRequired=getMapFromMaps(pmsConf,"lenv","require_conversion_to_json");
+          if(pmConvertionRequired==NULL || strncmp(pmConvertionRequired->value,"true",4)!=0){
+            setMapInMaps(pmsConf,"headers","Content-Type",pcAccept);
+            printAFile(pmsConf,pcaFilePath,zssStatus,localPrintException);
+          }else{
+            if(s==0){
+              FILE *pfRequest = fopen (pcaFilePath, "rb");
+              if(pfRequest==NULL){
+                setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+                map* error=createMap("code","NotAcceptable");
+                addToMap(error,"message",_("The resource is not available in the requested encoding"));
+                localPrintException(ppmsConf,error);
+                return 1;
+              }
+              else{
+                char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
+                fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+                pcaFcontent[zssStatus.st_size]=0;
+                setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent);
+                setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");
+                free(pcaFcontent);
+              }
+            }
+          }
+          free(pcaFilePath);
+          return 0;
+        }
+      }else{
+        setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+        map* error=createMap("code","NotAcceptable");
+        addToMap(error,"message",_("The resource is not available in the requested encoding"));
+        localPrintException(ppmsConf,error);
+        return 1;
+      }
+    }
+    return 1;
   }
 #endif // DRU_ENABLED
 

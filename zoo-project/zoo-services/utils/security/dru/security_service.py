@@ -44,7 +44,6 @@ def securityIn(conf,inputs,outputs):
             conf["auth_env"]={"user": conf["renv"][i],"cwd": rPath}
             conf["lenv"]["fpm_user"]=conf["renv"][i]
             conf["lenv"]["fpm_cwd"]=rPath
-            #conf["lenv"]["cwd"]=rPath
             conf["zooServicesNamespace"]={"namespace": conf["renv"][i],"cwd": rPath}
             break
     if not(os.path.isdir(rPath)):
@@ -53,6 +52,15 @@ def securityIn(conf,inputs,outputs):
             rFiles=conf["servicesNamespace"]["required_files"].split(',')
             for i in range(len(rFiles)):
                 shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
+    if conf["renv"]["REDIRECT_QUERY_STRING"].count("/package"):
+        # In case the client application requests for the CWL in JSON format,
+        # we need to inform the ZOO-Kernel by setting the
+        # require_conversion_to_json variabe to true in the lenv section.
+        if conf["renv"]["HTTP_ACCEPT"]=="application/cwl+json":
+            print("Conversion to cwl+json should happen in securityOut",file=sys.stderr)
+            conf["renv"]["HTTP_ACCEPT_ORIGIN"]="application/cwl+json"
+            conf["renv"]["HTTP_ACCEPT"]="application/cwl"
+            conf["lenv"]["require_conversion_to_json"]="true"
     return zoo.SERVICE_SUCCEEDED
 
 def securityOut(conf,inputs,outputs):
@@ -66,5 +74,14 @@ def securityOut(conf,inputs,outputs):
             print("No JWT service available: "+str(e),file=sys.stderr)
     if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
         print("securityOut!",file=sys.stderr)
+    if "require_conversion_to_json" in conf["lenv"] and conf["lenv"]["require_conversion_to_json"]=="true":
+        import json
+        import yaml
+        if "require_conversion_to_ogcapppkg" in conf["lenv"]:
+            # Convert the CWL to ogcapppkg+json format
+            conf["lenv"]["json_response_object"]=json.dumps({"executionUnit": {"value": yaml.safe_load(conf["lenv"]["json_response_object"]),"mediaType": "application/cwl+json" } }, indent=2)
+        else:
+            # Convert the CWL to JSON format
+            conf["lenv"]["json_response_object"]=json.dumps(yaml.safe_load(conf["lenv"]["json_response_object"]), indent=2)
     return zoo.SERVICE_SUCCEEDED
 

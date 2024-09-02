@@ -1376,6 +1376,41 @@ char* produceErrorMessage(maps* pmConf){
   return pacTmp;
 }
 
+
+/**
+ * Checks if the zooServicesNamespace map is present in the main map;
+ * if it is, the path to the directory where the ZOO-kernel should search for service providers will be updated.
+ *
+ * @param pmsConf the conf maps containing the main.cfg settings
+ * @param oldPath default location where the ZOO-kernel should search for service providers
+ * @param newPath location where the ZOO-kernel should search for service providers considering the namespace
+ * @param maxSize maximum number of bytes to be used in the newPath buffer.
+ */
+int getServicesNamespacePath(maps* pmsConf,char* oldPath,char* newPath,int maxSize){
+  map *zooServicesNamespaceMap = getMapFromMaps (pmsConf, "zooServicesNamespace", "namespace");
+  map *servicesNamespaceParentPath = getMapFromMaps (pmsConf, "servicesNamespace", "path");
+  memset(newPath,0,maxSize);
+  if (zooServicesNamespaceMap && strcmp(zooServicesNamespaceMap->value,"anonymous") == 0 ){
+    if (oldPath){
+      snprintf (newPath,maxSize, "%s", oldPath);
+    }
+  } else if (zooServicesNamespaceMap && zooServicesNamespaceMap->value && servicesNamespaceParentPath && servicesNamespaceParentPath->value){
+    char *path=(char*)malloc(1024*sizeof(char));
+    snprintf (path,maxSize, "%s/%s", servicesNamespaceParentPath->value,zooServicesNamespaceMap->value);
+    if (strstr(oldPath,path)!=NULL) {
+      snprintf (newPath,maxSize, "%s", oldPath);
+    } else {
+      snprintf(newPath, maxSize, "%s", path);
+    }
+    free(path);
+  } else {
+    if (oldPath)
+      snprintf (newPath,maxSize, "%s", oldPath);
+  }
+  return 0;
+}
+
+
 #ifdef WIN32
 /**
  * Create a KVP request for executing background task.

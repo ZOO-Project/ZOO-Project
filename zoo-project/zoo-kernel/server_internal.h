@@ -71,7 +71,7 @@ extern "C" {
   char* produceErrorMessage(maps*);
 
   int zoo_path_compare(char* path1, char* path2);
-
+  int getServicesNamespacePath(maps*,char*,char*,int);
 #ifdef WIN32
   char* getMapsAsKVP(maps*,int,int);
 #endif

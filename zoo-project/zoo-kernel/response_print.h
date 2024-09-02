@@ -234,6 +234,7 @@ extern "C" {
 
   void printHeaders(maps*);
   void printSessionHeaders(maps*);
+  int printAFile(maps*,char*,zStatStruct,void (funcError) (maps**, map*));
 
   int zooXmlSearchForNs(const char*);
   int zooXmlAddNs(xmlNodePtr,const char*,const char*);

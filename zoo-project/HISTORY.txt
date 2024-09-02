@@ -1,4 +1,11 @@
 Version 2.1.0-dev
+  * Add getServicesNamespacePath, printAFile, handlePackage functions to
+  the C-API.
+  * Add support for "File" inputs in CWL to be identified as ComplexData
+  as defined in the Table 3 of the OGC Best Practice for Earth Observation
+  Application Package.
+  * Add support for /processes/{processId}/package as defined in the
+  OGC API - Processes - Part2: Deploy, Replace, Undeploy draft.
   * Ensure the mutable processes cannot be executed syncrhonously.
   * Ensure that the invokeBasicCallback function is used in case the
   service execution failed.

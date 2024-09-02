@@ -284,16 +284,60 @@ def duplicateMessage(conf,deploy_process):
     conf["lenv"]["message"]=zoo._("A service with the same identifier is already deployed")
     return zoo.SERVICE_FAILED
 
+def storeCwl(conf,inputs,outputs):
+    #if "metadb" not in self.conf or "noRunSql" in self.conf["lenv"] or self.conf["lenv"]["noRunSql"] != "false":
+    #    return zoo.SERVICE_SUCCEEDED
+    cwl_content=yaml.safe_load(inputs["applicationPackage"]["value"])
+    if "zooServicesNamespace" in conf and \
+            "namespace" in conf["zooServicesNamespace"] and \
+            "servicesNamespace" in conf and \
+            "path" in conf["servicesNamespace"]:
+        zooservices_folder = os.path.join(conf["servicesNamespace"]["path"],
+                                            conf["zooServicesNamespace"]["namespace"])
+    else:
+    # if no namespace is used, we will use the default services path
+        if "CONTEXT_DOCUMENT_ROOT" in conf["renv"]:
+            zooservices_folder=conf["renv"]["CONTEXT_DOCUMENT_ROOT"]
+    app_package_file = os.path.join(
+        zooservices_folder, conf["lenv"]["deployedServiceId"], f"{cwl_content['id']}.cwl"
+    )
+    try:
+        with open(app_package_file, "w") as file:
+            yaml.dump(cwl_content, file)
+    except Exception as e:
+        print(e,file=sys.stderr)
+    return zoo.SERVICE_SUCCEEDED
+
 def DeployProcess(conf, inputs, outputs):
     try:
         if "applicationPackage" in inputs.keys() and "isArray" in inputs["applicationPackage"].keys() and inputs["applicationPackage"]["isArray"]=="true":
+            print("MULTIPLE execution untis",file=sys.stderr)
             for i in range(int(inputs["applicationPackage"]["length"])):
-                lInputs = {"applicationPackage": {"value": inputs["applicationPackage"]["value"][i]}}
-                lInputs["applicationPackage"]["mimeType"] = inputs["applicationPackage"]["mimeType"][i]
-                deploy_process = DeployService(conf, lInputs, outputs)
-                res=deploy_process.generate_service()
-                if not(res):
-                    return duplicateMessage(conf,deploy_process)
+                if i==0:
+                    lInputs = {
+                        "applicationPackage": {
+                            "value": inputs["applicationPackage"]["value"][0]
+                        }
+                    }
+                    lInputs["applicationPackage"]["mimeType"] = inputs["applicationPackage"]["mimeType"][0]
+                    deploy_process = DeployService(conf, lInputs, outputs)
+                    res=deploy_process.generate_service()
+                    if not(res):
+                        return duplicateMessage(conf,deploy_process)
+                if int(inputs["applicationPackage"]["length"])-1-i>0:
+                    val="value_"+str(int(inputs["applicationPackage"]["length"])-1-i)
+                    lInputs = {
+                        "applicationPackage": {
+                            "value":
+                                inputs["applicationPackage"][val]
+                        }
+                    }
+                else:
+                    break
+                lInputs["applicationPackage"]["mimeType"] = inputs["applicationPackage"]["mimeType"][0]
+                if i<int(inputs["applicationPackage"]["length"])-1 and "noRunSql" in conf["lenv"] and conf["lenv"]["noRunSql"] != "false":
+                    # Store the cwl file in the same location as the deployed process
+                    storeCwl(conf, lInputs, outputs)
         else:
             deploy_process = DeployService(conf, inputs, outputs)
             res=deploy_process.generate_service()
