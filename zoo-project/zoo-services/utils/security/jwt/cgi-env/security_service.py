@@ -124,7 +124,7 @@ def securityIn(main_conf,inputs,outputs):
                             main_conf["auth_env"]["user"]=main_conf["auth_env"]["user_name"]
                             hasAuth=True
             break
-    if "auth_env" in main_conf and "user" in main_conf:
+    if "auth_env" in main_conf and "user" in main_conf["auth_env"]:
         main_conf["renv"]["SERVICES_NAMESPACE"]=main_conf["auth_env"]["user"]
     if hasAuth or \
        ("lenv" in main_conf and "secured_url" in main_conf["lenv"] and main_conf["lenv"]["secured_url"]=="false"):
