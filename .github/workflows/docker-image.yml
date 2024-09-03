@@ -66,11 +66,11 @@ jobs:
     - name: Build TeamEngine and the ETS for OGC API - Processes and add it to the docker-compose
       run: docker/ets-ogcapi-processes/build.sh && head -n $(expr $(grep "^networks:" -rn docker-compose.yml | cut -d':' -f1) - 1) docker-compose.yml > docker-compose1.yml && cat docker/ets-ogcapi-processes/docker-compose-ets-part.yml >> docker-compose1.yml && cat docker-compose.yml| grep "^networks" -A10 >> docker-compose1.yml && mv docker-compose1.yml docker-compose.yml
     - name: Start the test env
-      run: mkdir docker/tmp; chmod 777 -R docker ; docker-compose up -d
+      run: mkdir docker/tmp; chmod 777 -R docker ; docker compose up -d
     - name: Install required package
       run: docker exec zoo-project_zookernel_1 /bin/bash -c "apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get -y install lynx;"
     - name: Run the ETS for OGC API - Processes (see test-run-props.xml for settings)
-      run: docker-compose exec -T teamengine /root/test.sh
+      run: docker compose exec -T teamengine /root/test.sh
     - name: Run GetCapabilities tests version 1.0.0
       run: docker exec zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"GetCapabilities\" 0 0 > outputGC.html 2> log; lynx -dump outputGC.html"
     - name: Run DescribeProcess tests version 1.0.0
