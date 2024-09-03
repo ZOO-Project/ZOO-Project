@@ -61,7 +61,7 @@ jobs:
     - name: Start the test env
       run: mkdir docker/tmp; chmod 777 -R docker ; sed "s=djayzen/zookernel:latest=djayzen/zookernel:osgeolive-latest=g" -i docker-compose.yml ; docker compose up -d
     - name: Install required package
-      run: docker exec zoo-project_zookernel_1 /bin/bash -c "apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get -y install lynx;"
+      run: docker ps ; docker exec zoo-project_zookernel_1 /bin/bash -c "apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get -y install lynx;"
     - name: Run GetCapabilities tests version 1.0.0
       run: docker exec zoo-project_zookernel_1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"GetCapabilities\" 0 0 > outputGC.html 2> log; lynx -dump outputGC.html"
     - name: Run DescribeProcess tests version 1.0.0
