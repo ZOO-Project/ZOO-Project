@@ -30,8 +30,8 @@ import osgeo.ogr as ogr
 
 def echo(conf,inputs,outputs):
     print(inputs,file=sys.stderr)
-    if inputs["a"]["inRequest"]=="false" and inputs["a"]["inRequest"]=="false" and inputs["a"]["inRequest"]=="false" :
-        conf["lenv"]["message"]="Unable to handle your request"
+    if inputs["a"]["inRequest"]=="false" and inputs["b"]["inRequest"]=="false" and inputs["c"]["inRequest"]=="false" :
+        conf["lenv"]["message"]="Unable to handle your request, at least one input (a, b or c) should be provided"
         return zoo.SERVICE_FAILED
     if "a" in inputs:
         if "cache_file" in inputs["a"]:
