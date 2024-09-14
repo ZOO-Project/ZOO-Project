@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2009-2021 GeoLabs SARL.
+Copyright (c) 2009-2024 GeoLabs SARL.
 Copyright 2010-2011 Fondazione Edmund Mach. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
