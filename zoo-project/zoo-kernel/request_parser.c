@@ -1740,7 +1740,6 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
 
   map* errI=NULL;
   char *dfv = addDefaultValues (request_inputs, s->inputs, *pmsConf, 0,&errI);
-
   maps *ptr = *request_inputs;
   while (ptr != NULL)
     {
@@ -2143,9 +2142,14 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
         }
         char* pcaTmp=(char *)malloc(7*sizeof(char));
         sprintf(pcaTmp,"%d",iCnt+1);
-        setMapArray(curs->content,"Order",i,pcaTmp);
+        if(i>0){
+          setMapArray(curs->content,"Order",i,pcaTmp);
+          setMapArray(curs->content,"Reference",i,pmHref->value);
+        }else{
+          addToMap(curs->content,"Order",pcaTmp);
+          addToMap(curs->content,"Reference",pmHref->value);
+        }
         free(pcaTmp);
-        setMapArray(curs->content,"Reference",i,pmHref->value);
         iCnt++;
       }
     }

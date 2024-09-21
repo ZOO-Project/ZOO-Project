@@ -2102,7 +2102,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 
 #ifdef USE_NODEJS
-  if (strncasecmp (r_inputs->value, "NODEJS", 2) == 0)
+  if (strncasecmp (r_inputs->value, "NODEJS", 6) == 0)
     {
       *eres =
         zoo_nodejs_support (&m, request_inputs, s1, &request_input_real_format,
@@ -3237,6 +3237,7 @@ runRequest (map ** inputs)
       if(strncasecmp(pmCgiRequestMethod->value,"DELETE",6)==0) {
         char* pcTmp=strstr(pcaCgiQueryString,"/jobs/");
         if(strlen(pcTmp)>6){
+          // DELETE /jobs/{jobId}
           char* jobId=zStrdup(pcTmp+6);
           setMapInMaps(m,"lenv","gs_usid",jobId);
           char* pcaStatusFilePath=json_getStatusFilePath(m);
@@ -3268,6 +3269,14 @@ runRequest (map ** inputs)
             if(res!=NULL)
               json_object_put(res);
             res=createStatus(m,SERVICE_DISMISSED);
+            map* pmResult=getMapFromMaps(m,"running_job","json");
+            if(pmResult!=NULL){
+              json_object *pjoResult=parseJson(m,pmResult->value);
+              json_object_object_foreach(pjoResult, key, val) {
+                json_object_object_add(res,key,val);
+              }
+              json_object_put(pjoResult);
+            }
           }
         }
       }
@@ -3303,6 +3312,13 @@ runRequest (map ** inputs)
                 if(res!=NULL)
                   json_object_put(res);
                 res=createStatus(m,SERVICE_DISMISSED);
+                map* pmResult=getMapFromMaps(m,"running_job","json");
+                if(pmResult!=NULL){
+                  json_object *pjoResult=parseJson(m,pmResult->value);
+                  json_object_object_foreach(pjoResult, key, val) {
+                    json_object_object_add(res,key,val);
+                  }
+                }
               }
             }else{
               char* jobId=zStrdup(tmpUrl+6);
@@ -4232,7 +4248,6 @@ runRequest (map ** inputs)
       free (r_inputs);
       r_inputs=NULL;
     }
-    //return 1;
 #endif
   }else{
     //
@@ -5038,8 +5053,8 @@ runRequest (map ** inputs)
 
   if (((int) zGetpid ()) != cpid || cgiSid != NULL)
     {
-      if (eres == SERVICE_SUCCEEDED)
 #ifdef USE_CALLBACK
+      if (eres == SERVICE_SUCCEEDED)
         invokeCallback(m,NULL,request_output_real_format,5,1);
 #endif
       fflush(stderr);
@@ -5426,10 +5441,11 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             fbkp =
               (char *)
               malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-                       strlen (usid->value) + 7) * sizeof (char));
+                       strlen (usid->value) + strlen (pmExecutionType->value) + 4) * sizeof (char));
             sprintf (fbkp, "%s/%s_%s.%s", r_inputs->value, r_inputs1->value,
                      usid->value, pmExecutionType->value);
-            setMapInMaps (lconf, "lenv", "file.responseInit", fbkp);
+            if(getMapFromMaps(lconf,"lenv","file.responseInit"))
+              setMapInMaps (lconf, "lenv", "file.responseInit", fbkp);
 
 #ifdef DEBUG
             fprintf (stderr, "RUN IN BACKGROUND MODE \n");
@@ -5449,6 +5465,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             freopen (flog, "w+", stderr);
             fflush (stderr);
 #endif
+
             f0 = freopen (fbkp, "w+", stdout);
             rewind (stdout);
 
@@ -5507,7 +5524,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             fbkp1 =
               (char *)
               malloc ((strlen (r_inputs->value) + strlen (r_inputs1->value) +
-                       strlen (usid->value) + 13) * sizeof (char));
+                       strlen (usid->value) + strlen(pmExecutionType->value) + 10) * sizeof (char));
             sprintf (fbkp1, "%s/%s_final_%s.%s", r_inputs->value,
                      r_inputs1->value, usid->value, pmExecutionType->value);
             setMapInMaps (lconf, "lenv", "file.responseFinal", fbkp1);
@@ -5609,8 +5626,9 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
                 if(res!=NULL)
                   json_object_put(res);
               }
-            }else
+            }else{
               invokeBasicCallback(lconf,SERVICE_FAILED);
+            }
             fflush (stdout);
 
             fflush(stderr);

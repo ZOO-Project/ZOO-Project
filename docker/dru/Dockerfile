@@ -26,36 +26,28 @@ RUN apt-get update -qqy --no-install-recommends \
  && apt-get install -qqy --no-install-recommends docker-ce-cli && \
  apt-get clean -qqy
 
-ARG PY_VER=3.10
+ARG PY_VER=3.8
 ARG MINICONDA=Miniconda3-latest-Linux-x86_64.sh
-# Miniconda
-RUN wget -nv \
-    https://repo.anaconda.com/miniconda/$MINICONDA \
-    && bash $MINICONDA -b -p /usr/miniconda3 \
-    && rm -f $MINICONDA
-ENV PATH="/usr/miniconda3/envs/ades-dev/bin:/usr/miniconda3/bin:${PATH}"
-COPY docker/dru/ades-dev_env.yaml /tmp/ades-dev_env.yaml
-#ARG CONDA_ENV_NAME=$(cat /tmp/ades-dev_env.yaml | grep 'name:' | awk {'print $2'})
-RUN conda install mamba -n base -c conda-forge && \
-    echo "$CONDA_ENV_FILE" && \
-    if [ -z "$CONDA_ENV_FILE" ] ; then \
-        echo "No download required" ;\
-        mamba env create --file /tmp/ades-dev_env.yaml ; \
-    else \
-        echo "Download $CONDA_ENV_FILE" ; \
-        wget -O /tmp/ades-dev_env.yaml $CONDA_ENV_FILE ; \
-        # Should it be done directly in the CONDA_ENV_FILE yaml file? \
-        echo "    - psycopg2-binary" >> /tmp/ades-dev_env.yaml ; \
-        echo "    - cheetah3" >> /tmp/ades-dev_env.yaml ; \
-        #cat /tmp/ades-dev_env.yaml ; \
-        mamba env create --file /tmp/ades-dev_env.yaml ; \
-    fi  &&\
-    #ls -ailtr /usr/miniconda3/envs/ades-dev/bin/ && \
-    rm /tmp/ades-dev_env.yaml
-RUN ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/bin/kubectl /usr/bin/kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
 
 ########################################
 # ZOO_Prerequisites
+
+ARG BUILD_DEPS="libfcgi-dev\
+    libxml2-dev\
+    libssl-dev\
+    libmapserver-dev\
+    libmozjs185-dev\
+    libxslt1-dev\
+    uuid-dev\
+    libjson-c-dev\
+    libproj-dev\
+    libgdal-dev\
+    libaprutil1-dev \
+	python3-dev\
+    librabbitmq-dev"
 
 RUN apt-get update -qqy  --no-install-recommends  && \
 apt-get install -qqy --no-install-recommends  software-properties-common && \
@@ -68,29 +60,20 @@ apt-get install -qqy  --no-install-recommends software-properties-common\
 	vim\
 	flex\
 	bison\
-	libfcgi-dev\
 	libxml2\
-	libxml2-dev\
 	curl\
-	libssl-dev\
 	autoconf\
 	apache2\
 	subversion\
 	s3cmd \
-	libmozjs185-dev\
-	python3-dev\
 	python3-setuptools\
+	pip \
 	build-essential\
-	libxslt1-dev\
-	uuid-dev\
-	libjson-c-dev\
-	libmapserver-dev\
-	libgdal-dev\
-	libaprutil1-dev \
-	librabbitmq-dev\
+	#valgrind \
 	libapache2-mod-fcgid\
 	wget \
 	pkg-config\
+    ${BUILD_DEPS}\
 # if you remove --with-db-backend from the configure command, uncomment the following line
 #RUN ln -s /usr/lib/x86_64-linux-gnu/libfcgi.a /usr/lib/
 && a2enmod actions fcgid alias proxy_fcgi \
@@ -106,9 +89,8 @@ WORKDIR /opt/ZOO-Project
 RUN make -C ./thirds/cgic206 libcgic.a
 RUN cd ./zoo-project/zoo-kernel \
      && autoconf \
-     #&& grep MS_VERSION_ -rni /usr/ \
      && ./configure --with-dru=yes \
-       --with-python=/usr/miniconda3/envs/${CONDA_ENV_NAME} \
+       --with-python=/usr/ \
 	--with-pyvers=$PY_VER \
 	--with-js=/usr \
 	--with-mapserver=/usr \
@@ -182,9 +164,23 @@ COPY zoo-project/zoo-services/utils/open-api/dru/deploy_util.py /usr/lib/cgi-bin
 
 RUN chmod -R 777 /usr/lib/cgi-bin
 
+COPY docker/dru/requirements.txt /tmp/
+
 RUN mkdir /tmp/cookiecutter-templates && \
-    pip install GDAL==3.4.3 && \
-    ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/libcrypto.so.3 /usr/lib/ && \
+    #pip install GDAL==3.4.3 && \
+    pip install -r /tmp/requirements.txt && \
+    cd /tmp && \
+    git clone https://github.com/Terradue/pycalrissian.git && \
+    cd pycalrissian && \
+    sed "s:V1Subject:RbacV1Subject:g" -i pycalrissian/context.py && \
+    python3 setup.py install && \
+    cd .. && \
+    git clone https://github.com/EOEPCA/cwl-wrapper.git && \
+    cd cwl-wrapper/ && \
+    python3 setup.py install && \
+    cd .. && \
+    rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
+    #ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/libcrypto.so.3 /usr/lib/ && \
     echo /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
     ldconfig && \
     if [ -z "$CONDA_ENV_FILE" ] ; then \
@@ -194,7 +190,10 @@ RUN mkdir /tmp/cookiecutter-templates && \
         sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/api.py ; \
         sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/cd.py ; \
     fi && \
-    chmod -R 777 /tmp/cookiecutter-templates
+    chmod -R 777 /tmp/cookiecutter-templates && \
+    #apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS && \
+    rm -rf /var/lib/apt/lists/*
+
 
 EXPOSE 80
 CMD ["apachectl", "-D", "FOREGROUND"]

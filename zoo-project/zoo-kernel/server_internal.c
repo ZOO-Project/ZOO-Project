@@ -35,6 +35,11 @@
 #define ERROR_MSG_MAX_LENGTH 1024
 #endif
 #include <signal.h>
+#ifdef USE_AMQP
+#include "service_internal_amqp.h"
+#include <sys/wait.h>
+#include "service_json.h"
+#endif
 
 // #include <stdlib.h>
 /*
@@ -1177,6 +1182,31 @@ void runDismiss(maps* conf,char* pid){
     return;
   }else{
     // We should send the Dismiss request to the target host if it differs
+#ifdef USE_AMQP
+    int eres=0;
+    map* pmRequestInputs=createMap("mode","async");
+    addToMap(pmRequestInputs,"Identifier","runDismiss");
+    addToMap(pmRequestInputs,"jrequest","{}");
+    map *sessId = getMapFromMaps (conf, "lenv", "usid");
+    if(sessId!=NULL){
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+      if(sessId==NULL)
+        sessId = getMapFromMaps (conf, "lenv", "usid");
+    }else
+      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+    json_object* pjoStatus=json_object_new_object();
+    json_getStatusAttributes(conf,sessId,pjoStatus);
+    const char* pccResult=json_object_to_json_string_ext(pjoStatus,JSON_C_TO_STRING_NOSLASHESCAPE);
+    maps* pmsInputs=createMaps("param");
+    setMapInMaps(pmsInputs,"param","value",pccResult);
+    setMapInMaps(conf,"running_job","json",pccResult);
+    setMapInMaps(pmsInputs,"param","mimeType","application/json");
+    publish_amqp_msg(conf,&eres,pmRequestInputs,pmsInputs,NULL);
+    freeMaps(&pmsInputs);
+    free(pmsInputs);
+    freeMap(&pmRequestInputs);
+    free(pmRequestInputs);
+#endif
     char* fbkpid =
       (char *)
       malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
@@ -1239,8 +1269,6 @@ void runDismiss(maps* conf,char* pid){
       addToMap(statusInfo,"Status","Dismissed");
       printStatusInfo(conf,statusInfo,(char*)"Dismiss");
       free(statusInfo);
-    }else{
-      setMapInMaps(conf,"lenv","error","false");
     }
   }
   return;

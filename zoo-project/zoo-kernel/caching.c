@@ -771,11 +771,11 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     zStatStruct f_status;
     int s=zStat(cached, &f_status);
     if(s==0){
-      zooLock* lck=lockFile(*m,cached,'r');
-      if(lck==NULL)
-        return -1;
-      fsize=f_status.st_size;
       if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
+        zooLock* lck=lockFile(*m,cached,'r');
+        if(lck==NULL)
+          return -1;
+        fsize=f_status.st_size;
         FILE* f=fopen(cached,"rb");
         if(f!=NULL){
           fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
@@ -783,12 +783,12 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
           fcontent[fsize]=0;
           fclose(f);
         }
+        unlockFile(*m,lck);
       }
       if(iCurrentIndex==0)
         addToMap(*content,"cache_file",cached);
       else
         setMapArray(*content,"cache_file",iCurrentIndex,cached);
-      unlockFile(*m,lck);
     }
     map* isLocalFile=getMapFromMaps(*m,"lenv",cached);
     if(isLocalFile==NULL){

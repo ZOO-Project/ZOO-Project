@@ -85,3 +85,31 @@ def securityOut(conf,inputs,outputs):
             conf["lenv"]["json_response_object"]=json.dumps(yaml.safe_load(conf["lenv"]["json_response_object"]), indent=2)
     return zoo.SERVICE_SUCCEEDED
 
+def runDismiss(conf,inputs,outputs):
+    import sys
+    print(conf["lenv"],file=sys.stderr)
+    print(outputs,file=sys.stderr)
+    import json
+    import os
+    from loguru import logger
+    from zoo_calrissian_runner import ZooCalrissianRunner
+    from pycalrissian.context import CalrissianContext
+
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+    try:
+        if "param" in inputs:
+            print(inputs,file=sys.stderr)
+            json_object=json.loads(inputs["param"]["value"])
+            session = CalrissianContext(
+                namespace=ZooCalrissianRunner.shorten_namespace(json_object["processID"]+"-"+conf["lenv"]["gs_usid"]),
+                storage_class=os.environ.get("STORAGE_CLASS", "openebs-nfs-test"),
+                volume_size="10Mi",
+            )
+        print("DISPOSE NAMESPACE",file=sys.stderr)
+        session.dispose()
+        print("DISPOSED NAMESPACE",file=sys.stderr)
+    except Exception as e:
+        print(e,file=sys.stderr)
+
+    return zoo.SERVICE_SUCCEEDED

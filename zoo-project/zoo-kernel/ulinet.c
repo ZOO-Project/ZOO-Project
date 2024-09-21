@@ -421,41 +421,41 @@ void InternetCloseHandle(HINTERNET* handle0){
     for(i=0;i<handle0->nb;i++){
       _HINTERNET handle=handle0->ihandle[i];
       if(handle.hasCacheFile>0){
-	fclose(handle.file);
-	zUnlink(handle.filename);
-	free(handle.filename);
+        fclose(handle.file);
+        zUnlink(handle.filename);
+        free(handle.filename);
       }
       else{
-	handle.pabyData = NULL;
-	handle.nDataAlloc = handle.nDataLen = 0;
+        handle.pabyData = NULL;
+        handle.nDataAlloc = handle.nDataLen = 0;
       }
       if(handle.header!=NULL){
-	curl_slist_free_all(handle.header);
-	handle.header=NULL;
+        curl_slist_free_all(handle.header);
+        handle.header=NULL;
       }
       if(handle.post!=NULL){
-	free(handle.post);
-	handle.post=NULL;
+        free(handle.post);
+        handle.post=NULL;
       }
       if(handle.url!=NULL){
-	free(handle.url);
-	handle.url=NULL;
+        free(handle.url);
+        handle.url=NULL;
       }
       if(handle.mimeType!=NULL){
-	free(handle.mimeType);
-	handle.mimeType=NULL;
+        free(handle.mimeType);
+        handle.mimeType=NULL;
       }
       if(handle.cookie!=NULL){
-	free(handle.cookie);
-	handle.cookie=NULL;
+        free(handle.cookie);
+        handle.cookie=NULL;
       }
       if(handle.location!=NULL){
-	free(handle.location);
-	handle.location=NULL;
+        free(handle.location);
+        handle.location=NULL;
       }
       if(handle0->waitingRequests[i]!=NULL){
-	free(handle0->waitingRequests[i]);
-	handle0->waitingRequests[i]=NULL;
+        free(handle0->waitingRequests[i]);
+        handle0->waitingRequests[i]=NULL;
       }
     }
     if(handle0->handle)
@@ -481,10 +481,10 @@ void InternetCloseHandle(HINTERNET* handle0){
  */
 HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeaders,size_t dwHeadersLength,size_t dwFlags,size_t dwContext,const maps* conf){
 
-  char filename[255];
+  //char filename[255];
+  char* pcaFilename;
   int ldwFlags=INTERNET_FLAG_NEED_FILE;
   map* memUse=getMapFromMaps((maps*) conf,"main","memory"); // knut: addad cast to maps*
-
   hInternet->ihandle[hInternet->nb].handle=curl_easy_init( );
   hInternet->ihandle[hInternet->nb].hasCacheFile=0;
   hInternet->ihandle[hInternet->nb].nDataAlloc = 0;
@@ -520,7 +520,6 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 
   if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
     ldwFlags=INTERNET_FLAG_NO_CACHE_WRITE;
-  
   switch(ldwFlags)
     {
     case INTERNET_FLAG_NO_CACHE_WRITE:
@@ -529,22 +528,27 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
       hInternet->ihandle[hInternet->nb].hasCacheFile=-1;
       break;
     default:
-      memset(filename,0,255);
+      ;
       char* tmpUuid=get_uuid();
       map* tmpPath=NULL;
       if(conf!=NULL){
-	tmpPath=getMapFromMaps((maps*) conf,"main","tmpPath"); // knut added cast to maps*
+        tmpPath=getMapFromMaps((maps*) conf,"main","tmpPath"); // knut added cast to maps*
       }
-      if(tmpPath==NULL)
-	sprintf(filename,"/tmp/ZOO_Cache%s", tmpUuid);
-      else
-	sprintf(filename,"%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
+      if(tmpPath==NULL){
+        pcaFilename=(char*)malloc((16+strlen(tmpUuid))*sizeof(char));
+        sprintf(pcaFilename,"/tmp/ZOO_Cache%s", tmpUuid);
+      }
+      else{
+        pcaFilename=(char*)malloc((12+strlen(tmpUuid))*sizeof(char));
+        sprintf(pcaFilename,"%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
+      }
       free(tmpUuid);
-      hInternet->ihandle[hInternet->nb].filename=zStrdup(filename);
+      hInternet->ihandle[hInternet->nb].filename=zStrdup(pcaFilename);
       hInternet->ihandle[hInternet->nb].file=fopen(hInternet->ihandle[hInternet->nb].filename,"w+");
       hInternet->ihandle[hInternet->nb].hasCacheFile=1;
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEFUNCTION, write_data_into_file);
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle, CURLOPT_WRITEDATA, (void*)&hInternet->ihandle[hInternet->nb]);
+      free(pcaFilename);
       break;
     }
 #ifdef ULINET_DEBUG
@@ -626,11 +630,11 @@ int processDownloads(HINTERNET* hInternet){
 
       curl_multi_timeout(hInternet->handle, &curl_timeo);
       if(curl_timeo >= 0) {
-	timeout.tv_sec = curl_timeo / 1000;
-	if(timeout.tv_sec > 1)
-	  timeout.tv_sec = 1;
-	else
-	  timeout.tv_usec = (curl_timeo % 1000) * 1000;
+        timeout.tv_sec = curl_timeo / 1000;
+        if(timeout.tv_sec > 1)
+          timeout.tv_sec = 1;
+        else
+          timeout.tv_usec = (curl_timeo % 1000) * 1000;
       }
 
       /* get file descriptors from the transfers */
@@ -638,7 +642,7 @@ int processDownloads(HINTERNET* hInternet){
 #endif
     }
     if(mc != CURLM_OK) {
-      fprintf(stderr, "curl_multi failed, code %d.n", mc);
+      fprintf(stderr, "curl_multi failed, code %d\n", mc);
       break;
     }
   }while(still_running);  

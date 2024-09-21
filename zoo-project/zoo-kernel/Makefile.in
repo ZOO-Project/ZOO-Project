@@ -62,7 +62,7 @@ response_print.o: response_print.c response_print.h
 	$(CXX) -fPIC ${JSON_CFLAGS} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${HPC_ENABLED} -c response_print.c
 
 server_internal.o: server_internal.c server_internal.h service.h mimetypes.h
-	$(CXX) ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
+	$(CXX) ${JSON_CFLAGS} ${GDAL_CFLAGS} ${RABBITMQ_CPPFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c server_internal.c
 
 service_internal.o: service_internal.c service_internal.h service.h
 	$(CC) ${JSON_CFLAGS} ${GDAL_CFLAGS} ${JS_ENABLED} ${NODEJS_ENABLED} ${JSCFLAGS} ${NODEJSCPPFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal.c

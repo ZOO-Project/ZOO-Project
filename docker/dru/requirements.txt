@@ -1,0 +1,23 @@
+ #python=3.8
+ jinja2<3.0.0
+ markupsafe<2.0.0
+ cookiecutter==1.7.2
+ boto3
+ #pycalrissian
+ #- zoo-calrissian-runner=0.1.7
+ kubernetes
+ #cwl-wrapper=0.10.1
+ coverage
+ git+https://github.com/EOEPCA/zoo-calrissian-runner.git@feature/add-support-for-input-files
+ cheetah3
+ psycopg2-binary
+ pyyaml
+ pyjwt
+ loguru
+ pystac
+ gdal==3.4.3
+ attrs
+ click-config-file
+ cwl-upgrader==1.2.11
+ cwl-utils==0.14
+ #cwl-wrapper==0.12.2

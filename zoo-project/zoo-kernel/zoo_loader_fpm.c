@@ -75,10 +75,7 @@ int cgiInit(){
  * @return 0 on sucess.
  */
 int cgiMain(){
-  /*}
-    int
-    main (int argc, char *argv[])
-    {*/
+
   int debug_flag = 0;
   int background_flag = 0;
   char *file_value = cgiQueryString;
@@ -122,6 +119,8 @@ int cgiMain(){
     return 1;
   }
   addMapsToMaps(&conf,oapi);
+  freeMaps(&oapi);
+  free(oapi);
   //dumpMaps(conf);
   
   int async_worker;
@@ -151,9 +150,9 @@ int cgiMain(){
     for (i = 0; i< async_worker; i++){
       fork_status = fork();
       if (fork_status == 0){
-	fprintf(stderr,"# %d child async \n",getpid());
-	fflush(stderr);
-	break;
+        fprintf(stderr,"# %d child async \n",getpid());
+        fflush(stderr);
+        break;
       }
     }
     
@@ -174,59 +173,69 @@ int cgiMain(){
     char * service_identifier;
 
     while(1){
-      /* mode asynchrone */
+      /* Asynchronous mode */
       if( master_async != getpid()){
       reinit:
-	/*traitement des requetes de la queue */
-	bind_amqp();
-	bind_queue();
-	while(1){
-	  init_consumer();
-	  c = consumer_amqp(&msg);
-	  if (c == 0)
-	    break;
-	  int consumed = consumer_ack_amqp(c);
-	  if(consumed<0){
-	    fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-	    fprintf(stderr,"Unable to acknowledge the message!\n");
-	    fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-	    fflush(stderr);
-	    return -1;
-	  }
+        /* Handle every request from the queue */
+        bind_amqp();
+        bind_queue();
+        while(1){
+          init_consumer();
+          c = consumer_amqp(&msg);
+          if (c == 0)
+            break;
+          int consumed = consumer_ack_amqp(c);
+          if(consumed<0){
+            fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
+            fprintf(stderr,"Unable to acknowledge the message!\n");
+            fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
+            fflush(stderr);
+            return -1;
+          }
 
-	  msg_obj = json_tokener_parse(msg);
+          msg_obj = json_tokener_parse(msg);
 
 #ifdef AMQP_DEBUG
-	  fprintf(stderr,"##########################################@@\n",getpid());
-	  fprintf(stderr,"# MSG TO TREAT:  %s\n",msg);
-	  fprintf(stderr,"##########################################@@\n",getpid());
+          fprintf(stderr,"##########################################@@\n",getpid());
+          fprintf(stderr,"# MSG TO TREAT:  %s\n",msg);
+          fprintf(stderr,"##########################################@@\n",getpid());
 #endif //AMQP_DEBUG
 
-	  json_object_object_get_ex(msg_obj,"request_inputs",&req_jobj);
-	  map* mpReq=jsonToMap(req_jobj);
+          json_object_object_get_ex(msg_obj,"request_inputs",&req_jobj);
+          map* mpReq=jsonToMap(req_jobj);
 
-	  json_object_object_get_ex(msg_obj,"main_lenv",&lenv_jobj);
-	  map* mpLenv=jsonToMap(lenv_jobj);
+          json_object_object_get_ex(msg_obj,"main_lenv",&lenv_jobj);
+          map* mpLenv=jsonToMap(lenv_jobj);
 
-	  free(msg);
-	  
-	  runAsyncRequest(&conf,&mpLenv,&mpReq,msg_obj);
+          free(msg);
 
-	  exit(0);
-	}
-	close_amqp();
+          runAsyncRequest(&conf,&mpLenv,&mpReq,msg_obj);
+
+          freeMap(&mpLenv);
+          free(mpLenv);
+          freeMap(&mpReq);
+          free(mpReq);
+          freeMaps(&conf);
+          free(conf);
+          close_amqp();
+          json_object_put(req_jobj);
+          json_object_put(lenv_jobj);
+          fclose(stderr);
+          exit(0);
+        }
+        close_amqp();
       }
       else {
-	fprintf(stderr,"##########################################@@\n",getpid());
-	fprintf(stderr,"# Master async %d\n",getpid());
-	fprintf(stderr,"# New async Child\n");
-	fprintf(stderr,"##########################################@@\n",getpid());
-	fflush(stderr);
-	int pid=fork();
-	if(pid==0)
-	  goto reinit;
-	else
-	  wait(0);
+        fprintf(stderr,"##########################################@@\n",getpid());
+        fprintf(stderr,"# Master async %d\n",getpid());
+        fprintf(stderr,"# New async Child\n");
+        fprintf(stderr,"##########################################@@\n",getpid());
+        fflush(stderr);
+        int pid=fork();
+        if(pid==0)
+          goto reinit;
+        else
+          wait(0);
       }
       zSleep(1);
     }
