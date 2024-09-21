@@ -1195,7 +1195,7 @@ void runDismiss(maps* conf,char* pid){
     }else
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     json_object* pjoStatus=json_object_new_object();
-    json_getStatusAttributes(conf,sessId,pjoStatus);
+    json_getStatusAttributes(conf,sessId,pjoStatus,SERVICE_STARTED);
     const char* pccResult=json_object_to_json_string_ext(pjoStatus,JSON_C_TO_STRING_NOSLASHESCAPE);
     maps* pmsInputs=createMaps("param");
     setMapInMaps(pmsInputs,"param","value",pccResult);

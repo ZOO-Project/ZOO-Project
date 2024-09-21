@@ -141,7 +141,7 @@ extern "C" {
   json_object* printFilteredJobList(maps*,map*);
   int createNextLinks(maps*,json_object*);
   int createStatusFile(maps*,int);
-  void json_getStatusAttributes(maps*,map*,json_object*);
+  void json_getStatusAttributes(maps*,map*,json_object*,int);
   json_object* createStatus(maps*,int);
   char* json_getStatusFilePath(maps*);
   json_object* parseJson(maps*,char*);

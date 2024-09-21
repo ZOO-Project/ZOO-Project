@@ -3052,9 +3052,14 @@ extern "C" {
 
   /**
    * Fetch the statusFields attributes
+   *
+   * @param pmsConf the conf maps containing the main.cfg settings
+   * @param pmSessId the map pointer to the session id
+   * @param res the object to store metadata informations
+   * @param status integer of the current execution status
    * @see statusFields,
    */
-  void json_getStatusAttributes(maps* pmsConf, map* pmSessId, json_object* res){
+  void json_getStatusAttributes(maps* pmsConf, map* pmSessId, json_object* res,int iStatus){
 #ifdef RELY_ON_DB
     for(int i=0;i<6;i++){
       char* pcaTmp=_getStatusField(pmsConf,pmSessId->value,statusFieldsC[i]);
@@ -3085,7 +3090,7 @@ extern "C" {
       size_t st_Time=strftime(pcaTime,TIME_SIZE, zDateFormat, localtime(&zssSid_status.st_mtime) );
       json_object_object_add(res,statusFields[2],json_object_new_string(pcaTime));
       json_object_object_add(res,statusFields[3],json_object_new_string(pcaTime));
-      if(status==SERVICE_SUCCEEDED || status==SERVICE_FAILED){
+      if(iStatus==SERVICE_SUCCEEDED || iStatus==SERVICE_FAILED){
         char* pcaStatusPath=(char*)malloc((strlen(pmSessId->value)+strlen(pmTmpPath->value)+6)*sizeof(char));
         sprintf(pcaStatusPath,"%s/%s.json",pmTmpPath->value,pmSessId->value);
         zStatStruct zssStatus_status;
@@ -3204,7 +3209,7 @@ extern "C" {
     if(sessId!=NULL){
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
       if(isDismissed==0)
-        json_getStatusAttributes(conf,sessId,res);
+        json_getStatusAttributes(conf,sessId,res,status);
     }
     json_object_object_add(res,"status",json_object_new_string(rstatus));
     json_object_object_add(res,"message",json_object_new_string(message));
