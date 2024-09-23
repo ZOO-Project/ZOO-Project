@@ -595,6 +595,22 @@ to this `page
 the `Swagger UI <https://swagger.io/tools/swagger-ui/>`__. A live
 instance is available `here <https://demo.mapmint.com/swagger-ui/dist/>`__.
 
+hidden_processes section
+........................
+
+In this section you can set the list of services that should not be listed as avaiable to the processes list.
+
+You can see below an example of such a section for hidding two services identified as ``myHiddenService1`` and ``myHiddenService2``.
+
+.. code-block:: guess
+    :linenos:
+    
+    [hidden_processes]
+    length=2
+    service=myHiddenService1
+    service_1=myHiddenService2
+
+
 OpenAPI Security
 ................
 
