@@ -688,11 +688,11 @@ The only difference is that the ZOO-Kernel won't consider the value returned by 
 
 At runtime, the ZOO-Kernel invokes the ``filter_in`` services, if any, before handling the request in any way.
 This means that the service can stop the request from being processed.
-To achieve this, the service should define in the ``lenv`` section a ``response`` key containing the response body to be returned or a ``response_generated_file`` key specifying the full path to the file where the response is stored (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L43>`__).
+To achieve this, the service should define in the ``lenv`` section a ``response`` key containing the response body to be returned (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L45>`__ or a ``response_generated_file`` key specifying the full path to the file where the response is stored (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L43>`__).
 
 On the other hand, the ``filter_out`` is invoked just before returning the produced response back to the client.
 The service can modify the response to return to the client.
-From the ``filter_out`` service, the developer can access the current response as a string using the ``json_response_object`` key from the ``lenv`` section (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/tree/main/zoo-project/zoo-services/utils/security/eoapi-proxy>`__).
+From the ``filter_out`` service, the developer can access the current response as a string using the ``json_response_object`` key from the ``lenv`` section (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L92>`__).
 One can use this key to update the response's content.
 
 .. rubric:: Footnotes
