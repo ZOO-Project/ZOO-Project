@@ -676,8 +676,24 @@ services
 <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/basicAuth/service.c>`__
 for handling HTTP Basic Authentication. 
 
+filter_in and filter_out
+************************
 
+One can use the ``filter_in`` service to secure an endpoint by verifying that authentication is valid.
+If a service in ``filter_in`` returns ``SERVICE_SUCCEEDED``, the authentication succeeded, and the request handling can continue; if ``SERVICE_FAILED``, it didn't, the handling should stop.
 
+If endpoints do not require authentication, the sections ``filter_in`` and ``filter_out`` can still be activated.
+The services are invoked the same way.
+The only difference is that the ZOO-Kernel won't consider the value returned by the service when deciding whether to continue handling the request.
+
+At runtime, the ZOO-Kernel invokes the ``filter_in`` services, if any, before handling the request in any way.
+This means that the service can stop the request from being processed.
+To achieve this, the service should define in the ``lenv`` section a ``response`` key containing the response body to be returned or a ``response_generated_file`` key specifying the full path to the file where the response is stored (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L43>`__).
+
+On the other hand, the ``filter_out`` is invoked just before returning the produced response back to the client.
+The service can modify the response to return to the client.
+From the ``filter_out`` service, the developer can access the current response as a string using the ``json_response_object`` key from the ``lenv`` section (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/tree/main/zoo-project/zoo-services/utils/security/eoapi-proxy>`__).
+One can use this key to update the response's content.
 
 .. rubric:: Footnotes
 
