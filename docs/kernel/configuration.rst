@@ -692,7 +692,7 @@ To achieve this, the service should define in the ``lenv`` section a ``response`
 
 On the other hand, the ``filter_out`` is invoked just before returning the produced response back to the client.
 The service can modify the response to return to the client.
-From the ``filter_out`` service, the developer can access the current response as a string using the ``json_response_object`` key from the ``lenv`` section (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L92>`__).
+From the ``filter_out`` service, the developer can access the current response as a string using the ``json_response_object`` key from the ``lenv`` section (ie. `eoapi-proxy <https://github.com/ZOO-Project/ZOO-Project/blob/main/zoo-project/zoo-services/utils/security/eoapi-proxy/eoapi_service.py#L85-L92>`__).
 One can use this key to update the response's content.
 
 .. rubric:: Footnotes
