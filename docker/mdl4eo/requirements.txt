@@ -6,3 +6,4 @@ opencv-python==4.8.0.76
 triton-model-analyzer==1.30.0
 numpy==1.22
 pyJWT
+setuptools>=70.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
