@@ -1,0 +1,80 @@
+type: software
+title: ZOO-Project
+version: 2.0.0
+date-released: 2024-03-02
+doi: 10.5281/zenodo.10759164
+abstract: The ZOO-Project is an open source processing platform, released under
+ MIT/X11 Licence. It provides the polyglot ZOO-Kernel, a server implementation
+ of the Web Processing Service (WPS) (1.0.0 and 2.0.0) and the OGC API - 
+ Processes standards published by the OGC. It contains ZOO-Services, a minimal
+ set of ready-to-use services that can be used as a base to create more usefull
+ services. It provides the ZOO-API, initially only available from the 
+ JavaScript service implementation, which exposes ZOO-Kernel variables and
+ functions to the language used to implement the service. It contains the
+ ZOO-Client, a JavaScript API which can be used from a client application to
+ interract with a WPS server.
+url: https://zoo-project.org
+repository-code: https://github.com/ZOO-Project/ZOO-Project/
+license: MIT
+authors:
+  - given-names: Gérald
+    family-names: Fenoy
+    affiliation: GeoLabs
+    orcid: https://orcid.org/0000-0002-9617-8641
+  - given-names: Nicolas
+    family-names: Bozon
+    affiliation: Maptiler
+  - given-names: Venkatesh
+    family-names: Raghavan
+    affiliation: Osaka Shiritsu Daigaku
+    orcid: https://orcid.org/0000-0003-1908-5940
+  - given-names: Jeff
+    family-names: McKenna
+    affiliation: Gateway Geomatics
+    orcid: https://orcid.org/0000-0003-3900-1863
+  - given-names: Fabrice
+    family-names: Brito
+    affiliation: Terradue (SRL)
+    orcid: https://orcid.org/0009-0000-1342-9736
+  - given-names: Blasco
+    family-names: Brauzzi
+  - given-names: Knut
+    family-names: Landmark
+  - given-names: Angelos
+    family-names: Tzotsos
+    affiliation: Open Source Geospatial Foundation
+  - given-names: Luca
+    family-names: Delucchi
+    affiliation: Fondazione Edmund Mach
+    orcid: https://orcid.org/0000-0002-0493-3516
+  - given-names: Markus
+    family-names: Neteler
+    affiliation: Mudialis
+    orcid: https://orcid.org/0000-0003-1916-1966
+  - given-names: Samuel
+    family-names: Barré
+    affiliation: Orange
+  - given-names: Samuel
+    family-names: Souk-Aloun
+  - given-names: Koushikey
+    family-names: Chhapariya
+    affiliation: Indian Institute of Technology
+  - given-names: Richard
+    family-names: Conway
+  - given-names: Rémi
+    family-names: Cresson
+    affiliation: INRAE
+  - given-names: Rajat
+    family-names: Shinde
+    orcid: https://orcid.org/0000-0002-9505-6204
+  - given-names: Momtchil
+    family-names: Momtchev
+  - given-names: David
+    family-names: Saggiorato
+  - given-names: René-Luc
+    family-names: D'HONT
+
+keywords:
+  - ZOO-Project
+  - geospatial
+  - processing
