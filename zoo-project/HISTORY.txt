@@ -1,6 +1,9 @@
 Version 2.1.0-dev
+  * Store temporary files associated with a run made by an authenticated
+  user in a non browsable directory, add a browse service to access these
+  files.
   * Remove Miniconda3 from the ZOO-Project-DRU docker image to avoid 
-  conflict with shared libraries
+  conflict with shared libraries.
   * Add getServicesNamespacePath, printAFile, handlePackage functions to
   the C-API.
   * Add support for "File" inputs in CWL to be identified as ComplexData

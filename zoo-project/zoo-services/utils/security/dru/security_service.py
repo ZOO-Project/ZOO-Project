@@ -45,22 +45,23 @@ def securityIn(conf,inputs,outputs):
             conf["lenv"]["fpm_user"]=conf["renv"][i]
             conf["lenv"]["fpm_cwd"]=rPath
             conf["zooServicesNamespace"]={"namespace": conf["renv"][i],"cwd": rPath}
-            break
+            conf["main"]["tmpPath"]=rPath+"/temp"
+        if i.count("QUERY_STRING") and conf["renv"]["REDIRECT_QUERY_STRING"].count("/package")>0:
+            # In case the client application requests for the CWL in JSON format,
+            # we need to inform the ZOO-Kernel by setting the
+            # require_conversion_to_json variabe to true in the lenv section.
+            if conf["renv"]["HTTP_ACCEPT"]=="application/cwl+json":
+                print("Conversion to cwl+json should happen in securityOut",file=sys.stderr)
+                conf["renv"]["HTTP_ACCEPT_ORIGIN"]="application/cwl+json"
+                conf["renv"]["HTTP_ACCEPT"]="application/cwl"
+                conf["lenv"]["require_conversion_to_json"]="true"
     if not(os.path.isdir(rPath)):
         os.mkdir(rPath)
+        os.mkdir(rPath+"/temp") # Create temporary directory for run informations specific to a user
         if "required_files" in conf["servicesNamespace"]:
             rFiles=conf["servicesNamespace"]["required_files"].split(',')
             for i in range(len(rFiles)):
                 shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
-    if conf["renv"]["REDIRECT_QUERY_STRING"].count("/package"):
-        # In case the client application requests for the CWL in JSON format,
-        # we need to inform the ZOO-Kernel by setting the
-        # require_conversion_to_json variabe to true in the lenv section.
-        if conf["renv"]["HTTP_ACCEPT"]=="application/cwl+json":
-            print("Conversion to cwl+json should happen in securityOut",file=sys.stderr)
-            conf["renv"]["HTTP_ACCEPT_ORIGIN"]="application/cwl+json"
-            conf["renv"]["HTTP_ACCEPT"]="application/cwl"
-            conf["lenv"]["require_conversion_to_json"]="true"
     return zoo.SERVICE_SUCCEEDED
 
 def securityOut(conf,inputs,outputs):
@@ -113,3 +114,16 @@ def runDismiss(conf,inputs,outputs):
         print(e,file=sys.stderr)
 
     return zoo.SERVICE_SUCCEEDED
+
+def browse(conf,inputs,outputs):
+    import sys
+    print(inputs,file=sys.stderr)
+    print(conf["renv"],file=sys.stderr)
+    f=open(conf["servicesNamespace"]["path"]+"/"+conf["renv"]["REDIRECT_REDIRECT_SERVICES_NAMESPACE"]+"/temp/"+inputs["directory"]["value"],"r", encoding="utf-8")
+    if f is not None:
+        if "result" not in outputs:
+            outputs["result"]={}
+        outputs["result"]["value"]=f.read()
+        return zoo.SERVICE_SUCCEEDED
+    conf["lenv"]["message"]="Unable to access the file"
+    return zoo.SERVICE_FAILED

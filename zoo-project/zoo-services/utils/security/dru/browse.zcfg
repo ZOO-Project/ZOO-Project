@@ -1,0 +1,28 @@
+[browse]
+ Title = Return the content of a log file
+ Abstract = Return the content of a log file
+ processVersion = 1
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = security_service
+ serviceType = Python
+ <DataInputs>
+  [directory]
+   Title = The file
+   Abstract = The file to read
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [result]
+   Title = The content of the file
+   Abstract = The content of the file
+   <LiteralData>
+    DataType = string
+    <Default />
+   </LiteralData>
+ </DataOutputs>

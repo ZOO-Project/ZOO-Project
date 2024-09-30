@@ -65,6 +65,7 @@ extern "C" {
   ZOO_DLL_EXPORT void recordStoredFile(maps*,const char*,const char*,const char*);
   ZOO_DLL_EXPORT void recordServiceStatus(maps*);
   ZOO_DLL_EXPORT void recordResponse(maps*,char*);
+  ZOO_DLL_EXPORT void recordRequest(maps*,map*);
   ZOO_DLL_EXPORT void readFinalRes(maps*,char*,map*);
   ZOO_DLL_EXPORT int isRunning(maps*,char*);
   ZOO_DLL_EXPORT char* getStatusId(maps*,char*);

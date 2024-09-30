@@ -522,29 +522,80 @@ void recordServiceStatus(maps* conf){
 }
 
 /**
- * Store the content of the result file
+ * Run INSERT query for content and usid in a given table
+ * INSERT INTO $schema.%pcTableName (content,usid) VALUE (%CONTENT,$usid)
  * 
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pcTableName the table name
+ * @param content the content to insert
+ * @param len the content length
+ */
+void recordRequestResponse(maps* conf,const char* pcTableName,const char* content,const int len){
+  int zoo_ds_nb=getCurrentId(conf);
+  map *sid=getMapFromMaps(conf,"lenv","usid");
+  map *schema=getMapFromMaps(conf,"database","schema");
+  char *sqlQuery=(char*)malloc((strlen(schema->value)+len+strlen(sid->value)+strlen(pcTableName)+49+1)*sizeof(char));
+  sprintf(sqlQuery,"INSERT INTO %s.%s (content,uuid) VALUES ($$%s$$,$$%s$$);",schema->value,pcTableName,content,sid->value);
+  execSql(conf,zoo_ds_nb-1,sqlQuery);
+  free(sqlQuery);
+  cleanUpResultSet(conf,zoo_ds_nb-1);
+}
+
+/**
+ * Store the content of the result file
+ *
  * @param conf the maps containing the setting of the main.cfg file
  * @param filename the file's name
  */
 void recordResponse(maps* conf,char* filename){
-  int zoo_ds_nb=getCurrentId(conf);
   FILE *file = fopen (filename, "rb");
-  fseek (file, 0, SEEK_END);
-  long flen = ftell (file);
-  fseek (file, 0, SEEK_SET);
-  char *tmps = (char *) malloc ((flen + 1) * sizeof (char));
-  fread (tmps, flen, 1, file);
-  tmps[flen]=0;
-  fclose(file);
-  map *sid=getMapFromMaps(conf,"lenv","usid");
-  map *schema=getMapFromMaps(conf,"database","schema");
-  char *sqlQuery=(char*)malloc((strlen(schema->value)+flen+strlen(sid->value)+57+1)*sizeof(char));
-  sprintf(sqlQuery,"INSERT INTO %s.responses (content,uuid) VALUES ($$%s$$,$$%s$$);",schema->value,tmps,sid->value);
-  execSql(conf,zoo_ds_nb-1,sqlQuery);
-  free(sqlQuery);
-  free(tmps);
-  cleanUpResultSet(conf,zoo_ds_nb-1);
+  char *pcaTmps = NULL;
+  long flen;
+  if(file!=NULL){
+    fseek (file, 0, SEEK_END);
+    flen = ftell (file);
+    fseek (file, 0, SEEK_SET);
+    pcaTmps = (char *) malloc ((flen + 1) * sizeof (char));
+    fread (pcaTmps, flen, 1, file);
+    pcaTmps[flen]=0;
+    fclose(file);
+  }else{
+    fprintf(stderr,"Error parsing response file!");
+    fflush(stderr);
+    return;
+  }
+  recordRequestResponse(conf,"responses",pcaTmps,flen);
+  free(pcaTmps);
+}
+
+/**
+ * Store the content of the request
+ *
+ * @param conf the maps containing the setting of the main.cfg file
+ * @param pcaInputs the maps containing the request parameters
+ */
+void recordRequest(maps* conf,map* pcaInputs){
+  char *pcaTmps = NULL;
+  long flen;
+  ZOO_DEBUG("jrequest");
+  map* pmRequest=getMap(pcaInputs,"jrequest");
+  if(pmRequest!=NULL){
+    ZOO_DEBUG("jrequest");
+    pcaTmps = zStrdup(pmRequest->value);
+  }else{
+    ZOO_DEBUG("xrequest");
+    pmRequest=getMap(pcaInputs,"xrequest");
+    if(pmRequest!=NULL){
+      ZOO_DEBUG("xrequest");
+      pcaTmps = zStrdup(pmRequest->value);
+    }else{
+      fprintf(stderr,"Error parsing response file!");
+      fflush(stderr);
+      return;
+    }
+  }
+  recordRequestResponse(conf,"requests",pcaTmps,strlen(pcaTmps));
+  free(pcaTmps);
 }
 
 /**
@@ -651,10 +702,10 @@ char* _getStatusField(maps* conf,char* pid,const char* field){
   while( (poFeature = zoo_ResultSet->GetNextFeature()) != NULL ){
     for( int iField = 0; iField < poFeature->GetFieldCount(); iField++ ){
       if( poFeature->IsFieldSet( iField ) ){
-	tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
+        tmp1=zStrdup(poFeature->GetFieldAsString( iField ));
       }
       else
-	tmp1=NULL;
+        tmp1=NULL;
     }
     OGRFeature::DestroyFeature( poFeature );
   }

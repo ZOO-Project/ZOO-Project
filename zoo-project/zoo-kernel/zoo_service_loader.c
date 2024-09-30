@@ -3667,6 +3667,7 @@ runRequest (map ** inputs)
 #ifdef RELY_ON_DB
           init_sql(m);
           recordServiceStatus(m);
+          recordRequest(m,request_inputs);
 #endif
 #ifdef USE_CALLBACK
           invokeCallback(m,NULL,NULL,0,0);
@@ -5232,6 +5233,10 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
               pmUserEnv=getMap(*lenv,"fpm_cwd");
               if(pmUserEnv!=NULL){
                 addToMap(pmsaUserEnv->content,"cwd",pmUserEnv->value);
+                char *pcaTmpPath=(char*) malloc((strlen(pmUserEnv->value)+6)*sizeof(char));
+                sprintf(pcaTmpPath,"%s/temp",pmUserEnv->value);
+                setMapInMaps(lconf,"main","tmpPath",pcaTmpPath);
+                free(pcaTmpPath);
               }
               addMapsToMaps(&lconf,pmsaUserEnv);
               freeMaps(&pmsaUserEnv);
@@ -5667,7 +5672,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             // Detect if there is a service_logs section
             maps* pmsLogs=getMaps(lconf,"service_logs");
             if(pmsLogs!=NULL){
-              map* pmTmpPath=getMapFromMaps(conf,"main","tmpPath");
+              map* pmTmpPath=getMapFromMaps(lconf,"main","tmpPath");
               map* pmUsid=getMapFromMaps(conf,"lenv","usid");
               char *pcaPath =
                 (char *) malloc ((strlen (pmTmpPath->value) + strlen (pmUsid->value) + 12) * sizeof (char));

@@ -73,6 +73,33 @@ create table responses (
        creation_time timestamp with time zone default now()
 );
 --------------------------------------------------------------------------------
+-- Requests table
+-- Used to store the requests sent to execute a service asynchronously
+create table requests (
+       uuid text references services(uuid) ON DELETE CASCADE,
+       content text,
+       creation_time timestamp with time zone default now()
+);
+--------------------------------------------------------------------------------
+-- Automatically remove requests after execution is over
+CREATE FUNCTION removeRequests() RETURNS trigger AS $$
+BEGIN
+       IF NEW.fstate = 'Succeeded' OR NEW.fstate = 'Failed' THEN
+              DELETE FROM requests WHERE uuid = NEW.uuid;
+       ELSE
+              IF NEW.end_time is not NULL THEN
+                     DELETE FROM requests WHERE uuid = NEW.uuid;
+              END IF;
+       END IF;
+       RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER services_request_handled
+BEFORE UPDATE ON services
+    FOR EACH ROW EXECUTE FUNCTION removeRequests();
+--------------------------------------------------------------------------------
 -- Files table
 -- Used to store the files generated during the service execution
 create table files (
