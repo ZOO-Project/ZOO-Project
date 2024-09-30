@@ -129,15 +129,18 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
       int i;
       for(i=0;i<10;i++)
         buffer++;
-      char* pcLocation=(char*)buffer;
-      _HINTERNET *psInternet=(_HINTERNET *)data;
-      if(pcLocation!=NULL && psInternet!=NULL){
-        psInternet->location=(char*)malloc(sizeof(char)*(strlen(pcLocation)+1));
-        if(pcLocation[strlen(pcLocation)-1]=='\n')
-          pcLocation[strlen(pcLocation)-1]='\0';
-        if(pcLocation[strlen(pcLocation)-1]=='\r')
-          pcLocation[strlen(pcLocation)-1]='\0';
-        snprintf(psInternet->location,"%s",pcLocation,strlen(pcLocation));
+      if(buffer!=NULL){
+        char* pcaLocation=zStrdup((char*)buffer);
+        _HINTERNET *psInternet=(_HINTERNET *)data;
+        if(pcaLocation!=NULL && psInternet!=NULL){
+          psInternet->location=(char*)malloc(sizeof(char)*(strlen(pcaLocation)+1));
+          if(pcaLocation[strlen(pcaLocation)-1]=='\n')
+            pcaLocation[strlen(pcaLocation)-1]='\0';
+          if(pcLocation[strlen(pcaLocation)-1]=='\r')
+            pcaLocation[strlen(pcaLocation)-1]='\0';
+          sprintf(psInternet->location,"%s",pcaLocation);
+        }
+        free(pcaLocation);
       }
     }
   return size * nmemb;
