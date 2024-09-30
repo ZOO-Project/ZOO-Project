@@ -46,7 +46,8 @@ ARG BUILD_DEPS="libfcgi-dev\
     libproj-dev\
     libgdal-dev\
     libaprutil1-dev \
-	python3-dev\
+    python3-dev\
+    build-essential\
     librabbitmq-dev"
 
 RUN apt-get update -qqy  --no-install-recommends  && \
@@ -68,8 +69,7 @@ apt-get install -qqy  --no-install-recommends software-properties-common\
 	s3cmd \
 	python3-setuptools\
 	pip \
-	build-essential\
-	#valgrind \
+	valgrind \
 	libapache2-mod-fcgid\
 	wget \
 	pkg-config\
