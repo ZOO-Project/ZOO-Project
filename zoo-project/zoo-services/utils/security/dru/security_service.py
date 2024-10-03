@@ -103,7 +103,7 @@ def runDismiss(conf,inputs,outputs):
             print(inputs,file=sys.stderr)
             json_object=json.loads(inputs["param"]["value"])
             session = CalrissianContext(
-                namespace=ZooCalrissianRunner.shorten_namespace(json_object["processID"]+"-"+conf["lenv"]["gs_usid"]),
+                namespace=ZooCalrissianRunner.shorten_namespace(json_object["processID"].replace("_","-")+"-"+conf["lenv"]["gs_usid"]),
                 storage_class=os.environ.get("STORAGE_CLASS", "openebs-nfs-test"),
                 volume_size="10Mi",
             )

@@ -3276,7 +3276,6 @@ runRequest (map ** inputs)
             localPrintExceptionJ(&m,pmaLenv);
             freeMap(&pmaLenv);
             free(pmaLenv);
-            //return 1;
             register_signals(donothing);
             freeService (&s1);
             free(s1);
@@ -3304,7 +3303,6 @@ runRequest (map ** inputs)
               json_object_object_foreach(pjoResult, key, val) {
                 json_object_object_add(res,key,val);
               }
-              json_object_put(pjoResult);
             }
           }
         }
