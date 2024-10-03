@@ -136,7 +136,7 @@ size_t header_write_data(void *buffer, size_t size, size_t nmemb, void *data){
           psInternet->location=(char*)malloc(sizeof(char)*(strlen(pcaLocation)+1));
           if(pcaLocation[strlen(pcaLocation)-1]=='\n')
             pcaLocation[strlen(pcaLocation)-1]='\0';
-          if(pcLocation[strlen(pcaLocation)-1]=='\r')
+          if(pcaLocation[strlen(pcaLocation)-1]=='\r')
             pcaLocation[strlen(pcaLocation)-1]='\0';
           sprintf(psInternet->location,"%s",pcaLocation);
         }

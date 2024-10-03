@@ -751,8 +751,6 @@ void exitAndCleanUp(registry* zooRegistry, maps** ppmsConf,
   zooXmlCleanupNs ();
   freeMap(&errormap);
   free(errormap);
-  freeMaps(&m);
-  free(m);
 }
 
 
@@ -1059,6 +1057,8 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
                                      funcError);
                     if(dirp!=NULL)
                       closedir (dirp);
+                    free (orig);
+                    free (corig);
                     return 1;
                   }
 #ifdef DEBUG
@@ -1104,6 +1104,8 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
                                    funcError);
                   if(dirp!=NULL)
                     closedir (dirp);
+                  free (orig);
+                  free (corig);
                   return 1;
                 }
 #ifdef DEBUG
@@ -1174,6 +1176,8 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
                               closedir (dirp);
                             freeMap(&errormap);
                             free(errormap);
+                            free (orig);
+                            free (corig);
                             return -1;
                           }
 #ifdef DEBUG_SERVICE_CONF
@@ -1198,6 +1202,8 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
                                              funcError);
                             if(dirp!=NULL)
                               closedir (dirp);
+                            free (orig);
+                            free (corig);
                             return 1;
                           }
 #ifdef DEBUG
@@ -1234,6 +1240,8 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_
               fflush(stdout);
               if(dirp!=NULL)
                 closedir (dirp);
+              free (orig);
+              free (corig);
               return 1;
             }
           rewinddir (dirp);
@@ -2991,14 +2999,23 @@ runRequest (map ** inputs)
             setMapInMaps(m,"lenv","oIdentifier",pmToDeploy->value);
             json_object *res3=json_object_new_object();
             json_object *res4=json_object_new_array();
-            //int saved_stdout = zDup (fileno (stdout));
             int t=fetchServicesForDescription(NULL, &m, pmToDeploy->value,
                                               printGetCapabilitiesForProcessJ,
                                               (void*) res4, (void*) res3, ntmp,
                                               request_inputs,
                                               localPrintExceptionJ);
-            //zDup2 (saved_stdout, fileno (stdout));
-            //zClose(saved_stdout);
+            if(json_object_array_length(res4)==0){
+              json_object_put(res4);
+              json_object_put(res3);
+              freeMaps(&m);
+              free(m);
+              free (REQUEST);
+              freeMap (inputs);
+              free (*inputs);
+              *inputs=NULL;
+              free(pcaCgiQueryString);
+              return 1;
+            }
             json_object *res5=json_object_array_get_idx(res4,0);
             if(res5==NULL){
               map* pmError=createMap("code","NoSuchProcess");
@@ -3247,7 +3264,19 @@ runRequest (map ** inputs)
           map* pmError=getMapFromMaps(m,"lenv","error");
           if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
             maps* pmsLenv=getMaps(m,"lenv");
-            localPrintExceptionJ(&m,pmsLenv->content);
+            map* pmaLenv=NULL;
+            map* pmPointer=pmsLenv->content;
+            while(pmPointer!=NULL){
+              if(pmaLenv==NULL)
+                pmaLenv=createMap(pmPointer->name,pmPointer->value);
+              else
+                addToMap(pmaLenv,pmPointer->name,pmPointer->value);
+              pmPointer=pmPointer->next;
+            }
+            localPrintExceptionJ(&m,pmaLenv);
+            freeMap(&pmaLenv);
+            free(pmaLenv);
+            //return 1;
             register_signals(donothing);
             freeService (&s1);
             free(s1);
@@ -3290,53 +3319,45 @@ runRequest (map ** inputs)
         else{
           char* tmpUrl=strstr(pcaCgiQueryString,"/jobs/");
           if(tmpUrl!=NULL && strlen(tmpUrl)>6){
-            // TODO: verify that the user is allowed to access the jobId
-            // invoke filterJobByUser?
-            if(strncasecmp(pmCgiRequestMethod->value,"DELETE",6)==0){
-              char* jobId=zStrdup(tmpUrl+6);
-              setMapInMaps(m,"lenv","gs_usid",jobId);
-              setMapInMaps(m,"lenv","file.statusFile",json_getStatusFilePath(m));
-              runDismiss(m,jobId);
-              map* pmError=getMapFromMaps(m,"lenv","error");
-              if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
-                localPrintExceptionJ(&m,getMapFromMaps(m,"lenv","code"));
+            char* jobId=zStrdup(tmpUrl+6);
+            if(strlen(jobId)==36){
+              if(res!=NULL)
+                json_object_put(res);
+              ensureFiltered(&m,"out");
+              res=printJobStatus(m,jobId);
+              if(res==NULL)
+                fflush(stdout);
+            }else{
+              // In case the service has run, then forward request to target result file
+              if(strlen(jobId)>36)
+                jobId[36]=0;
+              char *sid=getStatusId(m,jobId);
+              if(sid==NULL){
+                map* error=createMap("code","NoSuchJob");
+                addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
+                localPrintExceptionJ(&m,error);
+                free(jobId);
+                freeMap(&error);
+                free(error);
+                json_object_put(res);
+                free(pcaCgiQueryString);
+                map* pmTest=getMap(request_inputs,"shouldFree");
+                if(pmTest!=NULL){
+                  freeMap (inputs);
+                  free (*inputs);
+                  *inputs=NULL;
+                  freeMap(&r_inputs);
+                  free (r_inputs);
+                  r_inputs=NULL;
+                }
+                cleanUpSql(m);
                 freeMaps(&m);
                 free(m);
-                json_object_put(res);
-                free(jobId);
-                free(pcaCgiQueryString);
                 return 1;
-              }
-              else{
-                setMapInMaps(m,"lenv","gs_location","false");
-                if(res!=NULL)
-                  json_object_put(res);
-                res=createStatus(m,SERVICE_DISMISSED);
-                map* pmResult=getMapFromMaps(m,"running_job","json");
-                if(pmResult!=NULL){
-                  json_object *pjoResult=parseJson(m,pmResult->value);
-                  json_object_object_foreach(pjoResult, key, val) {
-                    json_object_object_add(res,key,val);
-                  }
-                }
-              }
-            }else{
-              char* jobId=zStrdup(tmpUrl+6);
-              if(strlen(jobId)==36){
-                if(res!=NULL)
-                  json_object_put(res);
-                ensureFiltered(&m,"out");
-                res=printJobStatus(m,jobId);
-                if(res==NULL)
-                  fflush(stdout);
               }else{
-                // In case the service has run, then forward request to target result file
-                if(strlen(jobId)>36)
-                  jobId[36]=0;
-                char *sid=getStatusId(m,jobId);
-                if(sid==NULL){
-                  map* error=createMap("code","NoSuchJob");
-                  addToMap(error,"message",_("The JobID from the request does not match any of the Jobs running on this server"));
+                if(isRunning(m,jobId)>0){
+                  map* error=createMap("code","ResultNotReady");
+                  addToMap(error,"message",_("The job is still running."));
                   localPrintExceptionJ(&m,error);
                   free(jobId);
                   freeMap(&error);
@@ -3357,13 +3378,82 @@ runRequest (map ** inputs)
                   free(m);
                   return 1;
                 }else{
-                  if(isRunning(m,jobId)>0){
-                    map* error=createMap("code","ResultNotReady");
-                    addToMap(error,"message",_("The job is still running."));
-                    localPrintExceptionJ(&m,error);
+                  char *Url0=getResultPath(m,jobId);
+                  zStatStruct f_status;
+                  int s=zStat(Url0, &f_status);
+                  if(s==0 && f_status.st_size>0){
+                    if(f_status.st_size>15){
+                      json_object* pjoTmp=json_readFile(m,Url0);
+                      json_object* pjoCode=NULL;
+                      json_object* pjoMessage=NULL;
+                      if(pjoTmp!=NULL &&
+                          !jsonIsFalse(json_object_object_get_ex(pjoTmp,"code",&pjoCode)) &&
+                          !jsonIsFalse(json_object_object_get_ex(pjoTmp,"description",&pjoMessage)) ){
+                        map* error=createMap("code",json_object_get_string(pjoCode));
+                        addToMap(error,"message",json_object_get_string(pjoMessage));
+                        localPrintExceptionJ(&m,error);
+                        free(jobId);
+                        freeMap(&error);
+                        free(error);
+                        freeMaps(&m);
+                        free(m);
+                        json_object_put(res);
+                        json_object_put(pjoTmp);
+                        free(pcaCgiQueryString);
+                        return 1;
+                      }else{
+                        map* tmpPath = getMapFromMaps (m, "main", "tmpUrl");
+                        Url0=(char*) realloc(Url0,(strlen(tmpPath->value)+
+                                                    //strlen(cIdentifier->value)+
+                                                    strlen(jobId)+8)*sizeof(char));
+                        sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
+                        setMapInMaps(m,"headers","Location",Url0);
+                        ensureFiltered(&m,"out");
+                      }
+                      if(pjoTmp!=NULL)
+                        json_object_put(pjoTmp);
+                      free(Url0);
+                    }else{
+                      // Service Failed
+                      map* statusInfo=createMap("JobID",jobId);
+                      readFinalRes(m,jobId,statusInfo);
+                      {
+                        map* pmStatus=getMap(statusInfo,"status");
+                        if(pmStatus!=NULL)
+                          setMapInMaps(m,"lenv","status",pmStatus->value);
+                      }
+                      char* tmpStr=_getStatus(m,jobId);
+                      if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+                        char *tmpStr1=zStrdup(tmpStr);
+                        char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
+                        free(tmpStr);
+                        tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+                        addToMap(statusInfo,"PercentCompleted",tmpStr1);
+                        addToMap(statusInfo,"Message",tmpStr0);
+                        setMapInMaps(m,"lenv","PercentCompleted",tmpStr1);
+                        setMapInMaps(m,"lenv","Message",tmpStr0);
+                        free(tmpStr0);
+                        free(tmpStr1);
+                      }
+                      map* error=createMap("code","NoApplicableCode");
+                      addToMap(error,"message",_("The service failed to execute."));
+                      localPrintExceptionJ(&m,error);
+                      free(jobId);
+                      freeMap(&error);
+                      free(error);
+                      freeMaps(&m);
+                      free(m);
+                      json_object_put(res);
+                      free(pcaCgiQueryString);
+                      return 1;
+                    }
+
+                  }else{
+                    free(Url0);
+                    ensureFiltered(&m,"out");
+                    runGetStatus(m,jobId,"GetResult");
                     free(jobId);
-                    freeMap(&error);
-                    free(error);
+                    free(sid);
                     json_object_put(res);
                     free(pcaCgiQueryString);
                     map* pmTest=getMap(request_inputs,"shouldFree");
@@ -3379,106 +3469,13 @@ runRequest (map ** inputs)
                     freeMaps(&m);
                     free(m);
                     return 1;
-                  }else{
-                    char *Url0=getResultPath(m,jobId);
-                    zStatStruct f_status;
-                    int s=zStat(Url0, &f_status);
-                    if(s==0 && f_status.st_size>0){
-                      if(f_status.st_size>15){
-                        json_object* pjoTmp=json_readFile(m,Url0);
-                        json_object* pjoCode=NULL;
-                        json_object* pjoMessage=NULL;
-                        if(pjoTmp!=NULL &&
-                           !jsonIsFalse(json_object_object_get_ex(pjoTmp,"code",&pjoCode)) &&
-                           !jsonIsFalse(json_object_object_get_ex(pjoTmp,"description",&pjoMessage)) ){
-                          map* error=createMap("code",json_object_get_string(pjoCode));
-                          addToMap(error,"message",json_object_get_string(pjoMessage));
-                          localPrintExceptionJ(&m,error);
-                          free(jobId);
-                          freeMap(&error);
-                          free(error);
-                          freeMaps(&m);
-                          free(m);
-                          json_object_put(res);
-                          json_object_put(pjoTmp);
-                          free(pcaCgiQueryString);
-                          return 1;
-                        }else{
-                          map* tmpPath = getMapFromMaps (m, "main", "tmpUrl");
-                          Url0=(char*) realloc(Url0,(strlen(tmpPath->value)+
-                                                     //strlen(cIdentifier->value)+
-                                                     strlen(jobId)+8)*sizeof(char));
-                          sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
-                          setMapInMaps(m,"headers","Location",Url0);
-                          ensureFiltered(&m,"out");
-                        }
-                        if(pjoTmp!=NULL)
-                          json_object_put(pjoTmp);
-                        free(Url0);
-                      }else{
-                        // Service Failed
-                        map* statusInfo=createMap("JobID",jobId);
-                        readFinalRes(m,jobId,statusInfo);
-                        {
-                          map* pmStatus=getMap(statusInfo,"status");
-                          if(pmStatus!=NULL)
-                            setMapInMaps(m,"lenv","status",pmStatus->value);
-                        }
-                        char* tmpStr=_getStatus(m,jobId);
-                        if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-                          char *tmpStr1=zStrdup(tmpStr);
-                          char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
-                          free(tmpStr);
-                          tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
-                          addToMap(statusInfo,"PercentCompleted",tmpStr1);
-                          addToMap(statusInfo,"Message",tmpStr0);
-                          setMapInMaps(m,"lenv","PercentCompleted",tmpStr1);
-                          setMapInMaps(m,"lenv","Message",tmpStr0);
-                          free(tmpStr0);
-                          free(tmpStr1);
-                        }
-                        map* error=createMap("code","NoApplicableCode");
-                        addToMap(error,"message",_("The service failed to execute."));
-                        localPrintExceptionJ(&m,error);
-                        free(jobId);
-                        freeMap(&error);
-                        free(error);
-                        freeMaps(&m);
-                        free(m);
-                        json_object_put(res);
-                        free(pcaCgiQueryString);
-                        return 1;
-                      }
-
-                    }else{
-                      free(Url0);
-                      ensureFiltered(&m,"out");
-                      runGetStatus(m,jobId,"GetResult");
-                      free(jobId);
-                      free(sid);
-                      json_object_put(res);
-                      free(pcaCgiQueryString);
-                      map* pmTest=getMap(request_inputs,"shouldFree");
-                      if(pmTest!=NULL){
-                        freeMap (inputs);
-                        free (*inputs);
-                        *inputs=NULL;
-                        freeMap(&r_inputs);
-                        free (r_inputs);
-                        r_inputs=NULL;
-                      }
-                      cleanUpSql(m);
-                      freeMaps(&m);
-                      free(m);
-                      return 1;
-                    }
                   }
                 }
-
-
               }
-              free(jobId);
+
+
             }
+            free(jobId);
           }
         }
 
@@ -4036,6 +4033,18 @@ runRequest (map ** inputs)
                                                   (void*) res4, (void*) res3, ntmp,
                                                   request_inputs,
                                                   localPrintExceptionJ);
+                if(json_object_array_length(res4)==0){
+                  json_object_put(res4);
+                  json_object_put(res3);
+                  freeMaps(&m);
+                  free(m);
+                  free (REQUEST);
+                  freeMap (inputs);
+                  free (*inputs);
+                  *inputs=NULL;
+                  free(pcaCgiQueryString);
+                  return 1;
+                }
                 json_object *res5=json_object_array_get_idx(res4,0);
                 const char* jsonStr=json_object_to_json_string_ext(res5,JSON_C_TO_STRING_NOSLASHESCAPE);
                 setMapInMaps(m,"lenv","no-headers","false");
@@ -4123,6 +4132,8 @@ runRequest (map ** inputs)
             json_object_put(res3);
             free(orig);
             free(pcaCgiQueryString);
+            free(&m);
+            free(m);
             return 1;
           }
           json_object_put(res);
@@ -4521,6 +4532,8 @@ runRequest (map ** inputs)
                 xmlFreeDoc (doc);
                 closedir (dirp);
                 free (REQUEST);
+                free(&m);
+                free(m);
                 return 1;
               }
               printDocument (m, doc, zGetpid ());
