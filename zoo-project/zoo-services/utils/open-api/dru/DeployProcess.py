@@ -192,8 +192,7 @@ class DeployService(object):
     def generate_service(self):
 
         path=None
-        print(self.conf["lenv"],file=sys.stderr)
-        if "noRunSql" in self.conf["lenv"]:
+        if "noRunSql" not in self.conf["lenv"]:
             # checking if the template location is remote or local
             if self.cookiecutter_template_url.endswith(".git"):
 
@@ -244,10 +243,11 @@ class DeployService(object):
             with open(zcfg_file, "w") as file:
                 self.service_configuration.write_zcfg(file)
 
+        # In case the service is not run asynchronously and method is PUT,
         # checking if service had already been deployed previously
-        # if yes, delete it before redeploy the new one
+        # if yes, delete it before redeploy the new one.
         old_service = os.path.join(self.zooservices_folder,self.service_configuration.identifier)
-        if os.path.isdir(old_service):
+        if os.path.isdir(old_service) and "noRunSql" not in self.conf["lenv"] and "orequest_method" in self.conf["lenv"]:
             shutil.rmtree(old_service)
             if "metadb" not in self.conf:
                 os.remove(zcfg_file)
@@ -257,7 +257,8 @@ class DeployService(object):
             if not(rSql):
                 return False
 
-        if path is not None:
+        if path is not None and "noRunSql" not in self.conf["lenv"]:
+            print(path,file=sys.stderr)
             app_package_file = os.path.join(
                 path,
                 f"app-package.cwl",
