@@ -2937,20 +2937,40 @@ runRequest (map ** inputs)
           fclose(pfRequest);
         }else{
           //if(strncasecmp(cgiRequestMethod,"DELETE",6)=0){
-          setMapInMaps(m,"headers","Status","403 Forbidden");
-          map* error=createMap("code","ImmutableProcess");
-          addToMap(error,"message",_("The process cannot be modified."));
-          setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
-          localPrintExceptionJ(&m,error);
-          // Cleanup memory
-          freeMaps(&m);
-          free(m);
-          free (REQUEST);
-          freeMap (inputs);
-          free (*inputs);
-          *inputs=NULL;
-          free(pcaCgiQueryString);
-          return 1;
+          json_object *res3=json_object_new_object();
+          json_object *res4=json_object_new_array();
+          int t=fetchServicesForDescription(NULL, &m, pcaProcessId,
+                                            printGetCapabilitiesForProcessJ,
+                                            (void*) res4, (void*) res3, ntmp,
+                                            request_inputs,
+                                            localPrintExceptionJ);
+          if(json_object_array_length(res4)==0){
+            json_object_put(res4);
+            json_object_put(res3);
+            freeMaps(&m);
+            free(m);
+            free (REQUEST);
+            freeMap (inputs);
+            free (*inputs);
+            *inputs=NULL;
+            free(pcaCgiQueryString);
+            return 1;
+          }else{
+            setMapInMaps(m,"headers","Status","403 Forbidden");
+            map* error=createMap("code","ImmutableProcess");
+            addToMap(error,"message",_("The process cannot be modified."));
+            setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
+            localPrintExceptionJ(&m,error);
+            // Cleanup memory
+            freeMaps(&m);
+            free(m);
+            free (REQUEST);
+            freeMap (inputs);
+            free (*inputs);
+            *inputs=NULL;
+            free(pcaCgiQueryString);
+            return 1;
+          }
         }
       }
     } else
