@@ -48,22 +48,19 @@ except ImportError:
     pass
 
 from cookiecutter.main import cookiecutter
+import os
 import sys
 import shutil
 import json
-from pathlib import Path
-import sys
-from deploy_util import Process
 import yaml
-import requests
-import botocore
-from urllib.parse import urlparse
+from loguru import logger
+from pathlib import Path
+from deploy_util import Process
 from collections import namedtuple
-import os
 
 
 def get_s3_settings():
-    # you can extend this method to get the S3 credentials 
+    # you can extend this method to get the S3 credentials
     return namedtuple(
         "S3Settings",
         ["region_name", "endpoint_url", "aws_access_key_id", "aws_secret_access_key"],
@@ -91,24 +88,32 @@ class DeployService(object):
         self.cookiecutter_templates_folder = self._get_conf_value(
             key="templatesPath", section="cookiecutter"
         )
+        logger.info(f"Using templates folder {self.cookiecutter_templates_folder}")
+
         self.cookiecutter_template_url = self._get_conf_value(
             key="templateUrl", section="cookiecutter"
         )
+        logger.info(f"Using template url {self.cookiecutter_template_url}")
 
         self.cookiecutter_template_branch = self._get_conf_value_if_exists(
             key="templateBranch", section="cookiecutter"
         )
+        if self.cookiecutter_template_branch is not None:
+            logger.info(f"Using template branch {self.cookiecutter_template_branch}")
 
         self.tmp_folder = self._get_conf_value("tmpPath")
 
         self.process_id = self.conf["lenv"]["usid"]
+        logger.info(f"Process ID {self.process_id}")
 
         self.service_tmp_folder = self.create_service_tmp_folder()
 
         self.cwl_content = self.get_application_package()
 
         if "workflow_id" in self.conf["lenv"]:
-            self.service_configuration = Process.create_from_cwl(self.cwl_content,self.conf["lenv"]["workflow_id"])
+            self.service_configuration = Process.create_from_cwl(
+                self.cwl_content, self.conf["lenv"]["workflow_id"]
+            )
         else:
             self.service_configuration = Process.create_from_cwl(self.cwl_content)
 
@@ -123,18 +128,25 @@ class DeployService(object):
     def get_zoo_services_folder(self):
 
         # checking for namespace
-        if "zooServicesNamespace" in self.conf and \
-                "namespace" in self.conf["zooServicesNamespace"] and \
-                "servicesNamespace" in self.conf and \
-                "path" in self.conf["servicesNamespace"]:
-            zooservices_folder = os.path.join(self.conf["servicesNamespace"]["path"],
-                                              self.conf["zooServicesNamespace"]["namespace"])
+        if (
+            "zooServicesNamespace" in self.conf
+            and "namespace" in self.conf["zooServicesNamespace"]
+            and "servicesNamespace" in self.conf
+            and "path" in self.conf["servicesNamespace"]
+        ):
+            logger.info(
+                f"Using namespace {self.conf['zooServicesNamespace']['namespace']}"
+            )
+            zooservices_folder = os.path.join(
+                self.conf["servicesNamespace"]["path"],
+                self.conf["zooServicesNamespace"]["namespace"],
+            )
         else:
-        # if no namespace is used, we will use the default services path
-            print(self.conf["renv"], file=sys.stderr)
+            # if no namespace is used, we will use the default services path
             zooservices_folder = self._get_conf_value(
                 key="CONTEXT_DOCUMENT_ROOT", section="renv"
             )
+            logger.info(f"Using default namespace {zooservices_folder}")
 
         # Checking if zoo can write in the servicePath
         self.check_write_permissions(zooservices_folder)
@@ -143,15 +155,14 @@ class DeployService(object):
 
     def _get_conf_value(self, key, section="main"):
 
-        print(section, file=sys.stderr)
         if key in self.conf[section].keys():
             return self.conf[section][key]
         else:
+            logger.error(f"{key} not set, check configuration")
             raise ValueError(f"{key} not set, check configuration")
 
     def _get_conf_value_if_exists(self, key, section="main"):
 
-        print(section, file=sys.stderr)
         if key in self.conf[section].keys():
             return self.conf[section][key]
         else:
@@ -162,7 +173,7 @@ class DeployService(object):
 
         if not os.access(folder, os.W_OK):
             errorMsg = f"Cannot write to {folder}. Please check folder"
-            print(errorMsg, file=sys.stderr)
+            logger.error(errorMsg)
             raise Exception(errorMsg)
 
     def create_service_tmp_folder(self):
@@ -170,8 +181,9 @@ class DeployService(object):
         tmp_path = os.path.join(self.tmp_folder, f"DeployProcess-{self.process_id}")
         try:
             os.makedirs(tmp_path)
+            logger.info(f"Temporary folder created in {tmp_path}")
         except Exception as e:
-            print(e,file=sys.stderr)
+            logger.error(str(e))
 
         return tmp_path
 
@@ -179,23 +191,30 @@ class DeployService(object):
 
         # checking if applicationPackage exists
         if "applicationPackage" not in self.inputs.keys():
+            logger.error("applicationPackage not found in inputs")
             raise ValueError("The inputs dot not include applicationPackage")
 
         # loading cwl in yaml object
         if "cache_file" in self.inputs["applicationPackage"]:
-            cwl_content = yaml.safe_load(open(self.inputs["applicationPackage"]["cache_file"]).read())
+            logger.info(
+                f"Loading CWL from cache file {self.inputs['applicationPackage']['cache_file']}"
+            )
+            cwl_content = yaml.safe_load(
+                open(self.inputs["applicationPackage"]["cache_file"]).read()
+            )
         else:
+            logger.info("Loading CWL from value")
             cwl_content = yaml.safe_load(self.inputs["applicationPackage"]["value"])
 
         return cwl_content
 
     def generate_service(self):
 
-        path=None
+        path = None
         if "noRunSql" not in self.conf["lenv"]:
             # checking if the template location is remote or local
             if self.cookiecutter_template_url.endswith(".git"):
-
+                logger.info(f"Cloning {self.cookiecutter_template_url}")
                 template_folder = os.path.join(
                     self.cookiecutter_templates_folder,
                     Path(self.cookiecutter_template_url).stem,
@@ -203,28 +222,40 @@ class DeployService(object):
 
                 # checking if template had already been cloned
                 if os.path.isdir(template_folder):
-                    shutil.rmtree(template_folder)
-
-                # retrieving the branch to clone
-                # if no branch is specified, we will clone the master branch
-                cookiecutter_template_branch = self.cookiecutter_template_branch
-
-                # cloning the template
-                if cookiecutter_template_branch is not None:
-                    os.system(
-                        f"git clone -b {cookiecutter_template_branch} {self.cookiecutter_template_url} {template_folder}"
-                    )
+                    logger.info(f"Template already cloned in {template_folder}")
                 else:
-                    os.system(f"git clone {self.cookiecutter_template_url} {template_folder}")
+                    # retrieving the branch to clone
+                    # if no branch is specified, we will clone the master branch
+                    cookiecutter_template_branch = self.cookiecutter_template_branch
+
+                    # cloning the template
+
+                    if cookiecutter_template_branch is not None:
+                        logger.info(
+                            f"Cloning {self.cookiecutter_template_url} branch {cookiecutter_template_branch}"
+                        )
+                        os.system(
+                            f"git clone -b {cookiecutter_template_branch} {self.cookiecutter_template_url} {template_folder}"
+                        )
+                    else:
+                        logger.info(f"Cloning {self.cookiecutter_template_url}")
+                        os.system(
+                            f"git clone {self.cookiecutter_template_url} {template_folder}"
+                        )
 
             else:
+                logger.error(
+                    f"{self.cookiecutter_template_url} is not a valid git repo"
+                )
                 raise ValueError(
                     f"{self.cookiecutter_template_url} is not a valid git repo"
                 )
 
-            cookiecutter_values = {"service_name": self.service_configuration.identifier,
-                                  "workflow_id": self.service_configuration.identifier,
-                                  "conf": self.conf["cookiecutter"]}
+            cookiecutter_values = {
+                "service_name": self.service_configuration.identifier,
+                "workflow_id": self.service_configuration.identifier,
+                "conf": self.conf["cookiecutter"],
+            }
 
             # Create project from template
             path = cookiecutter(
@@ -233,10 +264,17 @@ class DeployService(object):
                 output_dir=self.service_tmp_folder,
                 no_input=True,
                 overwrite_if_exists=True,
-                config_file=self.cookiecutter_configuration_file
+                config_file=self.cookiecutter_configuration_file,
             )
 
+            # checking if the service has been deployed
+            if os.path.isdir(path):
+                logger.info(
+                    f"Service {self.service_configuration.identifier} generated in {path}"
+                )
+
         if "metadb" not in self.conf:
+            logger.info(f"Writing {self.service_configuration.identifier}.zcfg")
             zcfg_file = os.path.join(
                 self.zooservices_folder, f"{self.service_configuration.identifier}.zcfg"
             )
@@ -246,113 +284,194 @@ class DeployService(object):
         # In case the service is not run asynchronously and method is PUT,
         # checking if service had already been deployed previously
         # if yes, delete it before redeploy the new one.
-        old_service = os.path.join(self.zooservices_folder,self.service_configuration.identifier)
-        if os.path.isdir(old_service) and "noRunSql" not in self.conf["lenv"] and "orequest_method" in self.conf["lenv"]:
+        old_service = os.path.join(
+            self.zooservices_folder, self.service_configuration.identifier
+        )
+        if (
+            os.path.isdir(old_service)
+            and "noRunSql" not in self.conf["lenv"]
+            and "orequest_method" in self.conf["lenv"]
+        ):
+            logger.info(
+                f"Got PUT, service {self.service_configuration.identifier} already deployed, deleting it"
+            )
             shutil.rmtree(old_service)
             if "metadb" not in self.conf:
                 os.remove(zcfg_file)
 
-        if "metadb" in self.conf and not("noRunSql" in self.conf["lenv"] and self.conf["lenv"]["noRunSql"] != "false"):
-            rSql=self.service_configuration.run_sql(self.conf)
-            if not(rSql):
+        if "metadb" in self.conf and not (
+            "noRunSql" in self.conf["lenv"] and self.conf["lenv"]["noRunSql"] != "false"
+        ):
+            rSql = self.service_configuration.run_sql(self.conf)
+            if rSql:
+                logger.info("Service inserted in the db")
+
+            else:
+                logger.error("Failed to insert the service metadata in the db")
                 return False
 
         if path is not None and "noRunSql" not in self.conf["lenv"]:
-            print(path,file=sys.stderr)
+
             app_package_file = os.path.join(
                 path,
                 f"app-package.cwl",
             )
 
+            logger.info(f"Storing the CWL file in {app_package_file}")
             with open(app_package_file, "w") as file:
                 yaml.dump(self.cwl_content, file)
 
+            logger.info(f"Moving {path} to {self.zooservices_folder}")
             shutil.move(path, self.zooservices_folder)
 
+            logger.info("Deleting the temporary folder")
             shutil.rmtree(self.service_tmp_folder)
 
         self.conf["lenv"]["deployedServiceId"] = self.service_configuration.identifier
-
+        logger.info(f"Service {self.service_configuration.identifier} deployed")
         return True
 
-def duplicateMessage(conf,deploy_process):
-    sLocation=conf["openapi"]["rootUrl"]+"/processes/"+deploy_process.service_configuration.identifier
+
+def duplicateMessage(conf, deploy_process):
+    sLocation = (
+        conf["openapi"]["rootUrl"]
+        + "/processes/"
+        + deploy_process.service_configuration.identifier
+    )
     if "headers" in conf:
-        conf["headers"]["Location"]=sLocation
+        conf["headers"]["Location"] = sLocation
     else:
-        conf["headers"]={"Location": sLocation }
-    conf["lenv"]["code"]="DuplicatedProcess"
-    conf["lenv"]["message"]=zoo._("A service with the same identifier is already deployed")
+        conf["headers"] = {"Location": sLocation}
+    conf["lenv"]["code"] = "DuplicatedProcess"
+    conf["lenv"]["message"] = zoo._(
+        "A service with the same identifier is already deployed"
+    )
+    logger.error(conf["lenv"]["message"])
     return zoo.SERVICE_FAILED
 
-def storeCwl(conf,inputs,outputs):
-    #if "metadb" not in self.conf or "noRunSql" in self.conf["lenv"] or self.conf["lenv"]["noRunSql"] != "false":
-    #    return zoo.SERVICE_SUCCEEDED
-    cwl_content=yaml.safe_load(inputs["applicationPackage"]["value"])
-    if "zooServicesNamespace" in conf and \
-            "namespace" in conf["zooServicesNamespace"] and \
-            "servicesNamespace" in conf and \
-            "path" in conf["servicesNamespace"]:
-        zooservices_folder = os.path.join(conf["servicesNamespace"]["path"],
-                                            conf["zooServicesNamespace"]["namespace"])
+
+def storeCwl(conf, inputs, outputs):
+    # saves addional cwl files in the same location as the deployed process
+    cwl_content = yaml.safe_load(inputs["applicationPackage"]["value"])
+    if (
+        "zooServicesNamespace" in conf
+        and "namespace" in conf["zooServicesNamespace"]
+        and "servicesNamespace" in conf
+        and "path" in conf["servicesNamespace"]
+    ):
+        zooservices_folder = os.path.join(
+            conf["servicesNamespace"]["path"], conf["zooServicesNamespace"]["namespace"]
+        )
     else:
-    # if no namespace is used, we will use the default services path
+        # if no namespace is used, we will use the default services path
         if "CONTEXT_DOCUMENT_ROOT" in conf["renv"]:
-            zooservices_folder=conf["renv"]["CONTEXT_DOCUMENT_ROOT"]
+            zooservices_folder = conf["renv"]["CONTEXT_DOCUMENT_ROOT"]
+
     app_package_file = os.path.join(
-        zooservices_folder, conf["lenv"]["deployedServiceId"], f"{cwl_content['id']}.cwl"
+        zooservices_folder,
+        conf["lenv"]["deployedServiceId"],
+        f"{cwl_content['id']}.cwl",
     )
+
     try:
+        logger.info(f"Storing the CWL file in {app_package_file}")
         with open(app_package_file, "w") as file:
             yaml.dump(cwl_content, file)
     except Exception as e:
-        print(e,file=sys.stderr)
-    return zoo.SERVICE_SUCCEEDED
+        logger.error(str(e))
+
 
 def DeployProcess(conf, inputs, outputs):
+
     try:
-        if "applicationPackage" in inputs.keys() and "isArray" in inputs["applicationPackage"].keys() and inputs["applicationPackage"]["isArray"]=="true":
-            print("MULTIPLE execution untis",file=sys.stderr)
+        if (
+            "applicationPackage" in inputs.keys()
+            and "isArray" in inputs["applicationPackage"].keys()
+            and inputs["applicationPackage"]["isArray"] == "true"
+        ):
+
             for i in range(int(inputs["applicationPackage"]["length"])):
-                if i==0:
+                if i == 0:
+
+                    logger.info("Deploying the Application Package", file=sys.stderr)
+
                     lInputs = {
                         "applicationPackage": {
                             "value": inputs["applicationPackage"]["value"][0]
                         }
                     }
-                    lInputs["applicationPackage"]["mimeType"] = inputs["applicationPackage"]["mimeType"][0]
+                    lInputs["applicationPackage"]["mimeType"] = inputs[
+                        "applicationPackage"
+                    ]["mimeType"][0]
+
                     deploy_process = DeployService(conf, lInputs, outputs)
-                    res=deploy_process.generate_service()
-                    if not(res):
-                        return duplicateMessage(conf,deploy_process)
-                if int(inputs["applicationPackage"]["length"])-1-i>0:
-                    val="value_"+str(int(inputs["applicationPackage"]["length"])-1-i)
+                    res = deploy_process.generate_service()
+                    if res:
+                        logger.info(
+                            f"Service {deploy_process.service_configuration.identifier} deployed"
+                        )
+                    else:
+                        logger.info(
+                            f"Service {deploy_process.service_configuration.identifier} already deployed"
+                        )
+                        return duplicateMessage(conf, deploy_process)
+
+                if int(inputs["applicationPackage"]["length"]) - 1 - i > 0:
+                    val = "value_" + str(
+                        int(inputs["applicationPackage"]["length"]) - 1 - i
+                    )
                     lInputs = {
                         "applicationPackage": {
-                            "value":
-                                inputs["applicationPackage"][val]
+                            "value": inputs["applicationPackage"][val]
                         }
                     }
                 else:
                     break
-                lInputs["applicationPackage"]["mimeType"] = inputs["applicationPackage"]["mimeType"][0]
-                if i<int(inputs["applicationPackage"]["length"])-1 and "noRunSql" in conf["lenv"] and conf["lenv"]["noRunSql"] != "false":
+
+                lInputs["applicationPackage"]["mimeType"] = inputs[
+                    "applicationPackage"
+                ]["mimeType"][0]
+
+                if (
+                    i < int(inputs["applicationPackage"]["length"]) - 1
+                    and "noRunSql" in conf["lenv"]
+                    and conf["lenv"]["noRunSql"] != "false"
+                ):
                     # Store the cwl file in the same location as the deployed process
+                    logger.info("Storing the additional CWL file(s)")
                     storeCwl(conf, lInputs, outputs)
         else:
+
+            logger.info("Got an OGC EO Application Package with a reference to a CWL")
+
             deploy_process = DeployService(conf, inputs, outputs)
-            res=deploy_process.generate_service()
-            if not(res):
-                return duplicateMessage(conf,deploy_process)
+            res = deploy_process.generate_service()
+            if res:
+                logger.info(
+                    f"Service {deploy_process.service_configuration.identifier} deployed"
+                )
+            else:
+                logger.info(
+                    f"Service {deploy_process.service_configuration.identifier} already deployed"
+                )
+                return duplicateMessage(conf, deploy_process)
+
+        logger.info(
+            f"Service {deploy_process.service_configuration.identifier} version {deploy_process.service_configuration.version} successfully deployed."
+        )
+
         response_json = {
             "message": f"Service {deploy_process.service_configuration.identifier} version {deploy_process.service_configuration.version} successfully deployed.",
             "service": deploy_process.service_configuration.identifier,
-            "status": "success"
+            "status": "success",
         }
         outputs["Result"]["value"] = json.dumps(response_json)
+
         return zoo.SERVICE_DEPLOYED
+
     except Exception as e:
-        print("Exception in Python service",file=sys.stderr)
-        print(e,file=sys.stderr)
-        conf["lenv"]["message"]=str(e)
+        logger.error("Failed to deploy the service")
+        logger.error(str(e))
+
+        conf["lenv"]["message"] = str(e)
         return zoo.SERVICE_FAILED
