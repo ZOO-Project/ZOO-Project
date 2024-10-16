@@ -5692,9 +5692,10 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #else
             map* pmIdentifier = getMap (request_inputs, "Identifier");
             // Record the response only if the service is not DRU
-            if(!serviceIsDRU(conf,pmIdentifier->value)){
+#ifdef DRU_ENABLED
+            if(!serviceIsDRU(conf,pmIdentifier->value))
+#endif
               recordResponse(lconf,fbkp1);
-            }
 #ifdef USE_CALLBACK
             if (eres == SERVICE_SUCCEEDED)
               invokeCallback(lconf,NULL,request_output_real_format,6,0);
