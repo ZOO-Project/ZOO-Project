@@ -57,6 +57,7 @@ from loguru import logger
 from pathlib import Path
 from deploy_util import Process
 from collections import namedtuple
+from deploy_util import Services
 
 
 def get_s3_settings():
@@ -73,14 +74,10 @@ def get_s3_settings():
     )
 
 
-class DeployService(object):
+class DeployService(Services):
     def __init__(self, conf, inputs, outputs):
 
-        self.conf = conf
-        self.inputs = inputs
-        self.outputs = outputs
-
-        self.zooservices_folder = self.get_zoo_services_folder()
+        super().__init__(conf,inputs,outputs)
 
         self.cookiecutter_configuration_file = self._get_conf_value(
             key="configurationFile", section="cookiecutter"
@@ -124,57 +121,6 @@ class DeployService(object):
 
         self.conf["lenv"]["workflow_id"] = self.service_configuration.identifier
         self.conf["lenv"]["service_name"] = self.service_configuration.identifier
-
-    def get_zoo_services_folder(self):
-
-        # checking for namespace
-        if (
-            "zooServicesNamespace" in self.conf
-            and "namespace" in self.conf["zooServicesNamespace"]
-            and "servicesNamespace" in self.conf
-            and "path" in self.conf["servicesNamespace"]
-        ):
-            logger.info(
-                f"Using namespace {self.conf['zooServicesNamespace']['namespace']}"
-            )
-            zooservices_folder = os.path.join(
-                self.conf["servicesNamespace"]["path"],
-                self.conf["zooServicesNamespace"]["namespace"],
-            )
-        else:
-            # if no namespace is used, we will use the default services path
-            zooservices_folder = self._get_conf_value(
-                key="CONTEXT_DOCUMENT_ROOT", section="renv"
-            )
-            logger.info(f"Using default namespace {zooservices_folder}")
-
-        # Checking if zoo can write in the servicePath
-        self.check_write_permissions(zooservices_folder)
-
-        return zooservices_folder
-
-    def _get_conf_value(self, key, section="main"):
-
-        if key in self.conf[section].keys():
-            return self.conf[section][key]
-        else:
-            logger.error(f"{key} not set, check configuration")
-            raise ValueError(f"{key} not set, check configuration")
-
-    def _get_conf_value_if_exists(self, key, section="main"):
-
-        if key in self.conf[section].keys():
-            return self.conf[section][key]
-        else:
-            return None
-
-    @staticmethod
-    def check_write_permissions(folder):
-
-        if not os.access(folder, os.W_OK):
-            errorMsg = f"Cannot write to {folder}. Please check folder"
-            logger.error(errorMsg)
-            raise Exception(errorMsg)
 
     def create_service_tmp_folder(self):
         # creating the folder where we will download the applicationPackage
@@ -384,6 +330,10 @@ def storeCwl(conf, inputs, outputs):
 def DeployProcess(conf, inputs, outputs):
 
     try:
+        if "noRunSql" in conf["lenv"]:
+            logger.info("Nothing to do here.", file=sys.stderr)
+            return zoo.SERVICE_SUCCEEDED
+
         if (
             "applicationPackage" in inputs.keys()
             and "isArray" in inputs["applicationPackage"].keys()

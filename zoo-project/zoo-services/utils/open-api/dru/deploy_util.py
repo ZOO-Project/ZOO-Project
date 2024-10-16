@@ -29,6 +29,7 @@ import yaml
 import re
 from cwl_utils.parser import load_document as load_cwl
 from cwl_utils.parser import *
+from loguru import logger
 
 class Process:
     def __init__(
@@ -726,4 +727,69 @@ class ProcessOutput:
                 raise Exception("Unsupported type: '{0}'".format(type_name))
 
             self.type = type_name
+
+class Services(object):
+
+    def __init__(self, conf, inputs, outputs):
+
+        self.conf = conf
+        self.inputs = inputs
+        self.outputs = outputs
+        self.zooservices_folder = self.get_zoo_services_folder()
+
+
+    def get_zoo_services_folder(self):
+
+        # checking for namespace
+        if (
+            "zooServicesNamespace" in self.conf
+            and "namespace" in self.conf["zooServicesNamespace"]
+            and "servicesNamespace" in self.conf
+            and "path" in self.conf["servicesNamespace"]
+        ):
+            logger.info(
+                f"Using namespace {self.conf['zooServicesNamespace']['namespace']}"
+            )
+            zooservices_folder = os.path.join(
+                self.conf["servicesNamespace"]["path"],
+                self.conf["zooServicesNamespace"]["namespace"],
+            )
+        else:
+            # if no namespace is used, we will use the default services path
+            zooservices_folder = self._get_conf_value(
+                key="CONTEXT_DOCUMENT_ROOT", section="renv"
+            )
+            logger.info(f"Using default namespace {zooservices_folder}")
+
+        # Checking if zoo can write in the servicePath
+        self.check_write_permissions(zooservices_folder)
+
+        return zooservices_folder
+
+    def _get_conf_value(self, key, section="main"):
+
+        if key in self.conf[section].keys():
+            return self.conf[section][key]
+        else:
+            logger.error(f"{key} not set, check configuration")
+            raise ValueError(f"{key} not set, check configuration")
+
+    def _get_conf_value_if_exists(self, key, section="main"):
+
+        if key in self.conf[section].keys():
+            return self.conf[section][key]
+        else:
+            return None
+
+    def get_process_identifier(self):
+        process_identifier = self.conf["lenv"]["deployedServiceId"]
+        return process_identifier
+
+    @staticmethod
+    def check_write_permissions(folder):
+
+        if not os.access(folder, os.W_OK):
+            errorMsg = f"Cannot write to {folder}. Please check folder"
+            logger.error(errorMsg)
+            raise Exception(errorMsg)
 
