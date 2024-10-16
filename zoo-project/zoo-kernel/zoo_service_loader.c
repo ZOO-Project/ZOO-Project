@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- *  Copyright 2008-2023 GeoLabs SARL. All rights reserved.
+ *  Copyright 2008-2024 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -2902,9 +2902,6 @@ runRequest (map ** inputs)
         char* pcaProcessId=zStrdup(strstr(cgiQueryString,"/processes/")+11);
         char newPath[1024];
         getServicesNamespacePath(m,ntmp,newPath,1024);
-        fprintf(stderr,"----+++++++--- %s %d %s \n",__FILE__,__LINE__,newPath);
-        fprintf(stderr,"----+++++++--- %s %d %s \n",__FILE__,__LINE__,pcaProcessId);
-        fflush(stderr);
         setMapInMaps(m,"lenv","deployedServiceId",pcaProcessId);
         char* pcaFileName=(char*)malloc((strlen(newPath)+strlen(pcaProcessId)+7)*sizeof(char));
         sprintf(pcaFileName,"%s/%s.json",newPath,pcaProcessId);
@@ -2936,7 +2933,6 @@ runRequest (map ** inputs)
           }
           fclose(pfRequest);
         }else{
-          //if(strncasecmp(cgiRequestMethod,"DELETE",6)=0){
           json_object *res3=json_object_new_object();
           json_object *res4=json_object_new_array();
           int t=fetchServicesForDescription(NULL, &m, pcaProcessId,
@@ -5694,7 +5690,11 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             dumpMapsToFile(bmap,fbkpres,1);
             removeShmLock (lconf, 1);
 #else
-            recordResponse(lconf,fbkp1);
+            map* pmIdentifier = getMap (request_inputs, "Identifier");
+            // Record the response only if the service is not DRU
+            if(!serviceIsDRU(conf,pmIdentifier->value)){
+              recordResponse(lconf,fbkp1);
+            }
 #ifdef USE_CALLBACK
             if (eres == SERVICE_SUCCEEDED)
               invokeCallback(lconf,NULL,request_output_real_format,6,0);

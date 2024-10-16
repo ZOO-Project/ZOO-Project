@@ -110,6 +110,18 @@ AC_SUBST([JSON_ENABLED])
 AC_SUBST([CALLBACK_FILE])
 AC_SUBST([CALLBACK_USE])
 
+AC_ARG_WITH([log-format],
+    [AS_HELP_STRING([--with-log-format], [define a specific format for debug messages  ])],
+    [LMF="$withval"], [LMF=""])
+
+if test -z "$LMF"
+then
+	LOG_MESSAGE_FORMAT="%s.%03d | %s %s | %d %s:%s:%d - %s"
+else
+	LOG_MESSAGE_FORMAT="$LMF"
+fi
+AC_SUBST([LOG_MESSAGE_FORMAT])
+
 #============================================================================
 # Detect if rabbitmq is available
 #============================================================================

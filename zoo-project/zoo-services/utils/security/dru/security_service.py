@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ###############################################################################
 #  Author:   Gérald Fenoy, gerald.fenoy@geolabs.fr
-#  Copyright (c) 2020-2023, GeoLabs SARL. 
+#  Copyright (c) 2020-2024, GeoLabs SARL.
 ############################################################################### 
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
@@ -22,20 +22,23 @@
 #  DEALINGS IN THE SOFTWARE.
 ################################################################################
 import zoo
+from loguru import logger
 
 def securityIn(conf,inputs,outputs):
     import sys,os,shutil
     if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
-        print("securityIn!",file=sys.stderr)
+        logger.info("securityIn!")
     try:
         if "has_jwt_service" in conf["servicesNamespace"] and conf["servicesNamespace"]["has_jwt_service"]=="true":
             import jwts.security_service as s
             res=s.securityIn(conf,inputs,outputs)
             s.addHeader(conf,"dru.securityIn")
             if res==zoo.SERVICE_FAILED:
+                logger.error("dru.securityIn has failed")
                 return res
     except Exception as e:
         if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
+            logger.error(f"No JWT service available: {str(e)}")
             print("No JWT service available: "+str(e),file=sys.stderr)
     rPath=conf["servicesNamespace"]["path"]+"/"
     for i in conf["renv"]:
@@ -56,11 +59,13 @@ def securityIn(conf,inputs,outputs):
                 conf["renv"]["HTTP_ACCEPT"]="application/cwl"
                 conf["lenv"]["require_conversion_to_json"]="true"
     if not(os.path.isdir(rPath)):
+        logger.info(f"Creating directory {rPath}")
         os.mkdir(rPath)
         os.mkdir(rPath+"/temp") # Create temporary directory for run informations specific to a user
         if "required_files" in conf["servicesNamespace"]:
             rFiles=conf["servicesNamespace"]["required_files"].split(',')
             for i in range(len(rFiles)):
+                logger.info(f"Copy file {rFile[i]}")
                 shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
     return zoo.SERVICE_SUCCEEDED
 
@@ -96,34 +101,30 @@ def runDismiss(conf,inputs,outputs):
     from zoo_calrissian_runner import ZooCalrissianRunner
     from pycalrissian.context import CalrissianContext
 
-    logger.remove()
-    logger.add(sys.stderr, level="INFO")
     try:
         if "param" in inputs:
-            print(inputs,file=sys.stderr)
             json_object=json.loads(inputs["param"]["value"])
             session = CalrissianContext(
                 namespace=ZooCalrissianRunner.shorten_namespace(json_object["processID"].replace("_","-")+"-"+conf["lenv"]["gs_usid"]),
                 storage_class=os.environ.get("STORAGE_CLASS", "openebs-nfs-test"),
                 volume_size="10Mi",
             )
-        print("DISPOSE NAMESPACE",file=sys.stderr)
-        session.dispose()
-        print("DISPOSED NAMESPACE",file=sys.stderr)
+            logger.info(f"Dispose namespace {session.namespace}")
+            session.dispose()
     except Exception as e:
-        print(e,file=sys.stderr)
+        logger.error(str(e))
 
     return zoo.SERVICE_SUCCEEDED
 
 def browse(conf,inputs,outputs):
     import sys
-    print(inputs,file=sys.stderr)
-    print(conf["renv"],file=sys.stderr)
-    f=open(conf["servicesNamespace"]["path"]+"/"+conf["renv"]["REDIRECT_REDIRECT_SERVICES_NAMESPACE"]+"/temp/"+inputs["directory"]["value"],"r", encoding="utf-8")
-    if f is not None:
-        if "result" not in outputs:
-            outputs["result"]={}
-        outputs["result"]["value"]=f.read()
-        return zoo.SERVICE_SUCCEEDED
+    for key in conf["renv"]:
+        if key.count("SERVICES_NAMESPACE")!=0:
+            f=open(conf["servicesNamespace"]["path"]+"/"+conf["renv"][key]+"/temp/"+inputs["directory"]["value"],"r", encoding="utf-8")
+            if f is not None:
+                if "result" not in outputs:
+                    outputs["result"]={}
+            outputs["result"]["value"]=f.read()
+            return zoo.SERVICE_SUCCEEDED
     conf["lenv"]["message"]="Unable to access the file"
     return zoo.SERVICE_FAILED

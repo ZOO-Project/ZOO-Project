@@ -1,4 +1,7 @@
 Version 2.1.0-dev
+  * Update ZOO_DEBUG function to use LOG_MESSAGE_FORMAT to format the
+  debug messages, using the iZooLogLevel integer to decide between: DEBUG,
+  INFO, WARN, ERROR, FATAL. Comes with it associated --with-log-format option.
   * Store temporary files associated with a run made by an authenticated
   user in a non browsable directory, add a browse service to access these
   files.

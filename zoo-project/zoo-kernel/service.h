@@ -1,7 +1,7 @@
 /*
  * Author : Gérald FENOY
  *
- * Copyright (c) 2009-2019 GeoLabs SARL
+ * Copyright (c) 2009-2024 GeoLabs SARL
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "version.h"
 #ifdef WIN32
 #define ZOO_DLL_EXPORT __declspec( dllexport )
 #else
@@ -35,6 +36,11 @@
 
 // ISO8601 compatible date format (RFC 3339)
 #define zDateFormat "%Y-%m-%dT%H:%M:%SZ"
+
+// Debug Messages date format
+#define zLogDateFormat "%Y-%m-%d %H:%M:%S"
+
+#include <sys/time.h>
  // knut: add bool if necessary
 #ifndef __cplusplus
 #ifndef WIN32
@@ -67,6 +73,7 @@ typedef int bool;
 #define zWrite _write
 #define zSleep Sleep
 #include <sys/timeb.h>
+
 struct ztimeval {
   long tv_sec; /* seconds */
   long tv_usec; /* and microseconds */
@@ -203,9 +210,92 @@ extern "C" {
 #define SERVICE_UNDEPLOYED 7
 
 /**
- * The ZOO_DEBUG macro print message with function name, file name and line number
+ * The global debug level: DEBUG
  */
-#define ZOO_DEBUG(message) fprintf(stderr," [ZOO_DEBUG] ++- %d -++ %s %s %d: ",getpid(),__func__,__FILE__,__LINE__);fprintf(stderr,"(%s)\n",message);fflush(stderr);
+#define ZOO_DEBUG_LEVEL_DEBUG 0
+/**
+ * The global debug level: INFO
+ */
+#define ZOO_DEBUG_LEVEL_INFO 1
+/**
+ * The global debug level: WARN
+ */
+#define ZOO_DEBUG_LEVEL_WARN 2
+/**
+ * The global debug level: ERROR
+ */
+#define ZOO_DEBUG_LEVEL_ERROR 3
+/**
+ * The global debug level: FATAL
+ */
+#define ZOO_DEBUG_LEVEL_FATAL 4
+
+/**
+ * The global log level names
+ */
+static const char* pccLogLevel[5]={
+  "DEBUG",
+  "INFO",
+  "WARN",
+  "ERROR",
+  "FATAL"
+};
+
+/**
+ * The global log level
+ */
+static int iZooLogLevel=0;
+
+/**
+ * The ZOO_DEBUG macro print a message with date time, process id (UNIX pid), file name, function name, and line number
+ *
+ * The message uses the ZOO_LOG_FORMAT to format the output.
+ *
+ * The values that should be included in this specific order in the
+ * ZOO_LOG_FORMAT are:
+ *
+ *  * %s: the date time
+ *  * %d: the milliseconds
+ *  * %s: the log level
+ *  * %s: the file name
+ *  * %s: the function name
+ *  * %d: the line number
+ *  * %s: the message
+ *
+ * @param message the message to print
+ */
+#define ZOO_DEBUG(message) \
+  do { \
+    const struct tm *pcsTm; \
+    time_t ttNow; \
+    size_t stLen; \
+    struct ztimeval sztv; \
+    ttNow = time ( NULL ); \
+    pcsTm = localtime ( &ttNow ); \
+    char* pcaLocalTime = (char*)malloc((TIME_SIZE+1)*sizeof(char)); \
+    zGettimeofday(&sztv, NULL); \
+    int iMillisec = int(sztv.tv_usec/1000.0); \
+    if (iMillisec>=1000) { \
+      iMillisec -=1000; \
+      sztv.tv_sec++; \
+    } \
+    stLen = strftime ( pcaLocalTime, TIME_SIZE, zLogDateFormat, pcsTm ); \
+    const char* pccExtra="   "; \
+    if(strlen(pccLogLevel[iZooLogLevel])==5) \
+      pccExtra="  "; \
+    fprintf(stderr,ZOO_LOG_FORMAT, \
+            pcaLocalTime, \
+            iMillisec, \
+            pccLogLevel[iZooLogLevel], \
+            pccExtra, \
+            getpid(), \
+            __FILE__, \
+            __func__, \
+            __LINE__, \
+            message); \
+    fflush(stderr); \
+    free(pcaLocalTime); \
+  } while(0)
 
 /**
  * The memory size to create an elements

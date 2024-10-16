@@ -5,6 +5,7 @@ all: version.h zoo_loader.cgi ${YAML_FILE1} ${ZOOFPM_FILE}
 version.h: Makefile
 	echo "#define ZOO_VERSION \"2.0.0\"" > version.h
 	echo "@ETC_DEF@" >> version.h
+	echo "#define ZOO_LOG_FORMAT \"@LOG_MESSAGE_FORMAT@\\\n\"" >> version.h
 	echo "#define LOCALEDIR \"@localedir@\"" >>  version.h
 
 service.o: service.c service.h
@@ -41,7 +42,7 @@ sshapi.o: sshapi.c
 	$(CXX) -fPIC ${CFLAGS} -c sshapi.c
 
 service_json.o: service_json.c
-	$(CXX) -fPIC ${JS_ENABLED} ${GDAL_CFLAGS}  ${XML2CFLAGS} ${CFLAGS} ${JSON_CFLAGS} ${MS_CFLAGS} -c service_json.c
+	$(CXX) -fPIC ${JS_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} ${JSON_CFLAGS} ${MS_CFLAGS} -c service_json.c
 
 service_callback.o: service_callback.c
 	$(CXX) -fPIC ${XML2CFLAGS} ${GDAL_CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c service_callback.c

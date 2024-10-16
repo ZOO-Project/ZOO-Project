@@ -28,6 +28,7 @@
 #include <amqp_tcp_socket.h>
 #include <amqp_framing.h>
 #include "json.h"
+#include <cmath>
 
 /**
  * AMQP connection state
@@ -310,37 +311,37 @@ int send_msg(const char * msg, const char * content_type){
     // Check that frame is on channel 1
     if (frame.frame_type == AMQP_FRAME_METHOD && frame.payload.method.id == AMQP_BASIC_ACK_METHOD)
       {
-        fprintf(stderr," *-* Message successfully delivered (%s %d)\n",__FILE__,__LINE__ );
-        fflush(stderr);
-        return 0;
         // Message successfully delivered
+        iZooLogLevel=ZOO_DEBUG_LEVEL_INFO;
+        ZOO_DEBUG("Message successfully delivered.");
+        return 0;
       }
     else
       {
-	// Read properties
-	amqp_simple_wait_frame(conn, &frame);
-	// Check that frame is on channel 1, and that its a properties type
-	uint64_t body_size = frame.payload.properties.body_size;
-	
-	uint64_t body_read = 0;
-	// Read body frame
-	while (body_read < body_size)
-	  {
-	    amqp_simple_wait_frame(conn, &frame);
-	    // Check frame is on channel 1, and that is a body frame
-	    body_read += frame.payload.body_fragment.len;
-	  }   
-	
-	// Read basic.ack
-	amqp_simple_wait_frame(conn, &frame);
-	// Check frame is on channel 1, and that its a basic.ack
-	if (frame.frame_type == AMQP_FRAME_METHOD && frame.payload.method.id == AMQP_BASIC_ACK_METHOD)
-	  {
-	    fprintf(stderr," *-* Message successfully delivered (%s %d)\n",__FILE__,__LINE__ );
-	    fflush(stderr);
-	    return 0;
-	    // Message successfully delivered
-	  }
+        // Read properties
+        amqp_simple_wait_frame(conn, &frame);
+        // Check that frame is on channel 1, and that its a properties type
+        uint64_t body_size = frame.payload.properties.body_size;
+
+        uint64_t body_read = 0;
+        // Read body frame
+        while (body_read < body_size)
+          {
+            amqp_simple_wait_frame(conn, &frame);
+            // Check frame is on channel 1, and that is a body frame
+            body_read += frame.payload.body_fragment.len;
+          }
+
+        // Read basic.ack
+        amqp_simple_wait_frame(conn, &frame);
+        // Check frame is on channel 1, and that its a basic.ack
+        if (frame.frame_type == AMQP_FRAME_METHOD && frame.payload.method.id == AMQP_BASIC_ACK_METHOD)
+          {
+            // Message successfully delivered
+            iZooLogLevel=ZOO_DEBUG_LEVEL_INFO;
+            ZOO_DEBUG("Message successfully delivered.");
+            return 0;
+          }
       }
     
     return ret;

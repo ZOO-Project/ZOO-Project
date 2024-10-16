@@ -2,7 +2,7 @@
 #
 # Author : Gérald FENOY
 #
-# Copyright 2023 GeoLabs SARL. All rights reserved.
+# Copyright 2023-2024 GeoLabs SARL. All rights reserved.
 # 
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@ import zoo
 import jwt
 import sys
 import json
+from loguru import logger
 
 def addHeader(conf,name):
     if "headers" not in conf:
@@ -40,14 +41,15 @@ def addHeader(conf,name):
 
 def securityIn(main_conf,inputs,outputs):
     if "servicesNamespace" in main_conf and "debug" in main_conf["servicesNamespace"]:
-        print("JWT securityIn",file=sys.stderr)
+        logger.info("JWT securityIn!")
     addHeader(main_conf,"jwt.securityIn")
     hasAuth=False
     for i in main_conf["renv"].keys():
         if i.count("HTTP_AUTHORIZATION")>0:
+            logger.info("HTTP Authorization header found")
             sToken=main_conf["renv"][i].split(' ')[1]
-            print(sToken,file=sys.stderr)
             if sToken.count(".")>=2:
+                logger.info("JWT token found")
                 cJWT=main_conf["renv"][i].split(' ')[1]
                 if "osecurity" in main_conf and "realm" in main_conf["osecurity"]:
                     if main_conf["renv"][i].count("oidc/"+main_conf["osecurity"]["realm"]+"/")>0:
