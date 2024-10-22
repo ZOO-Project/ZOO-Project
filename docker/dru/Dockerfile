@@ -194,6 +194,7 @@ RUN mkdir /tmp/cookiecutter-templates && \
     #apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS && \
     rm -rf /var/lib/apt/lists/*
 
+COPY docker/dru/index.html /var/www/html/index.html
 
 EXPOSE 80
 CMD ["apachectl", "-D", "FOREGROUND"]
