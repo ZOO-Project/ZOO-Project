@@ -9,6 +9,7 @@ COPY docker/ets-ogcapi-processes/src1 /home/app/src1
 RUN apt-get update && \
     apt-get install -y $BUILD_DEPS && \
     echo "teamengine building..." && \
+    curl -o /home/app/src1/pom.xml https://raw.githubusercontent.com/opengeospatial/ets-common/ecabb653c869b36c47feed31fbd67fcbc089af81/pom.xml && \
     mvn -f /home/app/src/pom.xml clean install > log && \
     echo "common building..." && \
     mvn -f /home/app/src1/pom.xml clean install  && \
