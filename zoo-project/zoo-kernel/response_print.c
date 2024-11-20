@@ -120,10 +120,10 @@ void printHeaders(maps* pmsConf){
     if(pmsTmp!=NULL){
       map* pmTmp=pmsTmp->content;
       while(pmTmp!=NULL){
-	if(strcasecmp(pmTmp->name,"status")!=0){
-	  printf("%s: %s\r\n",pmTmp->name,pmTmp->value);
-	}
-	pmTmp=pmTmp->next;
+        if(strcasecmp(pmTmp->name,"status")!=0){
+          printf("%s: %s\r\n",pmTmp->name,pmTmp->value);
+        }
+        pmTmp=pmTmp->next;
       }
     }
     printSessionHeaders(pmsConf);
@@ -2591,12 +2591,12 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
     for(iI=0;iI<3;iI++){
       int iJ=0;
       for(iJ=1;;iJ++){
-	if(aapccStatusCodes[iI][iJ]==NULL)
-	  break;
-	else{
-	  if(strcmp(aapccStatusCodes[iI][iJ],pmCode->value)==0)
-	    return aapccStatusCodes[iI][0];
-	}
+        if(aapccStatusCodes[iI][iJ]==NULL)
+          break;
+        else{
+          if(strcmp(aapccStatusCodes[iI][iJ],pmCode->value)==0)
+            return aapccStatusCodes[iI][0];
+        }
       }
     }
   }
@@ -2637,8 +2637,8 @@ void _printExceptionReportResponse(maps* pmsConf,map* s){
     map *tmpSid=getMapFromMaps(pmsConf,"lenv","sid");
     if(tmpSid!=NULL){
       if( getpid()==atoi(tmpSid->value) ){
-	printHeaders(pmsConf);
-	printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
+        printHeaders(pmsConf);
+        printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
       }
     }
     else{
@@ -2747,7 +2747,7 @@ xmlNodePtr createExceptionReportNode(maps* pmsConf,map* s,int use_ns){
       xmlNodePtr txt=xmlNewText(BAD_CAST tmp->value);
       xmlAddChild(nc1,txt);
       if(cnt==0)
-	setMapInMaps(pmsConf,"lenv","message",tmp->value);
+        setMapInMaps(pmsConf,"lenv","message",tmp->value);
     }
     else{
       xmlNodeSetContent(nc1, BAD_CAST _("No debug message available"));
@@ -2767,7 +2767,9 @@ xmlNodePtr createExceptionReportNode(maps* pmsConf,map* s,int use_ns){
  * @see printExceptionReportResponseJ,ensureFiltered
  */
 void localPrintException(maps** pmsConf,map* pmError){
-  ensureFiltered(pmsConf,"out");
+  map* pmTrace=getMapFromMaps(*pmsConf,"lenv","trace");
+  if(pmTrace==NULL || (pmTrace!=NULL && strcasecmp(pmTrace->value,"true"))!=0)
+    ensureFiltered(pmsConf,"out");
   map* pmExecutionType=getMapFromMaps(*pmsConf,"main","executionType");
   if(pmExecutionType!=NULL && strcasecmp(pmExecutionType->value,"json")==0)
     printExceptionReportResponseJ(pmsConf,pmError);
@@ -2891,11 +2893,11 @@ char* produceFileUrl(service* psService,maps* pmsConf,maps* pmsOutputs,const cha
     if(pccFormat==NULL || strcasecmp(pccFormat,"BoundingBoxData")!=0){
       map* size=getMap(pmsOutputs->content,"size");
       if(size!=NULL && pmValue!=NULL)
-	fwrite(pmValue->value,1,(atoi(size->value))*sizeof(char),pfOfile);
+        fwrite(pmValue->value,1,(atoi(size->value))*sizeof(char),pfOfile);
       else
-	if(pmValue!=NULL && pmValue->value!=NULL)
-	  fwrite(pmValue->value,1,
-		 strlen(pmValue->value)*sizeof(char),pfOfile);
+        if(pmValue!=NULL && pmValue->value!=NULL)
+          fwrite(pmValue->value,1,
+          strlen(pmValue->value)*sizeof(char),pfOfile);
     }else
       printBoundingBoxDocument(pmsConf,pmsOutputs,pfOfile);
     fclose(pfOfile);
@@ -2969,8 +2971,8 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   NESTED0:
     while(tmpI!=NULL){
       if(tmpI->child!=NULL){
-	stmpI=tmpI;
-	tmpI=tmpI->child;
+        stmpI=tmpI;
+        tmpI=tmpI->child;
       }
 #ifdef USE_MS
       map* testMap=getMap(tmpI->content,"useMapserver");	
@@ -2990,53 +2992,53 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #ifdef USE_MS
       map* geodatatype=getMap(tmpI->content,"geodatatype");
       if(pmRawData!=NULL && strcasecmp(pmRawData->value,"true")==0 &&
-	 (testMap==NULL ||
-	  strncasecmp(testMap->value,"true",4)!=0 ||
-	  (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0) ) ) 
+        (testMap==NULL ||
+          strncasecmp(testMap->value,"true",4)!=0 ||
+          (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0) ) ) 
 #else
-	if(pmRawData!=NULL && strcasecmp(pmRawData->value,"true")==0)
+      if(pmRawData!=NULL && strcasecmp(pmRawData->value,"true")==0)
 #endif
-	  {		
-	    elements* in=getElements(s->outputs,tmpI->name);
-	    if(in==NULL && s->outputs->child!=NULL){
-	      in=getElements(s->outputs->child,tmpI->name);
-	    }
-	    char *format=NULL;
-	    if(in!=NULL && in->format!=NULL){
-	      format=in->format;
-	    }else
-	      format=(char*)"LiteralData";
-	    if(format!=NULL && strcasecmp(format,"BoundingBoxData")==0){
-	      addToMap(tmpI->content,"extension","xml");
-	      addToMap(tmpI->content,"mimeType","text/xml");
-	      addToMap(tmpI->content,"encoding","UTF-8");
-	      addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
-	    }
-	    pcaFileUrl=produceFileUrl(s,pmsConf,tmpI,format,itn);
-	    itn++;
-	    if(pcaFileUrl==NULL)
-	      return;
-	    addToMap(tmpI->content,"Reference",pcaFileUrl);
-	  }
+      {
+        elements* in=getElements(s->outputs,tmpI->name);
+        if(in==NULL && s->outputs->child!=NULL){
+          in=getElements(s->outputs->child,tmpI->name);
+        }
+        char *format=NULL;
+        if(in!=NULL && in->format!=NULL){
+          format=in->format;
+        }else
+          format=(char*)"LiteralData";
+        if(format!=NULL && strcasecmp(format,"BoundingBoxData")==0){
+          addToMap(tmpI->content,"extension","xml");
+          addToMap(tmpI->content,"mimeType","text/xml");
+          addToMap(tmpI->content,"encoding","UTF-8");
+          addToMap(tmpI->content,"schema","http://schemas.opengis.net/ows/1.1.0/owsCommon.xsd");
+        }
+        pcaFileUrl=produceFileUrl(s,pmsConf,tmpI,format,itn);
+        itn++;
+        if(pcaFileUrl==NULL)
+          return;
+        addToMap(tmpI->content,"Reference",pcaFileUrl);
+      }
 #ifdef USE_MS
-	else{
-	  if(testMap!=NULL){
-	    map* nbFeatures;
-	    setMapInMaps(pmsConf,"lenv","state","out");
-	    setReferenceUrl(pmsConf,tmpI);
-	    nbFeatures=getMap(tmpI->content,"nb_features");
-	    geodatatype=getMap(tmpI->content,"geodatatype");
-	    if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
-	       (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0)){
-	      error=1;
-	      res=SERVICE_FAILED;
-	    }
-	  }
-	}
+      else{
+        if(testMap!=NULL){
+          map* nbFeatures;
+          setMapInMaps(pmsConf,"lenv","state","out");
+          setReferenceUrl(pmsConf,tmpI);
+          nbFeatures=getMap(tmpI->content,"nb_features");
+          geodatatype=getMap(tmpI->content,"geodatatype");
+          if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
+            (geodatatype!=NULL && strcasecmp(geodatatype->value,"other")==0)){
+            error=1;
+            res=SERVICE_FAILED;
+          }
+        }
+      }
 #endif	
       if(pcaFileUrl!=NULL){
-	free(pcaFileUrl);
-	pcaFileUrl=NULL;
+        free(pcaFileUrl);
+        pcaFileUrl=NULL;
       }
       tmpI=tmpI->next;
     }
@@ -3044,7 +3046,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
       tmpI=stmpI->next;
       stmpI=NULL;
       if(tmpI!=NULL)
-	goto NESTED0;
+        goto NESTED0;
     }    
 #ifdef DEBUG
     fprintf(stderr,"SERVICE : %s\n",s->name);
@@ -3052,9 +3054,9 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
 #endif	
     if(error<0)
       printProcessResponse(pmsConf,request_inputs1,cpid,
-			   s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
-			   request_inputs,
-			   request_outputs);
+            s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
+            request_inputs,
+            request_outputs);
     else{
       maps* tmpMaps=getMaps(pmsConf,"lenv");
 #ifdef USE_CALLBACK
@@ -3124,71 +3126,71 @@ void printRawdataOutputs(maps* pmsConf,service* s,maps* outputs){
     while(pmsOut!=NULL){
       map* pmPresence=getMap(pmsOut->content,"inRequest");
       if(pmPresence!=NULL && strcmp(pmPresence->value,"true")==0){
-	mi=getMap(pmsOut->content,"mimeType");
-	printf("--%s\r\n",pcaBoundary);
-	printf("Content-ID: %s\r\n",pmsOut->name);
-	map* pmDescription=getMap(pmsOut->content,"abstract");
-	if(pmDescription==NULL)
-	  pmDescription=getMap(pmsOut->content,"title");
-	if(pmDescription!=NULL)
-	  printf("Content-Description: %s\r\n",pmDescription->value);
+        mi=getMap(pmsOut->content,"mimeType");
+        printf("--%s\r\n",pcaBoundary);
+        printf("Content-ID: %s\r\n",pmsOut->name);
+        map* pmDescription=getMap(pmsOut->content,"abstract");
+        if(pmDescription==NULL)
+          pmDescription=getMap(pmsOut->content,"title");
+        if(pmDescription!=NULL)
+          printf("Content-Description: %s\r\n",pmDescription->value);
 
-	char mime[1024];
-	map* en=getMap(outputs->content,"encoding");
-	if(mi!=NULL && en!=NULL)
-	  sprintf(mime,
-		  "Content-Type: %s; charset=%s\r\n",
-		  mi->value,en->value);
-	else
-	  if(mi!=NULL)
-	    sprintf(mime,
-		    "Content-Type: %s; charset=UTF-8\r\n",
-		    mi->value);
-	  else
-	    sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
-	map* pmTransmissionMode=getMap(pmsOut->content,"transmissionMode");
-	if(pmTransmissionMode==NULL)
-	  pmTransmissionMode=getMap(pmsOut->content,"transmission");
-	if(pmTransmissionMode!=NULL && strcasecmp(pmTransmissionMode->value,"reference")==0){
-	  char *pcaFileUrl=produceFileUrl(s,pmsConf,pmsOut,NULL,itn);
-	  printf("%s",mime);
-	  printf("Content-Location: %s\r\n",pcaFileUrl);
-	  itn++;
-	}else{
-	  map *gfile=getMap(pmsOut->content,"generated_file");
-	  if(gfile!=NULL){
-	    gfile=getMap(pmsOut->content,"expected_generated_file");
-	    if(gfile==NULL){
-	      gfile=getMap(pmsOut->content,"generated_file");
-	    }
-	    readGeneratedFile(pmsConf,pmsOut->content,gfile->value);
-	  }
-	  map* pmValue=getMap(pmsOut->content,"value");
-	  if(pmValue==NULL){
-	    char tmpMsg[1024];
-	    sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
-	    map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
-	    if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-	      errorException(&pmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
-	    else{
-	      setMapInMaps(pmsConf,"lenv","error","true");
-	      setMapInMaps(pmsConf,"lenv","code","InvalidParameterValue");
-	      setMapInMaps(pmsConf,"lenv","message",tmpMsg);
-	    }
-	    return ;
-	  }
-	  printf("%s",mime);
-	  map* rs=getMap(pmsOut->content,"size");
-	  map* fname=getMap(pmsOut->content,"filename");
-	  if(fname!=NULL)
-	    printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
-	  else
-	    printf("Content-Disposition: INLINE\r\n");
-	  if(rs!=NULL)
-	    fwrite(pmValue->value,sizeof(char),atoi(rs->value),stdout);
-	  else
-	    fwrite(pmValue->value,sizeof(char),strlen(pmValue->value),stdout);
-	}
+        char mime[1024];
+        map* en=getMap(outputs->content,"encoding");
+        if(mi!=NULL && en!=NULL)
+          sprintf(mime,
+            "Content-Type: %s; charset=%s\r\n",
+            mi->value,en->value);
+        else
+          if(mi!=NULL)
+            sprintf(mime,
+              "Content-Type: %s; charset=UTF-8\r\n",
+              mi->value);
+          else
+            sprintf(mime,"Content-Type: text/plain; charset=utf-8\r\nStatus: 200 OK\r\n\r\n");
+        map* pmTransmissionMode=getMap(pmsOut->content,"transmissionMode");
+        if(pmTransmissionMode==NULL)
+          pmTransmissionMode=getMap(pmsOut->content,"transmission");
+        if(pmTransmissionMode!=NULL && strcasecmp(pmTransmissionMode->value,"reference")==0){
+          char *pcaFileUrl=produceFileUrl(s,pmsConf,pmsOut,NULL,itn);
+          printf("%s",mime);
+          printf("Content-Location: %s\r\n",pcaFileUrl);
+          itn++;
+        }else{
+          map *gfile=getMap(pmsOut->content,"generated_file");
+          if(gfile!=NULL){
+            gfile=getMap(pmsOut->content,"expected_generated_file");
+            if(gfile==NULL){
+              gfile=getMap(pmsOut->content,"generated_file");
+            }
+            readGeneratedFile(pmsConf,pmsOut->content,gfile->value);
+          }
+          map* pmValue=getMap(pmsOut->content,"value");
+          if(pmValue==NULL){
+            char tmpMsg[1024];
+            sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
+            map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
+            if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
+              errorException(&pmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+            else{
+              setMapInMaps(pmsConf,"lenv","error","true");
+              setMapInMaps(pmsConf,"lenv","code","InvalidParameterValue");
+              setMapInMaps(pmsConf,"lenv","message",tmpMsg);
+            }
+            return ;
+          }
+          printf("%s",mime);
+          map* rs=getMap(pmsOut->content,"size");
+          map* fname=getMap(pmsOut->content,"filename");
+          if(fname!=NULL)
+            printf("Content-Disposition: attachment; filename=\"%s\"\r\n",fname->value);
+          else
+            printf("Content-Disposition: INLINE\r\n");
+          if(rs!=NULL)
+            fwrite(pmValue->value,sizeof(char),atoi(rs->value),stdout);
+          else
+            fwrite(pmValue->value,sizeof(char),strlen(pmValue->value),stdout);
+        }
       }
       pmsOut=pmsOut->next;
     }
@@ -3242,14 +3244,14 @@ void printRawdataOutput(maps* pmsConf,maps* outputs){
     }
     else
       if(mi!=NULL){
-	pcaMimeType=(char*)malloc((strlen(mi->value)+32)*sizeof(char));
-	sprintf(pcaMimeType,
-		"Content-Type: %s; charset=UTF-8\r\n",
-		mi->value);
+        pcaMimeType=(char*)malloc((strlen(mi->value)+32)*sizeof(char));
+        sprintf(pcaMimeType,
+          "Content-Type: %s; charset=UTF-8\r\n",
+          mi->value);
       }
       else{
-	pcaMimeType=(char*)malloc(42*sizeof(char));
-	sprintf(pcaMimeType,"Content-Type: text/plain; charset=utf-8\r\n");
+        pcaMimeType=(char*)malloc(42*sizeof(char));
+        sprintf(pcaMimeType,"Content-Type: text/plain; charset=utf-8\r\n");
       }
     printf("%s",pcaMimeType);
     free(pcaMimeType);
@@ -3349,36 +3351,36 @@ map* parseBoundingBox(const char* value){
     char *currentValue=NULL;
     while(cv){
       if(cnt<2)
-	if(currentValue!=NULL){
-	  char *finalValue=(char*)malloc((strlen(currentValue)+strlen(cv)+1)*sizeof(char));
-	  sprintf(finalValue,"%s%s",currentValue,cv);
-	  switch(cnt){
-	  case 0:
-	    res=createMap("lowerCorner",finalValue);
-	    break;
-	  case 1:
-	    addToMap(res,"upperCorner",finalValue);
-	    icnt=-1;
-	    break;
-	  }
-	  cnt++;
-	  free(currentValue);
-	  currentValue=NULL;
-	  free(finalValue);
-	}
-	else{
-	  currentValue=(char*)malloc((strlen(cv)+2)*sizeof(char));
-	  sprintf(currentValue,"%s ",cv);
-	}
+        if(currentValue!=NULL){
+          char *finalValue=(char*)malloc((strlen(currentValue)+strlen(cv)+1)*sizeof(char));
+          sprintf(finalValue,"%s%s",currentValue,cv);
+          switch(cnt){
+          case 0:
+            res=createMap("lowerCorner",finalValue);
+            break;
+          case 1:
+            addToMap(res,"upperCorner",finalValue);
+            icnt=-1;
+            break;
+          }
+          cnt++;
+          free(currentValue);
+          currentValue=NULL;
+          free(finalValue);
+        }
+        else{
+          currentValue=(char*)malloc((strlen(cv)+2)*sizeof(char));
+          sprintf(currentValue,"%s ",cv);
+        }
       else
-	if(cnt==2){
-	  addToMap(res,"crs",cv);
-	  cnt++;
-	}
-	else
-	  addToMap(res,"dimensions",cv);
-      icnt++;
-      cv=strtok_r(NULL,",",&cvp);
+        if(cnt==2){
+          addToMap(res,"crs",cv);
+          cnt++;
+        }
+        else
+          addToMap(res,"dimensions",cv);
+            icnt++;
+            cv=strtok_r(NULL,",",&cvp);
     }
   }
   return res;

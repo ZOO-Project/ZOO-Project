@@ -52,6 +52,24 @@ _(strToTranslate)
 update_status(dictConf,iPourcent)
     update the status of the running service
 
+trace(strMessage)
+    write a message to the ZOO-Kernel log file
+
+info(strMessage)
+    write an information message to the ZOO-Kernel log file
+
+success(strMessage)
+    write a success message to the ZOO-Kernel log file
+
+warning(strMessage)
+    write a warning message to the ZOO-Kernel log file
+
+error(strMessage)
+    write an error message to the ZOO-Kernel log file
+
+critical(strMessage)
+    write a critical message to the ZOO-Kernel log file
+
 Python ZCFG requirements
 ************************
 

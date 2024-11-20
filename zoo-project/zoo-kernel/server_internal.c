@@ -106,23 +106,23 @@ int getVersionId(const char* version){
  *  resource once used.
  */
 char *get_uuid(){
-  char *res=(char*)malloc(37*sizeof(char));
+  char *pcaUuid=(char*)malloc(37*sizeof(char));
 #ifdef WIN32
   UUID uuid;
   UuidCreate(&uuid);
-  RPC_CSTR rest = NULL;
-  UuidToString(&uuid,&rest);
+  RPC_CSTR acRes = NULL;
+  UuidToString(&uuid,&acRes);
 #else
   uuid_t uuid;
   uuid_generate_time(uuid);
-  char rest[128];
-  uuid_unparse(uuid,rest);
+  char acRes[128];
+  uuid_unparse(uuid,acRes);
 #endif
-  sprintf(res,"%s",rest);
+  sprintf(pcaUuid,"%s",acRes);
 #ifdef WIN32
-  RpcStringFree(&rest);
+  RpcStringFree(&acRes);
 #endif
-  return res;
+  return pcaUuid;
 }
 
 /**
@@ -1163,21 +1163,21 @@ void removeSubdirectory(maps* pmsConf,char* acDirectoryName){
 /**
  * Run Dismiss requests.
  *
- * @param conf the maps containing the setting of the main.cfg file
+ * @param pmsConf the maps containing the setting of the main.cfg file
  * @param pid the service identifier (usid key from the [lenv] section)
  */
-void runDismiss(maps* conf,char* pid){
-  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  map* e_type = getMapFromMaps (conf, "main", "executionType");
-  char *sid=getStatusId(conf,pid);
+void runDismiss(maps* pmsConf,char* pid){
+  map* r_inputs = getMapFromMaps (pmsConf, "main", "tmpPath");
+  map* e_type = getMapFromMaps (pmsConf, "main", "executionType");
+  char *sid=getStatusId(pmsConf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+      errorException (&pmsConf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
     else{
-      setMapInMaps(conf,"lenv","error","true");
-      setMapInMaps(conf,"lenv","code","NoSuchJob");
-      setMapInMaps(conf,"lenv","message",_("The JobID from the request does not match any of the Jobs running on this server"));
+      setMapInMaps(pmsConf,"lenv","error","true");
+      setMapInMaps(pmsConf,"lenv","code","NoSuchJob");
+      setMapInMaps(pmsConf,"lenv","message",_("The JobID from the request does not match any of the Jobs running on this server"));
     }
     return;
   }else{
@@ -1187,21 +1187,21 @@ void runDismiss(maps* conf,char* pid){
     map* pmRequestInputs=createMap("mode","async");
     addToMap(pmRequestInputs,"Identifier","runDismiss");
     addToMap(pmRequestInputs,"jrequest","{}");
-    map *sessId = getMapFromMaps (conf, "lenv", "usid");
+    map *sessId = getMapFromMaps (pmsConf, "lenv", "usid");
     if(sessId!=NULL){
-      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+      sessId = getMapFromMaps (pmsConf, "lenv", "gs_usid");
       if(sessId==NULL)
-        sessId = getMapFromMaps (conf, "lenv", "usid");
+        sessId = getMapFromMaps (pmsConf, "lenv", "usid");
     }else
-      sessId = getMapFromMaps (conf, "lenv", "gs_usid");
+      sessId = getMapFromMaps (pmsConf, "lenv", "gs_usid");
     json_object* pjoStatus=json_object_new_object();
-    json_getStatusAttributes(conf,sessId,pjoStatus,SERVICE_STARTED);
+    json_getStatusAttributes(pmsConf,sessId,pjoStatus,SERVICE_STARTED);
     const char* pccResult=json_object_to_json_string_ext(pjoStatus,JSON_C_TO_STRING_NOSLASHESCAPE);
     maps* pmsInputs=createMaps("param");
     setMapInMaps(pmsInputs,"param","value",pccResult);
-    setMapInMaps(conf,"running_job","json",pccResult);
+    setMapInMaps(pmsConf,"running_job","json",pccResult);
     setMapInMaps(pmsInputs,"param","mimeType","application/json");
-    publish_amqp_msg(conf,&eres,pmRequestInputs,pmsInputs,NULL);
+    publish_amqp_msg(pmsConf,&eres,pmRequestInputs,pmsInputs,NULL);
     freeMaps(&pmsInputs);
     free(pmsInputs);
     freeMap(&pmRequestInputs);
@@ -1244,30 +1244,30 @@ void runDismiss(maps* conf,char* pid){
           int iStat=zStat(fileName,&zssStat);
           if(!S_ISDIR(zssStat.st_mode) && zUnlink(fileName)!=0){
             if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-              errorException (&conf,
+              errorException (&pmsConf,
                   _("The job cannot be removed, a file cannot be removed"),
                   "NoApplicableCode", NULL);
             else{
-              setMapInMaps(conf,"lenv","error","true");
-              setMapInMaps(conf,"lenv","code","NoApplicableCode");
-              setMapInMaps(conf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
+              setMapInMaps(pmsConf,"lenv","error","true");
+              setMapInMaps(pmsConf,"lenv","code","NoApplicableCode");
+              setMapInMaps(pmsConf,"lenv","message",_("The job cannot be removed, a file cannot be removed"));
             }
             return;
           }
           else{
-            removeSubdirectory(conf,fileName);
+            removeSubdirectory(pmsConf,fileName);
           }
         }
       }
       closedir (dirp);
     }
 #ifdef RELY_ON_DB
-    removeService(conf,pid);
+    removeService(pmsConf,pid);
 #endif
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0){
       map* statusInfo=createMap("JobID",pid);
       addToMap(statusInfo,"Status","Dismissed");
-      printStatusInfo(conf,statusInfo,(char*)"Dismiss");
+      printStatusInfo(pmsConf,statusInfo,(char*)"Dismiss");
       free(statusInfo);
     }
   }
@@ -1280,18 +1280,18 @@ extern int getServiceFromFile (maps *, const char *, service **);
  * Parse the service file using getServiceFromFile or use getServiceFromYAML
  * if YAML support was activated.
  *
- * @param conf the conf maps containing the main.cfg settings
+ * @param pmsConf the conf maps containing the main.cfg settings
  * @param file the file name to parse
  * @param service the service to update witht the file content
  * @param name the service name
  * @return true if the file can be parsed or false
  * @see getServiceFromFile, getServiceFromYAML
  */
-int readServiceFile (maps * conf, char *file, service ** service, char *name){
-  int t = getServiceFromFile (conf, file, service);
+int readServiceFile (maps * pmsConf, char *file, service ** service, char *name){
+  int t = getServiceFromFile (pmsConf, file, service);
 #ifdef YAML
   if (t < 0){
-    t = getServiceFromYAML (conf, file, service, name);
+    t = getServiceFromYAML (pmsConf, file, service, name);
   }
 #endif
   return t;
@@ -1324,12 +1324,12 @@ int createRegistry (maps* m,registry ** r, char *reg_dir)
   if (reg_dir == NULL)
     return 0;
   for(i=0;i<3;i++){
-    char * tmpName =
+    char * pcaRegistryPath =
       (char *) malloc ((strlen (reg_dir) + strlen (registryKeys[i]) + 2) *
 		       sizeof (char));
-    sprintf (tmpName, "%s/%s", reg_dir, registryKeys[i]);
+    sprintf (pcaRegistryPath, "%s/%s", reg_dir, registryKeys[i]);
     
-    DIR *dirp1 = opendir (tmpName);
+    DIR *dirp1 = opendir (pcaRegistryPath);
     if(dirp1==NULL){
       setMapInMaps(m,"lenv","message",_("Unable to open the registry directory."));
       setMapInMaps(m,"lenv","type","InternalError");
@@ -1339,47 +1339,46 @@ int createRegistry (maps* m,registry ** r, char *reg_dir)
     while ((dp1 = readdir (dirp1)) != NULL){
       char* extn = strstr(dp1->d_name, ".zcfg");
       if(dp1->d_name[0] != '.' && extn != NULL && strlen(extn) == 5)
-	{
-	  int t;
-	  char *tmps1=
-	    (char *) malloc ((strlen (tmpName) + strlen (dp1->d_name) + 2) *
-			     sizeof (char));
-	  sprintf (tmps1, "%s/%s", tmpName, dp1->d_name);
-	  char *tmpsn = zStrdup (dp1->d_name);
-	  tmpsn[strlen (tmpsn) - 5] = 0;
-	  service* s1 = (service *) malloc (SERVICE_SIZE);
-	  if (s1 == NULL)
-	    {
-	      setMapInMaps(m,"lenv","message",_("Unable to allocate memory."));
-	      setMapInMaps(m,"lenv","type","InternalError");
-	      return -2;
-	    }
-	  t = readServiceFile (m, tmps1, &s1, tmpsn);
-	  free (tmpsn);
-	  if (t < 0)
-	    {
-	      map *tmp00 = getMapFromMaps (m, "lenv", "message");
-	      char tmp01[1024];
-	      if (tmp00 != NULL)
-		sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
-			 dp1->d_name, tmp00->value);
-	      else
-		sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
-			 dp1->d_name);
-	      setMapInMaps(m,"lenv","message",tmp01);
-	      setMapInMaps(m,"lenv","type","InternalError");
-	      return -1;
-	    }
-	  if(strncasecmp(registryKeys[i],"implementation",14)==0){
-	    inheritance(*r,&s1);
-	  }
-	  addServiceToRegistry(r,registryKeys[i],s1);
-	  freeService (&s1);
-	  free (s1);
-	  scount++;
-	}
+      {
+        int t;
+        char *pcaFilePath=
+          (char *) malloc ((strlen (pcaRegistryPath) + strlen (dp1->d_name) + 2) *
+              sizeof (char));
+        sprintf (pcaFilePath, "%s/%s", pcaRegistryPath, dp1->d_name);
+        char *tmpsn = zStrdup (dp1->d_name);
+        tmpsn[strlen (tmpsn) - 5] = 0;
+        service* s1 = (service *) malloc (SERVICE_SIZE);
+        if (s1 == NULL){
+          setMapInMaps(m,"lenv","message",_("Unable to allocate memory."));
+          setMapInMaps(m,"lenv","type","InternalError");
+          return -2;
+        }
+        t = readServiceFile (m, pcaFilePath, &s1, tmpsn);
+        free (tmpsn);
+        if (t < 0){
+          map *tmp00 = getMapFromMaps (m, "lenv", "message");
+          char tmp01[1024];
+          if (tmp00 != NULL)
+            sprintf (tmp01, _("Unable to parse the ZCFG file: %s (%s)"),
+          dp1->d_name, tmp00->value);
+          else
+            sprintf (tmp01, _("Unable to parse the ZCFG file: %s."),
+              dp1->d_name);
+          setMapInMaps(m,"lenv","message",tmp01);
+          setMapInMaps(m,"lenv","type","InternalError");
+          return -1;
+        }
+        if(strncasecmp(registryKeys[i],"implementation",14)==0){
+          inheritance(*r,&s1);
+        }
+        addServiceToRegistry(r,registryKeys[i],s1);
+        freeService (&s1);
+        free (s1);
+        scount++;
+      }
     }
     (void) closedir (dirp1);
+    free(pcaRegistryPath);
   }
   return 0;
 }
@@ -1387,12 +1386,12 @@ int createRegistry (maps* m,registry ** r, char *reg_dir)
 /**
  * Create a string containing the basic error message.
  *
- * @param pmConf the main configuration maps pointer
+ * @param pmsConf the main configuration maps pointer
  * @return a new char* containing the error message (ressource should be freed)
  */
-char* produceErrorMessage(maps* pmConf){
+char* produceErrorMessage(maps* pmsConf){
   char *pacTmp;
-  map *pmLenv=getMapFromMaps(pmConf,"lenv","message");
+  map *pmLenv=getMapFromMaps(pmsConf,"lenv","message");
   if(pmLenv!=NULL){
     pacTmp=(char*)malloc((strlen(pmLenv->value)+strlen(_("Unable to run the Service. The message returned back by the Service was the following: "))+1)*sizeof(char));
     sprintf(pacTmp,_("Unable to run the Service. The message returned back by the Service was the following: %s"),pmLenv->value);
@@ -1444,14 +1443,14 @@ int getServicesNamespacePath(maps* pmsConf,char* oldPath,char* newPath,int maxSi
  * Create a KVP request for executing background task.
  * TODO: use the XML request in case of input POST request.
  *
- * @param m the maps containing the parameters from the main.cfg file
+ * @param pmsConf the maps containing the parameters from the main.cfg file
  * @param length the total length of the KVP parameters
  * @param type
  */
-char* getMapsAsKVP(maps* m,int length,int type){
+char* getMapsAsKVP(maps* pmsConf,int length,int type){
   char *dataInputsKVP=(char*) malloc(length*sizeof(char));
   char *dataInputsKVPi=NULL;
-  maps* curs=m;
+  maps* curs=pmsConf;
   int i=0;
   while(curs!=NULL){
     map *inRequest=getMap(curs->content,"inRequest");
@@ -1459,66 +1458,66 @@ char* getMapsAsKVP(maps* m,int length,int type){
     if((inRequest!=NULL && strncasecmp(inRequest->value,"true",4)==0) ||
        inRequest==NULL){
       if(i==0)
-	if(type==0){
-	  sprintf(dataInputsKVP,"%s=",curs->name);
-	  if(hasLength!=NULL){
-	    dataInputsKVPi=(char*)malloc((strlen(curs->name)+2)*sizeof(char));
-	    sprintf(dataInputsKVPi,"%s=",curs->name);
-	  }
-	}
-	else
-	  sprintf(dataInputsKVP,"%s",curs->name);
+        if(type==0){
+          sprintf(dataInputsKVP,"%s=",curs->name);
+          if(hasLength!=NULL){
+            dataInputsKVPi=(char*)malloc((strlen(curs->name)+2)*sizeof(char));
+            sprintf(dataInputsKVPi,"%s=",curs->name);
+          }
+        }
+        else
+          sprintf(dataInputsKVP,"%s",curs->name);
       else{
-	char *temp=zStrdup(dataInputsKVP);
-	if(type==0)
-	  sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
-	else
-	  sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
+        char *temp=zStrdup(dataInputsKVP);
+        if(type==0)
+          sprintf(dataInputsKVP,"%s;%s=",temp,curs->name);
+        else
+          sprintf(dataInputsKVP,"%s;%s",temp,curs->name);
       }
       map* icurs=curs->content;
       if(type==0){
-	char *temp=zStrdup(dataInputsKVP);
-	if(getMap(curs->content,"xlink:href")!=NULL)
-	  sprintf(dataInputsKVP,"%sReference",temp);
-	else{
-	  if(hasLength!=NULL){
-	    int j;
-	    for(j=0;j<atoi(hasLength->value);j++){
-	      map* tmp0=getMapArray(curs->content,"value",j);
-	      if(j==0)
-		free(temp);
-	      temp=zStrdup(dataInputsKVP);
-	      if(j==0)
-		sprintf(dataInputsKVP,"%s%s",temp,tmp0->value);
-	      else
-		sprintf(dataInputsKVP,"%s;%s%s",temp,dataInputsKVPi,tmp0->value);
-	    }
-	  }
-	  else
-	    sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
-	}
-	free(temp);
+        char *temp=zStrdup(dataInputsKVP);
+        if(getMap(curs->content,"xlink:href")!=NULL)
+          sprintf(dataInputsKVP,"%sReference",temp);
+        else{
+          if(hasLength!=NULL){
+            int j;
+            for(j=0;j<atoi(hasLength->value);j++){
+              map* tmp0=getMapArray(curs->content,"value",j);
+              if(j==0)
+          free(temp);
+              temp=zStrdup(dataInputsKVP);
+              if(j==0)
+          sprintf(dataInputsKVP,"%s%s",temp,tmp0->value);
+              else
+          sprintf(dataInputsKVP,"%s;%s%s",temp,dataInputsKVPi,tmp0->value);
+            }
+          }
+          else
+            sprintf(dataInputsKVP,"%s%s",temp,icurs->value);
+        }
+        free(temp);
       }
       while(icurs!=NULL){
-	if(strncasecmp(icurs->name,"value",5)!=0 &&
-	   strncasecmp(icurs->name,"mimeType_",9)!=0 &&
-	   strncasecmp(icurs->name,"dataType_",9)!=0 &&
-	   strncasecmp(icurs->name,"size",4)!=0 &&
-	   strncasecmp(icurs->name,"length",4)!=0 &&
-	   strncasecmp(icurs->name,"isArray",7)!=0 &&
-	   strcasecmp(icurs->name,"Reference")!=0 &&
-	   strcasecmp(icurs->name,"minOccurs")!=0 &&
-	   strcasecmp(icurs->name,"maxOccurs")!=0 &&
-	   strncasecmp(icurs->name,"fmimeType",9)!=0 &&
-	   strcasecmp(icurs->name,"inRequest")!=0){
-	  char *itemp=zStrdup(dataInputsKVP);
-	  if(strcasecmp(icurs->name,"xlink:href")!=0)
-	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
-	  else
-	    sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,url_encode(icurs->value));
-	  free(itemp);
-	}
-	icurs=icurs->next;
+        if(strncasecmp(icurs->name,"value",5)!=0 &&
+          strncasecmp(icurs->name,"mimeType_",9)!=0 &&
+          strncasecmp(icurs->name,"dataType_",9)!=0 &&
+          strncasecmp(icurs->name,"size",4)!=0 &&
+          strncasecmp(icurs->name,"length",4)!=0 &&
+          strncasecmp(icurs->name,"isArray",7)!=0 &&
+          strcasecmp(icurs->name,"Reference")!=0 &&
+          strcasecmp(icurs->name,"minOccurs")!=0 &&
+          strcasecmp(icurs->name,"maxOccurs")!=0 &&
+          strncasecmp(icurs->name,"fmimeType",9)!=0 &&
+          strcasecmp(icurs->name,"inRequest")!=0){
+          char *itemp=zStrdup(dataInputsKVP);
+          if(strcasecmp(icurs->name,"xlink:href")!=0)
+            sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,icurs->value);
+          else
+            sprintf(dataInputsKVP,"%s@%s=%s",itemp,icurs->name,url_encode(icurs->value));
+          free(itemp);
+        }
+        icurs=icurs->next;
       }
     }
     curs=curs->next;

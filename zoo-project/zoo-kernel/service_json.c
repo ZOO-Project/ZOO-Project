@@ -1118,13 +1118,13 @@ extern "C" {
       json_object_object_add(res,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       int hasType=-1;
-      for(i=0;i<7;i++){
+      for(i=0;i<8;i++){
         if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
           map* pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl");
           // Use OGC API - Processes - Part 2: Deploy, Replace, Undeploy
           // exceptions
-          // cf. /req/deploy-replace-undeploy/deploy/response-duplicate
-          // cf. /req/deploy-replace-undeploy/deploy/response-immutable
+          // cf. /req/deploy-replace-undeploy/deploy-response-duplicate
+          // cf. /req/deploy-replace-undeploy/deploy-response-immutable
           // cf. /req/deploy-replace-undeploy/unsupported-content-type
           if(i>=4)
             pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl_1");
@@ -1201,7 +1201,7 @@ extern "C" {
             map *tmpSid=getMapFromMaps(*pmsConf,"lenv","sid");
             if(tmpSid!=NULL){
               if( getpid()==atoi(tmpSid->value) ){
-          printf("Status: %s\r\n\r\n",exceptionCode);
+                printf("Status: %s\r\n\r\n",exceptionCode);
               }
             }
             else{
@@ -3010,11 +3010,13 @@ extern "C" {
     if (jerr != json_tokener_success) {
       setMapInMaps(conf,"lenv","message",json_tokener_error_desc(jerr));
       fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+      ZOO_DEBUG("FAILED");
       json_tokener_free(tok);
       return NULL;
     }
     if (tok->char_offset < slen){
       fprintf(stderr, "Error parsing json\n");
+      ZOO_DEBUG("FAILED");
       json_tokener_free(tok);
       return NULL;
     }
@@ -3515,12 +3517,12 @@ extern "C" {
       int iLen=atoi(pmLen->value);
       map* pmUseContent=getMapFromMaps(conf,"openapi","use_content");
       for(int i=0;i<iLen;i++){
-	map* cMap=getMapArray(pmResponses->content,"code",i);
-	map* vMap=getMapArray(pmResponses->content,"schema",i);
-	map* tMap=getMapArray(pmResponses->content,"type",i);
-	map* tMap0=getMapArray(pmResponses->content,"title",i);
-	if(vMap!=NULL)
-	  addResponse(pmUseContent,cc,vMap,tMap,cMap->value,(tMap0==NULL)?"successful operation":tMap0->value);
+        map* cMap=getMapArray(pmResponses->content,"code",i);
+        map* vMap=getMapArray(pmResponses->content,"schema",i);
+        map* tMap=getMapArray(pmResponses->content,"type",i);
+        map* tMap0=getMapArray(pmResponses->content,"title",i);
+        if(vMap!=NULL)
+          addResponse(pmUseContent,cc,vMap,tMap,cMap->value,(tMap0==NULL)?"successful operation":tMap0->value);
       }
       json_object_object_add(res,"responses",cc);
     }
@@ -3541,14 +3543,14 @@ extern "C" {
     if(pmTmp!=NULL){
       json_object_object_add(poJsonObject,"type",json_object_new_string(pmTmp->value));
       if(strcasecmp(pmTmp->value,"openIdConnect")==0){
-	pmTmp=getMap(pmsTmp->content,"openIdConnectUrl");
-	if(pmTmp!=NULL)
-	  json_object_object_add(poJsonObject,"openIdConnectUrl",json_object_new_string(pmTmp->value));
-      }else{
-	if(strcasecmp(pmTmp->value,"oauth2")==0){
-	  pmTmp=getMap(pmsTmp->content,"authorizationUrl");
-	  // TODO: continue integration of oauth2 security scheme
-	}
+        pmTmp=getMap(pmsTmp->content,"openIdConnectUrl");
+        if(pmTmp!=NULL)
+          json_object_object_add(poJsonObject,"openIdConnectUrl",json_object_new_string(pmTmp->value));
+            }else{
+        if(strcasecmp(pmTmp->value,"oauth2")==0){
+          pmTmp=getMap(pmsTmp->content,"authorizationUrl");
+          // TODO: continue integration of oauth2 security scheme
+        }
       }
     }
     // Get scheme if any
@@ -4339,6 +4341,8 @@ extern "C" {
     }
   }
 
+  extern char* isInCache(maps*,char*);
+
   /**
    * Print the Application Package in various encoding
    *
@@ -4406,11 +4410,91 @@ extern "C" {
         sprintf(pcaFileName,"%s.cwl",pcProcessId);
         char* pcaFilePath=searchForFile(pmsConf,pcaFileName,pcConfDir);
         if(pcaFilePath==NULL){
-          setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
-          map* error=createMap("code","NotAcceptable");
-          addToMap(error,"message",_("The resource is not available in the requested encoding"));
-          localPrintException(ppmsConf,error);
-          return 1;
+          // Should try to read the json file supposed to be in OGC Application
+          // Package format and try to fetch the cached file for the referenced
+          // CWL. If this failed, we can return an exception NotAcceptable
+          // mentioning that the content negotiation failed.
+          free(pcaFileName);
+          pcaFileName=(char*)malloc((strlen(pcProcessId)+6)*sizeof(char));
+          sprintf(pcaFileName,"%s.json",pcProcessId);
+          pcaFilePath=searchForFile(pmsConf,pcaFileName,pcConfDir);
+          if(pcaFilePath==NULL){
+            setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+            map* error=createMap("code","NotAcceptable");
+            addToMap(error,"message",_("The resource is not available in the requested encoding"));
+            localPrintException(ppmsConf,error);
+            return 1;
+          }else{
+            // Should parse the JSON OGC Application Package and try to fetch
+            // the corresponding CWL file stored in the cache.
+            zStatStruct zssStatus;
+            int s=zStat(pcaFilePath, &zssStatus);
+            char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
+            FILE *pfRequest = fopen (pcaFilePath, "rb");
+            if(pfRequest!=NULL){
+              fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+              pcaFcontent[zssStatus.st_size]=0;
+              json_object *pjoRes=parseJson(pmsConf,pcaFcontent);
+              if(pjoRes==NULL)
+                ZOO_DEBUG("pjoRes==NULL!");
+              json_object* pjoExecutionUnit;
+              if(json_object_object_get_ex(pjoRes, "executionUnit", &pjoExecutionUnit)!=FALSE){
+                if(json_object_is_type(pjoExecutionUnit,json_type_array)){
+                  // TODO: handle multiple execution units?
+                }else{
+                  json_object* pjoHref;
+                  if(json_object_object_get_ex(pjoExecutionUnit, "href", &pjoHref)!=FALSE){
+                    if(json_object_is_type(pjoHref,json_type_string)){
+                      const char* pccHref=json_object_get_string(pjoHref);
+                      char* pcaCachedFile=isInCache(pmsConf,(char*)pccHref);
+                      if(pcaCachedFile!=NULL){
+                        map* pmConvertionRequired=getMapFromMaps(pmsConf,"lenv","require_conversion_to_json");
+                        zStatStruct zssStatus1;
+                        int iStatus=zStat(pcaCachedFile, &zssStatus1);
+                        if(pmConvertionRequired==NULL || strncmp(pmConvertionRequired->value,"true",4)!=0){
+                          setMapInMaps(pmsConf,"headers","Content-Type",pcAccept);
+                          printAFile(pmsConf,pcaCachedFile,zssStatus1,localPrintException);
+                        }else{
+                          if(iStatus==0){
+                            FILE *pfRequest1 = fopen (pcaCachedFile, "rb");
+                            if(pfRequest1==NULL){
+                              setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+                              map* error=createMap("code","NotAcceptable");
+                              addToMap(error,"message",_("The resource is not available in the requested encoding"));
+                              localPrintException(ppmsConf,error);
+                              return 1;
+                            }
+                            else{
+                              char* pcaFcontent1=(char*)malloc(sizeof(char)*(zssStatus1.st_size+1));
+                              fread(pcaFcontent1,zssStatus1.st_size,sizeof(char),pfRequest1);
+                              pcaFcontent[zssStatus1.st_size]=0;
+                              setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent1);
+                              setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");
+                              setMapInMaps(pmsConf,"lenv","require_conversion_to_json","true");
+                              free(pcaFcontent1);
+                            }
+                          }
+                        }
+                        free(pcaCachedFile);
+                      }
+                    }
+                  }
+                }
+              }else{
+                setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent);
+                setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");
+              }
+              free(pcaFcontent);
+              return 0;
+            }else{
+              setMapInMaps(pmsConf,"lenv","status_code","406 Not Acceptable");
+              map* error=createMap("code","NotAcceptable");
+              addToMap(error,"message",_("The resource is not available in the requested encoding"));
+              localPrintException(ppmsConf,error);
+              free(pcaFileName);
+              return 1;
+            }
+          }
         }else{
           // Return the CWL content
           zStatStruct zssStatus;

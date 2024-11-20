@@ -110,13 +110,31 @@ AC_SUBST([JSON_ENABLED])
 AC_SUBST([CALLBACK_FILE])
 AC_SUBST([CALLBACK_USE])
 
+#============================================================================
+# Define log format
+#
+# Placeholders:
+#
+# %d: datetime + miliseconds (%s.%03d)
+# %l: debug level + space (%s %s)
+# %p: pid (%d)
+# %f: file name (%s)
+# %u; function name (%s)
+# %i: line number (%d)
+# %m: message (%s)
+#
+# Default value: "%d | %l | %p %f:%u:%i - %m"
+# Transformed to: "%s.%03d | %s %s | %d %s:%s:%d - %s"
+#
+#============================================================================
+
 AC_ARG_WITH([log-format],
     [AS_HELP_STRING([--with-log-format], [define a specific format for debug messages  ])],
     [LMF="$withval"], [LMF=""])
 
 if test -z "$LMF"
 then
-	LOG_MESSAGE_FORMAT="%s.%03d | %s %s | %d %s:%s:%d - %s"
+	LOG_MESSAGE_FORMAT="%d | %l | %p %f:%u:%i - %m"
 else
 	LOG_MESSAGE_FORMAT="$LMF"
 fi

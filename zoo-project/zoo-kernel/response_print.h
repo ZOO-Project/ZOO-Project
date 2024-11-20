@@ -212,6 +212,7 @@ extern "C" {
       "VersionNegotiationFailed",
       "NoSuchMode",
       "BadRequest",
+      "WorkflowNotFound",
       // ref. https://github.com/opengeospatial/ogcapi-processes/issues/250
       //"InvalidQueryParameterValue",
       NULL

@@ -62,6 +62,13 @@ static PyObject* ZooError;
 PyMethodDef zooMethods[] = {
   {"_", PythonTranslate, METH_VARARGS, "Translate a string using the zoo-services textdomain."},
   {"update_status", PythonUpdateStatus, METH_VARARGS, "Update status percentage of a running process."},
+  {"trace", PythonTraceMessage, METH_VARARGS, "Equivalent to logger.trace()."},
+  {"debug", PythonDebugMessage, METH_VARARGS, "Equivalent to logger.debug()."},
+  {"info", PythonInfoMessage, METH_VARARGS, "Equivalent to logger.info()."},
+  {"success", PythonSuccessMessage, METH_VARARGS, "Equivalent to logger.success()."},
+  {"warning", PythonWarningMessage, METH_VARARGS, "Equivalent to logger.warning()."},
+  {"error", PythonErrorMessage, METH_VARARGS|METH_COEXIST, "Equivalent to logger.error()."},
+  {"critical", PythonCriticalMessage, METH_VARARGS, "Equivalent to logger.critical()."},
   {NULL, NULL, 0, NULL} /* tempt not the blade, all fear the sentinel */
 };
 
@@ -115,6 +122,7 @@ PyMODINIT_FUNC init_zoo(){
 
   d = PyModule_GetDict(module);
   int iCnt=0;
+  // Define the ZOO-Kernel status values
   for(;ZOO_STATUS[iCnt]!=NULL;iCnt++){
     tmp = PyInt_FromLong(iCnt);
     PyDict_SetItemString(d, ZOO_STATUS[iCnt], tmp);
@@ -125,9 +133,9 @@ PyMODINIT_FUNC init_zoo(){
   PyDict_SetItemString(d, "VERSION", tmp);
   Py_DECREF(tmp);
 
-  ZooError = PyErr_NewException((char*)"zoo.error", NULL, NULL);
+  ZooError = PyErr_NewException((char*)"zoo.exception", NULL, NULL);
   Py_INCREF(ZooError);
-  PyModule_AddObject(module, "error", ZooError);
+  PyModule_AddObject(module, "exception", ZooError);
 #if PY_MAJOR_VERSION >= 3
   return module;
 #endif
@@ -193,24 +201,18 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
   tmp=NULL;
   tmp=getMap(request,"metapath");
   if(tmp!=NULL && strcmp(tmp->value,"")!=0){
-    //pythonpath=(char*)malloc((4+strlen(python_path)+strlen(ntmp)+strlen(tmp->value))*sizeof(char));
 	  pythonpath = (char*)malloc((5 + strlen(python_path) + strlen(ntmp) + strlen(tmp->value) + strlen(libPath)) * sizeof(char));
 #ifdef WIN32
-  //sprintf(pythonpath,"%s/%s/;%s",ntmp,tmp->value,python_path);
 	sprintf(pythonpath, "%s/%s/;%s;%s", ntmp, tmp->value, python_path, libPath);
 #else
-  //sprintf(pythonpath,"%s/%s/:%s",ntmp,tmp->value,python_path);
   sprintf(pythonpath, "%s/%s/:%s:%s", ntmp, tmp->value, python_path, libPath);  
 #endif
   }
   else{
-    //pythonpath=(char*)malloc((2+strlen(python_path)+strlen(ntmp))*sizeof(char));
 	  pythonpath = (char*)malloc((3 + strlen(python_path) + strlen(ntmp) + strlen(libPath)) * sizeof(char));
 #ifdef WIN32
-    //sprintf(pythonpath,"%s;%s",ntmp,python_path);
 	sprintf(pythonpath, "%s;%s;%s", ntmp, python_path, libPath);
 #else
-    //sprintf(pythonpath,"%s:%s",ntmp,python_path);
 	sprintf(pythonpath, "%s:%s:%s", ntmp, python_path, libPath);
 #endif	
   }
@@ -221,7 +223,6 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 // knut: also set PYTHONHOME environment variable so that Python can load standard modules
 #ifndef WIN32
   setenv("PYTHONPATH",pythonpath,1);  
-  //= getMapFromMaps(*main_conf, "env", "PYTHONHOME"); 
   if (hasvalue(*main_conf, "env", "PYTHONHOME", &home)) {
 	  setenv("PYTHONHOME", home->value, 1); // overwrite
   }
@@ -274,9 +275,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       int i,len=strlen(mps);
       int j=0;
       for(i=0;i<len;i++){
-	if(mps[i]=='/'){
-	  mps[i]='.';
-	}
+        if(mps[i]=='/'){
+          mps[i]='.';
+        }
       }
       char *mn=(char*)malloc((strlen(mps)+strlen(tmp->value)+2)*sizeof(char));
       sprintf(mn,"%s.%s",mps,tmp->value);
@@ -307,31 +308,31 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
       PyDictObject* arg3=PyDict_FromMaps(outputs);
       PyObject *pArgs=PyTuple_New(3);
       if (!pArgs)
-	return -1;
+        return -1;
       PyTuple_SetItem(pArgs, 0, (PyObject *)arg1);
       PyTuple_SetItem(pArgs, 1, (PyObject *)arg2);
       PyTuple_SetItem(pArgs, 2, (PyObject *)arg3);
       pValue = PyObject_CallObject(pFunc, pArgs);
       if (pValue != NULL) {
-	res=PyInt_AsLong(pValue);
-	bool isNotNull=false;
-	freeMaps(&m);
-	free(m);
-	*main_conf=mapsFromPyDict(arg1);
-	if(*real_outputs!=NULL && arg3!=(PyDictObject*) Py_None){
-	  freeMaps(real_outputs);
-	  free(*real_outputs);
-	  isNotNull=true;
-	  *real_outputs=mapsFromPyDict(arg3);
-	}
+        res=PyInt_AsLong(pValue);
+        bool isNotNull=false;
+        freeMaps(&m);
+        free(m);
+        *main_conf=mapsFromPyDict(arg1);
+        if(*real_outputs!=NULL && arg3!=(PyDictObject*) Py_None){
+          freeMaps(real_outputs);
+          free(*real_outputs);
+          isNotNull=true;
+          *real_outputs=mapsFromPyDict(arg3);
+        }
 #ifdef DEBUG
-	fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
-	dumpMaps(inputs);
-	dumpMaps(*real_outputs);
+        fprintf(stderr,"Result of call: %i\n", PyInt_AsLong(pValue));
+        dumpMaps(inputs);
+        dumpMaps(*real_outputs);
 #endif
       }else{
-	PythonZooReport(main_conf,tmp->value,0);
-	res=-1;
+        PythonZooReport(main_conf,tmp->value,0);
+        res=-1;
       }
     }
     else{
@@ -373,6 +374,7 @@ void PythonZooReport(maps** main_conf,const char* module,int load){
     char *pStrErrorMessage = PyString_AsString(pvalue);
   const char *tmp0=_("Python module %s cannot be loaded. Message: %s\n");
   
+  iZooLogLevel=ZOO_DEBUG_LEVEL_ERROR;
   PyObject *trace=PyObject_Str(pvalue);
   char *pbt=NULL;
   if(trace!=NULL && PyString_Check(trace)){
@@ -380,7 +382,7 @@ void PythonZooReport(maps** main_conf,const char* module,int load){
     sprintf(pbt,"TRACE: %s",PyString_AsString(trace));
   }
   else
-    fprintf(stderr,"EMPTY TRACE ?");
+    ZOO_DEBUG("EMPTY TRACE ?");
 
   trace=NULL;
   trace=PyObject_Str(ptype);
@@ -393,7 +395,7 @@ void PythonZooReport(maps** main_conf,const char* module,int load){
     free(tpbt);
   }
   else
-    fprintf(stderr,"EMPTY TRACE ?");
+    ZOO_DEBUG("EMPTY TRACE ?");
   
   if(ptraceback!=NULL && pbt!=NULL){
     char *tpbt=zStrdup(pbt);
@@ -407,20 +409,22 @@ void PythonZooReport(maps** main_conf,const char* module,int load){
     trace=PyObject_Str(pValue);
     if(PyString_Check(trace)){
       if(pbt!=NULL)
-	free(pbt);
+        free(pbt);
       const char* format=_("%s\nUnable to run your python process properly. Please check the following messages : %s");
       pbt=(char*)malloc((strlen(format)+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
       sprintf(pbt,format,tpbt,PyString_AsString(trace));
     }
     else{
       if(pbt!=NULL)
-	free(pbt);
+        free(pbt);
       const char* format=_("%s \n Unable to run your python process properly. Unable to provide any further information.");
       pbt=(char*)malloc((strlen(format)+strlen(tpbt)+strlen(PyString_AsString(trace))+1)*sizeof(char));
       sprintf(pbt,format,tpbt);
     }
     free(tpbt);
   }
+  // Set conf["lenv"]["trace"]="true"
+  setMapInMaps(m,"lenv","trace","true");
   if(load>0 && pbt!=NULL){
     char *tmpS=(char*)malloc((strlen(tmp0)+strlen(module)+strlen(pbt)+1)*sizeof(char));
     sprintf(tmpS,tmp0,module,pbt);
@@ -455,8 +459,8 @@ PyDictObject* PyDict_FromMaps(maps* t){
       PyObject* cname=PyString_FromString("child");
       PyObject* childs=(PyObject*)PyDict_FromMaps(tmp->child);
       if(PyDict_SetItem(value,cname,childs)<0){
-	fprintf(stderr,"Unable to set map value ...");
-	return NULL;
+        fprintf(stderr,"Unable to set map value ...");
+        return NULL;
       } 
       Py_DECREF(cname);
     }
@@ -928,4 +932,127 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
   freeMaps(&conf);
   free(conf);
   Py_RETURN_NONE;
+}
+
+/**
+ * ZOO-API debug message handling in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+#include "frameobject.h"
+PyObject*
+PythonPrintDebugMessage(PyObject* self, PyObject* args)
+{
+  char *str;
+  if (!PyArg_ParseTuple(args, "s", &str)){
+    fprintf(stderr,"Incorrect arguments to debug, only strings are supported\n");
+  }
+  PyFrameObject* poFrame=PyEval_GetFrame();
+  char const* pccModule = _PyUnicode_AsString(poFrame->f_code->co_filename);
+  char const* pccFunction = _PyUnicode_AsString(poFrame->f_code->co_name);
+  int iLine=PyFrame_GetLineNumber(poFrame);
+  _ZOO_DEBUG(str,pccModule,pccFunction,iLine);
+  Py_RETURN_NONE;
+}
+
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonTraceMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_TRACE;
+  return PythonPrintDebugMessage(self,args);
+}
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonDebugMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_DEBUG;
+  return PythonPrintDebugMessage(self,args);
+}
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonInfoMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_INFO;
+  return PythonPrintDebugMessage(self,args);
+}
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonSuccessMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_SUCCESS;
+  return PythonPrintDebugMessage(self,args);
+}
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonWarningMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_WARNING;
+  return PythonPrintDebugMessage(self,args);
+}
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonErrorMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_ERROR;
+  return PythonPrintDebugMessage(self,args);
+}
+/**
+ * ZOO-API equivalent to logger.debug() in Python
+ *
+ * @param self the Python object on which we can run the method
+ * @param args the Python arguments given from the Python environment
+ * @return a new Python string containing the translated value
+ * @see _ss
+ */
+PyObject*
+PythonCriticalMessage(PyObject* self, PyObject* args)
+{
+  iZooLogLevel=ZOO_DEBUG_LEVEL_FATAL;
+  return PythonPrintDebugMessage(self,args);
 }

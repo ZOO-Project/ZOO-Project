@@ -232,13 +232,13 @@ int unlockFile(maps* conf,struct zooLock* s){
  * @warning make sure to free resources returned by this function
  */
 char* getStatusId(maps* conf,char* pid){
-  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  char* fbkpid =
+  map* pmInputs = getMapFromMaps (conf, "main", "tmpPath");
+  char* pcaSidFile =
     (char *)
-    malloc ((strlen (r_inputs->value) + strlen (pid) + 7) * sizeof (char));
-  sprintf (fbkpid, "%s/%s.sid", r_inputs->value, pid);
-  FILE* f0 = fopen (fbkpid, "r");
-  free(fbkpid);
+    malloc ((strlen (pmInputs->value) + strlen (pid) + 7) * sizeof (char));
+  sprintf (pcaSidFile, "%s/%s.sid", pmInputs->value, pid);
+  FILE* f0 = fopen (pcaSidFile, "r");
+  free(pcaSidFile);
   if(f0!=NULL){
     long flen;
     char *fcontent;
@@ -327,7 +327,7 @@ char* _getStatusFile(maps* conf,char* pid){
       setMapInMaps(conf,"lenv","lid",stat);
       lockid=acquireLock(conf);
       if(lockid<0)
-	return NULL;
+	      return NULL;
     }
 
     //FILE* f0 = fopen (fileName, "r");
@@ -368,12 +368,12 @@ char* _getStatusFile(maps* conf,char* pid){
  * @warning make sure to free resources returned by this function
  */
 char* _getStatus(maps* conf,char* lid){
-  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  char* fbkpid =
+  map* pmInputs = getMapFromMaps (conf, "main", "tmpPath");
+  char* pcaStatusFile =
     (char *)
-    malloc ((strlen (r_inputs->value) + strlen (lid) + 9) * sizeof (char));
-  sprintf (fbkpid, "%s/%s.status", r_inputs->value, lid);
-  FILE* f0 = fopen (fbkpid, "r");
+    malloc ((strlen (pmInputs->value) + strlen (lid) + 9) * sizeof (char));
+  sprintf (pcaStatusFile, "%s/%s.status", pmInputs->value, lid);
+  FILE* f0 = fopen (pcaStatusFile, "r");
   if(f0!=NULL){
     semid lockid = NULL;
     char* stat;
@@ -394,7 +394,7 @@ char* _getStatus(maps* conf,char* lid){
       fread(fcontent,flen,1,f0);
       fcontent[flen]=0;
       fclose(f0);
-      free(fbkpid);
+      free(pcaStatusFile);
       if(stat!=NULL){
 #ifndef WIN32
 	removeShmLock(conf,1);
@@ -406,14 +406,14 @@ char* _getStatus(maps* conf,char* lid){
       return fcontent;
     }
     fclose(f0);
-    free(fbkpid);
+    free(pcaStatusFile);
     if(stat!=NULL){
       removeShmLock(conf,1);
       free(stat);
     }
     return NULL;
   }else{
-    free(fbkpid);
+    free(pcaStatusFile);
     char* stat=getStatusId(conf,lid);
     if(stat!=NULL)
       setMapInMaps(conf,"lenv","lid",stat);
@@ -428,14 +428,14 @@ char* _getStatus(maps* conf,char* lid){
  * @param conf the map containing the setting of the main.cfg file
  */
 void unhandleStatus(maps *conf){	
-  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
+  map* pmInputs = getMapFromMaps (conf, "main", "tmpPath");
   map* usid = getMapFromMaps (conf, "lenv", "usid");
-  char* fbkpid =
-    (char *) malloc ((strlen (r_inputs->value) + strlen (usid->value) + 9) 
+  char* pcaStatusFile =
+    (char *) malloc ((strlen (pmInputs->value) + strlen (usid->value) + 9) 
 		     * sizeof (char));
-  sprintf (fbkpid, "%s/%s.status", r_inputs->value, usid->value);
-  zUnlink(fbkpid);
-  free(fbkpid);
+  sprintf (pcaStatusFile, "%s/%s.status", pmInputs->value, usid->value);
+  zUnlink(pcaStatusFile);
+  free(pcaStatusFile);
 }
 
 /**
@@ -447,28 +447,28 @@ void unhandleStatus(maps *conf){
  */
 int _updateStatus(maps *conf){
 	
-  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  map* sid = getMapFromMaps (conf, "lenv", "usid");
+  map* pmInputs = getMapFromMaps (conf, "main", "tmpPath");
+  map* pmSid = getMapFromMaps (conf, "lenv", "usid");
   
-  char* fbkpid =
+  char* pcaStatusFile =
     (char *)
-    malloc ((strlen (r_inputs->value) + strlen (sid->value) + 9) * sizeof (char));
-  sprintf (fbkpid, "%s/%s.status", r_inputs->value, sid->value);
+    malloc ((strlen (pmInputs->value) + strlen (pmSid->value) + 9) * sizeof (char));
+  sprintf (pcaStatusFile, "%s/%s.status", pmInputs->value, pmSid->value);
   map* status=getMapFromMaps(conf,"lenv","status");
   map* msg=getMapFromMaps(conf,"lenv","message");
   if(status!=NULL && msg!=NULL &&
      status->value!=NULL && msg->value!=NULL && 
      strlen(status->value)>0 && strlen(msg->value)>1){    
     semid lockid = NULL;
-    char* stat=getStatusId(conf,sid->value);
+    char* stat=getStatusId(conf,pmSid->value);
     if(stat!=NULL){
       lockid=acquireLock(conf);
       if(lockid<0){
-	dumpMap(status);
-	return ZOO_LOCK_ACQUIRE_FAILED;
+        dumpMap(status);
+        return ZOO_LOCK_ACQUIRE_FAILED;
       }
     }
-    FILE* fstatus=fopen(fbkpid,"w");
+    FILE* fstatus=fopen(pcaStatusFile,"w");
     if(fstatus!=NULL){
       fprintf(fstatus,"%s|%s",status->value,msg->value);
       fflush(fstatus);
@@ -481,6 +481,7 @@ int _updateStatus(maps *conf){
       unlockShm(lockid);
       free(stat);
     }
+    free(pcaStatusFile);
   }
 
   return 0;
@@ -872,6 +873,7 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
   }
   return NULL;
 }
+
 
 /**
  * Read a file using the GDAL VSI API 

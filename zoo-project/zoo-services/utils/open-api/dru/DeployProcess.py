@@ -29,19 +29,7 @@ try:
     import zoo
 except ImportError:
     print("Not running in zoo instance, using ZooStub object for testing")
-
-    class ZooStub(object):
-        def __init__(self):
-            self.SERVICE_SUCCEEDED = 3
-            self.SERVICE_FAILED = 4
-            self.SERVICE_DEPLOYED = 6
-
-        def update_status(self, conf, progress):
-            print(f"Status {progress}")
-
-        def _(self, message):
-            print(f"invoked _ with {message}")
-
+    from ZooStub import ZooStub
     conf = {}
     conf["lenv"] = {"message": ""}
     zoo = ZooStub()
@@ -53,7 +41,6 @@ import sys
 import shutil
 import json
 import yaml
-from loguru import logger
 from pathlib import Path
 from deploy_util import Process
 from collections import namedtuple
@@ -85,23 +72,23 @@ class DeployService(Services):
         self.cookiecutter_templates_folder = self._get_conf_value(
             key="templatesPath", section="cookiecutter"
         )
-        logger.info(f"Using templates folder {self.cookiecutter_templates_folder}")
+        zoo.info(f"Using templates folder {self.cookiecutter_templates_folder}")
 
         self.cookiecutter_template_url = self._get_conf_value(
             key="templateUrl", section="cookiecutter"
         )
-        logger.info(f"Using template url {self.cookiecutter_template_url}")
+        zoo.info(f"Using template url {self.cookiecutter_template_url}")
 
         self.cookiecutter_template_branch = self._get_conf_value_if_exists(
             key="templateBranch", section="cookiecutter"
         )
         if self.cookiecutter_template_branch is not None:
-            logger.info(f"Using template branch {self.cookiecutter_template_branch}")
+            zoo.info(f"Using template branch {self.cookiecutter_template_branch}")
 
         self.tmp_folder = self._get_conf_value("tmpPath")
 
         self.process_id = self.conf["lenv"]["usid"]
-        logger.info(f"Process ID {self.process_id}")
+        zoo.info(f"Process ID {self.process_id}")
 
         self.service_tmp_folder = self.create_service_tmp_folder()
 
@@ -127,9 +114,9 @@ class DeployService(Services):
         tmp_path = os.path.join(self.tmp_folder, f"DeployProcess-{self.process_id}")
         try:
             os.makedirs(tmp_path)
-            logger.info(f"Temporary folder created in {tmp_path}")
+            zoo.info(f"Temporary folder created in {tmp_path}")
         except Exception as e:
-            logger.error(str(e))
+            zoo.error(str(e))
 
         return tmp_path
 
@@ -137,19 +124,19 @@ class DeployService(Services):
 
         # checking if applicationPackage exists
         if "applicationPackage" not in self.inputs.keys():
-            logger.error("applicationPackage not found in inputs")
+            zoo.error("applicationPackage not found in inputs")
             raise ValueError("The inputs dot not include applicationPackage")
 
         # loading cwl in yaml object
         if "cache_file" in self.inputs["applicationPackage"]:
-            logger.info(
+            zoo.info(
                 f"Loading CWL from cache file {self.inputs['applicationPackage']['cache_file']}"
             )
             cwl_content = yaml.safe_load(
                 open(self.inputs["applicationPackage"]["cache_file"]).read()
             )
         else:
-            logger.info("Loading CWL from value")
+            zoo.info("Loading CWL from value")
             cwl_content = yaml.safe_load(self.inputs["applicationPackage"]["value"])
 
         return cwl_content
@@ -160,7 +147,7 @@ class DeployService(Services):
         if "noRunSql" not in self.conf["lenv"]:
             # checking if the template location is remote or local
             if self.cookiecutter_template_url.endswith(".git"):
-                logger.info(f"Cloning {self.cookiecutter_template_url}")
+                zoo.info(f"Cloning {self.cookiecutter_template_url}")
                 template_folder = os.path.join(
                     self.cookiecutter_templates_folder,
                     Path(self.cookiecutter_template_url).stem,
@@ -168,7 +155,10 @@ class DeployService(Services):
 
                 # checking if template had already been cloned
                 if os.path.isdir(template_folder):
-                    logger.info(f"Template already cloned in {template_folder}")
+                    zoo.info(f"Template already cloned in {template_folder}, pull only")
+                    os.system(
+                        f"cd {template_folder}; git pull > log"
+                    )
                 else:
                     # retrieving the branch to clone
                     # if no branch is specified, we will clone the master branch
@@ -177,20 +167,20 @@ class DeployService(Services):
                     # cloning the template
 
                     if cookiecutter_template_branch is not None:
-                        logger.info(
+                        zoo.info(
                             f"Cloning {self.cookiecutter_template_url} branch {cookiecutter_template_branch}"
                         )
                         os.system(
                             f"git clone -b {cookiecutter_template_branch} {self.cookiecutter_template_url} {template_folder}"
                         )
                     else:
-                        logger.info(f"Cloning {self.cookiecutter_template_url}")
+                        zoo.info(f"Cloning {self.cookiecutter_template_url}")
                         os.system(
                             f"git clone {self.cookiecutter_template_url} {template_folder}"
                         )
 
             else:
-                logger.error(
+                zoo.error(
                     f"{self.cookiecutter_template_url} is not a valid git repo"
                 )
                 raise ValueError(
@@ -215,12 +205,12 @@ class DeployService(Services):
 
             # checking if the service has been deployed
             if os.path.isdir(path):
-                logger.info(
+                zoo.info(
                     f"Service {self.service_configuration.identifier} generated in {path}"
                 )
 
         if "metadb" not in self.conf:
-            logger.info(f"Writing {self.service_configuration.identifier}.zcfg")
+            zoo.info(f"Writing {self.service_configuration.identifier}.zcfg")
             zcfg_file = os.path.join(
                 self.zooservices_folder, f"{self.service_configuration.identifier}.zcfg"
             )
@@ -238,7 +228,7 @@ class DeployService(Services):
             and "noRunSql" not in self.conf["lenv"]
             and "orequest_method" in self.conf["lenv"]
         ):
-            logger.info(
+            zoo.info(
                 f"Got PUT, service {self.service_configuration.identifier} already deployed, deleting it"
             )
             shutil.rmtree(old_service)
@@ -250,10 +240,10 @@ class DeployService(Services):
         ):
             rSql = self.service_configuration.run_sql(self.conf)
             if rSql:
-                logger.info("Service inserted in the db")
+                zoo.info("Service inserted in the db")
 
             else:
-                logger.error("Failed to insert the service metadata in the db")
+                zoo.error("Failed to insert the service metadata in the db")
                 return False
 
         if path is not None and "noRunSql" not in self.conf["lenv"]:
@@ -263,18 +253,18 @@ class DeployService(Services):
                 f"app-package.cwl",
             )
 
-            logger.info(f"Storing the CWL file in {app_package_file}")
+            zoo.info(f"Storing the CWL file in {app_package_file}")
             with open(app_package_file, "w") as file:
                 yaml.dump(self.cwl_content, file)
 
-            logger.info(f"Moving {path} to {self.zooservices_folder}")
+            zoo.info(f"Moving {path} to {self.zooservices_folder}")
             shutil.move(path, self.zooservices_folder)
 
-            logger.info("Deleting the temporary folder")
+            zoo.info("Deleting the temporary folder")
             shutil.rmtree(self.service_tmp_folder)
 
         self.conf["lenv"]["deployedServiceId"] = self.service_configuration.identifier
-        logger.info(f"Service {self.service_configuration.identifier} deployed")
+        zoo.info(f"Service {self.service_configuration.identifier} deployed")
         return True
 
 
@@ -292,7 +282,7 @@ def duplicateMessage(conf, deploy_process):
     conf["lenv"]["message"] = zoo._(
         "A service with the same identifier is already deployed"
     )
-    logger.error(conf["lenv"]["message"])
+    zoo.error(conf["lenv"]["message"])
     return zoo.SERVICE_FAILED
 
 
@@ -320,18 +310,18 @@ def storeCwl(conf, inputs, outputs):
     )
 
     try:
-        logger.info(f"Storing the CWL file in {app_package_file}")
+        zoo.info(f"Storing the CWL file in {app_package_file}")
         with open(app_package_file, "w") as file:
             yaml.dump(cwl_content, file)
     except Exception as e:
-        logger.error(str(e))
+        zoo.error(str(e))
 
 
 def DeployProcess(conf, inputs, outputs):
 
     try:
         if "noRunSql" in conf["lenv"]:
-            logger.info("Nothing to do here.", file=sys.stderr)
+            zoo.info("Nothing to do here.")
             return zoo.SERVICE_SUCCEEDED
 
         if (
@@ -343,7 +333,7 @@ def DeployProcess(conf, inputs, outputs):
             for i in range(int(inputs["applicationPackage"]["length"])):
                 if i == 0:
 
-                    logger.info("Deploying the Application Package", file=sys.stderr)
+                    zoo.info("Deploying the Application Package")
 
                     lInputs = {
                         "applicationPackage": {
@@ -357,11 +347,11 @@ def DeployProcess(conf, inputs, outputs):
                     deploy_process = DeployService(conf, lInputs, outputs)
                     res = deploy_process.generate_service()
                     if res:
-                        logger.info(
+                        zoo.info(
                             f"Service {deploy_process.service_configuration.identifier} deployed"
                         )
                     else:
-                        logger.info(
+                        zoo.info(
                             f"Service {deploy_process.service_configuration.identifier} already deployed"
                         )
                         return duplicateMessage(conf, deploy_process)
@@ -388,25 +378,25 @@ def DeployProcess(conf, inputs, outputs):
                     and conf["lenv"]["noRunSql"] != "false"
                 ):
                     # Store the cwl file in the same location as the deployed process
-                    logger.info("Storing the additional CWL file(s)")
+                    zoo.info("Storing the additional CWL file(s)")
                     storeCwl(conf, lInputs, outputs)
         else:
 
-            logger.info("Got an OGC EO Application Package with a reference to a CWL")
+            zoo.info("Got an OGC EO Application Package with a reference to a CWL")
 
             deploy_process = DeployService(conf, inputs, outputs)
             res = deploy_process.generate_service()
             if res:
-                logger.info(
+                zoo.info(
                     f"Service {deploy_process.service_configuration.identifier} deployed"
                 )
             else:
-                logger.info(
+                zoo.info(
                     f"Service {deploy_process.service_configuration.identifier} already deployed"
                 )
                 return duplicateMessage(conf, deploy_process)
 
-        logger.info(
+        zoo.info(
             f"Service {deploy_process.service_configuration.identifier} version {deploy_process.service_configuration.version} successfully deployed."
         )
 
@@ -420,8 +410,12 @@ def DeployProcess(conf, inputs, outputs):
         return zoo.SERVICE_DEPLOYED
 
     except Exception as e:
-        logger.error("Failed to deploy the service")
-        logger.error(str(e))
-
+        zoo.error("Failed to deploy the service")
+        zoo.error(str(e))
+        if "headers" not in conf:
+            conf["headers"]={}
+        conf["headers"]["status"]="400 Bad Request"
+        conf["lenv"]["code"]="WorkflowNotFound"
+        #conf["lenv"]["exception"]="http://www.opengis.net/def/exceptions/ogcapi-processes-2/1.0/workflow-not-found"
         conf["lenv"]["message"] = str(e)
         return zoo.SERVICE_FAILED

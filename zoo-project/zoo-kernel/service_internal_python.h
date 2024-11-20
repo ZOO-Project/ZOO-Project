@@ -47,5 +47,12 @@ void PythonZooReport(maps**,const char*,int);
 
 PyObject* PythonTranslate(PyObject*, PyObject*);
 PyObject* PythonUpdateStatus(PyObject*, PyObject*);
+PyObject* PythonTraceMessage(PyObject*, PyObject*);
+PyObject* PythonDebugMessage(PyObject*, PyObject*);
+PyObject* PythonInfoMessage(PyObject*, PyObject*);
+PyObject* PythonSuccessMessage(PyObject*, PyObject*);
+PyObject* PythonWarningMessage(PyObject*, PyObject*);
+PyObject* PythonErrorMessage(PyObject*, PyObject*);
+PyObject* PythonCriticalMessage(PyObject*, PyObject*);
 
 #endif

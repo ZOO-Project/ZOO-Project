@@ -736,7 +736,6 @@ void exitAndCleanUp(registry* zooRegistry, maps** ppmsConf,
   char* errorCode=(char*)code;
   if(tmpMap!=NULL && strncasecmp(tmpMap->value,"json",4)==0)
     errorCode="NoSuchProcess";
-
   addToMap(errormap,"code", errorCode);
   addToMap(errormap,"locator", locator);
   funcError(&m,errormap);
@@ -744,13 +743,13 @@ void exitAndCleanUp(registry* zooRegistry, maps** ppmsConf,
     freeRegistry(&zooRegistry);
     free(zooRegistry);
   }
-  free (orig);
-  if (corig != NULL)
-    free (corig);
   xmlCleanupParser ();
   zooXmlCleanupNs ();
   freeMap(&errormap);
   free(errormap);
+  freeMaps(&m);
+  free(m);
+  *ppmsConf=NULL;
 }
 
 
@@ -758,14 +757,15 @@ void exitAndCleanUp(registry* zooRegistry, maps** ppmsConf,
  * Parse the ZOO-Service ZCFG to fill the service datastructure
  *
  * @param zooRegistry the populated registry
- * @param m the maps pointer to the content of main.cfg file
+ * @param pmsConf the maps pointer to the content of main.cfg file
  * @param spService the pointer to the service pointer to be filled
  * @param request_inputs the map pointer for http request inputs
  * @param pcDir the path where the ZCFG files are stored
  * @param cIdentifier the service identifier
  * @param funcError the error function to be used in case of error
  */
-int _fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
+int _fetchService(registry* zooRegistry,maps** pmsConf,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
+  maps* m=*pmsConf;
   char* tmps1=(char*)malloc(1024*sizeof(char));
   map *r_inputs=NULL;
   service* s1=*spService;
@@ -778,7 +778,6 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
     setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
   } 
   else {
-
     snprintf (tmps1, 1024, "%s/%s.zcfg", pcDir, cIdentifier);
 #ifdef DEBUG
     fprintf (stderr, "Trying to load %s\n", tmps1);
@@ -806,7 +805,10 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
   int metadb_id=_init_sql(m,"metadb");
   //FAILED CONNECTING DB
   if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
-    fprintf(stderr,"ERROR CONNECTING METADB\n");
+    int iTmp=iZooLogLevel;
+    iZooLogLevel=ZOO_DEBUG_LEVEL_ERROR;
+    ZOO_DEBUG("ERROR CONNECTING METADB");
+    iZooLogLevel=iTmp;
   }
   if(metadb_id>0){
     *spService=extractServiceFromDb(m,cIdentifier,0);
@@ -847,8 +849,7 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
         freeMap(&error);
         free(error);
         free(tmps1);
-        return 1; /*errorException (&m, _("Unable to allocate memory"),
-                    "InternalError", NULL);*/
+        return 1;
       }
 
     int saved_stdout = zDup (fileno (stdout));
@@ -888,7 +889,7 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
           }
           //setMapInMaps(conf,"lenv","status_code","404 Bad Request");
 #ifdef LOG_CONSOLE_ENABLED
-    logConsoleMessage(tmpMsg);
+          logConsoleMessage(tmpMsg);
 #endif
           funcError(&m,error);
 
@@ -917,14 +918,15 @@ int _fetchService(registry* zooRegistry,maps* m,service** spService, map* reques
  * Parse the ZOO-Service ZCFG to fill the service datastructure
  *
  * @param zooRegistry the populated registry
- * @param m the maps pointer to the content of main.cfg file
+ * @param pmsConf the maps pointer to the content of main.cfg file
  * @param spService the pointer to the service pointer to be filled
  * @param request_inputs the map pointer for http request inputs
  * @param pcDir the path where the ZCFG files are stored
  * @param cIdentifier the service identifier
  * @param funcError the error function to be used in case of error
  */
-int fetchService(registry* zooRegistry,maps* m,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
+int fetchService(registry* zooRegistry,maps** pmsConf,service** spService, map* request_inputs,char* pcDir,char* cIdentifier,void (funcError) (maps**, map*)){
+  maps* m=*pmsConf;
   map* pmHasSearchPath=getMapFromMaps(m,"main","search_path");
   // if services namespace is present in the map, conf_dir will
   // point to the namespace services path else it will point to
@@ -937,16 +939,16 @@ int fetchService(registry* zooRegistry,maps* m,service** spService, map* request
       setMapInMaps(m,"lenv","can_continue","false");
     else
       setMapInMaps(m,"lenv","can_continue","true");
-    res=_fetchService(zooRegistry, m, spService, request_inputs, conf_dir,
+    res=_fetchService(zooRegistry, &m, spService, request_inputs, conf_dir,
                       cIdentifier, funcError);
     if(res!=0 && strncmp(conf_dir,pcDir,strlen(pcDir))!=0){
       setMapInMaps(m,"lenv","can_continue","false");
-      res=_fetchService(zooRegistry, m, spService, request_inputs, pcDir,
+      res=_fetchService(zooRegistry, &m, spService, request_inputs, pcDir,
                         cIdentifier, funcError);
     }
   }else{
     setMapInMaps(m,"lenv","can_continue","false");
-    res=_fetchService(zooRegistry, m, spService, request_inputs, conf_dir,
+    res=_fetchService(zooRegistry, &m, spService, request_inputs, conf_dir,
                       cIdentifier, funcError);
   }
   return res;
@@ -1287,7 +1289,10 @@ int fetchServicesForDescription(registry* zooRegistry, maps** pmsConf, char* r_i
   int res=0;
   getServicesNamespacePath(m,pcDir,pcaConfDir,1024);
   if(pmHasSearchPath!=NULL && strncasecmp(pmHasSearchPath->value,"true",4)==0){
-    setMapInMaps(m,"lenv","can_continue","true");
+    if(strncmp(pcaConfDir,pcDir,strlen(pcDir))!=0)
+      setMapInMaps(m,"lenv","can_continue","true");
+    else
+      setMapInMaps(m,"lenv","can_continue","false");
     res=_fetchServicesForDescription(zooRegistry, &m, r_inputs, func, doc,
                                          n, pcaConfDir, request_inputs, funcError);
     if(res!=0 && strncmp(pcaConfDir,pcDir,strlen(pcDir))!=0){
@@ -2233,9 +2238,11 @@ int ensureFiltered(maps** pmsConf,const char* pcType){
        ((pmRun=getMapFromMaps(*pmsConf,"lenv",pcaName))==NULL) &&
        ((pmPath=getMapArray(pmsSection->content,"path",iCnt))!=NULL) &&
        ((pmName=getMapArray(pmsSection->content,"service",iCnt))!=NULL)){
-      if(fetchService(NULL,*pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
-        fprintf(stderr,"ERROR fetching the service %s %d \n",__FILE__,__LINE__);
-        free(pcaName);
+      if(fetchService(NULL,pmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
+        int iTmp=iZooLogLevel;
+        iZooLogLevel=ZOO_DEBUG_LEVEL_ERROR;
+        ZOO_DEBUG("ERROR fetching the service");
+        iZooLogLevel=iTmp;
         return 1;
       }
       maps* pmsInputs=NULL;
@@ -2943,8 +2950,6 @@ runRequest (map ** inputs)
           if(json_object_array_length(res4)==0){
             json_object_put(res4);
             json_object_put(res3);
-            freeMaps(&m);
-            free(m);
             free (REQUEST);
             freeMap (inputs);
             free (*inputs);
@@ -2958,8 +2963,8 @@ runRequest (map ** inputs)
             setMapInMaps(m,"headers","Content-Type","application/json;charset=UTF-8");
             localPrintExceptionJ(&m,error);
             // Cleanup memory
-            freeMaps(&m);
-            free(m);
+            /*freeMaps(&m);
+            free(m);*/
             free (REQUEST);
             freeMap (inputs);
             free (*inputs);
@@ -3023,8 +3028,6 @@ runRequest (map ** inputs)
             if(json_object_array_length(res4)==0){
               json_object_put(res4);
               json_object_put(res3);
-              freeMaps(&m);
-              free(m);
               free (REQUEST);
               freeMap (inputs);
               free (*inputs);
@@ -3040,8 +3043,8 @@ runRequest (map ** inputs)
               // Cleanup memory
               json_object_put(res4);
               json_object_put(res3);
-              freeMaps(&m);
-              free(m);
+              /*freeMaps(&m);
+              free(m);*/
               free (REQUEST);
               freeMap (inputs);
               free (*inputs);
@@ -3059,11 +3062,11 @@ runRequest (map ** inputs)
       zStrdup(strstr(pcaCgiQueryString,"/processes/")+11);
       char* pcaProcessId=(char*) malloc((1+strlen(pcaCgiQueryString)-19)*sizeof(char));
       snprintf(pcaProcessId,strlen(pcaCgiQueryString)-18,"%s",strstr(pcaCgiQueryString,"/processes/")+11);
-      if(fetchService(zooRegistry,m,&s1,request_inputs,conf_dir_,pcaProcessId,localPrintExceptionJ)!=0){
+      if(fetchService(zooRegistry,&m,&s1,request_inputs,conf_dir_,pcaProcessId,localPrintExceptionJ)!=0){
         // Cleanup memory
         register_signals(donothing);
-        freeMaps(&m);
-        free(m);
+        /*freeMaps(&m);
+        free(m);*/
         free(REQUEST);
         freeMap(inputs);
         free(*inputs);
@@ -3076,6 +3079,8 @@ runRequest (map ** inputs)
       }
       map* pmMutable=getMap(s1->content,"mutable");
       if(pmMutable!=NULL && strncmp(pmMutable->value,"1",1)==0){
+        maps* pmsTmp=getMaps(m,"renv");
+        dumpMap(pmsTmp->content);
         map* pmAccept=getMapFromMaps(m,"renv","HTTP_ACCEPT");
         if(pmAccept!=NULL){
           handlePackage(&m,pmAccept->value,pcaProcessId,ntmp);
@@ -3567,6 +3572,8 @@ runRequest (map ** inputs)
             localPrintExceptionJ(&m,pamError);
             fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
             json_tokener_free(tok);
+            freeMaps(&m);
+            free(m);
             return 1;
           }
           if (tok->char_offset < slen){
@@ -3613,13 +3620,12 @@ runRequest (map ** inputs)
 #endif
         if(cIdentifier!=NULL)
           addToMap(request_inputs,"Identifier",cIdentifier);
-        if(fetchService(zooRegistry,m,&s1,request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ)!=0){
+        if(fetchService(zooRegistry,&m,&s1,request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ)!=0){
           // Cleanup memory
           register_signals(donothing);
-          freeMaps(&m);
-          free(m);
           free(REQUEST);
           json_object_put(res);
+
           freeMap(inputs);
           free(*inputs);
           *inputs=NULL;
@@ -3928,9 +3934,12 @@ runRequest (map ** inputs)
             // And set response status to 409 Conflict
             map* pmError=NULL;
             if(bIsDeploy){
-              setMapInMaps(m,"headers","Status","409 Conflict");
-              map* pmError=createMap("code","DuplicatedProcess");
-              addToMap(pmError,"message",_("A service with the same identifier is already deployed"));
+              if(getMapFromMaps(m,"headers","Status")==NULL){
+                ZOO_DEBUG("Set status to 409 Conflict");
+                setMapInMaps(m,"headers","Status","409 Conflict");
+                pmError=createMap("code","DuplicatedProcess");
+                addToMap(pmError,"message",_("A service with the same identifier is already deployed"));
+              }
             }else{
               pmError=createMap("code","InternalError");
               addToMap(pmError,"message",_("An error occured when trying to undeploy your service."));
@@ -4050,8 +4059,6 @@ runRequest (map ** inputs)
                 if(json_object_array_length(res4)==0){
                   json_object_put(res4);
                   json_object_put(res3);
-                  freeMaps(&m);
-                  free(m);
                   free (REQUEST);
                   freeMap (inputs);
                   free (*inputs);
@@ -4127,9 +4134,12 @@ runRequest (map ** inputs)
       }//else error
       else
         if(strstr(pcaCgiQueryString,"/jobs")==NULL &&
-           (strstr(pcaCgiQueryString,"/processes/")+11)!=NULL){
+           strstr(pcaCgiQueryString,"/processes/")!=NULL &&
+           (strstr(pcaCgiQueryString,"/processes/")+11)!=NULL &&
+           strlen(strstr(pcaCgiQueryString,"/processes/")+11)>0){
           /* - /processes/{processId}/ */
           //DIR *dirp = opendir (ntmp);
+          ZOO_DEBUG(" /processes/{processId}");
           json_object *res3=json_object_new_object();
           char *orig = NULL;
           orig = zStrdup (strstr(pcaCgiQueryString,"/processes/")+11);
@@ -4146,8 +4156,6 @@ runRequest (map ** inputs)
             json_object_put(res3);
             free(orig);
             free(pcaCgiQueryString);
-            free(&m);
-            free(m);
             return 1;
           }
           json_object_put(res);
@@ -4157,6 +4165,7 @@ runRequest (map ** inputs)
         }else{
           char* cIdentifier=NULL;
           if(strstr(pcaCgiQueryString,"/processes/")!=NULL){
+            ZOO_DEBUG(" /processes/{processId}");
 
             int len0=strlen(strstr(pcaCgiQueryString,"/processes/")+11);
             int len1=strlen(pcaCgiQueryString)-strlen(strstr(pcaCgiQueryString,"/job"));
@@ -4167,9 +4176,24 @@ runRequest (map ** inputs)
               cIdentifier[cnt+1]=0;
               cnt++;
             }
-            fetchService(zooRegistry,m,&s1,
-                         request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ);
-
+            if(fetchService(zooRegistry,&m,&s1,
+                         request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ)!=0){
+            }
+          }else{
+            map* pmError=createMap("code","InternalError");
+            addToMap(pmError,"message",_("Something went wrong, no more information available."));
+            localPrintExceptionJ(&m,pmError);
+            freeMap(&pmError);
+            free(pmError);
+            freeMaps(&m);
+            free(m);
+            freeMaps (&request_input_real_format);
+            free (request_input_real_format);
+            freeMaps (&request_output_real_format);
+            free (request_output_real_format);
+            json_object_put(res);
+            free(pcaCgiQueryString);
+            return 1;
           }
         }
 
@@ -4179,6 +4203,7 @@ runRequest (map ** inputs)
         setMapInMaps(m,"lenv","json_response_object",pccResult);
     }
   jsonPrintOut:
+    //dumpMaps(m);
     ensureFiltered(&m,"out");
     map* pmHasPrinted=getMapFromMaps(m,"lenv","hasPrinted");
     if(res!=NULL && (pmHasPrinted==NULL || strncasecmp(pmHasPrinted->value,"false",5)==0)){
@@ -4546,7 +4571,7 @@ runRequest (map ** inputs)
                 xmlFreeDoc (doc);
                 closedir (dirp);
                 free (REQUEST);
-                free(&m);
+                freeMaps(&m);
                 free(m);
                 return 1;
               }
@@ -4645,7 +4670,7 @@ runRequest (map ** inputs)
 
     r_inputs = getMap (request_inputs, "Identifier");
 
-    if(fetchService(zooRegistry,m,&s1,request_inputs,conf_dir_,r_inputs->value,printExceptionReportResponse)!=0){
+    if(fetchService(zooRegistry,&m,&s1,request_inputs,conf_dir_,r_inputs->value,printExceptionReportResponse)!=0){
       // Service not found clear memory
       freeMaps(&m);
       free(m);
@@ -5387,7 +5412,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             // Reset metapath
             addToMap(request_inputs,"metapath","");
             setMapInMaps(lconf,"lenv","metapath","");
-            if(fetchService(zooRegistry,lconf,&s1,request_inputs,conf_dir,r_inputs->value,printExceptionReportResponse)!=0){
+            if(fetchService(zooRegistry,&lconf,&s1,request_inputs,conf_dir,r_inputs->value,printExceptionReportResponse)!=0){
               // Cleanup memory
               invokeBasicCallback(lconf,SERVICE_FAILED);
               freeMaps(&lconf);

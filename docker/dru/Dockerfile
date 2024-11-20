@@ -161,6 +161,7 @@ COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.zcfg /usr/lib/cgi
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/deploy_util.py /usr/lib/cgi-bin
+COPY zoo-project/zoo-services/utils/open-api/dru/ZooStub.py /usr/lib/cgi-bin
 
 RUN chmod -R 777 /usr/lib/cgi-bin
 
@@ -191,6 +192,8 @@ RUN mkdir /tmp/cookiecutter-templates && \
         sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/cd.py ; \
     fi && \
     chmod -R 777 /tmp/cookiecutter-templates && \
+    rm /var/log/apache2/error.log && \
+    ln -s /dev/stdout /var/log/apache2/error.log && \
     #apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS && \
     rm -rf /var/lib/apt/lists/*
 

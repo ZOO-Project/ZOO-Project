@@ -28,24 +28,12 @@ import shutil
 import json
 import sys
 from deploy_util import Services
-from loguru import logger
 
 try:
     import zoo
 except ImportError:
     print("Not running in zoo instance")
-
-    class ZooStub(object):
-        def __init__(self):
-            self.SERVICE_SUCCEEDED = 3
-            self.SERVICE_FAILED = 4
-
-        def update_status(self, conf, progress):
-            print(f"Status {progress}")
-
-        def _(self, message):
-            print(f"invoked _ with {message}")
-
+    from ZooStub import ZooStub
     conf = {}
     conf["lenv"] = {"message": ""}
     zoo = ZooStub()
@@ -70,20 +58,20 @@ class UndeployService(Services):
                 self.user=self.conf["auth_env"]["user"]
             else:
                 self.user="anonymous"
-            logger.info(f"Delete service {self.get_process_identifier} from database.")
+            zoo.info(f"Delete service {self.get_process_identifier} from database.")
             cur.execute("DELETE FROM collectiondb.ows_process WHERE identifier='%s' AND user_id=(select id from public.users where name=$q$%s$q$)" % (self.get_process_identifier(),self.user))
             conn.commit()
             conn.close()
 
         service_folder = os.path.join(self.zooservices_folder, self.service_identifier)
         if os.path.isdir(service_folder):
-            logger.info("Remove service directory.")
+            zoo.info("Remove service directory.")
             shutil.rmtree(service_folder)
 
         for i in [".zcfg",".json"]:
             service_configuration_file = f"{service_folder}"+i
             if os.path.exists(service_configuration_file):
-                logger.info("Delete service zcfg file.")
+                zoo.info("Delete service zcfg file.")
                 os.remove(service_configuration_file)
 
 def UndeployProcess(conf, inputs, outputs):
@@ -91,10 +79,10 @@ def UndeployProcess(conf, inputs, outputs):
         
         undeploy_process = UndeployService(conf, inputs, outputs)
         undeploy_process.remove_service()
-        logger.info(f"Service {undeploy_process.service_identifier} undeployed.")
+        zoo.info(f"Service {undeploy_process.service_identifier} undeployed.")
         return zoo.SERVICE_UNDEPLOYED
 
     except Exception as err:
         conf["lenv"]["message"]=str(err)
-        logger.error(f"Service cannot be undeployed for the following reason: {str(err)}")
+        zoo.error(f"Service cannot be undeployed for the following reason: {str(err)}")
         return zoo.SERVICE_FAILED

@@ -22,24 +22,22 @@
 #  DEALINGS IN THE SOFTWARE.
 ################################################################################
 import zoo
-from loguru import logger
 
 def securityIn(conf,inputs,outputs):
     import sys,os,shutil
     if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
-        logger.info("securityIn!")
+        zoo.info("securityIn!")
     try:
         if "has_jwt_service" in conf["servicesNamespace"] and conf["servicesNamespace"]["has_jwt_service"]=="true":
             import jwts.security_service as s
             res=s.securityIn(conf,inputs,outputs)
             s.addHeader(conf,"dru.securityIn")
             if res==zoo.SERVICE_FAILED:
-                logger.error("dru.securityIn has failed")
+                zoo.error("dru.securityIn has failed")
                 return res
     except Exception as e:
         if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
-            logger.error(f"No JWT service available: {str(e)}")
-            print("No JWT service available: "+str(e),file=sys.stderr)
+            zoo.error(f"No JWT service available: {str(e)}")
     rPath=conf["servicesNamespace"]["path"]+"/"
     for i in conf["renv"]:
         if i.count("SERVICES_NAMESPACE"):
@@ -54,18 +52,18 @@ def securityIn(conf,inputs,outputs):
             # we need to inform the ZOO-Kernel by setting the
             # require_conversion_to_json variabe to true in the lenv section.
             if conf["renv"]["HTTP_ACCEPT"]=="application/cwl+json":
-                print("Conversion to cwl+json should happen in securityOut",file=sys.stderr)
+                zoo.info("Conversion to cwl+json should happen in securityOut")
                 conf["renv"]["HTTP_ACCEPT_ORIGIN"]="application/cwl+json"
                 conf["renv"]["HTTP_ACCEPT"]="application/cwl"
                 conf["lenv"]["require_conversion_to_json"]="true"
     if not(os.path.isdir(rPath)):
-        logger.info(f"Creating directory {rPath}")
+        zoo.info(f"Creating directory {rPath}")
         os.mkdir(rPath)
         os.mkdir(rPath+"/temp") # Create temporary directory for run informations specific to a user
         if "required_files" in conf["servicesNamespace"]:
             rFiles=conf["servicesNamespace"]["required_files"].split(',')
             for i in range(len(rFiles)):
-                logger.info(f"Copy file {rFile[i]}")
+                zoo.info(f"Copy file {rFile[i]}")
                 shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
     return zoo.SERVICE_SUCCEEDED
 
@@ -77,10 +75,10 @@ def securityOut(conf,inputs,outputs):
             s.addHeader(conf,"dru.securityOut")
     except Exception as e:
         if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
-            print("No JWT service available: "+str(e),file=sys.stderr)
+            zoo.debug("No JWT service available: "+str(e))
     if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
-        print("securityOut!",file=sys.stderr)
-    if "require_conversion_to_json" in conf["lenv"] and conf["lenv"]["require_conversion_to_json"]=="true":
+        zoo.debug("securityOut!")
+    if "json_response_object" in conf["lenv"] and "require_conversion_to_json" in conf["lenv"] and conf["lenv"]["require_conversion_to_json"]=="true":
         import json
         import yaml
         if "require_conversion_to_ogcapppkg" in conf["lenv"]:
@@ -93,11 +91,8 @@ def securityOut(conf,inputs,outputs):
 
 def runDismiss(conf,inputs,outputs):
     import sys
-    print(conf["lenv"],file=sys.stderr)
-    print(outputs,file=sys.stderr)
     import json
     import os
-    from loguru import logger
     from zoo_calrissian_runner import ZooCalrissianRunner
     from pycalrissian.context import CalrissianContext
 
@@ -109,10 +104,10 @@ def runDismiss(conf,inputs,outputs):
                 storage_class=os.environ.get("STORAGE_CLASS", "openebs-nfs-test"),
                 volume_size="10Mi",
             )
-            logger.info(f"Dispose namespace {session.namespace}")
+            zoo.info(f"Dispose namespace {session.namespace}")
             session.dispose()
     except Exception as e:
-        logger.error(str(e))
+        zoo.error(str(e))
 
     return zoo.SERVICE_SUCCEEDED
 

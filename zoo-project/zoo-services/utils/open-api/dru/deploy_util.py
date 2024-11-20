@@ -1,7 +1,7 @@
 #
 # Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau
 #
-# Copyright 2023 Terradue. All rights reserved.
+# Copyright 2023-2024 Terradue. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -29,7 +29,16 @@ import yaml
 import re
 from cwl_utils.parser import load_document as load_cwl
 from cwl_utils.parser import *
-from loguru import logger
+
+try:
+    import zoo
+except ImportError:
+    print("Not running in zoo instance, using ZooStub object for testing")
+    from ZooStub import ZooStub
+    conf = {}
+    conf["lenv"] = {"message": ""}
+    zoo = ZooStub()
+    pass
 
 class Process:
     def __init__(
@@ -747,7 +756,7 @@ class Services(object):
             and "servicesNamespace" in self.conf
             and "path" in self.conf["servicesNamespace"]
         ):
-            logger.info(
+            zoo.info(
                 f"Using namespace {self.conf['zooServicesNamespace']['namespace']}"
             )
             zooservices_folder = os.path.join(
@@ -759,7 +768,7 @@ class Services(object):
             zooservices_folder = self._get_conf_value(
                 key="CONTEXT_DOCUMENT_ROOT", section="renv"
             )
-            logger.info(f"Using default namespace {zooservices_folder}")
+            zoo.info(f"Using default namespace {zooservices_folder}")
 
         # Checking if zoo can write in the servicePath
         self.check_write_permissions(zooservices_folder)
@@ -771,7 +780,7 @@ class Services(object):
         if key in self.conf[section].keys():
             return self.conf[section][key]
         else:
-            logger.error(f"{key} not set, check configuration")
+            zoo.error(f"{key} not set, check configuration")
             raise ValueError(f"{key} not set, check configuration")
 
     def _get_conf_value_if_exists(self, key, section="main"):
@@ -790,6 +799,6 @@ class Services(object):
 
         if not os.access(folder, os.W_OK):
             errorMsg = f"Cannot write to {folder}. Please check folder"
-            logger.error(errorMsg)
+            zoo.error(errorMsg)
             raise Exception(errorMsg)
 

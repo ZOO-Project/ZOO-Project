@@ -212,39 +212,49 @@ extern "C" {
 /**
  * The global debug level: DEBUG
  */
-#define ZOO_DEBUG_LEVEL_DEBUG 0
+#define ZOO_DEBUG_LEVEL_TRACE 0
+/**
+ * The global debug level: DEBUG
+ */
+#define ZOO_DEBUG_LEVEL_DEBUG 1
 /**
  * The global debug level: INFO
  */
-#define ZOO_DEBUG_LEVEL_INFO 1
+#define ZOO_DEBUG_LEVEL_INFO 2
 /**
  * The global debug level: WARN
  */
-#define ZOO_DEBUG_LEVEL_WARN 2
+#define ZOO_DEBUG_LEVEL_SUCCESS 3
+/**
+ * The global debug level: WARN
+ */
+#define ZOO_DEBUG_LEVEL_WARNING 4
 /**
  * The global debug level: ERROR
  */
-#define ZOO_DEBUG_LEVEL_ERROR 3
+#define ZOO_DEBUG_LEVEL_ERROR 5
 /**
  * The global debug level: FATAL
  */
-#define ZOO_DEBUG_LEVEL_FATAL 4
+#define ZOO_DEBUG_LEVEL_FATAL 6
 
 /**
  * The global log level names
  */
-static const char* pccLogLevel[5]={
+static const char* pccLogLevel[7]={
+  "TRACE",
   "DEBUG",
   "INFO",
-  "WARN",
+  "SUCCESS",
+  "WARNING",
   "ERROR",
-  "FATAL"
+  "CRITICAL"
 };
 
 /**
  * The global log level
  */
-static int iZooLogLevel=0;
+static int iZooLogLevel=1;
 
 /**
  * The ZOO_DEBUG macro print a message with date time, process id (UNIX pid), file name, function name, and line number
@@ -254,17 +264,19 @@ static int iZooLogLevel=0;
  * The values that should be included in this specific order in the
  * ZOO_LOG_FORMAT are:
  *
- *  * %s: the date time
- *  * %d: the milliseconds
- *  * %s: the log level
- *  * %s: the file name
- *  * %s: the function name
- *  * %d: the line number
- *  * %s: the message
+ *  * %d: the date time
+ *  * %l: the log level
+ *  * %p: the process identifier
+ *  * %f: the file name
+ *  * %u: the function name
+ *  * %i: the line number
+ *  * %m: the message
  *
  * @param message the message to print
  */
-#define ZOO_DEBUG(message) \
+#define ZOO_DEBUG(message) _ZOO_DEBUG(message,__FILE__,__func__,__LINE__)
+
+#define _ZOO_DEBUG(message,pccFile,pccFunc,iLine) \
   do { \
     const struct tm *pcsTm; \
     time_t ttNow; \
@@ -280,21 +292,106 @@ static int iZooLogLevel=0;
       sztv.tv_sec++; \
     } \
     stLen = strftime ( pcaLocalTime, TIME_SIZE, zLogDateFormat, pcsTm ); \
-    const char* pccExtra="   "; \
-    if(strlen(pccLogLevel[iZooLogLevel])==5) \
-      pccExtra="  "; \
-    fprintf(stderr,ZOO_LOG_FORMAT, \
-            pcaLocalTime, \
-            iMillisec, \
-            pccLogLevel[iZooLogLevel], \
-            pccExtra, \
-            getpid(), \
-            __FILE__, \
-            __func__, \
-            __LINE__, \
-            message); \
-    fflush(stderr); \
+    char pcExtra[8]={0}; \
+    int iLength=8; \
+    int iCounter=0; \
+    for(int iCnt=strlen(pccLogLevel[iZooLogLevel]);iCnt<8;iCnt++){\
+      pcExtra[iCounter]=' ';\
+      iCounter++; \
+    }\
+    char* pcaFormated=NULL; \
+    char acFormated[64]={0}; \
+    char* pvaArgs[7]; \
+    int aiTypes[7]={0,0,0,0,0,0,0}; \
+    int iInternalCnt=0; \
+    for(int iCnt=0;iCnt<strlen(ZOO_LOG_FORMAT);iCnt++){ \
+      if(ZOO_LOG_FORMAT[iCnt]=='%'){ \
+        int iLen=strlen(acFormated); \
+        acFormated[iLen]=ZOO_LOG_FORMAT[iCnt]; \
+        acFormated[iLen+1]='s'; \
+        const char* pcColor="\e[0;97m"; \
+        switch(iZooLogLevel){\
+          case ZOO_DEBUG_LEVEL_TRACE:\
+            pcColor="\e[1;37m";\
+            break;\
+          case ZOO_DEBUG_LEVEL_DEBUG:\
+            pcColor="\e[1;96m";\
+            break;\
+          case ZOO_DEBUG_LEVEL_INFO:\
+            pcColor="\e[1;97m";\
+            break;\
+          case ZOO_DEBUG_LEVEL_SUCCESS:\
+            pcColor="\e[1;92m";\
+            break;\
+          case ZOO_DEBUG_LEVEL_WARNING:\
+            pcColor="\e[1;93m";\
+            break;\
+          case ZOO_DEBUG_LEVEL_ERROR:\
+            pcColor="\e[1;91m";\
+            break;\
+          case ZOO_DEBUG_LEVEL_FATAL:\
+            pcColor="\e[41m\e[1;97m";\
+            break;\
+        } \
+        if(ZOO_LOG_FORMAT[iCnt+1]=='d'){ \
+          /* DATE Format: %s.%03d */ \
+          pvaArgs[iInternalCnt]=(char*) malloc(37*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"\e[0;32m%s.%03d\e[0m",pcaLocalTime,iMillisec); \
+        } \
+        else if(ZOO_LOG_FORMAT[iCnt+1]=='l'){ \
+          /* Debug level: %s %s */ \
+          pvaArgs[iInternalCnt]=(char*) malloc(36*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"%s%s%s\e[0m",pcColor,pccLogLevel[iZooLogLevel],pcExtra); \
+        } \
+        else if(ZOO_LOG_FORMAT[iCnt+1]=='p'){ \
+          /* Process identifier: %d */ \
+          pvaArgs[iInternalCnt]=(char*) malloc(10*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"%d",getpid()); \
+        } \
+        else if(ZOO_LOG_FORMAT[iCnt+1]=='f'){ \
+          /* File name: %s */ \
+          pvaArgs[iInternalCnt]=(char*) malloc((strlen(pccFile)+8)*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"\e[0;36m%s",pccFile); \
+        } \
+        else if(ZOO_LOG_FORMAT[iCnt+1]=='u'){ \
+          /* Function name: %s */ \
+          pvaArgs[iInternalCnt]=(char*) malloc((strlen(pccFunc)+1)*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"%s",pccFunc); \
+        } \
+        else if(ZOO_LOG_FORMAT[iCnt+1]=='i'){ \
+          /* Line number: %d */ \
+          pvaArgs[iInternalCnt]=(char*) malloc(14*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"%d\e[0m",iLine); \
+        } \
+        else if(ZOO_LOG_FORMAT[iCnt+1]=='m'){ \
+          /* Message: %s */ \
+          pvaArgs[iInternalCnt]=(char*) malloc((strlen(message)+25)*sizeof(char)); \
+          sprintf(pvaArgs[iInternalCnt],"%s%s\e[0m",pcColor,message); \
+        } \
+        iInternalCnt++; \
+        iCnt++; \
+      }else{ \
+          int iLen=0; \
+          if(acFormated[0]!=0)\
+            iLen=strlen(acFormated);\
+          acFormated[iLen]=ZOO_LOG_FORMAT[iCnt];\
+          acFormated[iLen+1]=0;\
+      } \
+    } \
+    fprintf(stderr,(char*)acFormated,\
+          pvaArgs[0], \
+          pvaArgs[1], \
+          pvaArgs[2], \
+          pvaArgs[3], \
+          pvaArgs[4], \
+          pvaArgs[5], \
+          pvaArgs[6] \
+    ); \
+    /* myPrint(acFormated,pvaArgs) */ \
     free(pcaLocalTime); \
+    for(int iCnt=6;iCnt>=0;iCnt--){ \
+      free(pvaArgs[iCnt]); \
+    } \
   } while(0)
 
 /**
@@ -511,21 +608,23 @@ static int iZooLogLevel=0;
     "InvalidQueryParameterValue",
     "DuplicatedProcess",
     "ImmutableProcess",
-    "UnsupportedMediaType"
+    "UnsupportedMediaType",
+    "WorkflowNotFound"
   };
 
   /**
    * WPS exception codes to OGC API - Processes ones
    * @see WPSExceptionCode, OAPIPExceptionCode
    */
-  static const int OAPIPCorrespondances[7][2] = {
+  static const int OAPIPCorrespondances[8][2] = {
     {9,0},
     {20,1},
     {21,2},
     {22,3},
     {23,4},
     {24,5},
-    {25,6}
+    {25,6},
+    {26,7}
   };
 
   /**
@@ -539,7 +638,8 @@ static int iZooLogLevel=0;
     "invalid-query-parameter-value",
     "duplicated-process",
     "immutable-process",
-    "unsupported-media-type"
+    "unsupported-media-type",
+    "workflow-not-found"
   };
 
   /**
