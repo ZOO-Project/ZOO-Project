@@ -1217,7 +1217,7 @@ extern "C" {
     if(getMapFromMaps(*pmsConf,"lenv","jsonStr")==NULL)
       setMapInMaps(*pmsConf,"lenv","jsonStr",jsonStr);
     if(pmHasprinted==NULL || strncasecmp(pmHasprinted->value,"false",5)==0){
-      printf(jsonStr);
+      printf("%s",jsonStr);
       if(*pmsConf!=NULL){
         setMapInMaps(*pmsConf,"lenv","hasPrinted","true");
         setMapInMaps(*pmsConf,"lenv","hasExceptionPrinted","true");
@@ -4178,7 +4178,7 @@ extern "C" {
     if(pmError!=NULL){
       printHeaders(conf);
       printf("\r\n");
-      printf(pmError->value);
+      printf("%s",pmError->value);
       printf("\n");
     }else{
       pmError=createMap("code","InternalError");

@@ -4715,6 +4715,10 @@ runRequest (map ** inputs)
       InternetCloseHandle (&hInternet);
       freeService (&s1);
       free (s1);
+#ifdef META_DB
+      close_sql(m,0);
+      end_sql();
+#endif
       return 0;
     }
     //InternetCloseHandle (&hInternet);
@@ -4821,7 +4825,11 @@ runRequest (map ** inputs)
           freeMaps (&request_output_real_format);
           free (request_output_real_format);
           freeMaps (&tmpmaps);
-          free (tmpmaps);
+          free (tmpmaps); 
+#ifdef META_DB
+          close_sql(m,0);
+          end_sql();
+#endif
           return -1;
         }
         map* testMap=getMapFromMaps(m,"main","memory");

@@ -167,23 +167,23 @@ void ensureDecodedBase64(maps **in){
     if(length!=NULL){
       int len=atoi(length->value);
       for(int i=1;i<len;i++){
-	tmp=getMapArray(cursor->content,"encoding",i);
-	if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
-	  char key[17];
-	  sprintf(key,"base64_value_%d",i);
-	  tmp=getMapArray(cursor->content,"value",i);
-	  readBase64(&tmp);
-	  addToMap(cursor->content,key,tmp->value);
-	  int size=0;
-	  char *s=zStrdup(tmp->value);
-	  free(tmp->value);
-	  tmp->value=base64d(s,strlen(s),&size);
-	  free(s);
-	  char sizes[1024];
-	  sprintf(sizes,"%d",size);
-	  sprintf(key,"size_%d",i);
-	  addToMap(cursor->content,key,sizes);
-	}
+        tmp=getMapArray(cursor->content,"encoding",i);
+        if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
+          char key[17];
+          sprintf(key,"base64_value_%d",i);
+          tmp=getMapArray(cursor->content,"value",i);
+          readBase64(&tmp);
+          addToMap(cursor->content,key,tmp->value);
+          int size=0;
+          char *s=zStrdup(tmp->value);
+          free(tmp->value);
+          tmp->value=base64d(s,strlen(s),&size);
+          free(s);
+          char sizes[1024];
+          sprintf(sizes,"%d",size);
+          sprintf(key,"size_%d",i);
+          addToMap(cursor->content,key,sizes);
+        }
       }
     }
     if(cursor->child!=NULL)
@@ -220,164 +220,153 @@ int kvpParseInputs(maps** pmsConf,service* s,map *request_inputs,maps** request_
     char *pToken;
     pToken = strtok (cursor_input, ";");
     char **inputs_as_text = (char **) malloc (100 * sizeof (char *));
-    if (inputs_as_text == NULL)
-      {
-	free(cursor_input);
-	return errorException (pmsConf, _("Unable to allocate memory"),
-			       "InternalError", NULL);
-      }
+    if (inputs_as_text == NULL){
+      free(cursor_input);
+      return errorException (pmsConf, _("Unable to allocate memory"),
+            "InternalError", NULL);
+    }
     int i = 0;
-    while (pToken != NULL)
-      {
-	inputs_as_text[i] =
-	  (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
-	if (inputs_as_text[i] == NULL)
-	  {
-	    free(cursor_input);
-	    return errorException (pmsConf, _("Unable to allocate memory"),
-				   "InternalError", NULL);
-	  }
-	snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
-	pToken = strtok (NULL, ";");
-	i++;
-      }
+    while (pToken != NULL){
+      inputs_as_text[i] =
+        (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
+      if (inputs_as_text[i] == NULL)
+        {
+          free(cursor_input);
+          return errorException (pmsConf, _("Unable to allocate memory"),
+              "InternalError", NULL);
+        }
+      snprintf (inputs_as_text[i], strlen (pToken) + 1, "%s", pToken);
+      pToken = strtok (NULL, ";");
+      i++;
+    }
 	
-    for (j = 0; j < i; j++)
-      {
-	char *tmp = zStrdup (inputs_as_text[j]);
-	free (inputs_as_text[j]);
-	char *tmpc;
-	tmpc = strtok (tmp, "@");
-	while (tmpc != NULL)
-	  {
-	    char *tmpv = strstr (tmpc, "=");
-	    char tmpn[256];
-	    memset (tmpn, 0, 256);
-	    if (tmpv != NULL)
-	      {
-		strncpy (tmpn, tmpc,
-			 (strlen (tmpc) - strlen (tmpv)) * sizeof (char));
-		tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
-	      }
-	    else
-	      {
-		strncpy (tmpn, tmpc, strlen (tmpc) * sizeof (char));
-		tmpn[strlen (tmpc)] = 0;
-	      }
-	    if (tmpmaps == NULL)
-	      {
-		tmpmaps = createMaps(tmpn);
-		if (tmpmaps == NULL)
-		  {
-		    free(cursor_input);
-		    return errorException (pmsConf,
-					   _("Unable to allocate memory"),
-					   "InternalError", NULL);
-		  }
-		if (tmpv != NULL)
-		  {
-		    char *tmpvf = url_decode (tmpv + 1);
-		    tmpmaps->content = createMap ("value", tmpvf);
-		    free (tmpvf);
-		  }
-		else
-		  tmpmaps->content = createMap ("value", "Reference");
-		tmpmaps->next = NULL;
-	      }
-	    tmpc = strtok (NULL, "@");
-	    while (tmpc != NULL)
-	      {
-		char *tmpv1 = strstr (tmpc, "=");
-		char tmpn1[1024];
-		memset (tmpn1, 0, 1024);
-		if (tmpv1 != NULL)
-		  {
-		    strncpy (tmpn1, tmpc, strlen (tmpc) - strlen (tmpv1));
-		    tmpn1[strlen (tmpc) - strlen (tmpv1)] = 0;
-		    addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
-		  }
-		else
-		  {
-		    strncpy (tmpn1, tmpc, strlen (tmpc));
-		    tmpn1[strlen (tmpc)] = 0;
-		    map *lmap = getLastMap (tmpmaps->content);
-		    char *tmpValue =
-		      (char *) malloc ((strlen (tmpv) + strlen (tmpc) + 1) *
-				       sizeof (char));
-		    sprintf (tmpValue, "%s@%s", tmpv + 1, tmpc);
-		    free (lmap->value);
-		    lmap->value = zStrdup (tmpValue);
-		    free (tmpValue);
-		    tmpc = strtok (NULL, "@");
-		    continue;
-		  }
-		if (strcmp (tmpn1, "xlink:href") != 0)
-		  addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
-		else if (tmpv1 != NULL)
-		  {
-		    char *tmpx2 = url_decode (tmpv1 + 1);
-		    if (strncasecmp (tmpx2, "http://", 7) != 0 &&
-			strncasecmp (tmpx2, "ftp://", 6) != 0 &&
-			strncasecmp (tmpx2, "https://", 8) != 0 &&
-			strncasecmp (tmpx2, "file://", 7) != 0)
-		      {
-			char emsg[1024];
-			sprintf (emsg,
-				 _
-				 ("Unable to find a valid protocol to download the remote file %s"),
-				 tmpv1 + 1);
-			free(cursor_input);
-			return errorException (pmsConf, emsg, "InternalError", NULL);
-		      }
-		    addToMap (tmpmaps->content, tmpn1, tmpx2);
-		    {
-		      if (loadRemoteFile
-			  (&*pmsConf, &tmpmaps->content, hInternet, tmpx2) < 0)
-			{
-			  free(cursor_input);
-			  return errorException (pmsConf, "Unable to fetch any resource", "InternalError", NULL);
-			}
-		      }
-		    free (tmpx2);
-		    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
-		    addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
-		  }
-		tmpc = strtok (NULL, "@");
-	      }
-	    if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
-	      if(getMap(tmpmaps->content,"to_load")==NULL){
-		addToMap(tmpmaps->content,"to_load","false");
-	      }
-	    if (*request_output == NULL)
-	      *request_output = dupMaps (&tmpmaps);
-	    else
-	      {
-		maps *testPresence =
-		  getMaps (*request_output, tmpmaps->name);
-		if (testPresence != NULL)
-		  {
-		    elements *elem =
-		      getElements (s->inputs, tmpmaps->name);
-		    if (elem != NULL)
-		      {
-			if (appendMapsToMaps
-			    (pmsConf, *request_output, tmpmaps,
-			     elem) < 0)
-			  {
-			    free(cursor_input);
-			    return errorException (pmsConf, "Unable to append maps", "InternalError", NULL);
-			  }
-		      }
-		  }
-		else
-		  addMapsToMaps (request_output, tmpmaps);
-	      }
-	    freeMaps (&tmpmaps);
-	    free (tmpmaps);
-	    tmpmaps = NULL;
-	    free (tmp);
-	  }
+    for (j = 0; j < i; j++){
+      char *tmp = zStrdup (inputs_as_text[j]);
+      free (inputs_as_text[j]);
+      char *tmpc;
+      tmpc = strtok (tmp, "@");
+      while (tmpc != NULL){
+        char *tmpv = strstr (tmpc, "=");
+        char tmpn[256];
+        memset (tmpn, 0, 256);
+        if (tmpv != NULL){
+          strncpy (tmpn, tmpc,
+            (strlen (tmpc) - strlen (tmpv)) * sizeof (char));
+          tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
+        }
+        else{
+          strncpy (tmpn, tmpc, strlen (tmpc) * sizeof (char));
+          tmpn[strlen (tmpc)] = 0;
+        }
+        if (tmpmaps == NULL){
+          tmpmaps = createMaps(tmpn);
+          if (tmpmaps == NULL){
+            free(cursor_input);
+            return errorException (pmsConf,
+                _("Unable to allocate memory"),
+                "InternalError", NULL);
+          }
+          if (tmpv != NULL){
+            char *tmpvf = url_decode (tmpv + 1);
+            tmpmaps->content = createMap ("value", tmpvf);
+            free (tmpvf);
+          }
+          else
+            tmpmaps->content = createMap ("value", "Reference");
+          tmpmaps->next = NULL;
+        }
+        tmpc = strtok (NULL, "@");
+        while (tmpc != NULL){
+          char *tmpv1 = strstr (tmpc, "=");
+          char tmpn1[1024];
+          memset (tmpn1, 0, 1024);
+          if (tmpv1 != NULL){
+            strncpy (tmpn1, tmpc, strlen (tmpc) - strlen (tmpv1));
+            tmpn1[strlen (tmpc) - strlen (tmpv1)] = 0;
+            if(strstr(tmpn1,"cache_file")==NULL)
+              addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
+          }
+          else{
+            strncpy (tmpn1, tmpc, strlen (tmpc));
+            tmpn1[strlen (tmpc)] = 0;
+            map *lmap = getLastMap (tmpmaps->content);
+            char *tmpValue =
+              (char *) malloc ((strlen (tmpv) + strlen (tmpc) + 1) *
+                  sizeof (char));
+            sprintf (tmpValue, "%s@%s", tmpv + 1, tmpc);
+            free (lmap->value);
+            lmap->value = zStrdup (tmpValue);
+            free (tmpValue);
+            tmpc = strtok (NULL, "@");
+            continue;
+          }
+          if (strcmp (tmpn1, "xlink:href") != 0 &&
+              strstr(tmpn1,"cache_file")==NULL)
+            addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
+          else if (tmpv1 != NULL){
+            char *tmpx2 = url_decode (tmpv1 + 1);
+            if (strncasecmp (tmpx2, "http://", 7) != 0 &&
+              strncasecmp (tmpx2, "ftp://", 6) != 0 &&
+              strncasecmp (tmpx2, "https://", 8) != 0 &&
+              strncasecmp (tmpx2, "file://", 7) != 0){
+              char emsg[1024];
+              sprintf (emsg,
+                _
+                ("Unable to find a valid protocol to download the remote file %s"),
+                tmpv1 + 1);
+              free (inputs_as_text);
+              free(cursor_input);
+              free(tmp);
+              free(tmpx2);
+              freeMaps(&tmpmaps);
+              free(tmpmaps);
+              return errorException (pmsConf, emsg, "InternalError", NULL);
+            }
+            if(strstr(tmpn1,"cache_file")==NULL)
+              addToMap (tmpmaps->content, tmpn1, tmpx2);
+            if (loadRemoteFile(&*pmsConf,
+                  &tmpmaps->content, hInternet, tmpx2) < 0){
+              free(cursor_input);
+              return errorException (pmsConf, "Unable to fetch any resource", "InternalError", NULL);
+            }
+            free (tmpx2);
+            addIntToMap (tmpmaps->content, "Order", hInternet->nb);
+            addToMap (tmpmaps->content, "Reference", tmpv1 + 1);
+          }
+          tmpc = strtok (NULL, "@");
+        }
+        if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
+          if(getMap(tmpmaps->content,"to_load")==NULL){
+            addToMap(tmpmaps->content,"to_load","false");
+          }
+        if (*request_output == NULL)
+          *request_output = dupMaps (&tmpmaps);
+        else{
+          maps *testPresence =
+            getMaps (*request_output, tmpmaps->name);
+          if (testPresence != NULL)
+            {
+              elements *elem =
+                getElements (s->inputs, tmpmaps->name);
+              if (elem != NULL) {
+                if (appendMapsToMaps
+                    (pmsConf, *request_output, tmpmaps,
+                    elem) < 0){
+                  free(cursor_input);
+                  return errorException (pmsConf, _("Unable to append maps"),\
+                     "InternalError", NULL);
+                }
+              }
+            }
+          else
+            addMapsToMaps (request_output, tmpmaps);
+        }
+        freeMaps (&tmpmaps);
+        free (tmpmaps);
+        tmpmaps = NULL;
+        free (tmp);
       }
+    }
     free (inputs_as_text);
     free(cursor_input);
   }
@@ -400,117 +389,89 @@ int kvpParseOutputs(maps** pmsConf,map *request_inputs,maps** request_output){
   r_inputs = getMap (request_inputs, "ResponseDocument");
   if (r_inputs == NULL)
     r_inputs = getMap (request_inputs, "RawDataOutput");
-
-  if (r_inputs != NULL)
-    {
-      char *cursor_output = zStrdup (r_inputs->value);
-      int j = 0;
-
-      /**
-       * Put each Output into the outputs_as_text array
-       */
-      char *pToken;
-      maps *tmp_output = NULL;
-      pToken = strtok (cursor_output, ";");
-      char **outputs_as_text = (char **) malloc (128 * sizeof (char *));
-      if (outputs_as_text == NULL)
-	{
-	  free(cursor_output);
-	  return errorException (pmsConf, _("Unable to allocate memory"),
-				 "InternalError", NULL);
-	}
-      int i = 0;
-      while (pToken != NULL)
-	{
-/* 	  outputs_as_text[i] =
-	    (char *) malloc ((strlen (pToken) + 1) * sizeof (char));
-	  if (outputs_as_text[i] == NULL)
-	    {
-	      free(cursor_output);
-	      return errorException (pmsConf, _("Unable to allocate memory"),
-				     "InternalError", NULL);
-	    }
-	  snprintf (outputs_as_text[i], strlen (pToken) + 1, "%s",
-		    pToken);
-	  pToken = strtok (NULL, ";");
-	  i++; */
-	  
-	  // knut : rewrite above fragment to enable parsing of mimetype;subtype strings in key-value pairs:
-	  
-	  char* _token = zStrdup(pToken); 
-	  pToken = strtok (NULL, ";");
-	  
-	  if (pToken != NULL && strncmp(pToken, "subtype=", 8) == 0)
-	  {
-		 size_t _length = strlen(pToken) + strlen(_token) + 2; 
-		 outputs_as_text[i] = (char *) malloc(_length * sizeof (char));
-		 snprintf(outputs_as_text[i], _length, "%s;%s", _token, pToken);
-		 pToken = strtok (NULL, ";");
-	  }
-	  else
-	  {
-		 outputs_as_text[i] = (char *) malloc((strlen(_token) + 1) * sizeof (char));
-		 snprintf (outputs_as_text[i], strlen(_token) + 1, "%s", _token);		 
-	  }
-	  free(_token);
-	  i++;	  
-	}
-      for (j = 0; j < i; j++)
-	{
-	  char *tmp = zStrdup (outputs_as_text[j]);
-	  free (outputs_as_text[j]);
-	  char *tmpc;
-	  tmpc = strtok (tmp, "@");
-	  int k = 0;
-	  while (tmpc != NULL)
-	    {
-	      if (k == 0)
-		{
-		  if (tmp_output == NULL)
-		    {
-		      tmp_output = createMaps(tmpc);
-		      if (tmp_output == NULL)
-			{
-			  free(cursor_output);
-			  return errorException (pmsConf,
-						 _
-						 ("Unable to allocate memory"),
-						 "InternalError", NULL);
-			}
-		    }
-		}
-	      else
-		{
-		  char *tmpv = strstr (tmpc, "=");
-		  char tmpn[256];
-		  memset (tmpn, 0, 256);
-		  strncpy (tmpn, tmpc,
-			   (strlen (tmpc) -
-			    strlen (tmpv)) * sizeof (char));
-		  tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
-		  if (tmp_output->content == NULL)
-		    {
-		      tmp_output->content = createMap (tmpn, tmpv + 1);
-		      tmp_output->content->next = NULL;
-		    }
-		  else
-		    addToMap (tmp_output->content, tmpn, tmpv + 1);
-		}
-	      k++;
-	      tmpc = strtok (NULL, "@");
-	    }
-	  if (*request_output == NULL)
-	    *request_output = dupMaps (&tmp_output);
-	  else
-	    addMapsToMaps (request_output, tmp_output);
-	  freeMaps (&tmp_output);
-	  free (tmp_output);
-	  tmp_output = NULL;
-	  free (tmp);
-	}
-      free (outputs_as_text);
+  if (r_inputs != NULL){
+    char *cursor_output = zStrdup (r_inputs->value);
+    int j = 0;
+    /**
+      * Put each Output into the outputs_as_text array
+      */
+    char *pToken;
+    maps *tmp_output = NULL;
+    pToken = strtok (cursor_output, ";");
+    char **outputs_as_text = (char **) malloc (128 * sizeof (char *));
+    if (outputs_as_text == NULL){
       free(cursor_output);
+      return errorException (pmsConf, _("Unable to allocate memory"),
+          "InternalError", NULL);
     }
+    int i = 0;
+    while (pToken != NULL){
+      // knut : rewrite above fragment to enable parsing of mimetype;subtype strings in key-value pairs:
+      char* _token = zStrdup(pToken); 
+      pToken = strtok (NULL, ";");
+      if (pToken != NULL && strncmp(pToken, "subtype=", 8) == 0){
+        size_t _length = strlen(pToken) + strlen(_token) + 2; 
+        outputs_as_text[i] = (char *) malloc(_length * sizeof (char));
+        snprintf(outputs_as_text[i], _length, "%s;%s", _token, pToken);
+        pToken = strtok (NULL, ";");
+      }
+      else{
+        outputs_as_text[i] = (char *) malloc((strlen(_token) + 1) * sizeof (char));
+        snprintf (outputs_as_text[i], strlen(_token) + 1, "%s", _token);
+      }
+      free(_token);
+      i++;
+    }
+    for (j = 0; j < i; j++){
+      char *tmp = zStrdup (outputs_as_text[j]);
+      free (outputs_as_text[j]);
+      char *tmpc;
+      tmpc = strtok (tmp, "@");
+      int k = 0;
+      while (tmpc != NULL){
+        if (k == 0) {
+          if (tmp_output == NULL) {
+            tmp_output = createMaps(tmpc);
+            if (tmp_output == NULL) {
+              free(cursor_output);
+              return errorException (pmsConf,
+                  _
+                  ("Unable to allocate memory"),
+                  "InternalError", NULL);
+            }
+          }
+        }
+        else{
+          char *tmpv = strstr (tmpc, "=");
+          char tmpn[256];
+          memset (tmpn, 0, 256);
+          strncpy (tmpn, tmpc,
+            (strlen (tmpc) -
+              strlen (tmpv)) * sizeof (char));
+          tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
+          if (tmp_output->content == NULL)
+            {
+              tmp_output->content = createMap (tmpn, tmpv + 1);
+              tmp_output->content->next = NULL;
+            }
+          else
+            addToMap (tmp_output->content, tmpn, tmpv + 1);
+        }
+        k++;
+        tmpc = strtok (NULL, "@");
+      }
+      if (*request_output == NULL)
+        *request_output = dupMaps (&tmp_output);
+      else
+        addMapsToMaps (request_output, tmp_output);
+      freeMaps (&tmp_output);
+      free (tmp_output);
+      tmp_output = NULL;
+      free (tmp);
+    }
+    free (outputs_as_text);
+    free(cursor_output);
+  }
   return 1;
 }
 
@@ -1670,22 +1631,20 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
 int parseRequest(maps** pmsConf,map** request_inputs,service* s,maps** inputs,maps** outputs,HINTERNET* hInternet){
   map *postRequest = NULL;
   postRequest = getMap (*request_inputs, "xrequest");
-  if (postRequest == NULLMAP)
-    {
-      if(kvpParseOutputs(pmsConf,*request_inputs,outputs)<0){
-	return -1;
-      }
-      if(kvpParseInputs(pmsConf,s,*request_inputs,inputs,hInternet)<0){
-	return -1;
-      }
+  if (postRequest == NULLMAP) {
+    if(kvpParseOutputs(pmsConf,*request_inputs,outputs)<0){
+      return -1;
     }
-  else
-    {
-      //Parse XML request
-      if(xmlParseRequest(pmsConf,postRequest->value,request_inputs,s,inputs,outputs,hInternet)<0){
-	return -1;
-      }
+    if(kvpParseInputs(pmsConf,s,*request_inputs,inputs,hInternet)<0){
+      return -1;
     }
+  }
+  else {
+    //Parse XML request
+    if(xmlParseRequest(pmsConf,postRequest->value,request_inputs,s,inputs,outputs,hInternet)<0){
+      return -1;
+    }
+  }
   return 1;
 }
 
