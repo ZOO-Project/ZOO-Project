@@ -107,6 +107,9 @@ The main.cfg ``[main]`` section parameters are explained bellow.
   section, then the response codes list given will be considered as
   valid response code when downloading input data (sample value:
   ``404,400``).
+* ``allowedPaths``: if this parameter is present, then the files using the
+  file:// protocol will be checked against the list of allowed paths. The 
+  list of allowed paths should be separated by a coma.
 
 .. warning:: 
   The ``libPath`` parameter is currently only recognized by services implemented

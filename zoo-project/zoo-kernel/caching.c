@@ -671,6 +671,31 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
 }
 
 /**
+ * Ensure that the file:// protocol is used only for allowed paths.
+ *
+ * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param pccPath the path to check
+ * @return true if the path is accessible, false otherwise
+ */
+bool isAllowedPath(maps* pmsConf,const char* pccPath){
+  map* pmAccessiblePaths=getMapFromMaps(pmsConf,"main","allowedPaths");
+  if(pmAccessiblePaths!=NULL){
+    char *pcTmp=zStrdup(pmAccessiblePaths->value);
+    char *pcToken, *pcSavePtr;
+    pcToken=strtok_r(pcTmp,",",&pcSavePtr);
+    while(pcToken!=NULL){
+      if(strstr(pccPath,pcToken)!=NULL){
+        free(pcTmp);
+        return true;
+      }
+      pcToken=strtok_r(NULL,",",&pcSavePtr);
+    }
+    free(pcTmp);
+  }
+  return false;
+}
+
+/**
  * Add a request in the download queue
  *
  * @param m the maps containing the settings of the main.cfg file

@@ -305,15 +305,23 @@ int kvpParseInputs(maps** pmsConf,service* s,map *request_inputs,maps** request_
             addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
           else if (tmpv1 != NULL){
             char *tmpx2 = url_decode (tmpv1 + 1);
-            if (strncasecmp (tmpx2, "http://", 7) != 0 &&
-              strncasecmp (tmpx2, "ftp://", 6) != 0 &&
-              strncasecmp (tmpx2, "https://", 8) != 0 &&
-              strncasecmp (tmpx2, "file://", 7) != 0){
+            bool bIsAllowedPath = isAllowedPath(*pmsConf,tmpx2);
+            if ((strncasecmp (tmpx2, "http://", 7) != 0 &&
+                strncasecmp (tmpx2, "ftp://", 6) != 0 &&
+                strncasecmp (tmpx2, "https://", 8) != 0 &&
+                strncasecmp (tmpx2, "file://", 7) != 0)
+                ||
+                (strncasecmp (tmpx2, "file://", 7) == 0 && !bIsAllowedPath)){
               char emsg[1024];
-              sprintf (emsg,
-                _
-                ("Unable to find a valid protocol to download the remote file %s"),
-                tmpv1 + 1);
+              if(strncasecmp (tmpx2, "file://", 7) == 0 && !bIsAllowedPath){
+                sprintf (emsg,
+                  _("Access to the provided file URL is not allowed %s"),
+                  tmpv1 + 1);
+              }else{
+                sprintf (emsg,
+                  _("Unable to find a valid protocol to download the remote file %s"),
+                  tmpv1 + 1);
+              }
               free (inputs_as_text);
               free(cursor_input);
               free(tmp);
