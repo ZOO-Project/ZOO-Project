@@ -11,6 +11,6 @@ The ZOO-Project developer team will release patches for security vulnerabilities
 
 | Version | Supported          |
 | ------- | ------------------ |
-| latest release   | :white_check_mark: |
+| future releases (main branch)   | :white_check_mark: |
 | previous releases   | :x:                |
 
