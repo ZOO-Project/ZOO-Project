@@ -71,10 +71,10 @@ profiles:
               persistence.procServicesAccessMode: ReadWriteMany
 
               # Kubernetes (arm64) from Docker Desktop specific settings
-              workflow.storageClass: hostpath
-              persistence.storageClass: hostpath
-              persistence.procServicesStorageClass: hostpath
-              persistence.tmpStorageClass: hostpath
+              #workflow.storageClass: hostpath
+              #persistence.storageClass: hostpath
+              #persistence.procServicesStorageClass: hostpath
+              #persistence.tmpStorageClass: hostpath
 
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
