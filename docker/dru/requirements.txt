@@ -5,6 +5,7 @@
  kubernetes
  coverage
  git+https://github.com/EOEPCA/zoo-calrissian-runner.git@feature/access-log-status-failed
+ git+https://github.com/EOEPCA/zoo-argowf-runner.git@develop
  cheetah3
  psycopg2-binary
  pyyaml
@@ -16,3 +17,6 @@
  click-config-file
  cwl-upgrader==1.2.11
  cwl-utils==0.14
+ hera
+ poetry
+ httpx

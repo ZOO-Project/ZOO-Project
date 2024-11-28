@@ -106,7 +106,6 @@ int getVersionId(const char* version){
  *  resource once used.
  */
 char *get_uuid(){
-  char *pcaUuid=(char*)malloc(37*sizeof(char));
 #ifdef WIN32
   UUID uuid;
   UuidCreate(&uuid);
@@ -118,7 +117,9 @@ char *get_uuid(){
   char acRes[128];
   uuid_unparse(uuid,acRes);
 #endif
-  sprintf(pcaUuid,"%s",acRes);
+  /*char *pcaUuid=(char*)malloc((strlen(acRes)+1)*sizeof(char));
+  sprintf(pcaUuid,"%s",acRes);*/
+  char *pcaUuid=zStrdup(acRes);
 #ifdef WIN32
   RpcStringFree(&acRes);
 #endif
@@ -392,7 +393,7 @@ void readGeneratedFile(maps* m,map* content,char* filename){
       setMapInMaps(m,"lenv","message","Unable to allocate the memory required to read the produced file.");
       return;
     }
-    fread(tmpMap1->value,1,f_status.st_size,file);
+    ssize_t sLength = fread(tmpMap1->value,1,f_status.st_size,file);
     tmpMap1->value[f_status.st_size]=0;
   }
   fclose(file);
@@ -1219,7 +1220,7 @@ void runDismiss(maps* pmsConf,char* pid){
       flen = ftell (f0);
       fseek (f0, 0, SEEK_SET);
       fcontent = (char *) malloc ((flen + 1) * sizeof (char));
-      fread(fcontent,flen,1,f0);
+      ssize_t sLength = fread(fcontent,flen,1,f0);
       fcontent[flen]=0;
       fclose(f0);
 #ifndef WIN32

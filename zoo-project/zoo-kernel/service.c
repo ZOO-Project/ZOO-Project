@@ -871,7 +871,7 @@ void loadMapBinary(map** ppmOut,map* pmIn,int iPos){
   map *pmOut=*ppmOut;
   map *pmTmpVin,*pmTmpVout;
   if(pmSize!=NULL && iPos>0){
-    char tmp[11];
+    char tmp[17];
     sprintf(tmp,"size_%d",iPos);
     pmSize=getMap(pmIn,tmp);
     sprintf(tmp,"value_%d",iPos);
@@ -1049,7 +1049,7 @@ void setMapArray(map* pmMap,const char* pccKey,int iIndex,const char* pccValue){
     map* pmLen=getMap(pmMap,"length");
     sprintf(acTmp,"%s_%d",pccKey,iIndex);
     if((pmLen!=NULL && atoi(pmLen->value)<iIndex+1) || pmLen==NULL){
-      char acTmp0[5];
+      char acTmp0[11];
       sprintf(acTmp0,"%d",iIndex+1);
       addToMap(pmMap,"length",acTmp0);
     }
@@ -1121,7 +1121,7 @@ map* getMapType(map* pmMap){
 int addMapsArrayToMaps(maps** pmsOut,maps* pmsIn,char* pcType){
   maps* pmsTmp=pmsIn;
   maps* pmsCursor=getMaps(*pmsOut,pmsTmp->name);
-  char acLen[10];
+  char acLen[12];
   int iLen=1;
   char *acV[14]={
     (char*)"size",

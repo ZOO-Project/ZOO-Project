@@ -178,7 +178,7 @@ extern "C" {
       map* pmLocation=getMapArray(arg->input,"location",iCnt);
 	    if(pmLocation==NULL)
 	      continue;
-      hInternet=InternetOpen("ZooWPSClient\0",
+      hInternet=InternetOpen((char*)"ZooWPSClient\0",
 			   INTERNET_OPEN_TYPE_PRECONFIG,
 			   NULL,NULL, 0);
       if(!CHECK_INET_HANDLE(hInternet)){
@@ -278,7 +278,7 @@ extern "C" {
               setMapArray(arg->input,"value",iCnt,tmp);
             }
             char* tmpStr=(char*)malloc((1024)*sizeof(char));
-            sprintf(tmpStr,"%d",strlen(tmp));
+            sprintf(tmpStr,"%ld",strlen(tmp));
             setMapArray(arg->input,"size",iCnt,tmpStr);
             free(tmpStr);
           }
@@ -329,7 +329,7 @@ extern "C" {
                 setMapArray(arg->input,"value",iCnt,tmp);
               }
               char* tmpStr=(char*)malloc((1024)*sizeof(char));
-              sprintf(tmpStr,"%d",strlen(tmp));
+              sprintf(tmpStr,"%ld",strlen(tmp));
               setMapArray(arg->input,"size",iCnt,tmpStr);
               free(tmpStr);
             }
@@ -363,8 +363,8 @@ extern "C" {
         }else{
           setMapArray(arg->input,"value",iCnt,tmp);
         }
-        char* tmpStr=(char*)malloc((1024)*sizeof(char));
-        sprintf(tmpStr,"%d",hInternet.ihandle[0].nDataLen);
+        char* tmpStr=(char*)malloc((12)*sizeof(char));
+        sprintf(tmpStr,"%ld",hInternet.ihandle[0].nDataLen);
         setMapArray(arg->input,"size",iCnt,tmpStr);
         free(tmpStr);
       }
@@ -508,7 +508,7 @@ extern "C" {
     char *tmp1;
     map *tmpStatus;
     map* pmTmp=getMapFromMaps(arg->conf,"lenv","status");
-    hInternet=InternetOpen("ZooWPSClient\0",
+    hInternet=InternetOpen((char*)"ZooWPSClient\0",
 			   INTERNET_OPEN_TYPE_PRECONFIG,
 			   NULL,NULL, 0);
     if(!CHECK_INET_HANDLE(hInternet)){
@@ -892,7 +892,7 @@ extern "C" {
 		break;
 	      char *tmpParam=(char*)malloc((strlen(curs->name)+11)*sizeof(char));
 	      char *tmpParam1=(char*)malloc((strlen(filePath->value)+11)*sizeof(char));
-	      char tmpParam2[16];
+	      char tmpParam2[24];
 	      sprintf(tmpParam2,"string(\"%d\")",ii);
 	      setMapArray(curs->content,"href",ii,filePath->value);
 	      setMapArray(curs->content,"xlink:href",ii,filePath->value);

@@ -1199,16 +1199,16 @@ int tryGdal(maps* conf,maps* output,mapObj* m){
     char tmpN[21];
     sprintf(tmpN,"Band%d",iBand+1);
     if (CPLGetLastErrorType() == CE_None){
-      char tmpMm[100],tmpMp[100],tmpNb[3];
+      char tmpMm[100],tmpMp[100],tmpNb[12];
       sprintf(tmpMm,"%.3f %.3f",pdfMin,pdfMax);
       if(pdfMin!=pdfMax && (styleMap==NULL || strstr(styleMap->value,"SCALE_")==NULL)){
         sprintf(tmpNb,"%d",iBand+1);
         if(styleMap==NULL || strstr(styleMap->value,"BANDS=")==NULL || strstr(strstr(styleMap->value,"BANDS="),tmpNb)!=NULL){ 
-	  if(pdfMean-(2*pdfStdDev)<0)
-	    sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,0.0,pdfMean+(2*pdfStdDev));
-	  else
-	    sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
-	  msLayerAddProcessing(myLayer,tmpMp);
+          if(pdfMean-(2*pdfStdDev)<0)
+            sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,0.0,pdfMean+(2*pdfStdDev));
+          else
+            sprintf(tmpMp,"SCALE_%d=%.3f,%.3f",iBand+1,pdfMean-(2*pdfStdDev),pdfMean+(2*pdfStdDev));
+          msLayerAddProcessing(myLayer,tmpMp);
         }
       }
       char tmpI[31];      
@@ -1355,10 +1355,14 @@ void outputMapfile(maps* conf,maps* outputs){
     map* sizeMap=getMapArray(outputs->content,"size",imyIndex);
     map* vData=getMapArray(outputs->content,"value",imyIndex);
     if(sizeMap!=NULL){
-      zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char));
+      if(zWrite(f,vData->value,atoi(sizeMap->value)*sizeof(char))<0){
+        setMapInMaps(conf,"lenv","message",_("Unable to write the file on disk!"));
+      }
     }
     else{
-      zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char));
+      if(zWrite(f,vData->value,(strlen(vData->value)+1)*sizeof(char))<0){
+        setMapInMaps(conf,"lenv","message",_("Unable to write the file on disk!"));
+      }
     }
     close(f);
     setMapArray(outputs->content,"storage",imyIndex,pszDataSource);

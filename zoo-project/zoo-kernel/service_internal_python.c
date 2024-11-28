@@ -39,7 +39,7 @@ struct module_state {
 #define PyString_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyString_Check PyUnicode_Check
 #define	PyString_AsString _PyUnicode_AsString
-#define	PyString_Size PyUnicode_GetSize
+#define	PyString_Size PyUnicode_GET_LENGTH
 #else
 #define GETSTATE(m) (&_state)
 static struct module_state _state;

@@ -1,2 +1,6 @@
-/Dockerfile
-/docker-compose.yml
+Dockerfile*
+docker-compose.yml
+*.yaml
+*.md
+debian/*
+.github/*

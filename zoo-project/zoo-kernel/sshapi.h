@@ -72,8 +72,7 @@
 extern "C" {
 #endif
 
-#define MAX_PARALLEL_SSH_CON 128  
-
+#define MAX_PARALLEL_SSH_CON 128
   static int nb_sessions;
 
   typedef struct {

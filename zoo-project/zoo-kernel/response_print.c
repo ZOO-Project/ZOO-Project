@@ -59,7 +59,7 @@ int printAFile(maps* pmsConf, char* pcFilePath, zStatStruct zssStatus,void (func
     return -1;
   }
   char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
-  fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+  ssize_t sLength = fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
   pcaFcontent[zssStatus.st_size]=0;
   printHeaders(pmsConf);
   printf("Status: 200 OK \r\n\r\n");
@@ -1942,53 +1942,54 @@ void printProcessResponse(maps* pmsConf,map* request, int pid,service* serv,cons
       map* cwdMap=getMapFromMaps(pmsConf,"main","servicePath");
       struct stat myFileInfo;
       int statRes;
-      char file_path[1024];
+      char* pcaFilePath;
       if(cwdMap!=NULL){
-	sprintf(file_path,"%s/GetStatus.zcfg",cwdMap->value);
+        pcaFilePath=(char*)malloc((strlen(cwdMap->value)+17)*sizeof(char));
+        sprintf(pcaFilePath,"%s/GetStatus.zcfg",cwdMap->value);
       }else{
-	char ntmp[1024];
-#ifndef WIN32
-	getcwd(ntmp,1024);
-#else
-	_getcwd(ntmp,1024);
-#endif
-	sprintf(file_path,"%s/GetStatus.zcfg",ntmp);
+        char ntmp[1024];
+        if(zGetCwd(ntmp,1024)==NULL){
+          ZOO_DEBUG(_("Unable to get the current working directory."));
+          return ;
+        }
+        pcaFilePath=(char*)malloc((strlen(ntmp)+17)*sizeof(char));
+        sprintf(pcaFilePath,"%s/GetStatus.zcfg",ntmp);
       }
-      statRes=stat(file_path,&myFileInfo);
+      statRes=stat(pcaFilePath,&myFileInfo);
       if(statRes==0){
-	char currentSid[128];
-	map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
-	map *tmp_lenv=NULL;
-	tmp_lenv=getMapFromMaps(pmsConf,"lenv","usid");
-	if(tmp_lenv==NULL)
-	  sprintf(currentSid,"%i",pid);
-	else
-	  sprintf(currentSid,"%s",tmp_lenv->value);
-	if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
-	  sprintf(url,"%s?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
-	}else{
-	  if(strlen(tmpm->value)>0)
-	    if(strcasecmp(tmpm->value,"true")!=0)
-	      sprintf(url,"%s/%s/GetStatus/%s",tmpm1->value,tmpm->value,currentSid);
-	    else
-	      sprintf(url,"%s/GetStatus/%s",tmpm1->value,currentSid);
-	  else
-	    sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
-	}
+        char currentSid[128];
+        map* tmpm=getMap(tmp_maps->content,"rewriteUrl");
+        map *tmp_lenv=NULL;
+        tmp_lenv=getMapFromMaps(pmsConf,"lenv","usid");
+        if(tmp_lenv==NULL)
+          sprintf(currentSid,"%i",pid);
+        else
+          sprintf(currentSid,"%s",tmp_lenv->value);
+        if(tmpm==NULL || strcasecmp(tmpm->value,"false")==0){
+          sprintf(url,"%s?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
+        }else{
+          if(strlen(tmpm->value)>0)
+            if(strcasecmp(tmpm->value,"true")!=0)
+              sprintf(url,"%s/%s/GetStatus/%s",tmpm1->value,tmpm->value,currentSid);
+            else
+              sprintf(url,"%s/GetStatus/%s",tmpm1->value,currentSid);
+          else
+            sprintf(url,"%s/?request=Execute&service=WPS&version=1.0.0&Identifier=GetStatus&DataInputs=sid=%s&RawDataOutput=Result",tmpm1->value,currentSid);
+        }
       }else{
-	int lpid;
-	map* tmpm2=getMapFromMaps(pmsConf,"lenv","usid");
-	map* tmpm3=getMap(tmp_maps->content,"tmpUrl");
-	if(tmpm1!=NULL && tmpm3!=NULL){
-	  if( strncasecmp( tmpm3->value, "http://", 7) == 0 ||
-	      strncasecmp( tmpm3->value, "https://", 8 ) == 0 ){
-	    sprintf(url,"%s/%s_%s.xml",tmpm3->value,service,tmpm2->value);
-	  }else
-	    sprintf(url,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
-	}
+        int lpid;
+        map* tmpm2=getMapFromMaps(pmsConf,"lenv","usid");
+        map* tmpm3=getMap(tmp_maps->content,"tmpUrl");
+        if(tmpm1!=NULL && tmpm3!=NULL){
+          if( strncasecmp( tmpm3->value, "http://", 7) == 0 ||
+              strncasecmp( tmpm3->value, "https://", 8 ) == 0 ){
+            sprintf(url,"%s/%s_%s.xml",tmpm3->value,service,tmpm2->value);
+          }else
+            sprintf(url,"%s/%s_%s.xml",tmpm1->value,service,tmpm2->value);
+        }
       }
       if(tmpm1!=NULL){
-	sprintf(tmp,"%s",tmpm1->value);
+      	sprintf(tmp,"%s",tmpm1->value);
       }
       int lpid;
       map* tmpm2=getMapFromMaps(pmsConf,"lenv","usid");

@@ -174,7 +174,8 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
   if(cwdMap!=NULL)
     sprintf(ntmp,"%s",cwdMap->value);
   else
-    getcwd(ntmp,1024);
+    if(zGetCwd(ntmp,1024)==NULL)
+      return -1;
 
   /**
    * Load the first part of the ZOO-API
@@ -264,11 +265,13 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
     char tmp1[1024];
     if(strlen(dbg)==0)
       sprintf(dbg,"No result was found after the function call");
-    sprintf(tmp1,"Unable to run %s from the JavaScript file %s : \n %s",s->name,filename,dbg);
+    char* pcaTmp=(char*)malloc((strlen(dbg)+strlen(s->name)+strlen(filename)+52)*sizeof(char));
+    sprintf(pcaTmp,"Unable to run %s from the JavaScript file %s : \n %s",s->name,filename,dbg);
 #ifdef JS_DEBUG
-    fprintf(stderr,"%s",tmp1);
+    fprintf(stderr,"%s",pcaTmp);
 #endif
     errorException(main_conf,tmp1,"NoApplicableCode",NULL);
+    free(pcaTmp);
     free(filename);
     JS_MaybeGC(cx);
     JS_DestroyContext(cx);
@@ -299,17 +302,17 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
       jsval tmp2;
       JSBool hasElement=JS_GetElement(cx,d,1,&tmp2);
       if(hasElement==JS_TRUE){
-	freeMaps(outputs);
-	free(*outputs);
-	*outputs=mapsFromJSObject(cx,tmp2);
+        freeMaps(outputs);
+        free(*outputs);
+        *outputs=mapsFromJSObject(cx,tmp2);
       }
     }else{
       jsval tmp3;
       JSBool hasConf=JS_GetElement(cx,d,1,&tmp3);
       if(hasConf==JS_TRUE){
-	freeMaps(main_conf);
-	free(*main_conf);
-	*main_conf=mapsFromJSObject(cx,tmp3);
+        freeMaps(main_conf);
+        free(*main_conf);
+        *main_conf=mapsFromJSObject(cx,tmp3);
       }
     }
   }
@@ -325,14 +328,15 @@ int zoo_js_support(maps** main_conf,map* request,service* s,maps **inputs,maps *
     if(hasResult)
       res=JSVAL_TO_INT(tmp1);
     else{
-      char tmp1[1024];
       if(strlen(dbg)==0)
-	sprintf(dbg,"No result was found in the returned object.");
-      sprintf(tmp1,"Unable to run %s from the JavaScript file %s : \n %s",s->name,filename,dbg);
+        sprintf(dbg,"No result was found in the returned object.");
+      char* pcaTmp=(char*)malloc((strlen(dbg)+strlen(s->name)+strlen(filename)+52)*sizeof(char));
+      sprintf(pcaTmp,"Unable to run %s from the JavaScript file %s : \n %s",s->name,filename,dbg);
 #ifdef JS_DEBUG
-      fprintf(stderr,"%s",tmp1);
+      fprintf(stderr,"%s",pcaTmp);
 #endif
-      errorException(main_conf,tmp1,"NoApplicableCode",NULL);
+      errorException(main_conf,pcaTmp,"NoApplicableCode",NULL);
+      free(pcaTmp);
       free(filename);
       JS_MaybeGC(cx);
       JS_DestroyContext(cx);

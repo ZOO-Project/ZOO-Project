@@ -249,7 +249,7 @@ extern "C" {
         int s=zStat(pmCurrent->value, &f_status);
         if(f_status.st_size>0){
           char* pcaTmp=(char*)malloc((f_status.st_size+1)*sizeof(char));
-          fread(pcaTmp,1,f_status.st_size,pfData);
+          size_t sLength = fread(pcaTmp,1,f_status.st_size,pfData);
           pcaTmp[f_status.st_size]=0;
           fclose(pfData);
           json_object_object_add(output,"description",json_object_new_string(_(pcaTmp)));
@@ -741,9 +741,9 @@ extern "C" {
           hasElement++;
         }else{
           if(iCnt1==1){
-            char* pcaPrefix=(char*)malloc(10*sizeof(char));
+            char* pcaPrefix=(char*)malloc(17*sizeof(char));
             sprintf(pcaPrefix,"role_%d",iCnt);
-            char* pcaLength=(char*)malloc(18*sizeof(char));
+            char* pcaLength=(char*)malloc(24*sizeof(char));
             sprintf(pcaLength,"%s_length",pcaPrefix);
             map* pmLength=getMap(cmeta,pcaLength);
             if(pmLength!=NULL){
@@ -934,7 +934,7 @@ extern "C" {
       maps* tmpMaps=getMaps(m,"lenv");
       char* tmpName=NULL;
       for(i=0;i<atoi(tmpMap0->value);i++){
-        char* key=(char*)malloc(15*sizeof(char));
+        char* key=(char*)malloc(21*sizeof(char));
         sprintf(key,"sprefix_%d",i);
         map* tmpMap1=getMap(tmpMaps->content,key);
         free(key);
@@ -1322,11 +1322,11 @@ extern "C" {
       map* tmpMap=getMapFromMaps(conf,"http_requests","length");
       int len=atoi(tmpMap->value);
       createdStr=1;
-      tmpStr=(char*) malloc((12)*sizeof(char));
+      tmpStr=(char*) malloc((16)*sizeof(char));
       sprintf(tmpStr,"%d",len+1);
       setMapInMaps(conf,"http_requests","length",tmpStr);
       sprintf(tmpStr,"url_%d",len);
-      tmpStr1=(char*) malloc((14)*sizeof(char));
+      tmpStr1=(char*) malloc((19)*sizeof(char));
       sprintf(tmpStr1,"input_%d",len);
     }
     setMapInMaps(conf,"http_requests",tmpStr,pccValue);
@@ -1388,7 +1388,7 @@ extern "C" {
         addToMap(output->content,"require_job_handler", "true");
         setMapArray(pmsRequests->content,"require_job_handler",atoi(pmTmp->value)-1, "true");
         maps* pmsJobHandlers=getMaps(conf,"jobs_handlers");
-        char* pcaTmp=(char*)malloc((11)*sizeof(char));
+        char* pcaTmp=(char*)malloc((12)*sizeof(char));
         sprintf(pcaTmp,"%d",atoi(pmTmp->value)-1);
         if(pmsJobHandlers==NULL){
           maps* tmpMaps=createMaps("jobs_handlers");
@@ -2124,7 +2124,7 @@ extern "C" {
     json_object* resFinal=json_object_new_object();
     json_object_object_add(resFinal,"jobs",res);
     setMapInMaps(conf,"lenv","path","jobs");
-    char pcCnt[10];
+    char pcCnt[12];
     sprintf(pcCnt,"%d",cnt);
     setMapInMaps(conf,"lenv","serviceCnt",pcCnt);
     createNextLinks(conf,resFinal);
@@ -2521,7 +2521,7 @@ extern "C" {
                     int s=zStat(gfile->value, &f_status);
                     if(f_status.st_size>0){
                       char* pcaTmp=(char*)malloc((f_status.st_size+1)*sizeof(char));
-                      fread(pcaTmp,1,f_status.st_size,pfData);
+                      size_t sLength = fread(pcaTmp,1,f_status.st_size,pfData);
                       pcaTmp[f_status.st_size]=0;
                       fclose(pfData);
                       outputSingleJsonComplexRes(conf,resu,res1,res3,pcaTmp,f_status.st_size);
@@ -3039,7 +3039,7 @@ extern "C" {
       FILE* cdat=fopen(filePath,"rb");
       if(cdat!=NULL){
         char* pcaMyString=(char*)malloc((zsFStatus.st_size+1)*sizeof(char));
-        fread(pcaMyString,1,zsFStatus.st_size,cdat);
+        size_t sLength = fread(pcaMyString,1,zsFStatus.st_size,cdat);
         pcaMyString[zsFStatus.st_size]=0;
         fclose(cdat);
         pajObj=parseJson(conf,pcaMyString);
@@ -3288,9 +3288,10 @@ extern "C" {
         free(tmpStr1);
         return 0;
       }else{
-	  
+        return 1;
       }
     }
+    return 1;
   }
 
   /**
@@ -3859,7 +3860,7 @@ extern "C" {
                         json_object_object_add(cc0,"schema",cc);
                         // Add examples from here
                         char* pcaKey1=getMapArrayKey(tmpMaps->content,"examples",i);
-                        char actmp0[10];
+                        char actmp0[12];
                         sprintf(actmp0,"%d",iCounter);
                         map* pmExample=getMapArray(tmpMaps->content,pcaKey1,iCounter);
                         if(pmExample==NULL){
@@ -3885,7 +3886,7 @@ extern "C" {
                                 pcaExempleFile=(char*)malloc((strlen(pmExamplesPath->value)+strlen(tmps)+2)*sizeof(char));
                                 sprintf(pcaExempleFile,"%s/%s",pmExamplesPath->value,tmps);
                               }
-                            char actmp[10];
+                            char actmp[12];
                             sprintf(actmp,"%d",iCnt);
                             char* pcaTmp;
                             char* pcaKey2=getMapArrayKey(tmpMaps->content,"examples_summary",i);
@@ -3915,7 +3916,7 @@ extern "C" {
                                   FILE* f=fopen(pcaExempleFile,"rb");
                                   if(f!=NULL){
                                     pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
-                                    fread(pcaFcontent,zssStatus.st_size,1,f);
+                                    size_t sLength = fread(pcaFcontent,zssStatus.st_size,1,f);
                                     pcaFcontent[zssStatus.st_size]=0;
                                     fclose(f);
                                     char* pcaCurrentValue=(char*)malloc((zssStatus.st_size+4)*sizeof(char));
@@ -4378,7 +4379,7 @@ extern "C" {
           char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
           FILE *pfRequest = fopen (pcaFilePath, "rb");
           if(pfRequest!=NULL){
-            fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+            size_t sLength = fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
             pcaFcontent[zssStatus.st_size]=0;
             setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent);
             setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");
@@ -4432,7 +4433,7 @@ extern "C" {
             char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
             FILE *pfRequest = fopen (pcaFilePath, "rb");
             if(pfRequest!=NULL){
-              fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+              size_t sLength = fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
               pcaFcontent[zssStatus.st_size]=0;
               json_object *pjoRes=parseJson(pmsConf,pcaFcontent);
               if(pjoRes==NULL)
@@ -4466,7 +4467,7 @@ extern "C" {
                             }
                             else{
                               char* pcaFcontent1=(char*)malloc(sizeof(char)*(zssStatus1.st_size+1));
-                              fread(pcaFcontent1,zssStatus1.st_size,sizeof(char),pfRequest1);
+                              size_t sLength = fread(pcaFcontent1,zssStatus1.st_size,sizeof(char),pfRequest1);
                               pcaFcontent[zssStatus1.st_size]=0;
                               setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent1);
                               setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");
@@ -4515,7 +4516,7 @@ extern "C" {
               }
               else{
                 char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
-                fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
+                size_t sLength = fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
                 pcaFcontent[zssStatus.st_size]=0;
                 setMapInMaps(pmsConf,"lenv","json_response_object",pcaFcontent);
                 setMapInMaps(pmsConf,"lenv","goto_json_print_out","true");

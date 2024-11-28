@@ -1,4 +1,8 @@
 Version 2.1.0-dev
+  * Update the skaffold.yaml file for easy deployment of the ZOO-Project
+  with DRU and CWL support on a local cluster
+  * Update the ZOO_DEBUG to use color for messages (if stderr is a tty)
+  * Update variables naming, including the main configuration file name
   * Update ZOO_DEBUG function to use LOG_MESSAGE_FORMAT to format the
   debug messages, using the iZooLogLevel integer to decide between: DEBUG,
   INFO, WARN, ERROR, FATAL. Comes with it associated --with-log-format option.

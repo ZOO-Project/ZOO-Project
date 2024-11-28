@@ -346,8 +346,10 @@ int isProtectedHost(const char* protectedHosts, const char* url) {
   int cnt;
 
   // knut: make a copy of url since strtok family modifies first argument and cannot be used on constant strings
-  char* urlcpy = (char*)malloc(sizeof(char)*(strlen(url) + 1));
-  urlcpy = strncpy(urlcpy, url, strlen(url) + 1); // since count > strlen(url), a null character is properly appended
+  ssize_t sLength = strlen(url);
+  char* urlcpy = (char*)malloc(sizeof(char)*(sLength + 1));
+  if(sLength > 0)
+    urlcpy = strcpy(urlcpy, url); // since count > strlen(url), a null character is properly appended
 
   //token = strtok_r (url, "//", &saveptr);
   token = strtok_r(urlcpy, "//", &saveptr);   // knut

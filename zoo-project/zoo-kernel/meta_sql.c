@@ -232,7 +232,7 @@ int fillMetadata(int iDbId,maps* conf,map** metadata,const char* dref){
             OGRLayer *nmetas=fetchSql(conf,iDbId-1,pcaNestedMetaQuery);
             free(pcaNestedMetaQuery);
             int iCount=0;
-            char* pcaPrefix=(char*) malloc(15*sizeof(char));
+            char* pcaPrefix=(char*) malloc((strlen(fields[2])+24)*sizeof(char));
             if(iCounter>0)
               sprintf(pcaPrefix,"%s_%d_%d",fields[2],res,iCounter);
             else{
@@ -244,7 +244,7 @@ int fillMetadata(int iDbId,maps* conf,map** metadata,const char* dref){
             }
             while( (nmeta = nmetas->GetNextFeature()) != NULL ){
               for(int iCnt=1;iCnt<4;iCnt++){
-                char* pcaName=(char*) malloc((strlen(pcaPrefix)+strlen(fields[iCnt])+16)*sizeof(char));
+                char* pcaName=(char*) malloc((strlen(pcaPrefix)+strlen(fields[iCnt])+14)*sizeof(char));
                 if(iCount>0)
                   sprintf(pcaName,"%s_%s_%d",pcaPrefix,fields[iCnt],iCount);
                 else

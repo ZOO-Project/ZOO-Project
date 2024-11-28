@@ -72,6 +72,7 @@ typedef int bool;
 #define zDup2 _dup2
 #define zWrite _write
 #define zSleep Sleep
+#define zGetCwd _getcwd
 #include <sys/timeb.h>
 
 struct ztimeval {
@@ -154,6 +155,8 @@ static int zSleep(const long millisecond){
 #define zStatStruct struct stat64
 #define zStat stat64
 
+#define zGetCwd getcwd
+
 #endif 
 
 #ifdef __cplusplus
@@ -166,6 +169,7 @@ extern "C" {
 #endif
 #endif
 #include <stdlib.h>
+#include <stdarg.h>
 #include <ctype.h>
 
 #include <stdio.h>
@@ -208,6 +212,11 @@ extern "C" {
  * The global undelployed status for a service
  */
 #define SERVICE_UNDEPLOYED 7
+
+/**
+ * The time size, used to create a buffer for time string
+ */
+#define TIME_SIZE 40
 
 /**
  * The global debug level: DEBUG
@@ -257,6 +266,98 @@ static const char* pccLogLevel[7]={
 static int iZooLogLevel=1;
 
 /**
+ * The global log level
+ */
+static int iMinZooLogLevel=0;
+
+/**
+ * The _ZOO_DEBUG macro print a message with date time, process id (UNIX pid),
+ * file name, function name, and line number.
+ *
+ * The message uses the ZOO_LOG_FORMAT to format the output.
+ *
+ * The values that should be included in this specific order in the
+ * ZOO_LOG_FORMAT are:
+ *
+ *  * %d: the date time
+ *  * %l: the log level
+ *  * %p: the process identifier
+ *  * %f: the file name
+ *  * %u: the function name
+ *  * %i: the line number
+ *  * %m: the message
+ *
+ *  In case the ZOO_LOG_FORMAT is not defined, the default format is used:
+ *  "%d %l %p %f:%u %m\n"
+ *
+ * @param message the message to print
+ */
+#define ZOO_DEBUG(message) _ZOO_DEBUG(message,__FILE__,__func__,__LINE__)
+
+/**
+ * The ZOO_COLOR_* variables are used to create colored output in the console.
+ *
+ * To use a color you should combine:
+ *  * ZOO_COLOR_START or ZOO_COLOR_START_BOLD
+ *  * ZOO_COLOR_STANDARD or ZOO_COLOR_HIGH_INTENSITY
+ *  * ZOO_COLOR_BLACK, ZOO_COLOR_RED, ZOO_COLOR_GREEN, ZOO_COLOR_YELLOW,
+ *    ZOO_COLOR_BLUE, ZOO_COLOR_MAGENTA, ZOO_COLOR_CYAN, ZOO_COLOR_WHITE
+ *
+ * To set the background color you should combine:
+ * * ZOO_COLOR_START_BACKGROUND or ZOO_COLOR_START_BACKGROUND_HIGH_INTENSITY
+ * * ZOO_COLOR_BLACK, ZOO_COLOR_RED, ZOO_COLOR_GREEN, ZOO_COLOR_YELLOW,
+ *   ZOO_COLOR_BLUE, ZOO_COLOR_MAGENTA, ZOO_COLOR_CYAN, ZOO_COLOR_WHITE
+ *
+ * To reset the color formatting you should use ZOO_COLOR_RESET.
+ *
+ * The ZOO_COLOR_START or ZOO_COLOR_START_BOLD are used to start the color 
+ * formatting.
+ * The ZOO_COLOR_STANDARD or ZOO_COLOR_HIGH_INTENSITY are used to set the color
+ * intensity.
+ * The ZOO_COLOR_BLACK, ZOO_COLOR_RED, ZOO_COLOR_GREEN, ZOO_COLOR_YELLOW,
+ * ZOO_COLOR_BLUE, ZOO_COLOR_MAGENTA, ZOO_COLOR_CYAN, ZOO_COLOR_WHITE are used
+ * to set the color.
+ * The ZOO_COLOR_START_BACKGROUND or ZOO_COLOR_START_BACKGROUND_HIGH_INTENSITY
+ * are used to set the background color.
+ * The ZOO_COLOR_RESET is used to reset the color formatting.
+ */
+
+/**
+ * The ZOO_COLOR_START is used to start the color formatting.
+ */
+#define ZOO_COLOR_START "\e[0;"
+
+/**
+ * The ZOO_COLOR_START_BOLD is used to start the color formatting with bold text.
+ */
+#define ZOO_COLOR_START_BOLD "\e[1;"
+
+/**
+ * The ZOO_COLOR_STANDARD is used to set the color intensity to standard.
+ */
+#define ZOO_COLOR_STANDARD "3"
+
+/**
+ * The ZOO_COLOR_HIGH_INTENSITY is used to set the color intensity to high.
+ */
+#define ZOO_COLOR_HIGH_INTENSITY "9"
+
+#define ZOO_COLOR_BLACK "0m"
+#define ZOO_COLOR_RED "1m"
+#define ZOO_COLOR_GREEN "2m"
+#define ZOO_COLOR_YELLOW "3m"
+#define ZOO_COLOR_BLUE "4m"
+#define ZOO_COLOR_MAGENTA "5m"
+#define ZOO_COLOR_CYAN "6m"
+#define ZOO_COLOR_WHITE "7m"
+
+#define ZOO_COLOR_START_BACKGROUND "\e[4"
+#define ZOO_COLOR_START_BACKGROUND_HIGH_INTENSITY "\e[0;10"
+
+#define ZOO_COLOR_RESET "\e[0m"
+
+#include "time.h"
+/**
  * The ZOO_DEBUG macro print a message with date time, process id (UNIX pid), file name, function name, and line number
  *
  * The message uses the ZOO_LOG_FORMAT to format the output.
@@ -272,12 +373,19 @@ static int iZooLogLevel=1;
  *  * %i: the line number
  *  * %m: the message
  *
+ *  The ZOO_DEBUG macro print messages in color, if stderr is a TTY.
+ *
  * @param message the message to print
+ * @param pccFile the file name
+ * @param pccFunc the function name
+ * @param iLine the line number
  */
-#define ZOO_DEBUG(message) _ZOO_DEBUG(message,__FILE__,__func__,__LINE__)
-
 #define _ZOO_DEBUG(message,pccFile,pccFunc,iLine) \
-  do { \
+do {\
+    if(iZooLogLevel<=iMinZooLogLevel)\
+      break;\
+      \
+    int iSaTTY=isatty(2); \
     const struct tm *pcsTm; \
     time_t ttNow; \
     size_t stLen; \
@@ -295,13 +403,13 @@ static int iZooLogLevel=1;
     char pcExtra[8]={0}; \
     int iLength=8; \
     int iCounter=0; \
-    for(int iCnt=strlen(pccLogLevel[iZooLogLevel]);iCnt<8;iCnt++){\
-      pcExtra[iCounter]=' ';\
+    for(int iCnt=strlen(pccLogLevel[iZooLogLevel]);iCnt<8;iCnt++){ \
+      pcExtra[iCounter]=' '; \
       iCounter++; \
-    }\
+    } \
     char* pcaFormated=NULL; \
     char acFormated[64]={0}; \
-    char* pvaArgs[7]; \
+    char* apcaArgv[7]; \
     int aiTypes[7]={0,0,0,0,0,0,0}; \
     int iInternalCnt=0; \
     for(int iCnt=0;iCnt<strlen(ZOO_LOG_FORMAT);iCnt++){ \
@@ -310,63 +418,116 @@ static int iZooLogLevel=1;
         acFormated[iLen]=ZOO_LOG_FORMAT[iCnt]; \
         acFormated[iLen+1]='s'; \
         const char* pcColor="\e[0;97m"; \
-        switch(iZooLogLevel){\
+        switch(iZooLogLevel){ \
           case ZOO_DEBUG_LEVEL_TRACE:\
-            pcColor="\e[1;37m";\
+            pcColor=ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_STANDARD \
+              ZOO_COLOR_WHITE;\
             break;\
           case ZOO_DEBUG_LEVEL_DEBUG:\
-            pcColor="\e[1;96m";\
+            pcColor=ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_HIGH_INTENSITY\
+              ZOO_COLOR_CYAN;\
             break;\
           case ZOO_DEBUG_LEVEL_INFO:\
-            pcColor="\e[1;97m";\
+            pcColor=ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_HIGH_INTENSITY\
+              ZOO_COLOR_WHITE;\
             break;\
           case ZOO_DEBUG_LEVEL_SUCCESS:\
-            pcColor="\e[1;92m";\
+            pcColor=ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_HIGH_INTENSITY\
+              ZOO_COLOR_GREEN;\
             break;\
           case ZOO_DEBUG_LEVEL_WARNING:\
-            pcColor="\e[1;93m";\
+            pcColor=ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_HIGH_INTENSITY\
+              ZOO_COLOR_YELLOW;\
             break;\
           case ZOO_DEBUG_LEVEL_ERROR:\
-            pcColor="\e[1;91m";\
+            pcColor=ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_HIGH_INTENSITY\
+              ZOO_COLOR_RED;\
             break;\
           case ZOO_DEBUG_LEVEL_FATAL:\
-            pcColor="\e[41m\e[1;97m";\
+            pcColor=ZOO_COLOR_START_BACKGROUND\
+              ZOO_COLOR_RED\
+              ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_HIGH_INTENSITY\
+              ZOO_COLOR_WHITE;\
             break;\
         } \
         if(ZOO_LOG_FORMAT[iCnt+1]=='d'){ \
           /* DATE Format: %s.%03d */ \
-          pvaArgs[iInternalCnt]=(char*) malloc(37*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"\e[0;32m%s.%03d\e[0m",pcaLocalTime,iMillisec); \
+          apcaArgv[iInternalCnt]=(char*) malloc(37*sizeof(char)); \
+          if(iSaTTY>0)\
+            sprintf(apcaArgv[iInternalCnt],\
+              ZOO_COLOR_START_BOLD\
+              ZOO_COLOR_STANDARD\
+              ZOO_COLOR_GREEN\
+              "%s.%03d"\
+              ZOO_COLOR_RESET,\
+              pcaLocalTime,iMillisec); \
+          else\
+            sprintf(apcaArgv[iInternalCnt],"%s.%03d",pcaLocalTime,iMillisec); \
         } \
         else if(ZOO_LOG_FORMAT[iCnt+1]=='l'){ \
           /* Debug level: %s %s */ \
-          pvaArgs[iInternalCnt]=(char*) malloc(36*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"%s%s%s\e[0m",pcColor,pccLogLevel[iZooLogLevel],pcExtra); \
+          apcaArgv[iInternalCnt]=(char*) malloc(36*sizeof(char)); \
+          if(iSaTTY>0)\
+            sprintf(apcaArgv[iInternalCnt],\
+              "%s%s%s"\
+              ZOO_COLOR_RESET,\
+              pcColor,\
+              pccLogLevel[iZooLogLevel],\
+              pcExtra); \
+          else\
+            sprintf(apcaArgv[iInternalCnt],"%s %s",pccLogLevel[iZooLogLevel],pcExtra); \
         } \
         else if(ZOO_LOG_FORMAT[iCnt+1]=='p'){ \
-          /* Process identifier: %d */ \
-          pvaArgs[iInternalCnt]=(char*) malloc(10*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"%d",getpid()); \
+          /* Process identifier: %p */ \
+          apcaArgv[iInternalCnt]=(char*) malloc(10*sizeof(char)); \
+          sprintf(apcaArgv[iInternalCnt],"%d",getpid()); \
         } \
         else if(ZOO_LOG_FORMAT[iCnt+1]=='f'){ \
-          /* File name: %s */ \
-          pvaArgs[iInternalCnt]=(char*) malloc((strlen(pccFile)+8)*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"\e[0;36m%s",pccFile); \
+          /* File name: %f */ \
+          apcaArgv[iInternalCnt]=(char*) malloc((strlen(pccFile)+8)*sizeof(char)); \
+          if(iSaTTY>0)\
+            sprintf(apcaArgv[iInternalCnt],\
+              ZOO_COLOR_START\
+              ZOO_COLOR_STANDARD\
+              ZOO_COLOR_CYAN\
+              "%s",\
+              pccFile); \
+          else\
+            sprintf(apcaArgv[iInternalCnt],"%s",pccFile); \
         } \
         else if(ZOO_LOG_FORMAT[iCnt+1]=='u'){ \
-          /* Function name: %s */ \
-          pvaArgs[iInternalCnt]=(char*) malloc((strlen(pccFunc)+1)*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"%s",pccFunc); \
+          /* Function name: %u */ \
+          apcaArgv[iInternalCnt]=(char*) malloc((strlen(pccFunc)+1)*sizeof(char)); \
+          sprintf(apcaArgv[iInternalCnt],"%s",pccFunc); \
         } \
         else if(ZOO_LOG_FORMAT[iCnt+1]=='i'){ \
-          /* Line number: %d */ \
-          pvaArgs[iInternalCnt]=(char*) malloc(14*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"%d\e[0m",iLine); \
+          /* Line number: %i */ \
+          apcaArgv[iInternalCnt]=(char*) malloc(14*sizeof(char)); \
+          if(iSaTTY>0)\
+            sprintf(apcaArgv[iInternalCnt],\
+              "%d"\
+              ZOO_COLOR_RESET,\
+              iLine); \
+          else\
+            sprintf(apcaArgv[iInternalCnt],"%d",iLine); \
         } \
         else if(ZOO_LOG_FORMAT[iCnt+1]=='m'){ \
-          /* Message: %s */ \
-          pvaArgs[iInternalCnt]=(char*) malloc((strlen(message)+25)*sizeof(char)); \
-          sprintf(pvaArgs[iInternalCnt],"%s%s\e[0m",pcColor,message); \
+          /* Message: %m */ \
+          apcaArgv[iInternalCnt]=(char*) malloc((strlen(message)+25)*sizeof(char)); \
+          if(iSaTTY>0)\
+            sprintf(apcaArgv[iInternalCnt],\
+              "%s%s"\
+              ZOO_COLOR_RESET,\
+              pcColor,message); \
+          else\
+            sprintf(apcaArgv[iInternalCnt],"%s",message); \
         } \
         iInternalCnt++; \
         iCnt++; \
@@ -378,21 +539,71 @@ static int iZooLogLevel=1;
           acFormated[iLen+1]=0;\
       } \
     } \
-    fprintf(stderr,(char*)acFormated,\
-          pvaArgs[0], \
-          pvaArgs[1], \
-          pvaArgs[2], \
-          pvaArgs[3], \
-          pvaArgs[4], \
-          pvaArgs[5], \
-          pvaArgs[6] \
-    ); \
-    /* myPrint(acFormated,pvaArgs) */ \
+    /* Minimal should be 2 (for the file+line) */ \
+    switch(iInternalCnt) {\
+      case 1: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0] \
+        ); \
+        break; \
+      case 2: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0], \
+            apcaArgv[1] \
+        ); \
+        break; \
+      case 3: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0], \
+            apcaArgv[1], \
+            apcaArgv[2] \
+        ); \
+        break; \
+      case 4: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0], \
+            apcaArgv[1], \
+            apcaArgv[2], \
+            apcaArgv[3] \
+        ); \
+        break; \
+      case 5: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0], \
+            apcaArgv[1], \
+            apcaArgv[2], \
+            apcaArgv[3], \
+            apcaArgv[4] \
+        ); \
+        break; \
+      case 6: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0], \
+            apcaArgv[1], \
+            apcaArgv[2], \
+            apcaArgv[3], \
+            apcaArgv[4], \
+            apcaArgv[5] \
+        ); \
+        break; \
+      default: \
+        fprintf(stderr,(char*)acFormated,\
+            apcaArgv[0], \
+            apcaArgv[1], \
+            apcaArgv[2], \
+            apcaArgv[3], \
+            apcaArgv[4], \
+            apcaArgv[5], \
+            apcaArgv[6] \
+        ); \
+        break; \
+    }\
+    /* myPrint(acFormated,apcaArgv) */ \
     free(pcaLocalTime); \
-    for(int iCnt=6;iCnt>=0;iCnt--){ \
-      free(pvaArgs[iCnt]); \
+    for(int iCnt=iInternalCnt-1;iCnt>=0;iCnt--){ \
+      free(apcaArgv[iCnt]); \
     } \
-  } while(0)
+} while(0)
 
 /**
  * The memory size to create an elements

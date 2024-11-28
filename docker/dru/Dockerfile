@@ -69,7 +69,7 @@ apt-get install -qqy  --no-install-recommends software-properties-common\
 	s3cmd \
 	python3-setuptools\
 	pip \
-	valgrind \
+	#valgrind \
 	libapache2-mod-fcgid\
 	wget \
 	pkg-config\
@@ -167,10 +167,22 @@ RUN chmod -R 777 /usr/lib/cgi-bin
 
 COPY docker/dru/requirements.txt /tmp/
 
-RUN mkdir /tmp/cookiecutter-templates && \
+# Force running the following run in case anything changed in
+# https://github.com/EOEPCA/zoo-argowf-runner.git (branch: develop) 
+# and / or 
+# https://github.com/EOEPCA/zoo-calrissian-runner.git 
+# (branch: feature/access-log-status-failed)
+RUN date && mkdir /tmp/cookiecutter-templates && \
     #pip install GDAL==3.4.3 && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
+    #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
+    git clone https://github.com/cedadev/eoepca-zoo-wes-runner.git && \
+    cd eoepca-zoo-wes-runner && \
+    poetry build && \
+    ls dist && \
+    pip install dist/zoo_wes_runner-0.1.0-py3-none-any.whl && \
+    cd .. && \
     git clone https://github.com/Terradue/pycalrissian.git && \
     cd pycalrissian && \
     sed "s:V1Subject:RbacV1Subject:g" -i pycalrissian/context.py && \

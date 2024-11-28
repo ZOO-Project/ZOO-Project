@@ -1,7 +1,7 @@
 /**
  * Author : David Saggiorato
  *
- *  Copyright 2015-2023 GeoLabs SARL. All rights reserved.
+ *  Copyright 2015-2024 GeoLabs SARL. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -93,11 +93,13 @@ int init_amqp(maps* conf){
     return 2;
   }
   else {
-    amqp_hostname = (char *)malloc((strlen(m_amqp_host->value) +1)*sizeof(char*));
-    strncpy(amqp_hostname,m_amqp_host->value,strlen(m_amqp_host->value));
-    amqp_hostname[strlen(m_amqp_host->value)] = '\0';
+    ssize_t sLength = strlen(m_amqp_host->value);
+    if(sLength>0){
+      amqp_hostname = (char *)malloc((sLength+1)*sizeof(char*));
+      strcpy(amqp_hostname,m_amqp_host->value);
+      amqp_hostname[sLength] = '\0';
+    }
   }
-
   //int amqp_port;
   map *m_amqp_port = getMapFromMaps (conf, "rabbitmq", "port");
   if (m_amqp_port == NULL){
@@ -119,9 +121,12 @@ int init_amqp(maps* conf){
     return 2;
   }
   else {
-    amqp_user = (char *)malloc((strlen(m_amqp_user->value) +1)*sizeof(char*));
-    strncpy(amqp_user,m_amqp_user->value,strlen(m_amqp_user->value));
-    amqp_user[strlen(m_amqp_user->value)] = '\0';
+    ssize_t sLength = strlen(m_amqp_user->value);
+    if(sLength>0){
+      amqp_user = (char *)malloc((sLength+1)*sizeof(char*));
+      strcpy(amqp_user,m_amqp_user->value);
+      amqp_user[sLength] = '\0';
+    }
   }
 
   //char * amqp_passwd;
@@ -131,9 +136,12 @@ int init_amqp(maps* conf){
     return 2;
   }
   else {
-    amqp_passwd = (char *)malloc((strlen(m_amqp_passwd->value) +1)*sizeof(char*));
-    strncpy(amqp_passwd,m_amqp_passwd->value,strlen(m_amqp_passwd->value));
-    amqp_passwd[strlen(m_amqp_passwd->value)] = '\0';
+    ssize_t sLength = strlen(m_amqp_passwd->value);
+    amqp_passwd = (char *)malloc((sLength +1)*sizeof(char*));
+    if(sLength>0){
+      strcpy(amqp_passwd,m_amqp_passwd->value);
+      amqp_passwd[sLength] = '\0';
+    }
   }
 
   //char * amqp_exchange;
@@ -143,9 +151,12 @@ int init_amqp(maps* conf){
     return 2;
   }
   else {
-    amqp_exchange = (char *)malloc((strlen(m_amqp_exchange->value) +1)*sizeof(char*));
-    strncpy(amqp_exchange,m_amqp_exchange->value,strlen(m_amqp_exchange->value));
-    amqp_exchange[strlen(m_amqp_exchange->value)] = '\0';
+    ssize_t sLength = strlen(m_amqp_exchange->value);
+    if(sLength>0){
+      amqp_exchange = (char *)malloc((sLength+1)*sizeof(char*));
+      strcpy(amqp_exchange,m_amqp_exchange->value);
+      amqp_exchange[strlen(m_amqp_exchange->value)] = '\0';
+    }
   }
 
   //char * amqp_routingkey;
@@ -155,9 +166,12 @@ int init_amqp(maps* conf){
     return 2;
   }
   else {
-    amqp_routingkey = (char *)malloc((strlen(m_amqp_routingkey->value) +1)*sizeof(char*));
-    strncpy(amqp_routingkey,m_amqp_routingkey->value,strlen(m_amqp_routingkey->value));
-    amqp_routingkey[strlen(m_amqp_routingkey->value)] = '\0';
+    ssize_t sLength = strlen(m_amqp_routingkey->value);
+    if(sLength>0){
+      amqp_routingkey = (char *)malloc((sLength+1)*sizeof(char*));
+      strcpy(amqp_routingkey,m_amqp_routingkey->value);
+      amqp_routingkey[strlen(m_amqp_routingkey->value)] = '\0';
+    }
   }
 
   //char * amqp_queue;
@@ -167,10 +181,13 @@ int init_amqp(maps* conf){
     return 2;
   }
   else {
-    amqp_queue = (char *)malloc((strlen(m_amqp_queue->value) +1)*sizeof(char*));
-    strncpy(amqp_queue,m_amqp_queue->value,strlen(m_amqp_queue->value));
-    amqp_queue[strlen(m_amqp_queue->value)] = '\0';
-    amqp_queuename=amqp_cstring_bytes(amqp_queue);
+    ssize_t sLength = strlen(m_amqp_queue->value);
+    if(sLength>0){
+      amqp_queue = (char *)malloc((strlen(m_amqp_queue->value) +1)*sizeof(char*));
+      strcpy(amqp_queue,m_amqp_queue->value);
+      amqp_queue[strlen(m_amqp_queue->value)] = '\0';
+      amqp_queuename=amqp_cstring_bytes(amqp_queue);
+    }
   }
   return 0;
 }

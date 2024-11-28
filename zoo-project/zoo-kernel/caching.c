@@ -102,15 +102,15 @@ char* getMd5f(char* file){
  * section.This imply that the URL will contain any authentication 
  * informations that should be fowarded to the server from which de input
  * was download.
- * @param conf the main configuration maps
+ * @param pmsConf the main configuration maps
  * @param request the URL to transform.
  * @return a char* that contain the original URL plus potential header (only for
  * hosts that are not shared).
  * @warning Be sure to free the memory returned by this function.
  */
-char* getFilenameForRequest(maps* conf, const char* request){
-  map* passThrough=getMapFromMaps(conf,"security","attributes");
-  map* targetHosts=getMapFromMaps(conf,"security","hosts");
+char* getFilenameForRequest(maps* pmsConf, const char* request){
+  map* passThrough=getMapFromMaps(pmsConf,"security","attributes");
+  map* targetHosts=getMapFromMaps(pmsConf,"security","hosts");
   char* passedHeader[10];
   int cnt=0;
   char *res=zStrdup(request);
@@ -120,7 +120,7 @@ char* getFilenameForRequest(maps* conf, const char* request){
     char *token, *saveptr;
     token = strtok_r (tmp, ",", &saveptr);
     int i;
-    if((strstr(targetHosts->value,"*")!=NULL || isProtectedHost(targetHosts->value,request)==1) && strncasecmp(getProvenance(conf,request),"SHARED",6)!=0){
+    if((strstr(targetHosts->value,"*")!=NULL || isProtectedHost(targetHosts->value,request)==1) && strncasecmp(getProvenance(pmsConf,request),"SHARED",6)!=0){
       while (token != NULL){
         int length=strlen(token)+6;
         char* tmp1=(char*)malloc(length*sizeof(char));
@@ -134,7 +134,7 @@ char* getFilenameForRequest(maps* conf, const char* request){
             tmp1[5+j]='_';
           tmp1[5+j+1]='\0';
         }
-        tmpMap = getMapFromMaps(conf,"renv",tmp1);
+        tmpMap = getMapFromMaps(pmsConf,"renv",tmp1);
         if(tmpMap!=NULL){
           if(toAppend==NULL){
             toAppend=(char*)malloc((strlen(tmpMap->value)+1)*sizeof(char));
@@ -187,7 +187,7 @@ int storeMd5(char* file){
  * For each cached file, the are two files stored, a .zca and a .zcm containing
  * the downloaded content and the mimeType respectively. 
  *
- * @param conf the maps containing the settings of the main.cfg file
+ * @param pmsConf the maps containing the settings of the main.cfg file
  * @param request the url used too fetch the content
  * @param content the downloaded content
  * @param mimeType the content mimeType 
@@ -195,12 +195,12 @@ int storeMd5(char* file){
  * @param filepath a buffer for storing the path of the cached file; may be NULL
  * @param max_path the size of the allocated filepath buffer  
  */
-void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename){
-  map* tmp=getMapFromMaps(conf,"main","cacheDir");
+void cacheFile(maps* pmsConf,char* request,char* mimeType,int length,char* filename){
+  map* tmp=getMapFromMaps(pmsConf,"main","cacheDir");
   char contentr[4096];
   int cred=0;
   if(tmp!=NULL){
-    char* myRequest=getFilenameForRequest(conf,request);
+    char* myRequest=getFilenameForRequest(pmsConf,request);
     char* md5str=getMd5(myRequest);
     free(myRequest);
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
@@ -217,7 +217,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
     fclose(fo);
     
     sprintf(fname,"%s/%s.zca",tmp->value,md5str);
-    zooLock* lck=lockFile(conf,fname,'w');
+    zooLock* lck=lockFile(pmsConf,fname,'w');
     if(lck!=NULL){
 #ifdef DEBUG
       fprintf(stderr,"Cache list : %s\n",fname);
@@ -230,14 +230,14 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
 #ifdef DEBUG
 	      fprintf (stderr, "Failed to open %s for writing\n",fname);
 #endif
-	      unlockFile(conf,lck);
+	      unlockFile(pmsConf,lck);
 	      return;
       }
       if(fi==NULL){
 #ifdef DEBUG
 	      fprintf (stderr, "Failed to open %s for reading\n",filename);
 #endif
-        unlockFile(conf,lck);
+        unlockFile(pmsConf,lck);
         return;
       }
       memset(contentr,0,4096);
@@ -246,7 +246,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
         fflush(fo);
         memset(contentr,0,4096);
       }
-      unlockFile(conf,lck);
+      unlockFile(pmsConf,lck);
       fclose(fo);
       fclose(fi);
 
@@ -262,7 +262,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
       // Store provenance
       sprintf(fname,"%s/%s.zcp",tmp->value,md5str);
       fo=fopen(fname,"w+");
-      char* origin=getProvenance(conf,request);
+      char* origin=getProvenance(pmsConf,request);
 #ifdef DEBUG
       fprintf(stderr,"ORIGIN: %s\n",origin);
 #endif
@@ -281,7 +281,7 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
  * For each cached file, the are two files stored, a .zca and a .zcm containing
  * the downloaded content and the mimeType respectively. 
  *
- * @param conf the maps containing the settings of the main.cfg file
+ * @param pmsConf the maps containing the settings of the main.cfg file
  * @param request the url used too fetch the content
  * @param content the downloaded content
  * @param mimeType the content mimeType 
@@ -289,16 +289,16 @@ void cacheFile(maps* conf,char* request,char* mimeType,int length,char* filename
  * @param filepath a buffer for storing the path of the cached file; may be NULL
  * @param max_path the size of the allocated filepath buffer  
  */
-void addToCache(maps* conf,char* request,char* content,char* mimeType,int length, 
+void addToCache(maps* pmsConf,char* request,char* content,char* mimeType,int length, 
                 char* filepath, size_t max_path){
-  map* tmp=getMapFromMaps(conf,"main","cacheDir");
+  map* tmp=getMapFromMaps(pmsConf,"main","cacheDir");
   if(tmp!=NULL){
-    char* myRequest=getFilenameForRequest(conf,request);
+    char* myRequest=getFilenameForRequest(pmsConf,request);
     char* md5str=getMd5(myRequest);
     free(myRequest);
     char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
     sprintf(fname,"%s/%s.zca",tmp->value,md5str);
-    zooLock* lck=lockFile(conf,fname,'w');
+    zooLock* lck=lockFile(pmsConf,fname,'w');
     if(lck!=NULL){
 #ifdef DEBUG
       fprintf(stderr,"Cache list : %s\n",fname);
@@ -310,11 +310,11 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
         fprintf (stderr, "Failed to open %s for writing\n");
 #endif
         filepath = NULL;
-        unlockFile(conf,lck);
+        unlockFile(pmsConf,lck);
         return;
       }
       fwrite(content,sizeof(char),length,fo);
-      unlockFile(conf,lck);
+      unlockFile(pmsConf,lck);
       fclose(fo);
 	
       if (filepath != NULL) {
@@ -331,7 +331,7 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
 
       sprintf(fname,"%s/%s.zcp",tmp->value,md5str);
       fo=fopen(fname,"w+");
-      char* origin=getProvenance(conf,request);
+      char* origin=getProvenance(pmsConf,request);
 #ifdef DEBUG
       fprintf(stderr,"ORIGIN: %s\n",mimeType);
 #endif
@@ -350,18 +350,18 @@ void addToCache(maps* conf,char* request,char* content,char* mimeType,int length
 /**
  * Verify if a url is available in the cache
  *
- * @param conf the maps containing the settings of the main.cfg file
+ * @param pmsConf the maps containing the settings of the main.cfg file
  * @param request the url
  * @return the full name of the cached file if any, NULL in other case
  * @warning make sure to free resources returned by this function (if not NULL)
  */
-char* isInCache(maps* conf,char* request){
-  map* tmpUrl=getMapFromMaps(conf,"main","tmpUrl");
-  map* tmpM=getMapFromMaps(conf,"main","cacheDir");
+char* isInCache(maps* pmsConf,char* request){
+  map* tmpUrl=getMapFromMaps(pmsConf,"main","tmpUrl");
+  map* tmpM=getMapFromMaps(pmsConf,"main","cacheDir");
   if(tmpM==NULL)
-    tmpM=getMapFromMaps(conf,"main","tmpPath");
+    tmpM=getMapFromMaps(pmsConf,"main","tmpPath");
   if(tmpUrl!=NULL && strstr(request,tmpUrl->value)!=NULL){
-    map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
+    map* tmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
     char* tmpStr=strstr(request,tmpUrl->value);
     char* tmpStr1=zStrdup(tmpStr+strlen(tmpUrl->value));
     char* res=(char*) malloc((strlen(tmpPath->value)+strlen(tmpStr1)+2)*sizeof(char));
@@ -370,7 +370,7 @@ char* isInCache(maps* conf,char* request){
     return res;
   }
 #ifdef MS_FORCE_LOCAL_FILE_USE
-  map* msUrl=getMapFromMaps(conf,"main","mapserverAddress");
+  map* msUrl=getMapFromMaps(pmsConf,"main","mapserverAddress");
   if(msUrl!=NULL && strstr(request,msUrl->value)!=NULL){
     char *tmpStr=strstr(request,"?");
     char *cursor=zStrdup(tmpStr+1);
@@ -401,11 +401,11 @@ char* isInCache(maps* conf,char* request){
 #endif  
   if(strncasecmp(request,"file://",7)==0){
     char* tmpStr=zStrdup(request+7);
-    setMapInMaps(conf,"lenv",tmpStr,"local");
+    setMapInMaps(pmsConf,"lenv",tmpStr,"local");
     return tmpStr;
   }
   else{
-    char* myRequest=getFilenameForRequest(conf,request);
+    char* myRequest=getFilenameForRequest(pmsConf,request);
     char* md5str=getMd5(myRequest);
     free(myRequest);
 #ifdef DEBUG
@@ -441,84 +441,84 @@ char* isInCache(maps* conf,char* request){
  * @param error the error map pointer
  * @return 0 in case of success, -1 in case of failure
  */
-int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** error){
+int readCurrentInput(maps** ppmsConf,maps** in,int* index,HINTERNET* hInternet,map** error){
   int shouldClean=-1;
   map* tmp1;
-  char sindex[5];
+  char sindex[12];
   maps* content=*in;
   map* length=getMap(content->content,"length");
-  map* memUse=getMapFromMaps(*m,"main","memory");
+  map* memUse=getMapFromMaps(*ppmsConf,"main","memory");
   if(length==NULL){
     length=createMap("length","1");
     shouldClean=1;
   }
   for(int i=0;i<atoi(length->value);i++){
-    char* fcontent;
+    char* pcaFileContent;
     char *mimeType=NULL;
     int fsize=0;
-    char oriname[12];
-    char cname[15];
-    char vname[11];
-    char vname1[11];
-    char sname[9];
-    char mname[15];
-    char icname[14];
-    char xname[16];
-    char bname[8];
-    char hname[11];
-    char oname[12];
-    char ufile[12];
-    char acLocation[14];
+    char acOriginalName[20];
+    char acCName[24];
+    char acVName[19];
+    char acVName1[19];
+    char acSName[17];
+    char acMName[22];
+    char acCName1[22];
+    char acXName[23];
+    char acBName[21];
+    char acHName[21];
+    char acOName[19];
+    char acFile[22];
+    char acLocation[22];
     if(*index>0)
-      sprintf(vname1,"value_%d",*index);
+      sprintf(acVName1,"value_%d",*index);
     else
-      sprintf(vname1,"value");
+      sprintf(acVName1,"value");
     
     if(i>0){
-      sprintf(cname,"cache_file_%d",i);
-      tmp1=getMap(content->content,cname);
-      sprintf(oriname,"origin_%d",i);
-      sprintf(vname,"value_%d",i);
-      sprintf(sname,"size_%d",i);
-      sprintf(mname,"mimeType_%d",i);
-      sprintf(icname,"isCached_%d",i);
-      sprintf(xname,"Reference_%d",i);
-      sprintf(bname,"body_%d",i);
-      sprintf(hname,"headers_%d",i);
-      sprintf(oname,"Order_%d",i);
-      sprintf(ufile,"use_file_%d",i);
+      sprintf(acCName,"cache_file_%d",i);
+      tmp1=getMap(content->content,acCName);
+      sprintf(acOriginalName,"origin_%d",i);
+      sprintf(acVName,"value_%d",i);
+      sprintf(acSName,"size_%d",i);
+      sprintf(acMName,"mimeType_%d",i);
+      sprintf(acCName1,"isCached_%d",i);
+      sprintf(acXName,"Reference_%d",i);
+      sprintf(acBName,"body_%d",i);
+      sprintf(acHName,"headers_%d",i);
+      sprintf(acOName,"Order_%d",i);
+      sprintf(acFile,"use_file_%d",i);
       sprintf(acLocation,"location_%d",i);
     }else{
-      sprintf(cname,"cache_file");
-      sprintf(oriname,"origin");
-      sprintf(vname,"value");
-      sprintf(sname,"size");
-      sprintf(mname,"mimeType");
-      sprintf(icname,"isCached");
-      sprintf(xname,"Reference");
-      sprintf(bname,"body");
-      sprintf(hname,"headers");
-      sprintf(oname,"Order");
-      sprintf(ufile,"use_file");
+      sprintf(acCName,"cache_file");
+      sprintf(acOriginalName,"origin");
+      sprintf(acVName,"value");
+      sprintf(acSName,"size");
+      sprintf(acMName,"mimeType");
+      sprintf(acCName1,"isCached");
+      sprintf(acXName,"Reference");
+      sprintf(acBName,"body");
+      sprintf(acHName,"headers");
+      sprintf(acOName,"Order");
+      sprintf(acFile,"use_file");
       sprintf(acLocation,"location");
     }
     
-    map* tmap=getMap(content->content,oname);
+    map* tmap=getMap(content->content,acOName);
     sprintf(sindex,"%d",*index+1);
-    if((tmp1=getMap(content->content,xname))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
-      if(getMap(content->content,icname)==NULL) {
+    if((tmp1=getMap(content->content,acXName))!=NULL && tmap!=NULL && strcasecmp(tmap->value,sindex)==0){
+      if(getMap(content->content,acCName1)==NULL) {
         if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
-          fcontent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
-          if(fcontent == NULL){
-            errorException(m, _("Unable to allocate memory"), "InternalError",NULL);
+          pcaFileContent=(char*)malloc((hInternet->ihandle[*index].nDataLen+1)*sizeof(char));
+          if(pcaFileContent == NULL){
+            errorException(ppmsConf, _("Unable to allocate memory"), "InternalError",NULL);
             return -1;
           }
           size_t dwRead;
           InternetReadFile(hInternet->ihandle[*index],
-              (LPVOID)fcontent,
+              (LPVOID)pcaFileContent,
               hInternet->ihandle[*index].nDataLen,
               &dwRead);
-          fcontent[hInternet->ihandle[*index].nDataLen]=0;
+          pcaFileContent[hInternet->ihandle[*index].nDataLen]=0;
         }
         fsize=hInternet->ihandle[*index].nDataLen;
         if(hInternet->ihandle[*index].mimeType==NULL)
@@ -530,18 +530,18 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
           addToMap((*in)->content,acLocation,hInternet->ihandle[*index].location);
         }
 
-        map* tmpMap=getMapOrFill(&(*in)->content,vname,"");
+        map* tmpMap=getMapOrFill(&(*in)->content,acVName,"");
         if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
           free(tmpMap->value);
           tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
           if(tmpMap->value==NULL){
-            return errorException(m, _("Unable to allocate memory"), "InternalError",NULL);
+            return errorException(ppmsConf, _("Unable to allocate memory"), "InternalError",NULL);
           }
-          memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
+          memcpy(tmpMap->value,pcaFileContent,(fsize+1)*sizeof(char));
         }else
-          addToMap((*in)->content,ufile,"true");
+          addToMap((*in)->content,acFile,"true");
         bool bCodes=false;
-        map* pmCodes=getMapFromMaps(*m,"main","extra_supported_codes");
+        map* pmCodes=getMapFromMaps(*ppmsConf,"main","extra_supported_codes");
         if(pmCodes!=NULL){
           char* pcaTmp=zStrdup(pmCodes->value);
           char *pcSavePtr, *pcToken;
@@ -575,12 +575,12 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
 	
         char ltmp1[256];
         sprintf(ltmp1,"%d",fsize);
-        map* tmp=getMapFromMaps(*m,"main","cacheDir");
+        map* tmp=getMapFromMaps(*ppmsConf,"main","cacheDir");
         char *request=NULL;
         if(tmp!=NULL){
           map* tmp2;
           char* md5str=NULL;
-          if((tmp2=getMap(content->content,bname))!=NULL){
+          if((tmp2=getMap(content->content,acBName))!=NULL){
             char *tmpStr=(char*)malloc((strlen(tmp1->value)+strlen(tmp2->value)+1)*sizeof(char));
             sprintf(tmpStr,"%s%s",tmp1->value,tmp2->value);
             if((tmp2=getMap(content->content,"headers"))!=NULL){
@@ -590,34 +590,34 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
               sprintf(tmpStr,"%s%s",tmpStr2,tmp2->value);
               free(tmpStr2);
             }
-            char *myRequest=getFilenameForRequest(*m,tmpStr);
+            char *myRequest=getFilenameForRequest(*ppmsConf,tmpStr);
             md5str=getMd5(myRequest);
             request=zStrdup(tmpStr);
             free(tmpStr);
             free(myRequest);
           }else{
-            char *myRequest=getFilenameForRequest(*m,tmp1->value);
+            char *myRequest=getFilenameForRequest(*ppmsConf,tmp1->value);
             md5str=getMd5(myRequest);
             request=zStrdup(tmp1->value);
             free(myRequest);
           }
           char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
           sprintf(fname,"%s/%s.zca",tmp->value,md5str);
-          addToMap((*in)->content,cname,fname);
+          addToMap((*in)->content,acCName,fname);
           free(fname);
         }
-        addToMap((*in)->content,sname,ltmp1);
-        addToMap((*in)->content,mname,mimeType);
-        char* origin=getProvenance(*m,request);
-        addToMap((*in)->content,oriname,origin);
-        char* cached=isInCache(*m,tmp1->value);
+        addToMap((*in)->content,acSName,ltmp1);
+        addToMap((*in)->content,acMName,mimeType);
+        char* origin=getProvenance(*ppmsConf,request);
+        addToMap((*in)->content,acOriginalName,origin);
+        char* cached=isInCache(*ppmsConf,tmp1->value);
         if(cached==NULL)
           if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
-            addToCache(*m,request,fcontent,mimeType,fsize, NULL, 0);
-            free(fcontent);
+            addToCache(*ppmsConf,request,pcaFileContent,mimeType,fsize, NULL, 0);
+            free(pcaFileContent);
           }else{
-            addToMap((*in)->content,ufile,"true");
-            cacheFile(*m,request,mimeType,fsize,hInternet->ihandle[*index].filename);
+            addToMap((*in)->content,acFile,"true");
+            cacheFile(*ppmsConf,request,mimeType,fsize,hInternet->ihandle[*index].filename);
           }
         free(mimeType);
         free(request);
@@ -642,10 +642,10 @@ int readCurrentInput(maps** m,maps** in,int* index,HINTERNET* hInternet,map** er
  * @param error the error map pointer
  * @return 0 on success, -1 on failure
  */
-int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
+int runHttpRequests(maps** ppmsConf,maps** inputs,HINTERNET* hInternet,map** error){
   int hasAFailure=0;
   if(hInternet!=NULL && hInternet->nb>0){
-    AddHeaderEntries(hInternet,*m);
+    AddHeaderEntries(hInternet,*ppmsConf);
     processDownloads(hInternet);
     maps* content=*inputs;
     int index=0;
@@ -653,14 +653,14 @@ int runHttpRequests(maps** m,maps** inputs,HINTERNET* hInternet,map** error){
       if(content->child!=NULL){
         maps* cursor=content->child;
         while(cursor!=NULL){
-          int red=readCurrentInput(m,&cursor,&index,hInternet,error);
+          int red=readCurrentInput(ppmsConf,&cursor,&index,hInternet,error);
           if(red<0)
             hasAFailure=red;
           cursor=cursor->next;
         }
       }
       else{
-        int red=readCurrentInput(m,&content,&index,hInternet,error);
+        int red=readCurrentInput(ppmsConf,&content,&index,hInternet,error);
         if(red<0)
           hasAFailure=red;
       }
@@ -701,16 +701,16 @@ bool isAllowedPath(maps* pmsConf,const char* pccPath){
  * @param m the maps containing the settings of the main.cfg file
  * @param url the url to add to the queue
  */
-void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
+void addRequestToQueue(maps** ppmsConf,HINTERNET* hInternet,const char* url,bool req){
   hInternet->waitingRequests[hInternet->nb]=zStrdup(url);
   if(req){
-    InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0,*m);
+    InternetOpenUrl(hInternet,hInternet->waitingRequests[hInternet->nb],NULL,0,INTERNET_FLAG_NO_CACHE_WRITE,0,*ppmsConf);
   }
-  maps *oreq=getMaps(*m,"orequests");
+  maps *oreq=getMaps(*ppmsConf,"orequests");
   if(oreq==NULL){
     oreq=createMaps("orequests");
     oreq->content=createMap("value",url);
-    addMapsToMaps(m,oreq);
+    addMapsToMaps(ppmsConf,oreq);
     freeMaps(&oreq);
     free(oreq);
   }else{
@@ -727,10 +727,10 @@ void addRequestToQueue(maps** m,HINTERNET* hInternet,const char* url,bool req){
  * @param url the url to fetch
  * @return 0
  */
-int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
-  char* fcontent = NULL;
-  maps* pmsRequests=getMaps(*m,"http_requests");
-  char *pcUrl=NULL;
+int loadRemoteFile(maps** ppmsConf,map** content,HINTERNET* hInternet,char *url){
+  char* pcaFileContent = NULL;
+  maps* pmsRequests=getMaps(*ppmsConf,"http_requests");
+  char *pcaUrl=NULL;
   int iCurrentIndex=0;
   int iIsInit=0;
 
@@ -762,12 +762,12 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       if(pmUrl!=NULL && strcasecmp(pmUrl->value,url)==0){
         if(pmBody!=NULL){
           if(pmHeaders!=NULL){
-            pcUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+strlen(pmHeaders->value)+1)*sizeof(char));
-            sprintf(pcUrl,"%s%s%s",url,pmBody->value,pmHeaders->value);
+            pcaUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+strlen(pmHeaders->value)+1)*sizeof(char));
+            sprintf(pcaUrl,"%s%s%s",url,pmBody->value,pmHeaders->value);
           }
           else{
-            pcUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+1)*sizeof(char));
-            sprintf(pcUrl,"%s%s",url,pmBody->value);
+            pcaUrl=(char*)malloc((strlen(url)+strlen(pmBody->value)+1)*sizeof(char));
+            sprintf(pcaUrl,"%s%s",url,pmBody->value);
           }
         }
         if(iIsInit==0)
@@ -775,16 +775,16 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
         break;
       }
     }
-    if(pcUrl==NULL)
-      pcUrl=zStrdup(url);
+    if(pcaUrl==NULL)
+      pcaUrl=zStrdup(url);
   }else
-    pcUrl=zStrdup(url);
-  char* cached=isInCache(*m,pcUrl);
-  free(pcUrl);
+    pcaUrl=zStrdup(url);
+  char* cached=isInCache(*ppmsConf,pcaUrl);
+  free(pcaUrl);
   char *mimeType=NULL;
   char *origin=NULL;
   long long fsize=0;
-  map* memUse=getMapFromMaps(*m,"main","memory");
+  map* memUse=getMapFromMaps(*ppmsConf,"main","memory");
 
   map* t=getMap(*content,"xlink:href");
   if(t==NULL){
@@ -797,38 +797,38 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     int s=zStat(cached, &f_status);
     if(s==0){
       if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
-        zooLock* lck=lockFile(*m,cached,'r');
+        zooLock* lck=lockFile(*ppmsConf,cached,'r');
         if(lck==NULL)
           return -1;
         fsize=f_status.st_size;
         FILE* f=fopen(cached,"rb");
         if(f!=NULL){
-          fcontent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
-          fread(fcontent,f_status.st_size,1,f);
-          fcontent[fsize]=0;
+          pcaFileContent=(char*)malloc(sizeof(char)*(f_status.st_size+1));
+          size_t sLength = fread(pcaFileContent,f_status.st_size,1,f);
+          pcaFileContent[fsize]=0;
           fclose(f);
         }
-        unlockFile(*m,lck);
+        unlockFile(*ppmsConf,lck);
       }
       if(iCurrentIndex==0)
         addToMap(*content,"cache_file",cached);
       else
         setMapArray(*content,"cache_file",iCurrentIndex,cached);
     }
-    map* isLocalFile=getMapFromMaps(*m,"lenv",cached);
+    map* isLocalFile=getMapFromMaps(*ppmsConf,"lenv",cached);
     if(isLocalFile==NULL){
       cached[strlen(cached)-1]='m';
       s=zStat(cached, &f_status);
       if(s==0){
-        zooLock* lck=lockFile(*m,cached,'r');
+        zooLock* lck=lockFile(*ppmsConf,cached,'r');
         if(lck==NULL)
           return -1;
         mimeType=(char*)malloc(sizeof(char)*(f_status.st_size+1));
         FILE* f=fopen(cached,"rb");
-        fread(mimeType,f_status.st_size,1,f);
+        size_t sLength = fread(mimeType,f_status.st_size,1,f);
         mimeType[f_status.st_size]=0;
         fclose(f);
-        unlockFile(*m,lck);
+        unlockFile(*ppmsConf,lck);
         if(mimeType!=NULL){
           addToMap(*content,"fmimeType",mimeType);
         }
@@ -836,15 +836,15 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       cached[strlen(cached)-1]='p';
       s=zStat(cached, &f_status);
       if(s==0){
-        zooLock* lck=lockFile(*m,cached,'r');
+        zooLock* lck=lockFile(*ppmsConf,cached,'r');
         if(lck==NULL)
           return -1;
         origin=(char*)malloc(sizeof(char)*(f_status.st_size+1));
         FILE* f=fopen(cached,"rb");
-        fread(origin,f_status.st_size,1,f);
+        size_t sLength = fread(origin,f_status.st_size,1,f);
         origin[f_status.st_size]=0;
         fclose(f);
-        unlockFile(*m,lck);
+        unlockFile(*ppmsConf,lck);
         if(origin!=NULL){
           addToMap(*content,"origin",origin);
           free(origin);
@@ -856,13 +856,13 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     if(pmsRequests!=NULL){
       map* pmBody=getMapArray(pmsRequests->content,"body",hInternet->nb);
       if(pmBody!=NULL){
-        addRequestToQueue(m,hInternet,url,false);
-        char* apcTmp[2]={
+        addRequestToQueue(ppmsConf,hInternet,url,false);
+        const char* apccTmp[2]={
           "Headers",
           "Headers_extra"
         };
         for(int iCnt=0;iCnt<2;iCnt++){
-          map* pmHeaders=getMapArray(pmsRequests->content,apcTmp[iCnt],hInternet->nb);
+          map* pmHeaders=getMapArray(pmsRequests->content,apccTmp[iCnt],hInternet->nb);
           if(pmHeaders!=NULL){
             if(iCnt==0)
               hInternet->ihandle[hInternet->nb].header = NULL;
@@ -871,12 +871,12 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
                     pmHeaders->value);
           }
         }
-        HINTERNET res = InternetOpenUrl(hInternet,url,pmBody->value,strlen(pmBody->value),INTERNET_FLAG_NO_CACHE_WRITE,0,*m);
+        HINTERNET res = InternetOpenUrl(hInternet,url,pmBody->value,strlen(pmBody->value),INTERNET_FLAG_NO_CACHE_WRITE,0,*ppmsConf);
         addIntToMap (pmsRequests->content, "Order", hInternet->nb);
       }else
-          addRequestToQueue(m,hInternet,url,true);
+          addRequestToQueue(ppmsConf,hInternet,url,true);
     }else
-      addRequestToQueue(m,hInternet,url,true);
+      addRequestToQueue(ppmsConf,hInternet,url,true);
     if(pmsRequests!=NULL){
       if(iCurrentIndex==0)
         addIntToMap (pmsRequests->content, "Order", hInternet->nb);
@@ -886,16 +886,16 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
     return 0;
   }
   if(fsize==0){
-    return errorException(m, _("Unable to download the file."), "InternalError", NULL);
+    return errorException(ppmsConf, _("Unable to download the file."), "InternalError", NULL);
   }
 
   map* tmpMap=getMapOrFill(content,"value","");
   if(memUse==NULL || strcasecmp(memUse->value,"load")==0){
     free(tmpMap->value);
     tmpMap->value=(char*)malloc((fsize+1)*sizeof(char));
-    if(tmpMap->value==NULL || fcontent == NULL)
-      return errorException(m, _("Unable to allocate memory"), "InternalError",NULL);
-    memcpy(tmpMap->value,fcontent,(fsize+1)*sizeof(char));
+    if(tmpMap->value==NULL || pcaFileContent == NULL)
+      return errorException(ppmsConf, _("Unable to allocate memory"), "InternalError",NULL);
+    memcpy(tmpMap->value,pcaFileContent,(fsize+1)*sizeof(char));
   }
   
   char ltmp1[256];
@@ -903,9 +903,9 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   addToMap(*content,"size",ltmp1);
   if(cached==NULL){
     if(memUse==NULL || strcasecmp(memUse->value,"load")==0)
-      addToCache(*m,url,fcontent,mimeType,fsize, NULL, 0);
+      addToCache(*ppmsConf,url,pcaFileContent,mimeType,fsize, NULL, 0);
     else{
-      cacheFile(*m,url,mimeType,fsize,hInternet->ihandle[hInternet->nb-1].filename);
+      cacheFile(*ppmsConf,url,mimeType,fsize,hInternet->ihandle[hInternet->nb-1].filename);
       addToMap(*content,"cache_file",hInternet->ihandle[hInternet->nb-1].filename);
       if(hInternet->ihandle[hInternet->nb-1].location!=NULL)
         addToMap(*content,"location",hInternet->ihandle[hInternet->nb-1].location);
@@ -913,12 +913,12 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
   }
   else{
     addToMap(*content,"isCached","true");
-    map* tmp=getMapFromMaps(*m,"main","cacheDir");
+    map* tmp=getMapFromMaps(*ppmsConf,"main","cacheDir");
     map* tmp1=getMap((*content),"cache_file");
     if(tmp!=NULL && tmp1==NULL){
       map *c=getMap((*content),"xlink:href");
       if(strncasecmp(c->value,"file://",7)!=0){
-        char *myRequest=getFilenameForRequest(*m,c->value);
+        char *myRequest=getFilenameForRequest(*ppmsConf,c->value);
         char* md5str=getMd5(myRequest);
         free(myRequest);
         char* fname=(char*)malloc(sizeof(char)*(strlen(tmp->value)+strlen(md5str)+6));
@@ -929,8 +929,8 @@ int loadRemoteFile(maps** m,map** content,HINTERNET* hInternet,char *url){
       }
     }
   }
-  if(fcontent!=NULL)
-    free(fcontent);
+  if(pcaFileContent!=NULL)
+    free(pcaFileContent);
   if(mimeType!=NULL)
     free(mimeType);
   if(cached!=NULL)

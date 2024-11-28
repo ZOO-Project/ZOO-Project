@@ -97,13 +97,11 @@ int cgiMain(){
 
   char ntmp[1024];
 #ifndef ETC_DIR
-#ifndef WIN32
-    getcwd (ntmp, 1024);
-#else
-    _getcwd (ntmp, 1024);
-#endif
+  if(zGetCwd(ntmp,1024)==NULL){
+    ZOO_DEBUG("Unable to get the current working directory\n");
+    return 1;
+  }
 
-    //  zGetcwd (ntmp, 1024);
 #else
   sprintf(ntmp,"%s",ETC_DIR);
 #endif

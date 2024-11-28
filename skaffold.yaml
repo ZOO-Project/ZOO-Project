@@ -11,45 +11,79 @@ build:
 
 
 profiles:
+
   - name: dru
     deploy:
       helm:
         releases:
+          - name: eoap-zoo-project-localstack
+            remoteChart: localstack/localstack
+            namespace: eoap-zoo-project
+            createNamespace: true
+            setValues:
+              service.type: ClusterIP
+              enableStartupScripts: true
+              startupScriptContent: |
+                #!/bin/bash
+
+                awslocal s3 mb s3://results
+
           - name: zoo-project-dru
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.6
-            valuesFiles: []
+            version: 0.3.14
+            valuesFiles:
+            - values.yaml
             setValueTemplates:
               iam.enabled: false
+              # WES cookiecutter
+              #cookiecutter.templateUrl: https://github.com/cedadev/eoepca-proc-service-template-wes.git
+              #cookiecutter.templateBranch: main
+              # EOEPCA cookiecutter
+              #cookiecutter.templateUrl: https://github.com/EOEPCA/eoepca-proc-service-template.git
+              #cookiecutter.templateBranch: feature/python3.8
+              # Argo cookiecutter
+              #cookiecutter.templateUrl: https://github.com/EOEPCA/zoo-argo-wf-proc-service-template.git
+              #cookiecutter.templateBranch: main
+              # Standard cookiecutter
               cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
               cookiecutter.templateBranch: develop
               filter_in.enabled: true
               filter_out.enabled: true
-              #zoofpm.image: "{{.IMAGE_FULLY_QUALIFIED_zoodruimage}}"
               zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
               zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
-              zoofpm.image.pullPolicy: Never
-              #zookernel.image: "{{.IMAGE_FULLY_QUALIFIED_zoodruimage}}"
+              zoofpm.image.pullPolicy: IfNotPresent
               zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
               zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
-              zookernel.image.pullPolicy: Never
-              minio.enabled: true
-              minio.auth.rootUser: minio-admin
-              minio.auth.rootPassword: minio-secret-password
-              minio.persistence.enabled: true
-              minio.persistence.storageClass: standard
-              minio.persistence.size: 2Gi
-              minio.persistence.accessMode: ReadWriteOnce
-              minio.defaultBuckets: "results"
-              minio.fullnameOverride: "zoo-project-localstack"
+              zookernel.image.pullPolicy: IfNotPresent
+
+              # HPC specific
+              #workflow.inputs.WES_URL: "https://<wes-server-dns-name>/ga4gh/wes/v1/"
+              #workflow.inputs.WES_USER: "yourusername"
+              #workflow.inputs.WES_PASSWORD: "yourpassword"
+
+              # ARGO specific
+              #workflow.argo.enabled: true
+              #workflow.argo.wfToken: "<ARGO_WF_TOKEN>"
+
+              # Persistence settings (should be same in the original chart)
+              persistence.procServicesAccessMode: ReadWriteMany
+
+              # Kubernetes (arm64) from Docker Desktop specific settings
+              workflow.storageClass: hostpath
+              persistence.storageClass: hostpath
+              persistence.procServicesStorageClass: hostpath
+              persistence.tmpStorageClass: hostpath
+
+              # RabbitMQ resource limits
+              rabbitmq.resource.limits.memory: 2048Mi
 
 
 portForward:
   - resourceType: service
     resourceName: zoo-project-dru-service
-    namespace: eoap-zoo-project  
+    namespace: eoap-zoo-project
     address: localhost
     port: 80
     localPort: 8080  

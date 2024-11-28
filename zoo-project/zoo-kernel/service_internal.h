@@ -31,10 +31,6 @@
  * The default service url (overriden by serverAddress)
  */
 #define DEFAULT_SERVICE_URL "http://www.zoo-project.org/"
-/**
- * The time size
- */
-#define TIME_SIZE 40
 
 #include <libintl.h>
 #include <locale.h>

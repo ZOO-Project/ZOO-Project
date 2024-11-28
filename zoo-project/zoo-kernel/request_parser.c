@@ -71,72 +71,61 @@ int appendMapsToMaps (maps** m, maps* mo, maps* mi, elements* elem){
   if (el == NULL)
     hasEl = -1;
 
-  if (tmap == NULL)
-    {
-      if (hasEl > 0)
-	tmap = getMapType (el->defaults->content);
+  if (tmap == NULL){
+    if (hasEl > 0)
+      tmap = getMapType (el->defaults->content);
     }
   
   map *testMap = NULL;
-  if (hasEl > 0)
-    {
-      testMap = getMap (el->content, "maxOccurs");
-    }
-  else
-    {
-      testMap = createMap ("maxOccurs", "unbounded");
-    }
+  if (hasEl > 0){
+    testMap = getMap (el->content, "maxOccurs");
+  }
+  else {
+    testMap = createMap ("maxOccurs", "unbounded");
+  }
     
-  if (testMap != NULL)
-    {
-      if (strncasecmp (testMap->value, "unbounded", 9) != 0
-	  && atoi (testMap->value) > 1)
-	{
-	  addMapsArrayToMaps (&mo, mi, tmap->name);
-	  map* nb=getMapFromMaps(mo,mi->name,"length");
-	  if (nb!=NULL && atoi(nb->value)>atoi(testMap->value))
-	    {
-	      char emsg[1024];
-	      sprintf (emsg,
-		       _("The maximum allowed occurrences for <%s> (%i) was exceeded."),
-		       mi->name, atoi (testMap->value));
-	      errorException (m, emsg, "InternalError", NULL);
-	      return -1;
-	    }
-	}
-      else
-	{
-	  if (strncasecmp (testMap->value, "unbounded", 9) == 0)
-	    {
-	      if (hasEl < 0)
-		{
-		  freeMap (&testMap);
-		  free (testMap);
-		}
-	      if (addMapsArrayToMaps (&mo, mi, tmap->name) < 0)
-		{
-		  char emsg[1024];
-		  map *tmpMap = getMap (mi->content, "length");
-		  sprintf (emsg,
-			   _
-			   ("ZOO-Kernel was unable to load your data for %s position %s."),
-			   mi->name, tmpMap->value);
-		  errorException (m, emsg, "InternalError", NULL);
-		  return -1;
-		}
-	    }
-	  else
-	    {
-	      char emsg[1024];
-	      sprintf (emsg,
-		       _
-		       ("The maximum allowed occurrences for <%s> is one."),
-		       mi->name);
-	      errorException (m, emsg, "InternalError", NULL);
-	      return -1;
-	    }
-	}
+  if (testMap != NULL){
+    if (strncasecmp (testMap->value, "unbounded", 9) != 0
+        && atoi (testMap->value) > 1){
+      addMapsArrayToMaps (&mo, mi, tmap->name);
+      map* nb=getMapFromMaps(mo,mi->name,"length");
+      if (nb!=NULL && atoi(nb->value)>atoi(testMap->value)){
+        char emsg[1024];
+        sprintf (emsg,
+              _("The maximum allowed occurrences for <%s> (%i) was exceeded."),
+              mi->name, atoi (testMap->value));
+        errorException (m, emsg, "InternalError", NULL);
+        return -1;
+      }
     }
+    else{
+      if (strncasecmp (testMap->value, "unbounded", 9) == 0){
+        if (hasEl < 0){
+          freeMap (&testMap);
+          free (testMap);
+        }
+        if (addMapsArrayToMaps (&mo, mi, tmap->name) < 0){
+          char emsg[1024];
+          map *tmpMap = getMap (mi->content, "length");
+          sprintf (emsg,
+               _
+               ("ZOO-Kernel was unable to load your data for %s position %s."),
+               mi->name, tmpMap->value);
+          errorException (m, emsg, "InternalError", NULL);
+          return -1;
+        }
+      }
+      else {
+        char emsg[1024];
+        sprintf (emsg,
+              _
+              ("The maximum allowed occurrences for <%s> is one."),
+              mi->name);
+        errorException (m, emsg, "InternalError", NULL);
+        return -1;
+      }
+    }
+  }
   return 0;
 }
 
@@ -169,7 +158,7 @@ void ensureDecodedBase64(maps **in){
       for(int i=1;i<len;i++){
         tmp=getMapArray(cursor->content,"encoding",i);
         if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
-          char key[17];
+          char key[26];
           sprintf(key,"base64_value_%d",i);
           tmp=getMapArray(cursor->content,"value",i);
           readBase64(&tmp);
@@ -239,23 +228,24 @@ int kvpParseInputs(maps** pmsConf,service* s,map *request_inputs,maps** request_
       pToken = strtok (NULL, ";");
       i++;
     }
-	
+
     for (j = 0; j < i; j++){
       char *tmp = zStrdup (inputs_as_text[j]);
       free (inputs_as_text[j]);
       char *tmpc;
       tmpc = strtok (tmp, "@");
       while (tmpc != NULL){
+        ssize_t sLength = strlen (tmpc);
         char *tmpv = strstr (tmpc, "=");
         char tmpn[256];
         memset (tmpn, 0, 256);
         if (tmpv != NULL){
           strncpy (tmpn, tmpc,
-            (strlen (tmpc) - strlen (tmpv)) * sizeof (char));
-          tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
+            (sLength - strlen (tmpv)) * sizeof (char));
+          tmpn[sLength - strlen (tmpv)] = 0;
         }
         else{
-          strncpy (tmpn, tmpc, strlen (tmpc) * sizeof (char));
+          strncpy (tmpn, tmpc, (sLength+1) * sizeof (char));
           tmpn[strlen (tmpc)] = 0;
         }
         if (tmpmaps == NULL){
@@ -277,18 +267,19 @@ int kvpParseInputs(maps** pmsConf,service* s,map *request_inputs,maps** request_
         }
         tmpc = strtok (NULL, "@");
         while (tmpc != NULL){
+          ssize_t sLength1 = strlen (tmpc);
           char *tmpv1 = strstr (tmpc, "=");
           char tmpn1[1024];
           memset (tmpn1, 0, 1024);
           if (tmpv1 != NULL){
-            strncpy (tmpn1, tmpc, strlen (tmpc) - strlen (tmpv1));
-            tmpn1[strlen (tmpc) - strlen (tmpv1)] = 0;
+            strncpy (tmpn1, tmpc, sLength1 - strlen (tmpv1));
+            tmpn1[sLength1 - strlen (tmpv1)] = 0;
             if(strstr(tmpn1,"cache_file")==NULL)
               addToMap (tmpmaps->content, tmpn1, tmpv1 + 1);
           }
           else{
-            strncpy (tmpn1, tmpc, strlen (tmpc));
-            tmpn1[strlen (tmpc)] = 0;
+            strncpy (tmpn1, tmpc, sLength1+1);
+            tmpn1[sLength1] = 0;
             map *lmap = getLastMap (tmpmaps->content);
             char *tmpValue =
               (char *) malloc ((strlen (tmpv) + strlen (tmpc) + 1) *
@@ -443,8 +434,7 @@ int kvpParseOutputs(maps** pmsConf,map *request_inputs,maps** request_output){
             if (tmp_output == NULL) {
               free(cursor_output);
               return errorException (pmsConf,
-                  _
-                  ("Unable to allocate memory"),
+                  _("Unable to allocate memory"),
                   "InternalError", NULL);
             }
           }
@@ -453,17 +443,20 @@ int kvpParseOutputs(maps** pmsConf,map *request_inputs,maps** request_output){
           char *tmpv = strstr (tmpc, "=");
           char tmpn[256];
           memset (tmpn, 0, 256);
-          strncpy (tmpn, tmpc,
-            (strlen (tmpc) -
-              strlen (tmpv)) * sizeof (char));
-          tmpn[strlen (tmpc) - strlen (tmpv)] = 0;
-          if (tmp_output->content == NULL)
-            {
-              tmp_output->content = createMap (tmpn, tmpv + 1);
-              tmp_output->content->next = NULL;
-            }
-          else
-            addToMap (tmp_output->content, tmpn, tmpv + 1);
+          ssize_t sLength = strlen (tmpc);
+          if(sLength==0){
+            strncpy (tmpn, tmpc,
+                    (sLength -
+                    strlen (tmpv)+1) * sizeof (char));
+            tmpn[sLength - strlen (tmpv)] = 0;
+            if (tmp_output->content == NULL)
+                {
+                tmp_output->content = createMap (tmpn, tmpv + 1);
+                tmp_output->content->next = NULL;
+                }
+            else
+                addToMap (tmp_output->content, tmpn, tmpv + 1);
+          }
         }
         k++;
         tmpc = strtok (NULL, "@");
@@ -495,8 +488,8 @@ int defineMissingIdentifier(maps** pmsConf,maps** mymaps){
     *mymaps = createMaps("missingIndetifier");
     if (*mymaps == NULL){
       return errorException (pmsConf,
-			     _("Unable to allocate memory"),
-			     "InternalError", NULL);
+                 _("Unable to allocate memory"),
+                 "InternalError", NULL);
     }
   }
   return 0;
@@ -519,677 +512,629 @@ int xmlParseInputs(maps** pmsConf,service* s,maps** request_output,xmlDocPtr doc
   map* version=getMapFromMaps(*pmsConf,"main","rversion");
   map* memory=getMapFromMaps(*pmsConf,"main","memory");
   int vid=getVersionId(version->value);
-  for (k=0; k < nodes->nodeNr; k++)
-    {
-      maps *tmpmaps = NULL;
-      xmlNodePtr cur = nodes->nodeTab[k];
+  for (k=0; k < nodes->nodeNr; k++){
+    maps *tmpmaps = NULL;
+    xmlNodePtr cur = nodes->nodeTab[k];
 
-      if (nodes->nodeTab[k]->type == XML_ELEMENT_NODE)
-	{
-	  // A specific Input node.
-	  if(vid==1){
-	    xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
-	    tmpmaps = createMaps((char *) val);
-	    xmlFree(val);
-	  }
+    if (nodes->nodeTab[k]->type == XML_ELEMENT_NODE){
+      // A specific Input node.
+      if(vid==1){
+        xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
+        tmpmaps = createMaps((char *) val);
+        xmlFree(val);
+      }
 
-	  xmlNodePtr cur2 = cur->children;
-	  while (cur2 != NULL)
-	    {
-	      while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
-		cur2 = cur2->next;
-	      if (cur2 == NULL)
-		break;
-	      // Indentifier
-	      if (xmlStrncasecmp
-		  (cur2->name, BAD_CAST "Identifier",
-		   xmlStrlen (cur2->name)) == 0)
-		{
-		  xmlChar *val =
-		    xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
-		  if (tmpmaps == NULL && val!=NULL)
-		    {
-		      tmpmaps = createMaps((char*)val);
-		      if (tmpmaps == NULL)
-			{
-			  return errorException (pmsConf,
-						 _
-						 ("Unable to allocate memory"),
-						 "InternalError", NULL);
-			}
-		      xmlFree (val);
-		    }
-		}
-	      // Title, Asbtract
-	      if (xmlStrncasecmp
-		  (cur2->name, BAD_CAST "Title",
-		   xmlStrlen (cur2->name)) == 0
-		  || xmlStrncasecmp (cur2->name, BAD_CAST "Abstract",
-				     xmlStrlen (cur2->name)) == 0)
-		{
-		  xmlChar *val =
-		    xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
-		  defineMissingIdentifier(pmsConf,&tmpmaps);
-		  if(val!=NULL){
-		    if (tmpmaps->content != NULL)
-		      addToMap (tmpmaps->content,
-				(char *) cur2->name, (char *) val);
-		    else
-		      tmpmaps->content =
-			createMap ((char *) cur2->name, (char *) val);
-		    xmlFree (val);
-		  }
-		}
-	      // InputDataFormChoice (Reference or Data ?) / 2.0.0 DataInputType / Input 
-	      if (xmlStrcasecmp (cur2->name, BAD_CAST "Input") == 0)
-		{
-		  char *xpathExpr=(char*)malloc(61+strlen(tmpmaps->name));
-		  sprintf(xpathExpr,"/*/*[local-name()='Input' and @id='%s']/*[local-name()='Input']",tmpmaps->name);
-		  xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
-		  xmlNodeSet *tmps = tmpsptr->nodesetval;
-		  if(tmps!=NULL){
-		    maps* request_output1=NULL;
-		    if(xmlParseInputs(pmsConf,s,&request_output1,doc,tmps,hInternet)<0)
-		      return -1;
-		    if(tmpmaps->child==NULL)
-		      tmpmaps->child=dupMaps(&request_output1);
-		    else
-		      addMapsToMaps(&tmpmaps->child,request_output1);
-		    freeMaps(&request_output1);
-		    free(request_output1);
-		  }
-		  while(cur2->next!=NULL)
-		    cur2=cur2->next;
-		}
-	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Reference") == 0)
-		{
-		  defineMissingIdentifier(pmsConf,&tmpmaps);
-		  // Get every attribute from a Reference node
-		  // mimeType, encoding, schema, href, method
-		  // Header and Body gesture should be added here
-		  const char *refs[5] =
-		    { "mimeType", "encoding", "schema", "method",
-		      "href"
-		    };
-		  for (l = 0; l < 5; l++)
-		    {
-		      xmlChar *val = xmlGetProp (cur2, BAD_CAST refs[l]);
-		      if (val != NULL && xmlStrlen (val) > 0)
-			{
-			  if (tmpmaps->content != NULL)
-			    addToMap (tmpmaps->content, refs[l],
-				      (char *) val);
-			  else
-			    tmpmaps->content =
-			      createMap (refs[l], (char *) val);
-			  map *ltmp = getMap (tmpmaps->content, "method");
-			  if (l == 4 )
-			    {
-			      if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0))
-				{
-				  if (loadRemoteFile
-				      (pmsConf, &tmpmaps->content, hInternet,
-				       (char *) val) != 0)
-				    {
-				      return errorException (pmsConf,
-							     _("Unable to add a request in the queue."),
-							     "InternalError",
-							     NULL);
-				    }
-				  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
-				}
-			      addToMap (tmpmaps->content, "Reference", (char*) val);
-			    }
-			  xmlFree (val);
-			}
-		    }
-		  // Parse Header and Body from Reference
-		  xmlNodePtr cur3 = cur2->children;
+      xmlNodePtr cur2 = cur->children;
+      while (cur2 != NULL)
+        {
+          while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
+            cur2 = cur2->next;
+          if (cur2 == NULL)
+            break;
+          // Indentifier
+          if (xmlStrncasecmp(cur2->name,
+              BAD_CAST "Identifier",
+              xmlStrlen (cur2->name)) == 0){
+            xmlChar *val =
+              xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
+          if (tmpmaps == NULL && val!=NULL){
+            tmpmaps = createMaps((char*)val);
+            if (tmpmaps == NULL){
+              return errorException (pmsConf,
+                        _
+                        ("Unable to allocate memory"),
+                        "InternalError", NULL);
+            }
+            xmlFree (val);
+          }
+        }
+        // Title, Asbtract
+        if (xmlStrncasecmp
+        (cur2->name, BAD_CAST "Title",
+          xmlStrlen (cur2->name)) == 0
+        || xmlStrncasecmp (cur2->name, BAD_CAST "Abstract",
+                    xmlStrlen (cur2->name)) == 0){
+          xmlChar *val =
+            xmlNodeListGetString (doc, cur2->xmlChildrenNode, 1);
+          defineMissingIdentifier(pmsConf,&tmpmaps);
+          if(val!=NULL){
+            if (tmpmaps->content != NULL)
+              addToMap (tmpmaps->content,
+                (char *) cur2->name, (char *) val);
+            else
+              tmpmaps->content =
+            createMap ((char *) cur2->name, (char *) val);
+            xmlFree (val);
+          }
+        }
+        // InputDataFormChoice (Reference or Data ?) / 2.0.0 DataInputType / Input 
+        if (xmlStrcasecmp (cur2->name, BAD_CAST "Input") == 0){
+          char *xpathExpr=(char*)malloc(61+strlen(tmpmaps->name));
+          sprintf(xpathExpr,"/*/*[local-name()='Input' and @id='%s']/*[local-name()='Input']",tmpmaps->name);
+          xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
+          xmlNodeSet *tmps = tmpsptr->nodesetval;
+          if(tmps!=NULL){
+            maps* request_output1=NULL;
+            if(xmlParseInputs(pmsConf,s,&request_output1,doc,tmps,hInternet)<0)
+              return -1;
+            if(tmpmaps->child==NULL)
+              tmpmaps->child=dupMaps(&request_output1);
+            else
+              addMapsToMaps(&tmpmaps->child,request_output1);
+            freeMaps(&request_output1);
+            free(request_output1);
+          }
+          while(cur2->next!=NULL)
+            cur2=cur2->next;
+        }
+        else if (xmlStrcasecmp (cur2->name, BAD_CAST "Reference") == 0) {
+          defineMissingIdentifier(pmsConf,&tmpmaps);
+          // Get every attribute from a Reference node
+          // mimeType, encoding, schema, href, method
+          // Header and Body gesture should be added here
+          const char *refs[5] =
+            {
+              "mimeType",
+              "encoding",
+              "schema",
+              "method",
+              "href"
+            };
+          for (l = 0; l < 5; l++){
+            xmlChar *val = xmlGetProp (cur2, BAD_CAST refs[l]);
+            if (val != NULL && xmlStrlen (val) > 0){
+              if (tmpmaps->content != NULL)
+                addToMap (tmpmaps->content, refs[l],
+                      (char *) val);
+              else
+                tmpmaps->content =
+                  createMap (refs[l], (char *) val);
+              map *ltmp = getMap (tmpmaps->content, "method");
+              if (l == 4 ) {
+                if ((ltmp==NULL || strncmp (ltmp->value, "POST",4) != 0)) {
+                  if (loadRemoteFile
+                      (pmsConf, &tmpmaps->content, hInternet,
+                       (char *) val) != 0) {
+                    return errorException (pmsConf,
+                                _("Unable to add a request in the queue."),
+                                "InternalError",
+                                NULL);
+                  }
+                  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
+                }
+                addToMap (tmpmaps->content, "Reference", (char*) val);
+              }
+              xmlFree (val);
+            }
+          }
+          // Parse Header and Body from Reference
+          xmlNodePtr cur3 = cur2->children;
 #ifdef USE_AMQP
-		  int iHeaders=0;
+          int iHeaders=0;
 #endif
-		  while (cur3 != NULL)
-		    {
-		      while (cur3 != NULL
-			     && cur3->type != XML_ELEMENT_NODE)
-			cur3 = cur3->next;
-		      if (cur3 == NULL)
-			break;
-		      if (xmlStrcasecmp (cur3->name, BAD_CAST "Header") ==
-			  0)
-			{
-			  const char *ha[2];
-			  ha[0] = "key";
-			  ha[1] = "value";
-			  int hai;
-			  char *has=NULL;
-			  char *key;
-			  for (hai = 0; hai < 2; hai++)
-			    {
-			      xmlChar *val =
-				xmlGetProp (cur3, BAD_CAST ha[hai]);
+          while (cur3 != NULL){
+              while (cur3 != NULL
+                 && cur3->type != XML_ELEMENT_NODE)
+                cur3 = cur3->next;
+              if (cur3 == NULL)
+                break;
+              if (xmlStrcasecmp (cur3->name, BAD_CAST "Header") == 0) {
+                const char *ha[2];
+                ha[0] = "key";
+                ha[1] = "value";
+                int hai;
+                char *has=NULL;
+                char *key;
+                for (hai = 0; hai < 2; hai++) {
+                  xmlChar *val =
+                    xmlGetProp (cur3, BAD_CAST ha[hai]);
+  #ifdef POST_DEBUG
+                  fprintf (stderr, "%s = %s\n", ha[hai],
+                        (char *) val);
+  #endif
+                  if (hai == 0){
+                    key = zStrdup ((char *) val);
+                  }
+                  else {
+                    has =
+                      (char *)
+                      malloc ((4 + xmlStrlen (val) +
+                          strlen (key)) *
+                          sizeof (char));
+                    if (has == NULL) {
+                      return errorException (pmsConf,
+                                  _
+                                  ("Unable to allocate memory"),
+                                  "InternalError",
+                                  NULL);
+                    }
+                    snprintf (has,
+                          (3 + xmlStrlen (val) +
+                          strlen (key)), "%s: %s", key,
+                          (char *) val);
+  #ifdef USE_AMQP
+                    if(getMaps(*pmsConf,"rabbitmq")){
+                      char* pcaName=NULL;
+                      pcaName=(char*) malloc((26)*sizeof(char));
+                      sprintf(pcaName,"rb_headers_%d",hInternet->nb);
+                      if(getMapFromMaps(*pmsConf,"lenv",pcaName)==NULL){
+                        setMapInMaps(*pmsConf,"lenv",pcaName,has);
+                      }
+                      else{
+                        maps* pmCurrent=getMaps(*pmsConf,"lenv");
+                        setMapArray(pmCurrent->content,pcaName,iHeaders,has);
+                      }
+                    }
+                    iHeaders++;
+  #endif
+                    free (key);
+                  }
+                  xmlFree (val);
+                }
+                if (has != NULL){
+                  hInternet->ihandle[hInternet->nb].header = NULL;
+                  hInternet->ihandle[hInternet->nb].header =
+                    curl_slist_append (hInternet->ihandle
+                          [hInternet->nb].header,
+                          has);
+                  free (has);
+                }
+              }
+              else {
 #ifdef POST_DEBUG
-			      fprintf (stderr, "%s = %s\n", ha[hai],
-				       (char *) val);
+                fprintf (stderr,
+                    "Try to fetch the body part of the request ...\n");
 #endif
-			      if (hai == 0)
-				{
-				  key = zStrdup ((char *) val);
-				}
-			      else
-				{
-				  has =
-				    (char *)
-				    malloc ((4 + xmlStrlen (val) +
-					     strlen (key)) *
-					    sizeof (char));
-				  if (has == NULL)
-				    {
-				      return errorException (pmsConf,
-							     _
-							     ("Unable to allocate memory"),
-							     "InternalError",
-							     NULL);
-				    }
-				  snprintf (has,
-					    (3 + xmlStrlen (val) +
-					     strlen (key)), "%s: %s", key,
-					    (char *) val);
-#ifdef USE_AMQP
-				  if(getMaps(*pmsConf,"rabbitmq")){
-				    char* pcaName=NULL;
-				    pcaName=(char*) malloc((26)*sizeof(char));
-				    sprintf(pcaName,"rb_headers_%d",hInternet->nb);
-				    if(getMapFromMaps(*pmsConf,"lenv",pcaName)==NULL){
-				      setMapInMaps(*pmsConf,"lenv",pcaName,has);
-				    }
-				    else{
-				      maps* pmCurrent=getMaps(*pmsConf,"lenv");
-				      setMapArray(pmCurrent->content,pcaName,iHeaders,has);
-				    }
-				  }
-				  iHeaders++;
-#endif
-				  free (key);
-				}
-			      xmlFree (val);
-			    }
-			  if (has != NULL){
-			    hInternet->ihandle[hInternet->nb].header = NULL;
-			    hInternet->ihandle[hInternet->nb].header =
-			      curl_slist_append (hInternet->ihandle
-						 [hInternet->nb].header,
-						 has);
-			    free (has);
-			  }
-			}
-		      else
-			{
+              if (xmlStrcasecmp (cur3->name, BAD_CAST "Body") == 0) {
 #ifdef POST_DEBUG
-			  fprintf (stderr,
-				   "Try to fetch the body part of the request ...\n");
+                fprintf (stderr, "Body part found (%s) !!!\n",
+                      (char *) cur3->content);
 #endif
-			  if (xmlStrcasecmp (cur3->name, BAD_CAST "Body")
-			      == 0)
-			    {
-#ifdef POST_DEBUG
-			      fprintf (stderr, "Body part found (%s) !!!\n",
-				       (char *) cur3->content);
-#endif
-			      char *tmp = NULL;
-			      xmlNodePtr cur4 = cur3->children;
-			      while (cur4 != NULL)
-				{
-				  while (cur4 && cur4 != NULL && cur4->type && cur4->type != XML_ELEMENT_NODE){
-				    if(cur4->next)
-				      cur4 = cur4->next;
-				    else
-				      cur4 = NULL;
-				  }
-				  if(cur4 != NULL) {
-				    xmlDocPtr bdoc =
-				      xmlNewDoc (BAD_CAST "1.0");
-				    bdoc->encoding =
-				      xmlCharStrdup ("UTF-8");
-				    xmlDocSetRootElement (bdoc, cur4);
-				    xmlChar *btmps;
-				    int bsize;
-				    // TODO : check for encoding defined in the input
-				    xmlDocDumpFormatMemoryEnc(bdoc, &btmps, &bsize, "UTF-8", 0);
-				    if (btmps != NULL){
-				      tmp = (char *) malloc ((bsize + 1) * sizeof (char));
+                char *tmp = NULL;
+                xmlNodePtr cur4 = cur3->children;
+                while (cur4 != NULL){
+                  while (cur4 && cur4 != NULL && cur4->type && cur4->type != XML_ELEMENT_NODE){
+                    if(cur4->next)
+                      cur4 = cur4->next;
+                    else
+                      cur4 = NULL;
+                  }
+                  if(cur4 != NULL) {
+                    xmlDocPtr bdoc =
+                      xmlNewDoc (BAD_CAST "1.0");
+                    bdoc->encoding =
+                      xmlCharStrdup ("UTF-8");
+                    xmlDocSetRootElement (bdoc, cur4);
+                    xmlChar *btmps;
+                    int bsize;
+                    // TODO : check for encoding defined in the input
+                    xmlDocDumpFormatMemoryEnc(bdoc, &btmps, &bsize, "UTF-8", 0);
+                    if (btmps != NULL){
+                      tmp = (char *) malloc ((bsize + 1) * sizeof (char));
+                      sprintf (tmp, "%s", (char*) btmps);
+                      //xmlFreeDoc (bdoc);
 
-				      sprintf (tmp, "%s", (char*) btmps);
-
-				      //xmlFreeDoc (bdoc);
-					  
-				      map *btmp =
-					getMap (tmpmaps->content, "Reference");
-				      addToMap (tmpmaps->content, "Body", tmp);
-				      if (btmp != NULL)
-					{
-					  addRequestToQueue(pmsConf,hInternet,(char *) btmp->value,false);
-					  InternetOpenUrl (hInternet,
-							   btmp->value,
-							   tmp,
-							   xmlStrlen(btmps),
-							   INTERNET_FLAG_NO_CACHE_WRITE,
-							   0,
-							   *pmsConf);
-					  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
-					}
-				      xmlFree (btmps);
-				      free (tmp);
-				      break;
-				    }
-				  }
-				  cur4 = cur4->next;
-				}
-			    }
-			  else
-			    if (xmlStrcasecmp
-				(cur3->name,
-				 BAD_CAST "BodyReference") == 0)
-			      {
-				xmlChar *val =
-				  xmlGetProp (cur3, BAD_CAST "href");
-				HINTERNET bInternet, res1, res;
-				maps *tmpConf=createMaps("main");
-				tmpConf->content=createMap("memory","load");
-				bInternet = InternetOpen (
+                      map *btmp =
+                        getMap (tmpmaps->content, "Reference");
+                      addToMap (tmpmaps->content, "Body", tmp);
+                      if (btmp != NULL){
+                        addRequestToQueue(pmsConf,hInternet,(char *) btmp->value,false);
+                        InternetOpenUrl (hInternet,
+                                btmp->value,
+                                tmp,
+                                xmlStrlen(btmps),
+                                INTERNET_FLAG_NO_CACHE_WRITE,
+                                0,
+                                *pmsConf);
+                        addIntToMap (tmpmaps->content, "Order", hInternet->nb);
+                      }
+                      xmlFree (btmps);
+                      free (tmp);
+                      break;
+                    }
+                  }
+                  cur4 = cur4->next;
+                }
+              }
+              else
+                if (xmlStrcasecmp
+                (cur3->name,
+                 BAD_CAST "BodyReference") == 0){
+                xmlChar *val =
+                  xmlGetProp (cur3, BAD_CAST "href");
+                HINTERNET bInternet, res1, res;
+                maps *tmpConf=createMaps("main");
+                tmpConf->content=createMap("memory","load");
+                bInternet = InternetOpen (
 #ifndef WIN32
-							  (LPCTSTR)
+                              (LPCTSTR)
 #endif
-							  "ZooWPSClient\0",
-							  INTERNET_OPEN_TYPE_PRECONFIG,
-							  NULL, NULL, 0);
+                              "ZooWPSClient\0",
+                              INTERNET_OPEN_TYPE_PRECONFIG,
+                              NULL, NULL, 0);
 #ifndef WIN32
-				if (!CHECK_INET_HANDLE (bInternet))
-				  fprintf (stderr,
-					   "WARNING : bInternet handle failed to initialize");
+                if (!CHECK_INET_HANDLE (bInternet))
+                  fprintf (stderr,
+                       "WARNING : bInternet handle failed to initialize");
 #endif
-				bInternet.waitingRequests[0] =
-				  zStrdup ((char *) val);
-				res1 =
-				  InternetOpenUrl (&bInternet,
-						   bInternet.waitingRequests
-						   [0], NULL, 0,
-						   INTERNET_FLAG_NO_CACHE_WRITE,
-						   0,
-						   tmpConf);
-				processDownloads (&bInternet);
-				freeMaps(&tmpConf);
-				free(tmpConf);
-				char *tmp =
-				  (char *)
-				  malloc ((bInternet.ihandle[0].nDataLen +
-					   1) * sizeof (char));
-				if (tmp == NULL)
-				  {
-				    return errorException (pmsConf,
-							   _
-							   ("Unable to allocate memory"),
-							   "InternalError",
-							   NULL);
-				  }
-				size_t bRead;
-				InternetReadFile (bInternet.ihandle[0],
-						  (LPVOID) tmp,
-						  bInternet.
-						  ihandle[0].nDataLen,
-						  &bRead);
-				tmp[bInternet.ihandle[0].nDataLen] = 0;
-				InternetCloseHandle(&bInternet);
-				addToMap (tmpmaps->content, "Body", tmp);
-				map *btmp =
-				  getMap (tmpmaps->content, "href");
-				if (btmp != NULL)
-				  {
-				    addRequestToQueue(pmsConf,hInternet,(char *) btmp->value,false);
+                bInternet.waitingRequests[0] =
+                  zStrdup ((char *) val);
+                res1 =
+                  InternetOpenUrl (&bInternet,
+                           bInternet.waitingRequests
+                           [0], NULL, 0,
+                           INTERNET_FLAG_NO_CACHE_WRITE,
+                           0,
+                           tmpConf);
+                processDownloads (&bInternet);
+                freeMaps(&tmpConf);
+                free(tmpConf);
+                char *tmp =
+                  (char *)
+                  malloc ((bInternet.ihandle[0].nDataLen +
+                       1) * sizeof (char));
+                if (tmp == NULL) {
+                  return errorException (pmsConf,
+                              _
+                              ("Unable to allocate memory"),
+                              "InternalError",
+                              NULL);
+                }
+                size_t bRead;
+                InternetReadFile (bInternet.ihandle[0],
+                          (LPVOID) tmp,
+                          bInternet.
+                          ihandle[0].nDataLen,
+                          &bRead);
+                tmp[bInternet.ihandle[0].nDataLen] = 0;
+                InternetCloseHandle(&bInternet);
+                addToMap (tmpmaps->content, "Body", tmp);
+                map *btmp =
+                  getMap (tmpmaps->content, "href");
+                if (btmp != NULL){
+                  addRequestToQueue(pmsConf,hInternet,(char *) btmp->value,false);
 
-				    res =
-				      InternetOpenUrl (hInternet,
-						       btmp->value,
-						       tmp,
-						       strlen(tmp),
-						       INTERNET_FLAG_NO_CACHE_WRITE,
-						       0,
-						       *pmsConf);
-				    addIntToMap (tmpmaps->content, "Order", hInternet->nb);
-				  }
-				free (tmp);
-				xmlFree (val);
-			      }
-			}
-		      cur3 = cur3->next;
-		    }
-		}
-	      else if (xmlStrcasecmp (cur2->name, BAD_CAST "Data") == 0)
-		{
-		  defineMissingIdentifier(pmsConf,&tmpmaps);
-		  xmlNodePtr cur4 = cur2->children;
-		  if(vid==1){
-		    // Get every dataEncodingAttributes from a Data node:
-		    // mimeType, encoding, schema
-		    const char *coms[3] =
-		      { "mimeType", "encoding", "schema" };
-		    for (l = 0; l < 3; l++){
-		      xmlChar *val =
-			  //xmlGetProp (cur4, BAD_CAST coms[l]);
-			  xmlGetProp (cur2, BAD_CAST coms[l]);   // knut : get attributes from the Data xml element, not it's children (the content)
-			if (val != NULL && strlen ((char *) val) > 0){
-			  if (tmpmaps->content != NULL)
-			    addToMap (tmpmaps->content,coms[l],(char *) val);
-			  else
-			    tmpmaps->content =
-			      createMap (coms[l],(char *) val);
-			}
-			xmlFree (val);
-		    }
-		    while (cur4 != NULL){
-		      while(cur4 != NULL && 
-			    cur4->type != XML_CDATA_SECTION_NODE &&
-			    cur4->type != XML_TEXT_NODE &&
-			    cur4->type != XML_ELEMENT_NODE)
-			cur4=cur4->next;
-		      if(cur4!=NULL){
-			if (cur4->type == XML_ELEMENT_NODE)
-			  {
-			    xmlChar *mv;
-			    int buffersize;
-			    xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
-			    xmlDocSetRootElement (doc1, cur4);
-			    xmlDocDumpFormatMemoryEnc (doc1, &mv,
-						       &buffersize,
-						       "utf-8", 0);
-			    if (tmpmaps->content != NULL)
-			      addToMap (tmpmaps->content, "value",
-					(char *) mv);
-			    else
-			      tmpmaps->content =
-				createMap ("value", (char *) mv);
-			    free(mv);
-			  }
-			else{
-			  if (tmpmaps->content != NULL)
-			    addToMap (tmpmaps->content, "value",
-				      (char *) cur4->content);
-			  else
-			    tmpmaps->content =
-			      createMap ("value", (char *) cur4->content);
-			}
-			cur4=cur4->next;
-		      }
-		    }
-		  }
+                  res =
+                    InternetOpenUrl (hInternet,
+                              btmp->value,
+                              tmp,
+                              strlen(tmp),
+                              INTERNET_FLAG_NO_CACHE_WRITE,
+                              0,
+                              *pmsConf);
+                  addIntToMap (tmpmaps->content, "Order", hInternet->nb);
+                }
+                free (tmp);
+                xmlFree (val);
+              }
+            }
+            cur3 = cur3->next;
+          }
+        }
+        else if (xmlStrcasecmp (cur2->name, BAD_CAST "Data") == 0) {
+          defineMissingIdentifier(pmsConf,&tmpmaps);
+          xmlNodePtr cur4 = cur2->children;
+          if(vid==1){
+            // Get every dataEncodingAttributes from a Data node:
+            // mimeType, encoding, schema
+            const char *coms[3] =
+              { "mimeType", "encoding", "schema" };
+            for (l = 0; l < 3; l++){
+              xmlChar *val =
+              //xmlGetProp (cur4, BAD_CAST coms[l]);
+              xmlGetProp (cur2, BAD_CAST coms[l]);   // knut : get attributes from the Data xml element, not it's children (the content)
+            if (val != NULL && strlen ((char *) val) > 0){
+              if (tmpmaps->content != NULL)
+                addToMap (tmpmaps->content,coms[l],(char *) val);
+              else
+                tmpmaps->content =
+                  createMap (coms[l],(char *) val);
+            }
+            xmlFree (val);
+            }
+            while (cur4 != NULL){
+              while(cur4 != NULL && 
+                cur4->type != XML_CDATA_SECTION_NODE &&
+                cur4->type != XML_TEXT_NODE &&
+                cur4->type != XML_ELEMENT_NODE)
+            cur4=cur4->next;
+              if(cur4!=NULL){
+                if (cur4->type == XML_ELEMENT_NODE) {
+                  xmlChar *mv;
+                  int buffersize;
+                  xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
+                  xmlDocSetRootElement (doc1, cur4);
+                  xmlDocDumpFormatMemoryEnc (doc1, &mv,
+                                &buffersize,
+                                "utf-8", 0);
+                  if (tmpmaps->content != NULL)
+                    addToMap (tmpmaps->content, "value",
+                      (char *) mv);
+                  else
+                    tmpmaps->content =
+                  createMap ("value", (char *) mv);
+                  free(mv);
+                }
+                else{
+                  if (tmpmaps->content != NULL)
+                    addToMap (tmpmaps->content, "value",
+                          (char *) cur4->content);
+                  else
+                    tmpmaps->content =
+                      createMap ("value", (char *) cur4->content);
+                }
+                cur4=cur4->next;
+              }
+            }
+          }
 
-		  while (cur4 != NULL)
-		    {
-		      while (cur4 != NULL
-			     && cur4->type != XML_ELEMENT_NODE)
-			cur4 = cur4->next;
-		      if (cur4 == NULL)
-			break;
-		      if (xmlStrcasecmp
-			  (cur4->name, BAD_CAST "LiteralData") == 0)
-			{
-			  // Get every attribute from a LiteralData node
-			  // dataType , uom
-			  char *list[2];
-			  list[0] = zStrdup ("dataType");
-			  list[1] = zStrdup ("uom");
-			  for (l = 0; l < 2; l++)
-			    {
-			      xmlChar *val =
-				xmlGetProp (cur4, BAD_CAST list[l]);
-			      if (val != NULL
-				  && strlen ((char *) val) > 0)
-				{
-				  if (tmpmaps->content != NULL)
-				    addToMap (tmpmaps->content, list[l],
-					      (char *) val);
-				  else
-				    tmpmaps->content =
-				      createMap (list[l], (char *) val);
-				  xmlFree (val);
-				}
-			      else{
-				if(l==0){
-				  if (tmpmaps->content != NULL)
-				    addToMap (tmpmaps->content, list[l],
-					      "string");
-				  else
-				    tmpmaps->content =
-				      createMap (list[l],"string");
-				}
-			      }
-			      free (list[l]);
-			    }
-			}
-		      else
-			if (xmlStrcasecmp
-			    (cur4->name, BAD_CAST "ComplexData") == 0)
-			  {
-			    // Get every attribute from a Reference node
-			    // mimeType, encoding, schema
-			    const char *coms[3] =
-			      { "mimeType", "encoding", "schema" };
-			    for (l = 0; l < 3; l++)
-			      {
-				xmlChar *val =
-				  xmlGetProp (cur4, BAD_CAST coms[l]);
-				if (val != NULL
-				    && strlen ((char *) val) > 0)
-				  {
-				    if (tmpmaps->content != NULL)
-				      addToMap (tmpmaps->content, coms[l],
-						(char *) val);
-				    else
-				      tmpmaps->content =
-					createMap (coms[l], (char *) val);
-				    xmlFree (val);
-				  }
-			      }
-			  }
+          while (cur4 != NULL) {
+              while (cur4 != NULL
+                 && cur4->type != XML_ELEMENT_NODE)
+            cur4 = cur4->next;
+              if (cur4 == NULL)
+            break;
+              if (xmlStrcasecmp
+              (cur4->name, BAD_CAST "LiteralData") == 0){
+              // Get every attribute from a LiteralData node
+              // dataType , uom
+              char *list[2];
+              list[0] = zStrdup ("dataType");
+              list[1] = zStrdup ("uom");
+              for (l = 0; l < 2; l++){
+                xmlChar *val =
+                  xmlGetProp (cur4, BAD_CAST list[l]);
+                if (val != NULL
+                    && strlen ((char *) val) > 0){
+                  if (tmpmaps->content != NULL)
+                    addToMap (tmpmaps->content, list[l],
+                          (char *) val);
+                  else
+                    tmpmaps->content =
+                      createMap (list[l], (char *) val);
+                  xmlFree (val);
+                }
+                else{
+                  if(l==0){
+                    if (tmpmaps->content != NULL)
+                      addToMap (tmpmaps->content, list[l],
+                            "string");
+                    else
+                      tmpmaps->content =
+                        createMap (list[l],"string");
+                  }
+                }
+                free (list[l]);
+              }
+            }
+            else
+              if (xmlStrcasecmp
+                (cur4->name, BAD_CAST "ComplexData") == 0) {
+                // Get every attribute from a Reference node
+                // mimeType, encoding, schema
+                const char *coms[3] =
+                  { "mimeType", "encoding", "schema" };
+                for (l = 0; l < 3; l++) {
+                  xmlChar *val =
+                    xmlGetProp (cur4, BAD_CAST coms[l]);
+                  if (val != NULL
+                      && strlen ((char *) val) > 0){
+                    if (tmpmaps->content != NULL)
+                      addToMap (tmpmaps->content, coms[l],
+                        (char *) val);
+                    else
+                      tmpmaps->content =
+                    createMap (coms[l], (char *) val);
+                    xmlFree (val);
+                  }
+                }
+              }
 
-		      map *test = getMap (tmpmaps->content, "encoding");
-		      if (test == NULL)
-			{
-			  if (tmpmaps->content != NULL)
-			    addToMap (tmpmaps->content, "encoding",
-				      "utf-8");
-			  else
-			    tmpmaps->content =
-			      createMap ("encoding", "utf-8");
-			  test = getMap (tmpmaps->content, "encoding");
-			}
+              map *test = getMap (tmpmaps->content, "encoding");
+              if (test == NULL) {
+                if (tmpmaps->content != NULL)
+                  addToMap (tmpmaps->content, "encoding",
+                        "utf-8");
+                else
+                  tmpmaps->content =
+                    createMap ("encoding", "utf-8");
+                test = getMap (tmpmaps->content, "encoding");
+              }
 
-		      if (getMap(tmpmaps->content,"dataType")==NULL && test!=NULL && strcasecmp (test->value, "base64") != 0)
-			{
-			  xmlChar *mv = NULL;
-			  /*if(cur4!=NULL && cur4->xmlChildrenNode!=NULL)
-			    xmlChar *mv = xmlNodeListGetString (doc,
-								cur4->xmlChildrenNode,
-								1);*/
-			  map *ltmp =
-			    getMap (tmpmaps->content, "mimeType");
-			  if (/*mv == NULL
-			      ||*/
-			      (xmlStrcasecmp
-			       (cur4->name, BAD_CAST "ComplexData") == 0
-			       && (ltmp == NULL
-				   || strncasecmp (ltmp->value,
-						   "text/xml", 8) == 0)))
-			    {
-			      xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
-			      int buffersize;
-			      xmlNodePtr cur5 = cur4->children;
-			      while (cur5 != NULL
-				     && cur5->type != XML_ELEMENT_NODE
-				     && cur5->type != XML_CDATA_SECTION_NODE)
-				cur5 = cur5->next;
-			      if (cur5 != NULL
-				  && cur5->type != XML_CDATA_SECTION_NODE)
-				{
-				  xmlDocSetRootElement (doc1, cur5);
-				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
-							     &buffersize,
-							     "utf-8", 0);
-				}
-			      else
-				{
-				  if (cur5 != NULL
-				      && cur5->type == XML_CDATA_SECTION_NODE){
-				    xmlDocPtr doc2 = xmlReadMemory((const char*)cur5->content,xmlStrlen(cur5->content),
-								   "input_content.xml", NULL, XML_PARSE_RECOVER);
-				    xmlDocDumpFormatMemoryEnc (doc2, &mv,
-							       &buffersize,
-							       "utf-8", 0);
-				    xmlFreeDoc (doc2);
-				  }
-				}
-			      addIntToMap (tmpmaps->content, "size",
-					   buffersize);
-			    }else{
+              if (getMap(tmpmaps->content,"dataType")==NULL && test!=NULL && strcasecmp (test->value, "base64") != 0) {
+              xmlChar *mv = NULL;
+              /*if(cur4!=NULL && cur4->xmlChildrenNode!=NULL)
+                xmlChar *mv = xmlNodeListGetString (doc,
+                                cur4->xmlChildrenNode,
+                                1);*/
+              map *ltmp =
+                getMap (tmpmaps->content, "mimeType");
+              if (/*mv == NULL
+                  ||*/
+                  (xmlStrcasecmp
+                   (cur4->name, BAD_CAST "ComplexData") == 0
+                   && (ltmp == NULL
+                   || strncasecmp (ltmp->value,
+                           "text/xml", 8) == 0))) {
+                  xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
+                  int buffersize;
+                  xmlNodePtr cur5 = cur4->children;
+                  while (cur5 != NULL
+                     && cur5->type != XML_ELEMENT_NODE
+                     && cur5->type != XML_CDATA_SECTION_NODE)
+                cur5 = cur5->next;
+                  if (cur5 != NULL
+                  && cur5->type != XML_CDATA_SECTION_NODE) {
+                    xmlDocSetRootElement (doc1, cur5);
+                    xmlDocDumpFormatMemoryEnc (doc1, &mv,
+                                  &buffersize,
+                                  "utf-8", 0);
+                  }
+                  else {
+                    if (cur5 != NULL
+                        && cur5->type == XML_CDATA_SECTION_NODE){
+                      xmlDocPtr doc2 = xmlReadMemory((const char*)cur5->content,xmlStrlen(cur5->content),
+                                    "input_content.xml", NULL, XML_PARSE_RECOVER);
+                      xmlDocDumpFormatMemoryEnc (doc2, &mv,
+                                    &buffersize,
+                                    "utf-8", 0);
+                      xmlFreeDoc (doc2);
+                    }
+                  }
+                  addIntToMap (tmpmaps->content, "size", buffersize);
+                }else{
+                if(xmlStrcasecmp
+                   (cur4->name, BAD_CAST "BoundingBoxData") == 0){
+                  xmlDocPtr doc1 = xmlNewDoc(BAD_CAST "1.0");
+                  int buffersize;
+                  xmlDocSetRootElement(doc1,cur4);
+                  xmlDocDumpFormatMemoryEnc(doc1,&mv,
+                            &buffersize,
+                            "utf-8",0);
+                  addIntToMap (tmpmaps->content, "size",
+                       buffersize);
+                  xmlParseBoundingBox(pmsConf,&tmpmaps->content,doc1);
+                }else{
+                  xmlNodePtr cur5 = cur4->children;
+                  while (cur5 != NULL
+                     && cur5->type != XML_ELEMENT_NODE
+                     && cur5->type != XML_TEXT_NODE
+                     && cur5->type != XML_CDATA_SECTION_NODE)
+                cur5 = cur5->next;
+                  if (cur5 != NULL
+                  && cur5->type != XML_CDATA_SECTION_NODE
+                  && cur5->type != XML_TEXT_NODE) {
+                    xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
+                    int buffersize;
+                    xmlDocSetRootElement (doc1, cur5);
+                    xmlDocDumpFormatMemoryEnc (doc1, &mv,
+                                  &buffersize,
+                                  "utf-8", 0);
+                    addIntToMap (tmpmaps->content, "size",
+                            buffersize);
+                  }
+                  else if (cur5 != NULL){
+                    map* handleText=getMapFromMaps(*pmsConf,"main","handleText");
+                    if(handleText!=NULL && strcasecmp(handleText->value,"true")==0 && ltmp!= NULL && strstr(ltmp->value,"text/")!=NULL){
+                      xmlChar *tmp = xmlNodeListGetRawString (doc,
+                                          cur4->xmlChildrenNode,
+                                          0);
+                      addToMap (tmpmaps->content, "value",
+                            (char *) tmp);
+                      xmlFree (tmp);
+                    }else{
+                      while(cur5!=NULL && cur5->type != XML_CDATA_SECTION_NODE)
+                        cur5=cur5->next;
+                      xmlFree(mv);
+                      if(cur5!=NULL && cur5->content!=NULL){
+                        mv=xmlStrdup(cur5->content);
+                      }
+                    }
+                  }
+                }
+              }
+              if (mv != NULL){
+                addToMap (tmpmaps->content, "value",
+                  (char*) mv);
+                xmlFree (mv);
+              }
+            }
+            else {
+              xmlNodePtr cur5 = cur4->children;
+              while (cur5 != NULL
+                 && cur5->type != XML_CDATA_SECTION_NODE)
+                cur5 = cur5->next;
+              if (cur5 != NULL
+                  && cur5->type == XML_CDATA_SECTION_NODE) {
+                addToMap (tmpmaps->content,
+                  "value",
+                  (char *) cur5->content);
+              }
+              else{
+                if(cur4->xmlChildrenNode!=NULL){
+                  xmlChar *tmp = xmlNodeListGetRawString (doc,
+                                      cur4->xmlChildrenNode,
+                                      0);
+                  addToMap (tmpmaps->content, "value",
+                    (char *) tmp);
+                  xmlFree (tmp);
+                }
+              }
+            }
 
-			    if(xmlStrcasecmp
-			       (cur4->name, BAD_CAST "BoundingBoxData") == 0){
-			      xmlDocPtr doc1 = xmlNewDoc(BAD_CAST "1.0");
-			      int buffersize;
-			      xmlDocSetRootElement(doc1,cur4);
-			      xmlDocDumpFormatMemoryEnc(doc1,&mv,
-							&buffersize,
-							"utf-8",0);
-			      addIntToMap (tmpmaps->content, "size",
-					   buffersize);
-			      xmlParseBoundingBox(pmsConf,&tmpmaps->content,doc1);
-			    }else{
-			      xmlNodePtr cur5 = cur4->children;
-			      while (cur5 != NULL
-				     && cur5->type != XML_ELEMENT_NODE
-				     && cur5->type != XML_TEXT_NODE
-				     && cur5->type != XML_CDATA_SECTION_NODE)
-				cur5 = cur5->next;
-			      if (cur5 != NULL
-				  && cur5->type != XML_CDATA_SECTION_NODE
-				  && cur5->type != XML_TEXT_NODE)
-				{
-				  xmlDocPtr doc1 = xmlNewDoc (BAD_CAST "1.0");
-				  int buffersize;
-				  xmlDocSetRootElement (doc1, cur5);
-				  xmlDocDumpFormatMemoryEnc (doc1, &mv,
-							     &buffersize,
-							     "utf-8", 0);
-				  addIntToMap (tmpmaps->content, "size",
-					       buffersize);
-				}
-			      else if (cur5 != NULL){
-				map* handleText=getMapFromMaps(*pmsConf,"main","handleText");
-				if(handleText!=NULL && strcasecmp(handleText->value,"true")==0 && ltmp!= NULL && strstr(ltmp->value,"text/")!=NULL){
-				  xmlChar *tmp = xmlNodeListGetRawString (doc,
-									  cur4->xmlChildrenNode,
-									  0);
-				  addToMap (tmpmaps->content, "value",
-					    (char *) tmp);
-				  xmlFree (tmp);
-				}else{
-				  while(cur5!=NULL && cur5->type != XML_CDATA_SECTION_NODE)
-				    cur5=cur5->next;
-				  xmlFree(mv);
-				  if(cur5!=NULL && cur5->content!=NULL){
-				    mv=xmlStrdup(cur5->content);
-				  }
-			 	}
-			      }
-			    }
-			  }
-			  if (mv != NULL)
-			    {
-			      addToMap (tmpmaps->content, "value",
-					(char*) mv);
-			      xmlFree (mv);
-			    }
-			}
-		      else
-			{
-			  xmlNodePtr cur5 = cur4->children;
-			  while (cur5 != NULL
-				 && cur5->type != XML_CDATA_SECTION_NODE)
-			    cur5 = cur5->next;
-			  if (cur5 != NULL
-			      && cur5->type == XML_CDATA_SECTION_NODE)
-			    {
-			      addToMap (tmpmaps->content,
-					"value",
-					(char *) cur5->content);
-			    }
-			  else{
-			    if(cur4->xmlChildrenNode!=NULL){
-			      xmlChar *tmp = xmlNodeListGetRawString (doc,
-								      cur4->xmlChildrenNode,
-								      0);
-			      addToMap (tmpmaps->content, "value",
-					(char *) tmp);
-			      xmlFree (tmp);
-			    }
-			  }
-			}
-
-		      cur4 = cur4->next;
-		    }
-		}
-	      cur2 = cur2->next;
-	      while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE){
-		cur2 = cur2->next;
-	      }
-	    }
-	  if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
-	    if(getMap(tmpmaps->content,"to_load")==NULL){
-	      addToMap(tmpmaps->content,"to_load","false");
-	    }
-	  {
-	    map* test=getMap(tmpmaps->content,"value");
-	    if(test==NULL && tmpmaps->child==NULL)
-	      addToMap(tmpmaps->content,"value","");
-	    maps *testPresence = getMaps (*request_output, tmpmaps->name);
-	    maps *cursor=*request_output;
-	    while(testPresence == NULL && cursor!=NULL){
-	      if(cursor->child!=NULL){
-		testPresence = getMaps (cursor->child, tmpmaps->name);
-	      }
-	      cursor=cursor->next;
-	    }
-	    if (testPresence != NULL)
-	      {
-		elements *elem = getElements (s->inputs, tmpmaps->name);
-		elements *cursor=s->inputs;
-		while(elem == NULL && cursor!=NULL){
-		  if(cursor->child!=NULL){
-		    elem = getElements (cursor->child, tmpmaps->name);
-		  }
-		  cursor=cursor->next;
-		}
-		if (elem != NULL)
-		  {
-		    if (appendMapsToMaps
-			(pmsConf, testPresence, tmpmaps, elem) < 0)
-		      {
-			return errorException (pmsConf,
-					       _("Unable to append maps to maps."),
-					       "InternalError",
-					       NULL);
-		      }
-		  }
-	      }
-	    else{
-	      addMapsToMaps (request_output, tmpmaps);
-	    }
-	  }
-	  freeMaps (&tmpmaps);
-	  free (tmpmaps);
-	  tmpmaps = NULL;
-	}
+            cur4 = cur4->next;
+          }
+        }
+        cur2 = cur2->next;
+        while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE){
+        cur2 = cur2->next;
+        }
+      }
+      if(memory!=NULL && strncasecmp(memory->value,"load",4)!=0)
+        if(getMap(tmpmaps->content,"to_load")==NULL){
+          addToMap(tmpmaps->content,"to_load","false");
+        }
+      {
+        map* test=getMap(tmpmaps->content,"value");
+        if(test==NULL && tmpmaps->child==NULL)
+          addToMap(tmpmaps->content,"value","");
+        maps *testPresence = getMaps (*request_output, tmpmaps->name);
+        maps *cursor=*request_output;
+        while(testPresence == NULL && cursor!=NULL){
+          if(cursor->child!=NULL){
+            testPresence = getMaps (cursor->child, tmpmaps->name);
+          }
+          cursor=cursor->next;
+        }
+        if (testPresence != NULL) {
+        elements *elem = getElements (s->inputs, tmpmaps->name);
+        elements *cursor=s->inputs;
+        while(elem == NULL && cursor!=NULL){
+          if(cursor->child!=NULL){
+            elem = getElements (cursor->child, tmpmaps->name);
+          }
+          cursor=cursor->next;
+        }
+        if (elem != NULL) {
+            if (appendMapsToMaps
+            (pmsConf, testPresence, tmpmaps, elem) < 0)
+              {
+            return errorException (pmsConf,
+                           _("Unable to append maps to maps."),
+                           "InternalError",
+                           NULL);
+              }
+          }
+        }
+        else{
+          addMapsToMaps (request_output, tmpmaps);
+        }
+      }
+      freeMaps (&tmpmaps);
+      free (tmpmaps);
+      tmpmaps = NULL;
     }
+  }
   return 1;
 }
 
@@ -1220,12 +1165,12 @@ int xmlParseBoundingBox(maps** pmsConf,map** current_input,xmlDocPtr doc){
       cur=cur->next;
     while(cur!=NULL && cur->type==XML_ELEMENT_NODE){
       xmlChar *val =
-	xmlNodeListGetString (doc, cur->xmlChildrenNode, 1);
+    xmlNodeListGetString (doc, cur->xmlChildrenNode, 1);
       addToMap(*current_input,(char*)cur->name,(char*)val);
       cur=cur->next;
       xmlFree(val);
       while(cur!=NULL && cur->type != XML_ELEMENT_NODE)
-	cur=cur->next;
+    cur=cur->next;
     }
   }
   return 0;
@@ -1252,48 +1197,48 @@ int xmlParseOutputs2(maps** pmsConf,map** request_inputs,maps** request_output,x
       maps *tmpmaps = NULL;
       xmlChar *val = xmlGetProp (cur, BAD_CAST "id");
       if(val!=NULL)
-	tmpmaps = createMaps((char *)val);
+    tmpmaps = createMaps((char *)val);
       else
-	tmpmaps = createMaps("unknownIdentifier");
+    tmpmaps = createMaps("unknownIdentifier");
       const char ress[4][13] =
-	{ "mimeType", "encoding", "schema", "transmission" };
+    { "mimeType", "encoding", "schema", "transmission" };
       xmlFree (val);
       for (l = 0; l < 4; l++){
-	val = xmlGetProp (cur, BAD_CAST ress[l]);
-	if (val != NULL && strlen ((char *) val) > 0)
-	  {
-	    if (tmpmaps->content != NULL)
-	      addToMap (tmpmaps->content, ress[l],
-			(char *) val);
-	    else
-	      tmpmaps->content =
-		createMap (ress[l], (char *) val);
-	    if(l==3 && strncasecmp((char*)val,"reference",xmlStrlen(val))==0)
-	      addToMap (tmpmaps->content,"asReference","true");
-	  }
-	xmlFree (val);
+    val = xmlGetProp (cur, BAD_CAST ress[l]);
+    if (val != NULL && strlen ((char *) val) > 0)
+      {
+        if (tmpmaps->content != NULL)
+          addToMap (tmpmaps->content, ress[l],
+            (char *) val);
+        else
+          tmpmaps->content =
+        createMap (ress[l], (char *) val);
+        if(l==3 && strncasecmp((char*)val,"reference",xmlStrlen(val))==0)
+          addToMap (tmpmaps->content,"asReference","true");
+      }
+    xmlFree (val);
       }
       if(cur->children!=NULL){
-	xmlNodePtr ccur = cur->children;
-	while (ccur != NULL){
-	  if(ccur->type == XML_ELEMENT_NODE){
-	    char *xpathExpr=(char*)malloc(66+strlen(tmpmaps->name));
-	    sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);	    
-	    xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
-	    xmlNodeSet* cnodes = tmpsptr->nodesetval;
-	    xmlParseOutputs2(pmsConf,request_inputs,&tmpmaps->child,doc,cnodes);
-	    xmlXPathFreeObject (tmpsptr);
-	    free(xpathExpr);
-	    break;
-	  }
-	  ccur = ccur->next;
-	}
+    xmlNodePtr ccur = cur->children;
+    while (ccur != NULL){
+      if(ccur->type == XML_ELEMENT_NODE){
+        char *xpathExpr=(char*)malloc(66+strlen(tmpmaps->name));
+        sprintf(xpathExpr,"/*/*[local-name()='Output' and @id='%s']/*[local-name()='Output']",tmpmaps->name);    
+        xmlXPathObjectPtr tmpsptr = extractFromDoc (doc, xpathExpr);
+        xmlNodeSet* cnodes = tmpsptr->nodesetval;
+        xmlParseOutputs2(pmsConf,request_inputs,&tmpmaps->child,doc,cnodes);
+        xmlXPathFreeObject (tmpsptr);
+        free(xpathExpr);
+        break;
+      }
+      ccur = ccur->next;
+    }
       }
       if (*request_output == NULL){
-	*request_output = dupMaps(&tmpmaps);
+    *request_output = dupMaps(&tmpmaps);
       }
       else{
-	addMapsToMaps(request_output,tmpmaps);
+    addMapsToMaps(request_output,tmpmaps);
       }
       freeMaps(&tmpmaps);
       free(tmpmaps);
@@ -1319,198 +1264,188 @@ int xmlParseOutputs(maps** pmsConf,map** request_inputs,maps** request_output,xm
     {
       addToMap (*request_inputs, "RawDataOutput", "");
       if (cur->type == XML_ELEMENT_NODE)
-	{
-
-	  maps *tmpmaps = createMaps("unknownIdentifier");
-	  if (tmpmaps == NULL)
-	    {
-	      return errorException (pmsConf, _("Unable to allocate memory"),
-				     "InternalError", NULL);
-	    }
-
-	  // Get every attribute from a RawDataOutput node
-	  // mimeType, encoding, schema, uom
-	  const char *outs[4] =
-	    { "mimeType", "encoding", "schema", "uom" };
-	  for (l = 0; l < 4; l++)
-	    {
-	      xmlChar *val = xmlGetProp (cur, BAD_CAST outs[l]);
-	      if (val != NULL)
-		{
-		  if (strlen ((char *) val) > 0)
-		    {
-		      if (tmpmaps->content != NULL)
-			addToMap (tmpmaps->content, outs[l],
-				  (char *) val);
-		      else
-			tmpmaps->content =
-			  createMap (outs[l], (char *) val);
-		    }
-		  xmlFree (val);
-		}
-	    }
-	  xmlNodePtr cur2 = cur->children;
-	  while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
-	    cur2 = cur2->next;
-	  while (cur2 != NULL)
-	    {
-	      if (xmlStrncasecmp
-		  (cur2->name, BAD_CAST "Identifier",
-		   xmlStrlen (cur2->name)) == 0)
-		{
-		  xmlChar *val =
-		    xmlNodeListGetString (NULL, cur2->xmlChildrenNode, 1);
-		  free (tmpmaps->name);
-		  tmpmaps->name = zStrdup ((char *) val);
-		  xmlFree (val);
-		}
-	      cur2 = cur2->next;
-	      while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
-		cur2 = cur2->next;
-	    }
-	  if (*request_output == NULL)
-	    *request_output = dupMaps (&tmpmaps);
-	  else
-	    addMapsToMaps (request_output, tmpmaps);
-	  if (tmpmaps != NULL)
-	    {
-	      freeMaps (&tmpmaps);
-	      free (tmpmaps);
-	      tmpmaps = NULL;
-	    }
-	}
-    }
-  else
     {
-      addToMap (*request_inputs, "ResponseDocument", "");
 
-      if (cur->type == XML_ELEMENT_NODE) {
-	// Get every attribute: storeExecuteResponse, lineage, status
-	const char *ress[3] =
-	  { "storeExecuteResponse", "lineage", "status" };
-	xmlChar *val;
-	for (l = 0; l < 3; l++)
-	  {
-	    val = xmlGetProp (cur, BAD_CAST ress[l]);
-	    if (val != NULL && strlen ((char *) val) > 0)
-	      {
-		addToMap (*request_inputs, ress[l], (char *) val);
-	      }
-	    xmlFree (val);
-	  }
-			
-	xmlNodePtr cur1 = cur->children;		
-	while (cur1 != NULL) // iterate over Output nodes
-	  {
-	    if (cur1->type != XML_ELEMENT_NODE || 
-		xmlStrncasecmp(cur1->name, BAD_CAST "Output", 
-			       xmlStrlen (cur1->name)) != 0) {
-	      cur1 = cur1->next;
-	      continue;
-	    }
-				
-	    maps *tmpmaps = createMaps("unknownIdentifier"); // one per Output node
-	    if (tmpmaps == NULL) {
-	      return errorException (pmsConf,
-				     _
-				     ("Unable to allocate memory"),
-				     "InternalError", NULL);
-	    }
-				
-	    xmlNodePtr elems = cur1->children;
-				
-	    while (elems != NULL) {
+      maps *tmpmaps = createMaps("unknownIdentifier");
+      if (tmpmaps == NULL)
+        {
+          return errorException (pmsConf, _("Unable to allocate memory"),
+                     "InternalError", NULL);
+        }
 
-	      // Identifier
-	      if (xmlStrncasecmp
-		  (elems->name, BAD_CAST "Identifier",
-		   xmlStrlen (elems->name)) == 0)
-		{
-		  xmlChar *val =
-		    xmlNodeListGetString (doc, elems->xmlChildrenNode, 1);
-		
-		  free(tmpmaps->name);
-		  tmpmaps->name = zStrdup ((char *) val);
-		  if (tmpmaps->content == NULL) {
-		    tmpmaps->content = createMap("Identifier", zStrdup ((char *) val));
-		  }
-		  else {
-		    addToMap(tmpmaps->content, "Identifier", zStrdup ((char *) val));
-		  }
-
-		  map* tt = getMap (*request_inputs, "ResponseDocument");
-		  if (strlen(tt->value) == 0) {
-		    addToMap (*request_inputs, "ResponseDocument",
-			      (char *) val);
-		  }
-		  else {
-		    char* tmp = (char*) malloc((strlen(tt->value) + 1 
-						+ strlen((char*) val) + 1) * sizeof(char));
-		    sprintf (tmp, "%s;%s", tt->value, (char *) val);
-		    free(tt->value);
-		    tt->value = tmp;
-		  }
-		  xmlFree (val);
-		}
-	      
-	      // Title, Abstract
-	      else if (xmlStrncasecmp(elems->name, BAD_CAST "Title",
-				      xmlStrlen (elems->name)) == 0
-		       || xmlStrncasecmp(elems->name, BAD_CAST "Abstract",
-					 xmlStrlen (elems->name)) == 0)
-		{
-		  xmlChar *val =
-		    xmlNodeListGetString (doc, elems->xmlChildrenNode, 1);
-							
-		  if (tmpmaps->content == NULL) {
-		    tmpmaps->content = createMap((char*) elems->name, zStrdup ((char *) val));
-		  }
-		  else {
-		    addToMap(tmpmaps->content, (char*) elems->name, zStrdup ((char *) val));
-		  }
-		  xmlFree (val);
-		}
-	      elems = elems->next;
-	    }
-				
-	    // Get every attribute from an Output node:
-	    // mimeType, encoding, schema, uom, asReference
-	    const char *outs[5] =
-	      { "mimeType", "encoding", "schema", "uom", "asReference" };
-					  
-	    for (l = 0; l < 5; l++) {
-	      xmlChar *val = xmlGetProp (cur1, BAD_CAST outs[l]);				
-	      if (val != NULL && xmlStrlen(val) > 0) {
-		if (tmpmaps->content != NULL) {
-		  addToMap (tmpmaps->content, outs[l], (char *) val);
-		}			  
-		else {
-		  tmpmaps->content = createMap (outs[l], (char *) val);
-		}	
-	      }
-	      xmlFree (val);
-	    }
-				
-	    if (*request_output == NULL) {
-	      *request_output = tmpmaps;
-	    }	
-	    else if (getMaps(*request_output, tmpmaps->name) != NULL) {
-	      return errorException (pmsConf,
-				     _
-				     ("Duplicate <Output> elements in WPS Execute request"),
-				     "InternalError", NULL);
-	    }
-	    else {
-	      maps* mptr = *request_output;
-	      while (mptr->next != NULL) {
-		mptr = mptr->next;
-	      }
-	      mptr->next = tmpmaps;	
-	    }					
-	    cur1 = cur1->next;
-	  }			 
+      // Get every attribute from a RawDataOutput node
+      // mimeType, encoding, schema, uom
+      const char *outs[4] =
+        { "mimeType", "encoding", "schema", "uom" };
+      for (l = 0; l < 4; l++){
+        xmlChar *val = xmlGetProp (cur, BAD_CAST outs[l]);
+        if (val != NULL){
+          if (strlen ((char *) val) > 0){
+              if (tmpmaps->content != NULL)
+                addToMap (tmpmaps->content, outs[l],
+                      (char *) val);
+              else
+                tmpmaps->content =
+                  createMap (outs[l], (char *) val);
+          }
+          xmlFree (val);
+        }
+      }
+      xmlNodePtr cur2 = cur->children;
+      while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
+        cur2 = cur2->next;
+      while (cur2 != NULL){
+        if (xmlStrncasecmp
+        (cur2->name, BAD_CAST "Identifier",
+          xmlStrlen (cur2->name)) == 0) {
+          xmlChar *val =
+            xmlNodeListGetString (NULL, cur2->xmlChildrenNode, 1);
+          free (tmpmaps->name);
+          tmpmaps->name = zStrdup ((char *) val);
+          xmlFree (val);
+        }
+        cur2 = cur2->next;
+        while (cur2 != NULL && cur2->type != XML_ELEMENT_NODE)
+          cur2 = cur2->next;
+      }
+      if (*request_output == NULL)
+        *request_output = dupMaps (&tmpmaps);
+      else
+        addMapsToMaps (request_output, tmpmaps);
+      if (tmpmaps != NULL){
+        freeMaps (&tmpmaps);
+        free (tmpmaps);
+        tmpmaps = NULL;
       }
     }
+  }
+  else{
+    addToMap (*request_inputs, "ResponseDocument", "");
+
+    if (cur->type == XML_ELEMENT_NODE) {
+    // Get every attribute: storeExecuteResponse, lineage, status
+    const char *ress[3] =
+      { "storeExecuteResponse", "lineage", "status" };
+    xmlChar *val;
+    for (l = 0; l < 3; l++){
+      val = xmlGetProp (cur, BAD_CAST ress[l]);
+      if (val != NULL && strlen ((char *) val) > 0)
+        {
+      addToMap (*request_inputs, ress[l], (char *) val);
+        }
+      xmlFree (val);
+    }
+
+    xmlNodePtr cur1 = cur->children;
+    // iterate over Output nodes
+    while (cur1 != NULL) {
+        if (cur1->type != XML_ELEMENT_NODE || 
+        xmlStrncasecmp(cur1->name, BAD_CAST "Output", 
+                   xmlStrlen (cur1->name)) != 0) {
+          cur1 = cur1->next;
+          continue;
+        }
+
+        maps *tmpmaps = createMaps("unknownIdentifier"); // one per Output node
+        if (tmpmaps == NULL) {
+          return errorException (pmsConf,
+                     _
+                     ("Unable to allocate memory"),
+                     "InternalError", NULL);
+        }
+
+        xmlNodePtr elems = cur1->children;
+
+        while (elems != NULL) {
+
+          // Identifier
+          if (xmlStrncasecmp
+          (elems->name, BAD_CAST "Identifier",
+            xmlStrlen (elems->name)) == 0) {
+            xmlChar *val =
+              xmlNodeListGetString (doc, elems->xmlChildrenNode, 1);
+
+            free(tmpmaps->name);
+            tmpmaps->name = zStrdup ((char *) val);
+            if (tmpmaps->content == NULL) {
+              tmpmaps->content = createMap("Identifier", zStrdup ((char *) val));
+            }
+            else {
+              addToMap(tmpmaps->content, "Identifier", zStrdup ((char *) val));
+            }
+
+            map* tt = getMap (*request_inputs, "ResponseDocument");
+            if (strlen(tt->value) == 0) {
+              addToMap (*request_inputs, "ResponseDocument",
+                    (char *) val);
+            }
+            else {
+              char* tmp = (char*) malloc((strlen(tt->value) + 1 
+                          + strlen((char*) val) + 1) * sizeof(char));
+              sprintf (tmp, "%s;%s", tt->value, (char *) val);
+              free(tt->value);
+              tt->value = tmp;
+            }
+            xmlFree (val);
+          }
+
+          // Title, Abstract
+          else if (xmlStrncasecmp(elems->name, BAD_CAST "Title",
+                      xmlStrlen (elems->name)) == 0
+                || xmlStrncasecmp(elems->name, BAD_CAST "Abstract",
+                      xmlStrlen (elems->name)) == 0) {
+            xmlChar *val =
+              xmlNodeListGetString (doc, elems->xmlChildrenNode, 1);
+
+            if (tmpmaps->content == NULL) {
+              tmpmaps->content = createMap((char*) elems->name, zStrdup ((char *) val));
+            }
+            else {
+              addToMap(tmpmaps->content, (char*) elems->name, zStrdup ((char *) val));
+            }
+            xmlFree (val);
+          }
+          elems = elems->next;
+        }
+
+        // Get every attribute from an Output node:
+        // mimeType, encoding, schema, uom, asReference
+        const char *outs[5] =
+          { "mimeType", "encoding", "schema", "uom", "asReference" };
+
+        for (l = 0; l < 5; l++) {
+          xmlChar *val = xmlGetProp (cur1, BAD_CAST outs[l]);
+          if (val != NULL && xmlStrlen(val) > 0) {
+            if (tmpmaps->content != NULL) {
+              addToMap (tmpmaps->content, outs[l], (char *) val);
+            }
+            else {
+              tmpmaps->content = createMap (outs[l], (char *) val);
+            }
+          }
+          xmlFree (val);
+        }
+
+        if (*request_output == NULL) {
+          *request_output = tmpmaps;
+        }
+        else if (getMaps(*request_output, tmpmaps->name) != NULL) {
+          return errorException (pmsConf,
+                     _
+                     ("Duplicate <Output> elements in WPS Execute request"),
+                     "InternalError", NULL);
+        }
+        else {
+          maps* mptr = *request_output;
+          while (mptr->next != NULL) {
+            mptr = mptr->next;
+          }
+          mptr->next = tmpmaps;
+        }
+        cur1 = cur1->next;
+      }
+    }
+  }
   return 1;
 }
 
@@ -1556,29 +1491,29 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
     if(tmps->nodeNr > 0){
       int k = 0;
       for (k=0; k < tmps->nodeNr; k++){
-	maps *tmpmaps = NULL;
-	xmlNodePtr cur = tmps->nodeTab[k];
-	if (cur->type == XML_ELEMENT_NODE){
-	  xmlChar *val = xmlGetProp (cur, BAD_CAST "mode");
-	  if(val!=NULL)
-	    addToMap(*request_inputs,"mode",(char*)val);
-	  else
-	    addToMap(*request_inputs,"mode","auto");
-	  xmlFree(val);
-	  val = xmlGetProp (cur, BAD_CAST "response");
-	  if(val!=NULL){
-	    addToMap(*request_inputs,"response",(char*)val);
-	    if(strncasecmp((char*)val,"raw",xmlStrlen(val))==0)
-	      addToMap(*request_inputs,"RawDataOutput","");
-	    else
-	      addToMap(*request_inputs,"ResponseDocument","");
-	  }
-	  else{
-	    addToMap(*request_inputs,"response","document");
-	    addToMap(*request_inputs,"ResponseDocument","");
-	  }
-	  xmlFree(val);
-	}
+    maps *tmpmaps = NULL;
+    xmlNodePtr cur = tmps->nodeTab[k];
+    if (cur->type == XML_ELEMENT_NODE){
+      xmlChar *val = xmlGetProp (cur, BAD_CAST "mode");
+      if(val!=NULL)
+        addToMap(*request_inputs,"mode",(char*)val);
+      else
+        addToMap(*request_inputs,"mode","auto");
+      xmlFree(val);
+      val = xmlGetProp (cur, BAD_CAST "response");
+      if(val!=NULL){
+        addToMap(*request_inputs,"response",(char*)val);
+        if(strncasecmp((char*)val,"raw",xmlStrlen(val))==0)
+          addToMap(*request_inputs,"RawDataOutput","");
+        else
+          addToMap(*request_inputs,"ResponseDocument","");
+      }
+      else{
+        addToMap(*request_inputs,"response","document");
+        addToMap(*request_inputs,"ResponseDocument","");
+      }
+      xmlFree(val);
+    }
       }
     }
     xmlXPathFreeObject (tmpsptr);
@@ -1587,10 +1522,10 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
     tmps = tmpsptr->nodesetval;
     if(tmps->nodeNr > 0){
       if(xmlParseOutputs2(pmsConf,request_inputs,outputs,doc,tmps)<0){
-	xmlXPathFreeObject (tmpsptr);
-	xmlFreeDoc (doc);
-	xmlCleanupParser ();
-	return -1;
+    xmlXPathFreeObject (tmpsptr);
+    xmlFreeDoc (doc);
+    xmlCleanupParser ();
+    return -1;
       }
     }
   }
@@ -1602,18 +1537,18 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
     tmps = tmpsptr->nodesetval;
     if (tmps->nodeNr == 0)
       {
-	xmlXPathFreeObject (tmpsptr);
-	tmpsptr =
-	  extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
-	tmps = tmpsptr->nodesetval;
-	asRaw = true;
+    xmlXPathFreeObject (tmpsptr);
+    tmpsptr =
+      extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
+    tmps = tmpsptr->nodesetval;
+    asRaw = true;
       }
     if(tmps->nodeNr != 0){
       if(xmlParseOutputs(pmsConf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
-	xmlXPathFreeObject (tmpsptr);
-	xmlFreeDoc (doc);
-	xmlCleanupParser ();
-	return -1;
+    xmlXPathFreeObject (tmpsptr);
+    xmlFreeDoc (doc);
+    xmlCleanupParser ();
+    return -1;
       }
     }
   }
@@ -1864,7 +1799,9 @@ int validateRequest(maps** pmsConf,service* s,map* original_request, maps** requ
                              == cgiFormSuccess)
                         {
                           if (got > 0)
-                            write (targetFile, buffer, got);
+                            if(write (targetFile, buffer, got)<0){
+                                break;
+                            }
                         }
                     }
                   addToMap (tmpReqI->content, "lref", storageNameOnServer);
@@ -1904,18 +1841,18 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       char *message=(char*)malloc((strlen(replace)+strlen(toCheck)+1)*sizeof(char));
       sprintf(message,replace,toCheck);
       if(lres==NULL){
-	lres=createMap("code","MissingParameterValue");
-	addToMap(lres,"text",message);
-	addToMap(lres,"locator",toCheck);       
+    lres=createMap("code","MissingParameterValue");
+    addToMap(lres,"text",message);
+    addToMap(lres,"locator",toCheck);
       }else{
-	int length=1;
-	map* len=getMap(lres,"length");
-	if(len!=NULL){
-	  length=atoi(len->value);
-	}
-	setMapArray(lres,"text",length,message);
-	setMapArray(lres,"locator",length,toCheck);
-	setMapArray(lres,"code",length,"MissingParameterValue");
+    int length=1;
+    map* len=getMap(lres,"length");
+    if(len!=NULL){
+      length=atoi(len->value);
+    }
+    setMapArray(lres,"text",length,message);
+    setMapArray(lres,"locator",length,toCheck);
+    setMapArray(lres,"code",length,"MissingParameterValue");
       }
       free(message);
     }
@@ -1929,23 +1866,23 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       char *pToken,*saveptr;
       pToken=strtok_r(tmp,",",&saveptr);
       while(pToken!=NULL){
-	while(avalues[nb]!=NULL){
-	  if(strcasecmp(avalues[nb],pToken)==0){
-	    hasValidValue=1;
-	    break;
-	  }
-	  nb++;
-	}
-	pToken=strtok_r(NULL,",",&saveptr);
+    while(avalues[nb]!=NULL){
+      if(strcasecmp(avalues[nb],pToken)==0){
+        hasValidValue=1;
+        break;
+      }
+      nb++;
+    }
+    pToken=strtok_r(NULL,",",&saveptr);
       }
       free(tmp);
     }else{
       while(avalues[nb]!=NULL){
-	if(strcasecmp(avalues[nb],r_inputs->value)==0){
-	  hasValidValue=1;
-	  break;
-	}
-	nb++;
+    if(strcasecmp(avalues[nb],r_inputs->value)==0){
+      hasValidValue=1;
+      break;
+    }
+    nb++;
       }
     }
     if(hasValidValue<0){
@@ -1954,19 +1891,19 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       char *vvalues=NULL;
       const char* num=_("is");
       while(avalues[nb]!=NULL){
-	char *tvalues;
-	if(vvalues==NULL){
-	  vvalues=(char*)malloc((strlen(avalues[nb])+3)*sizeof(char));
-	  sprintf(vvalues,"%s",avalues[nb]);
-	}
-	else{
-	  tvalues=zStrdup(vvalues);
-	  vvalues=(char*)realloc(vvalues,(strlen(tvalues)+strlen(avalues[nb])+3)*sizeof(char));
-	  sprintf(vvalues,"%s, %s",tvalues,avalues[nb]);
-	  free(tvalues);
-	  num=_("are");
-	}
-	nb++;
+    char *tvalues;
+    if(vvalues==NULL){
+      vvalues=(char*)malloc((strlen(avalues[nb])+3)*sizeof(char));
+      sprintf(vvalues,"%s",avalues[nb]);
+    }
+    else{
+      tvalues=zStrdup(vvalues);
+      vvalues=(char*)realloc(vvalues,(strlen(tvalues)+strlen(avalues[nb])+3)*sizeof(char));
+      sprintf(vvalues,"%s, %s",tvalues,avalues[nb]);
+      free(tvalues);
+      num=_("are");
+    }
+    nb++;
       }
       char *message=(char*)malloc((strlen(replace)+strlen(num)+strlen(vvalues)+strlen(toCheck)+1)*sizeof(char));
       sprintf(message,replace,toCheck,vvalues,num);
@@ -1974,25 +1911,25 @@ void checkValidValue(map* request,map** res,const char* toCheck,const char** ava
       code="InvalidParameterValue";
       const char *locator=toCheck;
       if( strncasecmp(toCheck,"version",7)==0 ||
-	  strncasecmp(toCheck,"AcceptVersions",14)==0 )
-	code="VersionNegotiationFailed";
+      strncasecmp(toCheck,"AcceptVersions",14)==0 )
+        code="VersionNegotiationFailed";
       if( strncasecmp(toCheck,"request",7)==0){
-	code="OperationNotSupported";
-	locator=r_inputs->value;
+        code="OperationNotSupported";
+        locator=r_inputs->value;
       }
       if(lres==NULL){
-	lres=createMap("code",code);
-	addToMap(lres,"text",message);
-	addToMap(lres,"locator",locator);       
+        lres=createMap("code",code);
+        addToMap(lres,"text",message);
+        addToMap(lres,"locator",locator);
       }else{
-	int length=1;
-	map* len=getMap(lres,"length");
-	if(len!=NULL){
-	  length=atoi(len->value);
-	}
-	setMapArray(lres,"text",length,message);
-	setMapArray(lres,"locator",length,locator);
-	setMapArray(lres,"code",length,code);
+        int length=1;
+        map* len=getMap(lres,"length");
+        if(len!=NULL){
+          length=atoi(len->value);
+        }
+        setMapArray(lres,"text",length,message);
+        setMapArray(lres,"locator",length,locator);
+        setMapArray(lres,"code",length,code);
       }
     }
   }
@@ -2018,17 +1955,17 @@ void parseCookie(maps** conf,const char* cookie){
     token1 = strtok_r (token, "=", &saveptr1);
     while (token1 != NULL){
       if(i==0){
-	name=zStrdup(token1);
-	i++;
+    name=zStrdup(token1);
+    i++;
       }
       else{
-	if(res->content==NULL)
-	  res->content=createMap(name,token1);
-	else
-	  addToMap(res->content,name,token1);
-	free(name);
-	name=NULL;
-	i=0;
+    if(res->content==NULL)
+      res->content=createMap(name,token1);
+    else
+      addToMap(res->content,name,token1);
+    free(name);
+    name=NULL;
+    i=0;
       }
       token1 = strtok_r (NULL, "=", &saveptr1);
     }
@@ -2084,12 +2021,12 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
       if(pmHref!=NULL){
         map* body=getMapArray(curs->content,"Body",i);
         if(body!=NULL){
-          char* apcTmp[2]={
+          const char* apccTmp[2]={
             "Headers",
             "Headers_extra"
           };
           for(int iCntL=0;iCntL<2;iCntL++){
-            map* pmHeaders=getMapArray(curs->content,apcTmp[iCntL],i);
+            map* pmHeaders=getMapArray(curs->content,apccTmp[iCntL],i);
             if(pmHeaders!=NULL){
               // TODO: handle multiple headers with | as separator
               hInternet->ihandle[iCnt].header =
@@ -2107,7 +2044,7 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
         }else{
           addRequestToQueue(&conf,hInternet,(char *) pmHref->value,true);
         }
-        char* pcaTmp=(char *)malloc(7*sizeof(char));
+        char* pcaTmp=(char *)malloc(12*sizeof(char));
         sprintf(pcaTmp,"%d",iCnt+1);
         if(i>0){
           setMapArray(curs->content,"Order",i,pcaTmp);

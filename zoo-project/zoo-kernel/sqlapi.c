@@ -70,7 +70,7 @@ char* _createInitString(maps* conf,const char* key){
   int i=0;
   maps* cconf=getMaps(conf,key);
   if(cconf==NULL){
-    return "-1";
+    return zStrdup("-1");
   }
   int len=0;
   for(i=0;i<6;i++){
@@ -133,7 +133,7 @@ int _init_sql(maps* conf,const char* key){
     setMapInMaps(conf,"lenv","ds_nb","1");
   }else{
     zoo_ds_nb=atoi(dsNb->value);
-    char* tmp=(char*)malloc(11*sizeof(char));
+    char* tmp=(char*)malloc(12*sizeof(char));
     sprintf(tmp,"%d",zoo_ds_nb+1);
     setMapInMaps(conf,"lenv","ds_nb",(const char*)tmp);
     free(tmp);
@@ -214,11 +214,11 @@ void close_sql(maps* conf,int cid){
     map* dsNb=getMapFromMaps(conf,"lenv","ds_nb");
     if(dsNb!=NULL){
       zoo_ds_nb=atoi(dsNb->value);
-      char* tmp=(char*)malloc(11*sizeof(char));
+      char* tmp=(char*)malloc(12*sizeof(char));
       if(zoo_ds_nb>0)
-	sprintf(tmp,"%d",zoo_ds_nb-1);
+        sprintf(tmp,"%d",zoo_ds_nb-1);
       else
-	sprintf(tmp,"%d",0);
+        sprintf(tmp,"%d",0);
       setMapInMaps(conf,"lenv","ds_nb",(const char*)tmp);
       free(tmp);
     }
