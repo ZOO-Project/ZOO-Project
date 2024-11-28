@@ -55,6 +55,9 @@ update_status(dictConf,iPourcent)
 trace(strMessage)
     write a message to the ZOO-Kernel log file
 
+debug(strMessage)
+    write a debug message to the ZOO-Kernel log file
+
 info(strMessage)
     write an information message to the ZOO-Kernel log file
 
