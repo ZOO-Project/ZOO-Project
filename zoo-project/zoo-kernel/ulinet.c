@@ -540,11 +540,11 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
         tmpPath=getMapFromMaps((maps*) conf,"main","tmpPath"); // knut added cast to maps*
       }
       if(tmpPath==NULL){
-        pcaFilename=(char*)malloc((16+strlen(tmpUuid))*sizeof(char));
+        pcaFilename=(char*)malloc((15+strlen(tmpUuid))*sizeof(char));
         sprintf(pcaFilename,"/tmp/ZOO_Cache%s", tmpUuid);
       }
       else{
-        pcaFilename=(char*)malloc((12+strlen(tmpUuid))*sizeof(char));
+        pcaFilename=(char*)malloc((11+strlen(tmpUuid)+strlen(tmpPath->value))*sizeof(char));
         sprintf(pcaFilename,"%s/ZOO_Cache%s", tmpPath->value,tmpUuid);
       }
       free(tmpUuid);

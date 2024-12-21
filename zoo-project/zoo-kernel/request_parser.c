@@ -1491,29 +1491,29 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
     if(tmps->nodeNr > 0){
       int k = 0;
       for (k=0; k < tmps->nodeNr; k++){
-    maps *tmpmaps = NULL;
-    xmlNodePtr cur = tmps->nodeTab[k];
-    if (cur->type == XML_ELEMENT_NODE){
-      xmlChar *val = xmlGetProp (cur, BAD_CAST "mode");
-      if(val!=NULL)
-        addToMap(*request_inputs,"mode",(char*)val);
-      else
-        addToMap(*request_inputs,"mode","auto");
-      xmlFree(val);
-      val = xmlGetProp (cur, BAD_CAST "response");
-      if(val!=NULL){
-        addToMap(*request_inputs,"response",(char*)val);
-        if(strncasecmp((char*)val,"raw",xmlStrlen(val))==0)
-          addToMap(*request_inputs,"RawDataOutput","");
-        else
-          addToMap(*request_inputs,"ResponseDocument","");
-      }
-      else{
-        addToMap(*request_inputs,"response","document");
-        addToMap(*request_inputs,"ResponseDocument","");
-      }
-      xmlFree(val);
-    }
+        maps *tmpmaps = NULL;
+        xmlNodePtr cur = tmps->nodeTab[k];
+        if (cur->type == XML_ELEMENT_NODE){
+          xmlChar *val = xmlGetProp (cur, BAD_CAST "mode");
+          if(val!=NULL)
+            addToMap(*request_inputs,"mode",(char*)val);
+          else
+            addToMap(*request_inputs,"mode","auto");
+          xmlFree(val);
+          val = xmlGetProp (cur, BAD_CAST "response");
+          if(val!=NULL){
+            addToMap(*request_inputs,"response",(char*)val);
+            if(strncasecmp((char*)val,"raw",xmlStrlen(val))==0)
+              addToMap(*request_inputs,"RawDataOutput","");
+            else
+              addToMap(*request_inputs,"ResponseDocument","");
+          }
+          else{
+            addToMap(*request_inputs,"response","document");
+            addToMap(*request_inputs,"ResponseDocument","");
+          }
+          xmlFree(val);
+        }
       }
     }
     xmlXPathFreeObject (tmpsptr);
@@ -1522,10 +1522,10 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
     tmps = tmpsptr->nodesetval;
     if(tmps->nodeNr > 0){
       if(xmlParseOutputs2(pmsConf,request_inputs,outputs,doc,tmps)<0){
-    xmlXPathFreeObject (tmpsptr);
-    xmlFreeDoc (doc);
-    xmlCleanupParser ();
-    return -1;
+        xmlXPathFreeObject (tmpsptr);
+        xmlFreeDoc (doc);
+        xmlCleanupParser ();
+        return -1;
       }
     }
   }
@@ -1535,20 +1535,19 @@ int xmlParseRequest(maps** pmsConf,const char* post,map** request_inputs,service
       extractFromDoc (doc, "/*/*/*[local-name()='ResponseDocument']");
     bool asRaw = false;
     tmps = tmpsptr->nodesetval;
-    if (tmps->nodeNr == 0)
-      {
-    xmlXPathFreeObject (tmpsptr);
-    tmpsptr =
-      extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
-    tmps = tmpsptr->nodesetval;
-    asRaw = true;
-      }
+    if (tmps->nodeNr == 0){
+      xmlXPathFreeObject (tmpsptr);
+      tmpsptr =
+        extractFromDoc (doc, "/*/*/*[local-name()='RawDataOutput']");
+      tmps = tmpsptr->nodesetval;
+      asRaw = true;
+    }
     if(tmps->nodeNr != 0){
       if(xmlParseOutputs(pmsConf,request_inputs,outputs,doc,tmps->nodeTab[0],asRaw)<0){
-    xmlXPathFreeObject (tmpsptr);
-    xmlFreeDoc (doc);
-    xmlCleanupParser ();
-    return -1;
+        xmlXPathFreeObject (tmpsptr);
+        xmlFreeDoc (doc);
+        xmlCleanupParser ();
+        return -1;
       }
     }
   }

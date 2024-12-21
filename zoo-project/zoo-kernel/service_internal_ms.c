@@ -193,20 +193,20 @@ void setReferenceUrl(maps* m,maps* tmpI){
       int lIndex=0;
       maps* lenv=getMaps(m,"lenv");
       if(getMapFromMaps(m,"lenv","mapErrorNb")==NULL)
-	setMapInMaps(m,"lenv","mapErrorNb","0");
+        setMapInMaps(m,"lenv","mapErrorNb","0");
       else{
-	map* tmpV=getMapFromMaps(m,"lenv","mapErrorNb");
-	lIndex=atoi(tmpV->value)+1;
-	addIntToMap(lenv->content,"mapErrorNb",lIndex);
+        map* tmpV=getMapFromMaps(m,"lenv","mapErrorNb");
+        lIndex=atoi(tmpV->value)+1;
+        addIntToMap(lenv->content,"mapErrorNb",lIndex);
       }
       setMapInMaps(m,"lenv","mapError","true");
       setMapArray(lenv->content,"locator",lIndex,tmpI->name);
       if(nbElements==NULL)
-	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
+        setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not read it as geographic data."));
       else
-	setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
+        setMapArray(lenv->content,"message",lIndex,_("The ZOO-Kernel was able to retrieve the data but could not access any feature or pixel in te resulting file."));
       if(getMapFromMaps(m,"lenv","state")==NULL)
-	errorException (&m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
+        errorException (&m, _("Unable to find any geographic data"), "WrongInputData", tmpI->name);
     }
     return;
   }
@@ -1345,7 +1345,7 @@ void outputMapfile(maps* conf,maps* outputs){
   if(storage==NULL){
     map* tmpMap=getMapFromMaps(conf,"main","dataPath");
     map* sidMap=getMapFromMaps(conf,"lenv","usid");
-    char *pszDataSource=(char*)malloc((strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+17)*sizeof(char));
+    char *pszDataSource=(char*)malloc((strlen(ext)+strlen(tmpMap->value)+strlen(sidMap->value)+strlen(outputs->name)+26)*sizeof(char));
     sprintf(pszDataSource,"%s/ZOO_DATA_%d_%s_%s.%s",tmpMap->value,imyIndex,outputs->name,sidMap->value,ext);
     int f=zOpen(pszDataSource,O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
     map *gfile=getMapArray(outputs->content,"generated_file",imyIndex);

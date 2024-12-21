@@ -37,15 +37,57 @@ profiles:
             - values.yaml
             setValueTemplates:
               iam.enabled: false
-              # WES cookiecutter
-              #cookiecutter.templateUrl: https://github.com/cedadev/eoepca-proc-service-template-wes.git
-              #cookiecutter.templateBranch: main
               # EOEPCA cookiecutter
               #cookiecutter.templateUrl: https://github.com/EOEPCA/eoepca-proc-service-template.git
               #cookiecutter.templateBranch: feature/python3.8
-              # Argo cookiecutter
-              #cookiecutter.templateUrl: https://github.com/EOEPCA/zoo-argo-wf-proc-service-template.git
-              #cookiecutter.templateBranch: main
+              # Standard cookiecutter
+              cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
+              cookiecutter.templateBranch: develop
+              filter_in.enabled: true
+              filter_out.enabled: true
+              zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}@{{.IMAGE_DIGEST_zoodruimage}}"
+              zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}@{{.IMAGE_DIGEST_zoodruimage}}" 
+
+              # Persistence settings (should be same in the original chart)
+              persistence.procServicesAccessMode: ReadWriteMany
+
+              # RabbitMQ resource limits
+              rabbitmq.resource.limits.memory: 2048Mi
+
+            setValues:
+              zookernel.image.pullPolicy: Always
+              zoofpm.image.pullPolicy: Always
+
+  - name: dru-hostpath
+    deploy:
+      helm:
+        releases:
+          - name: eoap-zoo-project-localstack
+            remoteChart: localstack/localstack
+            namespace: eoap-zoo-project
+            createNamespace: true
+            setValues:
+              service.type: ClusterIP
+              enableStartupScripts: true
+              startupScriptContent: |
+                #!/bin/bash
+
+                awslocal s3 mb s3://results
+
+          - name: zoo-project-dru
+            remoteChart: zoo-project/zoo-project-dru
+            namespace: eoap-zoo-project
+            createNamespace: true
+            version: 0.3.14
+            valuesFiles:
+            - values.yaml
+            setValueTemplates:
+              iam.enabled: false
+              # EOEPCA cookiecutter
+              #cookiecutter.templateUrl: https://github.com/EOEPCA/eoepca-proc-service-template.git
+              #cookiecutter.templateBranch: feature/python3.8
               # Standard cookiecutter
               cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
               cookiecutter.templateBranch: develop
@@ -58,27 +100,219 @@ profiles:
               zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
               zookernel.image.pullPolicy: IfNotPresent
 
-              # HPC specific
-              #workflow.inputs.WES_URL: "https://<wes-server-dns-name>/ga4gh/wes/v1/"
-              #workflow.inputs.WES_USER: "yourusername"
-              #workflow.inputs.WES_PASSWORD: "yourpassword"
+              # Persistence settings (should be same in the original chart)
+              persistence.procServicesAccessMode: ReadWriteMany
 
-              # ARGO specific
-              #workflow.argo.enabled: true
-              #workflow.argo.wfToken: "<ARGO_WF_TOKEN>"
+              # Kubernetes (arm64) from Docker Desktop specific settings
+              workflow.storageClass: hostpath
+              persistence.storageClass: hostpath
+              persistence.procServicesStorageClass: hostpath
+              persistence.tmpStorageClass: hostpath
+
+              # RabbitMQ resource limits
+              rabbitmq.resource.limits.memory: 2048Mi
+
+  - name: dru-wes
+    deploy:
+      helm:
+        releases:
+          - name: eoap-zoo-project-localstack
+            remoteChart: localstack/localstack
+            namespace: eoap-zoo-project
+            createNamespace: true
+            setValues:
+              service.type: ClusterIP
+              enableStartupScripts: true
+              startupScriptContent: |
+                #!/bin/bash
+
+                awslocal s3 mb s3://results
+
+          - name: zoo-project-dru
+            remoteChart: zoo-project/zoo-project-dru
+            namespace: eoap-zoo-project
+            createNamespace: true
+            version: 0.3.14
+            valuesFiles:
+            - values.yaml
+            setValueTemplates:
+              iam.enabled: false
+              # WES cookiecutter
+              cookiecutter.templateUrl: https://github.com/gfenoy/eoepca-proc-service-template-wes.git
+              cookiecutter.templateBranch: develop
+              filter_in.enabled: true
+              filter_out.enabled: true
+              zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
+              zoofpm.image.pullPolicy: IfNotPresent
+              zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
+              zookernel.image.pullPolicy: IfNotPresent
+
+              # WES specific
+              workflow.inputs.WES_URL: "http://192.168.1.59:8100/ga4gh/wes/v1/"
+              workflow.inputs.WES_USER: "test"
+              workflow.inputs.WES_PASSWORD: "$$2y$$12$$ci.4U63YX83CwkyUrjqxAucnmi2xXOIlEF6T/KdP9824f1Rf1iyNG"
+
+              # Persistence settings (should be same in the original chart)
+              persistence.procServicesAccessMode: ReadWriteMany
+
+              # RabbitMQ resource limits
+              rabbitmq.resource.limits.memory: 2048Mi
+
+  - name: dru-wes-hostpath
+    deploy:
+      helm:
+        releases:
+          - name: eoap-zoo-project-localstack
+            remoteChart: localstack/localstack
+            namespace: eoap-zoo-project
+            createNamespace: true
+            setValues:
+              service.type: ClusterIP
+              enableStartupScripts: true
+              startupScriptContent: |
+                #!/bin/bash
+
+                awslocal s3 mb s3://results
+
+          - name: zoo-project-dru
+            remoteChart: zoo-project/zoo-project-dru
+            namespace: eoap-zoo-project
+            createNamespace: true
+            version: 0.3.14
+            valuesFiles:
+            - values.yaml
+            setValueTemplates:
+              iam.enabled: false
+              # WES cookiecutter
+              cookiecutter.templateUrl: https://github.com/gfenoy/eoepca-proc-service-template-wes.git
+              cookiecutter.templateBranch: develop
+              filter_in.enabled: true
+              filter_out.enabled: true
+              zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
+              zoofpm.image.pullPolicy: IfNotPresent
+              zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
+              zookernel.image.pullPolicy: IfNotPresent
+
+              # WES specific
+              workflow.inputs.WES_URL: "http://192.168.1.59:8100/ga4gh/wes/v1/"
+              workflow.inputs.WES_USER: "test"
+              workflow.inputs.WES_PASSWORD: "$$2y$$12$$ci.4U63YX83CwkyUrjqxAucnmi2xXOIlEF6T/KdP9824f1Rf1iyNG"
 
               # Persistence settings (should be same in the original chart)
               persistence.procServicesAccessMode: ReadWriteMany
 
               # Kubernetes (arm64) from Docker Desktop specific settings
-              #workflow.storageClass: hostpath
-              #persistence.storageClass: hostpath
-              #persistence.procServicesStorageClass: hostpath
-              #persistence.tmpStorageClass: hostpath
+              workflow.storageClass: hostpath
+              persistence.storageClass: hostpath
+              persistence.procServicesStorageClass: hostpath
+              persistence.tmpStorageClass: hostpath
 
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
 
+  - name: dru-argo
+    deploy:
+      helm:
+        releases:
+          - name: eoap-zoo-project-localstack
+            remoteChart: localstack/localstack
+            namespace: eoap-zoo-project
+            createNamespace: true
+            setValues:
+              service.type: ClusterIP
+              enableStartupScripts: true
+              startupScriptContent: |
+                #!/bin/bash
+
+                awslocal s3 mb s3://results
+
+          - name: zoo-project-dru
+            remoteChart: zoo-project/zoo-project-dru
+            namespace: eoap-zoo-project
+            createNamespace: true
+            version: 0.3.14
+            valuesFiles:
+            - values.yaml
+            setValueTemplates:
+              iam.enabled: false
+              # Argo cookiecutter
+              cookiecutter.templateUrl: https://github.com/EOEPCA/zoo-argo-wf-proc-service-template.git
+              cookiecutter.templateBranch: main
+              filter_in.enabled: true
+              filter_out.enabled: true
+              zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
+              zoofpm.image.pullPolicy: IfNotPresent
+              zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
+              zookernel.image.pullPolicy: IfNotPresent
+
+              # ARGO specific
+              workflow.argo.enabled: true
+              workflow.argo.wfToken: "<ARGO_WF_TOKEN>"
+
+              # Persistence settings (should be same in the original chart)
+              persistence.procServicesAccessMode: ReadWriteMany
+
+              # RabbitMQ resource limits
+              rabbitmq.resource.limits.memory: 2048Mi
+
+  - name: dru-argo-hostpath
+    deploy:
+      helm:
+        releases:
+          - name: eoap-zoo-project-localstack
+            remoteChart: localstack/localstack
+            namespace: eoap-zoo-project
+            createNamespace: true
+            setValues:
+              service.type: ClusterIP
+              enableStartupScripts: true
+              startupScriptContent: |
+                #!/bin/bash
+
+                awslocal s3 mb s3://results
+
+          - name: zoo-project-dru
+            remoteChart: zoo-project/zoo-project-dru
+            namespace: eoap-zoo-project
+            createNamespace: true
+            version: 0.3.14
+            valuesFiles:
+            - values.yaml
+            setValueTemplates:
+              iam.enabled: false
+              # Argo cookiecutter
+              cookiecutter.templateUrl: https://github.com/EOEPCA/zoo-argo-wf-proc-service-template.git
+              cookiecutter.templateBranch: main
+              filter_in.enabled: true
+              filter_out.enabled: true
+              zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
+              zoofpm.image.pullPolicy: IfNotPresent
+              zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+              zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
+              zookernel.image.pullPolicy: IfNotPresent
+
+              # ARGO specific
+              workflow.argo.enabled: true
+              workflow.argo.wfToken: "<ARGO_WF_TOKEN>"
+
+              # Persistence settings (should be same in the original chart)
+              persistence.procServicesAccessMode: ReadWriteMany
+
+              # Kubernetes (arm64) from Docker Desktop specific settings
+              workflow.storageClass: hostpath
+              persistence.storageClass: hostpath
+              persistence.procServicesStorageClass: hostpath
+              persistence.tmpStorageClass: hostpath
+
+              # RabbitMQ resource limits
+              rabbitmq.resource.limits.memory: 2048Mi
 
 portForward:
   - resourceType: service
@@ -86,4 +320,10 @@ portForward:
     namespace: eoap-zoo-project
     address: localhost
     port: 80
-    localPort: 8080  
+    localPort: 8080
+  - resourceType: service
+    resourceName: eoap-zoo-project-localstack
+    namespace: eoap-zoo-project
+    address: localhost
+    port: 4566
+    localPort: 8022

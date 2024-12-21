@@ -3146,7 +3146,14 @@ extern "C" {
           hasMessage=1;
         }
         map* mMap=NULL;
-        if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
+        if((mMap=getMapFromMaps(conf,"lenv","status"))!=NULL){
+          map* pmMap1=getMapFromMaps(conf,"lenv","PercentCompleted");
+          if(pmMap1!=NULL && atoi(pmMap1->value)>atoi(mMap->value))
+            json_object_object_add(res,"progress",json_object_new_int(atoi(pmMap1->value)));
+          else
+            json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
+        }
+        else if((mMap=getMapFromMaps(conf,"lenv","PercentCompleted"))!=NULL)
           json_object_object_add(res,"progress",json_object_new_int(atoi(mMap->value)));
         rstatus="running";
         break;

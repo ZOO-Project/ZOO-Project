@@ -917,7 +917,7 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
      Py_RETURN_NONE;
   }else{
      char tmpStatus[4];
-     snprintf(tmpStatus, 4, "%i", istatus);
+     snprintf(tmpStatus, 4, "%d", istatus);
      status = zStrdup(tmpStatus);
   }
   // create a local copy and update the lenv map

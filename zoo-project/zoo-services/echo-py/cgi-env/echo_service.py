@@ -103,7 +103,8 @@ def echo(conf,inputs,outputs):
         nb_sleep=inputs["pause"]["value"]
         for i in range(4):
             conf["lenv"]["message"]="Sleeping for "+inputs["pause"]["value"]+" seconds ("+str(i+1)+"/4)"
-            zoo.update_status(conf,25*i)
+            zoo.update_status(conf,20*(i+1))
             time.sleep((float(inputs["pause"]["value"])*25)/100)
+            zoo.update_status(conf,20*(i+1))
     print(outputs,file=sys.stderr)
     return zoo.SERVICE_SUCCEEDED
