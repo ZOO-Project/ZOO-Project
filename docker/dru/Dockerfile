@@ -173,7 +173,6 @@ COPY docker/dru/requirements.txt /tmp/
 # https://github.com/EOEPCA/zoo-calrissian-runner.git 
 # (branch: feature/access-log-status-failed)
 RUN date && mkdir /tmp/cookiecutter-templates && \
-    #pip install GDAL==3.4.3 && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
