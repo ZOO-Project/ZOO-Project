@@ -96,6 +96,24 @@ def runDismiss(conf,inputs,outputs):
     from zoo_calrissian_runner import ZooCalrissianRunner
     from pycalrissian.context import CalrissianContext
 
+    zoo.info(f"runDismiss {str(conf["lenv"])}!")
+    try:
+        import configparser
+        lenv_path=os.path.join(
+            conf["main"]["tmpPath"],
+            f"{conf['lenv']['gs_usid']}_lenv.cfg"
+            )
+        config=configparser.ConfigParser()
+        config.read(lenv_path)
+        if "run_id" in config["lenv"]:
+            from zoo_wes_runner import ZooWESRunner
+            wes=ZooWESRunner()
+            conf["lenv"]["run_id"]=config["lenv"]["run_id"]
+            wes.dismiss()
+            return zoo.SERVICE_SUCCEEDED
+    except Exception as e:
+        zoo.error(str(e))
+
     try:
         if "param" in inputs:
             json_object=json.loads(inputs["param"]["value"])

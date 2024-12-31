@@ -177,7 +177,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
-    git clone https://github.com/cedadev/eoepca-zoo-wes-runner.git && \
+    git clone -b develop https://github.com/gfenoy/eoepca-zoo-wes-runner.git && \
     cd eoepca-zoo-wes-runner && \
     poetry build && \
     ls dist && \

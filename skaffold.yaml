@@ -196,7 +196,7 @@ profiles:
               zookernel.image.pullPolicy: IfNotPresent
 
               # WES specific
-              workflow.inputs.WES_URL: "http://192.168.1.59:8100/ga4gh/wes/v1/"
+              workflow.inputs.WES_URL: "http://192.168.1.13:8100/ga4gh/wes/v1/"
               workflow.inputs.WES_USER: "test"
               workflow.inputs.WES_PASSWORD: "$$2y$$12$$ci.4U63YX83CwkyUrjqxAucnmi2xXOIlEF6T/KdP9824f1Rf1iyNG"
 
