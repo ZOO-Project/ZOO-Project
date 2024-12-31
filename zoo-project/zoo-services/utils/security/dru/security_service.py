@@ -96,7 +96,7 @@ def runDismiss(conf,inputs,outputs):
     from zoo_calrissian_runner import ZooCalrissianRunner
     from pycalrissian.context import CalrissianContext
 
-    zoo.info(f"runDismiss {str(conf["lenv"])}!")
+    zoo.info(f"runDismiss {str(conf['lenv'])}!")
     try:
         import configparser
         lenv_path=os.path.join(
