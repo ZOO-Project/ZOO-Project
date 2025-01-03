@@ -107,7 +107,13 @@ def runDismiss(conf,inputs,outputs):
         config.read(lenv_path)
         if "run_id" in config["lenv"]:
             from zoo_wes_runner import ZooWESRunner
-            wes=ZooWESRunner()
+            wes=ZooWESRunner(
+                cwl=None,
+                conf=conf,
+                inputs=inputs,
+                outputs=outputs,
+                execution_handler=None,
+            )
             conf["lenv"]["run_id"]=config["lenv"]["run_id"]
             wes.dismiss()
             return zoo.SERVICE_SUCCEEDED
