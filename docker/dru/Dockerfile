@@ -173,6 +173,7 @@ COPY docker/dru/requirements.txt /tmp/
 # https://github.com/EOEPCA/zoo-calrissian-runner.git 
 # (branch: feature/access-log-status-failed)
 RUN date && mkdir /tmp/cookiecutter-templates && \
+    pip install --upgrade pip && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
@@ -191,6 +192,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
     cd .. && \
+    apt-get -qqy remove python3-setuptools python3-wheel python3-urllib3 python3-urllib3 python3-idna python3-certifi && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     #ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/libcrypto.so.3 /usr/lib/ && \
     echo /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
