@@ -1,12 +1,13 @@
  pip>=23.3.0
  certifi>=2022.12.07
  wheel>=0.38.1
+ urllib3==1.26.19
  requests>=2.32.0
  idna>=3.7
  jinja2>=3.1.5
  markupsafe>=2.0.0
  cookiecutter==2.1.1
- boto3
+ boto3==1.35.92
  kubernetes
  coverage
  git+https://github.com/EOEPCA/zoo-calrissian-runner.git@feature/access-log-status-failed
