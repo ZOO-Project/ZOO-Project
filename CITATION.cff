@@ -1,18 +1,11 @@
+cff-version: 1.2.0
 type: software
 title: ZOO-Project
+message: If you use this software, please cite it using the metadata from this file.
 version: 2.0.0
 date-released: 2024-03-02
 doi: 10.5281/zenodo.10759164
-abstract: The ZOO-Project is an open source processing platform, released under
- MIT/X11 Licence. It provides the polyglot ZOO-Kernel, a server implementation
- of the Web Processing Service (WPS) (1.0.0 and 2.0.0) and the OGC API - 
- Processes standards published by the OGC. It contains ZOO-Services, a minimal
- set of ready-to-use services that can be used as a base to create more usefull
- services. It provides the ZOO-API, initially only available from the 
- JavaScript service implementation, which exposes ZOO-Kernel variables and
- functions to the language used to implement the service. It contains the
- ZOO-Client, a JavaScript API which can be used from a client application to
- interract with a WPS server.
+abstract: The ZOO-Project is an open source processing platform, released under MIT/X11 Licence. It provides the polyglot ZOO-Kernel, a server implementation of the Web Processing Service (WPS) (1.0.0 and 2.0.0) and the OGC API - Processes standards published by the OGC. It contains ZOO-Services, a minimal set of ready-to-use services that can be used as a base to create more usefull services. It provides the ZOO-API, initially only available from the JavaScript service implementation, which exposes ZOO-Kernel variables and functions to the language used to implement the service. It contains the ZOO-Client, a JavaScript API which can be used from a client application to interract with a WPS server.
 url: https://zoo-project.org
 repository-code: https://github.com/ZOO-Project/ZOO-Project/
 license: MIT
@@ -30,7 +23,7 @@ authors:
     orcid: https://orcid.org/0000-0003-1908-5940
   - given-names: Jeff
     family-names: McKenna
-    affiliation: Gateway Geomatics
+    affiliation: GatewayGeo
     orcid: https://orcid.org/0000-0003-3900-1863
   - given-names: Fabrice
     family-names: Brito
@@ -73,7 +66,6 @@ authors:
     family-names: Saggiorato
   - given-names: René-Luc
     family-names: D'HONT
-
 keywords:
   - ZOO-Project
   - geospatial
