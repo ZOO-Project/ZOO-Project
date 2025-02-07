@@ -29,13 +29,18 @@ mv teamengine-5.7 src
 
 git clone https://github.com/opengeospatial/ets-common.git src1
 cd src1
-#Cannot clone the repo anymore, better to work with a dedicated version (1.2)
+#Cannot clone the repo anymore, better to work with a target version (1.2)
 #git clone https://github.com/opengeospatial/ets-ogcapi-processes10.git
 curl -L -o 1.2.zip https://github.com/opengeospatial/ets-ogcapi-processes10/archive/refs/tags/1.2.zip
 unzip 1.2.zip
 mv ets-ogcapi-processes10-1.2 ets-ogcapi-processes10
 rm 1.2.zip
-git clone https://github.com/opengeospatial/ets-wps20.git
+#Cannot clone the repo anymore, better to work with a target version (1.0)
+#git clone https://github.com/opengeospatial/ets-wps20.git
+curl -L -o 1.0.zip https://github.com/opengeospatial/ets-wps20/archive/refs/tags/1.0.zip
+unzip 1.0.zip
+mv ets-wps20-1.0 ets-wps20
+rm 1.0.zip
 
 cd ../../..
 
