@@ -839,6 +839,19 @@ do {\
   };
 
   /**
+   * OGC API - Processes exception limits
+   * 
+   * Used to determine which exceptionsUrl to use for the current exception.
+   * The first value is the index in the WPSExceptionCode array, and the second
+   * one is the index in the exceptionsUrl map array (i.e. when exception code 
+   * index is 4 or upper, we should use exceptionUrl_1).
+   * @see WPSExceptionCode, OAPIPCorrespondances
+   */
+  static const int OAPIPExceptionLimits[1][2] = {
+    {4,1}
+  };
+
+  /**
    * OGC API - Processes exception codes
    * @see WPSExceptionCode, OAPIPCorrespondances
    */

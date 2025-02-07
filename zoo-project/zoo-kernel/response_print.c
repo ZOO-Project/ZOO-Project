@@ -3266,7 +3266,7 @@ void printRawdataOutput(maps* pmsConf,maps* outputs){
       sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
       printf("Location: %s\r\n",locationUrlHeader);
     }
-
+    printHeaders(pmsConf);
     map* pmStatus = getMapFromMaps(pmsConf,"headers","Status");
     if(pmStatus!=NULL){
       printf("Status: %s;\r\n\r\n",pmStatus->value);

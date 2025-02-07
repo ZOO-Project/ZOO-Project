@@ -370,25 +370,34 @@ extern "C" {
       }
       json_object_object_add(schema,field,defaultProp);
     }
-    else if(pmTmp!=NULL)
-      if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
-        json_object_object_add(schema,field,json_object_new_int(atoi(pmTmp->value)));
-      else{
-        if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
-          json_object_object_add(schema,field,json_object_new_double(atof(pmTmp->value)));
-          json_object_object_add(schema,"format",json_object_new_string("double"));
-        }
-        else{
-          if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
-            if(strncasecmp(pmType->value,"true",4)==0)
-              json_object_object_add(schema,field,json_object_new_boolean(true));
-            else
-              json_object_object_add(schema,field,json_object_new_boolean(false));
-          }
-          else
-            json_object_object_add(schema,field,json_object_new_string(pmTmp->value));
-        }
+    else if(pmTmp!=NULL){
+      if((strstr(pmTmp->value,"[")!=NULL && strstr(pmTmp->value,"]")!=NULL) ||
+        (strstr(pmTmp->value,"{")!=NULL && strstr(pmTmp->value,"}")!=NULL)){
+        json_object* defaultProp=parseJson(pmConf,pmTmp->value);
+        json_object_object_add(schema,field,defaultProp);
       }
+      else
+        if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
+          json_object_object_add(schema,field,json_object_new_int(atoi(pmTmp->value)));
+        else{
+          if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
+            json_object_object_add(schema,field,json_object_new_double(atof(pmTmp->value)));
+            json_object_object_add(schema,"format",json_object_new_string("double"));
+          }
+          else{
+            if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
+              if(strncasecmp(pmType->value,"true",4)==0)
+                json_object_object_add(schema,field,json_object_new_boolean(true));
+              else
+                json_object_object_add(schema,field,json_object_new_boolean(false));
+            }
+            else{
+              ZOO_DEBUG(pmTmp->value);
+              json_object_object_add(schema,field,json_object_new_string(pmTmp->value));
+            }
+          }
+        }
+    }
   }
   
   /**
@@ -1126,8 +1135,14 @@ extern "C" {
           // cf. /req/deploy-replace-undeploy/deploy-response-duplicate
           // cf. /req/deploy-replace-undeploy/deploy-response-immutable
           // cf. /req/deploy-replace-undeploy/unsupported-content-type
-          if(i>=4)
-            pmExceptionUrl=getMapFromMaps(m,"openapi","exceptionsUrl_1");
+          for(int iSCnt=0;iSCnt<1;iSCnt++){
+            if(i>=OAPIPExceptionLimits[iSCnt][0]){
+              maps* pmsOpenApi=getMaps(m,"openapi");
+              if(pmsOpenApi!=NULL){
+                pmExceptionUrl=getMapArray(pmsOpenApi->content,"exceptionsUrl",OAPIPExceptionLimits[iSCnt][1]);
+              }
+            }
+          }
           char* pcaTmp=(char*)malloc((strlen(pmExceptionUrl->value)+strlen(OAPIPExceptionCode[OAPIPCorrespondances[i][1]])+2)*sizeof(char));
           sprintf(pcaTmp,"%s/%s",pmExceptionUrl->value,OAPIPExceptionCode[OAPIPCorrespondances[i][1]]);
           json_object_object_add(res,"type",json_object_new_string(pcaTmp));
@@ -3216,6 +3231,7 @@ extern "C" {
     }else
       sessId = getMapFromMaps (conf, "lenv", "gs_usid");
     if(sessId!=NULL){
+      json_object_object_add(res,"id",json_object_new_string(sessId->value));
       json_object_object_add(res,"jobID",json_object_new_string(sessId->value));
       if(isDismissed==0)
         json_getStatusAttributes(conf,sessId,res,status);
