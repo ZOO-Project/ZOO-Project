@@ -39,9 +39,12 @@ def securityIn(conf,inputs,outputs):
         if "servicesNamespace" in conf and "debug" in conf["servicesNamespace"]:
             zoo.error(f"No JWT service available: {str(e)}")
     rPath=conf["servicesNamespace"]["path"]+"/"
+    has_rpath=False
     for i in conf["renv"]:
         if i.count("SERVICES_NAMESPACE"):
-            rPath+=conf["renv"][i]
+            if not(has_rpath):
+                rPath+=conf["renv"][i]
+                has_rpath=True
             conf["auth_env"]={"user": conf["renv"][i],"cwd": rPath}
             conf["lenv"]["fpm_user"]=conf["renv"][i]
             conf["lenv"]["fpm_cwd"]=rPath
@@ -63,7 +66,7 @@ def securityIn(conf,inputs,outputs):
         if "required_files" in conf["servicesNamespace"]:
             rFiles=conf["servicesNamespace"]["required_files"].split(',')
             for i in range(len(rFiles)):
-                zoo.info(f"Copy file {rFile[i]}")
+                zoo.info(f"Copy file {rFiles[i]}")
                 shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
     return zoo.SERVICE_SUCCEEDED
 
