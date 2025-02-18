@@ -127,6 +127,7 @@ extern "C" {
 
   
   ZOO_DLL_EXPORT char *readVSIFile(maps*,const char*);
+  ZOO_DLL_EXPORT bool validateVRT(maps*,const char*);
   ZOO_DLL_EXPORT int  setOutputValue( maps*, const char*, char*, size_t);
   ZOO_DLL_EXPORT char* getInputValue( maps*,const char*,size_t*);
 

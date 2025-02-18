@@ -36,6 +36,7 @@
 CREATE TABLE workers (
        id serial primary key,
        uuid text,
+       host varchar(17),
        pid int,
        status int,
        creation_time timestamp with time zone default now(),
@@ -43,7 +44,7 @@ CREATE TABLE workers (
 );
 
 
-CREATE OR REPLACE FUNCTION checkAvailableExecutionSlot(schema text,uuid text, pid int) RETURNS boolean AS 
+CREATE OR REPLACE FUNCTION checkAvailableExecutionSlot(schema text,uuid text, host text, pid int) RETURNS boolean AS 
 $BODY$
 DECLARE
 	res int;
@@ -51,7 +52,7 @@ DECLARE
 BEGIN
         EXECUTE 'SELECT count(*) from '||schema||'.workers where uuid = '''||uuid||'''' INTO cnt;
 	IF cnt = 0  THEN
-	   EXECUTE 'INSERT INTO '||schema||'.workers (uuid,pid,status) VALUES ('''||uuid||''','||pid||',1)';
+	   EXECUTE 'INSERT INTO '||schema||'.workers (uuid,host,pid,status) VALUES ('''||uuid||''','''||host||''','||pid||',1)';
 	   RETURN true;
 	ELSE
 	   RETURN false;

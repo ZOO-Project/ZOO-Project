@@ -23,6 +23,7 @@ ARG RUN_DEPS=" \
     libpq5 \
     libpython3.6 \
     libxslt1.1 \
+    libgdal26 \
     gdal-bin \
     libcgal13 \
     librabbitmq4 \
@@ -103,7 +104,7 @@ WORKDIR /zoo-project
 COPY . .
 
 RUN set -ex \
-    && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
+    && apt-get update && apt-cache search libotb-dev && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && make -C ./thirds/cgic206 libcgic.a \
     \
@@ -118,7 +119,7 @@ RUN set -ex \
     && autoconf \
     && find /usr -name otbWrapperApplication.h \
     # Comment the line bellow if you don't want to use rabbitmq
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=7.0 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     # Uncomment the line bellow if you don't want to use rabbitmq
     #&& ./configure --with-python=/usr --with-pyvers=3.6 --with-js=/usr --with-mapserver=/usr --with-ms-version=7 --with-json=/usr --with-r=/usr --prefix=/usr --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 --with-itk-version=4.12 --with-saga=/usr --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
@@ -379,7 +380,7 @@ RUN set -ex \
     && pip3 install --upgrade pip setuptools wheel \
     # see various issue reported about _2to3 invocation and setuptools < 58.0 \
     && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
-    && pip3 install GDAL==2.4.2 \
+    && pip3 install GDAL==3.0.4 \
     && pip3 install Cheetah3 redis spython \
     && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
     \

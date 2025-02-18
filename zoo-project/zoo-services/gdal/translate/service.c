@@ -35,6 +35,7 @@
 #include "vrtdataset.h"
 
 #include "service.h"
+#include "service_internal.h"
 
 CPL_CVSID("$Id$");
 
@@ -58,7 +59,7 @@ __declspec(dllexport)
     int			i;
     int			nRasterXSize, nRasterYSize;
     const char		*pszSource=NULL, *pszDest=NULL, *pszFormat = "GTiff";
-    GDALDriverH		hDriver;
+    GDALDriverH		hDriver, hInDriver;
     int			*panBandList = NULL, nBandCount = 0, bDefBands = TRUE;
     double		adfGeoTransform[6];
     GDALDataType	eOutputType = GDT_Unknown;
@@ -131,19 +132,19 @@ __declspec(dllexport)
       char *ext=new char[4];
       ext="tif";
       if(strncasecmp(pszFormat,"AAIGRID",7)==0)
-	ext="csv";
+        ext="csv";
       else 
-	if(strncasecmp(pszFormat,"PNG",3)==0)
-	  ext="png";
-	else
-	  if(strncasecmp(pszFormat,"GIF",3)==0)
-	    ext="gif";
-	  else
-	    if(strncasecmp(pszFormat,"JPEG",4)==0)
-	      ext="jpg";
-      sprintf((char*)pszDest,"%s/%s.%s",tempPath,tmpMap->value,ext);
-      fprintf(stderr,"DEBUG pszDest : %s\n",pszDest);
-    }
+        if(strncasecmp(pszFormat,"PNG",3)==0)
+          ext="png";
+        else
+          if(strncasecmp(pszFormat,"GIF",3)==0)
+            ext="gif";
+          else
+            if(strncasecmp(pszFormat,"JPEG",4)==0)
+              ext="jpg";
+            sprintf((char*)pszDest,"%s/%s.%s",tempPath,tmpMap->value,ext);
+            fprintf(stderr,"DEBUG pszDest : %s\n",pszDest);
+          }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"SrcWin","value");
@@ -152,11 +153,11 @@ __declspec(dllexport)
       char *t=strtok(tmp,",");
       int cnt=0;
       while(t!=NULL){
-	anSrcWin[cnt] = atoi(t);
-	t=strtok(NULL,",");
-	cnt++;
+        anSrcWin[cnt] = atoi(t);
+        t=strtok(NULL,",");
+        cnt++;
       }
-    }   
+    }
 
     tmpMap=NULL;
     tmpMap=getMapFromMaps(inputs,"ProjWin","value");
@@ -165,22 +166,22 @@ __declspec(dllexport)
       char *t=strtok(tmp,",");
       int cnt=0;
       while(t!=NULL){
-	switch(cnt){
-	case 0:
-	  dfULX = atof(t);
-	  break;
-	case 1:
-	  dfULY = atof(t);
-	  break;
-	case 2:
-	  dfLRX = atof(t);
-	  break;
-	case 3:
-	  dfLRY = atof(t);
-	  break;
-	}
-	t=strtok(NULL,",");
-	cnt++;
+        switch(cnt){
+        case 0:
+          dfULX = atof(t);
+          break;
+        case 1:
+          dfULY = atof(t);
+          break;
+        case 2:
+          dfLRX = atof(t);
+          break;
+        case 3:
+          dfLRY = atof(t);
+          break;
+        }
+        t=strtok(NULL,",");
+        cnt++;
       }
     }
 
@@ -191,82 +192,82 @@ __declspec(dllexport)
       map* length=getMapFromMaps(inputs,"GCP","length");
       int len=0;
       if(length){
-	len=atoi(length->value);
-	int i;
-	maps* currentMaps=getMaps(inputs,"GCP");
-	for(i=0;i<len;i++){
-	  char* endptr = NULL;
-	  /* -gcp pixel line easting northing [elev] */
-	  
-	  nGCPCount++;
-	  pasGCPs = (GDAL_GCP *) 
-	    realloc( pasGCPs, sizeof(GDAL_GCP) * nGCPCount );
-	  GDALInitGCPs( 1, pasGCPs + nGCPCount - 1 );
+        len=atoi(length->value);
+        int i;
+        maps* currentMaps=getMaps(inputs,"GCP");
+        for(i=0;i<len;i++){
+          char* endptr = NULL;
+          /* -gcp pixel line easting northing [elev] */
 
-	  map* currentMap=getMapArray(currentMaps->content,"value",i);
+          nGCPCount++;
+          pasGCPs = (GDAL_GCP *)
+            realloc( pasGCPs, sizeof(GDAL_GCP) * nGCPCount );
+          GDALInitGCPs( 1, pasGCPs + nGCPCount - 1 );
 
-	  char* tmpV=strdup(currentMap->value);
-	  char *res=strtok(tmpV,",");
-	  int j=0;
-	  while(res!=NULL){
-	    switch(j){
-	    case 0:
-	      pasGCPs[nGCPCount-1].dfGCPPixel = CPLAtofM(res);
-	      break;
-	    case 1:
-	      pasGCPs[nGCPCount-1].dfGCPLine = CPLAtofM(res);
-	      break;
-	    case 2:
-	      pasGCPs[nGCPCount-1].dfGCPX = CPLAtofM(res);
-	      break;
-	    case 3:
-	      pasGCPs[nGCPCount-1].dfGCPY = CPLAtofM(res);
-	      break;
-	    case 4:
-	      if(res!=NULL && (strtod(res, &endptr) != 0.0 || res[0] == '0'))
-		if (endptr && *endptr == 0)
-		  pasGCPs[nGCPCount-1].dfGCPZ = CPLAtofM(res);
-	      break;
-	    }
-	    res=strtok(NULL,",");
-	    j++;
-	  }
-	}
+          map* currentMap=getMapArray(currentMaps->content,"value",i);
+
+          char* tmpV=strdup(currentMap->value);
+          char *res=strtok(tmpV,",");
+          int j=0;
+          while(res!=NULL){
+            switch(j){
+            case 0:
+              pasGCPs[nGCPCount-1].dfGCPPixel = CPLAtofM(res);
+              break;
+            case 1:
+              pasGCPs[nGCPCount-1].dfGCPLine = CPLAtofM(res);
+              break;
+            case 2:
+              pasGCPs[nGCPCount-1].dfGCPX = CPLAtofM(res);
+              break;
+            case 3:
+              pasGCPs[nGCPCount-1].dfGCPY = CPLAtofM(res);
+              break;
+            case 4:
+              if(res!=NULL && (strtod(res, &endptr) != 0.0 || res[0] == '0'))
+          if (endptr && *endptr == 0)
+            pasGCPs[nGCPCount-1].dfGCPZ = CPLAtofM(res);
+              break;
+            }
+            res=strtok(NULL,",");
+            j++;
+          }
+        }
       }else{
-	char* endptr = NULL;
-	/* -gcp pixel line easting northing [elev] */
-	
-	nGCPCount++;
-	pasGCPs = (GDAL_GCP *) 
-	  realloc( pasGCPs, sizeof(GDAL_GCP) * nGCPCount );
-	GDALInitGCPs( 1, pasGCPs + nGCPCount - 1 );
-	
-	char* tmpV=strdup(tmpMap->value);
-	char *res=strtok(tmpV,",");
-	int j=0;
-	while(res!=NULL){
-	  switch(j){
-	  case 0:
-	    pasGCPs[nGCPCount-1].dfGCPPixel = CPLAtofM(res);
-	    break;
-	  case 1:
-	    pasGCPs[nGCPCount-1].dfGCPLine = CPLAtofM(res);
-	    break;
-	  case 2:
-	    pasGCPs[nGCPCount-1].dfGCPX = CPLAtofM(res);
-	    break;
-	  case 3:
-	    pasGCPs[nGCPCount-1].dfGCPY = CPLAtofM(res);
-	    break;
-	  case 4:
-	    if(res!=NULL && (CPLStrtod(res, &endptr) != 0.0 || res[0] == '0'))
-	      if (endptr && *endptr == 0)
-		pasGCPs[nGCPCount-1].dfGCPZ = CPLAtofM(res);
-	    break;
-	  }	    
-	  res=strtok(NULL,",");
-	  j++;
-	}
+        char* endptr = NULL;
+        /* -gcp pixel line easting northing [elev] */
+
+        nGCPCount++;
+        pasGCPs = (GDAL_GCP *)
+          realloc( pasGCPs, sizeof(GDAL_GCP) * nGCPCount );
+        GDALInitGCPs( 1, pasGCPs + nGCPCount - 1 );
+
+        char* tmpV=strdup(tmpMap->value);
+        char *res=strtok(tmpV,",");
+        int j=0;
+        while(res!=NULL){
+          switch(j){
+          case 0:
+            pasGCPs[nGCPCount-1].dfGCPPixel = CPLAtofM(res);
+            break;
+          case 1:
+            pasGCPs[nGCPCount-1].dfGCPLine = CPLAtofM(res);
+            break;
+          case 2:
+            pasGCPs[nGCPCount-1].dfGCPX = CPLAtofM(res);
+            break;
+          case 3:
+            pasGCPs[nGCPCount-1].dfGCPY = CPLAtofM(res);
+            break;
+          case 4:
+            if(res!=NULL && (CPLStrtod(res, &endptr) != 0.0 || res[0] == '0'))
+              if (endptr && *endptr == 0)
+          pasGCPs[nGCPCount-1].dfGCPZ = CPLAtofM(res);
+            break;
+          }
+          res=strtok(NULL,",");
+          j++;
+        }
       }
     }
 
@@ -275,17 +276,16 @@ __declspec(dllexport)
     tmpMap=getMapFromMaps(inputs,"SRS","value");
     if(tmpMap!=NULL){
       OGRSpatialReference oOutputSRS;
-      if( oOutputSRS.SetFromUserInput( tmpMap->value ) != OGRERR_NONE )
-	{
-	  char *msg=(char*)CPLMalloc(100*sizeof(char));
-	  sprintf( msg, "Failed to process SRS definition: %s\n", 
-		   tmpMap->value );
-	  setMapInMaps(conf,"lenv","message",msg);
-	  /**
-	   * Avoiding GDALDestroyDriverManager() call
-	   */
-	  return SERVICE_FAILED;
-	}
+      if( oOutputSRS.SetFromUserInput( tmpMap->value ) != OGRERR_NONE ) {
+        char *msg=(char*)CPLMalloc(100*sizeof(char));
+        sprintf( msg, "Failed to process SRS definition: %s\n",
+          tmpMap->value );
+        setMapInMaps(conf,"lenv","message",msg);
+        /**
+        * Avoiding GDALDestroyDriverManager() call
+        */
+        return SERVICE_FAILED;
+      }
       oOutputSRS.exportToWkt( &pszOutputSRS );
     }
     tmpMap=NULL;
@@ -293,33 +293,31 @@ __declspec(dllexport)
     if(tmpMap!=NULL){
       int	iType;
       
-      for( iType = 1; iType < GDT_TypeCount; iType++ )
-	{
-	  if( GDALGetDataTypeName((GDALDataType)iType) != NULL
-	      && EQUAL(GDALGetDataTypeName((GDALDataType)iType),
-		       tmpMap->value) )
-	    {
-	      eOutputType = (GDALDataType) iType;
-	    }
-	}
+      for( iType = 1; iType < GDT_TypeCount; iType++ ) {
+        if( GDALGetDataTypeName((GDALDataType)iType) != NULL
+            && EQUAL(GDALGetDataTypeName((GDALDataType)iType),
+              tmpMap->value) )
+          {
+            eOutputType = (GDALDataType) iType;
+          }
+      }
       
-      if( eOutputType == GDT_Unknown )
-	{
-	  printf( "Unknown output pixel type: %s\n", tmpMap->value );
-	  /**
-	   * Avoiding GDALDestroyDriverManager() call
-	   */
-	  exit( 2 );
-	}
+      if( eOutputType == GDT_Unknown ) {
+        printf( "Unknown output pixel type: %s\n", tmpMap->value );
+        /**
+        * Avoiding GDALDestroyDriverManager() call
+        */
+        exit( 2 );
+      }
     }
 
     fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);
     if( pszDest == NULL ){
-	fprintf(stderr,"exit line 416");
-	fflush(stderr);
-	/**
-	 * Avoiding GDALDestroyDriverManager() call
-	 */
+        fprintf(stderr,"exit line 416");
+        fflush(stderr);
+        /**
+        * Avoiding GDALDestroyDriverManager() call
+        */
         exit( 10 );
       }
 
@@ -327,10 +325,10 @@ __declspec(dllexport)
     if ( strcmp(pszSource, pszDest) == 0)
       {
         fprintf(stderr, "Source and destination datasets must be different.\n");
-	fflush(stderr);
-	/**
-	 * Avoiding GDALDestroyDriverManager() call
-	 */
+        fflush(stderr);
+        /**
+        * Avoiding GDALDestroyDriverManager() call
+        */
         exit( 1 );
       }
 
@@ -349,6 +347,13 @@ __declspec(dllexport)
 	       CPLGetLastErrorNo(), CPLGetLastErrorMsg() );
       setMapInMaps(conf,"lenv","message",msg);
       return SERVICE_FAILED;
+    }
+
+    if(strstr(GDALGetDriverShortName(GDALGetDatasetDriver(hDataset)),"VRT")!=NULL){
+      if(!validateVRT(conf,pszSource)){
+        setMapInMaps(conf,"lenv","message",_("VRT file is not valid"));
+        return SERVICE_FAILED;
+      }
     }
 
     fprintf(stderr,"DEBUG pszDest : %s %d\n",pszDest,__LINE__);

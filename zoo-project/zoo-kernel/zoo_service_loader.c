@@ -122,6 +122,10 @@ extern "C" int crlex ();
 #ifdef USE_AMQP
 #include "service_internal_amqp.h"
 #include <sys/wait.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 
 #include <dirent.h>
@@ -5251,10 +5255,10 @@ int runRequest(map** inputs) {
  * @return 0 on sucess, other value on failure
  */
 int
-runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *msg_obj)
+runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_object *msg_obj)
 {
   register_signals(sig_handler);
-  maps* conf=*iconf;
+  maps* conf=*ppmsConf;
   map* request_inputs=*irequest_inputs;
   map* dsNb=getMapFromMaps(conf,"lenv","ds_nb");
   int metadb_id=0;
@@ -5264,14 +5268,22 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 #endif
   int iSqlCon=init_sql(conf);
     //}
-  map *uusid=getMap(*lenv,"usid");
+  map *uusid=getMap(*ppmLenv,"usid");
   map *schema=getMapFromMaps(conf,"database","schema");
 
-  char* sqlQuery0=(char*)malloc(((2*strlen(schema->value))+
-                                 strlen(uusid->value)+strlen(SQL_AVAILABLE_SLOT)+129)*sizeof(char));
-  sprintf(sqlQuery0,SQL_AVAILABLE_SLOT,schema->value,schema->value,uusid->value,getpid());
-  OGRLayer *res=fetchSql(conf,iSqlCon-1,sqlQuery0);
-  free(sqlQuery0);
+  char acHost[256];
+  int hostname=gethostname(acHost, sizeof(acHost));
+  struct hostent *host_entry = gethostbyname(acHost);
+  char *pcIP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
+  ZOO_DEBUG(pcIP);
+  ZOO_DEBUG(acHost);
+  char* pcaSqlQuery0=(char*)malloc(((2*strlen(schema->value))+
+                                strlen(pcIP)+strlen(uusid->value)+
+                                strlen(SQL_AVAILABLE_SLOT)+129)*sizeof(char));
+  sprintf(pcaSqlQuery0,SQL_AVAILABLE_SLOT,schema->value,schema->value,uusid->value,pcIP,getpid());
+  ZOO_DEBUG(pcaSqlQuery0);
+  OGRLayer *res=fetchSql(conf,iSqlCon-1,pcaSqlQuery0);
+  free(pcaSqlQuery0);
   if(res!=NULL){
     OGRFeature  *poFeature = NULL;
     const char *tmp1;
@@ -5298,7 +5310,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             setMapInMaps(conf,"lenv","usid",uusid->value);
             setMapInMaps(conf,"lenv","uusid",uusid->value);
 
-            maps* lconf=dupMaps(iconf);
+            maps* lconf=dupMaps(ppmsConf);
             // Reset metapath
             addToMap(request_inputs,"metapath","");
             setMapInMaps(lconf,"lenv","metapath","");
@@ -5307,13 +5319,13 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
 
             // Define auth_env section in case we find fpm_user in the lenv
             // map coming from the message received
-            map* pmUserEnv=getMap(*lenv,"fpm_user");
+            map* pmUserEnv=getMap(*ppmLenv,"fpm_user");
             if(pmUserEnv!=NULL){
               setMapInMaps(lconf,"env","SERVICES_NAMESPACE",pmUserEnv->value);
               setMapInMaps(lconf,"zooServicesNamespace","namespace",pmUserEnv->value);
               maps* pmsaUserEnv=createMaps("auth_env");
               pmsaUserEnv->content=createMap("user",pmUserEnv->value);
-              pmUserEnv=getMap(*lenv,"fpm_cwd");
+              pmUserEnv=getMap(*ppmLenv,"fpm_cwd");
               if(pmUserEnv!=NULL){
                 addToMap(pmsaUserEnv->content,"cwd",pmUserEnv->value);
                 char *pcaTmpPath=(char*) malloc((strlen(pmUserEnv->value)+6)*sizeof(char));
@@ -5336,7 +5348,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
               initAllEnvironment(lconf,request_inputs,ntmp,"xrequest");
             }
             // Update every lenv map and add them to the main conf maps lenv section
-            map* pmTmp0=*lenv;
+            map* pmTmp0=*ppmLenv;
             while(pmTmp0!=NULL){
               setMapInMaps(lconf,"lenv",pmTmp0->name,pmTmp0->value);
               pmTmp0=pmTmp0->next;
@@ -5502,7 +5514,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             dsNb=getMapFromMaps(conf,"lenv", "ds_nb");
             setMapInMaps(lconf, "lenv", "ds_nb",dsNb->value);
             map* usid = getMapFromMaps (lconf, "lenv", "uusid");
-            map* tmpm = getMap(*lenv, "osid");
+            map* tmpm = getMap(*ppmLenv, "osid");
             setMapInMaps(lconf, "lenv", "osid",tmpm->value);
             tmpm = getMapFromMaps (lconf, "lenv", "osid");
 
@@ -5586,7 +5598,7 @@ runAsyncRequest (maps** iconf, map ** lenv, map ** irequest_inputs,json_object *
             // Set Headers from lenv coming form the message
             // TODO: append current headers by fetching the renv from the
             // message?
-            map* pmCursor=*lenv;
+            map* pmCursor=*ppmLenv;
             while(pmCursor!=NULL){
               if(strncasecmp(pmCursor->name,"rb_headers_",11)==0){
                 setMapInMaps(lconf,"lenv",pmCursor->name,pmCursor->value);

@@ -93,6 +93,7 @@
 #include "commonutils.h"
 #else
 #include "service.h"
+#include "service_internal.h"
 #endif
 
 CPL_CVSID("$Id$");
@@ -2612,6 +2613,12 @@ __declspec(dllexport)
 #else
         exit( 1 );
 #endif
+    }
+    if(strstr(GDALGetDriverShortName(GDALGetDatasetDriver(hSrcDataset)),"VRT")!=NULL){
+        if(!validateVRT(conf,pszSrcFilename)){
+            setMapInMaps(conf,"lenv","message",_("VRT file is not valid"));
+            return NULL;
+        }
     }
 
     nXSize = GDALGetRasterXSize(hSrcDataset);

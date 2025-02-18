@@ -1,6 +1,13 @@
 Version 2.1.0-dev
+  * Store the zoofpm ip address in the status database to enable tracking
+  which zoofpm pod/container is used to run a process.
+  * Update GDAL based services to use the validateVRT for VRT used as
+  input file to ensure only the allowed paths are accessible.
+  * Add an isAllowedPath function to ensure the URL using file:// give
+  access only to the defined allowed paths, defined in the allowedPaths key
+  from the main section.
   * Update the skaffold.yaml file for easy deployment of the ZOO-Project
-  with DRU and CWL support on a local cluster
+  with DRU and CWL support on a local cluster in different flavors
   * Update the ZOO_DEBUG to use color for messages (if stderr is a tty)
   * Update variables naming, including the main configuration file name
   * Update ZOO_DEBUG function to use LOG_MESSAGE_FORMAT to format the

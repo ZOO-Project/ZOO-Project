@@ -67,6 +67,15 @@ int main(int argc,char** argv)
   free(pszFilename);
   if( hDataset != NULL )
     {
+
+		ZOO_DEBUG(GDALGetDriverShortName(GDALGetDatasetDriver(hDataset)));
+		if(strstr(GDALGetDriverShortName(GDALGetDatasetDriver(hDataset)),"VRT")!=NULL){
+			if(!validateVRT(conf,pszFilename)){
+				setMapInMaps(conf,"lenv","message",_("VRT file is not valid"));
+				return SERVICE_FAILED;
+			}
+		}
+
       GDALDriverH   hDriver;
       double        adfGeoTransform[6];
 

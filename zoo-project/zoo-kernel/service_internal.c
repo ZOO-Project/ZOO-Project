@@ -30,6 +30,8 @@
 #endif
 #include "service_internal.h"
 #include "service_callback.h"
+#include "request_parser.h"
+#include "caching.h"
 
 #ifdef WIN32
 // ref. https://docs.microsoft.com/en-us/windows/desktop/fileio/locking-and-unlocking-byte-ranges-in-files
@@ -342,15 +344,15 @@ char* _getStatusFile(maps* conf,char* pid){
       tmps1[flen]=0;
       fclose(f0);
       if(stat!=NULL){
-	unlockShm(lockid);
-	free(stat);
+        unlockShm(lockid);
+        free(stat);
       }
       return tmps1;
     }
     else{
       if(stat!=NULL){
-	unlockShm(lockid);
-	free(stat);
+        unlockShm(lockid);
+        free(stat);
       }
       return NULL;
     }
@@ -383,7 +385,7 @@ char* _getStatus(maps* conf,char* lid){
       setMapInMaps(conf,"lenv","lid",stat);
       lockid=acquireLock(conf);
       if(lockid<0)
-	return NULL;
+        return NULL;
     }
     fseek (f0, 0, SEEK_END);
     flen = ftell (f0);
@@ -397,11 +399,11 @@ char* _getStatus(maps* conf,char* lid){
       free(pcaStatusFile);
       if(stat!=NULL){
 #ifndef WIN32
-	removeShmLock(conf,1);
+        removeShmLock(conf,1);
 #else
-	unlockShm(lockid);
+        unlockShm(lockid);
 #endif
-	free(stat);
+        free(stat);
       }
       return fcontent;
     }
@@ -874,6 +876,53 @@ char* getInputValue( maps* inputs, const char* parameterName, size_t* numberOfBy
   return NULL;
 }
 
+/**
+ * Validate that the VRT contains only allowed path.
+ *
+ * @param pmsConf the maps pointing to the main configuration
+ * @param pccVRTName the name of the VRT file to validate
+ * @return true if the VRT is valid, false otherwise
+ */
+bool validateVRT(maps* pmsConf,const char* pccVRTName){
+  zStatStruct zStatus;
+  int iRes=zStat(pccVRTName, &zStatus);
+  if(zStatus.st_size>0){
+    char* pccVRTContent=(char*)malloc(zStatus.st_size*sizeof(char));
+    FILE* f=fopen(pccVRTName,"r");
+    if(f!=NULL){
+      fread(pccVRTContent,zStatus.st_size,1,f);
+      fclose(f);
+      xmlInitParser ();
+      xmlDocPtr doc = xmlReadMemory (pccVRTContent, zStatus.st_size, "validationFile.vrt.", NULL, XML_PARSE_RECOVER);
+      xmlXPathObjectPtr tmpsptr =
+        extractFromDoc (doc, "/*/*/*[local-name()='SourceFilename']");
+      xmlNodeSet *tmps = tmpsptr->nodesetval;
+      if(tmps!=NULL){
+        for (int i = 0; i < tmps->nodeNr; i++) {
+          xmlNodePtr node = tmps->nodeTab[i];
+          xmlChar *content = xmlNodeGetContent(node);
+          if(content!=NULL){
+            char* pccTmp=(char*)content;
+            if(strstr(pccTmp,"..")!=NULL || !isAllowedPath(pmsConf,pccTmp)){
+              xmlFree(content);
+              xmlXPathFreeObject (tmpsptr);
+              xmlFreeDoc (doc);
+              xmlCleanupParser ();
+              return false;
+            }
+            xmlFree(content);
+          }
+        }
+        xmlXPathFreeObject (tmpsptr);
+        xmlFreeDoc (doc);
+        xmlCleanupParser ();
+        return false;
+      }
+      xmlXPathFreeObject (tmpsptr);
+    }
+    return true;
+  }
+}
 
 /**
  * Read a file using the GDAL VSI API 

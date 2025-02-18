@@ -36,7 +36,7 @@
 #include "service.h"
 #include "service_internal.h"
 
-#define SQL_AVAILABLE_SLOT "SELECT %s.checkAvailableExecutionSlot('%s','%s',%d);"
+#define SQL_AVAILABLE_SLOT "SELECT %s.checkAvailableExecutionSlot('%s','%s','%s',%d);"
 
 #if defined(META_DB) || defined(USE_AMQP)
 extern "C" 

@@ -293,6 +293,12 @@ __declspec(dllexport)
 	setMapInMaps(conf,"lenv","message","Unable to open the file");
 #endif
     }
+    if(strstr(GDALGetDriverShortName(GDALGetDatasetDriver(hSrcDS)),"VRT")!=NULL){
+        if(!validateVRT(conf,pszSrcFilename)){
+          setMapInMaps(conf,"lenv","message",_("VRT file is not valid"));
+          return SERVICE_FAILED;
+        }
+    }
     hBand = GDALGetRasterBand( hSrcDS, nBandIn );
     if( hBand == NULL )
     {

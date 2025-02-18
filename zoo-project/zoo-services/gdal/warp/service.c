@@ -34,6 +34,7 @@
 #include "ogr_api.h"
 #include <vector>
 #include "service.h"
+#include "service_internal.h"
 
 CPL_CVSID("$Id: gdalwarp.cpp 24214 2012-04-08 20:17:17Z etourigny $");
 
@@ -821,6 +822,12 @@ int Gdal_Warp( maps*& conf,maps*& inputs,maps*& outputs )
 		  setMapInMaps(conf,"lenv","message","Cannot compute bounding box of cutline.");
 		  return GDALExit(1);
                 }
+                if(strstr(GDALGetDriverShortName(GDALGetDatasetDriver(hDataset)),"VRT")!=NULL){
+                    if(!validateVRT(conf,pszSource)){
+                        setMapInMaps(conf,"lenv","message",_("VRT file is not valid"));
+                        return SERVICE_FAILED;
+                    }
+                }
 
                 OGRSpatialReferenceH  hRasterSRS = NULL;
                 const char *pszProjection = NULL;
@@ -1478,6 +1485,12 @@ GDALWarpCreateOutput( maps*& conf,char **papszSrcFiles, const char *pszFilename,
         hSrcDS = GDALOpen( papszSrcFiles[iSrc], GA_ReadOnly );
         if( hSrcDS == NULL )
             GDALExit( 1 );
+        if(strstr(GDALGetDriverShortName(GDALGetDatasetDriver(hSrcDS)),"VRT")!=NULL){
+            if(!validateVRT(conf,papszSrcFiles[iSrc])){
+                setMapInMaps(conf,"lenv","message",_("VRT file is not valid"));
+                return NULL;
+            }
+        }
 
 /* -------------------------------------------------------------------- */
 /*      Check that there's at least one raster band                     */

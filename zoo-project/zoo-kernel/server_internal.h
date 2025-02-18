@@ -29,6 +29,18 @@
 #ifndef IMPORTSERVICE
 #define IMPORTSERVICE "include" // default name of [include] block in main.cfg
 
+#include <libintl.h>
+#include <locale.h>
+
+/**
+ * ZOO-Kernel internal messages translation function
+ */
+#define _(String) dgettext ("zoo-kernel",String)
+/**
+ * ZOO-Services messages translation function
+ */
+#define _ss(String) dgettext ("zoo-services",String)
+
 #include "service.h"
 #include <openssl/sha.h>
 #include <openssl/md5.h>
