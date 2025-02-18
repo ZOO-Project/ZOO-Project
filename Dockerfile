@@ -126,7 +126,7 @@ RUN set -ex \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.6 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=/usr/ --with-itk=/usr --with-otb-version=6.6 \
+              --with-otb=/usr/ --with-itk=/usr --with-otb-version=7.0 \
               --with-itk-version=4.12 --with-saga=/usr \
               --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
