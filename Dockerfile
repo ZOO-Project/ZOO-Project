@@ -144,12 +144,12 @@ RUN set -ex \
     && autoconf \
     # && find /usr -name otbWrapperApplication.h \
     && OTB_HEADER_PATH=$(find /usr -name otbWrapperApplication.h | xargs dirname) \
+    && export CXXFLAGS="-I$OTB_HEADER_PATH" \
     && curl -o config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess \
     && curl -o config.sub https://git.savannah.gnu.org/cgit/config.git/plain/config.sub \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=$OTB_HEADER_PATH --with-itk=/usr --with-otb-version=7.0 \
               --with-itk-version=4.12 --with-saga=/usr \
               --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
