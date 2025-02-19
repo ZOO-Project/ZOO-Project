@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 18.04 with updates and external packages
 #
-FROM ubuntu:24.04 AS base
+FROM ubuntu:22.04 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -143,15 +143,16 @@ RUN set -ex \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     # && find /usr -name otbWrapperApplication.h \
-    && OTB_HEADER_PATH=$(find /usr -name otbWrapperApplication.h | xargs dirname) \
-    && export CXXFLAGS="-I$OTB_HEADER_PATH" \
+    # && OTB_HEADER_PATH=$(find /usr -name otbWrapperApplication.h | xargs dirname) \
+    # && export CPPFLAGS="-I$OTB_HEADER_PATH" \
     # && curl -o config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess \
     # && curl -o config.sub https://git.savannah.gnu.org/cgit/config.git/plain/config.sub \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-itk-version=4.12 --with-saga=/usr \
-              --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
+              --with-otb=/usr --with-itk=/usr --with-otb-version=8.1 \
+              --with-itk-version=4.13 --with-saga=/usr \
+              --with-saga-version=7.3 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
     && make install \
     \
