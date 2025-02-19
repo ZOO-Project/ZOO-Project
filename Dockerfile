@@ -142,13 +142,14 @@ RUN set -ex \
     #&& cd .. \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
-    && find /usr -name otbWrapperApplication.h \
+    # && find /usr -name otbWrapperApplication.h \
+    && OTB_HEADER_PATH=$(find /usr -name otbWrapperApplication.h | xargs dirname) \
     && curl -o config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess \
     && curl -o config.sub https://git.savannah.gnu.org/cgit/config.git/plain/config.sub \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=/usr --with-itk=/usr --with-otb-version=7.0 \
+              --with-otb=$OTB_HEADER_PATH --with-itk=/usr --with-otb-version=7.0 \
               --with-itk-version=4.12 --with-saga=/usr \
               --with-saga-version=7.2 --with-wx-config=/usr/bin/wx-config \
     && make -j4 \
