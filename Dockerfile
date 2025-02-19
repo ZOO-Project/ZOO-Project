@@ -142,11 +142,7 @@ RUN set -ex \
     #&& cd .. \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
-    # && find /usr -name otbWrapperApplication.h \
-    # && OTB_HEADER_PATH=$(find /usr -name otbWrapperApplication.h | xargs dirname) \
-    # && export CPPFLAGS="-I$OTB_HEADER_PATH" \
-    # && curl -o config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess \
-    # && curl -o config.sub https://git.savannah.gnu.org/cgit/config.git/plain/config.sub \
+    # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
@@ -338,7 +334,7 @@ RUN set -ex \
 FROM base AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RUN_DEPS=" \
-    # se eliminó apache2 \
+    # se eliminó apache2 # TODO: remove (cesarbenjamindotnet) \
     # apache2 \
     # se agregó nginx \
     nginx \
@@ -351,7 +347,7 @@ ARG RUN_DEPS=" \
     libxml2-utils \
     gnuplot \
     locales \
-    # se eliminó libapache2-mod-fcgid \
+    # se eliminó libapache2-mod-fcgid # TODO: remove (cesarbenjamindotnet) \
     # libapache2-mod-fcgid \
     python3-setuptools \
     #Uncomment the line below to add vi editor \
@@ -401,9 +397,9 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/static
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/echo-py/cgi-env/ /usr/lib/cgi-bin/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/deploy-py/cgi-env/ /usr/lib/cgi-bin/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/undeploy-py/cgi-env/ /usr/lib/cgi-bin/
-# se eliminó la copia de .htaccess y default.conf de apache2
-# COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess
-# COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf
+# se eliminó la copia de .htaccess y default.conf de apache2 # TODO: remove (cesarbenjamindotnet)
+# COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess # TODO: remove (cesarbenjamindotnet)
+# COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf # TODO: remove (cesarbenjamindotnet)
 COPY --from=builder1 /zoo-project/docker/nginx-default.conf /etc/nginx/sites-available/zooproject
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
 
@@ -428,8 +424,8 @@ RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS $BUILD_DEPS \
     \
     && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
-    # se eliminó la configuración de apache2 \
-    # && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess \
+    # se eliminó la configuración de apache2  # TODO: remove (cesarbenjamindotnet) \
+    # && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess  # TODO: remove (cesarbenjamindotnet) \
     && sed "s=localhost=$SERVER_HOST=g" -i /etc/nginx/sites-available/zooproject \
     && cp /etc/nginx/sites-available/zooproject /etc/nginx/sites-available/default \
     && sed "s=http://localhost=$SERVER_URL=g;s=publisherUr\=$SERVER_URL=publisherUrl\=http://localhost=g;s=ws://localhost=$WS_SERVER_URL=g" -i /usr/lib/cgi-bin/oas.cfg \
@@ -445,7 +441,7 @@ RUN set -ex \
     && ln -s /usr/lib/x86_64-linux-gnu/saga/ /usr/lib/saga \
     && ln -s /testing /var/www/html/cptesting \
     && rm -rf /var/lib/apt/lists/* \
-    # && cp /000-default.conf /etc/apache2/sites-available/ \
+    # && cp /000-default.conf /etc/apache2/sites-available/  # TODO: remove (cesarbenjamindotnet) \
     && export CPLUS_INCLUDE_PATH=/usr/include/gdal \
     && export C_INCLUDE_PATH=/usr/include/gdal \
     && pip3 install --upgrade pip setuptools wheel \
@@ -453,12 +449,12 @@ RUN set -ex \
     && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
     && pip3 install GDAL==3.6.4 \
     && pip3 install Cheetah3 redis spython \
-    # se eliminó la modificación de apache2.conf \
-    # && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
+    # se eliminó la modificación de apache2.conf  # TODO: remove (cesarbenjamindotnet) \
+    # && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf   # TODO: remove (cesarbenjamindotnet) \
     \
-    # For using another port than 80, uncomment below. \
-    # remember to also change the ports in docker-compose.yml \
-    # && sed "s:Listen 80:Listen $PORT:g" -i /etc/apache2/ports.conf \
+    # For using another port than 80, uncomment below.  # TODO: remove (cesarbenjamindotnet) \
+    # remember to also change the ports in docker-compose.yml  # TODO: remove (cesarbenjamindotnet) \
+    # && sed "s:Listen 80:Listen $PORT:g" -i /etc/apache2/ports.conf  # TODO: remove (cesarbenjamindotnet) \
     \
     && mkdir -p /tmp/zTmp/statusInfos \
     && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project /usr/lib/cgi-bin/ \
@@ -470,10 +466,10 @@ RUN set -ex \
     # Update SAGA zcfg
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \
-    # Enable apache modules \
-    # se eliminó la habilitación de mod_fcgid \
+    # Enable apache modules  # TODO: remove (cesarbenjamindotnet) \
+    # se eliminó la habilitación de mod_fcgid  # TODO: remove (cesarbenjamindotnet) \
     \
-    # && a2enmod cgi rewrite \
+    # && a2enmod cgi rewrite  # TODO: remove (cesarbenjamindotnet) \
     \
     # Cleanup \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
@@ -485,6 +481,6 @@ RUN mkdir -p /opt/zooservices_namespaces && chmod -R 700 /opt/zooservices_namesp
 # For using another port than 80, change the value below.
 # remember to also change the ports in docker-compose.yml
 EXPOSE 80
-# se eliminó el arranque con apache2
-# CMD /usr/sbin/apache2ctl -D FOREGROUND
+# se eliminó el arranque con apache2   # TODO: remove (cesarbenjamindotnet)
+# CMD /usr/sbin/apache2ctl -D FOREGROUND   # TODO: remove (cesarbenjamindotnet)
 CMD ["/nginx-start.sh"]
