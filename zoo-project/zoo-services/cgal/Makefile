@@ -6,6 +6,7 @@ CC=gcc
 cgi-env/cgal_service.zo: delaunay.c voronoi.c cgal_service.o
 	g++ ${CFLAGS} -c ./delaunay.c
 	g++ ${CFLAGS} -c ./voronoi.c
+	find / -name libCGAL.so
 	g++ ${CFLAGS} -shared -o cgi-env/cgal_service.zo ./delaunay.o ./voronoi.o ./cgal_service.o ${GDAL_LIBS} ${CGAL_LDFLAGS} -LCGAL -lgmp ${GDAL_LIBS} -L${ZRPATH}/zoo-kernel/ -lzoo_service -lfcgi
 
 cgal_service.o: cgal_service.c cgal_service.h

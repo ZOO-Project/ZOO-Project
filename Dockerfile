@@ -141,7 +141,10 @@ RUN set -ex \
     #&& make && make install \
     #&& cd .. \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
-    && autoconf \
+    #&& aclocal \
+    && autoreconf --install \
+    #&& ls config/scripts/makemake \
+    #&& automake --add-missing \
     # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
@@ -383,7 +386,7 @@ COPY ./docker/startUp.sh /
 COPY ./docker/nginx-start.sh /
 
 # From zoo-kernel
-COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
+#COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
 COPY --from=builder1 /usr/lib/libzoo_service.so.2.0 /usr/lib/libzoo_service.so.2.0
 COPY --from=builder1 /usr/lib/libzoo_service.so /usr/lib/libzoo_service.so
 COPY --from=builder1 /usr/com/zoo-project/ /usr/com/zoo-project/
