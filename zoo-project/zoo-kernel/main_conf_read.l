@@ -26,7 +26,6 @@
 %option yylineno
 
 %{
-#define YY_BUF_SIZE 16384
 
 #include <string.h>
 #include "main_conf_read.tab.h"
