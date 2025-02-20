@@ -231,7 +231,7 @@ RUN set -ex \
     #Comment lines before this one if nor OTB nor SAGA \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*
 
 # The originally Generated TrainRegression.zcfg file have issues and it don't allow the processes to run
 # This file is a quick and dirty fix, and this is for override the generated file
