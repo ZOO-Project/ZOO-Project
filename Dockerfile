@@ -142,6 +142,7 @@ RUN set -ex \
     #&& cd .. \
     #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
+    && autoreconf --install \
     # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
     && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
@@ -235,7 +236,7 @@ RUN set -ex \
 # The originally Generated TrainRegression.zcfg file have issues and it don't allow the processes to run
 # This file is a quick and dirty fix, and this is for override the generated file
 # When it is fixed, this file and this line should be removed
-COPY docker/TrainRegression.zcfg /usr/lib/cgi-bin/OTB/
+# COPY ./docker/TrainRegression.zcfg /usr/lib/cgi-bin/OTB/
 
 #
 # Optional zoo modules build.
