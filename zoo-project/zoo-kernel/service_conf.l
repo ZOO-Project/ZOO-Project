@@ -26,6 +26,7 @@
 
 
 %{
+#define YY_BUF_SIZE 16384
 
 #include <string.h>
 #include "service_conf.tab.h"
