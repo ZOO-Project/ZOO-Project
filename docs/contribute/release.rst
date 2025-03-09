@@ -104,4 +104,4 @@ Release versions lead to an update in documentation and standard tarballs. This 
     zip -r ./zoo-project-$VERSION.zip ./zoo-project-$VERSION
     scp -P 1046 ./zoo-project-$VERSION.{zip,tar.bz2} zoo-project.org:/var/www/localhost/htdocs/dl/
 
-* Update the `Downloads page <http://zoo-project.org/new/Code/Download>`_ to add the latest release (by editing `this wiki page <http://zoo-project.org/trac/wiki/ZooWebSite/2015/Code/Download>`_).
+* Update the `Downloads page <https://zoo-project.org/resources/download/>`_ to add the latest release (by editing `this file <http://https://github.com/ZOO-Project/website/blob/main/themes/zoo-project/layouts/resources/download.html>`_).
