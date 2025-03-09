@@ -59,7 +59,12 @@ OGRLayer *zoo_ResultSet = NULL;
  */
 char* _createInitString(maps* conf,const char* key){
   char* res=NULL;
-  char keywords[6][14]={
+  int i=0;
+  maps* cconf=getMaps(conf,key);
+  if(cconf==NULL){
+    return zStrdup("-1");
+  }
+  char aacKeywords[6][14]={
     "dbname",
     "host",
     "port",
@@ -67,27 +72,49 @@ char* _createInitString(maps* conf,const char* key){
     "password",
     "active_schema"    
   };
-  int i=0;
-  maps* cconf=getMaps(conf,key);
-  if(cconf==NULL){
-    return zStrdup("-1");
-  }
+  char aacEnvVars[6][14]={
+    "PGDATABASE",
+    "PGHOST",
+    "PGPORT",
+    "PGUSER",
+    "PGPASSWORD",
+    "PGSCHEMA"
+  };
   int len=0;
   for(i=0;i<6;i++){
-    map* tmp=getMap(cconf->content,keywords[i]);
+    map* tmp=getMap(cconf->content,aacKeywords[i]);
     if(tmp!=NULL){
+      map* pmTmp=NULL;
       if(res==NULL){
-        res=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+4)*sizeof(char));
-        sprintf(res,"%s='%s'",keywords[i],tmp->value);
-        len+=strlen(res);
+        if((pmTmp=getMapFromMaps(conf,"renv",aacEnvVars[i]))!=NULL) {
+          res=(char*)malloc((strlen(aacKeywords[i])+strlen(pmTmp->value)+4)*sizeof(char));
+          sprintf(res,"%s='%s'",aacKeywords[i],pmTmp->value);
+          len+=strlen(res);
+        }
+        else{
+          res=(char*)malloc((strlen(aacKeywords[i])+strlen(tmp->value)+4)*sizeof(char));
+          sprintf(res,"%s='%s'",aacKeywords[i],tmp->value);
+          len+=strlen(res);
+        }
       }else{
-        char* res1=(char*)malloc((strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
-        sprintf(res1," %s='%s'",keywords[i],tmp->value);
-        res=(char*)realloc(res,(len+strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
-        memcpy(res+len,res1,(strlen(keywords[i])+strlen(tmp->value)+5)*sizeof(char));
-        len+=strlen(res1);
-        res[len]=0;
-        free(res1);
+        if((pmTmp=getMapFromMaps(conf,"renv",aacEnvVars[i]))!=NULL) {
+          char* res1=(char*)malloc((strlen(aacKeywords[i])+strlen(pmTmp->value)+5)*sizeof(char));
+          sprintf(res1," %s='%s'",aacKeywords[i],pmTmp->value);
+          res=(char*)realloc(res,(len+strlen(aacKeywords[i])+strlen(pmTmp->value)+5)*sizeof(char));
+          memcpy(res+len,res1,(strlen(aacKeywords[i])+strlen(pmTmp->value)+5)*sizeof(char));
+          len+=strlen(res1);
+          res[len]=0;
+          free(res1);
+        }
+        else{
+          char* res1=(char*)malloc((strlen(aacKeywords[i])+strlen(tmp->value)+5)*sizeof(char));
+          sprintf(res1," %s='%s'",aacKeywords[i],tmp->value);
+          res=(char*)realloc(res,(len+strlen(aacKeywords[i])+strlen(tmp->value)+5)*sizeof(char));
+          memcpy(res+len,res1,(strlen(aacKeywords[i])+strlen(tmp->value)+5)*sizeof(char));
+          len+=strlen(res1);
+          res[len]=0;
+          free(res1);
+        }
       }
     }
   }
