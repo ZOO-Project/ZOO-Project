@@ -357,13 +357,13 @@ extern "C" {
             }
             else{
               if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
-          if(strncasecmp(pmTmp0->value,"true",4)==0)
-            json_object_array_add(defaultProp,json_object_new_boolean(true));
-          else
-            json_object_array_add(defaultProp,json_object_new_boolean(false));
+                if(strncasecmp(pmTmp0->value,"true",4)==0)
+                  json_object_array_add(defaultProp,json_object_new_boolean(true));
+                else
+                  json_object_array_add(defaultProp,json_object_new_boolean(false));
               }
               else
-          json_object_array_add(defaultProp,json_object_new_string(pmTmp0->value));
+                json_object_array_add(defaultProp,json_object_new_string(pmTmp0->value));
             }
           }
         }
@@ -411,6 +411,7 @@ extern "C" {
   void printLiteralDataJ(maps* m,elements* in,json_object* input){
     json_object* schema=json_object_new_object();
     map* pmMin=getMap(in->content,"minOccurs");
+    map* pmMax=getMap(in->content,"maxOccurs");
     if(in->defaults!=NULL){
       map* tmpMap1=getMap(in->defaults->content,"DataType");
       if(tmpMap1!=NULL){
@@ -461,6 +462,17 @@ extern "C" {
     }
     if(pmMin!=NULL && atoi(pmMin->value)==0)
       json_object_object_add(schema,"nullable",json_object_new_boolean(true));
+    // Add experimental support for array of literals using extended-schema
+    if(pmMax!=NULL && atoi(pmMax->value)>1 && pmMin!=NULL){
+      json_object* pjoSchema1=json_object_new_object();
+      json_object_object_add(pjoSchema1,"type",json_object_new_string("array"));
+      json_object* pjoSchema2=NULL;
+      json_object_deep_copy(schema,&pjoSchema2,NULL);
+      json_object_object_add(pjoSchema1,"items",pjoSchema2);
+      json_object_object_add(pjoSchema1,"minItems",json_object_new_int(atoi(pmMin->value)));
+      json_object_object_add(pjoSchema1,"maxItems",json_object_new_int(atoi(pmMax->value)));
+      json_object_object_add(input,"extended-schema",pjoSchema1);
+    }
     json_object_object_add(input,"schema",schema);
   }
 

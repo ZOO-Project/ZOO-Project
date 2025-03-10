@@ -588,7 +588,8 @@ class ProcessInput:
         # it means the input is optional and of type typename
         if isinstance(input.type, str) or (isinstance(input.type, list) and len(input.type) == 2 and input.type[0] == 'null'):
             type_name = input.type[1] if isinstance(input.type, list) else input.type
-            current_type_is_array=False
+            current_type_is_array=False if not(isinstance(input.type, list)) else True
+            self.is_array=current_type_is_array
             if isinstance(type_name, cwl_v1_0.InputEnumSchema):
                 self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in type_name.symbols]
                 type_name = "string"
