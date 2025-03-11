@@ -1009,8 +1009,16 @@ int isRunning(maps* conf,char* pid){
 void runGetStatus(maps* conf,char* pid,char* req){
   map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
   map* e_type = getMapFromMaps (conf, "main", "executionType");
-  char *sid=getStatusId(conf,pid);
-  if(sid==NULL){
+  char *sid = getStatusId(conf, pid);
+if (sid == NULL) {
+    printf("[ERROR] Job ID '%s' not found. Avoiding crash.\n", pid);
+    
+    setMapInMaps(conf, "lenv", "error", "true");
+    setMapInMaps(conf, "lenv", "code", "NoSuchJob");
+    setMapInMaps(conf, "lenv", "message", _("The JobID from the request does not match any running job."));
+    
+    return; 
+}
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
       errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
