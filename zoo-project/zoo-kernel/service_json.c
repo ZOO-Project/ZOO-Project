@@ -27,6 +27,7 @@
 #include "sqlapi.h"
 #endif
 #include "json.h"
+#include "json_c_version.h"
 #include <errno.h>
 #include "json_tokener.h"
 #include "json_object.h"
@@ -462,7 +463,8 @@ extern "C" {
     }
     if(pmMin!=NULL && atoi(pmMin->value)==0)
       json_object_object_add(schema,"nullable",json_object_new_boolean(true));
-    // Add experimental support for array of literals using extended-schema
+#if JSON_C_MINOR_VERSION >= 13
+      // Add experimental support for array of literals using extended-schema
     if(pmMax!=NULL && atoi(pmMax->value)>1 && pmMin!=NULL){
       json_object* pjoSchema1=json_object_new_object();
       json_object_object_add(pjoSchema1,"type",json_object_new_string("array"));
@@ -473,6 +475,7 @@ extern "C" {
       json_object_object_add(pjoSchema1,"maxItems",json_object_new_int(atoi(pmMax->value)));
       json_object_object_add(input,"extended-schema",pjoSchema1);
     }
+#endif
     json_object_object_add(input,"schema",schema);
   }
 
