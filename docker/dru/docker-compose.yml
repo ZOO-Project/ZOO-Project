@@ -34,6 +34,7 @@ services:
       - APACHE_RUN_USER=www-data
       - APACHE_RUN_GROUP=www-data
       - APACHE_LOG_DIR=/var/log/apache2
+      - ZOO_OUTPUT_FORMAT=geojson-feature-collection
   zoofpm:
     platform: linux/amd64
     image: zooproject/zoo-project:dru-latest

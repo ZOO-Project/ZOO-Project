@@ -203,3 +203,202 @@ build the docker image locally.
 
 
 Now you can deploy on Minikube as defined here: :ref:`Deploy using Helm`
+
+
+.. _CWL Supported types:
+
+CWL Supported types
+##########################################
+
+OGC API - Processes - Part 1: Core introduced the `format` key in the `schema` 
+property giving the opportunity to provide additional semantic context that 
+can aid in the interpretation of the data (cf. 
+`Table 13 Additional values for the JSON schema format key for OGC Process Description <https://docs.ogc.org/DRAFTS/18-062.html#format-key-values>`_).
+The `format` key can be particularly useful when dealing with complex data 
+types (especially when they have the same media type) or when integrating with 
+other systems that require specific data formats.
+
+A set of `CWL Custom Types <https://eoap.github.io/schemas/>`_ has beend 
+defined by the `Earth Observation Application Package (EOAP) GitHub 
+Organization <https://github.com/eoap>`_. 
+They helps to define the data structure used in the CWL workflow description
+for the additional values to the JSON Schema formats key for OGC Process 
+Descripton. They are managed on the 
+`Schemas EOAP GitHub repository <https://github.com/eoap/schemas>`_.
+
+They are organized in the following three definition files:
+
+- **OGC**: `ogc.yaml <https://raw.githubusercontent.com/eoap/schemas/refs/heads/main/ogc.yaml>`_
+- **GeoJSON**: `geojson.yaml <https://raw.githubusercontent.com/eoap/schemas/refs/heads/main/geojson.yaml>`_
+- **STAC**: `stac.yaml <https://raw.githubusercontent.com/eoap/schemas/refs/heads/main/stac.yaml>`_
+
+
+In the `oas.cfg` file, the `schemas` property can be defined to list the 
+predefined schemas definition used in the exposed OpenAPI.
+The value explicitely linked to the `format` key in the `schema` property is 
+the URL of the OpenAPI or JSON Schema definition file.
+
+Below is the list of the predefined format names and their corresponding 
+schemas.
+
+.. code-block:: guess
+
+       [schemas]
+       length=7
+       value=https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/bbox.yaml
+       name=ogc-bbox
+       value_1=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureCollectionGeoJSON.yaml
+       name_1=geojson-feature-collection
+       value_2=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureGeoJSON.yaml
+       name_2=geojson-feature
+       value_3=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometrycollectionGeoJSON.yaml
+       name_3=geojson-geometry
+       value_4=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/catalog-spec/json-schema/catalog.json
+       name_4=stac-catalog
+       value_5=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/collection-spec/json-schema/collection.json
+       name_5=stac-collection
+       value_6=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/item-spec/json-schema/item.json
+       name_6=stac-item
+
+
+The table below provides the list of the predefined supported CWL Custom Types 
+and their corresponding format key values and OGC Processes Description.
+
+.. list-table:: CWL Custom Types and OGC Processes Description
+   :widths: 15 10 75
+   :align: center
+   :header-rows: 1
+
+   * - CWL Custom Type
+     - Short code
+     - OGC Processes Description
+   * - geojson.yaml#FeatureCollection
+     - geojson-feature-collection
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "geojson-feature-collection"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureCollectionGeoJSON.yaml"
+                        }
+                      ]
+                     }
+   * - geojson.yaml#Feature
+     - geojson-feature
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "geojson-feature"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureGeoJSON.yaml"
+                        }
+                      ]
+                     }
+   * - * geojson.yaml#GeometryCollection
+       * geojson.yaml#Polygon
+       * geojson.yaml#LineString
+       * geojson.yaml#Point
+       * geojson.yaml#MultiPolygon
+       * geojson.yaml#MultiLineString
+       * geojson.yaml#MultiPoint
+     - geojson-geometry
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "geojson-geometry"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometrycollectionGeoJSON.yaml"
+                        }
+                      ]
+                     }
+   * - ogc.yaml#BBox
+     - ogc-bbox
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "ogc-bbox"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/bbox.yaml"
+                        }
+                      ]
+                     }
+   * - None
+     - epsg-code
+     - None
+   * - None
+     - wkt2-def
+     - None
+   * - None
+     - cql2-text
+     - None
+   * - None
+     - cql2-json  
+     - None
+   * - None
+     - collection-id
+     - None
+   * - stac.yaml#Collection
+     - stac-collection
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "stac-collection"
+                        },
+                        {
+                          "$ref": "https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/collection-spec/json-schema/collection.json"
+                        }
+                      ]
+                     }
+   * - stac.yaml#Catalog
+     - stac-catalog
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "stac-catalog"
+                        },
+                        {
+                          "$ref": "https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/catalog-spec/json-schema/catalog.json"
+                        }
+                      ]
+                     }
+   * - None
+     - stac-itemCollection
+     - None
+   * - stac.yaml#Item
+     - stac-item
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "stac-item"
+                        },
+                        {
+                          "$ref": "https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/item-spec/json-schema/item.json"
+                        }
+                      ]
+                     }
+   * - None
+     - ogc-feature-collection
+     - None
+   * - None
+     - ogc-coverage-collection
+     - None
+
+

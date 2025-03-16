@@ -174,9 +174,43 @@ create table CollectionDB.ows_Format (
 	ms_styles text
 );
 
+create table CollectionDB.PrimitiveDataFormats (
+	id serial primary key,
+	short_name varchar(255),
+	cwl_type varchar(100),
+	namespace varchar(255)
+);
+-- source : Open Geospatial Consortium - OGC API - Processes - Part 1: Core, v1.1 - Table 13 — Additional values for the JSON schema format key for OGC Process Description
+-- reference for namespaces can be found at https://github.com/eoap/schemas
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-feature-collection','FeatureCollection','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-feature','Feature','geojson.yaml');
+-- We bind the geometry types of the geojson.yaml namespace to the geojson-geometry short_name (we lost the geometry type information)
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','Point','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','LineString','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','Polygon','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','MultiPoint','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','MultiLineString','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','MultiPolygon','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','GeometryCollection','geojson.yaml');
+-- It is not clear if the following short_name should be bound to a cwl_type
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('epsg-code',NULL,NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('wkt2-def',NULL,NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('cql2-text',NULL,NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('cql2-json',NULL,NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('collection-id',NULL,NULL);
+-- We bind the stac catalog, collection and item to the stac.yaml namespace with their respective cwl_type (no itemCollection correspondance found)
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-collection','Collection','stac.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-catalog','Catalog','stac.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-itemCollection',NULL,'stac.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-item','Item','stac.yaml');
+-- ogc-feature-collection and ogc-coverage-collection are not bound to a cwl_type nor supported
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('ogc-feature-collection',NULL,NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('ogc-coverage-collection',NULL,NULL);
+
 create table CollectionDB.ows_DataDescription (
     id serial primary key,
-    format_id int references CollectionDB.ows_Format(id) ON DELETE CASCADE
+    format_id int references CollectionDB.ows_Format(id) ON DELETE CASCADE,
+    data_format_id int references CollectionDB.PrimitiveDataFormats(id) ON DELETE CASCADE
 );
 
 create table CollectionDB.PrimitiveUom (

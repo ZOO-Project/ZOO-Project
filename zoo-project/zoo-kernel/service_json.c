@@ -464,7 +464,7 @@ extern "C" {
     if(pmMin!=NULL && atoi(pmMin->value)==0)
       json_object_object_add(schema,"nullable",json_object_new_boolean(true));
 #if JSON_C_MINOR_VERSION >= 13
-      // Add experimental support for array of literals using extended-schema
+    // Add experimental support for array of literals using extended-schema
     if(pmMax!=NULL && atoi(pmMax->value)>1 && pmMin!=NULL){
       json_object* pjoSchema1=json_object_new_object();
       json_object_object_add(pjoSchema1,"type",json_object_new_string("array"));
@@ -555,67 +555,115 @@ extern "C" {
   }
 
   /**
+   * Get the data format definition from the schemas section, return 1 if found.
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pccName the name of the data format to search for
+   * @return 1 if found, 0 otherwise
+   */
+  int getDefinitionFromSchemas(maps* pmsConf,const char* pccName,json_object* pjoInput){
+    maps* pmsTmp=getMaps(pmsConf,"schemas");
+    map* pmLength=getMap(pmsTmp->content,"length");
+    int iLen=1;
+    if(pmLength!=NULL)
+      iLen=atoi(pmLength->value);
+    for(int iCnt=0;iCnt<iLen;iCnt++){
+      map* pmTmp=getMapArray(pmsTmp->content,"name",iCnt);
+      if(pmTmp!=NULL && strncasecmp(pmTmp->value,pccName,4)==0){
+        json_object* pjoFinal=json_object_new_object();
+        json_object* pjoAllOf=json_object_new_array();
+        json_object* pjoFormat=json_object_new_object();
+        json_object_object_add(pjoFormat,"format",json_object_new_string(pccName));
+        json_object* pjoRef=json_object_new_object();
+        pmTmp=getMapArray(pmsTmp->content,"value",iCnt);
+        if(pmTmp!=NULL)
+          json_object_object_add(pjoRef,"$ref",json_object_new_string(pmTmp->value));
+        json_object_array_add(pjoAllOf,pjoFormat);
+        json_object_array_add(pjoAllOf,pjoRef);
+        json_object_object_add(pjoFinal,"allOf",pjoAllOf);
+        json_object_object_add(pjoInput,"schema",pjoFinal);
+        return 1;
+      }
+    }
+    return 0;
+  }
+
+  /**
    * Add basic schema definition for the BoundingBox type
    * 
    * @param m the main configuration maps pointer
-   * @param in the main configuration maps pointer
+   * @param in the elements pointing to an input/output
    * @param input the json_object pointer used to store the schema definition
    */
-  void printBoundingBoxJ(maps* m,elements* in,json_object* input){
+  void printBoundingBoxJ(maps* pmsConf,elements* in,json_object* input){
     map* pmMin=getMap(in->content,"minOccurs");
-    json_object* prop20=json_object_new_object();
-    json_object_object_add(prop20,"type",json_object_new_string("object"));
-    json_object* prop21=json_object_new_array();
-    json_object_array_add(prop21,json_object_new_string("bbox"));
-    json_object_array_add(prop21,json_object_new_string("crs"));
-    json_object_object_add(prop20,"required",prop21);
-
-    json_object* prop22=json_object_new_object();
-
-    json_object* prop23=json_object_new_object();
-    json_object_object_add(prop23,"type",json_object_new_string("array"));
-    json_object* prop27=json_object_new_object();
-    json_object* prop28=json_object_new_object();
-    json_object* prop29=json_object_new_array();
-    json_object_object_add(prop27,"minItems",json_object_new_int(4));
-    json_object_object_add(prop27,"maxItems",json_object_new_int(4));
-    json_object_array_add(prop29,prop27);
-    json_object_object_add(prop28,"minItems",json_object_new_int(6));
-    json_object_object_add(prop28,"maxItems",json_object_new_int(6));
-    json_object_array_add(prop29,prop28);
-    json_object_object_add(prop23,"oneOf",prop29);
-    json_object* prop24=json_object_new_object();
-    json_object_object_add(prop24,"type",json_object_new_string("number"));
-    json_object_object_add(prop24,"format",json_object_new_string("double"));
-    json_object_object_add(prop23,"items",prop24);
-    json_object_object_add(prop22,"bbox",prop23);
-
-    json_object* prop25=json_object_new_object();
-    json_object_object_add(prop25,"type",json_object_new_string("string"));
-    json_object_object_add(prop25,"format",json_object_new_string("uri"));
-
-    json_object* prop26=json_object_new_array();
-
-    map* tmpMap1=getMap(in->defaults->content,"crs");
-    if(tmpMap1==NULL)
+    if(getDefinitionFromSchemas(pmsConf,"ogc-bbox",input)>0)
       return;
-    json_object_array_add(prop26,json_object_new_string(tmpMap1->value));
-    json_object_object_add(prop25,"default",json_object_new_string(tmpMap1->value));
-    iotype* sup=in->supported;
-    while(sup!=NULL){
-      tmpMap1=getMap(sup->content,"crs");
-      if(tmpMap1!=NULL)
-        json_object_array_add(prop26,json_object_new_string(tmpMap1->value));
-      sup=sup->next;
+
+    json_object* pjoFinal=json_object_new_object();
+    json_object_object_add(pjoFinal,"type",json_object_new_string("object"));
+
+    json_object* pjoReqiredProperties=json_object_new_array();
+    json_object_array_add(pjoReqiredProperties,json_object_new_string("bbox"));
+    json_object_array_add(pjoReqiredProperties,json_object_new_string("crs"));
+    json_object_object_add(pjoFinal,"required",pjoReqiredProperties);
+
+    json_object* pjoProperties=json_object_new_object();
+
+    json_object* pjoBBoxProperty=json_object_new_object();
+    json_object_object_add(pjoBBoxProperty,"type",json_object_new_string("array"));
+
+    json_object* pjoMinMax4=json_object_new_object();
+    json_object_object_add(pjoMinMax4,"minItems",json_object_new_int(4));
+    json_object_object_add(pjoMinMax4,"maxItems",json_object_new_int(4));
+
+    json_object* pjoMinMax6=json_object_new_object();
+    json_object_object_add(pjoMinMax6,"minItems",json_object_new_int(6));
+    json_object_object_add(pjoMinMax6,"maxItems",json_object_new_int(6));
+
+    json_object* pjoOneOf=json_object_new_array();
+    json_object_array_add(pjoOneOf,pjoMinMax4);
+    json_object_array_add(pjoOneOf,pjoMinMax6);
+
+    json_object_object_add(pjoBBoxProperty,"oneOf",pjoOneOf);
+
+    json_object* pjoItems=json_object_new_object();
+    json_object_object_add(pjoItems,"type",json_object_new_string("number"));
+    json_object_object_add(pjoItems,"format",json_object_new_string("double"));
+    json_object_object_add(pjoBBoxProperty,"items",pjoItems);
+
+    json_object_object_add(pjoProperties,"bbox",pjoBBoxProperty);
+
+    json_object* pjoCrs=json_object_new_object();
+    json_object_object_add(pjoCrs,"type",json_object_new_string("string"));
+    json_object_object_add(pjoCrs,"format",json_object_new_string("uri"));
+
+    if(in->defaults!=NULL){
+      map* pmTmp=getMap(in->defaults->content,"crs");
+      if(pmTmp!=NULL){
+        json_object* pjoSupportedCRS=json_object_new_array();
+        json_object_array_add(pjoSupportedCRS,json_object_new_string(pmTmp->value));
+        json_object_object_add(pjoCrs,"default",json_object_new_string(pmTmp->value));
+        iotype* sup=in->supported;
+        while(sup!=NULL){
+          pmTmp=getMap(sup->content,"crs");
+          if(pmTmp!=NULL)
+            json_object_array_add(pjoSupportedCRS,json_object_new_string(pmTmp->value));
+          sup=sup->next;
+        }
+        json_object_object_add(pjoCrs,"enum",pjoSupportedCRS);
+      }
     }
-    json_object_object_add(prop25,"enum",prop26);
 
-    json_object_object_add(prop22,"crs",prop25);
+    json_object_object_add(pjoProperties,"crs",pjoCrs);
 
-    json_object_object_add(prop20,"properties",prop22);
+    json_object_object_add(pjoFinal,"properties",pjoProperties);
     if(pmMin!=NULL && atoi(pmMin->value)==0)
-      json_object_object_add(prop20,"nullable",json_object_new_boolean(true));
-    json_object_object_add(input,"schema",prop20);
+      json_object_object_add(pjoFinal,"nullable",json_object_new_boolean(true));
+
+    json_object_object_add(pjoFinal,"format",json_object_new_string("ogc-bbox"));
+
+    json_object_object_add(input,"schema",pjoFinal);
   }
 
   /**
@@ -629,34 +677,37 @@ extern "C" {
   void printFormatJ1(maps* m,iotype* iot,json_object* res,bool isDefault,map* maxSize){
     if(iot!=NULL){
       int i=0;
-      json_object* prop1=json_object_new_object();
+      json_object* pjoMetadata=json_object_new_object();
       map* tmpMap1=getMap(iot->content,"encoding");
       map* tmpMap2=getMap(iot->content,"mimeType");
       map* tmpMap3=getMap(iot->content,"schema");
       if(tmpMap2!=NULL && (strncasecmp(tmpMap2->value,"application/json",16)==0 || strstr(tmpMap2->value,"json")!=NULL)){
-        json_object_object_add(prop1,"type",json_object_new_string("object"));
+        json_object_object_add(pjoMetadata,"type",json_object_new_string("object"));
         if(tmpMap3!=NULL)
-          json_object_object_add(prop1,"$ref",json_object_new_string(tmpMap3->value));
-        json_object_array_add(res,prop1);
+          json_object_object_add(pjoMetadata,"$ref",json_object_new_string(tmpMap3->value));
+        if((tmpMap2=getMap(iot->content,"dataFormat"))!=NULL){
+          json_object_object_add(pjoMetadata,"format",json_object_new_string(tmpMap2->value));
+        }
+        json_object_array_add(res,pjoMetadata);
         return ;
       }
       //json_object* prop2=json_object_new_object();
-      json_object_object_add(prop1,"type",json_object_new_string("string"));
+      json_object_object_add(pjoMetadata,"type",json_object_new_string("string"));
       if(tmpMap1!=NULL)
-        json_object_object_add(prop1,"contentEncoding",json_object_new_string(tmpMap1->value));
+        json_object_object_add(pjoMetadata,"contentEncoding",json_object_new_string(tmpMap1->value));
       else{
-        json_object_object_add(prop1,"contentEncoding",json_object_new_string("base64"));
+        json_object_object_add(pjoMetadata,"contentEncoding",json_object_new_string("base64"));
         i=1;
       }
       if(tmpMap2!=NULL){
-        json_object_object_add(prop1,"contentMediaType",json_object_new_string(tmpMap2->value));
+        json_object_object_add(pjoMetadata,"contentMediaType",json_object_new_string(tmpMap2->value));
       }
       // TODO: specific handling of schema?!
       if(tmpMap3!=NULL)
-        json_object_object_add(prop1,"contentSchema",json_object_new_string(tmpMap3->value));
+        json_object_object_add(pjoMetadata,"contentSchema",json_object_new_string(tmpMap3->value));
       if(maxSize!=NULL)
-        json_object_object_add(prop1,"contentMaximumMegabytes",json_object_new_int64(atoll(maxSize->value)));
-      json_object_array_add(res,prop1);
+        json_object_object_add(pjoMetadata,"contentMaximumMegabytes",json_object_new_int64(atoll(maxSize->value)));
+      json_object_array_add(res,pjoMetadata);
     }
   }
   
@@ -865,52 +916,58 @@ extern "C" {
             map* sizeMap=getMap(in->content,"maximumMegabytes");
             printComplexHref(m,in,prop1,false,sizeMap);
             printFormatJ(m,in->defaults,prop0,true,sizeMap);
-            json_object* pjoSchemaPart=json_object_new_array();
-            printFormatJ1(m,in->defaults,pjoSchemaPart,true,sizeMap);
+            json_object* pjoPredefinedSchema=json_object_new_object();
+            map* pmTmp=getMap(in->defaults->content,"dataFormat");
+            if(pmTmp!=NULL && getDefinitionFromSchemas(m,pmTmp->value,input)>0){
+              json_object_put(pjoSchema);
+            }else{
+              json_object* pjoSchemaPart=json_object_new_array();
+              printFormatJ1(m,in->defaults,pjoSchemaPart,true,sizeMap);
 
+              printFormatJ1(m,in->defaults,pjoSchema,true,sizeMap);
+              iotype* sup=in->supported;
+              while(sup!=NULL){
+                printFormatJ(m,sup,prop0,false,sizeMap);
+                printFormatJ1(m,sup,pjoSchemaPart,false,sizeMap);
+                printFormatJ1(m,sup,pjoSchema,true,sizeMap);
+                sup=sup->next;
+              }
 
-            printFormatJ1(m,in->defaults,pjoSchema,true,sizeMap);
-            iotype* sup=in->supported;
-            while(sup!=NULL){
-              printFormatJ(m,sup,prop0,false,sizeMap);
-              printFormatJ1(m,sup,pjoSchemaPart,false,sizeMap);
-              printFormatJ1(m,sup,pjoSchema,true,sizeMap);
-              sup=sup->next;
+              json_object* pjoQualifiedValue=json_object_new_object();
+              json_object_object_add(pjoQualifiedValue,"type",json_object_new_string("object"));
+
+              json_object* pjoRequiredArray=json_object_new_array();
+              json_object_array_add(pjoRequiredArray,json_object_new_string("value"));
+              json_object_object_add(pjoQualifiedValue,"required",pjoRequiredArray);
+
+              json_object* pjoProperties=json_object_new_object();
+              json_object* pjoValueField=json_object_new_object();
+              json_object_object_add(pjoValueField,"oneOf",pjoSchemaPart);
+              json_object_object_add(pjoProperties,"value",pjoValueField);
+              json_object_object_add(pjoQualifiedValue,"properties",pjoProperties);
+              json_object_array_add(prop1,pjoQualifiedValue);
+
+              json_object* prop2=json_object_new_object();
+              json_object_object_add(prop2,"oneOf",prop1);
+              json_object* prop3=addArray(m,in);
+              if(prop3!=NULL){
+                json_object_object_add(prop3,"items",prop2);
+                if(pmMin!=NULL && atoi(pmMin->value)==0)
+                  json_object_object_add(prop3,"nullable",json_object_new_boolean(true));
+                json_object_object_add(input,"extended-schema",prop3);
+              }
+              else{
+                if(pmMin!=NULL && atoi(pmMin->value)==0)
+                  json_object_object_add(prop2,"nullable",json_object_new_boolean(true));
+                json_object_object_add(input,"extended-schema",prop2);
+              }
+
+              json_object* prop4=json_object_new_object();
+              json_object_object_add(prop4,"oneOf",pjoSchema);
+              json_object_object_add(input,"schema",prop4);
+              json_object_put(prop0);
             }
 
-            json_object* pjoQualifiedValue=json_object_new_object();
-            json_object_object_add(pjoQualifiedValue,"type",json_object_new_string("object"));
-
-            json_object* pjoRequiredArray=json_object_new_array();
-            json_object_array_add(pjoRequiredArray,json_object_new_string("value"));
-            json_object_object_add(pjoQualifiedValue,"required",pjoRequiredArray);
-
-            json_object* pjoProperties=json_object_new_object();
-            json_object* pjoValueField=json_object_new_object();
-            json_object_object_add(pjoValueField,"oneOf",pjoSchemaPart);
-            json_object_object_add(pjoProperties,"value",pjoValueField);
-            json_object_object_add(pjoQualifiedValue,"properties",pjoProperties);
-            json_object_array_add(prop1,pjoQualifiedValue);
-
-            json_object* prop2=json_object_new_object();
-            json_object_object_add(prop2,"oneOf",prop1);
-            json_object* prop3=addArray(m,in);
-            if(prop3!=NULL){
-              json_object_object_add(prop3,"items",prop2);
-              if(pmMin!=NULL && atoi(pmMin->value)==0)
-                json_object_object_add(prop3,"nullable",json_object_new_boolean(true));
-              json_object_object_add(input,"extended-schema",prop3);
-            }
-            else{
-              if(pmMin!=NULL && atoi(pmMin->value)==0)
-                json_object_object_add(prop2,"nullable",json_object_new_boolean(true));
-              json_object_object_add(input,"extended-schema",prop2);
-            }
-
-            json_object* prop4=json_object_new_object();
-            json_object_object_add(prop4,"oneOf",pjoSchema);
-            json_object_object_add(input,"schema",prop4);
-            json_object_put(prop0);
           }
           else{
             printBoundingBoxJ(m,in,input);
@@ -925,7 +982,7 @@ extern "C" {
       json_object_object_add(inputs,in->name,input);
       in=in->next;
     }
-    
+
   }
 
   /**
