@@ -32,7 +32,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.38
+            version: 0.4.0
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -42,7 +42,7 @@ profiles:
               #cookiecutter.templateBranch: feature/python3.8
               # Standard cookiecutter
               cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
-              cookiecutter.templateBranch: develop
+              cookiecutter.templateBranch: feature-secrets-nodeselector-imagepullsecrets
               filter_in.enabled: true
               filter_out.enabled: true
               zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
@@ -57,6 +57,13 @@ profiles:
 
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
+
+              workflow.additionalInputs:
+                s3_bucket: results
+                region_name: us-east-1
+                aws_secret_access_key: test
+                aws_access_key_id: test
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:
 
   - name: dru-hostpath
     deploy:
@@ -78,7 +85,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.38
+            version: 0.4.0
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -110,6 +117,13 @@ profiles:
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
 
+              workflow.additionalInputs:
+                s3_bucket: results
+                region_name: us-east-1
+                aws_secret_access_key: test
+                aws_access_key_id: test
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:
+
   - name: dru-wes
     deploy:
       helm:
@@ -130,7 +144,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.38
+            version: 0.4.0
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -158,6 +172,13 @@ profiles:
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
 
+              workflow.additionalInputs:
+                s3_bucket: results
+                region_name: us-east-1
+                aws_secret_access_key: test
+                aws_access_key_id: test
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:
+
   - name: dru-wes-hostpath
     deploy:
       helm:
@@ -178,7 +199,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.38
+            version: 0.4.0
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -212,6 +233,13 @@ profiles:
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
 
+              workflow.additionalInputs:
+                s3_bucket: results
+                region_name: us-east-1
+                aws_secret_access_key: test
+                aws_access_key_id: test
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:
+
   - name: dru-argo
     deploy:
       helm:
@@ -232,7 +260,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.38
+            version: 0.4.0
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -259,6 +287,13 @@ profiles:
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
 
+              workflow.additionalInputs:
+                s3_bucket: results
+                region_name: us-east-1
+                aws_secret_access_key: test
+                aws_access_key_id: test
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:
+
   - name: dru-argo-hostpath
     deploy:
       helm:
@@ -279,7 +314,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.3.38
+            version: 0.4.0
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -311,6 +346,13 @@ profiles:
 
               # RabbitMQ resource limits
               rabbitmq.resource.limits.memory: 2048Mi
+
+              workflow.additionalInputs:
+                s3_bucket: results
+                region_name: us-east-1
+                aws_secret_access_key: test
+                aws_access_key_id: test
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:
 
 portForward:
   - resourceType: service
