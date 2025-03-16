@@ -63,7 +63,7 @@ profiles:
                 region_name: us-east-1
                 aws_secret_access_key: test
                 aws_access_key_id: test
-                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
 
   - name: dru-hostpath
     deploy:
@@ -122,7 +122,7 @@ profiles:
                 region_name: us-east-1
                 aws_secret_access_key: test
                 aws_access_key_id: test
-                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
 
   - name: dru-wes
     deploy:
@@ -177,7 +177,7 @@ profiles:
                 region_name: us-east-1
                 aws_secret_access_key: test
                 aws_access_key_id: test
-                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
 
   - name: dru-wes-hostpath
     deploy:
@@ -238,7 +238,7 @@ profiles:
                 region_name: us-east-1
                 aws_secret_access_key: test
                 aws_access_key_id: test
-                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
 
   - name: dru-argo
     deploy:
@@ -292,7 +292,7 @@ profiles:
                 region_name: us-east-1
                 aws_secret_access_key: test
                 aws_access_key_id: test
-                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
 
   - name: dru-argo-hostpath
     deploy:
@@ -352,7 +352,7 @@ profiles:
                 region_name: us-east-1
                 aws_secret_access_key: test
                 aws_access_key_id: test
-                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local
+                endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
 
 portForward:
   - resourceType: service
