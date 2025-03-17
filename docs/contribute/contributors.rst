@@ -26,7 +26,8 @@ alphabetical order):
 
 Current members:
 
-    * Nicolas BOZON (`GeoLabs SARL <http://geolabs.fr>`_), FR
+    * Nicolas BOZON (`MapTiler france <https://www.maptiler.com/>`_), FR
+    * Fabrice Brito (`Terradue <https://www.terradue.com/>`_), IT
     * Gérald FENOY (`GeoLabs <http://www.geolabs.fr/>`_), FR **(Chair)**
     * Jeff McKENNA (`Gateway Geomatics
       <http://www.gatewaygeomatics.com/>`_), CA

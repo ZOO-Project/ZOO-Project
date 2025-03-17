@@ -1,4 +1,7 @@
 Version 2.1.0-dev
+  * Introduce the conversion from CWL type to LiteralData in documentation.
+  * ZOO-Project-DRU: Bind user to anonymous when no SERVICE_NAMESPACE is 
+  defined.
   * Add documentation on how to bind a format key to a schema using the 
   dedicated schemas section from the configuration file.
   * Support CWL Custom Types with their corresponding format from OGC Process

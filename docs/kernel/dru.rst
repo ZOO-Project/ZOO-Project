@@ -210,6 +210,51 @@ Now you can deploy on Minikube as defined here: :ref:`Deploy using Helm`
 CWL Supported types
 ##########################################
 
+The ZOO-Project handle `three kind of input types <../services/zcfg-reference.html#type-of-data-nodes>`_ for every process/service.
+One of them are the LiteralData, which are simple values like strings, numbers, etc.
+
+You can find below the exhaustive list of supported types for the LiteralData 
+depending on the type defined in the CWL used to deploy a process.
+
+.. list-table:: CWL Types for LiteralData
+   :widths: 15 65
+   :align: center
+   :header-rows: 1
+
+   * - CWL Type
+     - Schema Definition
+   * - `string`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "string"
+                     }
+   * - `int`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "integer"
+                     }
+   * - `float`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "number"
+                     }
+   * - `double`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "double"
+                     }
+   * - `boolean`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "boolean"
+                     }
+
+
 OGC API - Processes - Part 1: Core introduced the `format` key in the `schema` 
 property giving the opportunity to provide additional semantic context that 
 can aid in the interpretation of the data (cf. 
