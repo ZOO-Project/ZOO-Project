@@ -235,17 +235,25 @@ depending on the type defined in the CWL used to deploy a process.
                     "schema": {
                       "type": "integer"
                      }
+   * - `long`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "integer"
+                     }
    * - `float`
      - .. code-block:: guess
 
                     "schema": {
-                      "type": "number"
+                      "type": "number",
+                      "format": "float"
                      }
    * - `double`
      - .. code-block:: guess
 
                     "schema": {
-                      "type": "double"
+                      "type": "number",
+                      "format": "double"
                      }
    * - `boolean`
      - .. code-block:: guess

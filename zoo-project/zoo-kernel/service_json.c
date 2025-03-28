@@ -352,9 +352,12 @@ extern "C" {
           if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
             json_object_array_add(defaultProp,json_object_new_int(atoi(pmTmp0->value)));
           else{
-            if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
+            if(pmType!=NULL && (strncasecmp(pmType->value,"float",5)==0 || strncasecmp(pmType->value,"double",6)==0) ){
               json_object_array_add(defaultProp,json_object_new_double(atof(pmTmp0->value)));
-              json_object_object_add(schema,"format",json_object_new_string("double"));
+              if(strncasecmp(pmType->value,"float",5)==0)
+                json_object_object_add(schema,"format",json_object_new_string("float"));
+              else
+                json_object_object_add(schema,"format",json_object_new_string("double"));
             }
             else{
               if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
@@ -381,9 +384,12 @@ extern "C" {
         if(pmType!=NULL && strncasecmp(pmType->value,"integer",7)==0)
           json_object_object_add(schema,field,json_object_new_int(atoi(pmTmp->value)));
         else{
-          if(pmType!=NULL && strncasecmp(pmType->value,"float",5)==0){
+          if(pmType!=NULL && (strncasecmp(pmType->value,"float",5)==0 || strncasecmp(pmType->value,"double",6)==0) ){
             json_object_object_add(schema,field,json_object_new_double(atof(pmTmp->value)));
-            json_object_object_add(schema,"format",json_object_new_string("double"));
+            if(strncasecmp(pmType->value,"float",5)==0)
+              json_object_object_add(schema,"format",json_object_new_string("float"));
+            else
+              json_object_object_add(schema,"format",json_object_new_string("double"));
           }
           else{
             if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
@@ -416,7 +422,7 @@ extern "C" {
     if(in->defaults!=NULL){
       map* tmpMap1=getMap(in->defaults->content,"DataType");
       if(tmpMap1!=NULL){
-        if(strncasecmp(tmpMap1->value,"float",5)==0)
+        if(strncasecmp(tmpMap1->value,"float",5)==0 || strncasecmp(tmpMap1->value,"double",6)==0)
           json_object_object_add(schema,"type",json_object_new_string("number"));
         else
           if(strncasecmp(tmpMap1->value,"bool",5)==0)
@@ -569,7 +575,7 @@ extern "C" {
       iLen=atoi(pmLength->value);
     for(int iCnt=0;iCnt<iLen;iCnt++){
       map* pmTmp=getMapArray(pmsTmp->content,"name",iCnt);
-      if(pmTmp!=NULL && strncasecmp(pmTmp->value,pccName,4)==0){
+      if(pmTmp!=NULL && strncasecmp(pmTmp->value,pccName,strlen(pmTmp->value))==0){
         json_object* pjoFinal=json_object_new_object();
         json_object* pjoAllOf=json_object_new_array();
         json_object* pjoFormat=json_object_new_object();
