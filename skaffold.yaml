@@ -32,7 +32,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.4.2
+            version: 0.4.5
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -85,7 +85,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.4.2
+            version: 0.4.5
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -144,7 +144,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.4.2
+            version: 0.4.5
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -199,7 +199,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.4.2
+            version: 0.4.5
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -260,7 +260,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.4.2
+            version: 0.4.5
             valuesFiles:
             - values.yaml
             setValueTemplates:
@@ -314,7 +314,7 @@ profiles:
             remoteChart: zoo-project/zoo-project-dru
             namespace: eoap-zoo-project
             createNamespace: true
-            version: 0.4.2
+            version: 0.4.5
             valuesFiles:
             - values.yaml
             setValueTemplates:

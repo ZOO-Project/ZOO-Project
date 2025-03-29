@@ -370,6 +370,13 @@ extern "C" {
                 json_object_array_add(defaultProp,json_object_new_string(pmTmp0->value));
             }
           }
+        }else{
+          if(pmType!=NULL && (strncasecmp(pmType->value,"float",5)==0 || strncasecmp(pmType->value,"double",6)==0) ){
+            if(strncasecmp(pmType->value,"float",5)==0)
+              json_object_object_add(schema,"format",json_object_new_string("float"));
+            else
+              json_object_object_add(schema,"format",json_object_new_string("double"));
+          }
         }
       }
       json_object_object_add(schema,field,defaultProp);
@@ -403,6 +410,13 @@ extern "C" {
             }
           }
         }
+    }else{
+      if(pmType!=NULL && (strncasecmp(pmType->value,"float",5)==0 || strncasecmp(pmType->value,"double",6)==0) ){
+        if(strncasecmp(pmType->value,"float",5)==0)
+          json_object_object_add(schema,"format",json_object_new_string("float"));
+        else
+          json_object_object_add(schema,"format",json_object_new_string("double"));
+      }
     }
   }
   
