@@ -596,13 +596,31 @@ class ProcessInput:
 
         return process_input
 
+    def handle_custom_types(self, type_name):
+        schema_parts=type_name.split("#")
+        type_name = None
+        if len(schema_parts)>1 and schema_parts[0].count("ogc.yaml")>0 and schema_parts[1]=="BBox":
+            self.is_bbox = True
+            type_name = None
+        if len(schema_parts)>1 and schema_parts[0].count("stac.yaml")>0:
+            self.is_complex = True
+            type_name = schema_parts[1]
+            self.namespace = schema_parts[0]
+            self.file_content_type = "application/json"
+        if len(schema_parts)>1 and schema_parts[0].count("geojson.yaml")>0:
+            self.is_complex = True
+            self.namespace = schema_parts[0]
+            type_name = schema_parts[1]
+            self.file_content_type = "application/json"
+        return type_name
+
     def set_type_from_cwl(self, input, trim_len):
         type_name = None
         # if input.type is something like ['null', 'typename'],
         # it means the input is optional and of type typename
+        current_type_is_array=False
         if isinstance(input.type, str) or (isinstance(input.type, list) and len(input.type) == 2 and input.type[0] == 'null'):
             type_name = input.type[1] if isinstance(input.type, list) else input.type
-            current_type_is_array=False if not(isinstance(input.type, list)) else True
             self.is_array=current_type_is_array
             if isinstance(type_name, cwl_v1_0.InputEnumSchema):
                 self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in type_name.symbols]
@@ -638,24 +656,12 @@ class ProcessInput:
                 elif type_name == "Directory":
                     type_name = "string"
                     self.file_content_type = "text/plain"
+                elif type_name.count("schemas")>0:
+                    type_name = self.handle_custom_types(type_name)
                 else:
                     type_name = None
             elif type_name.count("schemas")>0:
-                schema_parts=type_name.split("#")
-                type_name = None
-                if len(schema_parts)>1 and schema_parts[0].count("ogc.yaml")>0 and schema_parts[1]=="BBox":
-                    self.is_bbox = True
-                    type_name = None
-                if len(schema_parts)>1 and schema_parts[0].count("stac.yaml")>0:
-                    self.is_complex = True
-                    type_name = schema_parts[1]
-                    self.namespace = schema_parts[0]
-                    self.file_content_type = "application/json"
-                if len(schema_parts)>1 and schema_parts[0].count("geojson.yaml")>0:
-                    self.is_complex = True
-                    self.namespace = schema_parts[0]
-                    type_name = schema_parts[1]
-                    self.file_content_type = "application/json"
+                type_name = self.handle_custom_types(type_name)
 
             else:
                 raise Exception(
@@ -663,7 +669,7 @@ class ProcessInput:
                 )
 
             self.type = type_name
-            self.min_occurs = 0 if (isinstance(input.type, list) or input.default) else 1
+            self.min_occurs = 0 if ((isinstance(input.type, list) and input.type[0]=='null')) else 1
             # How should we set the maximum length of an array for instance?
             # We currently set the default maximum to 1024
             self.max_occurs = 1 if not(current_type_is_array) else 1024
@@ -680,6 +686,8 @@ class ProcessInput:
             elif type_name == "Directory":
                 type_name = "string"
                 self.file_content_type = "text/plain"
+            elif type_name.count("schemas")>0:
+                type_name = self.handle_custom_types(type_name)
             else:
                 type_name = None
             self.min_occurs = 1

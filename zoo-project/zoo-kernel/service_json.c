@@ -48,51 +48,51 @@ extern "C" {
   /**
    * Convert a json object to maps
    *
-   * @param jopObj the json object to convert
+   * @param pjoObj the json object to convert
    * @return the allocated maps
    */
-  maps* jsonToMaps(json_object* jopObj){
-    maps* res=NULL;
+  maps* jsonToMaps(json_object* pjoObj){
+    maps* pmsRes=NULL;
     //enum json_type type;
-    json_object_object_foreach(jopObj, key, val) { /*Passing through every object element*/
-      json_object* json_input=NULL;
-      if(json_object_object_get_ex(jopObj, key, &json_input)!=FALSE){
-        map* tmpMap=jsonToMap(json_input);
-        if(res==NULL){
-          res=createMaps(key);
-          addMapToMap(&(res->content),tmpMap);
+    json_object_object_foreach(pjoObj, key, val) { /*Passing through every object element*/
+      json_object* pjoInput=NULL;
+      if(json_object_object_get_ex(pjoObj, key, &pjoInput)!=FALSE){
+        map* tmpMap=jsonToMap(pjoInput);
+        if(pmsRes==NULL){
+          pmsRes=createMaps(key);
+          addMapToMap(&(pmsRes->content),tmpMap);
         }else{
           maps *tres=createMaps(key);
           addMapToMap(&(tres->content),tmpMap);
-          addMapsToMaps(&res,tres);
+          addMapsToMaps(&pmsRes,tres);
           freeMaps(&tres);
           free(tres);
         }
       }
     }
-    return res;
+    return pmsRes;
   }
 
   /**
    * Convert a json object to map
    *
-   * @param jopObj the json object to convert
+   * @param pjoObj the json object to convert
    * @return the allocated map
    */
-  map* jsonToMap(json_object* jopObj){
-    map* res=NULL;
-    json_object_object_foreach(jopObj, key, val) {
+  map* jsonToMap(json_object* pjoObj){
+    map* pmRes=NULL;
+    json_object_object_foreach(pjoObj, key, val) {
       if(val!=NULL && json_object_is_type (val,json_type_string)){
         const char* pcVal=json_object_get_string(val);
         if(strlen(pcVal)>0){
-          if(res==NULL)
-            res=createMap(key,pcVal);
+          if(pmRes==NULL)
+            pmRes=createMap(key,pcVal);
           else
-            addToMap(res,key,pcVal);
+            addToMap(pmRes,key,pcVal);
         }
       }
     }
-    return res;
+    return pmRes;
   }
 
   /**
@@ -107,125 +107,125 @@ extern "C" {
 
   /**
    * Convert a map to a json object
-   * @param myMap the map to be converted into json object
+   * @param pmMap the map to be converted into json object
    * @return a json_object pointer to the created json_object
    */
-  json_object* mapToJson(map* myMap){
-    json_object *res=json_object_new_object();
-    map* cursor=myMap;
-    map* sizeMap=getMap(myMap,"size");
-    map* length=getMap(myMap,"length");
-    map* toLoad=getMap(myMap,"to_load");
-    while(cursor!=NULL){
-      json_object *val=NULL;
-      if(length==NULL && sizeMap==NULL){
-        if(strstr(cursor->name,"title")!=NULL)
-          val=json_object_new_string(_(cursor->value));
+  json_object* mapToJson(map* pmMap){
+    json_object *pjoRes=json_object_new_object();
+    map* pmCursor=pmMap;
+    map* pmSize=getMap(pmMap,"size");
+    map* pmLength=getMap(pmMap,"length");
+    map* pmToLoad=getMap(pmMap,"to_load");
+    while(pmCursor!=NULL){
+      json_object *pjoVal=NULL;
+      if(pmLength==NULL && pmSize==NULL){
+        if(strstr(pmCursor->name,"title")!=NULL)
+          pjoVal=json_object_new_string(_(pmCursor->value));
         else
-          val=json_object_new_string(cursor->value);
+          pjoVal=json_object_new_string(pmCursor->value);
       }
       else{
-        if(length==NULL && sizeMap!=NULL){
-          if(strncasecmp(cursor->name,"value",5)==0){
-            if(strlen(cursor->value)!=0 && toLoad!=NULL && strncasecmp(toLoad->value,"true",4)==0)
-              val=json_object_new_string_len(cursor->value,atoi(sizeMap->value));
+        if(pmLength==NULL && pmSize!=NULL){
+          if(strncasecmp(pmCursor->name,"value",5)==0){
+            if(strlen(pmCursor->value)!=0 && pmToLoad!=NULL && strncasecmp(pmToLoad->value,"true",4)==0)
+              pjoVal=json_object_new_string_len(pmCursor->value,atoi(pmSize->value));
           }
           else{
-            if(strstr(cursor->name,"title")!=NULL)
-              val=json_object_new_string(_(cursor->value));
+            if(strstr(pmCursor->name,"title")!=NULL)
+              pjoVal=json_object_new_string(_(pmCursor->value));
             else
-              val=json_object_new_string(cursor->value);
+              pjoVal=json_object_new_string(pmCursor->value);
           }
         }
         else{
-          val=json_object_new_string(cursor->value);
+          pjoVal=json_object_new_string(pmCursor->value);
         }
       }
-      if(val!=NULL)
-        json_object_object_add(res,cursor->name,val);
-      cursor=cursor->next;
+      if(pjoVal!=NULL)
+        json_object_object_add(pjoRes,pmCursor->name,pjoVal);
+      pmCursor=pmCursor->next;
     }
-    return res;
+    return pjoRes;
   }
 
   /**
    * Convert a maps to a json object
-   * @param myMap the maps to be converted into json object
+   * @param pmMap the maps to be converted into json object
    * @return a json_object pointer to the created json_object
    */
-  json_object* mapsToJson(maps* myMap){
-    json_object *res=json_object_new_object();
-    maps* cursor=myMap;
-    while(cursor!=NULL){
-      json_object *obj=NULL;
-      if(cursor->content!=NULL){
-        obj=mapToJson(cursor->content);
+  json_object* mapsToJson(maps* pmMap){
+    json_object *pjoRes=json_object_new_object();
+    maps* pmCursor=pmMap;
+    while(pmCursor!=NULL){
+      json_object *pjoObj=NULL;
+      if(pmCursor->content!=NULL){
+        pjoObj=mapToJson(pmCursor->content);
       }else
-        obj=json_object_new_object();
-      if(cursor->child!=NULL){
+        pjoObj=json_object_new_object();
+      if(pmCursor->child!=NULL){
         json_object *child=NULL;
-        child=mapsToJson(cursor->child);
-        json_object_object_add(obj,"child",child);
+        child=mapsToJson(pmCursor->child);
+        json_object_object_add(pjoObj,"child",child);
       }
-      json_object_object_add(res,cursor->name,obj);
-      cursor=cursor->next;
+      json_object_object_add(pjoRes,pmCursor->name,pjoObj);
+      pmCursor=pmCursor->next;
     }
-    return res;
+    return pjoRes;
   }
 
   /**
    * Convert an elements to a json object
-   * @param myElements the elements pointer to be converted into a json object
+   * @param peElements the elements pointer to be converted into a json object
    * @return a json_object pointer to the created json_object
    */
-  json_object* elementsToJson(elements* myElements){
-    json_object *res=json_object_new_object();
-    elements* cur=myElements;
-    while(cur!=NULL){
-      json_object *cres=json_object_new_object();
-      json_object_object_add(cres,"content",mapToJson(cur->content));
-      json_object_object_add(cres,"metadata",mapToJson(cur->metadata));
-      json_object_object_add(cres,"additional_parameters",mapToJson(cur->additional_parameters));
-      if(cur->format!=NULL){
-        json_object_object_add(cres,"format",json_object_new_string(cur->format));
+  json_object* elementsToJson(elements* peElements){
+    json_object *pjoRes=json_object_new_object();
+    elements* peCur=peElements;
+    while(peCur!=NULL){
+      json_object *pjoCres=json_object_new_object();
+      json_object_object_add(pjoCres,"content",mapToJson(peCur->content));
+      json_object_object_add(pjoCres,"metadata",mapToJson(peCur->metadata));
+      json_object_object_add(pjoCres,"additional_parameters",mapToJson(peCur->additional_parameters));
+      if(peCur->format!=NULL){
+        json_object_object_add(pjoCres,"format",json_object_new_string(peCur->format));
       }
-      if(cur->child==NULL){
-        if(cur->defaults!=NULL)
-          json_object_object_add(cres,"defaults",mapToJson(cur->defaults->content));
+      if(peCur->child==NULL){
+        if(peCur->defaults!=NULL)
+          json_object_object_add(pjoCres,"defaults",mapToJson(peCur->defaults->content));
         else
-          json_object_object_add(cres,"defaults",mapToJson(NULL));
-        iotype* scur=cur->supported;
-        json_object *resi=json_object_new_array();
-        while(scur!=NULL){
-          json_object_array_add(resi,mapToJson(scur->content));
-          scur=scur->next;
+          json_object_object_add(pjoCres,"defaults",mapToJson(NULL));
+        iotype* piotCur=peCur->supported;
+        json_object *pjoResi=json_object_new_array();
+        while(piotCur!=NULL){
+          json_object_array_add(pjoResi,mapToJson(piotCur->content));
+          piotCur=piotCur->next;
         }
-        json_object_object_add(cres,"supported",resi);
+        json_object_object_add(pjoCres,"supported",pjoResi);
       }
       
-      json_object_object_add(cres,"child",elementsToJson(cur->child));
+      json_object_object_add(pjoCres,"child",elementsToJson(peCur->child));
 
-      json_object_object_add(res,cur->name,cres);
-      cur=cur->next;
+      json_object_object_add(pjoRes,peCur->name,pjoCres);
+      peCur=peCur->next;
     }
-    return res;
+    return pjoRes;
   }
   
   /**
    * Convert an service to a json object
    *
-   * @param myService the service pointer to be converted into a json object
+   * @param psService the service pointer to be converted into a json object
    * @return a json_object pointer to the created json_object
    */
-  json_object* serviceToJson(service* myService){
-    json_object *res=json_object_new_object();
-    json_object_object_add(res,"name",json_object_new_string(myService->name));
-    json_object_object_add(res,"content",mapToJson(myService->content));
-    json_object_object_add(res,"metadata",mapToJson(myService->metadata));
-    json_object_object_add(res,"additional_parameters",mapToJson(myService->additional_parameters));
-    json_object_object_add(res,"inputs",elementsToJson(myService->inputs));
-    json_object_object_add(res,"outputs",elementsToJson(myService->outputs));
-    return res;
+  json_object* serviceToJson(service* psService){
+    json_object *pjoRes=json_object_new_object();
+    json_object_object_add(pjoRes,"name",json_object_new_string(psService->name));
+    json_object_object_add(pjoRes,"content",mapToJson(psService->content));
+    json_object_object_add(pjoRes,"metadata",mapToJson(psService->metadata));
+    json_object_object_add(pjoRes,"additional_parameters",mapToJson(psService->additional_parameters));
+    json_object_object_add(pjoRes,"inputs",elementsToJson(psService->inputs));
+    json_object_object_add(pjoRes,"outputs",elementsToJson(psService->outputs));
+    return pjoRes;
   }
 
   /**
@@ -236,10 +236,10 @@ extern "C" {
    *
    * @param pmElement the current map to search for abstract_file/abstract field
    * @param iIndex the index to use to fetch from the map array
-   * @param output the first json object to add the description
-   * @param output1 the second json object to add the description (optional)
+   * @param pjoOutput the first json object to add the description
+   * @param pjoOutput1 the second json object to add the description (optional)
    */
-  void addDescription(map* pmElement,int iIndex,json_object* output,json_object* output1){
+  void addDescription(map* pmElement,int iIndex,json_object* pjoOutput,json_object* pjoOutput1){
     if(pmElement==NULL)
       return ;
     map* pmCurrent=getMapArray(pmElement,"abstract_file",iIndex);
@@ -253,22 +253,22 @@ extern "C" {
           size_t sLength = fread(pcaTmp,1,f_status.st_size,pfData);
           pcaTmp[f_status.st_size]=0;
           fclose(pfData);
-          json_object_object_add(output,"description",json_object_new_string(_(pcaTmp)));
-          if(output1!=NULL)
-            json_object_object_add(output1,"description",json_object_new_string(_(pcaTmp)));
+          json_object_object_add(pjoOutput,"description",json_object_new_string(_(pcaTmp)));
+          if(pjoOutput1!=NULL)
+            json_object_object_add(pjoOutput1,"description",json_object_new_string(_(pcaTmp)));
           free(pcaTmp);
         }
       }else{
-        json_object_object_add(output,"description",json_object_new_string(_("Unable to load your file")));
-        if(output1!=NULL)
-          json_object_object_add(output1,"description",json_object_new_string(_("Unable to load your file")));
+        json_object_object_add(pjoOutput,"description",json_object_new_string(_("Unable to load your file")));
+        if(pjoOutput1!=NULL)
+          json_object_object_add(pjoOutput1,"description",json_object_new_string(_("Unable to load your file")));
       }
     }else{
       pmCurrent=getMapArray(pmElement,"abstract",iIndex);
       if(pmCurrent!=NULL){
-        json_object_object_add(output,"description",json_object_new_string(_(pmCurrent->value)));
-        if(output1!=NULL)
-          json_object_object_add(output1,"description",json_object_new_string(_(pmCurrent->value)));
+        json_object_object_add(pjoOutput,"description",json_object_new_string(_(pmCurrent->value)));
+        if(pjoOutput1!=NULL)
+          json_object_object_add(pjoOutput1,"description",json_object_new_string(_(pmCurrent->value)));
       }
     }
   }
@@ -393,13 +393,12 @@ extern "C" {
           }
           else{
             if(pmType!=NULL && strncasecmp(pmType->value,"bool",4)==0){
-              if(strncasecmp(pmType->value,"true",4)==0)
+              if(strncasecmp(pmTmp->value,"true",4)==0)
                 json_object_object_add(schema,field,json_object_new_boolean(true));
               else
                 json_object_object_add(schema,field,json_object_new_boolean(false));
             }
             else{
-              ZOO_DEBUG(pmTmp->value);
               json_object_object_add(schema,field,json_object_new_string(pmTmp->value));
             }
           }
@@ -597,13 +596,13 @@ extern "C" {
   /**
    * Add basic schema definition for the BoundingBox type
    * 
-   * @param m the main configuration maps pointer
-   * @param in the elements pointing to an input/output
-   * @param input the json_object pointer used to store the schema definition
+   * @param pmsConf the main configuration maps pointer
+   * @param peIn the elements pointing to an input/output
+   * @param pjoInput the json_object pointer used to store the schema definition
    */
-  void printBoundingBoxJ(maps* pmsConf,elements* in,json_object* input){
-    map* pmMin=getMap(in->content,"minOccurs");
-    if(getDefinitionFromSchemas(pmsConf,"ogc-bbox",input)>0)
+  void printBoundingBoxJ(maps* pmsConf,elements* peIn,json_object* pjoInput){
+    map* pmMin=getMap(peIn->content,"minOccurs");
+    if(getDefinitionFromSchemas(pmsConf,"ogc-bbox",pjoInput)>0)
       return;
 
     json_object* pjoFinal=json_object_new_object();
@@ -644,13 +643,13 @@ extern "C" {
     json_object_object_add(pjoCrs,"type",json_object_new_string("string"));
     json_object_object_add(pjoCrs,"format",json_object_new_string("uri"));
 
-    if(in->defaults!=NULL){
-      map* pmTmp=getMap(in->defaults->content,"crs");
+    if(peIn->defaults!=NULL){
+      map* pmTmp=getMap(peIn->defaults->content,"crs");
       if(pmTmp!=NULL){
         json_object* pjoSupportedCRS=json_object_new_array();
         json_object_array_add(pjoSupportedCRS,json_object_new_string(pmTmp->value));
         json_object_object_add(pjoCrs,"default",json_object_new_string(pmTmp->value));
-        iotype* sup=in->supported;
+        iotype* sup=peIn->supported;
         while(sup!=NULL){
           pmTmp=getMap(sup->content,"crs");
           if(pmTmp!=NULL)
@@ -669,7 +668,7 @@ extern "C" {
 
     json_object_object_add(pjoFinal,"format",json_object_new_string("ogc-bbox"));
 
-    json_object_object_add(input,"schema",pjoFinal);
+    json_object_object_add(pjoInput,"schema",pjoFinal);
   }
 
   /**
@@ -875,67 +874,68 @@ extern "C" {
 
   /**
    * Add metadata properties to a json_object
-   * @param m the main configuration maps pointer
-   * @param io a string 
-   * @param in an elements pointer to the current input/output
-   * @param inputs the json_object pointer to add the property to
-   * @param serv the service pointer to extract the metadata from
+   *
+   * @param pmsConf the main configuration maps pointer
+   * @param pccIo a string "input" or "output" 
+   * @param peIn an elements pointer to the current input/output
+   * @param pjoInputs the json_object pointer to add the property to
+   * @param psServ the service pointer to extract the metadata from
    */
-  void printIOTypeJ(maps* m, const char *io, elements* in,json_object* inputs,service* serv){
-    while(in!=NULL){
-      json_object* input=json_object_new_object();
-      map* tmpMap=getMap(in->content,"title");
+  void printIOTypeJ(maps* pmsConf, const char *pccIo, elements* peIn,json_object* pjoInputs,service* psServ){
+    while(peIn!=NULL){
+      json_object* pjoInput=json_object_new_object();
+      map* tmpMap=getMap(peIn->content,"title");
       map* pmMin=NULL;
       map* pmMax=NULL;
-      if(strcmp(io,"input")==0){
-        pmMin=getMap(in->content,"minOccurs");
-        pmMax=getMap(in->content,"maxOccurs");
+      if(strcmp(pccIo,"input")==0){
+        pmMin=getMap(peIn->content,"minOccurs");
+        pmMax=getMap(peIn->content,"maxOccurs");
       }
       if(tmpMap!=NULL)
-        json_object_object_add(input,"title",json_object_new_string(_ss(tmpMap->value)));
-      addDescription(in->content,0,input,NULL);
-      if(strcmp(io,"input")==0){
-        if(pmMin!=NULL && strcmp(pmMin->value,"1")!=0 && strcmp(pmMin->value,"0")!=0)
-          json_object_object_add(input,"minOccurs",json_object_new_int(atoi(pmMin->value)));
+        json_object_object_add(pjoInput,"title",json_object_new_string(_ss(tmpMap->value)));
+      addDescription(peIn->content,0,pjoInput,NULL);
+      if(strcmp(pccIo,"input")==0){
+        if(pmMin!=NULL && strcmp(pmMin->value,"1")!=0)
+          json_object_object_add(pjoInput,"minOccurs",json_object_new_int(atoi(pmMin->value)));
         if(pmMax!=NULL){
           if(strncasecmp(pmMax->value,"unbounded",9)==0)
-            json_object_object_add(input,"maxOccurs",json_object_new_string(pmMax->value));
+            json_object_object_add(pjoInput,"maxOccurs",json_object_new_string(pmMax->value));
           else
             if(strcmp(pmMax->value,"1")!=0)
-              json_object_object_add(input,"maxOccurs",json_object_new_int(atoi(pmMax->value)));
+              json_object_object_add(pjoInput,"maxOccurs",json_object_new_int(atoi(pmMax->value)));
         }
       }
-      if(in->format!=NULL){
+      if(peIn->format!=NULL){
         //json_object* input1=json_object_new_object();
-        json_object* prop0=json_object_new_array();
-        json_object* prop1=json_object_new_array();
+        json_object* pjoProp0=json_object_new_array();
+        json_object* pjoProp1=json_object_new_array();
         json_object* pjoSchema=json_object_new_array();
-        if(strcasecmp(in->format,"LiteralData")==0 ||
-            strcasecmp(in->format,"LiteralOutput")==0){
-          printLiteralDataJ(m,in,input);
-          json_object_put(prop0);
-          json_object_put(prop1);
+        if(strcasecmp(peIn->format,"LiteralData")==0 ||
+            strcasecmp(peIn->format,"LiteralOutput")==0){
+          printLiteralDataJ(pmsConf,peIn,pjoInput);
+          json_object_put(pjoProp0);
+          json_object_put(pjoProp1);
           json_object_put(pjoSchema);
         }else{
-          if(strcasecmp(in->format,"ComplexData")==0 ||
-              strcasecmp(in->format,"ComplexOutput")==0) {
-            map* sizeMap=getMap(in->content,"maximumMegabytes");
-            printComplexHref(m,in,prop1,false,sizeMap);
-            printFormatJ(m,in->defaults,prop0,true,sizeMap);
+          if(strcasecmp(peIn->format,"ComplexData")==0 ||
+              strcasecmp(peIn->format,"ComplexOutput")==0) {
+            map* pmSize=getMap(peIn->content,"maximumMegabytes");
+            printComplexHref(pmsConf,peIn,pjoProp1,false,pmSize);
+            printFormatJ(pmsConf,peIn->defaults,pjoProp0,true,pmSize);
             json_object* pjoPredefinedSchema=json_object_new_object();
-            map* pmTmp=getMap(in->defaults->content,"dataFormat");
-            if(pmTmp!=NULL && getDefinitionFromSchemas(m,pmTmp->value,input)>0){
+            map* pmTmp=getMap(peIn->defaults->content,"dataFormat");
+            if(pmTmp!=NULL && getDefinitionFromSchemas(pmsConf,pmTmp->value,pjoInput)>0){
               json_object_put(pjoSchema);
             }else{
               json_object* pjoSchemaPart=json_object_new_array();
-              printFormatJ1(m,in->defaults,pjoSchemaPart,true,sizeMap);
+              printFormatJ1(pmsConf,peIn->defaults,pjoSchemaPart,true,pmSize);
 
-              printFormatJ1(m,in->defaults,pjoSchema,true,sizeMap);
-              iotype* sup=in->supported;
+              printFormatJ1(pmsConf,peIn->defaults,pjoSchema,true,pmSize);
+              iotype* sup=peIn->supported;
               while(sup!=NULL){
-                printFormatJ(m,sup,prop0,false,sizeMap);
-                printFormatJ1(m,sup,pjoSchemaPart,false,sizeMap);
-                printFormatJ1(m,sup,pjoSchema,true,sizeMap);
+                printFormatJ(pmsConf,sup,pjoProp0,false,pmSize);
+                printFormatJ1(pmsConf,sup,pjoSchemaPart,false,pmSize);
+                printFormatJ1(pmsConf,sup,pjoSchema,true,pmSize);
                 sup=sup->next;
               }
 
@@ -951,42 +951,42 @@ extern "C" {
               json_object_object_add(pjoValueField,"oneOf",pjoSchemaPart);
               json_object_object_add(pjoProperties,"value",pjoValueField);
               json_object_object_add(pjoQualifiedValue,"properties",pjoProperties);
-              json_object_array_add(prop1,pjoQualifiedValue);
+              json_object_array_add(pjoProp1,pjoQualifiedValue);
 
               json_object* prop2=json_object_new_object();
-              json_object_object_add(prop2,"oneOf",prop1);
-              json_object* prop3=addArray(m,in);
+              json_object_object_add(prop2,"oneOf",pjoProp1);
+              json_object* prop3=addArray(pmsConf,peIn);
               if(prop3!=NULL){
                 json_object_object_add(prop3,"items",prop2);
                 if(pmMin!=NULL && atoi(pmMin->value)==0)
                   json_object_object_add(prop3,"nullable",json_object_new_boolean(true));
-                json_object_object_add(input,"extended-schema",prop3);
+                json_object_object_add(pjoInput,"extended-schema",prop3);
               }
               else{
                 if(pmMin!=NULL && atoi(pmMin->value)==0)
                   json_object_object_add(prop2,"nullable",json_object_new_boolean(true));
-                json_object_object_add(input,"extended-schema",prop2);
+                json_object_object_add(pjoInput,"extended-schema",prop2);
               }
 
               json_object* prop4=json_object_new_object();
               json_object_object_add(prop4,"oneOf",pjoSchema);
-              json_object_object_add(input,"schema",prop4);
-              json_object_put(prop0);
+              json_object_object_add(pjoInput,"schema",prop4);
+              json_object_put(pjoProp0);
             }
 
           }
           else{
-            printBoundingBoxJ(m,in,input);
-            json_object_put(prop0);
-            json_object_put(prop1);
+            printBoundingBoxJ(pmsConf,peIn,pjoInput);
+            json_object_put(pjoProp0);
+            json_object_put(pjoProp1);
             json_object_put(pjoSchema);
           }
         }
       }
-      printJMetadata(m,in->metadata,input);
-      printJAdditionalParameters(m,in->additional_parameters,input);
-      json_object_object_add(inputs,in->name,input);
-      in=in->next;
+      printJMetadata(pmsConf,peIn->metadata,pjoInput);
+      printJAdditionalParameters(pmsConf,peIn->additional_parameters,pjoInput);
+      json_object_object_add(pjoInputs,peIn->name,pjoInput);
+      peIn=peIn->next;
     }
 
   }
@@ -1835,9 +1835,9 @@ extern "C" {
           json_current_io=json_object_array_get_idx(json_io,i);
           json_object* cname=NULL;
           if(json_object_object_get_ex(json_current_io,"id",&cname)!=FALSE) {
-            json_object* json_input=NULL;
-            if(json_object_object_get_ex(json_current_io,"input",&json_input)!=FALSE) {
-              parseJIOSingle(conf,ioElements,ioMaps,ioType,json_object_get_string(cname),json_input);
+            json_object* pjoInput=NULL;
+            if(json_object_object_get_ex(json_current_io,"input",&pjoInput)!=FALSE) {
+              parseJIOSingle(conf,ioElements,ioMaps,ioType,json_object_get_string(cname),pjoInput);
             }else
               parseJIOSingle(conf,ioElements,ioMaps,ioType,json_object_get_string(cname),json_current_io);
           }
