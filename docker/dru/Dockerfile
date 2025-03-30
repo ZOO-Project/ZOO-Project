@@ -236,8 +236,8 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
-    git clone -b develop https://github.com/gfenoy/eoepca-zoo-wes-runner.git && \
-    cd eoepca-zoo-wes-runner && \
+    git clone https://github.com/ZOO-Project/zoo-wes-runner.git && \
+    cd zoo-wes-runner && \
     poetry build && \
     ls dist && \
     pip install dist/zoo_wes_runner-0.1.0-py3-none-any.whl && \
