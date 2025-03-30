@@ -233,6 +233,12 @@ COPY docker/dru/requirements.txt /tmp/
 # (branch: feature/access-log-status-failed)
 RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install --upgrade pip && \
+    # Using the latest version of pycalrissian with the fix for the RBAC
+    cd /tmp && \
+    git clone -b feature/v1subject-fix https://github.com/Terradue/pycalrissian.git && \
+    cd pycalrissian && \
+    python3 setup.py install && \
+    cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
@@ -241,12 +247,6 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     poetry build && \
     ls dist && \
     pip install dist/zoo_wes_runner-0.1.0-py3-none-any.whl && \
-    cd .. && \
-    git clone https://github.com/Terradue/pycalrissian.git && \
-    cd pycalrissian && \
-    # Using the latest version of pycalrissian with the fix for the RBAC
-    #sed "s:V1Subject:RbacV1Subject:g" -i pycalrissian/context.py && \
-    python3 setup.py install && \
     cd .. && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
