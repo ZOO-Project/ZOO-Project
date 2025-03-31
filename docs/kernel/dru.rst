@@ -21,15 +21,19 @@ simple, flexible mechanisms for specifying constraints between the
 steps in a workflow and artifact management for linking the output of
 any step as an input to subsequent steps.
 
-.. |slurm| image:: https://slurm.schedmd.com/slurm_logo.png
+The ZOO-Project with DRU support is available as a 
+`helm chart that <https://artifacthub.io/packages/helm/zoo-project/zoo-project-dru>`__
+can be deployed on a Kubernetes cluster. 
+
+.. |cwl-logo| image:: https://www.commonwl.org/assets/img/CWL-Logo-HD-cropped2.png
        :height: 100px
        :width: 100px
        :scale: 45%
-       :alt: Slurm logo
+       :alt: CWL logo
 
 
-Installation on a Minikube Cluster
-------------------------------
+Installation on a local Kubernetes Cluster
+------------------------------------------
 
 Follow the steps described below in order to activate the ZOO-Project
 optional DRU support.
@@ -48,13 +52,87 @@ code, please proceed to the section :ref:`Building the docker image
 Prerequisites
 .....................
 
-   * `Docker <https://docs.docker.com/get-docker/>`_
+   * `Docker <https://docs.docker.com/get-docker/>`_ (Apple silicon users should activate kubernetes from Docker Desktop, the virtual machine options should be set to Apple virtualization framework with the option "Use Rosetta for x86/64 emulation on Apple silicon" activated)
    * `Kubectl <https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/>`_
    * `Helm <https://helm.sh/docs/intro/install/>`_
-   * `Minikube <https://minikube.sigs.k8s.io/docs/start/>`_
+   * `Minikube <https://minikube.sigs.k8s.io/docs/start/>`_ (not required for Apple silicon)
+   * `Skaffold <https://skaffold.dev/docs/install/>`_ (for developers)
    * latest `ZOO-Project
      <https://github.com/ZOO-Project/ZOO-Project/>`_
      version
+
+.. _Installation using skaffold:
+
+Building and installing using skaffold
+......................................
+
+The ZOO-Project with DRU support can be setup using skaffold. There are
+multiple profiles defined in the `skaffold.yaml` file. The profiles are the
+following:
+
+   * `dru`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster with
+      the ZOO-Project-DRU docker image built from the source code and the
+      default `zoo-calrissian-runner 
+      <https://github.com/EOEPCA/zoo-calrissian-runner>`_.
+   * `dru-wes`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster with
+      the ZOO-Project-DRU docker image built from the source code and
+      the WES support (using the 
+      `zoo-wes-runner <https://github.com/ZOO-Project/zoo-wes-runner>`_).
+   * `dru-argo`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster 
+      with the ZOO-Project-DRU docker image built from the source code and
+      the Argo Workflows support (using the `zoo-argowf-runner 
+      <https://github.com/EOEPCA/zoo-argowf-runner/tree/develop>`_).
+
+Associated with each profile, there is a corresponding `X-hostpath` prfile
+where `X` is a profile name (`dru`, `dru-wes` or `dru-argo`). These profiles
+should be used when deploying on Apple Silicon.
+
+For instance, to deploy the ZOO-Project-DRU on a x86/amd64 Kubernetes cluster
+with the default zoo-calrissian-runner, use the following command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       de ZOO-Project
+       skaffold dev -p dru
+
+For deploying on arm64 (Apple silicon) Kubernetes cluster, use the following
+command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       de ZOO-Project
+       skaffold dev -p dru-hostpath \
+          --platform=linux/amd64 \
+          --enable-platform-node-affinity=true
+
+.. note::
+    
+      💡 The `skaffold.yaml` file is located in the root directory of the
+      ZOO-Project repository. It is used to build
+      the docker image and deploy the ZOO-Project on a Kubernetes
+      cluster. Usually, you should use a specific version of the
+      ZOO-Project-DRU docker image, as defined in the Helm chart. 
+      During the development phase, skaffold can be used to build and deploy
+      using the current state of the local source code.
+
+For deploying the ZOO-Project-DRU using Argo Workflows, you don't need to
+deploy any object storage, the ZOO-Project will use the one created by the Argo
+server. In consequence, we also provide an optional `skaffold-argo.yaml` file
+that can be used to deploy the ZOO-Project-DRU using Argo Workflows without
+extra object storage. To deplot this version on a x86/amd64 Kubernetes cluster,
+use the following command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       de ZOO-Project
+       skaffold dev -p dru-argo -f docker/dru/skaffold-argo.yaml
+
 
 .. _Installation on a Minikube Cluster:
 
@@ -208,7 +286,7 @@ Now you can deploy on Minikube as defined here: :ref:`Deploy using Helm`
 .. _CWL Supported types:
 
 CWL Supported types
-##########################################
+-------------------
 
 The ZOO-Project handle `three kind of input types <../services/zcfg-reference.html#type-of-data-nodes>`_ for every process/service.
 One of them are the LiteralData, which are simple values like strings, numbers, etc.
