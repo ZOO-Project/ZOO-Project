@@ -8,7 +8,7 @@ This is an introduction to  the `ZOO-Project
 What is ZOO-Project ?
 ---------------------
 
-`ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and  `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`__ (OGC).
+`ZOO-Project <http://zoo-project.org>`__  is a WPS (Web Processing Service) implementation written in C, Python and JavaScript. It is an open source platform which implements the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_, `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and `OGC API - Processes - Part 1: Core <https://docs.ogc.org/is/18-062r2/18-062r2.html>`_ standards edited by the `Open Geospatial Consortium <http://www.opengeospatial.org/>`__ (OGC).
 
 `ZOO-Project <http://zoo-project.org>`__ provides a developer-friendly framework for creating and chaining WPS compliant Web Services. Its main goal is to provide generic and standard-compliant methods for using existing open source librairies and algorithms as WPS. It also offers efficient tools for creating new innovative web services and applications.
 
@@ -37,9 +37,9 @@ Open Source
 
 Please refer to the ZOO-Project :ref:`contribute_index` if you want to participate and contribute. It is easy to :ref:`get involved <contribute_index>`  on source code, documentation or translation. Everybody is welcome to join the `ZOO-Tribe <http://zoo-project.org/new/ZOO-Project/ZOO%20Tribe/>`__.
 
-`ZOO-Project <http://zoo-project.org>`__  is an incubating software at the Open Source Geospatial Foundation (`OSGeo <http://osgeo.org>`__).
+`ZOO-Project <http://zoo-project.org>`__  is an official project of the Open Source Geospatial Foundation (`OSGeo <http://osgeo.org>`__).
 
-.. image:: _static/OSGeo_incubation.png
+.. image:: https://raw.githubusercontent.com/OSGeo/osgeo/master/incubation/project/OSGeo_project.svg
    :height: 92px
    :width: 225px
    :scale: 75 %
