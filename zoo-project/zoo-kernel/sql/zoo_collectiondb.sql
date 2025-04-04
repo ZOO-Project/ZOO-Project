@@ -201,7 +201,7 @@ INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VA
 -- We bind the stac catalog, collection and item to the stac.yaml namespace with their respective cwl_type (no itemCollection correspondance found)
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-collection','Collection','stac.yaml');
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-catalog','Catalog','stac.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-itemCollection',NULL,'stac.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-item-collection',NULL,'stac.yaml');
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-item','Item','stac.yaml');
 -- ogc-feature-collection and ogc-coverage-collection are not bound to a cwl_type nor supported
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('ogc-feature-collection',NULL,NULL);
