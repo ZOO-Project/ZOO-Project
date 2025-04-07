@@ -3705,7 +3705,7 @@ int runRequest(map** inputs) {
           //setMapInMaps(pmsaConfig,"lenv","no-headers","true");
 #ifdef USE_AMQP
           publish_amqp_msg(pmsaConfig,&eres,request_inputs,request_input_real_format,request_output_real_format);
-          if(res!=SERVICE_ACCEPTED){
+          if(eres!=SERVICE_ACCEPTED){
             map* pmaError=createMap("code","InternalError");
             addToMap(pmaError,"message",_("The service failed to send message through AMQP."));
             localPrintExceptionJ(&pmsaConfig,pmaError);
