@@ -447,7 +447,7 @@ and their corresponding format key values and OGC Processes Description.
                           "format": "geojson-geometry"
                         },
                         {
-                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometrycollectionGeoJSON.yaml"
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometryGeoJSON.yaml"
                         }
                       ]
                      }
