@@ -382,7 +382,7 @@ schemas.
        name_1=geojson-feature-collection
        value_2=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureGeoJSON.yaml
        name_2=geojson-feature
-       value_3=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometrycollectionGeoJSON.yaml
+       value_3=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometryGeoJSON.yaml
        name_3=geojson-geometry
        value_4=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/catalog-spec/json-schema/catalog.json
        name_4=stac-catalog
