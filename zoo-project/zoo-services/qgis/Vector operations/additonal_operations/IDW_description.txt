@@ -1,0 +1,78 @@
+IDW interpolation (qgis:idwinterpolation)
+
+
+----------------
+Input parameters
+----------------
+
+INTERPOLATION_DATA: Input layer(s)
+
+	Parameter type:	ParameterInterpolationData
+
+DISTANCE_COEFFICIENT: Distance coefficient P
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+EXTENT: Extent
+
+	Parameter type:	QgsProcessingParameterExtent
+
+	Accepted data types:
+		- str: as comma delimited list of x min, x max, y min, y max. E.g. '4,10,101,105'
+		- str: layer ID. Extent of layer is used.
+		- str: layer name. Extent of layer is used.
+		- str: layer source. Extent of layer is used.
+		- QgsMapLayer: Extent of layer is used
+		- QgsProcessingFeatureSourceDefinition: Extent of source is used
+		- QgsProperty
+		- QgsRectangle
+		- QgsReferencedRectangle
+		- QgsGeometry: bounding box of geometry is used
+
+PIXEL_SIZE: Output raster size
+
+	Parameter type:	ParameterPixelSize
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+COLUMNS: Number of columns
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+ROWS: Number of rows
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+OUTPUT: Interpolated
+
+	Parameter type:	QgsProcessingParameterRasterDestination
+
+	Accepted data types:
+		- str
+		- QgsProperty
+		- QgsProcessingOutputLayerDefinition
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputRasterLayer>
+	Interpolated
