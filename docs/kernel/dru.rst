@@ -61,6 +61,33 @@ Prerequisites
      <https://github.com/ZOO-Project/ZOO-Project/>`_
      version
 
+Checking the requirements
+*************************
+
+After installing these tools, ensure they are available in your terminal by running the following commands:
+
+.. code-block:: bash
+
+       docker --version
+       kubectl version --client
+       helm version
+       skaffold version
+       # The following command is not required to work on Apple silicon
+       minikube version
+
+
+Add the helm repositories
+*************************
+
+Before starting the next steps, make sure to run the following command to
+ensure that your local environment is ready to deploy the ZOO-Project-DRU.
+
+.. code-block:: bash
+
+       helm repo add localstack https://helm.localstack.cloud
+       helm repo add zoo-project https://zoo-project.github.io/charts/
+
+
 .. _Installation using skaffold:
 
 Building and installing using skaffold
