@@ -90,52 +90,8 @@ ensure that your local environment is ready to deploy the ZOO-Project-DRU.
 
 .. _Installation using skaffold:
 
-Building and installing using skaffold
+Build and install with skaffold
 ......................................
-
-The ZOO-Project with DRU support can be setup using skaffold. There are
-multiple profiles defined in the `skaffold.yaml` file. The profiles are the
-following:
-
-   * `dru`: 
-      it will deploy the ZOO-Project-DRU on a Kubernetes cluster with
-      the ZOO-Project-DRU docker image built from the source code and the
-      default `zoo-calrissian-runner 
-      <https://github.com/EOEPCA/zoo-calrissian-runner>`_.
-   * `dru-wes`: 
-      it will deploy the ZOO-Project-DRU on a Kubernetes cluster with
-      the ZOO-Project-DRU docker image built from the source code and
-      the WES support (using the 
-      `zoo-wes-runner <https://github.com/ZOO-Project/zoo-wes-runner>`_).
-   * `dru-argo`: 
-      it will deploy the ZOO-Project-DRU on a Kubernetes cluster 
-      with the ZOO-Project-DRU docker image built from the source code and
-      the Argo Workflows support (using the `zoo-argowf-runner 
-      <https://github.com/EOEPCA/zoo-argowf-runner/tree/develop>`_).
-
-Associated with each profile, there is a corresponding `X-hostpath` prfile
-where `X` is a profile name (`dru`, `dru-wes` or `dru-argo`). These profiles
-should be used when deploying on Apple Silicon.
-
-For instance, to deploy the ZOO-Project-DRU on a x86/amd64 Kubernetes cluster
-with the default zoo-calrissian-runner, use the following command:
-
-.. code-block:: bash
-
-       git clone https://github.com/ZOO-Project/ZOO-Project.git
-       de ZOO-Project
-       skaffold dev -p dru
-
-For deploying on arm64 (Apple silicon) Kubernetes cluster, use the following
-command:
-
-.. code-block:: bash
-
-       git clone https://github.com/ZOO-Project/ZOO-Project.git
-       de ZOO-Project
-       skaffold dev -p dru-hostpath \
-          --platform=linux/amd64 \
-          --enable-platform-node-affinity=true
 
 .. note::
     
@@ -146,6 +102,55 @@ command:
       ZOO-Project-DRU docker image, as defined in the Helm chart. 
       During the development phase, skaffold can be used to build and deploy
       using the current state of the local source code.
+
+The ZOO-Project with DRU support can be setup using skaffold. There are
+multiple profiles defined in the `skaffold.yaml` file. The profiles are the
+following:
+
+   * `hostpath`: 
+      it define the storageClass to use for the persistent volumes. It should
+      be used when deploying on Apple silicon.
+   * `wes`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster with
+      the ZOO-Project-DRU docker image built from the source code and
+      the WES support (using the 
+      `zoo-wes-runner <https://github.com/ZOO-Project/zoo-wes-runner>`_).
+   * `argo`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster 
+      with the ZOO-Project-DRU docker image built from the source code and
+      the Argo Workflows support (using the `zoo-argowf-runner 
+      <https://github.com/EOEPCA/zoo-argowf-runner/tree/develop>`_).
+
+If you don't specify any profile, skaffold will deploy the ZOO-Project-DRU on
+a Kubernetes cluster with the ZOO-Project-DRU docker image built from the
+source code and the default `zoo-calrissian-runner 
+<https://github.com/EOEPCA/zoo-calrissian-runner>`_.
+
+For instance, to deploy the ZOO-Project-DRU on a x86/amd64 Kubernetes cluster
+with the default zoo-calrissian-runner, use the following command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       de ZOO-Project
+       skaffold dev
+
+For deploying on arm64 (Apple silicon) Kubernetes cluster, use the following
+command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       de ZOO-Project
+       skaffold dev -p hostpath \
+          --platform=linux/amd64 \
+          --enable-platform-node-affinity=true
+
+
+.. note::
+    
+      💡 You can combine multiple profiles, so using `-p hostpath,wes` it will
+      deploy the WES support using hostpath as the storageClass.
 
 For deploying the ZOO-Project-DRU using Argo Workflows, you don't need to
 deploy any object storage, the ZOO-Project will use the one created by the Argo
@@ -158,7 +163,7 @@ use the following command:
 
        git clone https://github.com/ZOO-Project/ZOO-Project.git
        de ZOO-Project
-       skaffold dev -p dru-argo -f docker/dru/skaffold-argo.yaml
+       skaffold dev -f docker/dru/skaffold-argo.yaml
 
 
 .. _Installation on a Minikube Cluster:
