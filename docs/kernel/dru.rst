@@ -132,7 +132,7 @@ with the default zoo-calrissian-runner, use the following command:
 .. code-block:: bash
 
        git clone https://github.com/ZOO-Project/ZOO-Project.git
-       de ZOO-Project
+       cd ZOO-Project
        skaffold dev
 
 For deploying on arm64 (Apple silicon) Kubernetes cluster, use the following
@@ -141,7 +141,13 @@ command:
 .. code-block:: bash
 
        git clone https://github.com/ZOO-Project/ZOO-Project.git
-       de ZOO-Project
+       cd ZOO-Project
+       # Pull the latest Docker image used from the latest Helm chart 
+       docker pull \
+          zooproject/zoo-project:$(curl \
+            https://raw.githubusercontent.com/ZOO-Project/charts/refs/heads/main/zoo-project-dru/values.yaml \
+            | grep tag | grep dru | head -1 | awk {'print $2'}) \
+          --platform linux/amd64
        skaffold dev -p hostpath \
           --platform=linux/amd64 \
           --enable-platform-node-affinity=true
