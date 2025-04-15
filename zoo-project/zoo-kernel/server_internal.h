@@ -72,7 +72,7 @@ extern "C" {
   void dumpMapsValuesToFiles(maps**,maps**);
   void runDismiss(maps*,char*);
   int isRunning(maps*,char*);
-  void runGetStatus(maps*,char*,char*);
+  void runGetStatus(maps**,char*,char*);
   void readFinalRes(maps*,char*,map*);
 
   int isValidLang(maps*,const char*);

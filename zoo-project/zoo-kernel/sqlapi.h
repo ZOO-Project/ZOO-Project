@@ -45,7 +45,7 @@ extern "C"
 #else
   OGRDataSource 
 #endif
-  **zoo_DS;
+  **ppoZooDS;
 #endif
 
 #ifdef __cplusplus

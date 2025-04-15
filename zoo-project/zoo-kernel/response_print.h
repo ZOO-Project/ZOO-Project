@@ -233,9 +233,9 @@ extern "C" {
   
   void addLangAttr(xmlNodePtr,maps*);
 
-  void printHeaders(maps*);
-  void printSessionHeaders(maps*);
-  int printAFile(maps*,char*,zStatStruct,void (funcError) (maps**, map*));
+  void printHeaders(maps**);
+  void printSessionHeaders(maps**);
+  int printAFile(maps**,char*,zStatStruct,void (funcError) (maps**, map*));
 
   int zooXmlSearchForNs(const char*);
   int zooXmlAddNs(xmlNodePtr,const char*,const char*);
@@ -247,17 +247,17 @@ extern "C" {
   const char* produceStatusString(maps*,map*);
   void printExceptionReportResponse(maps**,map*);
   xmlNodePtr createExceptionReportNode(maps*,map*,int);
-  void printProcessResponse(maps*,map*,int,service*,const char*,int,maps*,maps*);
+  void printProcessResponse(maps**,map*,int,service*,const char*,int,maps*,maps*);
   xmlNodePtr printWPSHeader(xmlDocPtr,maps*,const char*,const char*,const char*,int);
   xmlNodePtr printGetCapabilitiesHeader(xmlDocPtr,maps*,const char*);
   void printGetCapabilitiesForProcess(registry*,maps*,void*,void*,service*);
   void printDescribeProcessForProcess(registry*,maps*,void*,void*,service*);
   void printFullDescription(xmlDocPtr,int,elements*,const char*,xmlNsPtr,xmlNsPtr,xmlNodePtr,int,int,const map*);
-  void printDocument(maps*,xmlDocPtr,int);
+  void printDocument(maps**,xmlDocPtr,int);
   void printDescription(xmlNodePtr,xmlNsPtr,const char*,map*,int);
   void printIOType(xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,xmlNsPtr,elements*,maps*,const char*,int);
-  void printRawdataOutput(maps*,maps*);
-  void printRawdataOutputs(maps*,service*,maps*);
+  void printRawdataOutput(maps**,maps*);
+  void printRawdataOutputs(maps**,service*,maps*);
   map* parseBoundingBox(const char*);
   void printBoundingBox(xmlNsPtr,xmlNodePtr,map*);
   void printBoundingBoxDocument(maps*,maps*,FILE*);
@@ -267,7 +267,7 @@ extern "C" {
   void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
 
   char* produceFileUrl(service*,maps*,maps*,const char*, int);
-  void outputResponse(service*,maps*,maps*,map*,int,maps*,int);
+  void outputResponse(service*,maps*,maps*,map*,int,maps**,int);
 
   void localPrintException(maps**,map*);
   int errorException(maps**, const char *, const char *, const char*);

@@ -34,16 +34,16 @@
  * Apply XPath Expression on XML document.
  *
  * @param doc the XML Document
- * @param search the XPath expression
+ * @param pccSearch the XPath expression
  * @return xmlXPathObjectPtr containing the resulting nodes set
  */
 xmlXPathObjectPtr
-extractFromDoc (xmlDocPtr doc, const char* search)
+extractFromDoc (xmlDocPtr doc, const char* pccSearch)
 {
   xmlXPathContextPtr xpathCtx;
   xmlXPathObjectPtr xpathObj;
   xpathCtx = xmlXPathNewContext (doc);
-  xpathObj = xmlXPathEvalExpression (BAD_CAST search, xpathCtx);
+  xpathObj = xmlXPathEvalExpression (BAD_CAST pccSearch, xpathCtx);
   xmlXPathFreeContext (xpathCtx);
   return xpathObj;
 }
@@ -51,67 +51,67 @@ extractFromDoc (xmlDocPtr doc, const char* search)
 /**
  * Create (or append to) an array valued maps value = "["",""]"
  *
- * @param m the conf maps containing the main.cfg settings
- * @param mo the map to update
- * @param mi the map to append
- * @param elem the elements containing default definitions
+ * @param ppmsConf the conf maps containing the main.cfg settings
+ * @param pmsOutput the map to update
+ * @param pmsInput the map to append
+ * @param peElem the elements containing default definitions
  * @return 0 on success, -1 on failure
  */
-int appendMapsToMaps (maps** m, maps* mo, maps* mi, elements* elem){
-  maps *tmpMaps = getMaps (mo, mi->name);
-  map *tmap = getMapType (tmpMaps->content);
-  elements *el = getElements (elem, mi->name);
-  elements *cursor = elem;
-  while(cursor!=NULL && el==NULL){
-    if(cursor->child!=NULL)
-      el = getElements (cursor->child, mi->name);
-    cursor=cursor->next;
+int appendMapsToMaps (maps** ppmsConf, maps* pmsOutput, maps* pmsInput, elements* peElem){
+  maps *pmsTmp = getMaps (pmsOutput, pmsInput->name);
+  map *pmTmp = getMapType (pmsTmp->content);
+  elements *peCurrentElem = getElements (peElem, pmsInput->name);
+  elements *peCursor = peElem;
+  while(peCursor!=NULL && peCurrentElem==NULL){
+    if(peCursor->child!=NULL)
+      peCurrentElem = getElements (peCursor->child, pmsInput->name);
+    peCursor=peCursor->next;
   }
   int hasEl = 1;
-  if (el == NULL)
+  if (peCurrentElem == NULL)
     hasEl = -1;
 
-  if (tmap == NULL){
+  if (pmTmp == NULL){
     if (hasEl > 0)
-      tmap = getMapType (el->defaults->content);
+      pmTmp = getMapType (peCurrentElem->defaults->content);
     }
   
-  map *testMap = NULL;
+  map *pmTest = NULL;
   if (hasEl > 0){
-    testMap = getMap (el->content, "maxOccurs");
+    pmTest = getMap (peCurrentElem->content, "maxOccurs");
   }
   else {
-    testMap = createMap ("maxOccurs", "unbounded");
+    pmTest = createMap ("maxOccurs", "unbounded");
   }
     
-  if (testMap != NULL){
-    if (strncasecmp (testMap->value, "unbounded", 9) != 0
-        && atoi (testMap->value) > 1){
-      addMapsArrayToMaps (&mo, mi, tmap->name);
-      map* nb=getMapFromMaps(mo,mi->name,"length");
-      if (nb!=NULL && atoi(nb->value)>atoi(testMap->value)){
+  if (pmTest != NULL){
+    if (strncasecmp (pmTest->value, "unbounded", 9) != 0
+        && atoi (pmTest->value) > 1){
+      addMapsArrayToMaps (&pmsOutput, pmsInput, pmTmp->name);
+      map* pmLength=getMapFromMaps(pmsOutput,pmsInput->name,"length");
+      if (pmLength!=NULL && atoi(pmLength->value)>atoi(pmTest->value)){
         char emsg[1024];
         sprintf (emsg,
               _("The maximum allowed occurrences for <%s> (%i) was exceeded."),
-              mi->name, atoi (testMap->value));
-        errorException (m, emsg, "InternalError", NULL);
+              pmsInput->name, atoi (pmTest->value));
+        errorException (ppmsConf, emsg, "InternalError", NULL);
         return -1;
       }
     }
     else{
-      if (strncasecmp (testMap->value, "unbounded", 9) == 0){
+      if (strncasecmp (pmTest->value, "unbounded", 9) == 0){
         if (hasEl < 0){
-          freeMap (&testMap);
-          free (testMap);
+          freeMap (&pmTest);
+          free (pmTest);
         }
-        if (addMapsArrayToMaps (&mo, mi, tmap->name) < 0){
+        if (addMapsArrayToMaps (&pmsOutput, pmsInput, pmTmp->name) < 0){
           char emsg[1024];
-          map *tmpMap = getMap (mi->content, "length");
+          map *tmpMap = getMap (pmsInput->content, "length");
           sprintf (emsg,
                _
                ("ZOO-Kernel was unable to load your data for %s position %s."),
-               mi->name, tmpMap->value);
-          errorException (m, emsg, "InternalError", NULL);
+               pmsInput->name, tmpMap->value);
+          errorException (ppmsConf, emsg, "InternalError", NULL);
           return -1;
         }
       }
@@ -120,8 +120,8 @@ int appendMapsToMaps (maps** m, maps* mo, maps* mi, elements* elem){
         sprintf (emsg,
               _
               ("The maximum allowed occurrences for <%s> is one."),
-              mi->name);
-        errorException (m, emsg, "InternalError", NULL);
+              pmsInput->name);
+        errorException (ppmsConf, emsg, "InternalError", NULL);
         return -1;
       }
     }
@@ -132,52 +132,52 @@ int appendMapsToMaps (maps** m, maps* mo, maps* mi, elements* elem){
 /**
  * Make sure that each value encoded in base64 in a maps is decoded.
  *
- * @param in the maps containing the values
+ * @param ppmsInput the maps containing the values
  * @see readBase64
  */
-void ensureDecodedBase64(maps **in){
-  maps* cursor=*in;
-  while(cursor!=NULL){
-    map *tmp=getMap(cursor->content,"encoding");
-    if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
-      tmp=getMap(cursor->content,"value");
-      readBase64(&tmp);
-      addToMap(cursor->content,"base64_value",tmp->value);
-      int size=0;
-      char *s=zStrdup(tmp->value);
-      free(tmp->value);
-      tmp->value=base64d(s,strlen(s),&size);
-      free(s);
-      char sizes[1024];
-      sprintf(sizes,"%d",size);
-      addToMap(cursor->content,"size",sizes);
+void ensureDecodedBase64(maps **ppmsInput){
+  maps* pmsCursor=*ppmsInput;
+  while(pmsCursor!=NULL){
+    map *pmTmp=getMap(pmsCursor->content,"encoding");
+    if(pmTmp!=NULL && strncasecmp(pmTmp->value,"base64",6)==0){
+      pmTmp=getMap(pmsCursor->content,"value");
+      readBase64(&pmTmp);
+      addToMap(pmsCursor->content,"base64_value",pmTmp->value);
+      int iSize=0;
+      char *pcaTmp=zStrdup(pmTmp->value);
+      free(pmTmp->value);
+      pmTmp->value=base64d(pcaTmp,strlen(pcaTmp),&iSize);
+      free(pcaTmp);
+      char acSizes[1024];
+      sprintf(acSizes,"%d",iSize);
+      addToMap(pmsCursor->content,"size",acSizes);
     }
-    map* length=getMap(cursor->content,"length");
+    map* length=getMap(pmsCursor->content,"length");
     if(length!=NULL){
       int len=atoi(length->value);
-      for(int i=1;i<len;i++){
-        tmp=getMapArray(cursor->content,"encoding",i);
-        if(tmp!=NULL && strncasecmp(tmp->value,"base64",6)==0){
-          char key[26];
-          sprintf(key,"base64_value_%d",i);
-          tmp=getMapArray(cursor->content,"value",i);
-          readBase64(&tmp);
-          addToMap(cursor->content,key,tmp->value);
-          int size=0;
-          char *s=zStrdup(tmp->value);
-          free(tmp->value);
-          tmp->value=base64d(s,strlen(s),&size);
-          free(s);
-          char sizes[1024];
-          sprintf(sizes,"%d",size);
-          sprintf(key,"size_%d",i);
-          addToMap(cursor->content,key,sizes);
+      for(int iCnt=1;iCnt<len;iCnt++){
+        pmTmp=getMapArray(pmsCursor->content,"encoding",iCnt);
+        if(pmTmp!=NULL && strncasecmp(pmTmp->value,"base64",6)==0){
+          char acKey[26];
+          sprintf(acKey,"base64_value_%d",iCnt);
+          pmTmp=getMapArray(pmsCursor->content,"value",iCnt);
+          readBase64(&pmTmp);
+          addToMap(pmsCursor->content,acKey,pmTmp->value);
+          int iSize=0;
+          char *pcaTmp=zStrdup(pmTmp->value);
+          free(pmTmp->value);
+          pmTmp->value=base64d(pcaTmp,strlen(pcaTmp),&iSize);
+          free(pcaTmp);
+          char acSizes[1024];
+          sprintf(acSizes,"%d",iSize);
+          sprintf(acKey,"size_%d",iCnt);
+          addToMap(pmsCursor->content,acKey,acSizes);
         }
       }
     }
-    if(cursor->child!=NULL)
-      ensureDecodedBase64(&cursor->child);
-    cursor=cursor->next;
+    if(pmsCursor->child!=NULL)
+      ensureDecodedBase64(&pmsCursor->child);
+    pmsCursor=pmsCursor->next;
   }
 }
 

@@ -41,7 +41,7 @@ extern "C" {
   bool handleJobStatus(maps*,maps*,int);
   void cleanupJobStatusThreads(maps**);
 #ifdef USE_CALLBACK
-  bool invokeCallback(maps*,maps*,maps*,int,int);
+  bool invokeCallback(maps**,maps*,maps*,int,int);
 #endif
   void cleanupCallbackThreads();
   

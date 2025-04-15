@@ -1296,7 +1296,7 @@ extern "C" {
         else
           setMapInMaps(*pmsConf,"headers","Content-Type","application/json;encoding=utf-8");
       }
-      printHeaders(*pmsConf);
+      printHeaders(pmsConf);
       if(getMapFromMaps(*pmsConf,"headers","status")==NULL){
         pmTmp=getMapFromMaps(*pmsConf,"lenv","status_code");
         if(pmTmp!=NULL)
@@ -1971,9 +1971,10 @@ extern "C" {
    * @param pcJobId the char pointer to the jobid
    * @return the JSON object pointer to the statusInfo
    */
-  json_object* printJobStatus(maps* pmsConf,char* pcJobId){
+  json_object* printJobStatus(maps** ppmsConf,char* pcJobId){
     json_object* pjoRes=NULL;
-    runGetStatus(pmsConf,pcJobId,(char*)"GetStatus");
+    maps* pmsConf=*ppmsConf;
+    runGetStatus(ppmsConf,pcJobId,(char*)"GetStatus");
     map* pmError=getMapFromMaps(pmsConf,"lenv","error");
     if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
       printExceptionReportResponseJ(&pmsConf,getMapFromMaps(pmsConf,"lenv","code"));
@@ -2121,19 +2122,20 @@ extern "C" {
   /**
    * Print the jobs list
    *
-   * @param conf the maps containing the settings of the main.cfg file
+   * @param ppmsConf the maps containing the settings of the main.cfg file
    * @return the JSON object pointer to the jobs list
    */
-  json_object* printJobList(maps* conf){
+  json_object* printJobList(maps** ppmsConf){
     json_object* res=json_object_new_array();
-    map* pmJobs=getMapFromMaps(conf,"lenv","selectedJob");
-    map* tmpPath=getMapFromMaps(conf,"main","tmpPath");
+    maps* pmsConf=*ppmsConf;
+    map* pmJobs=getMapFromMaps(pmsConf,"lenv","selectedJob");
+    map* tmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
     struct dirent *dp;
     int cnt=0;
     int skip=0;
     int limit=10000;
-    map* pmLimit=getMapFromMaps(conf,"lenv","serviceCntLimit");
-    map* pmSkip=getMapFromMaps(conf,"lenv","serviceCntSkip");
+    map* pmLimit=getMapFromMaps(pmsConf,"lenv","serviceCntLimit");
+    map* pmSkip=getMapFromMaps(pmsConf,"lenv","serviceCntSkip");
     if(pmLimit!=NULL){
       limit=atoi(pmLimit->value);
     }
@@ -2146,7 +2148,7 @@ extern "C" {
         map* pmaTmp=createMap("code","InvalidQueryParameterValue");
         addToMap(pmaTmp,"message","The server was unable to parse one of the query pareter provided");
         json_object_put(res);
-        printExceptionReportResponseJ(&conf,pmaTmp);
+        printExceptionReportResponseJ(ppmsConf,pmaTmp);
         freeMap(&pmaTmp);
         free(pmaTmp);
         return NULL;
@@ -2157,12 +2159,12 @@ extern "C" {
         if(cnt>=skip && cnt<limit+skip && strlen(tmps)>2){
           char* tmpStr=zStrdup(tmps+1);
           tmpStr[strlen(tmpStr)-1]=0;
-          json_object* cjob=printJobStatus(conf,tmpStr);
+          json_object* cjob=printJobStatus(ppmsConf,tmpStr);
           json_object_array_add(res,cjob);
           free(tmpStr);
         }
         if(cnt==limit+skip)
-          setMapInMaps(conf,"lenv","serviceCntNext","true");
+          setMapInMaps(pmsConf,"lenv","serviceCntNext","true");
         cnt++;
         tmps = strtok_r (NULL, ",", &saveptr);
       }
@@ -2204,14 +2206,14 @@ extern "C" {
 #else
             map *pmaPid=NULL, *pmaUsid=NULL;
 #endif
-            if(isFilteredPid(conf,pmaPid->value) &&
-                isFilteredDMM(conf,pmaUsid->value)){
+            if(isFilteredPid(pmsConf,pmaPid->value) &&
+                isFilteredDMM(pmsConf,pmaUsid->value)){
               if(cnt>=skip && cnt<limit+skip){
-                json_object* cjob=printJobStatus(conf,tmpStr);
+                json_object* cjob=printJobStatus(ppmsConf,tmpStr);
                 json_object_array_add(res,cjob);
               }
               if(cnt==limit+skip)
-                setMapInMaps(conf,"lenv","serviceCntNext","true");
+                setMapInMaps(pmsConf,"lenv","serviceCntNext","true");
               cnt++;
             }
             if(pmaPid!=NULL && getMap(pmaPid,"toRemove")!=NULL){
@@ -2230,11 +2232,11 @@ extern "C" {
     }
     json_object* resFinal=json_object_new_object();
     json_object_object_add(resFinal,"jobs",res);
-    setMapInMaps(conf,"lenv","path","jobs");
+    setMapInMaps(pmsConf,"lenv","path","jobs");
     char pcCnt[12];
     sprintf(pcCnt,"%d",cnt);
-    setMapInMaps(conf,"lenv","serviceCnt",pcCnt);
-    createNextLinks(conf,resFinal);
+    setMapInMaps(pmsConf,"lenv","serviceCnt",pcCnt);
+    createNextLinks(pmsConf,resFinal);
     return resFinal;
   }
 
@@ -2252,8 +2254,9 @@ extern "C" {
    * @return the JSON object pointer to the jobs list
    * @see printJobList
    */
-  json_object* printFilteredJobList(maps* pmsConf, map* pmRequestInputs){
+  json_object* printFilteredJobList(maps** ppmsConf, map* pmRequestInputs){
     map* pmTmp=getMap(pmRequestInputs,"limit");
+    maps* pmsConf=*ppmsConf;
     if(pmTmp!=NULL)
       setMapInMaps(pmsConf,"lenv","serviceCntLimit",pmTmp->value);
     else{
@@ -2509,20 +2512,20 @@ extern "C" {
     }else{
       free(pcaClauseFinal);
     }
-    return printJobList(pmsConf);
+    return printJobList(ppmsConf);
   }
   
   /**
    * Print the result of an execution
    *
-   * @param conf the maps containing the settings of the main.cfg file
+   * @param ppmsConf the maps containing the settings of the main.cfg file
    * @param s service pointer to metadata
    * @param result outputs of the service
    * @param res the status of execution SERVICE_FAILED/SERVICE_SUCCEEDED
    * @return the JSON object pointer to the result
    */
-  json_object* printJResult(maps* conf,service* s,maps* result,int res){
-
+  json_object* printJResult(maps** ppmsConf,service* s,maps* result,int res){
+    maps* conf=*ppmsConf;
     if(res==SERVICE_FAILED){
       char* pcaTmp=produceErrorMessage(conf);
       map* pamTmp=createMap("message",pcaTmp);
@@ -2545,7 +2548,7 @@ extern "C" {
       if (res == SERVICE_DEPLOYED){
           setMapInMaps(conf,"headers","Status","201 Service Deployed");
       }
-      printRawdataOutputs(conf,s,resu);
+      printRawdataOutputs(ppmsConf,s,resu);
       map* pmError=getMapFromMaps(conf,"lenv","error");
       if(pmError!=NULL && strncasecmp(pmError->value,"true",4)==0){
         printExceptionReportResponseJ(&conf,pmError);
@@ -2725,7 +2728,7 @@ extern "C" {
                 map* geodatatype=getMap(resu->content,"geodatatype");
                 map* nbFeatures;
                 setMapInMaps(conf,"lenv","state","out");
-                setReferenceUrl(conf,resu);
+                setReferenceUrl(ppmsConf,resu);
                 nbFeatures=getMap(resu->content,"nb_features");
                 geodatatype=getMap(resu->content,"geodatatype");
                 if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
@@ -4283,23 +4286,24 @@ extern "C" {
   /**
    * Print exception report in case Deploy or Undeploy failed to execute
    *
-   * @param conf the main configuration maps pointer
+   * @param ppmsConf the main configuration maps pointer
    */
-  void handleDRUError(maps* conf){
-    map* pmError=getMapFromMaps(conf,"lenv","jsonStr");
-    setMapInMaps(conf,"lenv","hasPrinted","false");
-    setMapInMaps(conf,"lenv","no-headers","false");
-    setMapInMaps(conf,"headers","Status","500 Internal Server Error");
-    setMapInMaps(conf,"lenv","status_code","500 Internal Server Error");
+  void handleDRUError(maps** ppmsConf){
+    maps* pmsConf=*ppmsConf;
+    map* pmError=getMapFromMaps(pmsConf,"lenv","jsonStr");
+    setMapInMaps(pmsConf,"lenv","hasPrinted","false");
+    setMapInMaps(pmsConf,"lenv","no-headers","false");
+    setMapInMaps(pmsConf,"headers","Status","500 Internal Server Error");
+    setMapInMaps(pmsConf,"lenv","status_code","500 Internal Server Error");
     if(pmError!=NULL){
-      printHeaders(conf);
+      printHeaders(ppmsConf);
       printf("\r\n");
       printf("%s",pmError->value);
       printf("\n");
     }else{
       pmError=createMap("code","InternalError");
-      map* pmMessage=getMapFromMaps(conf,"lenv","message");
-      map* pmORequestMethod=getMapFromMaps(conf,"lenv","orequest_method");
+      map* pmMessage=getMapFromMaps(pmsConf,"lenv","message");
+      map* pmORequestMethod=getMapFromMaps(pmsConf,"lenv","orequest_method");
       if(pmORequestMethod!=NULL && strncasecmp(pmORequestMethod->value,"put",3)==0){
         if(pmMessage!=NULL){
           char* pcaMessage=(char*)malloc((strlen(pmMessage->value)+strlen(_("Failed to update the process!"))+1)*sizeof(char));
@@ -4318,12 +4322,12 @@ extern "C" {
         }else
           addToMap(pmError,"message",_("Failed to deploy process!"));
       }
-      printExceptionReportResponseJ(&conf,pmError);
+      printExceptionReportResponseJ(ppmsConf,pmError);
       freeMap(&pmError);
       free(pmError);
     }
-    setMapInMaps(conf,"lenv","no-headers","true");
-    setMapInMaps(conf,"lenv","hasPrinted","true");
+    setMapInMaps(pmsConf,"lenv","no-headers","true");
+    setMapInMaps(pmsConf,"lenv","hasPrinted","true");
   }
 
   /**
@@ -4515,7 +4519,7 @@ extern "C" {
         zStatStruct zssStatus;
         int s=zStat(pcaFilePath, &zssStatus);
         setMapInMaps(pmsConf,"headers","Content-Type",pcAccept);
-        printAFile(pmsConf,pcaFilePath,zssStatus,localPrintException);
+        printAFile(ppmsConf,pcaFilePath,zssStatus,localPrintException);
         free(pcaFileName);
         free(pcaFilePath);
         return 0;
@@ -4569,7 +4573,7 @@ extern "C" {
                         int iStatus=zStat(pcaCachedFile, &zssStatus1);
                         if(pmConvertionRequired==NULL || strncmp(pmConvertionRequired->value,"true",4)!=0){
                           setMapInMaps(pmsConf,"headers","Content-Type",pcAccept);
-                          printAFile(pmsConf,pcaCachedFile,zssStatus1,localPrintException);
+                          printAFile(ppmsConf,pcaCachedFile,zssStatus1,localPrintException);
                         }else{
                           if(iStatus==0){
                             FILE *pfRequest1 = fopen (pcaCachedFile, "rb");
@@ -4618,7 +4622,7 @@ extern "C" {
           map* pmConvertionRequired=getMapFromMaps(pmsConf,"lenv","require_conversion_to_json");
           if(pmConvertionRequired==NULL || strncmp(pmConvertionRequired->value,"true",4)!=0){
             setMapInMaps(pmsConf,"headers","Content-Type",pcAccept);
-            printAFile(pmsConf,pcaFilePath,zssStatus,localPrintException);
+            printAFile(ppmsConf,pcaFilePath,zssStatus,localPrintException);
           }else{
             if(s==0){
               FILE *pfRequest = fopen (pcaFilePath, "rb");

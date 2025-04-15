@@ -676,68 +676,68 @@ int getKeyValue(maps* conf){
  * @return a semaphores set indentifier on success, -1 in other case
  */
 int getShmLockId(maps* conf, int nsems){
-    int i;
-    union semun arg;
-    struct semid_ds buf;
-    struct sembuf sb;
-    semid sem_id;
-    int key=getKeyValue(conf);
-    
-    sem_id = semget(key, nsems, IPC_CREAT | IPC_EXCL | 0666);
+  int i;
+  union semun arg;
+  struct semid_ds buf;
+  struct sembuf sb;
+  semid sem_id;
+  int key=getKeyValue(conf);
+  
+  sem_id = semget(key, nsems, IPC_CREAT | IPC_EXCL | 0666);
 
-    if (sem_id >= 0) { /* we got it first */
-        sb.sem_op = 1; 
-	sb.sem_flg = 0;
-	arg.val=1;
-        for(sb.sem_num = 0; sb.sem_num < nsems; sb.sem_num++) { 
-            /* do a semop() to "free" the semaphores. */
-            /* this sets the sem_otime field, as needed below. */
-            if (semop(sem_id, &sb, 1) == -1) {
-                int e = errno;
-                semctl(sem_id, 0, IPC_RMID); /* clean up */
-                errno = e;
-                return -1; /* error, check errno */
-            }
-        }
-	setMapInMaps(conf,"lenv","semaphore","Created");
-    } else if (errno == EEXIST) { /* someone else got it first */
-        int ready = 0;
-
-        sem_id = semget(key, nsems, 0); /* get the id */
-        if (sem_id < 0) return sem_id; /* error, check errno */
-
-        /* wait for other process to initialize the semaphore: */
-        arg.buf = &buf;
-        for(i = 0; i < MAX_RETRIES && !ready; i++) {
-            semctl(sem_id, nsems-1, IPC_STAT, arg);
-            if (arg.buf->sem_otime != 0) {
-#ifdef DEBUG
-	      fprintf(stderr,"Semaphore acquired ...\n");
-#endif
-	      ready = 1;
-            } else {
-#ifdef DEBUG
-	      fprintf(stderr,"Retry to access the semaphore later ...\n");
-#endif
-	      zSleep(1000);
-            }
-        }
-	errno = ZOO_LOCK_ACQUIRE_FAILED;
-        if (!ready) {
-#ifdef DEBUG
-	  fprintf(stderr,"Unable to access the semaphore ...\n");
-#endif
-	  errno = ETIME;
-	  return -1;
-        }
-	setMapInMaps(conf,"lenv","semaphore","Acquired");
-    } else {
-        return sem_id; /* error, check errno */
+  if (sem_id >= 0) { /* we got it first */
+    sb.sem_op = 1;
+    sb.sem_flg = 0;
+    arg.val=1;
+    for(sb.sem_num = 0; sb.sem_num < nsems; sb.sem_num++) { 
+      /* do a semop() to "free" the semaphores. */
+      /* this sets the sem_otime field, as needed below. */
+      if (semop(sem_id, &sb, 1) == -1) {
+        int e = errno;
+        semctl(sem_id, 0, IPC_RMID); /* clean up */
+        errno = e;
+        return -1; /* error, check errno */
+      }
     }
+    setMapInMaps(conf,"lenv","semaphore","Created");
+  } else if (errno == EEXIST) { /* someone else got it first */
+    int ready = 0;
+
+    sem_id = semget(key, nsems, 0); /* get the id */
+    if (sem_id < 0) return sem_id; /* error, check errno */
+
+    /* wait for other process to initialize the semaphore: */
+    arg.buf = &buf;
+    for(i = 0; i < MAX_RETRIES && !ready; i++) {
+      semctl(sem_id, nsems-1, IPC_STAT, arg);
+      if (arg.buf->sem_otime != 0) {
 #ifdef DEBUG
-    fprintf(stderr,"%d Created !\n",sem_id);
+        fprintf(stderr,"Semaphore acquired ...\n");
 #endif
-    return sem_id;
+        ready = 1;
+      } else {
+#ifdef DEBUG
+        fprintf(stderr,"Retry to access the semaphore later ...\n");
+#endif
+        zSleep(1000);
+      }
+    }
+errno = ZOO_LOCK_ACQUIRE_FAILED;
+    if (!ready) {
+#ifdef DEBUG
+      fprintf(stderr,"Unable to access the semaphore ...\n");
+#endif
+      errno = ETIME;
+      return -1;
+    }
+    setMapInMaps(conf,"lenv","semaphore","Acquired");
+  } else {
+    return sem_id; /* error, check errno */
+  }
+#ifdef DEBUG
+  fprintf(stderr,"%d Created !\n",sem_id);
+#endif
+  return sem_id;
 }
 
 /**

@@ -1,4 +1,9 @@
 Version 2.1.0-dev
+  * C-API change signature of: printHeaders, printSessionHeaders,
+  printAFile, printProcessResponse, printDocument, printRawdataOutput,
+  printRawdataOutputs, outputResponse, runGetStatus, invokeCallback,
+  setReferenceUrl, printJResult, printJobStatus, printJobList,
+  printFilteredJobList, handleDRUError.
   * Introduce the conversion from CWL type to LiteralData in documentation.
   * ZOO-Project-DRU: Bind user to anonymous when no SERVICE_NAMESPACE is 
   defined.
@@ -52,6 +57,7 @@ Version 2.1.0-dev
   * Support recording metadata and author for processes deployed from CWL.
   * Add gdalmdiminfo and gdalmdimtranslate services
   * Update support for OGC API - Processes - Part 3: Workflows
+
 Version 2.0.0
   * Update the beta Part 3: Workflow & chaining support
   * Add Configuration option to force stderr in the console rather 
