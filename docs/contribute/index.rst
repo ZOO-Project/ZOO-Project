@@ -18,5 +18,5 @@ open source software project and help making it better.
    dev
    release
    translate
-   contributors
    hugo
+   contributors

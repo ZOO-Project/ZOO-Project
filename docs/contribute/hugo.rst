@@ -1,9 +1,53 @@
 .. _contribute_hugo:
 
-Creating and Updating Pages in Hugo
+Contribute to the Website
 ===================================
 
-This guide provides instructions for contributors on how to create and update pages using the Hugo framework.
+This guide provides step-by-step instructions for contributing to the ZOO-Project website using the Hugo static site generator.
+
+Repository Location
+-------------------
+
+The source code for the website is hosted on GitHub:
+
+`https://github.com/ZOO-Project/website <https://github.com/ZOO-Project/website>`_
+
+If you're new to the project, this is where all the website content is managed. You will need to clone this repository and set it up locally before making any changes.
+
+Cloning the Repository
+----------------------
+
+To get started, clone the official repository and navigate into the project folder:
+
+.. code:: bash
+
+   git clone https://github.com/ZOO-Project/website.git
+   cd website
+
+Installing Hugo
+---------------
+
+The website uses Hugo, a fast static site generator written in Go. You must install Hugo on your system.
+
+Install Hugo by following instructions here: https://gohugo.io/getting-started/installing/
+
+To check if Hugo was installed successfully, run:
+
+.. code:: bash
+
+   hugo version
+
+Running the Website Locally
+---------------------------
+
+To preview the website locally before committing changes:
+
+.. code:: bash
+
+   hugo server
+
+Then open your browser at `http://localhost:8080/` to see the live site.
+
 
 Creating a New Page
 -------------------
@@ -49,7 +93,7 @@ To modify an existing page:
 
       hugo server
 
-4. Once satisfied with the updates, commit the changes:
+4. When you're satisfied, commit and push your changes:
 
    .. code:: bash
 
@@ -73,4 +117,9 @@ To include the new page in the navigation menu:
       url = "/docs/new-page/"
       weight = 10
 
-3. Save the changes and test the menu update.
+3. Save the file and test the navigation link locally using:
+
+   .. code:: bash
+
+      hugo server
+
