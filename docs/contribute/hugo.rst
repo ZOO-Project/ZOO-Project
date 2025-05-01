@@ -98,7 +98,7 @@ To modify an existing page:
    .. code:: bash
 
       git add content/docs/updated-page.md
-      git commit -m "Updated documentation"
+      git commit -m "Updated page"
       git push origin main
 
 Adding Navigation Links
@@ -117,9 +117,36 @@ To include the new page in the navigation menu:
       url = "/docs/new-page/"
       weight = 10
 
-3. Save the file and test the navigation link locally using:
+
+Customizing Page Layouts
+------------------------
+
+After creating a new Markdown (.md) file, Hugo automatically displays the content using its default layout template. If no custom layout is defined, the site will use the theme’s predefined rendering logic.
+
+To create a custom layout for a specific section or page:
+
+1. Navigate to the `themes/<theme_name>/layouts/` directory.
+2. Create or edit layout templates based on your content type:
+   - For example: `layouts/_default/single.html` for general content pages.
+   - Or: `layouts/docs/single.html` for documentation-specific pages.
+3. Modify these templates using Hugo’s Go template syntax to define your custom HTML structure.
+
+
+Including Custom CSS and JavaScript
+-----------------------------------
+
+To apply custom styles or add scripts:
+
+1. Place your custom `.css` and `.js` files inside the `static/` directory of the project:
+   - Example: `static/css/custom.css`
+   - Example: `static/js/custom.js`
+
+2. Reference these files in your HTML templates, typically in:
+   - `themes/<theme_name>/layouts/partials/head.html`
+   - or `themes/<theme_name>/layouts/_default/baseof.html`
+
+3. Save the changes and test them with:
 
    .. code:: bash
 
       hugo server
-
