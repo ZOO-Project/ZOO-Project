@@ -118,7 +118,7 @@ To include the new page in the navigation menu:
       weight = 10
 
 
-Customizing Page Layouts
+Customising Page Layouts
 ------------------------
 
 After creating a new Markdown (.md) file, Hugo automatically displays the content using its default layout template. If no custom layout is defined, the site will use the theme’s predefined rendering logic.
