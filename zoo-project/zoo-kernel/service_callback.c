@@ -521,18 +521,18 @@ extern "C" {
     }
     if(arg->state==SERVICE_STARTED && pmTmp!=NULL){
       if(maxProgress<=atoi(pmTmp->value)){
-	maxProgress=atoi(pmTmp->value);
+        maxProgress=atoi(pmTmp->value);
       }else{
 #ifdef CALLBACK_DEBUG
-	fprintf(stderr,"************************* From thread %d %s %d: REQUEST CANCELLED (%s) EXIT!\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
-	fflush(stderr);
+        fprintf(stderr,"************************* From thread %d %s %d: REQUEST CANCELLED (%s) EXIT!\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
+        fflush(stderr);
 #endif
-	freeMaps(&arg->conf);
-	free(arg->conf);
-	freeMap(&arg->url);
-	free(arg->url);
-	pthread_exit(NULL);
-	return NULL;
+        freeMaps(&arg->conf);
+        free(arg->conf);
+        freeMap(&arg->url);
+        free(arg->url);
+        pthread_exit(NULL);
+        return NULL;
       }
     }else
       maxProgress=101;
@@ -561,9 +561,9 @@ extern "C" {
 				 * sizeof (char));
     if (tmp == NULL)
       {
-	setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
-	setMapInMaps(arg->conf,"lenv","code","InternalError");
-	return NULL;
+        setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
+        setMapInMaps(arg->conf,"lenv","code","InternalError");
+        return NULL;
       }
     size_t bRead;
     InternetReadFile (hInternet.ihandle[0],
@@ -596,50 +596,53 @@ extern "C" {
    * @return bool true in case of success, false in other cases
    */
   bool invokeBasicCallback(maps* conf,int state){
-    map* url=getMapFromMaps(conf,"subscriber","inProgressUri");
+    map* pmUrl=getMapFromMaps(conf,"subscriber","inProgressUri");
     if(state==SERVICE_SUCCEEDED)
-      url=getMapFromMaps(conf,"subscriber","successUri");
+      pmUrl=getMapFromMaps(conf,"subscriber","successUri");
     else
       if(state==SERVICE_FAILED)
-	url=getMapFromMaps(conf,"subscriber","failedUri");
-    if(url==NULL)
+        pmUrl=getMapFromMaps(conf,"subscriber","failedUri");
+    if(pmUrl==NULL)
       return false;
-    map* url0=createMap("url",url->value);
+    map* pmUrl0=createMap("url",pmUrl->value);
     map* sname=getMapFromMaps(conf,"lenv","identifier");
     if(sname!=NULL && isProhibited(conf,sname->value))
       return false;
     if(state<cStep)
       return true;
-    if(cStep!=state || isOngoing==0){
+    if(cStep!=state || isOngoing>=0){
+      maps* pmsaLocalConf=dupMaps(&conf);
       json_object *res=NULL;
       if(state==SERVICE_SUCCEEDED || state==SERVICE_FAILED){
-	maps* pmsTmp=getMaps(conf,"lenv");
-	setMapInMaps(conf,"lenv","no-write","true");
-	map* pmTmp=getMapFromMaps(conf,"lenv","usid");
-	if(pmTmp!=NULL){
-	  map* pmResponse=getMapFromMaps(conf,"lenv","jsonStr");
-	  res=parseJson(conf,pmResponse->value);
-	}
+        maps* pmsTmp=getMaps(pmsaLocalConf,"lenv");
+        setMapInMaps(pmsaLocalConf,"lenv","no-write","true");
+        map* pmTmp=getMapFromMaps(pmsaLocalConf,"lenv","usid");
+        if(pmTmp!=NULL){
+          map* pmResponse=getMapFromMaps(pmsaLocalConf,"lenv","jsonStr");
+          res=parseJson(pmsaLocalConf,pmResponse->value);
+        }
       }else
-	res=createStatus(conf,state);
+        res=createStatus(pmsaLocalConf,state);
       if(local_arguments==NULL)
-	local_arguments=(local_params**)malloc(sizeof(local_params*));
+        local_arguments=(local_params**)malloc(sizeof(local_params*));
       else
-	local_arguments=(local_params**)realloc(local_arguments,(nbThreads+1)*sizeof(local_params*));
+        local_arguments=(local_params**)realloc(local_arguments,(nbThreads+1)*sizeof(local_params*));
       local_arguments[nbThreads]=(local_params*)malloc(MAPS_SIZE+MAP_SIZE+sizeof(json_object*)+(2*sizeof(int)));	
-      local_arguments[nbThreads]->conf=dupMaps(&conf);
-      local_arguments[nbThreads]->url=url0;
+      local_arguments[nbThreads]->conf=pmsaLocalConf;
+      local_arguments[nbThreads]->url=pmUrl0;
       local_arguments[nbThreads]->res=res;
       local_arguments[nbThreads]->step=0;
       local_arguments[nbThreads]->state=state;
       cStep=state;
       if(myThreads==NULL)
-	myThreads=(pthread_t*)malloc((nbThreads+1)*sizeof(pthread_t));
+        myThreads=(pthread_t*)malloc((nbThreads+1)*sizeof(pthread_t));
       else
-	myThreads=(pthread_t*)realloc(myThreads,(nbThreads+1)*sizeof(pthread_t));
+        myThreads=(pthread_t*)realloc(myThreads,(nbThreads+1)*sizeof(pthread_t));
       if(pthread_create(&myThreads[nbThreads], NULL, _invokeBasicCallback, (void*)local_arguments[nbThreads])==-1){
-	setMapInMaps(conf,"lenv","message",_("Unable to create a new thread"));
-	return false;
+        setMapInMaps(conf,"lenv","message",_("Unable to create a new thread"));
+        freeMaps(&local_arguments[nbThreads]->conf);
+        free(local_arguments[nbThreads]->conf);
+        return false;
       }
       nbThreads++;
     }

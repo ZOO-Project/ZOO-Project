@@ -13,6 +13,8 @@
  git+https://github.com/EOEPCA/zoo-calrissian-runner.git@develop
  git+https://github.com/EOEPCA/zoo-argowf-runner.git@develop
  cheetah3
+ redis
+ CloudEvents
  psycopg2-binary
  pyyaml
  pyjwt

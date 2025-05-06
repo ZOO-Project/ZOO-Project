@@ -99,13 +99,20 @@ profiles:
   - name: argo
     patches:
       - op: replace
-        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs
-        value:
-          s3_bucket: results
-          region_name: us-east-1
-          aws_secret_access_key: minio-admin
-          aws_access_key_id: minio-admin
-          endpoint_url: http://minio.ns1.svc.cluster.local:9000
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.s3_bucket
+        value: results
+      - op: replace
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.region_name
+        value: us-east-1
+      - op: replace
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.aws_secret_access_key
+        value: minio-admin
+      - op: replace
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.aws_access_key_id
+        value: minio-admin
+      - op: replace
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.endpoint_url
+        value: http://minio.ns1.svc.cluster.local:9000
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/cookiecutter.templateUrl
         value: https://github.com/gfenoy/zoo-argo-wf-proc-service-template.git
