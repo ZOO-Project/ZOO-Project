@@ -73,13 +73,15 @@ jobs:
           echo "Waiting for pods to be ready..."
           sleep 5
         done
+        kubectl get pods -n eoap-zoo-project
         echo "Pods are ready!"
 
     - name: Build and run the OGC ETS for OGC API - Processes - Part 2
       run: |
+        sleep 30
         hostname
         hostip=$(host $(hostname) | awk {'print $4'})
-        netstat -na
+        netstat -na | grep "LISTEN "
         echo ${hostip}
         curl http://${hostip}:8080/ogc-api/
         sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
