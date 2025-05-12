@@ -73,6 +73,15 @@ jobs:
           echo "Waiting for pods to be ready..."
           sleep 5
         done
+        i=0
+        while [ "$i" == 0 ] ; do
+          if [ "$(kubectl get pods -n eoap-zoo-project | grep "1/1" | wc -l)" == "6" ] ; then
+            i = 1
+          else
+            echo "Waiting for pods to be ready..."
+            sleep 5
+          fi
+        done
         kubectl get pods -n eoap-zoo-project
         echo "Pods are ready!"
 
