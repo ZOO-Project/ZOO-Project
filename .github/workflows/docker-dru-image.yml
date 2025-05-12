@@ -65,6 +65,7 @@ jobs:
     - name: Run skaffold
       run: |
         sed "s#address: localhost#address: 0.0.0.0#g" -i skaffold.yaml
+        skaffold build
         skaffold dev &
 
     - name: Wait for the Application to be ready
