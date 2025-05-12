@@ -21,12 +21,63 @@ jobs:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
         restore-keys: ${{ runner.os }}-buildx-
+
     - name: docker login
       env:
         DOCKER_USER: ${{secrets.DOCKER_USER}}
         DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+
+    - name: Get IP Addresses
+      id: ip
+      uses: candidob/get-runner-ip@v1.0.0
+
+    - name: Install Minikube
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y apt-transport-https
+        sudo curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+    # Start Minikube
+    - name: Start Minikube
+      run: |
+        minikube start --driver=docker --memory=6500
+
+    - name: Wait for Minikube to be ready
+      run: |
+        while ! minikube status | grep -q "Running"; do
+          echo "Waiting for Minikube to be ready..."
+          sleep 5
+        done
+
+    # Set and export KUBECONFIG path
+    - name: Set KUBECONFIG path
+      run: |
+        cp ~/.kube/config ~/.kube/kubeconfig-t2-dev.yaml
+        echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
+        echo "CI_TEST_SKIP=1" >> $GITHUB_ENV
+
+    - name: Build and deploy on Minikube
+      uses: heypigeonhq/setup-skaffold@v1.0.0
+      run: |
+        sed "s#address: localhost#address: 0.0.0.0#g" -i skaffold.yaml
+        skaffold dev &
+
+    - name: Wait for the Application to be ready
+      run: |
+        while ! kubectl get pods -n eoap-zoo-project | grep -q "Running"; do
+          echo "Waiting for pods to be ready..."
+          sleep 5
+        done
+        echo "Pods are ready!"
+
+    - name: Build and run the OGC ETS for OGC API - Processes - Part 2
+      run: |
+        sed "s#localhost#${{ steps.ip.outputs.ip }}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        ./docker/ets-ogcapi-processes/build-ets-part2.sh
+
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
@@ -36,6 +87,7 @@ jobs:
         tags: ${{secrets.DOCKER_USER}}/zookernel:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
     - name: Build and push (official dru image)
       uses: docker/build-push-action@v4
       with:
@@ -45,6 +97,7 @@ jobs:
         tags: zooproject/zoo-project:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
     - name: Build and push (official eoepca image)
       uses: docker/build-push-action@v4
       with:
@@ -56,12 +109,14 @@ jobs:
         tags: zooproject/zoo-project:eoepca-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-eoepca-cache
         cache-to: type=local,dest=/tmp/.buildx-eoepca-cache-new,mode=max
+
     - name: Move cache
       run: |
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
         rm -rf /tmp/.buildx-eoepca-cache
         mv /tmp/.buildx-eoepca-cache-new /tmp/.buildx-eoepca-cache
+
     - name: Build and push latest
       uses: docker/build-push-action@v4
       with:
@@ -71,6 +126,7 @@ jobs:
         tags: ${{secrets.DOCKER_USER}}/zookernel:dru-latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
     - name: Build and push latest
       uses: docker/build-push-action@v4
       with:
