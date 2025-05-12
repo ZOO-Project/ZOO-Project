@@ -89,7 +89,6 @@ jobs:
 
     - name: Build and run the OGC ETS for OGC API - Processes - Part 2
       run: |
-        sleep 30
         hostname
         hostip=$(host $(hostname) | awk {'print $4'})
         netstat -na | grep "LISTEN "
@@ -97,6 +96,7 @@ jobs:
         curl http://${hostip}:8080/ogc-api/
         sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/build-ets-part2.sh
         ./docker/ets-ogcapi-processes/build-ets-part2.sh
 
     - name: Build and push
