@@ -66,6 +66,8 @@ jobs:
       run: |
         sed "s#address: localhost#address: 0.0.0.0#g" -i skaffold.yaml
         skaffold build
+        helm repo add localstack https://helm.localstack.cloud
+        helm repo add zoo-project https://zoo-project.github.io/charts/
         skaffold dev &
 
     - name: Wait for the Application to be ready
