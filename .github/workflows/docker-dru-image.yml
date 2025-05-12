@@ -85,6 +85,7 @@ jobs:
           fi
         done
         kubectl get pods -n eoap-zoo-project
+        sleep 10
         echo "Pods are ready!"
 
     - name: Build and run the OGC ETS for OGC API - Processes - Part 2
