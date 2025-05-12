@@ -29,10 +29,6 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
 
-    - name: Get IP Addresses
-      id: ip
-      uses: candidob/get-runner-ip@v1.0.0
-
     - name: Install Minikube
       run: |
         sudo apt-get update -y
@@ -80,7 +76,7 @@ jobs:
 
     - name: Build and run the OGC ETS for OGC API - Processes - Part 2
       run: |
-        sed "s#localhost#${{ steps.ip.outputs.ip }}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        sed "s#localhost#$(curl https://api.ipify.org)#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         ./docker/ets-ogcapi-processes/build-ets-part2.sh
 
