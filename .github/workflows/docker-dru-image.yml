@@ -81,6 +81,7 @@ jobs:
     - name: Build and run the OGC ETS for OGC API - Processes - Part 2
       run: |
         sed "s#localhost#${{ steps.ip.outputs.ip }}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         ./docker/ets-ogcapi-processes/build-ets-part2.sh
 
     - name: Build and push
