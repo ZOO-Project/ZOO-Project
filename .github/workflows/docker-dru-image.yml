@@ -59,8 +59,10 @@ jobs:
         echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
         echo "CI_TEST_SKIP=1" >> $GITHUB_ENV
 
-    - name: Build and deploy on Minikube
+    - name: Install skaffold
       uses: heypigeonhq/setup-skaffold@v1.0.0
+    
+    - name: Run skaffold
       run: |
         sed "s#address: localhost#address: 0.0.0.0#g" -i skaffold.yaml
         skaffold dev &
