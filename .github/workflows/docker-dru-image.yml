@@ -77,8 +77,8 @@ jobs:
     - name: Build and run the OGC ETS for OGC API - Processes - Part 2
       run: |
         hostname
-        host $(hostname)
-        sed "s#localhost#$(hostname)#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        hostip=$(host $(hostname) | awk {'print $3'})
+        sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         ./docker/ets-ogcapi-processes/build-ets-part2.sh
 
