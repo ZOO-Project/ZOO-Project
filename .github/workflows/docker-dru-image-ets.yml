@@ -1,0 +1,95 @@
+name: Skaffold and OGC ETS for OGC API - Processes - Part 2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: docker/setup-buildx-action@v2
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-buildx-
+
+    - name: Install Minikube
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y apt-transport-https
+        sudo curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+    # Start Minikube
+    - name: Start Minikube
+      run: |
+        minikube start --driver=docker --memory=6500
+
+    - name: Wait for Minikube to be ready
+      run: |
+        while ! minikube status | grep -q "Running"; do
+          echo "Waiting for Minikube to be ready..."
+          sleep 5
+        done
+
+    # Set and export KUBECONFIG path
+    - name: Set KUBECONFIG path
+      run: |
+        cp ~/.kube/config ~/.kube/kubeconfig-t2-dev.yaml
+        echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
+        echo "CI_TEST_SKIP=1" >> $GITHUB_ENV
+
+    - name: Install skaffold
+      uses: heypigeonhq/setup-skaffold@v1.0.0
+    
+    - name: Run skaffold
+      run: |
+        hostip=$(host $(hostname) | awk {'print $4'})
+        sed "s#address: localhost#address: ${hostip}#g" -i skaffold.yaml
+        skaffold build
+        helm repo add localstack https://helm.localstack.cloud
+        helm repo add zoo-project https://zoo-project.github.io/charts/
+        skaffold dev &
+
+    - name: Wait for the Application to be ready
+      run: |
+        while ! kubectl get pods -n eoap-zoo-project | grep -q "Running"; do
+          echo "Waiting for pods to be ready..."
+          sleep 5
+        done
+        i=0
+        while [ "$i" == 0 ] ; do
+          if [ "$(kubectl get pods -n eoap-zoo-project | grep "1/1" | wc -l)" == "6" ] ; then
+            echo "Pods are all in running state!"
+            i=1
+          else
+            echo "Waiting for pods to be ready..."
+            kubectl get pods -n eoap-zoo-project
+            sleep 10
+          fi
+        done
+        kubectl get pods -n eoap-zoo-project
+        sleep 10
+        echo "Pods are ready!"
+
+    - name: Build and run the OGC ETS for OGC API - Processes - Part 2
+      run: |
+        hostname
+        hostip=$(host $(hostname) | awk {'print $4'})
+        netstat -na | grep "LISTEN "
+        echo ${hostip}
+        curl http://${hostip}:8080/ogc-api/
+        sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
+        sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/build-ets-part2.sh
+        ./docker/ets-ogcapi-processes/build-ets-part2.sh
+
