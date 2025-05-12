@@ -35,6 +35,6 @@ cd ../..
 
 curl -L -o test.cwl https://github.com/Terradue/ogc-eo-application-package-hands-on/releases/download/1.5.0/app-water-bodies-cloud-native.1.5.0.cwl
 
-curl -X POST -H "Content-Type: application/cwl+yaml" --data-binary @test.cwl http://127.0.0.1:8080/anonymous/ogc-api/processes
+curl -X POST -H "Content-Type: application/cwl+yaml" --data-binary @test.cwl http://localhost:8080/anonymous/ogc-api/processes
 
 docker run -v "$(pwd):/tmp" zooproject/ets-ogcapi-processes10-part2:latest /tmp/docker/ets-ogcapi-processes/test-part2.sh
