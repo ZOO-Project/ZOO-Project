@@ -71,9 +71,9 @@ jobs:
     - name: Run DescribeProcess tests version 1.0.0
       run: docker exec zoo-project-zookernel-1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"DescribeProcess\" 0 0 > outputDP.html 2> log; lynx -dump outputDP.html"
     - name: Run ExecuteSync tests version 1.0.0
-      run: docker exec zoo-project-zookernel-1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; GEOSERVER=\"http://old-www.zoo-project.org:8082/geoserver/ows\" CPTESTING=\"http://localhost/cptesting/requests/\" ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"ExecuteSync\" 0 0 > outputES.html 2> log; lynx -dump outputES.html"
+      run: docker exec zoo-project-zookernel-1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; GEOSERVER=\"https://old-www.zoo-project.org:8082/geoserver/ows\" CPTESTING=\"http://localhost/cptesting/requests/\" ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"ExecuteSync\" 0 0 > outputES.html 2> log; lynx -dump outputES.html"
     - name: Run ExecuteAsync tests version 1.0.0
-      run: docker exec zoo-project-zookernel-1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; GEOSERVER=\"http://old-www.zoo-project.org:8082/geoserver/ows\" CPTESTING=\"http://localhost/cptesting/requests/\" ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"ExecuteAsync\" 0 0 > outputEA.html 2> log; lynx -dump outputEA.html"
+      run: docker exec zoo-project-zookernel-1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; GEOSERVER=\"https://old-www.zoo-project.org:8082/geoserver/ows\" CPTESTING=\"http://localhost/cptesting/requests/\" ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"ExecuteAsync\" 0 0 > outputEA.html 2> log; lynx -dump outputEA.html"
     - name: Run GetCapabilities tests version 2.0.0
       run: docker exec zoo-project-zookernel-1 /bin/bash -c "sed \"s:version = 1.0.0:version = 2.0.0:g\" /usr/lib/cgi-bin/main.cfg > /usr/lib/cgi-bin/main.cfg1 ; cp /usr/lib/cgi-bin/main.cfg1 /usr/lib/cgi-bin/main.cfg; cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 2.0 Buffer \"GetCapabilities\" 0 0 > outputGC1.html 2> log; lynx -dump outputGC1.html"
     - name: Run DescribeProcess tests version 2.0.0
