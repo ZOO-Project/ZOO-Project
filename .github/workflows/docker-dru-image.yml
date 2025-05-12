@@ -60,7 +60,8 @@ jobs:
     
     - name: Run skaffold
       run: |
-        sed "s#address: localhost#address: 0.0.0.0#g" -i skaffold.yaml
+        hostip=$(host $(hostname) | awk {'print $4'})
+        sed "s#address: localhost#address: ${hostip}#g" -i skaffold.yaml
         skaffold build
         helm repo add localstack https://helm.localstack.cloud
         helm repo add zoo-project https://zoo-project.github.io/charts/
@@ -78,6 +79,9 @@ jobs:
       run: |
         hostname
         hostip=$(host $(hostname) | awk {'print $4'})
+        netstat -na
+        echo ${hostip}
+        curl http://${hostip}:8080/ogc-api/
         sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         ./docker/ets-ogcapi-processes/build-ets-part2.sh
