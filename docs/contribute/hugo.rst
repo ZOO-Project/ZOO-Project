@@ -93,6 +93,7 @@ Steps to Use Custom Layouts
 
    - In your .md file (e.g., new-page.md), specify the custom layout in the front matter
 
+
    .. code:: yaml
 
       ---
