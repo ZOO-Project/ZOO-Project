@@ -90,7 +90,8 @@ Steps to Use Custom Layouts
 
 1. Create a layout file (e.g., new-page.html) in themes/<your-theme>/layouts/
 2. Edit the Markdown File:
-   - In your .md file (e.g., new-page.md), specify the custom layout in the front matter:
+
+   In your .md file (e.g., new-page.md), specify the custom layout in the front matter
 
    .. code:: yaml
 
@@ -104,6 +105,7 @@ Add Custom CSS/JS
 
 1. Add files in themes/<your-theme>/static/
 2. Reference them in:
+
    - `themes/<theme_name>/layouts/partials/head.html`
    - `themes/<theme_name>/layouts/_default/baseof.html`
 
