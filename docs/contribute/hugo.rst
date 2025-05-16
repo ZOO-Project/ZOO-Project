@@ -16,6 +16,14 @@ Execute the following commands in the terminal:
    git clone https://github.com/ZOO-Project/website.git
    cd website
 
+.. note::
+
+   Changes made to the "Examples" page in the ZOO-Project/website repository  
+   (`https://github.com/ZOO-Project/website <https://github.com/ZOO-Project/website>`_)  
+   must also be reflected in the examples repository  
+   (`https://github.com/ZOO-Project/examples <https://github.com/ZOO-Project/examples>`_)  
+   to ensure consistency between both sources.
+
 
 Installing Hugo
 ---------------
