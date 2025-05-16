@@ -233,15 +233,18 @@ COPY docker/dru/requirements.txt /tmp/
 # (branch: feature/access-log-status-failed)
 RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install --upgrade pip && \
+    pip install hatch && \
     # Using the latest version of pycalrissian with the fix for the RBAC
     cd /tmp && \
-    git clone -b feature/v1subject-fix https://github.com/Terradue/pycalrissian.git && \
+    git clone -b develop https://github.com/Terradue/pycalrissian.git && \
     cd pycalrissian && \
-    python3 setup.py install && \
+    hatch build && \
+    find . -name "*.whl" && \
+    ls dist && \
+    pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
     cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
-    #pip install -i https://test.pypi.org/simple/ zoo-argowf-runner && \
     git clone https://github.com/ZOO-Project/zoo-wes-runner.git && \
     cd zoo-wes-runner && \
     poetry build && \
@@ -254,7 +257,6 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd .. && \
     apt-get -qqy remove python3-setuptools python3-wheel python3-urllib3 python3-urllib3 python3-idna python3-certifi && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
-    #ln -s /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/libcrypto.so.3 /usr/lib/ && \
     echo /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
     ldconfig && \
     if [ -z "$CONDA_ENV_FILE" ] ; then \
