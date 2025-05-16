@@ -239,8 +239,6 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     git clone -b develop https://github.com/Terradue/pycalrissian.git && \
     cd pycalrissian && \
     hatch build && \
-    find . -name "*.whl" && \
-    ls dist && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
     cd .. && \
     pip install -r /tmp/requirements.txt && \
