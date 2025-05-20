@@ -47,7 +47,7 @@ The platform consists of the following main components:
 Open Source and Community
 -------------------------
 
-ZOO-Project is released under the `MIT/X-11 license <http://opensource.org/licenses/MITlicense>`__ and maintained by a vibrant international community called the **ZOO-Tribe**.
+ZOO-Project is released under the `MIT/X-11 license <http://opensource.org/licenses/MITlicense>`__ and maintained by a vibrant international community called the `ZOO-Tribe <http://zoo-project.org/about/tribe/>`__.
 
 It is an official project of the `Open Source Geospatial Foundation (OSGeo) <http://osgeo.org>`__, reflecting its commitment to open standards and collaboration.
 
