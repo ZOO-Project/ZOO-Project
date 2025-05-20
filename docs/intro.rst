@@ -8,6 +8,7 @@ What is ZOO-Project ?
 ---------------------
 
 `ZOO-Project <http://zoo-project.org>`_ is an open source implementation of the **OGC WPS standards**:  
+
 - `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps>`_  
 - `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps>`_  
 - `OGC API - Processes - Part 1: Core <https://docs.ogc.org/is/18-062r2/18-062r2.html>`_
@@ -37,10 +38,10 @@ ZOO-Project Components
 
 The platform consists of the following main components:
 
-* **:ref:`kernel_index`** — The WPS-compliant core engine written in C. Manages service execution and chaining.
-* **:ref:`services_index`** — A growing suite of ready-to-use services built on robust open-source libraries (GDAL, GRASS, etc.).
-* **:ref:`api-index`** — A JavaScript server-side API to manage workflows and service orchestration.
-* **:ref:`client-index`** — A JavaScript client-side library for sending WPS requests from web apps.
+* :ref:`kernel_index` — The WPS-compliant core engine written in C. Manages service execution and chaining.
+* :ref:`services_index`: — A growing suite of ready-to-use services built on robust open-source libraries (GDAL, GRASS, etc.).
+* :ref:`api-index`: — A JavaScript server-side API to manage workflows and service orchestration.
+* :ref:`client-index`: — A JavaScript client-side library for sending WPS requests from web apps.
 
 
 Open Source and Community
@@ -59,6 +60,7 @@ How to Contribute
 ------------------
 
 Want to get involved? You can contribute to:
+
 - Source code
 - Documentation
 - Translations
