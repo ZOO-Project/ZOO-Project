@@ -3,6 +3,10 @@ Introduction
 
 Welcome to the official documentation of the `ZOO-Project <http://zoo-project.org>`_, a powerful open source platform for creating and executing **OGC-compliant Web Processing Services (WPS)**.
 
+.. note::
+
+   This documentation is currently under review. Some content may be outdated, including support for certain platforms like Windows which is no longer maintained. Pages with obsolete material will be marked accordingly.
+
 
 What is ZOO-Project ?
 ---------------------
