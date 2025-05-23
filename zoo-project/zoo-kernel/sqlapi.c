@@ -458,7 +458,7 @@ int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
     int iCreated=0;
     char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+
 				  strlen(pmUserName->value)+
-				  34+1)*sizeof(char));
+				  36+1)*sizeof(char));
     sprintf(pcaSqlQuery,"SELECT id from %s.users WHERE name='%s'",pmSchema->value,pmUserName->value);
     if( iZooDsNb == 0 ){
       init_sql(pmsConf);
