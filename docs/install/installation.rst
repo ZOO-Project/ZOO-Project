@@ -11,8 +11,8 @@ To build and install ZOO-Project on your Web Server follow these 4 steps:
     :backlinks: top
 
 
-Step 1: Build the cgic Library
-------------------------------
+Build the cgic Library
+----------------------
 
 Navigate to the `thirds/cgic206` directory and run:
 
@@ -26,8 +26,8 @@ The cgic library originaly comes from `http://www.boutell.com/cgic <http://www.b
 
    If you're building on a 64-bit platform and your fcgi library is not in ``/usr/lib64``, you may need to manually edit the ``Makefile``.
 
-Step 2: Install the ZOO-Kernel
-------------------
+Install the ZOO-Kernel
+----------------------
 
 
 For a quick installation
@@ -88,8 +88,8 @@ To place your ``main.cfg`` in a different directory (e.g., ``/etc/zoo-project``)
 
 .. _zoo_install_db_backend:
 
-Step 3: Use a Database Backend (Optional)
-*****************************************
+Use a Database Backend (Optional)
+*********************************
 
 To enable shared state across multiple ZOO-Kernel instances:
 
@@ -114,8 +114,8 @@ If using a custom schema name, uncomment lines 33 and 34 in `schema.sql <http://
 .. _zoo_create_metadb:
 
 
-Step 4: Metadata Database (Optional)
-************************************
+Metadata Database (Optional)
+****************************
 
 
 To enable metadata storage in PostgreSQL:
