@@ -426,7 +426,7 @@ void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
         pcaTmp,pmSchema->value,pmUserName->value);
       free(pcaTmp);
     }else{
-      *pcaClauseFinal=(char*)malloc((strlen(pmSchema->value)+strlen(pmUserName->value)+68)*sizeof(char));
+      *pcaClauseFinal=(char*)malloc((strlen(pmSchema->value)+strlen(pmUserName->value)+60+1)*sizeof(char));
       sprintf(*pcaClauseFinal,"(user_id=0 or user_id=(SELECT id FROM %s.users WHERE name='%s'))",
         pmSchema->value,pmUserName->value);
     }
@@ -436,7 +436,7 @@ void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
       *pcaClauseFinal=(char*)realloc(*pcaClauseFinal,
                   (strlen(pcaTmp)+15)*sizeof(char));
       sprintf(*pcaClauseFinal,"%s AND user_id=0",
-        pcaTmp);
+         pcaTmp);
       free(pcaTmp);
     }else{
       *pcaClauseFinal=(char*)malloc(10*sizeof(char));
@@ -570,7 +570,7 @@ void recordRequestResponse(maps* pmsConf,const char* pcTableName,const char* con
   int iZooDsNb=getCurrentId(pmsConf);
   map *pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
-  char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+len+strlen(pmUsid->value)+strlen(pcTableName)+49+1)*sizeof(char));
+  char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+len+strlen(pmUsid->value)+strlen(pcTableName)+48+1)*sizeof(char));
   sprintf(pcaSqlQuery,"INSERT INTO %s.%s (content,uuid) VALUES ($$%s$$,$$%s$$);",pmSchema->value,pcTableName,content,pmUsid->value);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   free(pcaSqlQuery);
@@ -714,7 +714,7 @@ char* _getStatusField(maps* pmsConf,char* pcPid,const char* field){
     sprintf(pcaSqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE display_date_rfc3339(%s) END from %s.services where uuid=$$%s$$;",field,field,pmSchema->value,pcPid);
   }else{
     if(strstr(field,"itype")!=NULL){
-      pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+(2*strlen(field))+strlen(field)+137+1)*sizeof(char));
+      pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+(2*strlen(field))+strlen(field)+136+1)*sizeof(char));
       sprintf(pcaSqlQuery,"select CASE WHEN %s is null  THEN 'unknown' ELSE CASE WHEN %s = 'json' THEN 'process' ELSE 'unknown' END END from %s.services where uuid=$$%s$$;",field,field,pmSchema->value,pcPid);
     }else{
       pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+strlen(field)+strlen(field)+83+1)*sizeof(char));

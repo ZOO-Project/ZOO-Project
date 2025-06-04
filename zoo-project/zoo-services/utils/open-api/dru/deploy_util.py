@@ -669,7 +669,7 @@ class ProcessInput:
                 )
 
             self.type = type_name
-            self.min_occurs = 0 if ((isinstance(input.type, list) and input.type[0]=='null')) else 1
+            self.min_occurs = 0 if (input.default is not None or (isinstance(input.type, list) and input.type[0]=='null')) else 1
             # How should we set the maximum length of an array for instance?
             # We currently set the default maximum to 1024
             self.max_occurs = 1 if not(current_type_is_array) else 1024
