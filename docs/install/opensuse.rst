@@ -6,7 +6,7 @@ Install on OpenSUSE
 ZOO-Project's :ref:`kernel_index` can be installed on recent OpenSUSE distributions either via pre-built packages from the OpenSUSE Build Service (OBS) or by compiling from source.
 
 .. note::
-   These instructions are updated for OpenSUSE Leap 15.4+ or Tumbleweed. Older instructions for 11.x releases are obsolete.
+   These instructions are updated for OpenSUSE Leap 15.4+ or Tumbleweed. Older instructions for 11.4 releases are obsolete.
 
 Stable release
 ---------------
