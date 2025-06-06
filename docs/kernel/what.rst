@@ -21,9 +21,9 @@ Simple
 ZOO-Kernel is based on straightforward principles and aims to simplify the creation of new services. It does this by using a unified data structure across all supported programming languages.
 
 ZOO-Kernel handles incoming WPS requests by parsing them and producing appropriate WPS responses. For *Execute* requests, it:
-1. Stores request information in a basic key-value pair (KVP) structure.
-2. Dynamically loads the appropriate Service Provider defined in the `.zcfg` file.
-3. Calls the corresponding function of the service, passing **three arguments**.
+  1. Stores request information in a basic key-value pair (KVP) structure.
+  2. Dynamically loads the appropriate Service Provider defined in the `.zcfg` file.
+  3. Calls the corresponding function of the service, passing **three arguments**.
 
 After the function executes, ZOO-Kernel checks the return value to determine if the service ran successfully. If successful, it parses the third argument (containing the result) and generates the response in the required format.
 
