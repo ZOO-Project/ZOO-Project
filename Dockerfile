@@ -40,7 +40,8 @@ RUN set -ex \
     && apt-get install -y --no-install-recommends $BUILD_DEPS software-properties-common gnupg wget curl \
     \
     # Añadir el repositorio de UbuntuGIS
-    && add-apt-repository ppa:ubuntugis/ppa \
+    # && add-apt-repository ppa:ubuntugis/ppa \
+    # TODO (cesarbenjamindotnet): remove this line, seems not needed anymore \
     \
     # Crear directorio para claves modernas y deshabilitar IPv6 en GPG
     && mkdir -p /etc/apt/keyrings \
