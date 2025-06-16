@@ -77,8 +77,16 @@ function loadRequest(){
                         console.log(System["JSON_STR"]["inputs"][i]["schema"]["type"]);
                         cInput=$(this).val();
                     }else{
-                        console.log($(this).attr("name"));
-                        console.log("ok BB");
+                        var keys=[
+                                "_minx]",
+                                "_miny]",
+                                "_maxx]",
+                                "_maxy]"
+                        ];
+                        for(var iCnt=0;iCnt<4;iCnt++){
+                            if($("input[name="+$(this).attr("name")+keys[iCnt]).val()=="")
+                                    return;
+                        }
                         cInput["crs"]=$(this).val();
                         cInput["bbox"]=[
                             parseFloat($("input[name="+$(this).attr("name")+"_minx]").val()),
@@ -149,25 +157,25 @@ function loadRequest(){
         if(!socket && executionMode!="sync")
             socket = new WebSocket($('input[name="oapi_wsUrl"]').val());
         else
-	    if(executionMode=="sync"){
-		var localHeaders={"Prefer": "return="+($("select[name='main_value_format']").val()=="raw"?"minimal":"representation")};
-		$.ajax({
-		    headers: localHeaders,
+            if(executionMode=="sync"){
+                var localHeaders={"Prefer": "return="+($("select[name='main_value_format']").val()=="raw"?"minimal":"representation")};
+                $.ajax({
+                    headers: localHeaders,
                     contentType: "application/json",
-		    data: $("textarea").val(),
+                    data: $("textarea").val(),
                     type: "POST",
                     url: $('input[name="oapi_jobUrl"]').val(),
-		    success: function (msg) {
-			console.log(msg);
-			var cObj=msg;
-			$('#result').html(js_beautify(JSON.stringify(msg)));
+                    success: function (msg) {
+                        console.log(msg);
+                        var cObj=msg;
+                        $('#result').html(js_beautify(JSON.stringify(msg)));
+                                },
+                                error: function(){
+                        console.log(arguments);
+                        $('#result').html(js_beautify(JSON.stringify(arguments[0].responseJSON)));
                     },
-                    error: function(){
-			console.log(arguments);
-			$('#result').html(js_beautify(JSON.stringify(arguments[0].responseJSON)));
-                    },
-		});
-	    }
+                });
+            }
         if(executionMode=="sync"){
             return;
         }
@@ -177,7 +185,7 @@ function loadRequest(){
             socket.send("SUB "+$('input[name="oapi_reqID"]').val());
         };
         socket.onmessage = function(event) {
-            console.log('MESSAGE: ' + event.data);
+            //console.log('MESSAGE: ' + event.data);
             if(event.data=="1"){
                 var localHeaders={};
                 if(executionMode!="sync"){
@@ -206,12 +214,12 @@ function loadRequest(){
                 $("#progress_details").show();
                 var cObj=JSON.parse(event.data);
                 if(cObj["jobID"]){
-                    console.log('MESSAGE: ' + event.data);
+                    //console.log('MESSAGE: ' + event.data);
                     $("#prgress_description").html(cObj["jobID"]+": "+cObj["message"]);
                     $(".progress-bar").attr("aria-valuenow",cObj["progress"]);
                     $(".progress-bar").css("width",cObj["progress"]+"%");
                 }else{
-                    console.log('MESSAGE (to close): ' + event.data);
+                    //console.log('MESSAGE (to close): ' + event.data);
                     $("#progress_details").hide();
                     if(cObj)
                         $('#result').html(js_beautify(JSON.stringify(cObj)));
