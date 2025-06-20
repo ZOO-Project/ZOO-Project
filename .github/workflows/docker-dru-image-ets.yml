@@ -85,9 +85,10 @@ jobs:
       run: |
         hostname
         hostip=$(host $(hostname) | awk {'print $4'})
-        netstat -na | grep "LISTEN "
+        hostport=$(netstat -na | grep "LISTEN " | grep 8080 | awk {'print $4'})
         echo ${hostip}
-        curl http://${hostip}:8080/ogc-api/
+        echo ${hostport}
+        curl http://${hostport}/ogc-api/
         sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         cat ./docker/ets-ogcapi-processes/test-run-ogcapi-processes-2.xml
         sed "s#localhost#${hostip}#g" -i ./docker/ets-ogcapi-processes/build-ets-part2.sh
