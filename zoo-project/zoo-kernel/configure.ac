@@ -553,22 +553,31 @@ AC_SUBST([GEOS_LDFLAGS])
 # ===========================================================================
 
 AC_ARG_WITH([cgal],
-        [AS_HELP_STRING([--with-cgal=PATH], [Specifies an alternative location for CGAL setup])],
-        [CGALPATH="$withval"], [CGALPATH="/usr"])
-
+    [AS_HELP_STRING([--with-cgal=PATH], [Specifies an alternative location for CGAL setup])],
+    [CGALPATH="$withval"], [CGALPATH="/usr"])
 
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
 CGAL_CPPFLAGS="-I$CGALPATH/include"
 CPPFLAGS="$CGAL_CPPFLAGS"
+
+# Force C++ Lang
+AC_LANG_PUSH([C++])
+
+# Check headers file
 AC_CHECK_HEADERS([CGAL/Delaunay_triangulation_2.h],
          [], [AC_MSG_WARN([could not find headers include related to libCGAL])])
 
+# Return to previous Lang
+AC_LANG_POP([C++])
+
+# Restore CPPFLAGS
+CPPFLAGS="$CPPFLAGS_SAVE"
+
 # Extract the linker and include flags
 CGAL_LDFLAGS="-L$CGALPATH/lib"
-CGAL_CPPFLAGS="-I$CGALPATH/include"
 
-
+# Sustituciones para el Makefile
 AC_SUBST([CGAL_CPPFLAGS])
 AC_SUBST([CGAL_LDFLAGS])
 #============================================================================
