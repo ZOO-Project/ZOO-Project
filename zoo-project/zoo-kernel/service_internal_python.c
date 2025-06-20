@@ -942,7 +942,7 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
  * @return a new Python string containing the translated value
  * @see _ss
  */
-#include "frameobject.h"
+#include <frameobject.h>
 PyObject*
 PythonPrintDebugMessage(PyObject* self, PyObject* args)
 {
@@ -951,8 +951,13 @@ PythonPrintDebugMessage(PyObject* self, PyObject* args)
     fprintf(stderr,"Incorrect arguments to debug, only strings are supported\n");
   }
   PyFrameObject* poFrame=PyEval_GetFrame();
-  char const* pccModule = _PyUnicode_AsString(poFrame->f_code->co_filename);
-  char const* pccFunction = _PyUnicode_AsString(poFrame->f_code->co_name);
+  // char const* pccModule = _PyUnicode_AsString(poFrame->f_code->co_filename);
+  // char const* pccFunction = _PyUnicode_AsString(poFrame->f_code->co_name);
+  // For python 3.11 and later, we can use the new public API
+  PyCodeObject* code = PyFrame_GetCode(poFrame); // nueva función pública
+  const char* pccModule = PyUnicode_AsUTF8(code->co_filename);
+  const char* pccFunction = PyUnicode_AsUTF8(code->co_name);
+  Py_DECREF(code);
   int iLine=PyFrame_GetLineNumber(poFrame);
   _ZOO_DEBUG(str,pccModule,pccFunction,iLine);
   Py_RETURN_NONE;
