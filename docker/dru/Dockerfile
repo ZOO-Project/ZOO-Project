@@ -130,6 +130,7 @@ apt-get install -qqy  --no-install-recommends software-properties-common\
 	pip \
 	#valgrind \
 	libapache2-mod-fcgid\
+    libapache2-mod-auth-openidc \
 	wget \
 	pkg-config\
     ${BUILD_DEPS}\
@@ -178,7 +179,7 @@ RUN cd ./zoo-project/zoo-kernel \
      && sed -i "s%../tmpPathRelativeToServerAdress/%http://localhost/temp/%g" /usr/lib/cgi-bin/main.cfg \
      && echo "\n[env]\nPYTHONPATH=/usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/python${PY_VER}/site-packages"\
           >> /usr/lib/cgi-bin/main.cfg \
-     && a2enmod cgi rewrite \
+     && a2enmod cgi rewrite headers auth_openidc proxy proxy_http \
      && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
      && cd /opt/ZOO-Project \
      && cp ./docker/.htaccess /var/www/html/.htaccess \
@@ -214,7 +215,7 @@ RUN git clone --depth 1 https://github.com/swagger-api/swagger-ui.git \
     && sed "s=https://petstore.swagger.io/v2/swagger.json=http://localhost:8080/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
     && mv /var/www/html/swagger-ui/dist /var/www/html/swagger-ui/oapip
 
-COPY docker/default.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/dru/default.conf /etc/apache2/sites-available/000-default.conf
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.py /usr/lib/cgi-bin
@@ -243,12 +244,6 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
-    git clone https://github.com/ZOO-Project/zoo-wes-runner.git && \
-    cd zoo-wes-runner && \
-    poetry build && \
-    ls dist && \
-    pip install dist/zoo_wes_runner-0.1.0-py3-none-any.whl && \
-    cd .. && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \

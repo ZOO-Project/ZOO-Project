@@ -11,7 +11,8 @@
  kubernetes
  coverage
  git+https://github.com/EOEPCA/zoo-calrissian-runner.git@develop
- git+https://github.com/EOEPCA/zoo-argowf-runner.git@develop
+ git+https://github.com/ZOO-Project/zoo-argowf-runner.git@develop
+ git+https://github.com/ZOO-Project/zoo-wes-runner.git@main
  cheetah3
  redis
  CloudEvents
@@ -26,8 +27,8 @@
  cwl-upgrader==1.2.11
  cwl-utils==0.14
  hera
- poetry
  httpx
- #setuptools>=65.5.1
+ h11>=0.16.0
+ #setuptools>=75.3.2
  #urllib>=1.26.5
 
