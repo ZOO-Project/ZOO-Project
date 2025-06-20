@@ -17,12 +17,13 @@ ARG RUN_DEPS=" \
     curl \
     \
     saga \
-    libsaga-api-7.3.0 \
-    libotb \
-    otb-bin \
+    libsaga-api9 \
+    # libotb \
+    # otb-bin \
     \
     libpq5 \
-    libpython3.10 \
+    libpython3 \
+    libpython3-dev \
     libxslt1.1 \
     gdal-bin \
     libcgal-dev \
@@ -32,8 +33,8 @@ ARG RUN_DEPS=" \
     python3 \
     r-base \
     python3-pip \
-    libnode93 \
-    libhdf5-openmpi-103-1 libnetcdf-c++4 libvtk7.1p libvtkgdcm3.0 libvtkgdcm-cil libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-java libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
+    libhdf5-openmpi-103-1 libnetcdf-c++4-dev libvtk9-dev libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
+    libffi8 libffi-dev \
 "
 RUN set -ex \
     && apt-get update \
@@ -44,32 +45,23 @@ RUN set -ex \
     # TODO (cesarbenjamindotnet): remove this line, seems not needed anymore \
     \
     # Crear directorio para claves modernas y deshabilitar IPv6 en GPG
-    && mkdir -p /etc/apt/keyrings \
-    && mkdir -p ~/.gnupg \
-    && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf \
+    # niji && mkdir -p /etc/apt/keyrings \
+    # niji && mkdir -p ~/.gnupg \
+    # niji && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf \
     \
     # Añadir clave pública de CRAN
-    && curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-       | gpg --dearmor -o /etc/apt/keyrings/cran-archive-keyring.gpg \
+    # niji && curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
+    # niji   | gpg --dearmor -o /etc/apt/keyrings/cran-archive-keyring.gpg \
     \
     # Añadir el repositorio de CRAN
-    && echo "deb [signed-by=/etc/apt/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME")-cran40/" \
-       | tee /etc/apt/sources.list.d/cran.list \
+    # niji && echo "deb [signed-by=/etc/apt/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME")-cran40/" \
+    # niji   | tee /etc/apt/sources.list.d/cran.list \
     \
     # Actualizar repositorios
     && apt-get update \
-    && add-apt-repository ppa:mmomtchev/libnode \
+    # && add-apt-repository ppa:mmomtchev/libnode \
     \
     && apt-get install -y $RUN_DEPS \
-    \
-    && curl -LO http://archive.ubuntu.com/ubuntu/pool/main/libf/libffi/libffi6_3.2.1-8_amd64.deb \
-    && dpkg -i libffi6_3.2.1-8_amd64.deb \
-    && wget http://launchpadlibrarian.net/309343863/libmozjs185-1.0_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && wget http://launchpadlibrarian.net/309343864/libmozjs185-dev_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && dpkg --force-depends -i libmozjs185-1.0_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && dpkg --force-depends -i libmozjs185-dev_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && apt -y --fix-broken install \
-    && rm libmozjs185*.deb libffi6*.deb \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -89,9 +81,9 @@ ARG BUILD_DEPS=" \
     gettext \
     \
     # Comment lines bellow if nor OTB nor SAGA \
-    libotb-dev \
-    otb-qgis \
-    otb-bin-qt \
+    # libotb-dev \
+    # otb-qgis \
+    # otb-bin-qt \
     qttools5-dev \
     qttools5-dev-tools \
     qtbase5-dev \
@@ -104,8 +96,31 @@ ARG BUILD_DEPS=" \
     git \
     libfcgi-dev \
     libfcgi-bin \
+    libpq-dev \
+    libproj-dev \
+    libcurl4-openssl-dev \
+    zlib1g-dev \
+    libexpat1-dev \
+    libgeos-dev \
+    libqt5svg5-dev \ 
     libgdal-dev \
-    libwxgtk3.0-gtk3-dev \
+    python3.12 \ 
+    python3.12-dev \
+    libncurses-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libffi-dev \
+    liblzma-dev \
+    uuid-dev \
+    libgdbm-dev \ 
+    libnss3-dev \
+    xz-utils \
+    tk-dev \
+    ca-certificates \
+    python3-pip \ 
+    gdal-bin \ 
+    libwxgtk3.2-dev \
     libjson-c-dev \
     libssh2-1-dev \
     libssl-dev \
@@ -118,22 +133,61 @@ ARG BUILD_DEPS=" \
     librabbitmq-dev \
     libkrb5-dev \
     nlohmann-json3-dev \
-    libnode-dev \
-    node-addon-api \
-    nodejs \
     libaprutil1-dev \
     libxslt-dev \
     libopengl-dev \
+    nodejs node-addon-api \
 "
 WORKDIR /zoo-project
 COPY . .
 
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+ENV PATH="$OTB_INSTALL_DIR/bin:$PATH"
+ENV OTB_APPLICATION_PATH="$OTB_INSTALL_DIR/lib/otb/applications"
+
+# Añadir también /usr/local/lib al runtime
+ENV LD_LIBRARY_PATH="/usr/local/lib:$OTB_INSTALL_DIR/lib:$LD_LIBRARY_PATH"
+
+# Flags para compilación con Python 3.12 (instalado manualmente en /usr/local)
+ENV LDFLAGS="-L/usr/local/lib -lpython3.12"
+ENV CFLAGS="-I/usr/local/include/python3.12"
+ENV CPPFLAGS="-I/usr/local/include/python3.12"
+# ENV CPPFLAGS="-I/usr/local/include/python3.12 -I/usr/include/node"
+ENV CXXFLAGS="-I/usr/include/node/node-addon-api"
+
 RUN set -ex \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    # && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
-    \
+    # && apt-get remove -y node-acorn || true \
+    # && apt-get install -y --no-install-recommends libnode-dev \
+    # && npm install -g node-gyp node-addon-api \
+    # && npm install -g node-gyp node-addon-api \
+    && cd /usr/src \
+    && curl -O https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz \
+    && tar -xf Python-3.12.3.tgz \
+    && cd Python-3.12.3 \
+    && ./configure --enable-optimizations --enable-shared --prefix=/usr/local --with-system-expat \
+    && make -j$(nproc) \
+    && make altinstall \
+    && cd /usr/src \
+    # && curl -fsSL https://nodejs.org/dist/v22.16.0/node-v22.16.0.tar.gz -o node.tar.gz \
+    # && tar -xzf node.tar.gz \
+    # && cd node-v22.16.0 \
+    # && ./configure --prefix=/usr/local --shared --shared-zlib --shared-openssl --shared-nghttp2 --shared-brotli \
+    # && make -j$(nproc) \
+    # && make install \
+    # && ln -s /usr/local/lib/libnode.so.127 /usr/local/lib/libnode.so \
+    # && npm install -g node-gyp node-addon-api \
+    # && cd /usr/src && rm -rf node* \
+    # && ldconfig \
+    && cd /usr/src \
+    && wget https://www.orfeo-toolbox.org/packages/OTB-9.1.0-Linux.tar.gz \
+    && tar xvf OTB-9.1.0-Linux.tar.gz --one-top-level=/opt/otb-9.1.1 \
+    && rm OTB-9.1.0-Linux.tar.gz \ 
+    && bash -c "source /opt/otb-9.1.1/otbenv.profile && sh /opt/otb-9.1.1/recompile_bindings.sh" \    
     && make -C ./thirds/cgic206 libcgic.a \
-    \
+
+RUN set -ex \
     && cd ./zoo-project/zoo-kernel \
     #&& git clone  --depth=1 https://github.com/json-c/json-c.git \
     #&& mkdir json-c-build \
@@ -145,12 +199,13 @@ RUN set -ex \
     && autoconf \
     && autoreconf --install \
     # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
-              --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
+    && ./configure --with-rabbitmq=yes --with-python=/usr/local --with-pyvers=3.12 \
+              --with-nodejs=$NODEJS_HOME --with-mapserver=/usr --with-ms-version=8  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=/usr --with-itk=/usr --with-otb-version=8.1 \
-              --with-itk-version=4.13 --with-saga=/usr \
-              --with-saga-version=7.3 --with-wx-config=/usr/bin/wx-config \
+              --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
+              --with-itk-version=5.2 --with-saga=/usr \
+              --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
+              --disable-mozjs \
     && make -j4 \
     && make install \
     \
@@ -259,7 +314,6 @@ ARG BUILD_DEPS=" \
     libxslt1-dev \
     libcgal-dev \
     libcgal-qt5-dev \
-    libnode-dev \
     node-addon-api \
 "
 WORKDIR /zoo-project
@@ -352,7 +406,6 @@ ARG RUN_DEPS=" \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
-    libnode93 \
 "
 ARG BUILD_DEPS=" \
     make \
