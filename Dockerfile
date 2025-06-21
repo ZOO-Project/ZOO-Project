@@ -22,7 +22,6 @@ ARG RUN_DEPS=" \
     # otb-bin \
     \
     libpq5 \
-    libpython3 \
     libpython3-dev \
     libxslt1.1 \
     gdal-bin \
@@ -102,9 +101,9 @@ ARG BUILD_DEPS=" \
     zlib1g-dev \
     libexpat1-dev \
     libgeos-dev \
-    libqt5svg5-dev \ 
+    libqt5svg5-dev \
     libgdal-dev \
-    python3.12 \ 
+    python3.12 \
     python3.12-dev \
     libncurses-dev \
     libbz2-dev \
@@ -113,13 +112,13 @@ ARG BUILD_DEPS=" \
     libffi-dev \
     liblzma-dev \
     uuid-dev \
-    libgdbm-dev \ 
+    libgdbm-dev \
     libnss3-dev \
     xz-utils \
     tk-dev \
     ca-certificates \
-    python3-pip \ 
-    gdal-bin \ 
+    python3-pip \
+    gdal-bin \
     libwxgtk3.2-dev \
     libjson-c-dev \
     libssh2-1-dev \
@@ -136,7 +135,7 @@ ARG BUILD_DEPS=" \
     libaprutil1-dev \
     libxslt-dev \
     libopengl-dev \
-    nodejs node-addon-api \
+    nodejs
 "
 WORKDIR /zoo-project
 COPY . .
