@@ -28,7 +28,7 @@
 #pragma once
 #include "service.h"
 #include "service_internal.h"
-#include <node-addon-api/napi.h>
+#include <napi.h>
 #include <node_api.h>
 
 #ifdef __cplusplus
