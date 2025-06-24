@@ -117,6 +117,9 @@ ARG BUILD_DEPS=" \
     libopengl-dev \
     libhdf5-openmpi-103-1 \
     libnetcdf-c++4-dev \
+    libboost-filesystem-dev \
+    libboost-dev \
+    libboost-system-dev \
     libvtk9-dev libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
 "
 WORKDIR /zoo-project
@@ -125,18 +128,19 @@ COPY . .
 # ENV OTBPATH="/opt/otb-9.1.1"
 # ENV OTB_CPPFLAGS="-I$OTBPATH/
 
-ENV OTB_INSTALL_DIR="/opt/otb-9.1.1"
 ENV CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH"
 ENV CXXFLAGS="$CPPFLAGS"
 ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
 
-SHELL ["/bin/bash", "-c"]
+ENV LC_NUMERIC=C
+ENV GDAL_DATA=/opt/otb-9.1.1/share/gdal
+ENV PROJ_LIB=/opt/otb-9.1.1/share/proj
+ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
 
 RUN set -ex \
-    && export OTB_INSTALL_DIR="/opt/otb-9.1.1" \
-    && export CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH" \
-    && export CXXFLAGS="$CPPFLAGS" \
-    && export LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1-bin.deb \
     && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
@@ -145,24 +149,16 @@ RUN set -ex \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode-dev.deb \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
     && dpkg -i /tmp/otb/*.deb \
-    && dpkg -i /tmp/node/*.deb \
-    \
-    && sed -i 's|sh /opt/otb-9.1.1/tools/post_install.sh|. /opt/otb-9.1.1/tools/post_install.sh|' /opt/otb-9.1.1/tools/post_install.sh \
-    && sed -i 's|  source |  \. |g' /opt/otb-9.1.1/otbenv.profile \
-    && cat /opt/otb-9.1.1/otbenv.profile \
-    && . /opt/otb-9.1.1/otbenv.profile \
-    && echo "✔️ OTB environment loaded during build" \
-    && printf '#!/bin/bash\n# Global load OTB env\nif [ -f /opt/otb-9.1.1/otbenv.profile ]; then\n  . /opt/otb-9.1.1/otbenv.profile\nfi\n' > /etc/profile.d/otb.sh \
-    && chmod +x /etc/profile.d/otb.sh \
-    && sed -i 's|  \. |  source |g' /opt/otb-9.1.1/otbenv.profile \
-    && cat /opt/otb-9.1.1/otbenv.profile \
-    \    
-    && printf '%s\n' '#!/bin/sh' '# Global load OTB env' 'if [ -f /opt/otb-9.1.1/otbenv.profile ]; then' '  . /opt/otb-9.1.1/otbenv.profile' 'fi' > /etc/profile.d/otb.sh \
-    # && sed "s=source=.=g" -i /opt/otb-9.1.1/otbenv.profile \
-    && source /opt/otb-9.1.1/otbenv.profile \
-    && source /opt/otb-9.1.1/tools/post_install.sh \
-    # && sed -i 's|^\. \(/\)|source \1|' /opt/otb-9.1.1/otbenv.profile \
-    && chmod +x /etc/profile.d/otb.sh \
+    && dpkg -i --force-all /tmp/node/*.deb \
+    && ln -s /usr/lib/libnode.so.108 /usr/lib/libnode.so.109 \
+    && ls -l /usr/lib/x86_64-linux-gnu/ | grep node \
+    && dpkg -L libnode109 | grep '\.so' \ 
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/gdal-config|/usr/bin/gdal-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/curl-config|/usr/bin/curl-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|^ostype="\$(lsb_release -is)"|ostype="RedHatEnterprise"|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|\$OTB_INSTALL_DIR|/opt/otb-9.1.1|g' /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && cat /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && . /opt/otb-9.1.1/tools/post_install.sh \
     && make -C ./thirds/cgic206 libcgic.a \
     && cd ./zoo-project/zoo-kernel \
     && autoconf \
@@ -177,7 +173,7 @@ RUN set -ex \
     && make install \
     \
     # TODO: why not copied by 'make'?
-    && cp zoo_loader_fpm -zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
+    && cp zoo_loader_fpm zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
