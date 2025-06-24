@@ -125,12 +125,6 @@ ARG BUILD_DEPS=" \
 WORKDIR /zoo-project
 COPY . .
 
-# ENV OTBPATH="/opt/otb-9.1.1"
-# ENV OTB_CPPFLAGS="-I$OTBPATH/
-
-ENV CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH"
-ENV CXXFLAGS="$CPPFLAGS"
-ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
 
 ENV LC_NUMERIC=C
 ENV GDAL_DATA=/opt/otb-9.1.1/share/gdal
@@ -139,6 +133,8 @@ ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
 ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
 ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH 
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
@@ -151,25 +147,28 @@ RUN set -ex \
     && dpkg -i /tmp/otb/*.deb \
     && dpkg -i --force-all /tmp/node/*.deb \
     && ln -s /usr/lib/libnode.so.108 /usr/lib/libnode.so.109 \
-    && ls -l /usr/lib/x86_64-linux-gnu/ | grep node \
-    && dpkg -L libnode109 | grep '\.so' \ 
+    && ls -l /usr/lib/x86_64-linux-gnu/libfcgi* \
+    && make -C ./thirds/cgic206 libcgic.a \
     && sed -i 's|"\$OTB_INSTALL_DIR"/bin/gdal-config|/usr/bin/gdal-config|' /opt/otb-9.1.1/tools/post_install.sh \
     && sed -i 's|"\$OTB_INSTALL_DIR"/bin/curl-config|/usr/bin/curl-config|' /opt/otb-9.1.1/tools/post_install.sh \
     && sed -i 's|^ostype="\$(lsb_release -is)"|ostype="RedHatEnterprise"|' /opt/otb-9.1.1/tools/post_install.sh \
     && sed -i 's|\$OTB_INSTALL_DIR|/opt/otb-9.1.1|g' /opt/otb-9.1.1/tools/sanitize_rpath.sh \
     && cat /opt/otb-9.1.1/tools/sanitize_rpath.sh \
     && . /opt/otb-9.1.1/tools/post_install.sh \
-    && make -C ./thirds/cgic206 libcgic.a \
-    && cd ./zoo-project/zoo-kernel \
+    && cd ./zoo-project/zoo-kernel \ 
+    && export CFLAGS="-I/usr/include/mapserver" \
+    && export CPPFLAGS="-I/usr/include/mapserver -I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include" \
+    && export CXXFLAGS="$CPPFLAGS" \
     && autoconf \
     && autoreconf --install \
-    && ./configure CXXFLAGS="$CPPFLAGS" LD_LIBRARY_PATH="$LD_LIBRARY_PATH" --with-rabbitmq=yes --with-pyvers=3.12 \
-              --with-nodejs=/usr \
+    && ./configure --with-rabbitmq=yes --with-pyvers=3.12 \
+              --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=8 \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
               --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
-              --with-itk-version=4.13 --with-saga=/usr --with-nodejs=/usr \
-              --with-saga-version=9 --with-wx-config=/usr/bin/wx-config || (cat config.log ) \
+              --with-itk-version=4.13 --with-saga=/usr \
+              --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
     && make -j$(nproc) \
+    && make -n install \
     && make install \
     \
     # TODO: why not copied by 'make'?
@@ -292,7 +291,7 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service_internal.h /zoo
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/version.h /zoo-project/zoo-project/zoo-kernel/version.h
 
 # Node.js global node_modules
-COPY --from=builder1 /usr/lib/node_modules/ /usr/lib/node_modules/
+COPY --from=builder1 /usr/local/lib/node_modules/ /usr/local/lib/node_modules/
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
@@ -380,6 +379,14 @@ ARG SERVER_HOST="localhost"
 ARG SERVER_URL="http://localhost/"
 ARG WS_SERVER_URL="ws://localhost"
 
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
+ENV GDAL_DATA=/opt/otb-9.1.1/share/gdal
+ENV PROJ_LIB=/opt/otb-9.1.1/share/proj
+ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+
 # For using another port than 80, uncomment below.
 # remember to also change the ports in docker-compose.yml
 #ARG PORT=8090
@@ -407,7 +414,7 @@ COPY --from=builder1 /zoo-project/docker/nginx-default.conf /etc/nginx/sites-ava
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
 
 # Node.js global node_modules
-COPY --from=builder1 /usr/lib/node_modules/ /usr/lib/node_modules/
+COPY --from=builder1 /usr/local/lib/node_modules/ /usr/local/lib/node_modules/
 
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -443,21 +450,36 @@ RUN set -ex \
     && ln -s /testing /var/www/html/cptesting \
     && rm -rf /var/lib/apt/lists/* \
     && export CPLUS_INCLUDE_PATH=/usr/include/gdal \
-    && export C_INCLUDE_PATH=/usr/include/gdal \
-    && pip3 install --upgrade pip setuptools wheel \
-    # see various issue reported about _2to3 invocation and setuptools < 58.0 \
-    && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
-    && pip3 install GDAL==3.8.4 \
-    && pip3 install Cheetah3 redis spython \
+    && export C_INCLUDE_PATH=/usr/include/gdal 
+
+RUN set -ex \
+    && export OTB_INSTALL_DIR="/opt/otb-9.1.1" \
+    && apt update \
+    && apt install -y python3-spython python3-cheetah python3-redis wget \
+    && rm -rf /tmp/otb /tmp/node \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1-bin.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb-9.1.1.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode109.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode-dev.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
+    && dpkg -i /tmp/otb/*.deb \
+    && dpkg -i --force-all /tmp/node/*.deb \
+    && ln -s /usr/lib/libnode.so.108 /usr/lib/libnode.so.109 \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/gdal-config|/usr/bin/gdal-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/curl-config|/usr/bin/curl-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|^ostype="\$(lsb_release -is)"|ostype="RedHatEnterprise"|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|\$OTB_INSTALL_DIR|/opt/otb-9.1.1|g' /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && cat /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && . /opt/otb-9.1.1/tools/post_install.sh \
     \
     && mkdir -p /tmp/zTmp/statusInfos \
     && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project /usr/lib/cgi-bin/ \
     && chmod 755 /startUp.sh \
     && chmod +x /nginx-start.sh \
-    \
     # remove invalid zcfgs \
-    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
-    # Update SAGA zcfg
+    ### && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
+    # Update SAGA zcfg 
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \
     \
