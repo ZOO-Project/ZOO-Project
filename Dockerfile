@@ -76,6 +76,7 @@ ARG BUILD_DEPS=" \
     flex \
     make \
     autoconf \
+    autopoint \
     gcc \
     gettext \
     \
@@ -140,35 +141,37 @@ ARG BUILD_DEPS=" \
 WORKDIR /zoo-project
 COPY . .
 
-ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
-ENV PATH="$OTB_INSTALL_DIR/bin:$PATH"
-ENV OTB_APPLICATION_PATH="$OTB_INSTALL_DIR/lib/otb/applications"
+ENV OTBPATH="/opt/otb-9.1.1"
+ENV OTB_INSTALL_DIR="/opt/otb-9.1.1"
+ENV OTB_CPPFLAGS="-I$OTBPATH"
+ENV CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH"
+ENV CXXFLAGS="$CPPFLAGS"
 
-# Añadir también /usr/local/lib al runtime
-ENV LD_LIBRARY_PATH="/usr/local/lib:$OTB_INSTALL_DIR/lib:$LD_LIBRARY_PATH"
-
-# Flags para compilación con Python 3.12 (instalado manualmente en /usr/local)
-ENV LDFLAGS="-L/usr/local/lib -lpython3.12"
-ENV CFLAGS="-I/usr/local/include/python3.12"
-ENV CPPFLAGS="-I/usr/local/include/python3.12"
-# ENV CPPFLAGS="-I/usr/local/include/python3.12 -I/usr/include/node"
-ENV CXXFLAGS="-I/usr/include/node/node-addon-api"
 
 RUN set -ex \
     # && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
+    # && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-bin.deb \
+    # && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
+    # && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode109.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode-dev.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
+    # && dpkg -i /tmp/otb/*.deb \
+    && dpkg -i /tmp/node/*.deb \
+    
     # && apt-get remove -y node-acorn || true \
     # && apt-get install -y --no-install-recommends libnode-dev \
     # && npm install -g node-gyp node-addon-api \
     # && npm install -g node-gyp node-addon-api \
-    && cd /usr/src \
-    && curl -O https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz \
-    && tar -xf Python-3.12.3.tgz \
-    && cd Python-3.12.3 \
-    && ./configure --enable-optimizations --enable-shared --prefix=/usr/local --with-system-expat \
-    && make -j$(nproc) \
-    && make altinstall \
-    && cd /usr/src \
+    # && cd /usr/src \
+    # && curl -O https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz \
+    # && tar -xf Python-3.12.3.tgz \
+    # && cd Python-3.12.3 \
+    # && ./configure --enable-optimizations --enable-shared --prefix=/usr/local --with-system-expat \
+    # && make -j$(nproc) \
+    # && make altinstall \
+    # && cd /usr/src \
     # && curl -fsSL https://nodejs.org/dist/v22.16.0/node-v22.16.0.tar.gz -o node.tar.gz \
     # && tar -xzf node.tar.gz \
     # && cd node-v22.16.0 \
@@ -179,17 +182,17 @@ RUN set -ex \
     # && npm install -g node-gyp node-addon-api \
     # && cd /usr/src && rm -rf node* \
     # && ldconfig \
-    && cd /usr/src \
-    && wget https://www.orfeo-toolbox.org/packages/OTB-9.1.0-Linux.tar.gz \
-    && tar xvf OTB-9.1.0-Linux.tar.gz --one-top-level=/opt/otb-9.1.1 \
-    && rm OTB-9.1.0-Linux.tar.gz \ 
-    && bash -c "source /opt/otb-9.1.1/otbenv.profile && sh /opt/otb-9.1.1/recompile_bindings.sh" \    
+    # && cd /usr/src \
+    # && wget https://www.orfeo-toolbox.org/packages/OTB-9.1.0-Linux.tar.gz \
+    # && tar xvf OTB-9.1.0-Linux.tar.gz --one-top-level=/opt/otb-9.1.1 \
+    # && rm OTB-9.1.0-Linux.tar.gz \ 
+    # && bash -c "source /opt/otb-9.1.1/otbenv.profile && sh /opt/otb-9.1.1/recompile_bindings.sh" \    
     && make -C ./thirds/cgic206 libcgic.a \
 
 RUN set -ex \
     && cd ./zoo-project/zoo-kernel \
     #&& git clone  --depth=1 https://github.com/json-c/json-c.git \
-    #&& mkdir json-c-build \
+    #&& mkdir json-c-build \
     #&& cd json-c-build \
     #&& cmake ../json-c -DCMAKE_INSTALL_PREFIX=/usr/local \
     #&& make && make install \
@@ -198,11 +201,11 @@ RUN set -ex \
     && autoconf \
     && autoreconf --install \
     # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
-    && ./configure --with-rabbitmq=yes --with-python=/usr/local --with-pyvers=3.12 \
+    && ./configure CPPFLAGS="$CPPFLAGS" CXXFLAGS="$CPPFLAGS" --with-rabbitmq=yes --with-pyvers=3.12 \
               --with-nodejs=$NODEJS_HOME --with-mapserver=/usr --with-ms-version=8  \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
-              --with-itk-version=5.2 --with-saga=/usr \
+              --with-otb=/usr/lib/otb-9.1.1 --with-itk=/usr/lib/otb-9.1.1 --with-otb-version=9.1 \
+              --with-itk-version=4.3 --with-saga=/usr \
               --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
               --disable-mozjs \
     && make -j4 \

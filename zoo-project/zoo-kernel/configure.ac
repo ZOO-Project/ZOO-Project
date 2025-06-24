@@ -630,6 +630,8 @@ else
                         MS_LDFLAGS="$MS_LDFLAGS -Wl,-rpath,$MS_SRC_PATH/lib/"
                     fi
                     MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include/mapserver"
+		    echo "MS_CPPFLAGS = $MS_CPPFLAGS"
+                    AC_MSG_RESULT([Using MS_CPPFLAGS: $MS_CPPFLAGS])
                     ms_detection_method="manual-ms7"
                 else
                     # Intentamos usar mapserver-config si existe
