@@ -380,6 +380,14 @@ ARG SERVER_HOST="localhost"
 ARG SERVER_URL="http://localhost/"
 ARG WS_SERVER_URL="ws://localhost"
 
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
+ENV GDAL_DATA=/opt/otb-9.1.1/share/gdal
+ENV PROJ_LIB=/opt/otb-9.1.1/share/proj
+ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+
 # For using another port than 80, uncomment below.
 # remember to also change the ports in docker-compose.yml
 #ARG PORT=8090
