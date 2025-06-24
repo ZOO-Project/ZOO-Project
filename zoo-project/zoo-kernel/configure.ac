@@ -553,120 +553,78 @@ AC_SUBST([GEOS_LDFLAGS])
 # ===========================================================================
 
 AC_ARG_WITH([cgal],
-    [AS_HELP_STRING([--with-cgal=PATH], [Specifies an alternative location for CGAL setup])],
-    [CGALPATH="$withval"], [CGALPATH="/usr"])
+        [AS_HELP_STRING([--with-cgal=PATH], [Specifies an alternative location for CGAL setup])],
+        [CGALPATH="$withval"], [CGALPATH="/usr"])
+
 
 # Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
 CGAL_CPPFLAGS="-I$CGALPATH/include"
 CPPFLAGS="$CGAL_CPPFLAGS"
-
-# Force C++ Lang
-AC_LANG_PUSH([C++])
-
-# Check headers file
 AC_CHECK_HEADERS([CGAL/Delaunay_triangulation_2.h],
          [], [AC_MSG_WARN([could not find headers include related to libCGAL])])
 
-# Return to previous Lang
-AC_LANG_POP([C++])
-
-# Restore CPPFLAGS
-CPPFLAGS="$CPPFLAGS_SAVE"
-
 # Extract the linker and include flags
 CGAL_LDFLAGS="-L$CGALPATH/lib"
+CGAL_CPPFLAGS="-I$CGALPATH/include"
 
-# Sustituciones para el Makefile
+
 AC_SUBST([CGAL_CPPFLAGS])
 AC_SUBST([CGAL_LDFLAGS])
-
 #============================================================================
 # Detect if mapserver is installed
 #============================================================================
 
 AC_ARG_WITH([mapserver], 
-       [AS_HELP_STRING([--with-mapserver=PATH], [Specifies the path for MapServer compiled source tree or installation])],
+       [AS_HELP_STRING([--with-mapserver=PATH], [Specifies the path for MapServer compiled source tree])], 
        [MS_SRC_PATH="$withval"], [MS_SRC_PATH=""])
 
-AC_ARG_WITH([ms-version],
-       [AS_HELP_STRING([--with-ms-version=VERSION], [Specifies the MapServer version to build against])],
+AC_ARG_WITH([ms-version], 
+       [AS_HELP_STRING([--with-ms-version=VERSION], [Specifies the MapServer version to build against])], 
        [MS_VERSION="$withval"], [MS_VERSION=""])
 
 AC_ARG_WITH([ms-force-linkage],
-       [AS_HELP_STRING([--with-ms-force-linkage=yes], [Specifies if the MapServer version should be force linked])],
+       [AS_HELP_STRING([--with-ms-force-linkage=yes], [Specifies if the MapServer version should be force linked])], 
        [MS_FORCE_LINKAGE="$withval"], [MS_FORCE_LINKAGE=""])
 
-# Inicializamos variables
-MS_CPPFLAGS=""
-MS_LDFLAGS=""
-MS_FILE=""
-ms_detection_method=""
-
-# Si se especificó MacOS como origen
-if test "x$MS_SRC_PATH" = "xmacos"; then
-    MS_LDFLAGS="/Library/Frameworks/MapServer.framework/Versions/6.0/MapServer -lintl"
-    MS_CPPFLAGS="-DUSE_MS `/Library/Frameworks/MapServer.framework/Programs/mapserver-config --includes` -I/Library/Frameworks/MapServer.framework/Versions/Current/Headers/ -I../mapserver "
-    AC_MSG_WARN([Please make sure that ../mapserver exists and contains MapServer source tree])
-    AC_MSG_RESULT([Using MacOS X Framework for MapServer])
-    ms_detection_method="macos"
+if test -z $MS_SRC_PATH;
+then
+	MS_CPPFLAGS=""
+	MS_LDFLAGS=""
 else
-
-    # Si pkg-config funciona, lo usamos
-    PKG_CHECK_MODULES([MAPSERVER], [mapserver], [
-        MS_CPPFLAGS="$MAPSERVER_CFLAGS"
-        MS_LDFLAGS="$MAPSERVER_LIBS"
-        AC_MSG_RESULT([Using pkg-config to detect MapServer])
-        ms_detection_method="pkg-config"
-    ], [
-
-        # Si pkg-config no funcionó, pasamos a detección manual
-        if test -n "$MS_SRC_PATH"; then
-            if test -d "$MS_SRC_PATH"; then
-
-                if test "x$MS_VERSION" = "x7"; then
-                    MS_LDFLAGS="-L$MS_SRC_PATH/lib -lmapserver"
-                    if test "x$MS_FORCE_LINKAGE" = "xyes"; then
-                        MS_LDFLAGS="$MS_LDFLAGS -Wl,-rpath,$MS_SRC_PATH/lib/"
-                    fi
-                    MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include/mapserver"
-		    echo "MS_CPPFLAGS = $MS_CPPFLAGS"
-                    AC_MSG_RESULT([Using MS_CPPFLAGS: $MS_CPPFLAGS])
-                    ms_detection_method="manual-ms7"
-                else
-                    # Intentamos usar mapserver-config si existe
-                    if test -x "$MS_SRC_PATH/mapserver-config"; then
-                        MS_LDFLAGS="-L$MS_SRC_PATH -lmapserver `$MS_SRC_PATH/mapserver-config --libs`"
-                        MS_CPPFLAGS="-DUSE_MS `$MS_SRC_PATH/mapserver-config --includes` `$MS_SRC_PATH/mapserver-config --cflags` -I$MS_SRC_PATH"
-                        ms_detection_method="manual-config"
-                    else
-                        AC_MSG_WARN([mapserver-config no encontrado en $MS_SRC_PATH, usando rutas básicas])
-                        MS_LDFLAGS="-L$MS_SRC_PATH -lmapserver"
-                        MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include -I$MS_SRC_PATH/include/mapserver"
-                        ms_detection_method="manual-fallback"
-                    fi
-                fi
-
-                AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
-            else
-                AC_MSG_ERROR([The user-specified MapServer path $MS_SRC_PATH does not exist or is not a directory])
-            fi
+       if test "x$MS_SRC_PATH" = "xmacos";
+       then
+               MS_LDFLAGS="/Library/Frameworks/MapServer.framework//Versions/6.0/MapServer -lintl"
+               MS_CPPFLAGS="-DUSE_MS `/Library/Frameworks/MapServer.framework/Programs/mapserver-config --includes` -I/Library/Frameworks/MapServer.framework/Versions/Current/Headers/ -I../mapserver "
+               AC_MSG_WARN([Please make sure that ../mapserver exists and contains MapServer source tree])
+               AC_MSG_RESULT([Using MacOS X Framework for MapServer])
+       else
+	if test "x$MS_VERSION" = "x7";
+	then
+		MS_LDFLAGS="-L$MS_SRC_PATH/lib -lmapserver"
+		if test "x$MS_FORCE_LINKAGE" = "xyes";
+		then
+			MS_LDFLAGS="$MS_LDFLAGS -Wl,-rpath,$MS_SRC_PATH/lib/"
+		fi
+		MS_CPPFLAGS="-DUSE_MS -I$MS_SRC_PATH/include/mapserver "
+               	AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
         else
-            # Fallback si no se especifica nada
-            AC_MSG_WARN([No --with-mapserver specified and pkg-config not found. Using default system paths.])
-            MS_CPPFLAGS="-I/usr/include/mapserver"
-            MS_LDFLAGS="-lmapserver"
-            ms_detection_method="system-default"
+               if test -d $MS_SRC_PATH; then
+                       MS_LDFLAGS="-L$MS_SRC_PATH -lmapserver `$MS_SRC_PATH/mapserver-config --libs`"
+                       MS_CPPFLAGS="-DUSE_MS `$MS_SRC_PATH/mapserver-config --includes` `$MS_SRC_PATH/mapserver-config --cflags` -I$MS_SRC_PATH "
+               
+                       AC_MSG_RESULT([Using user-specified MapServer src path: $MS_SRC_PATH])
+               else
+                       AC_MSG_ERROR([the user-specified mapserver-config file $MS_SRC_PATH does not exist])
+               fi
         fi
-    ])
-    MS_FILE="service_internal_ms.o"
+       fi
+       MS_FILE="service_internal_ms.o"
 fi
 
-# Variables finales
 MS_CFLAGS="$MS_CPPFLAGS"
 MS_LIBS="$MS_LDFLAGS"
 
-AC_MSG_NOTICE([MapServer detection method: $ms_detection_method])
 AC_SUBST([MS_CFLAGS])
 AC_SUBST([MS_LIBS])
 AC_SUBST([MS_FILE])
