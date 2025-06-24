@@ -141,74 +141,35 @@ ARG BUILD_DEPS=" \
 WORKDIR /zoo-project
 COPY . .
 
-ENV OTBPATH="/opt/otb-9.1.1"
-ENV OTB_INSTALL_DIR="/opt/otb-9.1.1"
-ENV OTB_CPPFLAGS="-I$OTBPATH"
+# ENV OTBPATH="/opt/otb-9.1.1"
+# ENV OTB_INSTALL_DIR="/opt/otb-9.1.1"
+# ENV OTB_CPPFLAGS="-I$OTBPATH/
+
 ENV CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH"
 ENV CXXFLAGS="$CPPFLAGS"
-
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
 
 RUN set -ex \
-    # && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
-    # && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-bin.deb \
-    # && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
-    # && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1.-bin.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb-9.1.1.deb \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode109.deb \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode-dev.deb \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
-    # && dpkg -i /tmp/otb/*.deb \
+    && dpkg -i /tmp/otb/*.deb \
     && dpkg -i /tmp/node/*.deb \
-    
-    # && apt-get remove -y node-acorn || true \
-    # && apt-get install -y --no-install-recommends libnode-dev \
-    # && npm install -g node-gyp node-addon-api \
-    # && npm install -g node-gyp node-addon-api \
-    # && cd /usr/src \
-    # && curl -O https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz \
-    # && tar -xf Python-3.12.3.tgz \
-    # && cd Python-3.12.3 \
-    # && ./configure --enable-optimizations --enable-shared --prefix=/usr/local --with-system-expat \
-    # && make -j$(nproc) \
-    # && make altinstall \
-    # && cd /usr/src \
-    # && curl -fsSL https://nodejs.org/dist/v22.16.0/node-v22.16.0.tar.gz -o node.tar.gz \
-    # && tar -xzf node.tar.gz \
-    # && cd node-v22.16.0 \
-    # && ./configure --prefix=/usr/local --shared --shared-zlib --shared-openssl --shared-nghttp2 --shared-brotli \
-    # && make -j$(nproc) \
-    # && make install \
-    # && ln -s /usr/local/lib/libnode.so.127 /usr/local/lib/libnode.so \
-    # && npm install -g node-gyp node-addon-api \
-    # && cd /usr/src && rm -rf node* \
-    # && ldconfig \
-    # && cd /usr/src \
-    # && wget https://www.orfeo-toolbox.org/packages/OTB-9.1.0-Linux.tar.gz \
-    # && tar xvf OTB-9.1.0-Linux.tar.gz --one-top-level=/opt/otb-9.1.1 \
-    # && rm OTB-9.1.0-Linux.tar.gz \ 
-    # && bash -c "source /opt/otb-9.1.1/otbenv.profile && sh /opt/otb-9.1.1/recompile_bindings.sh" \    
     && make -C ./thirds/cgic206 libcgic.a \
-
-RUN set -ex \
     && cd ./zoo-project/zoo-kernel \
-    #&& git clone  --depth=1 https://github.com/json-c/json-c.git \
-    #&& mkdir json-c-build \
-    #&& cd json-c-build \
-    #&& cmake ../json-c -DCMAKE_INSTALL_PREFIX=/usr/local \
-    #&& make && make install \
-    #&& cd .. \
-    #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
     && autoconf \
     && autoreconf --install \
-    # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
-    && ./configure CPPFLAGS="$CPPFLAGS" CXXFLAGS="$CPPFLAGS" --with-rabbitmq=yes --with-pyvers=3.12 \
-              --with-nodejs=$NODEJS_HOME --with-mapserver=/usr --with-ms-version=8  \
-              --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=/usr/lib/otb-9.1.1 --with-itk=/usr/lib/otb-9.1.1 --with-otb-version=9.1 \
-              --with-itk-version=4.3 --with-saga=/usr \
-              --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
-              --disable-mozjs \
-    && make -j4 \
+    && ./configure CXXFLAGS="$CPPFLAGS" --with-rabbitmq=yes --with-pyvers=3.12 \
+    &&          --with-nodejs=/usr \
+    &&          --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
+    &&          --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
+    &&          --with-itk-version=4.13 --with-saga=/usr --with-nodejs=/usr \
+    &&          --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
+    && make -j$(nproc) \
     && make install \
     \
     # TODO: why not copied by 'make'?
