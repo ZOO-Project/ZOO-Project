@@ -10,7 +10,7 @@ ARG BUILD_DEPS=" \
     wget \
 "
 ARG RUN_DEPS=" \
-    libcurl3-gnutls \
+    libcurl3t64-gnutls \
     libfcgi-dev \
     libfcgi-bin \
     libmapserver-dev \
@@ -18,47 +18,31 @@ ARG RUN_DEPS=" \
     \
     saga \
     libsaga-api9 \
-    # libotb \
-    # otb-bin \
+    libsaga-dev \
     \
     libpq5 \
     libpython3-dev \
     libxslt1.1 \
     gdal-bin \
+    gdal-data \
+    python3-gdal \
+    python3-pip \
     libcgal-dev \
-    libcgal-qt5-dev \
+    ### libcgal-qt5-dev \
     librabbitmq4 \
     nlohmann-json3-dev \
     python3 \
     r-base \
-    python3-pip \
-    libhdf5-openmpi-103-1 libnetcdf-c++4-dev libvtk9-dev libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
-    libffi8 libffi-dev \
+    libffi8 \
+    libffi-dev \
+    nodejs \ 
+    npm \
 "
 RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends $BUILD_DEPS software-properties-common gnupg wget curl \
     \
-    # Añadir el repositorio de UbuntuGIS
-    # && add-apt-repository ppa:ubuntugis/ppa \
-    # TODO (cesarbenjamindotnet): remove this line, seems not needed anymore \
-    \
-    # Crear directorio para claves modernas y deshabilitar IPv6 en GPG
-    # niji && mkdir -p /etc/apt/keyrings \
-    # niji && mkdir -p ~/.gnupg \
-    # niji && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf \
-    \
-    # Añadir clave pública de CRAN
-    # niji && curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-    # niji   | gpg --dearmor -o /etc/apt/keyrings/cran-archive-keyring.gpg \
-    \
-    # Añadir el repositorio de CRAN
-    # niji && echo "deb [signed-by=/etc/apt/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME")-cran40/" \
-    # niji   | tee /etc/apt/sources.list.d/cran.list \
-    \
-    # Actualizar repositorios
     && apt-get update \
-    # && add-apt-repository ppa:mmomtchev/libnode \
     \
     && apt-get install -y $RUN_DEPS \
     \
@@ -71,6 +55,8 @@ RUN set -ex \
 FROM base AS builder1
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
+    wget \
+    lsb-release \
     build-essential \
     bison \
     flex \
@@ -81,21 +67,17 @@ ARG BUILD_DEPS=" \
     gettext \
     \
     # Comment lines bellow if nor OTB nor SAGA \
-    # libotb-dev \
-    # otb-qgis \
-    # otb-bin-qt \
-    qttools5-dev \
-    qttools5-dev-tools \
-    qtbase5-dev \
-    libqt5opengl5-dev \
+    ### qttools5-dev \
+    ### qttools5-dev-tools \
+    ### qtbase5-dev \
+    ### libqt5opengl5-dev \
     libtinyxml-dev \
     libfftw3-dev \
     cmake \
-    libsaga-dev \
     # Comment lines before this one if nor OTB nor SAGA \
     git \
-    libfcgi-dev \
-    libfcgi-bin \
+    ### libfcgi-dev \
+    ### libfcgi-bin \
     libpq-dev \
     libproj-dev \
     libcurl4-openssl-dev \
@@ -104,7 +86,6 @@ ARG BUILD_DEPS=" \
     libgeos-dev \
     libqt5svg5-dev \
     libgdal-dev \
-    python3.12 \
     python3.12-dev \
     libncurses-dev \
     libbz2-dev \
@@ -118,8 +99,6 @@ ARG BUILD_DEPS=" \
     xz-utils \
     tk-dev \
     ca-certificates \
-    python3-pip \
-    gdal-bin \
     libwxgtk3.2-dev \
     libjson-c-dev \
     libssh2-1-dev \
@@ -136,22 +115,30 @@ ARG BUILD_DEPS=" \
     libaprutil1-dev \
     libxslt-dev \
     libopengl-dev \
-    nodejs
+    libhdf5-openmpi-103-1 \
+    libnetcdf-c++4-dev \
+    libvtk9-dev libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
 "
 WORKDIR /zoo-project
 COPY . .
 
 # ENV OTBPATH="/opt/otb-9.1.1"
-# ENV OTB_INSTALL_DIR="/opt/otb-9.1.1"
 # ENV OTB_CPPFLAGS="-I$OTBPATH/
 
+ENV OTB_INSTALL_DIR="/opt/otb-9.1.1"
 ENV CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH"
 ENV CXXFLAGS="$CPPFLAGS"
 ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
 
+SHELL ["/bin/bash", "-c"]
+
 RUN set -ex \
+    && export OTB_INSTALL_DIR="/opt/otb-9.1.1" \
+    && export CPPFLAGS="-I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include -I$OTBPATH" \
+    && export CXXFLAGS="$CPPFLAGS" \
+    && export LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
-    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1.-bin.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1-bin.deb \
     && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
     && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb-9.1.1.deb \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode109.deb \
@@ -159,22 +146,38 @@ RUN set -ex \
     && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
     && dpkg -i /tmp/otb/*.deb \
     && dpkg -i /tmp/node/*.deb \
+    \
+    && sed -i 's|sh /opt/otb-9.1.1/tools/post_install.sh|. /opt/otb-9.1.1/tools/post_install.sh|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|  source |  \. |g' /opt/otb-9.1.1/otbenv.profile \
+    && cat /opt/otb-9.1.1/otbenv.profile \
+    && . /opt/otb-9.1.1/otbenv.profile \
+    && echo "✔️ OTB environment loaded during build" \
+    && printf '#!/bin/bash\n# Global load OTB env\nif [ -f /opt/otb-9.1.1/otbenv.profile ]; then\n  . /opt/otb-9.1.1/otbenv.profile\nfi\n' > /etc/profile.d/otb.sh \
+    && chmod +x /etc/profile.d/otb.sh \
+    && sed -i 's|  \. |  source |g' /opt/otb-9.1.1/otbenv.profile \
+    && cat /opt/otb-9.1.1/otbenv.profile \
+    \    
+    && printf '%s\n' '#!/bin/sh' '# Global load OTB env' 'if [ -f /opt/otb-9.1.1/otbenv.profile ]; then' '  . /opt/otb-9.1.1/otbenv.profile' 'fi' > /etc/profile.d/otb.sh \
+    # && sed "s=source=.=g" -i /opt/otb-9.1.1/otbenv.profile \
+    && source /opt/otb-9.1.1/otbenv.profile \
+    && source /opt/otb-9.1.1/tools/post_install.sh \
+    # && sed -i 's|^\. \(/\)|source \1|' /opt/otb-9.1.1/otbenv.profile \
+    && chmod +x /etc/profile.d/otb.sh \
     && make -C ./thirds/cgic206 libcgic.a \
     && cd ./zoo-project/zoo-kernel \
     && autoconf \
     && autoreconf --install \
-    && ./configure CXXFLAGS="$CPPFLAGS" --with-rabbitmq=yes --with-pyvers=3.12 \
-    &&          --with-nodejs=/usr \
-    &&          --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-    &&          --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
-    &&          --with-itk-version=4.13 --with-saga=/usr --with-nodejs=/usr \
-    &&          --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
+    && ./configure CXXFLAGS="$CPPFLAGS" LD_LIBRARY_PATH="$LD_LIBRARY_PATH" --with-rabbitmq=yes --with-pyvers=3.12 \
+              --with-nodejs=/usr \
+              --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
+              --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
+              --with-itk-version=4.13 --with-saga=/usr --with-nodejs=/usr \
+              --with-saga-version=9 --with-wx-config=/usr/bin/wx-config || (cat config.log ) \
     && make -j$(nproc) \
     && make install \
     \
     # TODO: why not copied by 'make'?
-    && cp zoo_loader_fpm zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
-    && cp zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
+    && cp zoo_loader_fpm -zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
@@ -198,10 +201,7 @@ RUN set -ex \
          msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
        done  \
     \
-    && npm -g install gdal-async --build-from-source --shared_gdal \
-    && npm -g install proj4 \
-    && npm -g install bower \
-    && npm -g install wps-js-52-north \
+    && npm -g install gdal-async proj4 bower wps-js-52-north \
     && ( cd /usr/lib/cgi-bin/hello-nodejs && npm install ) \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\
@@ -224,10 +224,10 @@ RUN set -ex \
     && make \
     && mkdir OTB \
     && cd OTB \
-    && ITK_AUTOLOAD_PATH=/usr/lib/x86_64-linux-gnu/otb/applications/ ../otb2zcfg \
+    && ITK_AUTOLOAD_PATH="$OTB_INSTALL_DIR"/lib/otb/applications/ ../otb2zcfg \
     && mkdir /usr/lib/cgi-bin/OTB \
     && cp *zcfg /usr/lib/cgi-bin/OTB \
-    #&& for i in *zcfg; do cp $i /usr/lib/cgi-bin/$i ; j="$(echo $i | sed "s:.zcfg::g")" ; sed "s:$j:OTB_$j:g" -i  /usr/lib/cgi-bin/OTB_$i ; done \
+    #&& for i in *zcfg; do cp $i /usr/lib/cgi-bin/$i ; j="$(echo $i | sed "s:.zcfg::g")" ; sed "s:$j:$j:g" -i  /usr/lib/cgi-bin/$i ; done \
     #Comment lines before this one if no OTB \
     \
     #Comment lines below from here if no SAGA \
@@ -277,7 +277,6 @@ ARG BUILD_DEPS=" \
     libxslt1-dev \
     libcgal-dev \
     libcgal-qt5-dev \
-    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
@@ -376,8 +375,6 @@ ARG BUILD_DEPS=" \
     gcc \
     libgdal-dev \
     python3-dev \
-    libnode-dev \
-    node-addon-api \
 "
 # For Azure use, uncomment bellow
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
