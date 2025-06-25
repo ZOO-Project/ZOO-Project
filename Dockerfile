@@ -28,7 +28,6 @@ ARG RUN_DEPS=" \
     python3-gdal \
     python3-pip \
     libcgal-dev \
-    ### libcgal-qt5-dev \
     librabbitmq4 \
     nlohmann-json3-dev \
     python3 \
@@ -67,17 +66,11 @@ ARG BUILD_DEPS=" \
     gettext \
     \
     # Comment lines bellow if nor OTB nor SAGA \
-    ### qttools5-dev \
-    ### qttools5-dev-tools \
-    ### qtbase5-dev \
-    ### libqt5opengl5-dev \
     libtinyxml-dev \
     libfftw3-dev \
     cmake \
     # Comment lines before this one if nor OTB nor SAGA \
     git \
-    ### libfcgi-dev \
-    ### libfcgi-bin \
     libpq-dev \
     libproj-dev \
     libcurl4-openssl-dev \
@@ -125,14 +118,14 @@ ARG BUILD_DEPS=" \
 WORKDIR /zoo-project
 COPY . .
 
-
 ENV LC_NUMERIC=C
-ENV GDAL_DATA=/opt/otb-9.1.1/share/gdal
-ENV PROJ_LIB=/opt/otb-9.1.1/share/proj
-ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
-ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+ENV GDAL_DATA=/usr/share/gdal                                                             
+ENV PROJ_LIB=/usr/share/proj                                                              
+ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications                              
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/bin:/usr/lib/saga
 ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
-ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1           
+ENV SAGA_MLB=/usr/lib/saga  
 
 ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH 
 
@@ -161,7 +154,7 @@ RUN set -ex \
     && export CXXFLAGS="$CPPFLAGS" \
     && autoconf \
     && autoreconf --install \
-    && ./configure --with-rabbitmq=yes --with-pyvers=3.12 \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.12 \
               --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=8 \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
               --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
@@ -375,17 +368,18 @@ ARG BUILD_DEPS=" \
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
 #ARG WS_SERVER_URL="ws://zooprojectdemo.azurewebsites.net"
 # For basic usage
-ARG SERVER_HOST="localhost"
-ARG SERVER_URL="http://localhost/"
-ARG WS_SERVER_URL="ws://localhost"
+ARG SERVER_HOST="34.59.244.69"
+ARG SERVER_URL="http://34.59.244.69/"
+ARG WS_SERVER_URL="ws://34.59.244.69"
 
-ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH
-ENV GDAL_DATA=/opt/otb-9.1.1/share/gdal
-ENV PROJ_LIB=/opt/otb-9.1.1/share/proj
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:/usr/lib/saga
+ENV GDAL_DATA=/usr/share/gdal
+ENV PROJ_LIB=/usr/share/proj
 ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
-ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/bin:/usr/lib/saga
 ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
 ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+ENV SAGA_MLB=/usr/lib/saga
 
 # For using another port than 80, uncomment below.
 # remember to also change the ports in docker-compose.yml
@@ -455,7 +449,7 @@ RUN set -ex \
 RUN set -ex \
     && export OTB_INSTALL_DIR="/opt/otb-9.1.1" \
     && apt update \
-    && apt install -y python3-spython python3-cheetah python3-redis wget \
+    && apt install -y python3-spython python3-cheetah python3-redis wget libboost-filesystem-dev \
     && rm -rf /tmp/otb /tmp/node \
     && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1-bin.deb \
     && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
@@ -472,6 +466,8 @@ RUN set -ex \
     && sed -i 's|\$OTB_INSTALL_DIR|/opt/otb-9.1.1|g' /opt/otb-9.1.1/tools/sanitize_rpath.sh \
     && cat /opt/otb-9.1.1/tools/sanitize_rpath.sh \
     && . /opt/otb-9.1.1/tools/post_install.sh \
+    && rm -rf /tmp/otb /tmp/node \
+    && apt remove -y wget \
     \
     && mkdir -p /tmp/zTmp/statusInfos \
     && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project /usr/lib/cgi-bin/ \
