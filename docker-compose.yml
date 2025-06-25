@@ -25,7 +25,7 @@ services:
       # Uncomment below to allow changes to the nginx-default.conf file to be reflected in the container
       # - ./docker/nginx-default.conf:/etc/nginx/sites-available/default
       # the next line mounts a modified version of TrainRegression.zcfg because the generated one on build is not working
-      - ./docker/TrainRegression.zcfg:/usr/lib/cgi-bin/OTB/TrainRegression.zcfg
+      # - ./docker/TrainRegression.zcfg:/usr/lib/cgi-bin/OTB/TrainRegression.zcfg
       - ./zoo-project/zoo-services/utils/open-api/templates/index.html:/var/www/index.html
       - ./zoo-project/zoo-services/utils/open-api/static:/var/www/html/static
       - ./docker/com:/usr/com/zoo-project
