@@ -53,10 +53,6 @@ jobs:
     
     - name: Run skaffold
       run: |
-        echo "Detect open ports (8022, 8080, 8821)"
-        netstat -na | grep "LISTEN " | grep 8022
-        netstat -na | grep "LISTEN " | grep 8080
-        netstat -na | grep "LISTEN " | grep 8821
         hostip=$(host $(hostname) | awk {'print $4'})
         sed "s#address: localhost#address: ${hostip}#g;s#localPort: 8888#localPort: 8821#g" -i skaffold.yaml
         skaffold build
