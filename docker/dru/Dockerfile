@@ -7,33 +7,50 @@ FROM ubuntu:20.04
 
 # procadesdev:latest
 ENV DEBIAN_FRONTEND noninteractive
-ARG CONDA_ENV_FILE=""
-ARG CONDA_ENV_NAME=ades-dev
 
 ########################################
 ### DEV TOOLS
 RUN apt-get update -qqy --no-install-recommends \
-# Various cli tools
- && apt-get install -qqy --no-install-recommends wget mlocate tree \
-# C++ and CMAKE
- gcc mono-mcs cmake \
- build-essential libcgicc-dev gdb \
-#Install Docker CE CLI
- curl apt-transport-https ca-certificates gnupg2 lsb-release \
- && curl -fsSL https://download.docker.com/linux/$(lsb_release -is | tr '[:upper:]' '[:lower:]')/gpg | apt-key add - 2>/dev/null \
- && echo "deb [arch=amd64] https://download.docker.com/linux/$(lsb_release -is | tr '[:upper:]' '[:lower:]') $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
- && apt-get update -qqy --no-install-recommends \
- && apt-get install -qqy --no-install-recommends docker-ce-cli && \
- apt-get clean -qqy
+    # Various cli tools
+    && apt-get install -qqy --no-install-recommends wget mlocate tree \
+    # C++ and CMAKE
+    gcc cmake build-essential \
+    #Install Docker CE CLI
+    curl apt-transport-https ca-certificates gnupg2 lsb-release \
+    && curl -fsSL https://download.docker.com/linux/$(lsb_release -is | tr '[:upper:]' '[:lower:]')/gpg | apt-key add - 2>/dev/null \
+    && echo "deb [arch=amd64] https://download.docker.com/linux/$(lsb_release -is | tr '[:upper:]' '[:lower:]') $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
+    && apt-get update -qqy --no-install-recommends \
+    && apt-get install -qqy --no-install-recommends docker-ce-cli && \
+    apt-get clean -qqy
 
 ARG PY_VER=3.8
-ARG MINICONDA=Miniconda3-latest-Linux-x86_64.sh
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 
 ########################################
 # ZOO_Prerequisites
+
+ARG RUN_DEPS="\
+    git\
+    wget\
+    vim\
+    flex\
+    bison\
+    libxml2\
+    curl\
+    autoconf\
+    apache2\
+    subversion\
+    s3cmd \
+    python3-setuptools\
+    pip \
+    #valgrind \
+    libapache2-mod-fcgid\
+    libapache2-mod-auth-openidc \
+    wget \
+    pkg-config\
+"
 
 ARG BUILD_DEPS="libfcgi-dev\
     libxml2-dev\
@@ -110,35 +127,16 @@ ARG DEPS_TO_REMOVE="\
 "
 
 RUN apt-get update -qqy  --no-install-recommends  && \
-apt-get install -qqy --no-install-recommends  software-properties-common && \
-add-apt-repository ppa:ubuntugis/ubuntugis-unstable && \
-add-apt-repository ppa:ubuntugis/ppa && \
-apt-get update -qqy  --no-install-recommends && \
-apt-get install -qqy  --no-install-recommends software-properties-common\
-	git\
-	wget\
-	vim\
-	flex\
-	bison\
-	libxml2\
-	curl\
-	autoconf\
-	apache2\
-	subversion\
-	s3cmd \
-	python3-setuptools\
-	pip \
-	#valgrind \
-	libapache2-mod-fcgid\
-    libapache2-mod-auth-openidc \
-	wget \
-	pkg-config\
-    ${BUILD_DEPS}\
-# if you remove --with-db-backend from the configure command, uncomment the following line
-#RUN ln -s /usr/lib/x86_64-linux-gnu/libfcgi.a /usr/lib/
-&& a2enmod actions fcgid alias proxy_fcgi \
-&& /etc/init.d/apache2 restart \
-&& rm -rf /var/lib/apt/lists/*
+    apt-get install -qqy --no-install-recommends  software-properties-common && \
+    add-apt-repository ppa:ubuntugis/ubuntugis-unstable && \
+    add-apt-repository ppa:ubuntugis/ppa && \
+    apt-get update -qqy  --no-install-recommends && \
+    apt-get install -qqy  --no-install-recommends software-properties-common\
+        ${RUN_DEPS}\
+        ${BUILD_DEPS}\
+    && a2enmod cgi rewrite headers auth_openidc proxy proxy_http actions fcgid alias proxy_fcgi \
+    && /etc/init.d/apache2 restart \
+    && rm -rf /var/lib/apt/lists/*
 
 ########################################
 # ZOO_KERNEL
@@ -161,7 +159,6 @@ RUN cd ./zoo-project/zoo-kernel \
 	--with-db-backend \
 	--with-rabbitmq=yes \
      && sed -i "s/-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H/-DPROJ_VERSION_MAJOR=8/g" ./ZOOMakefile.opts \
-     #&& sed -i "s:LDFLAGS=:LDFLAGS=-Wl,-rpath,/usr/miniconda3/lib/ :g" ./ZOOMakefile.opts \
      && make -j4\
      && make install \
      && cp main.cfg /usr/lib/cgi-bin \
@@ -177,9 +174,6 @@ RUN cd ./zoo-project/zoo-kernel \
     \
      && sed -i "s%http://www.zoo-project.org/zoo/%http://127.0.0.1%g" /usr/lib/cgi-bin/main.cfg \
      && sed -i "s%../tmpPathRelativeToServerAdress/%http://localhost/temp/%g" /usr/lib/cgi-bin/main.cfg \
-     && echo "\n[env]\nPYTHONPATH=/usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/python${PY_VER}/site-packages"\
-          >> /usr/lib/cgi-bin/main.cfg \
-     && a2enmod cgi rewrite headers auth_openidc proxy proxy_http \
      && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
      && cd /opt/ZOO-Project \
      && cp ./docker/.htaccess /var/www/html/.htaccess \
@@ -250,23 +244,11 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd .. && \
     apt-get -qqy remove python3-setuptools python3-wheel python3-urllib3 python3-urllib3 python3-idna python3-certifi && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
-    echo /usr/miniconda3/envs/${CONDA_ENV_NAME}/lib/ > /etc/ld.so.conf.d/zoo-project.conf && \
-    ldconfig && \
-    if [ -z "$CONDA_ENV_FILE" ] ; then \
-        echo "No modification required" ; \
-    else \
-        echo "Modify charset_normalizer" ; \
-        sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/api.py ; \
-        sed "s:from .md:#from .md:g" -i /usr/miniconda3/envs/env_zoo_calrissian/lib/python3.10/site-packages/charset_normalizer/cd.py ; \
-    fi && \
     chmod -R 777 /tmp/cookiecutter-templates && \
     rm /var/log/apache2/error.log && \
     ln -s /dev/stdout /var/log/apache2/error.log && \
-    #apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS && \
     apt-get purge -y $DEPS_TO_REMOVE $BUILD_DEPS && \
     rm -rf /var/lib/apt/lists/*
-
-
 
 COPY docker/dru/index.html /var/www/html/index.html
 
