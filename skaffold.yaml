@@ -28,7 +28,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.4.14
+        version: 0.5.0
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -133,6 +133,11 @@ portForward:
     address: localhost
     port: 80
     localPort: 8080
+  - resourceType: service
+    resourceName: zoo-project-dru-websocketd
+    namespace: eoap-zoo-project
+    port: 8888
+    localPort: 8888
   - resourceType: service
     resourceName: eoap-zoo-project-localstack
     namespace: eoap-zoo-project

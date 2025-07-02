@@ -5271,6 +5271,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
     //}
   map *uusid=getMap(*ppmLenv,"usid");
   map *schema=getMapFromMaps(conf,"database","schema");
+  map* pmAsyncWorkers=getMapFromMaps(conf,"server","async_worker");
 
   char acHost[256];
   int hostname=gethostname(acHost, sizeof(acHost));
@@ -5278,6 +5279,13 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
   char *pcIP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
   ZOO_DEBUG(pcIP);
   ZOO_DEBUG(acHost);
+  char* pcaSqlQuery2=(char*)malloc(((2*strlen(schema->value))+
+                                  strlen(pcIP)+strlen(pmAsyncWorkers->value)+
+                                  strlen(SQL_REGISTER_SERVER)+1)*sizeof(char));
+  sprintf(pcaSqlQuery2,SQL_REGISTER_SERVER,schema->value,schema->value,pcIP,pmAsyncWorkers->value);
+  execSql(conf,iSqlCon-1,pcaSqlQuery2);
+  free(pcaSqlQuery2);
+  cleanUpResultSet(conf,iSqlCon-1);
   char* pcaSqlQuery0=(char*)malloc(((2*strlen(schema->value))+
                                 strlen(pcIP)+strlen(uusid->value)+
                                 strlen(SQL_AVAILABLE_SLOT)+129)*sizeof(char));

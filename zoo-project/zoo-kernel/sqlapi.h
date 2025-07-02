@@ -36,6 +36,7 @@
 #include "service.h"
 #include "service_internal.h"
 
+#define SQL_REGISTER_SERVER "SELECT %s.registerServer('%s','%s',%s);"
 #define SQL_AVAILABLE_SLOT "SELECT %s.checkAvailableExecutionSlot('%s','%s','%s',%d);"
 
 #if defined(META_DB) || defined(USE_AMQP)
@@ -63,6 +64,7 @@ extern "C" {
   ZOO_DLL_EXPORT int init_sql(maps*);
   ZOO_DLL_EXPORT void close_sql(maps*,int);
   ZOO_DLL_EXPORT int execSql(maps*,int,const char*);
+  ZOO_DLL_EXPORT void cleanUpResultSet(const maps*,int);
   ZOO_DLL_EXPORT char* runSqlQuery(maps*,char*);
   ZOO_DLL_EXPORT void recordStoredFile(maps*,const char*,const char*,const char*);
   ZOO_DLL_EXPORT void recordServiceStatus(maps*);
