@@ -127,7 +127,7 @@ ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
 ENV OTB_INSTALL_DIR=/opt/otb-9.1.1           
 ENV SAGA_MLB=/usr/lib/saga  
 
-ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:$LD_LIBRARY_PATH 
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
@@ -368,9 +368,12 @@ ARG BUILD_DEPS=" \
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
 #ARG WS_SERVER_URL="ws://zooprojectdemo.azurewebsites.net"
 # For basic usage
-ARG SERVER_HOST="34.59.244.69"
-ARG SERVER_URL="http://34.59.244.69/"
-ARG WS_SERVER_URL="ws://34.59.244.69"
+ARG SERVER_HOST="104.198.204.184"
+ARG SERVER_URL="http://104.198.204.184"
+ARG WS_SERVER_URL="ws://104.198.204.184"
+ENV SERVER_HOST="$SERVER_HOST"
+ENV SERVER_URL="$SERVER_URL"
+ENV WS_SERVER_URL="$WS_SERVER_URL" 
 
 ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:/usr/lib/saga
 ENV GDAL_DATA=/usr/share/gdal
@@ -473,6 +476,14 @@ RUN set -ex \
     && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project /usr/lib/cgi-bin/ \
     && chmod 755 /startUp.sh \
     && chmod +x /nginx-start.sh \
+    && rm /usr/lib/cgi-bin/SAGA/grid_gridding/0.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/grid_gridding/6.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/grid_gridding/9.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_georeference/4.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/14.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/17.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/23.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/24.zcfg \
     # remove invalid zcfgs \
     ### && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
     # Update SAGA zcfg 
