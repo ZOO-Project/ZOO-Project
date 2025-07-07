@@ -341,8 +341,7 @@ FROM base AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RUN_DEPS=" \
     nginx \
-    fcgiwrap \
-    spawn-fcgi \
+    lighttpd \
     curl \
     cgi-mapserver \
     mapserver-bin \
@@ -391,6 +390,7 @@ ENV SAGA_MLB=/usr/lib/saga
 WORKDIR /zoo-project
 COPY ./docker/startUp.sh /
 COPY ./docker/nginx-start.sh /
+COPY ./docker/70-zoo-loader-cgi.conf /etc/lighttpd/conf-available/70-zoo-loader-cgi.conf
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -486,10 +486,13 @@ RUN set -ex \
     && rm /usr/lib/cgi-bin/SAGA/pj_proj4/24.zcfg \
     # remove invalid zcfgs \
     ### && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
-    # Update SAGA zcfg 
+    # Update SAGA zcfg \ 
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \
     \
+    && sed "s=80=9090=g" -i /etc/lighttpd/lighttpd.conf \
+    && sed -i '/include_shell .*use-ipv6\.pl/d' /etc/lighttpd/lighttpd.conf \
+    && lighty-enable-mod zoo-loader-cgi \
     # Cleanup \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
