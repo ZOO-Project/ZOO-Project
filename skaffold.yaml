@@ -28,7 +28,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.5.0
+        version: 0.5.1
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -53,6 +53,10 @@ deploy:
 
           # RabbitMQ resource limits
           rabbitmq.resource.limits.memory: 2048Mi
+
+          # Enable websocketd and redis services
+          redis.enabled: true
+          websocketd.enabled: true
 
           workflow.additionalInputs:
             s3_bucket: results

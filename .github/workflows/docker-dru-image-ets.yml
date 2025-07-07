@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build:
+  build-ets-part2-image-run:
 
     runs-on: ubuntu-latest
 
@@ -54,7 +54,7 @@ jobs:
     - name: Run skaffold
       run: |
         hostip=$(host $(hostname) | awk {'print $4'})
-        sed "s#address: localhost#address: ${hostip}#g" -i skaffold.yaml
+        sed "s#address: localhost#address: ${hostip}#g;s#localPort: 8888#localPort: 8821#g" -i skaffold.yaml
         skaffold build
         helm repo add localstack https://helm.localstack.cloud
         helm repo add zoo-project https://zoo-project.github.io/charts/
@@ -68,7 +68,7 @@ jobs:
         done
         i=0
         while [ "$i" == 0 ] ; do
-          if [ "$(kubectl get pods -n eoap-zoo-project | grep "1/1" | wc -l)" == "6" ] ; then
+          if [ "$(kubectl get pods -n eoap-zoo-project | grep "1/1" | wc -l)" == "9" ] ; then
             echo "Pods are all in running state!"
             i=1
           else
