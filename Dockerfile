@@ -367,9 +367,9 @@ ARG BUILD_DEPS=" \
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
 #ARG WS_SERVER_URL="ws://zooprojectdemo.azurewebsites.net"
 # For basic usage
-ARG SERVER_HOST="104.198.204.184"
-ARG SERVER_URL="http://104.198.204.184"
-ARG WS_SERVER_URL="ws://104.198.204.184"
+ARG SERVER_HOST="localhost"
+ARG SERVER_URL="http://localhost"
+ARG WS_SERVER_URL="ws://localhost"
 ENV SERVER_HOST="$SERVER_HOST"
 ENV SERVER_URL="$SERVER_URL"
 ENV WS_SERVER_URL="$WS_SERVER_URL" 
