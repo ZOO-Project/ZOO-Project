@@ -238,6 +238,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
+    pip install --upgrade setuptools typing_extensions && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
