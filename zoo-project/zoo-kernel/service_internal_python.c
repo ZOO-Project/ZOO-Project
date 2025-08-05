@@ -964,10 +964,15 @@ PythonPrintDebugMessage(PyObject* self, PyObject* args)
     // Get the current Python frame using the public API
 #if PY_VERSION_HEX < 0x030C0000  // For Python < 3.12
     PyFrameObject* poFrame = PyEval_GetFrame();
+    char const* pccModule = _PyUnicode_AsString(poFrame->f_code->co_filename);
+    char const* pccFunction = _PyUnicode_AsString(poFrame->f_code->co_name);
+    int iLine = PyFrame_GetLineNumber(poFrame);
 #else  // For Python >= 3.12
+    const char* pccModule = "unknown";
+    const char* pccFunction = "unknown";
+    int iLine = -1;
     PyThreadState* tstate = PyThreadState_Get();
     PyFrameObject* poFrame = tstate ? PyThreadState_GetFrame(tstate) : NULL;
-#endif
 
     if (poFrame) {
         // Extract code object safely (don't access f_code directly)
@@ -986,6 +991,7 @@ PythonPrintDebugMessage(PyObject* self, PyObject* args)
         // Get the current line number in the frame
         iLine = PyFrame_GetLineNumber(poFrame);
     }
+#endif
 
     // Custom debug macro
     _ZOO_DEBUG(str, pccModule, pccFunction, iLine);
