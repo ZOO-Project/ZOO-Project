@@ -2447,7 +2447,8 @@ int runRequest(map** inputs) {
   map *request_inputs = *inputs;
 #ifdef IGNORE_METAPATH
   addToMap(request_inputs, "metapath", "");
-#endif  
+#endif
+
   maps *pmsaConfig = NULL;
   char *REQUEST = NULL;
 
@@ -2888,6 +2889,12 @@ int runRequest(map** inputs) {
     }
 
     setMapInMaps(pmsaConfig,"lenv","request_method",cgiRequestMethod);
+    if(strncasecmp(cgiRequestMethod,"HEAD",4)==0){
+      // HEAD request, return only the headers
+      setMapInMaps(pmsaConfig,"lenv","request_method","GET");
+      setMapInMaps(pmsaConfig,"lenv","no-content","true");
+      setMapInMaps(pmsaConfig,"lenv","real_request_method","HEAD");
+    }
 #ifdef DRU_ENABLED
     //
     // Routes to OGC API - Processes - Part 2: Deploy, Replace, Undeploy (DRU)
@@ -3076,7 +3083,6 @@ int runRequest(map** inputs) {
         strstr(pcaCgiQueryString,"/package")!=NULL &&
         strncasecmp(cgiRequestMethod,"GET",3)==0 ) {
       // /processes/{processId}/package
-      zStrdup(strstr(pcaCgiQueryString,"/processes/")+11);
       char* pcaProcessId=(char*) malloc((1+strlen(pcaCgiQueryString)-19)*sizeof(char));
       snprintf(pcaProcessId,strlen(pcaCgiQueryString)-18,"%s",strstr(pcaCgiQueryString,"/processes/")+11);
       if(fetchService(zooRegistry,&pmsaConfig,&s1,request_inputs,conf_dir_,pcaProcessId,localPrintExceptionJ)!=0){
@@ -3127,7 +3133,7 @@ int runRequest(map** inputs) {
         return -1;
       }
     }
-#endif
+#endif // DRU_ENABLED
     map* pmCgiRequestMethod=getMapFromMaps(pmsaConfig,"lenv","request_method");
 
     setRootUrlMap(pmsaConfig);
@@ -3206,7 +3212,7 @@ int runRequest(map** inputs) {
     }
     else if(cgiContentLength==1){
       // - Root url
-      if(strncasecmp(cgiRequestMethod,"GET",3)!=0){
+      if(strncasecmp(pmCgiRequestMethod->value,"GET",3)!=0){
         setMapInMaps(pmsaConfig,"lenv","status_code","405");
         map* pmaError=createMap("code","InvalidMethod");
         const char* pccErr=_("This API does not support the method.");
@@ -4163,13 +4169,18 @@ int runRequest(map** inputs) {
            (strstr(pcaCgiQueryString,"/processes/")+11)!=NULL &&
            strlen(strstr(pcaCgiQueryString,"/processes/")+11)>0){
           /* - /processes/{processId}/ */
-          ZOO_DEBUG(pcaCgiQueryString);
+          //ZOO_DEBUG(pcaCgiQueryString);
           json_object *res3=json_object_new_object();
           char *orig = NULL;
           orig = zStrdup (strstr(pcaCgiQueryString,"/processes/")+11);
           if(orig[strlen(orig)-1]=='/')
             orig[strlen(orig)-1]=0;
           setMapInMaps(pmsaConfig,"lenv","requestType","GetCapabilities");
+
+          setMapInMaps(pmsaConfig,"headers_links","length","1");
+          setMapInMaps(pmsaConfig,"headers_links","rel","profile");
+          setMapInMaps(pmsaConfig,"headers_links","url","https://www.opengis.net/dev/profile/OGC/0/ogc-process-description");
+
           int t=fetchServicesForDescription(NULL, &pmsaConfig, orig,
                                             printGetCapabilitiesForProcessJ,
                                             NULL, (void*) res3, conf_dir_,
@@ -4303,8 +4314,10 @@ int runRequest(map** inputs) {
             free(pcaLink);
           }
         }
-        printf(pmResponseObject->value);
-        printf("\n");
+        if(getMapFromMaps(pmsaConfig,"lenv","no-content")==NULL){
+          printf(pmResponseObject->value);
+          printf("\n");
+        }
         fflush(stdout);
         if(getMapFromMaps(pmsaConfig,"lenv","output_response")!=NULL){
           createStatusFile(pmsaConfig,eres);

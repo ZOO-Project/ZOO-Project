@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # to build:
 # docker build --rm -t ades:latest .
@@ -23,7 +23,7 @@ RUN apt-get update -qqy --no-install-recommends \
     && apt-get install -qqy --no-install-recommends docker-ce-cli && \
     apt-get clean -qqy
 
-ARG PY_VER=3.8
+ARG PY_VER=3.10
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
@@ -50,13 +50,14 @@ ARG RUN_DEPS="\
     libapache2-mod-auth-openidc \
     wget \
     pkg-config\
+    gettext \
+    locales \
 "
 
 ARG BUILD_DEPS="libfcgi-dev\
     libxml2-dev\
     libssl-dev\
     libmapserver-dev\
-    libmozjs185-dev\
     libxslt1-dev\
     uuid-dev\
     libjson-c-dev\
@@ -65,66 +66,8 @@ ARG BUILD_DEPS="libfcgi-dev\
     libaprutil1-dev \
     python3-dev\
     build-essential\
-    librabbitmq-dev"
-
-ARG DEPS_TO_REMOVE="\
-    dpkg-dev\
-    unixodbc-dev\
-    python3.8-dev\
-    libzstd-dev\
-    libxerces-c-dev\
-    liburiparser-dev\
-    libwebp-dev\
-    libsuperlu-dev\
-    libstdc++-9-dev\
-    libsctp-dev\
-    librttopo-dev\
-    libpython3-dev\
-    libpython3.8-dev\
-    libqhull-dev\
-    libpoppler-dev\
-    libpoppler-private-dev\
-    libpq-dev\
-    libpng-dev\
-    libpcre2-dev\
-    libnetcdf-dev\
-    libnspr4-dev\
-    libogdi-dev\
-    libopenjp2-7-dev\
-    libminizip-dev\
-    liblapack-dev\
-    libldap2-dev\
-    libltdl-dev\
-    liblz4-dev\
-    libkml-dev\
-    libhdf5-dev\
-    libheif-dev\
-    libicu-dev\
-    libhdf4-alt-dev\
-    libgeos-dev\
-    libgeotiff-dev\
-    libgif-dev\
-    libfyba-dev\
-    libffi-dev\
-    libfreexl-dev\
-    libexpat1-dev\
-    libdeflate-dev\
-    libcfitsio-dev\
-    libcharls-dev\
-    libarmadillo-dev\
-    libarpack2-dev\
-    libblas-dev\
-    libblosc-dev\
-    libboost-dev\
-    libapr1-dev\
-    libaec-dev\
-    g++\
-    g++-9\
-    zlib1g-dev\
-    libjpeg-turbo8-dev \
-    libjpeg8-dev\
-    libcurl4-gnutls-dev\
-"
+    librabbitmq-dev\
+    libcairo2-dev"
 
 RUN apt-get update -qqy  --no-install-recommends  && \
     apt-get install -qqy --no-install-recommends  software-properties-common && \
@@ -142,15 +85,17 @@ RUN apt-get update -qqy  --no-install-recommends  && \
 # ZOO_KERNEL
 #ARG ZOO_PRJ_GIT_BRANCH='feature/deploy-undeploy-ogcapi-route'
 #RUN cd /opt && git clone --depth 1 https://github.com/terradue/ZOO-Project.git -b $ZOO_PRJ_GIT_BRANCH
-COPY . /opt/ZOO-Project
+COPY ./docker/.htaccess /opt/ZOO-Project/docker/.htaccess
+COPY ./thirds /opt/ZOO-Project/thirds
+COPY ./zoo-project /opt/ZOO-Project/zoo-project
 WORKDIR /opt/ZOO-Project
 RUN make -C ./thirds/cgic206 libcgic.a
 RUN cd ./zoo-project/zoo-kernel \
-     && autoconf \
+     && autoreconf -i \
+     && autoreconf --install \
      && ./configure --with-dru=yes \
        --with-python=/usr/ \
 	--with-pyvers=$PY_VER \
-	--with-js=/usr \
 	--with-mapserver=/usr \
 	--with-ms-version=7 \
 	--with-json=/usr \
@@ -219,13 +164,96 @@ COPY zoo-project/zoo-services/utils/open-api/dru/ZooStub.py /usr/lib/cgi-bin
 
 RUN chmod -R 777 /usr/lib/cgi-bin
 
-COPY docker/dru/requirements.txt /tmp/
 
-# Force running the following run in case anything changed in
-# https://github.com/EOEPCA/zoo-argowf-runner.git (branch: develop) 
-# and / or 
-# https://github.com/EOEPCA/zoo-calrissian-runner.git 
-# (branch: feature/access-log-status-failed)
+ARG DEPS_TO_REMOVE="\
+    dpkg-dev\
+    unixodbc-dev\
+    python3.10-dev\
+    libzstd-dev\
+    libxerces-c-dev\
+    liburiparser-dev\
+    libwebp-dev\
+    libsuperlu-dev\
+    libsctp-dev\
+    librttopo-dev\
+    libpython3-dev\
+    libpython3.10-dev\
+    libqhull-dev\
+    libpoppler-dev\
+    libpoppler-private-dev\
+    libpq-dev\
+    libpng-dev\
+    libpcre2-dev\
+    libnetcdf-dev\
+    libogdi-dev\
+    libopenjp2-7-dev\
+    libminizip-dev\
+    liblapack-dev\
+    libldap2-dev\
+    libltdl-dev\
+    liblz4-dev\
+    libkml-dev\
+    libhdf5-dev\
+    libheif-dev\
+    libicu-dev\
+    libhdf4-alt-dev\
+    libgeos-dev\
+    libgeotiff-dev\
+    libgif-dev\
+    libfyba-dev\
+    libfreexl-dev\
+    libexpat1-dev\
+    libdeflate-dev\
+    libcfitsio-dev\
+    libarmadillo-dev\
+    libarpack2-dev\
+    libblas-dev\
+    libblosc-dev\
+    libboost-dev\
+    libapr1-dev\
+    libaec-dev\
+    g++\
+    g++-11\
+    zlib1g-dev\
+    libjpeg-turbo8-dev \
+    libjpeg8-dev\
+    libxcb-shm0-dev \
+    libxext-dev \
+    libxrender-dev \
+    xtrans-dev \
+    x11proto-dev \
+    libxdmcp-dev \
+    libxcb1-dev \
+    libxcb-render0-dev \
+    libxau-dev \
+    libx265-dev \
+    libx11-dev \
+    libstdc++-11-dev \
+    libsqlite3-dev \
+    libsm-dev \
+    libsepol-dev \
+    libpthread-stubs0-dev \
+    libpixman-1-dev \
+    libpcre3-dev \
+    liblzma-dev \
+    libldap-dev \
+    libjbig-dev \
+    libice-dev \
+    libffi-dev \
+    libde265-dev \
+    libdav1d-dev \
+    libcurl4-openssl-dev \
+    libbrotli-dev \
+    libboost1.74-dev \
+    libaom-dev \
+    autotools-dev \
+    autoconf \
+    automake \
+"
+
+COPY docker/dru/requirements.txt /tmp/
+COPY zoo-project/zoo-kernel/locale /tmp/locale
+
 RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install --upgrade pip && \
     pip install hatch && \
@@ -233,23 +261,33 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd /tmp && \
     git clone -b develop https://github.com/Terradue/pycalrissian.git && \
     cd pycalrissian && \
+    #sed "s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
     hatch build && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
     cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
-    pip install --upgrade setuptools typing_extensions && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
     cd .. && \
-    apt-get -qqy remove python3-setuptools python3-wheel python3-urllib3 python3-urllib3 python3-idna python3-certifi && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
     rm /var/log/apache2/error.log && \
     ln -s /dev/stdout /var/log/apache2/error.log && \
+    # Add minimal translation support for the ZOO-Kernel internal messages
+    cd /tmp && for i in  $(ls ./locale/po/*po | grep -v utf8 | grep -v message); do \
+        j=$(echo $i | sed "s:./locale/po/::g;s:.po::g"); \
+        mkdir -p /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
+        msgfmt  $i -o /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
+        mkdir -p /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
+        msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
+        locale-gen $j ; \
+        localedef -i $j -c -f UTF-8 -A /usr/share/locale/locale.alias ${j}.UTF-8; \
+    done  && \
+    \
     apt-get purge -y $DEPS_TO_REMOVE $BUILD_DEPS && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/*
 
 COPY docker/dru/index.html /var/www/html/index.html
 
