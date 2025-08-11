@@ -270,6 +270,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
+    pip install --upgrade setuptools cryptography PyJWT && \
     cd .. && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
