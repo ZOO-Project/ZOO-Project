@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build:
+  build-dru-images:
 
     runs-on: ubuntu-latest
 
@@ -55,8 +55,6 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        build-args: |
-          PY_VER=3.8
         tags: zooproject/zoo-project:eoepca-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-eoepca-cache
         cache-to: type=local,dest=/tmp/.buildx-eoepca-cache-new,mode=max
