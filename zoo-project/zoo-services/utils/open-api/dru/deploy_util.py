@@ -30,6 +30,7 @@ import yaml
 import re
 from cwl_utils.parser import load_document as load_cwl
 from cwl_utils.parser import *
+import cwl_utils.__meta__ as cwl_meta
 
 try:
     import zoo
@@ -76,7 +77,10 @@ class Process:
         """
         Creates a Process object from a dictionary representing the CWL YAML file.
         """
-        cwl_obj = load_cwl(cwl)
+        if cwl_meta.__version__ < "0.16":
+            cwl_obj = load_cwl(cwl)
+        else:
+            cwl_obj = load_cwl(cwl, id_=(workflow_id if workflow_id else "main"), load_all=True)
 
         workflows = [
             item for item in cwl_obj if item.class_ == 'Workflow'
@@ -532,7 +536,12 @@ class Process:
                 ogc["inputs"][input.identifier] = ogc_input
 
         for output in self.outputs:
-            ogc_output_schema = {"type": output.type}
+            if cwl_meta.__version__ < "0.16":
+                my_current_type =  output.type
+            else:
+                my_current_type = output.type_
+
+            ogc_output_schema = {"type": my_current_type}
 
             ogc_output = {
                 "title": output.title,
@@ -618,9 +627,17 @@ class ProcessInput:
         type_name = None
         # if input.type is something like ['null', 'typename'],
         # it means the input is optional and of type typename
+
+        if cwl_meta.__version__ < "0.16":
+            my_current_type =  input.type
+        else:
+            my_current_type = input.type_
+
+        print(f"Input '{dir(input)}' \n '{input.type_}'", file=sys.stderr)
+
         current_type_is_array=False
-        if isinstance(input.type, str) or (isinstance(input.type, list) and len(input.type) == 2 and input.type[0] == 'null'):
-            type_name = input.type[1] if isinstance(input.type, list) else input.type
+        if isinstance(my_current_type, str) or (isinstance(my_current_type, list) and len(my_current_type) == 2 and my_current_type[0] == 'null'):
+            type_name = my_current_type[1] if isinstance(my_current_type, list) else my_current_type
             self.is_array=current_type_is_array
             if isinstance(type_name, cwl_v1_0.InputEnumSchema):
                 self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in type_name.symbols]
@@ -669,14 +686,14 @@ class ProcessInput:
                 )
 
             self.type = type_name
-            self.min_occurs = 0 if (input.default is not None or (isinstance(input.type, list) and input.type[0]=='null')) else 1
+            self.min_occurs = 0 if (input.default is not None or (isinstance(my_current_type, list) and my_current_type[0]=='null')) else 1
             # How should we set the maximum length of an array for instance?
             # We currently set the default maximum to 1024
             self.max_occurs = 1 if not(current_type_is_array) else 1024
             # 0 means unbounded, TODO: what should be the maxOcccurs value if unbounded is not available?
 
-        elif isinstance(input.type, cwl_v1_0.InputArraySchema):
-            type_name = input.type.items
+        elif isinstance(my_current_type, cwl_v1_0.InputArraySchema):
+            type_name = my_current_type.items
 
             if type_name in self.__class__.cwl_type_map:
                 type_name = self.__class__.cwl_type_map[type_name]
@@ -698,9 +715,9 @@ class ProcessInput:
 
             self.type = type_name
 
-        elif isinstance(input.type, cwl_v1_0.InputEnumSchema):
+        elif isinstance(my_current_type, cwl_v1_0.InputEnumSchema):
             type_name = "string"
-            self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in input.type.symbols]
+            self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in my_current_type.symbols]
 
 
 
@@ -737,8 +754,12 @@ class ProcessOutput:
         return process_output
 
     def set_type_from_cwl(self, output):
-        if isinstance(output.type, str):
-            type_name = output.type
+        if cwl_meta.__version__ < "0.16":
+            my_current_type = output.type
+        else:
+            my_current_type = output.type_
+        if isinstance(my_current_type, str):
+            type_name = my_current_type
             if type_name == "string":
                 pass
             elif type_name == "File":
@@ -755,8 +776,8 @@ class ProcessOutput:
                 )
             self.type = type_name
 
-        elif isinstance(output.type, cwl_v1_0.OutputArraySchema):
-            type_name = output.type.items
+        elif isinstance(my_current_type, cwl_v1_0.OutputArraySchema):
+            type_name = my_current_type.items
 
             if type_name == "string":
                 pass

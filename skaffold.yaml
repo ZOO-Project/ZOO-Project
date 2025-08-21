@@ -28,7 +28,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.5.1
+        version: 0.6.1
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -122,7 +122,7 @@ profiles:
         value: https://github.com/gfenoy/zoo-argo-wf-proc-service-template.git
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/cookiecutter.templateBranch
-        value: develop
+        value: main
       - op: add
         path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.enabled
         value: true

@@ -1,7 +1,7 @@
  pip>=23.3.0
  certifi>=2022.12.07
  wheel>=0.38.1
- urllib3==1.26.19
+ urllib3>=1.26.19
  requests>=2.32.0
  idna>=3.7
  jinja2>=3.1.5
@@ -10,7 +10,11 @@
  boto3==1.35.92
  kubernetes
  coverage
+ # Current version uses cwl-wrapper
+ # Should be merged in the official repository
  git+https://github.com/EOEPCA/zoo-calrissian-runner.git@develop
+ # Future version with eoap-cwlwrap
+ #git+https://github.com/GeoLabs/zoo-calrissian-runner.git@feature/eoap-cwlwrap
  git+https://github.com/ZOO-Project/zoo-argowf-runner.git@develop
  git+https://github.com/ZOO-Project/zoo-wes-runner.git@main
  cheetah3
@@ -21,11 +25,11 @@
  pyjwt
  loguru
  pystac
- gdal==3.4.3
+ gdal==3.8.4
  attrs
  click-config-file
  cwl-upgrader==1.2.11
- cwl-utils==0.14
+ cwl-utils>=0.14
  hera
  httpx
  h11>=0.16.0

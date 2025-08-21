@@ -234,6 +234,7 @@ extern "C" {
   void addLangAttr(xmlNodePtr,maps*);
 
   void printHeaders(maps**);
+  void printAssociatedLinks(maps**);
   void printSessionHeaders(maps**);
   int printAFile(maps**,char*,zStatStruct,void (funcError) (maps**, map*));
 

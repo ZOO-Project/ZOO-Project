@@ -581,6 +581,8 @@ extern "C" {
    */
   int getDefinitionFromSchemas(maps* pmsConf,const char* pccName,json_object* pjoInput){
     maps* pmsTmp=getMaps(pmsConf,"schemas");
+    if(pmsTmp==NULL)
+      return 0;
     map* pmLength=getMap(pmsTmp->content,"length");
     int iLen=1;
     if(pmLength!=NULL)
