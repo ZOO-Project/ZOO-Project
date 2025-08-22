@@ -3839,7 +3839,6 @@ extern "C" {
       while (tmps != NULL){
         pmsTmp=getMaps(pmsConf,tmps+1);
         json_object *method=json_object_new_object();
-        map* pmName=getMap(pmsTmp->content,"pname");
         if(pmsTmp!=NULL){
           if(getMap(pmsTmp->content,"length")==NULL)
             addToMap(pmsTmp->content,"length","1");
@@ -3848,6 +3847,7 @@ extern "C" {
             json_object *methodc=json_object_new_object();
             map* cMap=getMapArray(pmsTmp->content,"method",i);
             map* vMap=getMapArray(pmsTmp->content,"title",i);
+            map* pmName=getMapArray(pmsTmp->content,"pname",i);
             if(vMap!=NULL)
               json_object_object_add(methodc,"summary",json_object_new_string(_(vMap->value)));
             vMap=getMapArray(pmsTmp->content,"secured",i);
@@ -3879,7 +3879,6 @@ extern "C" {
                 sprintf(pcaOperationId,"%s%s",vMap->value,pmName->value);
                 json_object_object_add(methodc,"operationId",json_object_new_string(pcaOperationId));
                 free(pcaOperationId);
-                pmName=NULL;
               }
               else{
                 produceOperationId(pmsConf,pmsTmp,i,methodc);
