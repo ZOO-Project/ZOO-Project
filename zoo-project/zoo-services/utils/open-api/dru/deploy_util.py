@@ -633,8 +633,6 @@ class ProcessInput:
         else:
             my_current_type = input.type_
 
-        print(f"Input '{dir(input)}' \n '{input.type_}'", file=sys.stderr)
-
         current_type_is_array=False
         if isinstance(my_current_type, str) or (isinstance(my_current_type, list) and len(my_current_type) == 2 and my_current_type[0] == 'null'):
             type_name = my_current_type[1] if isinstance(my_current_type, list) else my_current_type

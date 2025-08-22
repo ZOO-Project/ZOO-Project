@@ -168,6 +168,17 @@ RUN chmod -R 777 /usr/lib/cgi-bin
 
 
 ARG DEPS_TO_REMOVE="\
+    libc6-dev\
+    libcrypt-dev\
+    icu-devtools\
+    libc-dev-bin\
+    libgcc-11-dev\
+    libglib2.0-dev-bin\
+    libnsl-dev\
+    libtirpc-dev\
+    linux-libc-dev\
+    python3-zipp\
+    python3-pip\
     dpkg-dev\
     unixodbc-dev\
     python3.10-dev\
@@ -272,7 +283,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
-    pip install --upgrade setuptools cryptography PyJWT && \
+    pip install --upgrade setuptools cryptography PyJWT pip zipp urllib3 && \
     cd .. && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
