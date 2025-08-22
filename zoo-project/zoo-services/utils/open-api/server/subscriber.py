@@ -64,6 +64,7 @@ def receive():
         t1 = t.split(" ")
         if t1[0]=="SUB":
             mThreads += [threading.Thread(target=listenMessages,kwargs={"jobID":t1[1]})]
+            mThreads[len(mThreads)-1].daemon = True
             mThreads[len(mThreads)-1].start()
         else:
             send(t)

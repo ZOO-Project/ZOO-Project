@@ -3757,8 +3757,7 @@ extern "C" {
   void produceOperationId(maps* pmsConf,maps* pmsContent,int iIndex,json_object* pjoRes){
     map* pmMethod=getMapArray(pmsContent->content,"method",iIndex);
     if(pmMethod!=NULL){
-      char *pcaOperationId =
-	(char*) malloc((strlen(pmsContent->name)+
+      char *pcaOperationId = (char*) malloc((strlen(pmsContent->name)+
 			strlen(pmMethod->value)+
 			2)*sizeof(char));
       char* pcaTmp=zStrdup(pmsContent->name);
@@ -3880,9 +3879,11 @@ extern "C" {
                 sprintf(pcaOperationId,"%s%s",vMap->value,pmName->value);
                 json_object_object_add(methodc,"operationId",json_object_new_string(pcaOperationId));
                 free(pcaOperationId);
+                pmName=NULL;
               }
-              else
+              else{
                 produceOperationId(pmsConf,pmsTmp,i,methodc);
+              }
             }
             json_object *responses=json_object_new_object();
             json_object *pjoaResponse=json_object_new_object();
@@ -4083,12 +4084,12 @@ extern "C" {
                       map* pmTmp2=getMap(pmsTmp1->content,"length");
                       int iLen=atoi(pmTmp2->value);
                       json_object *pjoaRes=json_object_new_object();
-                      for(int i/*iCallbackCnt*/=0;i<iLen;i/*iCallbackCnt*/++){
-                        map* pmState=getMapArray(pmsTmp1->content,"state",i/*iCallbackCnt*/);
-                        map* pmUri=getMapArray(pmsTmp1->content,"uri",i/*iCallbackCnt*/);
-                        map* pmSchema=getMapArray(pmsTmp1->content,"schema",i/*iCallbackCnt*/);
-                        map* pmType=getMapArray(pmsTmp1->content,"type",i/*iCallbackCnt*/);
-                        map* pmTitle=getMapArray(pmsTmp1->content,"title",i/*iCallbackCnt*/);
+                      for(int iCallbackCnt=0;iCallbackCnt<iLen;iCallbackCnt++){
+                        map* pmState=getMapArray(pmsTmp1->content,"state",iCallbackCnt);
+                        map* pmUri=getMapArray(pmsTmp1->content,"uri",iCallbackCnt);
+                        map* pmSchema=getMapArray(pmsTmp1->content,"schema",iCallbackCnt);
+                        map* pmType=getMapArray(pmsTmp1->content,"type",iCallbackCnt);
+                        map* pmTitle=getMapArray(pmsTmp1->content,"title",iCallbackCnt);
                         json_object *pjoaSchema=json_object_new_object();
                         if(pmSchema!=NULL)
                           json_object_object_add(pjoaSchema,"$ref",json_object_new_string(pmSchema->value));
@@ -4114,15 +4115,16 @@ extern "C" {
                         json_object_object_add(pjoaPost,"requestBody",pjoaRBody);
                         json_object_object_add(pjoaPost,"responses",pjoaResponse);
                         if(pmName==NULL)
-                          pmName=getMapArray(pmsTmp->content,"operationId",i/*iCallbackCnt*/);
+                          pmName=getMapArray(pmsTmp->content,"operationId",iCallbackCnt);
                         if(pmName!=NULL){
                           char* pcaOperationId=(char*)malloc((strlen(pmState->value)+strlen(pmName->value)+1)*sizeof(char));
                           sprintf(pcaOperationId,"%s%s",pmState->value,pmName->value);
                           json_object_object_add(pjoaPost,"operationId",json_object_new_string(pcaOperationId));
                           free(pcaOperationId);
                         }
-                        else
-                          produceOperationId(pmsConf,pmsTmp1,i/*iCallbackCnt*/,pjoaPost);
+                        else{
+                          produceOperationId(pmsConf,pmsTmp1,iCallbackCnt,pjoaPost);
+                        }
 
                         json_object *pjoaMethod=json_object_new_object();
                         json_object_object_add(pjoaMethod,"post",pjoaPost);

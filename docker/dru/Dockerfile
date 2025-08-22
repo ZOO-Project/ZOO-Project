@@ -11,6 +11,8 @@ ENV DEBIAN_FRONTEND noninteractive
 ########################################
 ### DEV TOOLS
 RUN apt-get update -qqy --no-install-recommends \
+    # Required for security fixes
+    && apt-get upgrade -y \
     # Various cli tools
     && apt-get install -qqy --no-install-recommends wget mlocate tree \
     # C++ and CMAKE

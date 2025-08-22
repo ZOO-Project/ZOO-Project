@@ -178,7 +178,6 @@ void printAssociatedLinks(maps** ppmsConf){
   map* pmResponse=getMapFromMaps(pmsConf,"lenv","json_response_object");
   if(pmResponse!=NULL){
     json_object* jobj=parseJson(pmsConf,pmResponse->value);
-    ZOO_DEBUG("Response object");
     map* pmLinksHeader=getMapFromMaps(pmsConf,"openapi","include_links_header");
     printf("Content-Length: %lu\r\n",strlen(pmResponse->value)+1);
     if(jobj!=NULL && pmLinksHeader!=NULL && strncasecmp(pmLinksHeader->value,"true",4)==0){
