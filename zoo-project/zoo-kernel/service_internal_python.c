@@ -957,10 +957,6 @@ PythonPrintDebugMessage(PyObject* self, PyObject* args)
         Py_RETURN_NONE;
     }
 
-    const char* pccModule = "unknown";
-    const char* pccFunction = "unknown";
-    int iLine = -1;
-
     // Get the current Python frame using the public API
 #if PY_VERSION_HEX < 0x030C0000  // For Python < 3.12
     PyFrameObject* poFrame = PyEval_GetFrame();
