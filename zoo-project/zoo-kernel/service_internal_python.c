@@ -943,6 +943,9 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
  * @see _ss
  */
 #include <Python.h>
+#if PY_VERSION_HEX < 0x030C0000  // For Python < 3.12
+#include "frameobject.h"
+#endif
 
 // This function prints a debug message along with the module, function, and line number
 // where it was called from. Only string arguments are supported.
