@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 find_package(Boost 1.65.0 COMPONENTS serialization filesystem REQUIRED)
 
+find_package(CURL)
 find_package(OTB)
 if(OTB_FOUND)
   include(${OTB_USE_FILE})

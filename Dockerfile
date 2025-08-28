@@ -1,7 +1,7 @@
 #
 # Base: Ubuntu 18.04 with updates and external packages
 #
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
     dirmngr \
@@ -10,65 +10,40 @@ ARG BUILD_DEPS=" \
     wget \
 "
 ARG RUN_DEPS=" \
-    libcurl3-gnutls \
+    libcurl3t64-gnutls \
     libfcgi-dev \
     libfcgi-bin \
     libmapserver-dev \
     curl \
     \
     saga \
-    libsaga-api-7.3.0 \
-    libotb \
-    otb-bin \
+    libsaga-api9 \
+    libsaga-dev \
     \
     libpq5 \
-    libpython3.10 \
+    libpython3-dev \
     libxslt1.1 \
     gdal-bin \
+    gdal-data \
+    python3-gdal \
+    python3-pip \
     libcgal-dev \
-    libcgal-qt5-dev \
     librabbitmq4 \
     nlohmann-json3-dev \
     python3 \
     r-base \
-    python3-pip \
-    libnode93 \
-    libhdf5-openmpi-103-1 libnetcdf-c++4 libvtk7.1p libvtkgdcm3.0 libvtkgdcm-cil libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-java libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
+    libffi8 \
+    libffi-dev \
+    nodejs \ 
+    npm \
 "
 RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends $BUILD_DEPS software-properties-common gnupg wget curl \
     \
-    # Añadir el repositorio de UbuntuGIS
-    && add-apt-repository ppa:ubuntugis/ppa \
-    \
-    # Crear directorio para claves modernas y deshabilitar IPv6 en GPG
-    && mkdir -p /etc/apt/keyrings \
-    && mkdir -p ~/.gnupg \
-    && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf \
-    \
-    # Añadir clave pública de CRAN
-    && curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-       | gpg --dearmor -o /etc/apt/keyrings/cran-archive-keyring.gpg \
-    \
-    # Añadir el repositorio de CRAN
-    && echo "deb [signed-by=/etc/apt/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME")-cran40/" \
-       | tee /etc/apt/sources.list.d/cran.list \
-    \
-    # Actualizar repositorios
     && apt-get update \
-    && add-apt-repository ppa:mmomtchev/libnode \
     \
     && apt-get install -y $RUN_DEPS \
-    \
-    && curl -LO http://archive.ubuntu.com/ubuntu/pool/main/libf/libffi/libffi6_3.2.1-8_amd64.deb \
-    && dpkg -i libffi6_3.2.1-8_amd64.deb \
-    && wget http://launchpadlibrarian.net/309343863/libmozjs185-1.0_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && wget http://launchpadlibrarian.net/309343864/libmozjs185-dev_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && dpkg --force-depends -i libmozjs185-1.0_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && dpkg --force-depends -i libmozjs185-dev_1.8.5-1.0.0+dfsg-7_amd64.deb \
-    && apt -y --fix-broken install \
-    && rm libmozjs185*.deb libffi6*.deb \
     \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -79,32 +54,45 @@ RUN set -ex \
 FROM base AS builder1
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DEPS=" \
+    wget \
+    lsb-release \
     build-essential \
     bison \
     flex \
     make \
     autoconf \
+    autopoint \
     gcc \
     gettext \
     \
     # Comment lines bellow if nor OTB nor SAGA \
-    libotb-dev \
-    otb-qgis \
-    otb-bin-qt \
-    qttools5-dev \
-    qttools5-dev-tools \
-    qtbase5-dev \
-    libqt5opengl5-dev \
     libtinyxml-dev \
     libfftw3-dev \
     cmake \
-    libsaga-dev \
     # Comment lines before this one if nor OTB nor SAGA \
     git \
-    libfcgi-dev \
-    libfcgi-bin \
+    libpq-dev \
+    libproj-dev \
+    libcurl4-openssl-dev \
+    zlib1g-dev \
+    libexpat1-dev \
+    libgeos-dev \
+    libqt5svg5-dev \
     libgdal-dev \
-    libwxgtk3.0-gtk3-dev \
+    python3.12-dev \
+    libncurses-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libffi-dev \
+    liblzma-dev \
+    uuid-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    xz-utils \
+    tk-dev \
+    ca-certificates \
+    libwxgtk3.2-dev \
     libjson-c-dev \
     libssh2-1-dev \
     libssl-dev \
@@ -117,45 +105,67 @@ ARG BUILD_DEPS=" \
     librabbitmq-dev \
     libkrb5-dev \
     nlohmann-json3-dev \
-    libnode-dev \
-    node-addon-api \
-    nodejs \
     libaprutil1-dev \
     libxslt-dev \
     libopengl-dev \
+    libhdf5-openmpi-103-1 \
+    libnetcdf-c++4-dev \
+    libboost-filesystem-dev \
+    libboost-dev \
+    libboost-system-dev \
+    libvtk9-dev libgdcm-dev libgdcm-java libgdcm-tools libvtkgdcm-dev libvtkgdcm-tools python3-vtkgdcm python3-gdcm \
 "
 WORKDIR /zoo-project
 COPY . .
 
+ENV LC_NUMERIC=C
+ENV GDAL_DATA=/usr/share/gdal                                                             
+ENV PROJ_LIB=/usr/share/proj                                                              
+ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications                              
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/bin:/usr/lib/saga
+ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1           
+ENV SAGA_MLB=/usr/lib/saga  
+
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib
+
 RUN set -ex \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
-    \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1-bin.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb-9.1.1.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode109.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode-dev.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
+    && dpkg -i /tmp/otb/*.deb \
+    && dpkg -i --force-all /tmp/node/*.deb \
+    && ln -s /usr/lib/libnode.so.108 /usr/lib/libnode.so.109 \
+    && ls -l /usr/lib/x86_64-linux-gnu/libfcgi* \
     && make -C ./thirds/cgic206 libcgic.a \
-    \
-    && cd ./zoo-project/zoo-kernel \
-    #&& git clone  --depth=1 https://github.com/json-c/json-c.git \
-    #&& mkdir json-c-build \
-    #&& cd json-c-build \
-    #&& cmake ../json-c -DCMAKE_INSTALL_PREFIX=/usr/local \
-    #&& make && make install \
-    #&& cd .. \
-    #&& sed "s:-ljson-c:-Wl,-rpath,/usr/local/lib /usr/local/lib/libjson-c.so.5 :g" -i configure.ac \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/gdal-config|/usr/bin/gdal-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/curl-config|/usr/bin/curl-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|^ostype="\$(lsb_release -is)"|ostype="RedHatEnterprise"|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|\$OTB_INSTALL_DIR|/opt/otb-9.1.1|g' /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && cat /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && . /opt/otb-9.1.1/tools/post_install.sh \
+    && cd ./zoo-project/zoo-kernel \ 
+    && export CFLAGS="-I/usr/include/mapserver" \
+    && export CPPFLAGS="-I/usr/include/mapserver -I/opt/otb-9.1.1/include/OTB-9.1 -I/opt/otb-9.1.1/include/ITK-4.13 -I/usr/include/mapserver -I/usr/include/node -I/usr/share/nodejs/node-addon-api -I/usr/include" \
+    && export CXXFLAGS="$CPPFLAGS" \
     && autoconf \
     && autoreconf --install \
-    # && find /usr -name otbWrapperApplication.h  # TODO: remove (cesarbenjamindotnet) \
-    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.10 \
-              --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=7  \
+    && ./configure --with-rabbitmq=yes --with-python=/usr --with-pyvers=3.12 \
+              --with-nodejs=/usr --with-mapserver=/usr --with-ms-version=8 \
               --with-json=/usr --with-r=/usr --with-db-backend --prefix=/usr \
-              --with-otb=/usr --with-itk=/usr --with-otb-version=8.1 \
+              --with-otb=/opt/otb-9.1.1 --with-itk=/opt/otb-9.1.1 --with-otb-version=9.1 \
               --with-itk-version=4.13 --with-saga=/usr \
-              --with-saga-version=7.3 --with-wx-config=/usr/bin/wx-config \
-    && make -j4 \
+              --with-saga-version=9 --with-wx-config=/usr/bin/wx-config \
+    && make -j$(nproc) \
+    && make -n install \
     && make install \
     \
     # TODO: why not copied by 'make'?
     && cp zoo_loader_fpm zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
-    && cp zoo_loader.cgi main.cfg /usr/lib/cgi-bin/ \
     && cp ../zoo-api/js/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/utils/open-api/cgi-env/* /usr/lib/cgi-bin/ \
     && cp ../zoo-services/hello-py/cgi-env/* /usr/lib/cgi-bin/ \
@@ -179,10 +189,7 @@ RUN set -ex \
          msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
        done  \
     \
-    && npm -g install gdal-async --build-from-source --shared_gdal \
-    && npm -g install proj4 \
-    && npm -g install bower \
-    && npm -g install wps-js-52-north \
+    && npm -g install gdal-async proj4 bower wps-js-52-north \
     && ( cd /usr/lib/cgi-bin/hello-nodejs && npm install ) \
     #&& for lang in fr_FR ; do msgcat $(find ../zoo-services/ -name "${lang}.po") -o ${lang}.po ; done \
     && for lang in fr_FR ; do\
@@ -205,10 +212,10 @@ RUN set -ex \
     && make \
     && mkdir OTB \
     && cd OTB \
-    && ITK_AUTOLOAD_PATH=/usr/lib/x86_64-linux-gnu/otb/applications/ ../otb2zcfg \
+    && ITK_AUTOLOAD_PATH="$OTB_INSTALL_DIR"/lib/otb/applications/ ../otb2zcfg \
     && mkdir /usr/lib/cgi-bin/OTB \
     && cp *zcfg /usr/lib/cgi-bin/OTB \
-    #&& for i in *zcfg; do cp $i /usr/lib/cgi-bin/$i ; j="$(echo $i | sed "s:.zcfg::g")" ; sed "s:$j:OTB_$j:g" -i  /usr/lib/cgi-bin/OTB_$i ; done \
+    #&& for i in *zcfg; do cp $i /usr/lib/cgi-bin/$i ; j="$(echo $i | sed "s:.zcfg::g")" ; sed "s:$j:$j:g" -i  /usr/lib/cgi-bin/$i ; done \
     #Comment lines before this one if no OTB \
     \
     #Comment lines below from here if no SAGA \
@@ -258,8 +265,6 @@ ARG BUILD_DEPS=" \
     libxslt1-dev \
     libcgal-dev \
     libcgal-qt5-dev \
-    libnode-dev \
-    node-addon-api \
 "
 WORKDIR /zoo-project
 COPY ./zoo-project/zoo-services ./zoo-project/zoo-services
@@ -279,7 +284,7 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service_internal.h /zoo
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/version.h /zoo-project/zoo-project/zoo-kernel/version.h
 
 # Node.js global node_modules
-COPY --from=builder1 /usr/lib/node_modules/ /usr/lib/node_modules/
+COPY --from=builder1 /usr/local/lib/node_modules/ /usr/local/lib/node_modules/
 
 RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
@@ -335,12 +340,8 @@ RUN set -ex \
 FROM base AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RUN_DEPS=" \
-    # se eliminó apache2 # TODO: remove (cesarbenjamindotnet) \
-    # apache2 \
-    # se agregó nginx \
     nginx \
-    fcgiwrap \
-    spawn-fcgi \
+    lighttpd \
     curl \
     cgi-mapserver \
     mapserver-bin \
@@ -348,15 +349,12 @@ ARG RUN_DEPS=" \
     libxml2-utils \
     gnuplot \
     locales \
-    # se eliminó libapache2-mod-fcgid # TODO: remove (cesarbenjamindotnet) \
-    # libapache2-mod-fcgid \
     python3-setuptools \
     #Uncomment the line below to add vi editor \
     vim \
     #Uncomment the lines below to add debuging \
     #valgrind \
     #gdb \
-    libnode93 \
 "
 ARG BUILD_DEPS=" \
     make \
@@ -364,16 +362,26 @@ ARG BUILD_DEPS=" \
     gcc \
     libgdal-dev \
     python3-dev \
-    libnode-dev \
-    node-addon-api \
 "
 # For Azure use, uncomment bellow
 #ARG SERVER_URL="http://zooprojectdemo.azurewebsites.net/"
 #ARG WS_SERVER_URL="ws://zooprojectdemo.azurewebsites.net"
 # For basic usage
 ARG SERVER_HOST="localhost"
-ARG SERVER_URL="http://localhost/"
+ARG SERVER_URL="http://localhost"
 ARG WS_SERVER_URL="ws://localhost"
+ENV SERVER_HOST="$SERVER_HOST"
+ENV SERVER_URL="$SERVER_URL"
+ENV WS_SERVER_URL="$WS_SERVER_URL" 
+
+ENV LD_LIBRARY_PATH=/opt/otb-9.1.1/lib:/usr/lib/saga
+ENV GDAL_DATA=/usr/share/gdal
+ENV PROJ_LIB=/usr/share/proj
+ENV OTB_APPLICATION_PATH=/opt/otb-9.1.1/lib/otb/applications
+ENV PATH=/opt/otb-9.1.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/bin:/usr/lib/saga
+ENV PYTHONPATH=/opt/otb-9.1.1/lib/otb/python:/opt/otb-9.1.1/lib/otb/python
+ENV OTB_INSTALL_DIR=/opt/otb-9.1.1
+ENV SAGA_MLB=/usr/lib/saga
 
 # For using another port than 80, uncomment below.
 # remember to also change the ports in docker-compose.yml
@@ -382,6 +390,7 @@ ARG WS_SERVER_URL="ws://localhost"
 WORKDIR /zoo-project
 COPY ./docker/startUp.sh /
 COPY ./docker/nginx-start.sh /
+COPY ./docker/70-zoo-loader-cgi.conf /etc/lighttpd/conf-available/70-zoo-loader-cgi.conf
 
 # From zoo-kernel
 COPY --from=builder1 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -398,14 +407,11 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/static
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/echo-py/cgi-env/ /usr/lib/cgi-bin/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/deploy-py/cgi-env/ /usr/lib/cgi-bin/
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/undeploy-py/cgi-env/ /usr/lib/cgi-bin/
-# se eliminó la copia de .htaccess y default.conf de apache2 # TODO: remove (cesarbenjamindotnet)
-# COPY --from=builder1 /zoo-project/docker/.htaccess /var/www/html/.htaccess # TODO: remove (cesarbenjamindotnet)
-# COPY --from=builder1 /zoo-project/docker/default.conf /000-default.conf # TODO: remove (cesarbenjamindotnet)
 COPY --from=builder1 /zoo-project/docker/nginx-default.conf /etc/nginx/sites-available/zooproject
 COPY --from=builder1 /zoo-project/zoo-project/zoo-services/utils/open-api/server/publish.py /usr/lib/cgi-bin/publish.py
 
 # Node.js global node_modules
-COPY --from=builder1 /usr/lib/node_modules/ /usr/lib/node_modules/
+COPY --from=builder1 /usr/local/lib/node_modules/ /usr/local/lib/node_modules/
 
 # From optional zoo modules
 COPY --from=builder2 /usr/lib/cgi-bin/ /usr/lib/cgi-bin/
@@ -425,8 +431,6 @@ RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS $BUILD_DEPS \
     \
     && sed "s=https://petstore.swagger.io/v2/swagger.json=${SERVER_URL}/ogc-api/api=g" -i /var/www/html/swagger-ui/dist/* \
-    # se eliminó la configuración de apache2  # TODO: remove (cesarbenjamindotnet) \
-    # && sed "s=http://localhost=$SERVER_URL=g" -i /var/www/html/.htaccess  # TODO: remove (cesarbenjamindotnet) \
     && sed "s=localhost=$SERVER_HOST=g" -i /etc/nginx/sites-available/zooproject \
     && cp /etc/nginx/sites-available/zooproject /etc/nginx/sites-available/default \
     && sed "s=http://localhost=$SERVER_URL=g;s=publisherUr\=$SERVER_URL=publisherUrl\=http://localhost=g;s=ws://localhost=$WS_SERVER_URL=g" -i /usr/lib/cgi-bin/oas.cfg \
@@ -442,36 +446,53 @@ RUN set -ex \
     && ln -s /usr/lib/x86_64-linux-gnu/saga/ /usr/lib/saga \
     && ln -s /testing /var/www/html/cptesting \
     && rm -rf /var/lib/apt/lists/* \
-    # && cp /000-default.conf /etc/apache2/sites-available/  # TODO: remove (cesarbenjamindotnet) \
     && export CPLUS_INCLUDE_PATH=/usr/include/gdal \
-    && export C_INCLUDE_PATH=/usr/include/gdal \
-    && pip3 install --upgrade pip setuptools wheel \
-    # see various issue reported about _2to3 invocation and setuptools < 58.0 \
-    && python3 -m pip install --upgrade --no-cache-dir setuptools==57.5.0 \
-    && pip3 install GDAL==3.6.4 \
-    && pip3 install Cheetah3 redis spython \
-    # se eliminó la modificación de apache2.conf  # TODO: remove (cesarbenjamindotnet) \
-    # && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf   # TODO: remove (cesarbenjamindotnet) \
-    \
-    # For using another port than 80, uncomment below.  # TODO: remove (cesarbenjamindotnet) \
-    # remember to also change the ports in docker-compose.yml  # TODO: remove (cesarbenjamindotnet) \
-    # && sed "s:Listen 80:Listen $PORT:g" -i /etc/apache2/ports.conf  # TODO: remove (cesarbenjamindotnet) \
+    && export C_INCLUDE_PATH=/usr/include/gdal 
+
+RUN set -ex \
+    && export OTB_INSTALL_DIR="/opt/otb-9.1.1" \
+    && apt update \
+    && apt install -y python3-spython python3-cheetah python3-redis wget libboost-filesystem-dev \
+    && rm -rf /tmp/otb /tmp/node \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/otb-9.1.1-bin.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/libotb-dev.deb \
+    && wget -P /tmp/otb https://github.com/veogeo/OTB-9-ubuntu24/releases/download/9.1.1/python3-otb-9.1.1.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode109.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/libnode-dev.deb \
+    && wget -P /tmp/node https://github.com/veogeo/mmomtchev--libnode/releases/download/node-18.x-2025.06/node-addon-api.deb \
+    && dpkg -i /tmp/otb/*.deb \
+    && dpkg -i --force-all /tmp/node/*.deb \
+    && ln -s /usr/lib/libnode.so.108 /usr/lib/libnode.so.109 \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/gdal-config|/usr/bin/gdal-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|"\$OTB_INSTALL_DIR"/bin/curl-config|/usr/bin/curl-config|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|^ostype="\$(lsb_release -is)"|ostype="RedHatEnterprise"|' /opt/otb-9.1.1/tools/post_install.sh \
+    && sed -i 's|\$OTB_INSTALL_DIR|/opt/otb-9.1.1|g' /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && cat /opt/otb-9.1.1/tools/sanitize_rpath.sh \
+    && . /opt/otb-9.1.1/tools/post_install.sh \
+    && rm -rf /tmp/otb /tmp/node \
+    && apt remove -y wget \
     \
     && mkdir -p /tmp/zTmp/statusInfos \
     && chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project /usr/lib/cgi-bin/ \
     && chmod 755 /startUp.sh \
     && chmod +x /nginx-start.sh \
-    \
+    && rm /usr/lib/cgi-bin/SAGA/grid_gridding/0.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/grid_gridding/6.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/grid_gridding/9.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_georeference/4.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/14.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/17.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/23.zcfg \
+    && rm /usr/lib/cgi-bin/SAGA/pj_proj4/24.zcfg \
     # remove invalid zcfgs \
-    && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
-    # Update SAGA zcfg
+    ### && rm /usr/lib/cgi-bin/SAGA/db_pgsql/6.zcfg /usr/lib/cgi-bin/SAGA/imagery_tools/8.zcfg /usr/lib/cgi-bin/SAGA/grid_calculus_bsl/0.zcfg /usr/lib/cgi-bin/SAGA/grids_tools/1.zcfg /usr/lib/cgi-bin/SAGA/grid_visualisation/1.zcfg /usr/lib/cgi-bin/SAGA/ta_lighting/2.zcfg /usr/lib/cgi-bin/OTB/TestApplication.zcfg /usr/lib/cgi-bin/OTB/StereoFramework.zcfg \
+    # Update SAGA zcfg \ 
     && sed "s:AllowedValues =    <Default>:AllowedValues =\n    <Default>:g" -i /usr/lib/cgi-bin/SAGA/*/*zcfg \
     && sed "s:Title = $:Title = No title found:g" -i /usr/lib/cgi-bin/SAGA/*/*.zcfg \
-    # Enable apache modules  # TODO: remove (cesarbenjamindotnet) \
-    # se eliminó la habilitación de mod_fcgid  # TODO: remove (cesarbenjamindotnet) \
     \
-    # && a2enmod cgi rewrite  # TODO: remove (cesarbenjamindotnet) \
-    \
+    && sed "s=80=9090=g" -i /etc/lighttpd/lighttpd.conf \
+    && sed -i '/include_shell .*use-ipv6\.pl/d' /etc/lighttpd/lighttpd.conf \
+    && lighty-enable-mod zoo-loader-cgi \
     # Cleanup \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists/*
@@ -482,6 +503,4 @@ RUN mkdir -p /opt/zooservices_namespaces && chmod -R 700 /opt/zooservices_namesp
 # For using another port than 80, change the value below.
 # remember to also change the ports in docker-compose.yml
 EXPOSE 80
-# se eliminó el arranque con apache2   # TODO: remove (cesarbenjamindotnet)
-# CMD /usr/sbin/apache2ctl -D FOREGROUND   # TODO: remove (cesarbenjamindotnet)
 CMD ["/nginx-start.sh"]
