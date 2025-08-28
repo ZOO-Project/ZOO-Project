@@ -3,8 +3,6 @@ name: Documentation building and deployment
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
 

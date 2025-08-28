@@ -3,8 +3,6 @@ name: Docker Image CI (DRU with HPC and OGC Application Package support)
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
 

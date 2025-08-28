@@ -3,8 +3,6 @@ name: Skaffold and OGC ETS for OGC API - Processes - Part 2
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
 
