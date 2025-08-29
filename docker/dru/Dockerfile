@@ -157,6 +157,7 @@ RUN git clone --depth 1 https://github.com/swagger-api/swagger-ui.git \
     && mv /var/www/html/swagger-ui/dist /var/www/html/swagger-ui/oapip
 
 COPY docker/dru/default.conf /etc/apache2/sites-available/000-default.conf
+COPY zoo-project/zoo-services/utils/open-api/dru/DetectEntrypoint.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.py /usr/lib/cgi-bin
