@@ -318,10 +318,55 @@ def storeCwl(conf, inputs, outputs):
 
 
 def DeployProcess(conf, inputs, outputs):
-
     try:
+        # If noRunSql is true, we will try to detect the entrypoint of the docker image(s)
         if "noRunSql" in conf["lenv"]:
-            zoo.info("Nothing to do here.")
+            if os.environ.get("ZOOFPM_DETECT_ENTRYPOINT","false") == "false":
+                zoo.info("Nothing to do here.")
+                return zoo.SERVICE_SUCCEEDED
+            from DetectEntrypoint import KubernetesClient
+            # Here we need to invoke the crane pod to detect potential entrypoint
+            zooservices_folder = os.path.join(
+                conf["auth_env"]["cwd"],
+                conf["lenv"]["deployedServiceId"]
+            )
+            f = open(os.path.join(zooservices_folder, "app-package.cwl"),"r")
+            cwl_content = yaml.safe_load(f.read())
+            f.close()
+            try:
+                has_updated_values = False
+                k8s_client = KubernetesClient(conf)
+                # for each class: CommandLineTool
+                for graph_item in cwl_content.get("$graph",[]):
+                    if graph_item.get("class") == "CommandLineTool":
+                        zoo.info(f"Found CommandLineTool: {graph_item.get('hints', {}).get('DockerRequirement', {}).get('dockerPull')}")
+                        image_config = k8s_client.get_image_entrypoint(graph_item.get("hints", {}).get("DockerRequirement", {}).get("dockerPull"))
+                        # Detect entry point using the remote service
+                        if image_config["config"].get("Entrypoint") is not None:
+                            has_updated_values = True
+                            zoo.info(f"Entrypoint found: {image_config['config']['Entrypoint']}")
+                            if graph_item.get("baseCommand") is not None:
+                                graph_item["baseCommand"] = graph_item.get("baseCommand").prepend(image_config['config']['Entrypoint'])
+                            else:
+                                graph_item["baseCommand"] = image_config['config']['Entrypoint']
+                        else:
+                            zoo.info("No Entrypoint found")
+                k8s_client.delete_crane_pod()
+                # Here we need to save the updated CWL graph
+                if has_updated_values:
+                    with open(os.path.join(zooservices_folder, "app-package.cwl"), "w") as f:
+                        yaml.dump(cwl_content, f)
+                        f.close()
+                    zoo.success("CWL file updated successfully.")
+                else:
+                    zoo.success("No updates were made to the CWL file.")
+            except Exception as e:
+                zoo.error(f"Failed to get the image entrypoint(s): {e}")
+                try:
+                    k8s_client.delete_crane_pod()
+                except Exception as e:
+                    zoo.error(f"Failed to delete the crane pod: {e}")
+                return zoo.SERVICE_FAILED
             return zoo.SERVICE_SUCCEEDED
 
         if (
