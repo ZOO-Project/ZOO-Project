@@ -215,7 +215,7 @@ Configuration Files
   [headers]
   Access-Control-Allow-Origin=*
   Access-Control-Allow-Methods=GET, POST, PUT, PATCH, OPTIONS, DELETE, HEAD
-  Access-Control-Allow-Headers=Content-Type, Accept, Authorization, Origin
+  Access-Control-Allow-Headers=Content-Type, Accept, Authorization, Origin, Prefer
 
 **oas.cfg** (check rootHost/rootUrl)
 
@@ -234,5 +234,5 @@ To build and run the Nuxt client:
 
 Once completed, open the Nuxt client and Login at:
 
-http://192.168.1.6:3000/
+http://your-ip-address:3000/
 
