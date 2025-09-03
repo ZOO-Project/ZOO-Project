@@ -809,4 +809,4 @@ msgstr "Le paramètre optionnel f indique le format de sortie que le serveur doi
 
 #: locale/.cache/my_service_string_to_translate.c:58
 msgid "Exception"
-msgstr ""
+msgstr "Exception"
