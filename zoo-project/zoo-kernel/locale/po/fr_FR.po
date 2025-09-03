@@ -729,7 +729,7 @@ msgstr "Erreur serveur"
 
 #: locale/.cache/my_service_string_to_translate.c:31
 msgid "InvalidParameter"
-msgstr ""
+msgstr "Paramètre invalide"
 
 #: locale/.cache/my_service_string_to_translate.c:32
 msgid "NotAllowed"
