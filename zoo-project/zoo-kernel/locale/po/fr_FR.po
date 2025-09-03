@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the PACKAGE package.
 # 
 # Translators:
-# Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015-2016,2021
+# Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015-2016,2021,2025
 # Nicolas Bozon <nicolas.bozon@gmail.com>, 2015
 msgid ""
 msgstr ""
@@ -11,7 +11,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-12-07 22:21+0100\n"
 "PO-Revision-Date: 2015-07-01 12:58+0000\n"
-"Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015-2016,2021\n"
+"Last-Translator: Gérald FENOY <gerald.fenoy@geolabs.fr>, 2015-2016,2021,2025\n"
 "Language-Team: French (France) (http://app.transifex.com/zoo-project/zoo-kernel-internationalization/language/fr_FR/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -721,7 +721,7 @@ msgstr "Le paramètre f optionel"
 
 #: locale/.cache/my_service_string_to_translate.c:29
 msgid "NotFound"
-msgstr ""
+msgstr "Non trouvé"
 
 #: locale/.cache/my_service_string_to_translate.c:30
 msgid "ServerError"
