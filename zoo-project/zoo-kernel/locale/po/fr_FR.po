@@ -733,11 +733,11 @@ msgstr "Paramètre invalide"
 
 #: locale/.cache/my_service_string_to_translate.c:32
 msgid "NotAllowed"
-msgstr ""
+msgstr "Non autorisé"
 
 #: locale/.cache/my_service_string_to_translate.c:33
 msgid "NotSupported"
-msgstr ""
+msgstr "Non supporté"
 
 #: locale/.cache/my_service_string_to_translate.c:34
 msgid "Results received successfully"
