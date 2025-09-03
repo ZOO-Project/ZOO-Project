@@ -725,7 +725,7 @@ msgstr "Non trouvé"
 
 #: locale/.cache/my_service_string_to_translate.c:30
 msgid "ServerError"
-msgstr ""
+msgstr "Erreur serveur"
 
 #: locale/.cache/my_service_string_to_translate.c:31
 msgid "InvalidParameter"
