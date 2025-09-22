@@ -275,13 +275,14 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     # Using the latest version of pycalrissian with the fix for the RBAC
     cd /tmp && \
     #git clone -b develop https://github.com/Terradue/pycalrissian.git && \
+    # Use temporarily a different branch with the fix for passing the workflow as an env variable
     git clone -b feature/workflow-as-env-var https://github.com/gfenoy/pycalrissian.git && \
     cd pycalrissian && \
     #sed "s:cwltool==:cwltool>=:g;s:setuptools==:setuptools>=:g;s:" -i pyproject.toml && \
     sed "s:cwltool==:cwltool>=:g;s:kubernetes==:kubernetes>=:g;s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
     hatch build && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
-    cd .. && \
+    # cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
