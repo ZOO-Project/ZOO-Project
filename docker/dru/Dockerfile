@@ -265,6 +265,7 @@ ARG DEPS_TO_REMOVE="\
     automake \
 "
 
+COPY docker/startUp.sh /startUp.sh
 COPY docker/dru/requirements.txt /tmp/
 COPY zoo-project/zoo-kernel/locale /tmp/locale
 
@@ -273,9 +274,11 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install hatch && \
     # Using the latest version of pycalrissian with the fix for the RBAC
     cd /tmp && \
-    git clone -b develop https://github.com/Terradue/pycalrissian.git && \
+    #git clone -b develop https://github.com/Terradue/pycalrissian.git && \
+    git clone -b feature/workflow-as-env-var https://github.com/gfenoy/pycalrissian.git && \
     cd pycalrissian && \
-    #sed "s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
+    #sed "s:cwltool==:cwltool>=:g;s:setuptools==:setuptools>=:g;s:" -i pyproject.toml && \
+    sed "s:cwltool==:cwltool>=:g;s:kubernetes==:kubernetes>=:g;s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
     hatch build && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
     cd .. && \
@@ -293,14 +296,28 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     # Add minimal translation support for the ZOO-Kernel internal messages
     cd /tmp && for i in  $(ls ./locale/po/*po | grep -v utf8 | grep -v message); do \
         j=$(echo $i | sed "s:./locale/po/::g;s:.po::g"); \
-        mkdir -p /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
-        msgfmt  $i -o /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
-        mkdir -p /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
-        msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
-        locale-gen $j ; \
-        localedef -i $j -c -f UTF-8 -A /usr/share/locale/locale.alias ${j}.UTF-8; \
+        case "$j" in \
+            cs) j_full="cs_CZ" ;; \
+            de) j_full="de_DE" ;; \
+            es) j_full="es_ES" ;; \
+            fi) j_full="fi_FI" ;; \
+            ja) j_full="ja_JP" ;; \
+            messages) \
+            echo "Skipping $j (not a real locale)" \
+            continue \
+            ;; \
+            *) j_full="$j" ;; \
+        esac ; \
+        echo "🔹 Processing $file -> $j_full" ; \
+        mkdir -p /usr/share/locale/$j_full/LC_MESSAGES; \
+        msgfmt  $i -o /usr/share/locale/$j_full/LC_MESSAGES/zoo-kernel.mo ; \
+        mkdir -p /usr/local/share/locale/$j_full/LC_MESSAGES; \
+        msgfmt  $i -o /usr/local/share/locale/$j_full/LC_MESSAGES/zoo-kernel.mo ; \
+        locale-gen $j_full ; \
+        localedef -i $j_full -c -f UTF-8 -A /usr/share/locale/locale.alias ${j_full}.UTF-8; \
     done  && \
     \
+    chown www-data:www-data -R /var/www && \
     apt-get purge -y $DEPS_TO_REMOVE $BUILD_DEPS && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 

@@ -4,19 +4,17 @@
  urllib3>=1.26.19
  requests>=2.32.0
  idna>=3.7
- jinja2>=3.1.5
+ jinja2>=3.1.6
  markupsafe>=2.0.0
- cookiecutter==2.1.1
+ cookiecutter>=2.1.1
  boto3==1.35.92
  kubernetes
  coverage
- # Current version uses cwl-wrapper
- # Should be merged in the official repository
  git+https://github.com/EOEPCA/zoo-calrissian-runner.git@develop
- # Future version with eoap-cwlwrap
- #git+https://github.com/GeoLabs/zoo-calrissian-runner.git@feature/eoap-cwlwrap
  git+https://github.com/ZOO-Project/zoo-argowf-runner.git@develop
  git+https://github.com/ZOO-Project/zoo-wes-runner.git@main
+ cwl2ogc==0.10.0.dev5
+ eoap-cwlwrap==0.12.0
  cheetah3
  redis
  CloudEvents
@@ -30,6 +28,7 @@
  click-config-file
  cwl-upgrader==1.2.11
  cwl-utils>=0.14
+ cwl-loader==0.4.0
  hera
  httpx
  h11>=0.16.0

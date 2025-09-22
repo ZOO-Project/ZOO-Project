@@ -106,16 +106,30 @@ files:
       cwlVersion: v1.0
 
       class: CommandLineTool
-      id: main
-      inputs: {}
-      outputs: {}
+      id: stage-in-directory
 
+      inputs:
+        reference:
+          type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI
+          doc: "A STAC Item to stage" 
+          label: "STAC Item URL"
+      outputs:
+        staged:
+          type: Directory
+          outputBinding:
+            glob: .
       baseCommand: 
       - python
       - stage.py
       arguments:
-      - $( inputs.input )
+      - $( inputs.reference.value )
+      # - $( inputs.another_input ) # This is an additional input to demonstrate the use of multiple inputs
       requirements:
+        NetworkAccess:
+          networkAccess: true
+        SchemaDefRequirement:
+          types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
         DockerRequirement:
           dockerPull: ghcr.io/eoap/mastering-app-package/stage:1.0.0
         InlineJavascriptRequirement: {}
@@ -132,23 +146,23 @@ files:
                 config = stac_asset.Config(warn=True)
 
                 async def main(href: str):
-                    
+
                     item = pystac.read_file(href)
-                    
+
                     os.makedirs(item.id, exist_ok=True)
                     cwd = os.getcwd()
-                    
+
                     os.chdir(item.id)
                     item = await stac_asset.download_item(item=item, directory=".", config=config)
                     os.chdir(cwd)
-                    
+
                     cat = pystac.Catalog(
                         id="catalog",
                         description=f"catalog with staged {item.id}",
                         title=f"catalog with staged {item.id}",
                     )
                     cat.add_item(item)
-                    
+
                     cat.normalize_hrefs("./")
                     cat.save(catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
@@ -178,28 +192,50 @@ files:
           type: string
         endpoint_url:
           type: string
+        stac_catalog:
+          doc: "The folder containing the STAC catalog to stage out"
+          label: "STAC Catalog folder"
+          type: Directory
       outputs:
         s3_catalog_output:
+          type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI
           outputBinding:
-            outputEval: ${  return "s3://" + inputs.s3_bucket + "/" + inputs.sub_path + "/catalog.json"; }
-          type: string
+            glob: catalog-uri.txt
+            loadContents: true
+            outputEval: |
+              ${ 
+                return { "value": self[0].contents, "type": "https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI" };
+              }
+      stdout: catalog-uri.txt
       baseCommand:
         - python
         - stage.py
       arguments:
-        - $( inputs.wf_outputs.path )
+        - $( inputs.stac_catalog.path )
         - $( inputs.s3_bucket )
-        - $( inputs.sub_path )
+        - ${
+            var firstPart = (Math.random() * 46656) | 0;
+            var secondPart = (Math.random() * 46656) | 0;
+            firstPart = ("000" + firstPart.toString(36)).slice(-3);
+            secondPart = ("000" + secondPart.toString(36)).slice(-3);
+            return inputs.sub_path + "-" + firstPart + secondPart;
+          } 
+
       requirements:
+        NetworkAccess:
+          networkAccess: true
+        SchemaDefRequirement:
+          types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
         DockerRequirement:
           dockerPull: ghcr.io/eoap/mastering-app-package/stage:1.0.0
         InlineJavascriptRequirement: {}
         EnvVarRequirement:
           envDef:
-            AWS_ACCESS_KEY_ID: $( inputs.aws_access_key_id )
-            AWS_SECRET_ACCESS_KEY: $( inputs.aws_secret_access_key )
-            AWS_REGION: $( inputs.region_name )
-            AWS_S3_ENDPOINT: $( inputs.endpoint_url )
+            aws_access_key_id: $( inputs.aws_access_key_id )
+            aws_secret_access_key: $( inputs.aws_secret_access_key )
+            aws_region_name: $( inputs.region_name )
+            aws_endpoint_url: $( inputs.endpoint_url )
         ResourceRequirement: {}
         InitialWorkDirRequirement:
           listing:
@@ -224,10 +260,10 @@ files:
                 print(f"bucket: {bucket}", file=sys.stderr)
                 print(f"subfolder: {subfolder}", file=sys.stderr)
 
-                aws_access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
-                aws_secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
-                region_name = os.environ["AWS_REGION"]
-                endpoint_url = os.environ["AWS_S3_ENDPOINT"]
+                aws_access_key_id = os.environ["aws_access_key_id"]
+                aws_secret_access_key = os.environ["aws_secret_access_key"]
+                region_name = os.environ["aws_region_name"]
+                endpoint_url = os.environ["aws_endpoint_url"]
 
                 shutil.copytree(cat_url, "/tmp/catalog")
                 cat = pystac.read_file(os.path.join("/tmp/catalog", "catalog.json"))
@@ -335,3 +371,56 @@ files:
                 pystac.write_file(cat, cat.get_self_href())
 
                 print(f"s3://{bucket}/{subfolder}/catalog.json", file=sys.stdout)
+
+    stagein-file.yaml: |
+      cwlVersion: v1.0
+
+      class: CommandLineTool
+      id: stage-in-file
+
+      inputs:
+        reference:
+          type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI
+          doc: "An URL to stage" 
+          label: "Reference URL"
+      outputs:
+        staged:
+          type: File
+          outputBinding:
+            glob: staged
+      baseCommand: 
+      - python
+      - stage.py
+      arguments:
+      - $( inputs.reference.value )
+      requirements:
+        NetworkAccess:
+          networkAccess: true
+        SchemaDefRequirement:
+          types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+        DockerRequirement:
+          dockerPull: ghcr.io/eoap/application-package-patterns/vegetation-indexes:0.1.1
+        InlineJavascriptRequirement: {}
+        InitialWorkDirRequirement:
+          listing:
+            - entryname: stage.py
+              entry: |-
+                import sys
+                import requests
+                import planetary_computer
+
+                href = sys.argv[1]
+
+                signed_url = planetary_computer.sign(href)
+                output_path = "staged"
+
+                response = requests.get(signed_url, stream=True)
+                response.raise_for_status()  # Raise an error for bad status codes
+
+                with open(output_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+                print(f"Downloaded to {output_path}")
+

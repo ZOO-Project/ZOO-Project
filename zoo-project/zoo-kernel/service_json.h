@@ -152,6 +152,7 @@ extern "C" {
   void produceRoot(maps*,json_object*);
   void produceConformances(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
+  void outputSingleJsonLiteralData(maps*,maps*,json_object*,const char*,char*);
   bool jsonIsFalse(json_bool);
 #ifdef DRU_ENABLED
   void handleDRUError(maps**);

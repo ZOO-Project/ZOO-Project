@@ -28,7 +28,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.6.1
+        version: 0.7.4
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -37,8 +37,10 @@ deploy:
           #cookiecutter.templateUrl: https://github.com/EOEPCA/eoepca-proc-service-template.git
           #cookiecutter.templateBranch: feature/python3.8
           # Standard cookiecutter
-          cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
-          cookiecutter.templateBranch: feature-secrets-nodeselector-imagepullsecrets
+          # cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
+          # cookiecutter.templateBranch: feature-secrets-nodeselector-imagepullsecrets
+          cookiecutter.templateUrl: https://github.com/GeoLabs/zoo-service-template.git
+          cookiecutter.templateBranch: feature/eoap-tooling
           filter_in.enabled: true
           filter_out.enabled: true
           zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
@@ -47,7 +49,6 @@ deploy:
           zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
           zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}" 
           zookernel.image.pullPolicy: IfNotPresent
-
           # Persistence settings (should be same in the original chart)
           persistence.procServicesAccessMode: ReadWriteMany
 
@@ -58,6 +59,7 @@ deploy:
           redis.enabled: true
           websocketd.enabled: true
 
+          #workflow.calrissianImage: 192.168.1.13:5010/geolabs/calrissian:0.18.1
           workflow.additionalInputs:
             s3_bucket: results
             region_name: us-east-1

@@ -1,7 +1,7 @@
 #
 # Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau
 #
-# Copyright 2023-2024 Terradue. All rights reserved.
+# Copyright 2023-2025 Terradue. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -31,6 +31,7 @@ import re
 from cwl_utils.parser import load_document as load_cwl
 from cwl_utils.parser import *
 import cwl_utils.__meta__ as cwl_meta
+from cwl2ogc import BaseCWLtypes2OGCConverter
 
 try:
     import zoo
@@ -139,28 +140,10 @@ class Process:
         elif workflow.extension_fields:
             process.metadata=workflow.extension_fields
 
-        process.add_inputs_from_cwl(workflow.inputs, len(workflow.id))
-        process.add_outputs_from_cwl(workflow.outputs, len(workflow.id))
+        process.cwl2ogc_converter = BaseCWLtypes2OGCConverter(workflow)
 
         return process
 
-
-    def add_inputs_from_cwl(self, inputs, trim_len):
-        """
-        Adds a process input from a CWL input representation.
-        """
-
-        for input in inputs:
-            process_input = ProcessInput.create_from_cwl(input, trim_len)
-            self.inputs.append(process_input)
-
-    def add_outputs_from_cwl(self, outputs, trim_len):
-        """
-        Adds a process output from a CWL input representation.
-        """
-        for output in outputs:
-            process_output = ProcessOutput.create_from_cwl(output, trim_len)
-            self.outputs.append(process_output)
 
     def write_zcfg(self, stream):
         """
@@ -354,6 +337,8 @@ class Process:
         # Main Metadata extraction
         if self.metadata is not None:
             for item in self.metadata:
+                if not(isinstance(self.metadata[item],list)) and isinstance(self.metadata[item],object):
+                    self.metadata[item]=[self.metadata[item]]
                 if isinstance(self.metadata[item],str):
                     cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href) "+
                                 "VALUES ($q${0}$q$,$q${1}$q$)".format(item,self.metadata[item]))
@@ -407,398 +392,161 @@ class Process:
                                                         str(icnt)
                                                     ))
 
-        # Inputs treatment
-        for input in self.inputs:
-            if input.is_complex:
-                current_content_type = input.file_content_type if input.file_content_type else "text/plain"
-                cur.execute("SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1".
-                            format(current_content_type))
-                val=cur.fetchone()
-                if val is None:
-                    cur.execute("INSERT INTO CollectionDB.PrimitiveFormats (mime_type) VALUES ('{0}')".
-                                format(current_content_type))
-                cur.execute("INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES "+
-                            "(true,(SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1));".
-                            format(current_content_type))
-                if input.namespace is not None:
-                    cur.execute(f"INSERT INTO CollectionDB.ows_DataDescription (format_id,data_format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq),(SELECT id from CollectionDB.PrimitiveDataFormats where cwl_type=$q${input.type}$q$));")
-                else:
-                    cur.execute("INSERT INTO CollectionDB.ows_DataDescription (format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq));")
-            else:
-                if input.is_bbox:
-                    cur.execute("INSERT INTO CollectionDB.BoundingBoxData (format_id) VALUES (NULL);")
-
-                else:
-                    cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
-                            "(true,(SELECT id from CollectionDB.PrimitiveDatatypes where name = $q${0}$q$));".format(input.type))
-                    if input.possible_values:
-                        for i in range(len(input.possible_values)):
-                            cur.execute("INSERT INTO CollectionDB.AllowedValues (allowed_value) VALUES ($q${0}$q$);".format(input.possible_values[i]))
-                            cur.execute("INSERT INTO CollectionDB.AllowedValuesAssignment (literal_data_domain_id,allowed_value_id) VALUES ("+
-                                            "(select last_value as id from CollectionDB.ows_DataDescription_id_seq),"+
-                                            "(select last_value as id from CollectionDB.AllowedValues_id_seq)"
-                                            ");")
-                    if input.default_value:
-                        cur.execute("UPDATE CollectionDB.LiteralDataDomain"+
-                                        " set default_value = $q${0}$q$ ".format(input.default_value)+
-                                        " WHERE id = "+
-                                        "  ((SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));")
-
-            cur.execute(("INSERT INTO CollectionDB.ows_Input (identifier,title,abstract,min_occurs,max_occurs) VALUES "+
+        # Inputs handling
+        myInputs = self.cwl2ogc_converter.get_inputs()
+        for input in myInputs:
+            # zoo.debug(str(myInputs[input]))
+            self.sql_handle_io(cur,myInputs[input],input,"Input")
+            cur.execute(("INSERT INTO CollectionDB.ows_Input (identifier,title,abstract,min_occurs,max_occurs,raw_schema) VALUES "+
                       "($q${0}$q$,"+
                       "$q${1}$q$,"+
                       "$q${2}$q$,"+
                       "{3},"+
-                      "{4});").format(input.identifier,
-                                         input.title,
-                                         input.description,
-                                         input.min_occurs,
-                                         999 if input.max_occurs == 0 else input.max_occurs))
-            cur.execute("INSERT INTO CollectionDB.InputDataDescriptionAssignment (input_id,data_description_id) VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),(select last_value from CollectionDB.ows_DataDescription_id_seq));");
-            cur.execute("INSERT INTO CollectionDB.ProcessInputAssignment(process_id,input_id) VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));")
+                      "{4},"+
+                      "$q${5}$q$);").format(input,
+                                myInputs[input].get("title",None),
+                                myInputs[input].get("description",None),
+                                myInputs[input].get("minOccurs",None),
+                                999 if myInputs[input]["maxOccurs"] == 0 else myInputs[input]["maxOccurs"],
+                                json.dumps(myInputs[input].get("schema",None))
+                      ))
+            cur.execute("INSERT INTO CollectionDB.InputDataDescriptionAssignment (input_id,data_description_id)"+
+                        "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"+
+                        "(select last_value from CollectionDB.ows_DataDescription_id_seq));");
+            cur.execute("INSERT INTO CollectionDB.ProcessInputAssignment(process_id,input_id)"+
+                        "VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));")
+            for i in range(len(myInputs[input]["metadata"])):
+                self.sql_add_metadata(cur, myInputs[input]["metadata"][i])
 
-
-        # Output treatment
-        for output in self.outputs:
-            if output.is_complex:
-                cur.execute("INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES "+
-                          "(true,(SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1));".format(
-                              output.file_content_type
-                              if output.file_content_type
-                              else "text/plain"
-                              ))
-            else:
-                pass
-            local_format=os.environ['ZOO_OUTPUT_FORMAT'] if 'ZOO_OUTPUT_FORMAT' in os.environ else 'geojson-feature-collection'
-            cur.execute(f"INSERT INTO CollectionDB.ows_DataDescription (format_id,data_format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq),(SELECT id from CollectionDB.PrimitiveDataFormats where short_name='{local_format}'));")
+        # Output handling
+        myOutputs = self.cwl2ogc_converter.get_outputs()
+        for output in myOutputs:
+            # zoo.debug(str(myOutputs[output]))
+            self.sql_handle_io(cur,myOutputs[output],output,"Output")
             cur.execute("INSERT INTO CollectionDB.ows_Output"+
-                      "(identifier,title,abstract)"+
+                      "(identifier,title,abstract,raw_schema)"+
                       " VALUES "+
-                      "($q${0}$q$,$q${1}$q$,$q${2}$q$);".format(output.identifier,output.title,output.description))
-            cur.execute("INSERT INTO CollectionDB.OutputDataDescriptionAssignment (output_id,data_description_id) VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),(select last_value from CollectionDB.ows_DataDescription_id_seq));")
-            cur.execute("INSERT INTO CollectionDB.ProcessOutputAssignment(process_id,output_id) VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));")
+                      "($q${0}$q$,$q${1}$q$,$q${2}$q$,$q${3}$q$);".format(output,
+                                                                myOutputs[output].get("title",None),
+                                                                myOutputs[output].get("description",None),
+                                                                json.dumps(myOutputs[output].get("schema",None))
+                                                            )
+                      )
+            cur.execute("INSERT INTO CollectionDB.OutputDataDescriptionAssignment (output_id,data_description_id) "+
+                        "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"+
+                        "(select last_value from CollectionDB.ows_DataDescription_id_seq));")
+            # zoo.info(f"Using {local_format} as output format")
+            cur.execute("INSERT INTO CollectionDB.ProcessOutputAssignment(process_id,output_id) "+
+                        "VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));")
+            for i in range(len(myOutputs[output]["metadata"])):
+                self.sql_add_metadata(cur, myOutputs[output]["metadata"][i])
+
         cur.execute("DROP TABLE pid;")
         conn.commit()
         conn.close()
         return True
 
-    def write_ogc_api_json(self, stream):
-        ogc = self.get_ogc_api_json()
-        print(json.dumps(ogc, indent=2), file=stream)
-
-    def write_ogc_api_yaml(self, stream):
-        ogc = self.get_ogc_api_json()
-        print(yaml.dump(ogc), file=stream)
-
-    def get_ogc_api_json(self):
-        ogc = {
-            "id": self.identifier,
-            "version": self.version,
-            "title": self.title,
-            "description": self.description,
-            "jobControlOptions": [],
-            "outputTransmission": [],
-            "links": [],
-            "inputs": {},
-            "outputs": {},
-        }
-
-        for input in self.inputs:
-            ogc_input_schema = {"type": input.type}
-            if input.min_occurs == 0:
-                ogc_input_schema["nullable"] = True
-            elif input.max_occurs != 1:
-                ogc_input_schema["minItems"] = input.min_occurs
-            if input.max_occurs != 1:
-                ogc_input_schema["type"] = "array"
-                ogc_input_schema["maxItems"] = (
-                    input.max_occurs if input.max_occurs > 1 else 100
-                )
-                ogc_input_schema["items"] = {"type": input.type}
-            if input.possible_values:
-                ogc_input_schema["enum"] = input.possible_values.copy()
-            if input.default_value:
-                ogc_input_schema["default"] = input.default_value
-            if input.is_file:
-                ogc_input_schema["contentMediaType"] = input.file_content_type()
-            elif input.is_directory:
-                ogc_input_schema["contentMediaType"] = input.file_content_type()
-
-            ogc_input = {
-                "title": input.title,
-                "description": input.description,
-                "schema": ogc_input_schema,
-            }
-
-            if input.is_complex:
-                pass  # TODO
-            else:
-                ogc["inputs"][input.identifier] = ogc_input
-
-        for output in self.outputs:
-            if cwl_meta.__version__ < "0.16":
-                my_current_type =  output.type
-            else:
-                my_current_type = output.type_
-
-            ogc_output_schema = {"type": my_current_type}
-
-            ogc_output = {
-                "title": output.title,
-                "description": output.description,
-                "schema": ogc_output_schema,
-            }
-
-            if output.is_complex:
-                pass  # TODO
-            else:
-                ogc["outputs"][output.identifier] = ogc_output
-        return ogc
-
-
-class ProcessInput:
-
-    cwl_type_map = {
-        "boolean": "boolean",
-        "int": "integer",
-        "long": "integer",
-        "float": "float",
-        "double": "double",
-        "string": "string",
-        "enum": None,
-    }
-
-    def __init__(self, identifier, title=None, description=None, input_type="string"):
-        self.identifier = str(identifier)
-        self.title = title or identifier
-        if self.title:
-            self.title = str(self.title)
-        self.description = description or title
-        if self.description:
-            self.description = str(self.description)
-        self.type = input_type
-        self.min_occurs = 1
-        self.max_occurs = 1
-        self.default_value = None
-        self.possible_values = None
-        self.is_complex = False
-        self.is_bbox = False
-        self.is_file = False
-        self.file_content_type = None
-        self.is_directory = False
-        self.namespace = None
-        self.is_array = False
-
-    @classmethod
-    def create_from_cwl(cls, input, trim_len):
-
-        process_input = cls(
-            input.id[trim_len+1:],
-            input.label,
-            input.doc,
-        )
-
-        process_input.set_type_from_cwl(input, trim_len)
-
-        if input.default:
-            process_input.default_value = input.default
-
-        return process_input
-
-    def handle_custom_types(self, type_name):
-        schema_parts=type_name.split("#")
-        type_name = None
-        if len(schema_parts)>1 and schema_parts[0].count("ogc.yaml")>0 and schema_parts[1]=="BBox":
-            self.is_bbox = True
-            type_name = None
-        if len(schema_parts)>1 and schema_parts[0].count("stac.yaml")>0:
-            self.is_complex = True
-            type_name = schema_parts[1]
-            self.namespace = schema_parts[0]
-            self.file_content_type = "application/json"
-        if len(schema_parts)>1 and schema_parts[0].count("geojson.yaml")>0:
-            self.is_complex = True
-            self.namespace = schema_parts[0]
-            type_name = schema_parts[1]
-            self.file_content_type = "application/json"
-        return type_name
-
-    def set_type_from_cwl(self, input, trim_len):
-        type_name = None
-        # if input.type is something like ['null', 'typename'],
-        # it means the input is optional and of type typename
-
-        if cwl_meta.__version__ < "0.16":
-            my_current_type =  input.type
-        else:
-            my_current_type = input.type_
-
-        current_type_is_array=False
-        if isinstance(my_current_type, str) or (isinstance(my_current_type, list) and len(my_current_type) == 2 and my_current_type[0] == 'null'):
-            type_name = my_current_type[1] if isinstance(my_current_type, list) else my_current_type
-            self.is_array=current_type_is_array
-            if isinstance(type_name, cwl_v1_0.InputEnumSchema):
-                self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in type_name.symbols]
-                type_name = "string"
-            if type_name in self.__class__.cwl_type_map:
-                type_name = self.__class__.cwl_type_map[type_name]
-            elif type_name == "File":
-                if input.format is not None:
-                    self.is_complex = True
-                    self.is_file = True
-                    type_name="File"
-                    self.file_content_type = input.format
+    def handle_oneof(self,cur,io_entity):
+        for i in range(len(io_entity["oneOf"])):
+            if "$id" in io_entity["oneOf"][i]:
+                schema=io_entity["oneOf"][i]["$id"]
+                # This is a workaround for schema with anchors
+                if schema.count("#")>0:
+                    schema=schema.split("#")[0]
+                cur.execute("SELECT namespace|| '#' || cwl_type from CollectionDB.PrimitiveDataFormats "+
+                            "where schemaUrl=$q${0}$q$ LIMIT 1".format(schema))
+                val= cur.fetchone()
+                if val is not None:
+                    self.sql_add_complex_data(cur, val[0])
                 else:
-                    type_name = "string"
-                    self.file_content_type = "text/plain"
-            elif type_name == "Directory":
-                type_name = "string"
-                self.file_content_type = "text/plain"
-            elif isinstance(type_name, cwl_v1_0.InputArraySchema):
-                current_type_is_array=True
-                type_name = type_name.items
-                if type_name in self.__class__.cwl_type_map:
-                    type_name = self.__class__.cwl_type_map[type_name]
-                elif type_name == "File":
-                    if input.format is not None:
-                        self.is_complex = True
-                        self.is_file = True
-                        type_name="File"
-                        self.file_content_type = input.format
-                    else:
-                        type_name = "string"
-                        self.file_content_type = "text/plain"
-                elif type_name == "Directory":
-                    type_name = "string"
-                    self.file_content_type = "text/plain"
-                elif type_name.count("schemas")>0:
-                    type_name = self.handle_custom_types(type_name)
-                else:
-                    type_name = None
-            elif type_name.count("schemas")>0:
-                type_name = self.handle_custom_types(type_name)
+                    zoo.error("No format found for schema "+schema)
+                break
 
-            else:
-                raise Exception(
-                    "Unsupported 0 type for input '{0}': {1}".format(input.id, type_name)
-                )
-
-            self.type = type_name
-            self.min_occurs = 0 if (input.default is not None or (isinstance(my_current_type, list) and my_current_type[0]=='null')) else 1
-            # How should we set the maximum length of an array for instance?
-            # We currently set the default maximum to 1024
-            self.max_occurs = 1 if not(current_type_is_array) else 1024
-            # 0 means unbounded, TODO: what should be the maxOcccurs value if unbounded is not available?
-
-        elif isinstance(my_current_type, cwl_v1_0.InputArraySchema):
-            type_name = my_current_type.items
-
-            if type_name in self.__class__.cwl_type_map:
-                type_name = self.__class__.cwl_type_map[type_name]
-            elif type_name == "File":
-                type_name = "string"
-                self.file_content_type = "text/plain"
-            elif type_name == "Directory":
-                type_name = "string"
-                self.file_content_type = "text/plain"
-            elif type_name.count("schemas")>0:
-                type_name = self.handle_custom_types(type_name)
-            else:
-                type_name = None
-            self.min_occurs = 1
-            self.max_occurs = 0
-
-            if not type_name:
-                raise Exception("Unsupported 1 type: '{0}'".format(type_name))
-
-            self.type = type_name
-
-        elif isinstance(my_current_type, cwl_v1_0.InputEnumSchema):
-            type_name = "string"
-            self.possible_values = [str(s)[trim_len+len(self.identifier)+2:] for s in my_current_type.symbols]
-
-
-
-class ProcessOutput:
-    def __init__(self, identifier, title=None, description=None, input_type="string"):
-        self.identifier = str(identifier)
-        self.title = title or identifier
-        if self.title:
-            self.title = str(self.title)
-        self.description = description or title
-        if self.description:
-            self.description = str(self.description)
-        self.type = input_type
-        self.min_occurs = 1
-        self.max_occurs = 1
-        self.default_value = None
-        self.possible_values = None
-        self.is_complex = False
-        self.is_file = False
-        self.file_content_type = None
-        self.is_directory = False
-
-    @classmethod
-    def create_from_cwl(cls, output, trim_len):
-
-        process_output = cls(
-            output.id[trim_len+1:],
-            output.label,
-            output.doc,
-        )
-
-        process_output.set_type_from_cwl(output)
-
-        return process_output
-
-    def set_type_from_cwl(self, output):
-        if cwl_meta.__version__ < "0.16":
-            my_current_type = output.type
+    def sql_handle_io(self,cur,io_entity,name,str_type):
+        #zoo.debug(f"Handling {str_type} {name} with schema {io_entity['schema']}")
+        if io_entity["metadata"][0]["value"].count("#BBox") > 0:
+            cur.execute("INSERT INTO CollectionDB.BoundingBoxData (format_id) VALUES (NULL);")
         else:
-            my_current_type = output.type_
-        if isinstance(my_current_type, str):
-            type_name = my_current_type
-            if type_name == "string":
-                pass
-            elif type_name == "File":
-                type_name = "string"
-                self.file_content_type = "text/plain"
-            elif type_name == "Directory":
-                self.is_complex = True
-                self.file_content_type = "application/json"
+            if "oneOf" in io_entity["schema"]:
+                self.handle_oneof(cur,io_entity["schema"])
+            elif io_entity["schema"]["type"] != "array":
+                if io_entity["schema"]["type"] != "object":
+                    self.sql_add_literal_data_domain(cur, io_entity["schema"])
+                else:
+                    if io_entity["metadata"][0]["value"].count("#")>0:
+                        self.sql_add_complex_data(cur, io_entity["metadata"][0]["value"])
             else:
-                raise Exception(
-                    "Unsupported type for output '{0}': {1}".format(
-                        output.id, type_name
+                io_entity["maxOccurs"] = 0
+                if "oneOf" in io_entity["schema"]["items"]:
+                    self.handle_oneof(cur,io_entity["schema"]["items"])
+                elif io_entity["schema"]["items"]["type"] != "object":
+                    self.sql_add_literal_data_domain(cur, io_entity["schema"]["items"])
+                else:
+                    if io_entity["metadata"][0]["value"].count("#")>0:
+                        self.sql_add_complex_data(cur, io_entity["metadata"][0]["value"])
+
+            if "enum" in io_entity["schema"]:
+                for i in range(len(io_entity["schema"]["enum"])):
+                    cur.execute("INSERT INTO CollectionDB.AllowedValues (allowed_value) VALUES ($q${0}$q$);".format(io_entity["schema"]["enum"][i]))
+                    cur.execute("INSERT INTO CollectionDB.AllowedValuesAssignment (literal_data_domain_id,allowed_value_id) VALUES ("+
+                                    "(select last_value as id from CollectionDB.ows_DataDescription_id_seq),"+
+                                    "(select last_value as id from CollectionDB.AllowedValues_id_seq)"
+                                    ");")
+
+            if "default" in io_entity["schema"]:
+                cur.execute("UPDATE CollectionDB.LiteralDataDomain"+
+                                " set default_value = $q${0}$q$ ".format(io_entity["schema"]["default"])+
+                                " WHERE id = "+
+                                "  ((SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));")
+
+    def sql_add_metadata(self, cur, metadata_object):
+        cur.execute("INSERT INTO CollectionDB.ows_Metadata (title,href) VALUES "+
+                    "($q${0}$q$,$q${1}$q$);".format(
+                        metadata_object["title"],
+                        metadata_object["value"]
                     )
-                )
-            self.type = type_name
+        )
+        cur.execute("INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "+
+                "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"+
+                "(select last_value from CollectionDB.ows_Metadata_id_seq));")
 
-        elif isinstance(my_current_type, cwl_v1_0.OutputArraySchema):
-            type_name = my_current_type.items
+    def sql_add_literal_data_domain(self, cur, primitive_data):
+        if "format" in primitive_data:
+            try:
+                cur.execute("SELECT id from CollectionDB.PrimitiveDatatypes "+
+                            "where name = $q${0}$q$;".format(primitive_data["format"]))
+                val=cur.fetchone()
+                if val is None:
+                    cur.execute("SELECT id from CollectionDB.PrimitiveDatatypes "+
+                                "where name = $q${0}$q$;".format(primitive_data["type"]))
+                    val=cur.fetchone()
+            except Exception as e:
+                zoo.error(f"Error fetching primitive datatype: {e}")
+            if val is not None:
+                cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
+                            "(true,{0});".format(val[0]))
+        else:
+            cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
+                        "(true,(SELECT id from CollectionDB.PrimitiveDatatypes where name = $q${0}$q$));".format(primitive_data["type"]))
 
-            if type_name == "string":
-                pass
-            elif type_name == "File":
-                type_name = "string"
-                self.file_content_type = "text/plain"
-            elif type_name == "Directory":
-                self.is_complex = True
-                self.file_content_type = "application/json"
-            else:
-                raise Exception(
-                    "Unsupported type for output '{0}': {1}".format(
-                        output.id, type_name
-                    )
-                )
+    def sql_add_complex_data(self, cur, complex_data):
+        # myInputs[input]["metadata"][0]["value"] = <complex_data>
+        parsed_str=complex_data.split("#")[0].split("/")
+        usable_str=parsed_str[len(parsed_str)-1]
+        cur.execute("SELECT id FROM CollectionDB.PrimitiveDataFormats "+
+                    "where namespace=$q${0}$q$ and cwl_type=$q${1}$q$ LIMIT 1".format(usable_str,
+                                                                                    complex_data.split("#")[1]))
+        val=cur.fetchone()
+        # zoo.debug(f"Found format: {val}")
+        # Use a static mimeType for now
+        current_content_type="application/json"
+        cur.execute("SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1".
+                            format(current_content_type))
+        val1=cur.fetchone()
+        cur.execute("INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES "+
+                    "(true,{0});".format(val1[0]))
+        cur.execute(f"INSERT INTO CollectionDB.ows_DataDescription (format_id,data_format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq),{val[0]});")
 
-            self.min_occurs = 1
-            self.max_occurs = 0
-
-            if not type_name:
-                raise Exception("Unsupported type: '{0}'".format(type_name))
-
-            self.type = type_name
 
 class Services(object):
 

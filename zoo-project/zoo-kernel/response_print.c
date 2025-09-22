@@ -167,6 +167,35 @@ void printLinkInfo(const char* pccUrl,const char* pccRel,const char* pccTitle,co
 }
 
 /**
+ * Prepare the Links header based on the profile of the endpoint.
+ *
+ * @param pmsaConfig the main configuration map
+ * @param pccEndPoint the endpoint to check
+ */
+void prepareLinksHeader(maps* pmsConfig, const char* pccEndPoint){
+  maps* pmsProfiles=getMaps(pmsConfig,"processes_profiles");
+  if(pmsProfiles!=NULL){
+    map* pmLength=getMap(pmsProfiles->content,"length");
+    int iLength=1;
+    if(pmLength!=NULL)
+      iLength=atoi(pmLength->value);
+    int iCnt=0;
+    for(;iCnt<iLength;iCnt++){
+      map* pmLink=getMapArray(pmsProfiles->content,"url",iCnt);
+      if(pmLink!=NULL && strcasecmp(pmLink->value,pccEndPoint)==0){
+        setMapInMaps(pmsConfig,"headers_links","length","1");
+        setMapInMaps(pmsConfig,"headers_links","rel","profile");
+        map* pmProfile=getMapArray(pmsProfiles->content,"profile",iCnt);
+        if(pmProfile!=NULL){
+          setMapInMaps(pmsConfig,"headers_links","url",pmProfile->value);
+        }
+        break;
+      }
+    }
+  }
+}
+
+/**
   * Produce the Links header based on the links stored in the
   * headers_links section of the main configuration.
   *

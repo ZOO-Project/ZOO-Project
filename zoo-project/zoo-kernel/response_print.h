@@ -267,6 +267,8 @@ extern "C" {
   void addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
   void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
 
+  void prepareLinksHeader(maps*,const char*);
+
   char* produceFileUrl(service*,maps*,maps*,const char*, int);
   void outputResponse(service*,maps*,maps*,map*,int,maps**,int);
 

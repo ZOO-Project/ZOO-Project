@@ -243,13 +243,15 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 
   PyThreadState *mainstate;
 #if PY_MAJOR_VERSION >= 3  
-  PyImport_AppendInittab("zoo", init_zoo);  
+  PyImport_AppendInittab("zoo", init_zoo);
 #else
   PyEval_InitThreads();
 #endif
   Py_Initialize();
-#if PY_MAJOR_VERSION >= 3  
+#if PY_MAJOR_VERSION >= 3
+#if PY_MINOR_VERSION < 9
   PyEval_InitThreads();
+#endif
   PyImport_ImportModule("zoo");
 #else
   init_zoo();

@@ -3253,6 +3253,7 @@ int runRequest(map** inputs) {
       setMapInMaps(pmsaConfig,"lenv","requestType","desc");
       setMapInMaps(pmsaConfig,"lenv","serviceCnt","0");
       setMapInMaps(pmsaConfig,"lenv","serviceCounter","0");
+      prepareLinksHeader(pmsaConfig,"/processes");
       map* pmTmp=getMap(request_inputs,"limit");
       if(pmTmp!=NULL)
         setMapInMaps(pmsaConfig,"lenv","serviceCntLimit",pmTmp->value);
@@ -3354,6 +3355,7 @@ int runRequest(map** inputs) {
       else if(strcasecmp(pmCgiRequestMethod->value,"get")==0){
         /* - /jobs List (GET) */
         if(strncasecmp(pmCgiRequestMethod->value,"get",3)==0 && strlen(pcaCgiQueryString)<=6){
+          prepareLinksHeader(pmsaConfig,"/jobs");
           if(res!=NULL)
             json_object_put(res);
           res=printFilteredJobList(&pmsaConfig,request_inputs);
@@ -3366,6 +3368,7 @@ int runRequest(map** inputs) {
               if(res!=NULL)
                 json_object_put(res);
               ensureFiltered(&pmsaConfig,"out");
+              prepareLinksHeader(pmsaConfig,"/jobs/{jobID}");
               res=printJobStatus(&pmsaConfig,jobId);
               if(res==NULL)
                 fflush(stdout);
@@ -3420,6 +3423,7 @@ int runRequest(map** inputs) {
                   free(pmsaConfig);
                   return 1;
                 }else{
+                  prepareLinksHeader(pmsaConfig,"/jobs/{jobID}/results");
                   char *Url0=getResultPath(pmsaConfig,jobId);
                   zStatStruct f_status;
                   int s=zStat(Url0, &f_status);
@@ -4177,9 +4181,7 @@ int runRequest(map** inputs) {
             orig[strlen(orig)-1]=0;
           setMapInMaps(pmsaConfig,"lenv","requestType","GetCapabilities");
 
-          setMapInMaps(pmsaConfig,"headers_links","length","1");
-          setMapInMaps(pmsaConfig,"headers_links","rel","profile");
-          setMapInMaps(pmsaConfig,"headers_links","url","https://www.opengis.net/dev/profile/OGC/0/ogc-process-description");
+          prepareLinksHeader(pmsaConfig,"/processes/{processID}");
 
           int t=fetchServicesForDescription(NULL, &pmsaConfig, orig,
                                             printGetCapabilitiesForProcessJ,
@@ -5020,6 +5022,7 @@ int runRequest(map** inputs) {
 #endif
             f0 = freopen (fbkp, "w+", stdout);
             rewind (stdout);
+
 #ifndef WIN32
             fclose (stdin);
 #endif
@@ -5591,6 +5594,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
 #endif
 
             f0 = freopen (fbkp, "w+", stdout);
+            fflush(stdout);
             rewind (stdout);
 
 #ifndef WIN32
