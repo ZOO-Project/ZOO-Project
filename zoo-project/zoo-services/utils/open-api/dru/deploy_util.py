@@ -337,7 +337,7 @@ class Process:
         # Main Metadata extraction
         if self.metadata is not None:
             for item in self.metadata:
-                if not(isinstance(self.metadata[item],list)) and isinstance(self.metadata[item],object):
+                if isinstance(self.metadata[item],dict):
                     self.metadata[item]=[self.metadata[item]]
                 if isinstance(self.metadata[item],str):
                     cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href) "+
@@ -460,7 +460,7 @@ class Process:
                     self.sql_add_complex_data(cur, val[0])
                 else:
                     zoo.error("No format found for schema "+schema)
-                break
+                # do not break to use the last option as complex data type
 
     def sql_handle_io(self,cur,io_entity,name,str_type):
         #zoo.debug(f"Handling {str_type} {name} with schema {io_entity['schema']}")

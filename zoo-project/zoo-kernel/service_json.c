@@ -917,10 +917,12 @@ extern "C" {
                   free(pcaName);
                 }
                 json_object_object_add(pjoMeta,"value",innerElement);
+#if JSON_C_MINOR_VERSION >= 13
                 json_object* pjoMetaTmp=NULL;
                 json_object_deep_copy(pjoMeta,&pjoMetaTmp,NULL);
                 json_object_array_add(carr,pjoMetaTmp);
                 json_object_put(pjoMeta);
+#endif
                 pjoMeta=NULL;
                 hasKey++;
               }
@@ -1051,18 +1053,24 @@ extern "C" {
           }
         }
       }
+#if JSON_C_MINOR_VERSION >= 13
+      map* pmUseRawSchema=getMapFromMaps(pmsConf,"openapi","cwl2ogc_schema");
       map* pmRawSchema=getMap(peInput->content,"raw_schema");
-      if(pmRawSchema!=NULL){
+      if((pmUseRawSchema==NULL || strcasecmp(pmUseRawSchema->value,"false")==0) && pmRawSchema!=NULL){
         if(pmRawSchema->value[0]=='{' || pmRawSchema->value[0]=='['){
           json_object* pjoRawSchema=parseJson(pmsConf,pmRawSchema->value);
-          // If there is a schema definition already, rename it to original_schema
-          if(json_object_object_get(pjoInput,"schema")!=NULL){
-            json_object_object_add(pjoInput,"original-schema",json_object_get(json_object_object_get(pjoInput,"schema")));
+          // If there is a schema definition already, rename it to original-schema
+          json_object* pjoSchema=NULL;
+          if(json_object_object_get_ex(pjoInput,"schema",&pjoSchema)!=FALSE){
+            json_object* pjoSchema2=NULL;
+            json_object_deep_copy(pjoSchema,&pjoSchema2,NULL);
+            json_object_object_add(pjoInput,"original-schema",pjoSchema2);
             json_object_object_del(pjoInput,"schema");
           }
           json_object_object_add(pjoInput,"schema",pjoRawSchema);
         }
       }
+#endif
       printJMetadata(pmsConf,peInput->metadata,pjoInput);
       printJAdditionalParameters(pmsConf,peInput->additional_parameters,pjoInput);
       json_object_object_add(pjoInputs,peInput->name,pjoInput);

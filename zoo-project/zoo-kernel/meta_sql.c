@@ -413,8 +413,9 @@ int fillLiteralData(int iDbId,maps* pmsConf,elements* in,OGRFeature  *input,cons
  */
 int fillComplexData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const char* ltype){
   int res=0;
-  char* ioQuery=(char*)malloc((META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH+(strlen(ltype)*3)+(strlen(input->GetFieldAsString( 0 ))*2)+1)*sizeof(char));
-  sprintf(ioQuery,META_SERVICES_LIST_FORMATS_FROM_IO,ltype,ltype,input->GetFieldAsString( 0 ),ltype,ltype,input->GetFieldAsString( 0 ));
+  const char* pccField0 = input->GetFieldAsString( 0 );
+  char* ioQuery=(char*)malloc((META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH+(strlen(ltype)*4)+(strlen(pccField0)*2)+1)*sizeof(char));
+  sprintf(ioQuery,META_SERVICES_LIST_FORMATS_FROM_IO,ltype,ltype,pccField0,ltype,ltype,pccField0);
   OGRFeature  *io = NULL;
   OGRLayer *ios=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
