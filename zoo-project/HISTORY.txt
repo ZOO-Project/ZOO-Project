@@ -1,4 +1,9 @@
 Version 2.1.0-dev
+  * Add profiles as per https://docs.ogc.org/DRAFTS/18-062r3.html#profile-uris
+  * Enhanced storage of metadata embedded within a CWL Application Pachage.
+  * Type detection for literal data output for proper result access.
+  * Use the cwl2ogc Python library for the transactional support and 
+  schema definitions for inputs and output.
   * C-API change signature of: printHeaders, printSessionHeaders,
   printAFile, printProcessResponse, printDocument, printRawdataOutput,
   printRawdataOutputs, outputResponse, runGetStatus, invokeCallback,
