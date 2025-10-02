@@ -196,7 +196,7 @@ INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,sch
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','MultiPolygon','geojson.yaml','https://geojson.org/schema/Geometry.json');
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','GeometryCollection','geojson.yaml','https://geojson.org/schema/GeometryCollection.json');
 -- It is not clear if the following short_name should be bound to a cwl_type
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('epsg-code',NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('epsg-code',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('wkt2-def',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('cql2-text',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('cql2-json',NULL,NULL);
