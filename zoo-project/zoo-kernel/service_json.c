@@ -3618,7 +3618,7 @@ extern "C" {
       json_object_object_add(pjoRes4,"name",json_object_new_string(tmpMap->value));
       tmpMap=getMapFromMaps(pmsConf,"openapi","license_url");
       if(tmpMap!=NULL){
-        json_object_object_add(pjoRes4,"ucrl",json_object_new_string(tmpMap->value));
+        json_object_object_add(pjoRes4,"url",json_object_new_string(tmpMap->value));
       }
     }
     json_object_object_add(pjoRes1,"license",pjoRes4);
