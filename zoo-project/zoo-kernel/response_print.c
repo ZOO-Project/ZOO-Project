@@ -50,18 +50,19 @@ extern int ensureFiltered(maps**,const char*);
  * @param pmsConf the maps containing the settings of the main.cfg file
  * @param pjoRes the JSON object to populate
  */
-int printAFile(maps* pmsConf, char* pcFilePath, zStatStruct zssStatus,void (funcError) (maps**, map*)){
+int printAFile(maps** ppmsConf, char* pcFilePath, zStatStruct zssStatus,void (funcError) (maps**, map*)){
+  maps* pmsConf=*ppmsConf;
   FILE *pfRequest = fopen (pcFilePath, "rb");
   if(pfRequest==NULL){
     map* error=createMap("code","NotFound");
     addToMap(error,"message",_("The resource is not available"));
-    funcError(&pmsConf,error);
+    funcError(ppmsConf,error);
     return -1;
   }
   char* pcaFcontent=(char*)malloc(sizeof(char)*(zssStatus.st_size+1));
   ssize_t sLength = fread(pcaFcontent,zssStatus.st_size,sizeof(char),pfRequest);
   pcaFcontent[zssStatus.st_size]=0;
-  printHeaders(pmsConf);
+  printHeaders(ppmsConf);
   printf("Status: 200 OK \r\n\r\n");
   fprintf(stdout,"%s\n",pcaFcontent);
   fflush(stdout);
@@ -111,9 +112,10 @@ void addPrefix(maps* pmsConf,map* pmLevel,service* psService){
 /**
  * Print the HTTP headers based on a map.
  * 
- * @param pmsConf the map containing the headers information
+ * @param ppmsConf the map containing the headers information
  */
-void printHeaders(maps* pmsConf){
+void printHeaders(maps** ppmsConf){
+  maps* pmsConf=*ppmsConf;
   maps *pmsTmp=getMaps(pmsConf,"headers");
   map* pmHeaders=getMapFromMaps(pmsConf,"lenv","no-headers");
   if(pmHeaders==NULL || strncasecmp(pmHeaders->value,"false",5)==0){
@@ -126,12 +128,144 @@ void printHeaders(maps* pmsConf){
         pmTmp=pmTmp->next;
       }
     }
-    printSessionHeaders(pmsConf);
+    printSessionHeaders(ppmsConf);
+    printAssociatedLinks(ppmsConf);
     map* pmTmp=getMapFromMaps(pmsConf,"headers","status");
     if(pmTmp!=NULL){
       printf("Status: %s\r\n\r\n",pmTmp->value);
     }
     setMapInMaps(pmsConf,"lenv","no-headers","true");
+  }
+}
+
+
+/**
+ * Print link information.
+ *
+ * @param pccUrl the URL of the link
+ * @param pccRel the rel attribute
+ * @param pccTitle the title attribute
+ * @param pccType the type attribute
+ * @param pccFormat the format attribute
+ */
+void printLinkInfo(const char* pccUrl,const char* pccRel,const char* pccTitle,const char* pccType,const char* pccFormat){
+  if (pccUrl != NULL) {
+    printf("<%s>", pccUrl);
+    if (pccRel != NULL) {
+        printf("; rel=\"%s\"", pccRel);
+    }
+    if (pccType != NULL) {
+        printf("; type=\"%s\"", pccType);
+    }
+    if (pccFormat != NULL) {
+        printf("; format=\"%s\"", pccFormat);
+    }
+    if (pccTitle != NULL) {
+        printf("; title=\"%s\"", pccTitle);
+    }
+  }
+}
+
+/**
+ * Prepare the Links header based on the profile of the endpoint.
+ *
+ * @param pmsaConfig the main configuration map
+ * @param pccEndPoint the endpoint to check
+ */
+void prepareLinksHeader(maps* pmsConfig, const char* pccEndPoint){
+  maps* pmsProfiles=getMaps(pmsConfig,"processes_profiles");
+  if(pmsProfiles!=NULL){
+    map* pmLength=getMap(pmsProfiles->content,"length");
+    int iLength=1;
+    if(pmLength!=NULL)
+      iLength=atoi(pmLength->value);
+    int iCnt=0;
+    for(;iCnt<iLength;iCnt++){
+      map* pmLink=getMapArray(pmsProfiles->content,"url",iCnt);
+      if(pmLink!=NULL && strcasecmp(pmLink->value,pccEndPoint)==0){
+        setMapInMaps(pmsConfig,"headers_links","length","1");
+        setMapInMaps(pmsConfig,"headers_links","rel","profile");
+        map* pmProfile=getMapArray(pmsProfiles->content,"profile",iCnt);
+        if(pmProfile!=NULL){
+          setMapInMaps(pmsConfig,"headers_links","url",pmProfile->value);
+        }
+        break;
+      }
+    }
+  }
+}
+
+/**
+  * Produce the Links header based on the links stored in the
+  * headers_links section of the main configuration.
+  *
+  * @param ppmsConf the main configuration map
+  * @return void
+ */
+void printAssociatedLinks(maps** ppmsConf){
+  maps* pmsConf=*ppmsConf;
+  map* pmResponse=getMapFromMaps(pmsConf,"lenv","json_response_object");
+  if(pmResponse!=NULL){
+    json_object* jobj=parseJson(pmsConf,pmResponse->value);
+    map* pmLinksHeader=getMapFromMaps(pmsConf,"openapi","include_links_header");
+    printf("Content-Length: %lu\r\n",strlen(pmResponse->value)+1);
+    if(jobj!=NULL && pmLinksHeader!=NULL && strncasecmp(pmLinksHeader->value,"true",4)==0){
+      json_object* jlinks=json_object_object_get(jobj,"links");
+      if(jlinks!=NULL && json_object_get_type(jlinks)==json_type_array){
+        printf("Link: ");
+        int iLength=json_object_array_length(jlinks);
+        for(int i=0;i<iLength;i++){
+          if(i>0)
+            printf(", ");
+          json_object* jlink=json_object_array_get_idx(jlinks,i);
+          if(json_object_get_type(jlink)==json_type_object){
+            json_object* pjoUrl=json_object_object_get(jlink,"href");
+            json_object* pjoRel=json_object_object_get(jlink,"rel");
+            json_object* pjoType=json_object_object_get(jlink,"type");
+            json_object* pjoFormat=json_object_object_get(jlink,"format");
+            json_object* pjoTitle=json_object_object_get(jlink,"title");
+
+            printLinkInfo(
+              pjoUrl != NULL ? json_object_get_string(pjoUrl) : NULL,
+              pjoRel != NULL ? json_object_get_string(pjoRel) : NULL,
+              pjoTitle != NULL ? json_object_get_string(pjoTitle) : NULL,
+              pjoType != NULL ? json_object_get_string(pjoType) : NULL,
+              pjoFormat != NULL ? json_object_get_string(pjoFormat) : NULL
+            );
+
+          }
+        }
+        printf("\r\n");
+      }
+      json_object_put(jobj);
+    }
+  }
+  maps* pmsLinks=getMaps(pmsConf,"headers_links");
+  if(pmsLinks!=NULL){
+    map* pmTmp=getMap(pmsLinks->content,"length");
+    int iLength=1;
+    if(pmTmp!=NULL)
+      iLength=atoi(pmTmp->value);
+    printf("Link: ");
+    for(int i=0;i<iLength;i++){
+      map* pmUrl=getMapArray(pmsLinks->content,"url",i);
+      map* pmRel=getMapArray(pmsLinks->content,"rel",i);
+      map* pmType=getMapArray(pmsLinks->content,"type",i);
+      map* pmFormat=getMapArray(pmsLinks->content,"format",i);
+      map* pmTitle=getMapArray(pmsLinks->content,"title",i);
+      if(i>0)
+        printf(", ");
+
+      printLinkInfo(
+        pmUrl!=NULL ? pmUrl->value : NULL,
+        pmRel!=NULL ? pmRel->value : NULL,
+        pmTitle!=NULL ? pmTitle->value : NULL,
+        pmType!=NULL ? pmType->value : NULL,
+        pmFormat!=NULL ? pmFormat->value : NULL
+      );
+
+    }
+    printf("\r\n");
   }
 }
 
@@ -141,9 +275,10 @@ void printHeaders(maps* pmsConf){
  * 
  * The session file (sess_<SESSID>_.cfg where <SESSID> is the cookie value) is
  * stored in the conf["main"]["tmpPath"] directory.
- * @param pmsConf the main configuration map
+ * @param ppmsConf the main configuration map
  */
-void printSessionHeaders(maps* pmsConf){
+void printSessionHeaders(maps** ppmsConf){
+  maps* pmsConf=*ppmsConf;
   maps* pmsSess=getMaps(pmsConf,"senv");
   if(pmsSess!=NULL){
     map *pmTmp=getMapFromMaps(pmsConf,"lenv","cookie");
@@ -188,7 +323,7 @@ void printSessionHeaders(maps* pmsConf){
     if(teste==NULL){
       char tmpMsg[1024];
       sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
-      errorException(&pmsConf,tmpMsg,"InternalError",NULL);
+      errorException(ppmsConf,tmpMsg,"InternalError",NULL);
       return;
     }
     else{
@@ -1893,7 +2028,7 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
 /**
  * Generate a wps:Execute XML document.
  * 
- * @param m the conf maps containing the main.cfg settings
+ * @param ppmsConf the conf maps containing the main.cfg settings
  * @param request the map representing the HTTP request
  * @param pid the process identifier linked to a service
  * @param serv the serv structure created from the zcfg file
@@ -1902,7 +2037,8 @@ void printFullDescription(xmlDocPtr doc,int in,elements *elem,const char* type,x
  * @param inputs the inputs provided
  * @param outputs the outputs generated by the service
  */
-void printProcessResponse(maps* pmsConf,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
+void printProcessResponse(maps** ppmsConf,map* request, int pid,service* serv,const char* service,int status,maps* inputs,maps* outputs){
+  maps* pmsConf=*ppmsConf;
   xmlNsPtr ns,ns_ows,ns_xlink;
   xmlNodePtr nr,n,nc,nc1=NULL,nc3;
   xmlDocPtr doc;
@@ -2175,18 +2311,18 @@ void printProcessResponse(maps* pmsConf,map* request, int pid,service* serv,cons
       /* We need to write the ExecuteResponse Document somewhere */
       FILE* output=fopen(stored_path,"w");
       if(output==NULL){
-	/* If the file cannot be created return an ExceptionReport */
-	char tmpMsg[1024];
-	sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the ExecuteResponse."),stored_path);
+        /* If the file cannot be created return an ExceptionReport */
+        char tmpMsg[1024];
+        sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the ExecuteResponse."),stored_path);
 
-	errorException(&pmsConf,tmpMsg,"InternalError",NULL);
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-	zooXmlCleanupNs();
+        errorException(ppmsConf,tmpMsg,"InternalError",NULL);
+        xmlFreeDoc(doc);
+        xmlCleanupParser();
+        zooXmlCleanupNs();
 #ifndef RELY_ON_DB
-	unlockShm(lid);
+        unlockShm(lid);
 #endif
-	return;
+        return;
       }
       xmlChar *xmlbuff;
       int buffersize;
@@ -2208,7 +2344,7 @@ void printProcessResponse(maps* pmsConf,map* request, int pid,service* serv,cons
 #endif
   }
 
-  printDocument(pmsConf,doc,pid);
+  printDocument(ppmsConf,doc,pid);
 
   xmlCleanupParser();
   zooXmlCleanupNs();
@@ -2217,14 +2353,15 @@ void printProcessResponse(maps* pmsConf,map* request, int pid,service* serv,cons
 /**
  * Print a XML document.
  * 
- * @param m the conf maps containing the main.cfg settings
+ * @param ppmsConf the conf maps containing the main.cfg settings
  * @param doc the XML document
  * @param pid the process identifier linked to a service
  */
-void printDocument(maps* pmsConf, xmlDocPtr doc,int pid){
+void printDocument(maps** ppmsConf, xmlDocPtr doc,int pid){
+  maps* pmsConf=*ppmsConf;
   char *encoding=getEncoding(pmsConf);
   if(pid==getpid()){
-    printHeaders(pmsConf);
+    printHeaders(ppmsConf);
     printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
   }
   xmlChar *xmlbuff;
@@ -2612,10 +2749,11 @@ const char* produceStatusString(maps* pmConf,map* pmCode){
  * depending on the code.
  * Set hasPrinted value to true in the [lenv] section.
  * 
- * @param m the maps containing the settings of the main.cfg file
+ * @param ppmsConf the maps containing the settings of the main.cfg file
  * @param s the map containing the text,code,locator keys (or a map array of the same keys)
  */
-void _printExceptionReportResponse(maps* pmsConf,map* s){
+void _printExceptionReportResponse(maps** ppmsConf,map* s){
+  maps* pmsConf=*ppmsConf;
   int buffersize;
   xmlDocPtr doc;
   xmlChar *xmlbuff;
@@ -2638,12 +2776,12 @@ void _printExceptionReportResponse(maps* pmsConf,map* s){
     map *tmpSid=getMapFromMaps(pmsConf,"lenv","sid");
     if(tmpSid!=NULL){
       if( getpid()==atoi(tmpSid->value) ){
-        printHeaders(pmsConf);
+        printHeaders(ppmsConf);
         printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
       }
     }
     else{
-      printHeaders(pmsConf);
+      printHeaders(ppmsConf);
       printf("Content-Type: text/xml; charset=%s\r\nStatus: %s\r\n\r\n",encoding,exceptionCode);
     }
   }else{
@@ -2666,17 +2804,18 @@ void _printExceptionReportResponse(maps* pmsConf,map* s){
  * Print an OWS ExceptionReport or exception.yaml Document and HTTP headers
  * (when required) depending on the code.
  * 
- * @param pmsConf the maps containing the settings of the main.cfg file
+ * @param ppmsConf the maps containing the settings of the main.cfg file
  * @param pmError the map containing the text,code,locator keys (or a map array)
  */
-void printExceptionReportResponse(maps** pmsConf,map* pmError){
-  if(getMapFromMaps(*pmsConf,"lenv","hasPrinted")!=NULL)
+void printExceptionReportResponse(maps** ppmsConf,map* pmError){
+  maps* pmsConf=*ppmsConf;
+  if(getMapFromMaps(pmsConf,"lenv","hasPrinted")!=NULL)
     return;
-  map* pmExecutionType=getMapFromMaps(*pmsConf,"main","executionType");
+  map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
   if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-    _printExceptionReportResponse(*pmsConf,pmError);
+    _printExceptionReportResponse(ppmsConf,pmError);
   else
-    printExceptionReportResponseJ(pmsConf,pmError);
+    printExceptionReportResponseJ(ppmsConf,pmError);
 }
 
 /**
@@ -2920,22 +3059,23 @@ char* produceFileUrl(service* psService,maps* pmsConf,maps* pmsOutputs,const cha
  * @param res the value returned by the service execution
  */
 void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
-		    map* request_inputs1,int cpid,maps* pmsConf,int res){
+		    map* request_inputs1,int cpid,maps** ppmsConf,int res){
 #ifdef DEBUG
   dumpMaps(request_inputs);
   dumpMaps(request_outputs);
   fprintf(stderr,"printProcessResponse\n");
-#endif  
+#endif
+  maps* pmsConf=*ppmsConf;
   map* pmRawData=getMap(request_inputs1,"RawDataOutput");
   int asRaw=0;
   if(pmRawData!=NULL)
     asRaw=1;
   map* version=getMapFromMaps(pmsConf,"main","rversion");
   int vid=getVersionId(version->value);
-  printSessionHeaders(pmsConf);
+  printSessionHeaders(ppmsConf);
   if(res==SERVICE_FAILED){
     char* tmp0=produceErrorMessage(pmsConf);
-    errorException(&pmsConf,tmp0,"InternalError",NULL);
+    errorException(ppmsConf,tmp0,"InternalError",NULL);
     free(tmp0);
     return;
   }
@@ -2951,7 +3091,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
   }
 
   if(res!=SERVICE_SUCCEEDED){	  
-    printProcessResponse(pmsConf,request_inputs1,cpid,
+    printProcessResponse(ppmsConf,request_inputs1,cpid,
                          s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
                          request_inputs,
                          request_outputs);
@@ -3026,7 +3166,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
         if(testMap!=NULL){
           map* nbFeatures;
           setMapInMaps(pmsConf,"lenv","state","out");
-          setReferenceUrl(pmsConf,tmpI);
+          setReferenceUrl(ppmsConf,tmpI);
           nbFeatures=getMap(tmpI->content,"nb_features");
           geodatatype=getMap(tmpI->content,"geodatatype");
           if((nbFeatures!=NULL && atoi(nbFeatures->value)==0) ||
@@ -3054,14 +3194,14 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     dumpMaps(pmsConf);
 #endif	
     if(error<0)
-      printProcessResponse(pmsConf,request_inputs1,cpid,
+      printProcessResponse(ppmsConf,request_inputs1,cpid,
             s, s->name,res,  // replace serviceProvider with serviceName in stored response file name
             request_inputs,
             request_outputs);
     else{
       maps* tmpMaps=getMaps(pmsConf,"lenv");
 #ifdef USE_CALLBACK
-      invokeCallback(pmsConf,NULL,NULL,7,0);
+      invokeCallback(ppmsConf,NULL,NULL,7,0);
 #endif
       printExceptionReportResponse(&pmsConf,tmpMaps->content);
     }
@@ -3083,7 +3223,7 @@ void outputResponse(service* s,maps* request_inputs,maps* request_outputs,
     if(e!=NULL && strcasecmp(e->format,"BoundingBoxData")==0){
       printBoundingBoxDocument(pmsConf,tmpI,NULL);
     }else{
-      printRawdataOutput(pmsConf,tmpI);
+      printRawdataOutput(ppmsConf,tmpI);
     }
   }
 }
@@ -3112,7 +3252,8 @@ int getNumberOfOutputs(maps* conf,maps* outputs){
  * @param pmsConf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void printRawdataOutputs(maps* pmsConf,service* s,maps* outputs){
+void printRawdataOutputs(maps** ppmsConf,service* s,maps* outputs){
+  maps* pmsConf=*ppmsConf;
   maps* pmsOut=outputs;
   if(pmsOut!= NULL && pmsOut->next!=NULL && getNumberOfOutputs(pmsConf,outputs)>1){
     map* pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
@@ -3172,7 +3313,7 @@ void printRawdataOutputs(maps* pmsConf,service* s,maps* outputs){
             sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
             map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
             if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-              errorException(&pmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+              errorException(ppmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
             else{
               setMapInMaps(pmsConf,"lenv","error","true");
               setMapInMaps(pmsConf,"lenv","code","InvalidParameterValue");
@@ -3197,16 +3338,17 @@ void printRawdataOutputs(maps* pmsConf,service* s,maps* outputs){
     }
     printf("--%s--\r\n",pcaBoundary);
   }
-  else printRawdataOutput(pmsConf,outputs);
+  else printRawdataOutput(ppmsConf,outputs);
 }
 
 /**
  * Print one outputs as raw
  * 
- * @param pmsConf the main configuration maps
+ * @param ppmsConf the main configuration maps
  * @param outputs the output to be print as raw
  */
-void printRawdataOutput(maps* pmsConf,maps* outputs){
+void printRawdataOutput(maps** ppmsConf,maps* outputs){
+  maps* pmsConf=*ppmsConf;
   map *gfile=getMap(outputs->content,"generated_file");
   if(gfile!=NULL){
     gfile=getMap(outputs->content,"expected_generated_file");
@@ -3221,7 +3363,7 @@ void printRawdataOutput(maps* pmsConf,maps* outputs){
     sprintf(tmpMsg,_("Wrong RawDataOutput parameter: unable to fetch any result for the given parameter name: \"%s\"."),outputs->name);
     map* pmExecutionType=getMapFromMaps(pmsConf,"main","executionType");
     if(pmExecutionType!=NULL && strncasecmp(pmExecutionType->value,"xml",3)==0)
-      errorException(&pmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
+      errorException(ppmsConf,tmpMsg,"InvalidParameterValue","RawDataOutput");
     else{
       setMapInMaps(pmsConf,"lenv","error","true");
       setMapInMaps(pmsConf,"lenv","code","InvalidParameterValue");
@@ -3266,7 +3408,7 @@ void printRawdataOutput(maps* pmsConf,maps* outputs){
       sprintf(locationUrlHeader,"%s/processes/%s",rootUrl->value,location->value);
       printf("Location: %s\r\n",locationUrlHeader);
     }
-    printHeaders(pmsConf);
+    printHeaders(ppmsConf);
     map* pmStatus = getMapFromMaps(pmsConf,"headers","Status");
     if(pmStatus!=NULL){
       printf("Status: %s;\r\n\r\n",pmStatus->value);
@@ -3516,4 +3658,3 @@ void printStatusInfo(maps* conf,map* statusInfo,char* req){
   zooXmlCleanupNs();
   
 }
-

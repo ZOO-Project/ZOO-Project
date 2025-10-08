@@ -21,15 +21,19 @@ simple, flexible mechanisms for specifying constraints between the
 steps in a workflow and artifact management for linking the output of
 any step as an input to subsequent steps.
 
-.. |slurm| image:: https://slurm.schedmd.com/slurm_logo.png
+The ZOO-Project with DRU support is available as a 
+`helm chart that <https://artifacthub.io/packages/helm/zoo-project/zoo-project-dru>`__
+can be deployed on a Kubernetes cluster. 
+
+.. |cwl-logo| image:: https://www.commonwl.org/assets/img/CWL-Logo-HD-cropped2.png
        :height: 100px
        :width: 100px
        :scale: 45%
-       :alt: Slurm logo
+       :alt: CWL logo
 
 
-Installation on a Minikube Cluster
-------------------------------
+Installation on a local Kubernetes Cluster
+------------------------------------------
 
 Follow the steps described below in order to activate the ZOO-Project
 optional DRU support.
@@ -48,13 +52,125 @@ code, please proceed to the section :ref:`Building the docker image
 Prerequisites
 .....................
 
-   * `Docker <https://docs.docker.com/get-docker/>`_
+   * `Docker <https://docs.docker.com/get-docker/>`_ (Apple silicon users should activate kubernetes from Docker Desktop, the virtual machine options should be set to Apple virtualization framework with the option "Use Rosetta for x86/64 emulation on Apple silicon" activated)
    * `Kubectl <https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/>`_
    * `Helm <https://helm.sh/docs/intro/install/>`_
-   * `Minikube <https://minikube.sigs.k8s.io/docs/start/>`_
+   * `Minikube <https://minikube.sigs.k8s.io/docs/start/>`_ (not required for Apple silicon)
+   * `Skaffold <https://skaffold.dev/docs/install/>`_ (for developers)
    * latest `ZOO-Project
      <https://github.com/ZOO-Project/ZOO-Project/>`_
      version
+
+Checking the requirements
+*************************
+
+After installing these tools, ensure they are available in your terminal by running the following commands:
+
+.. code-block:: bash
+
+       docker --version
+       kubectl version --client
+       helm version
+       skaffold version
+       # The following command is not required to work on Apple silicon
+       minikube version
+
+
+Add the helm repositories
+*************************
+
+Before starting the next steps, make sure to run the following command to
+ensure that your local environment is ready to deploy the ZOO-Project-DRU.
+
+.. code-block:: bash
+
+       helm repo add localstack https://helm.localstack.cloud
+       helm repo add zoo-project https://zoo-project.github.io/charts/
+
+
+.. _Installation using skaffold:
+
+Build and install with skaffold
+......................................
+
+.. note::
+    
+      💡 The `skaffold.yaml` file is located in the root directory of the
+      ZOO-Project repository. It is used to build
+      the docker image and deploy the ZOO-Project on a Kubernetes
+      cluster. Usually, you should use a specific version of the
+      ZOO-Project-DRU docker image, as defined in the Helm chart. 
+      During the development phase, skaffold can be used to build and deploy
+      using the current state of the local source code.
+
+The ZOO-Project with DRU support can be setup using skaffold. There are
+multiple profiles defined in the `skaffold.yaml` file. The profiles are the
+following:
+
+   * `hostpath`: 
+      it define the storageClass to use for the persistent volumes. It should
+      be used when deploying on Apple silicon.
+   * `wes`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster with
+      the ZOO-Project-DRU docker image built from the source code and
+      the WES support (using the 
+      `zoo-wes-runner <https://github.com/ZOO-Project/zoo-wes-runner>`_).
+   * `argo`: 
+      it will deploy the ZOO-Project-DRU on a Kubernetes cluster 
+      with the ZOO-Project-DRU docker image built from the source code and
+      the Argo Workflows support (using the `zoo-argowf-runner 
+      <https://github.com/EOEPCA/zoo-argowf-runner/tree/develop>`_).
+
+If you don't specify any profile, skaffold will deploy the ZOO-Project-DRU on
+a Kubernetes cluster with the ZOO-Project-DRU docker image built from the
+source code and the default `zoo-calrissian-runner 
+<https://github.com/EOEPCA/zoo-calrissian-runner>`_.
+
+For instance, to deploy the ZOO-Project-DRU on a x86/amd64 Kubernetes cluster
+with the default zoo-calrissian-runner, use the following command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       cd ZOO-Project
+       skaffold dev
+
+For deploying on arm64 (Apple silicon) Kubernetes cluster, use the following
+command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       cd ZOO-Project
+       # Pull the latest Docker image used from the latest Helm chart 
+       docker pull \
+          zooproject/zoo-project:$(curl \
+            https://raw.githubusercontent.com/ZOO-Project/charts/refs/heads/main/zoo-project-dru/values.yaml \
+            | grep tag | grep dru | head -1 | awk {'print $2'}) \
+          --platform linux/amd64
+       skaffold dev -p hostpath \
+          --platform=linux/amd64 \
+          --enable-platform-node-affinity=true
+
+
+.. note::
+    
+      💡 You can combine multiple profiles, so using `-p hostpath,wes` it will
+      deploy the WES support using hostpath as the storageClass.
+
+For deploying the ZOO-Project-DRU using Argo Workflows, you don't need to
+deploy any object storage, the ZOO-Project will use the one created by the Argo
+server. In consequence, we also provide an optional `skaffold-argo.yaml` file
+that can be used to deploy the ZOO-Project-DRU using Argo Workflows without
+extra object storage. To deplot this version on a x86/amd64 Kubernetes cluster,
+use the following command:
+
+.. code-block:: bash
+
+       git clone https://github.com/ZOO-Project/ZOO-Project.git
+       de ZOO-Project
+       skaffold dev -f docker/dru/skaffold-argo.yaml
+
 
 .. _Installation on a Minikube Cluster:
 
@@ -203,3 +319,255 @@ build the docker image locally.
 
 
 Now you can deploy on Minikube as defined here: :ref:`Deploy using Helm`
+
+
+.. _CWL Supported types:
+
+CWL Supported types
+-------------------
+
+The ZOO-Project handle `three kind of input types <../services/zcfg-reference.html#type-of-data-nodes>`_ for every process/service.
+One of them are the LiteralData, which are simple values like strings, numbers, etc.
+
+You can find below the exhaustive list of supported types for the LiteralData 
+depending on the type defined in the CWL used to deploy a process.
+
+.. list-table:: CWL Types for LiteralData
+   :widths: 15 65
+   :align: center
+   :header-rows: 1
+
+   * - CWL Type
+     - Schema Definition
+   * - `string`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "string"
+                     }
+   * - `int`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "integer"
+                     }
+   * - `long`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "integer"
+                     }
+   * - `float`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "number",
+                      "format": "float"
+                     }
+   * - `double`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "number",
+                      "format": "double"
+                     }
+   * - `boolean`
+     - .. code-block:: guess
+
+                    "schema": {
+                      "type": "boolean"
+                     }
+
+
+OGC API - Processes - Part 1: Core introduced the `format` key in the `schema` 
+property giving the opportunity to provide additional semantic context that 
+can aid in the interpretation of the data (cf. 
+`Table 13 Additional values for the JSON schema format key for OGC Process Description <https://docs.ogc.org/DRAFTS/18-062.html#format-key-values>`_).
+The `format` key can be particularly useful when dealing with complex data 
+types (especially when they have the same media type) or when integrating with 
+other systems that require specific data formats.
+
+A set of `CWL Custom Types <https://eoap.github.io/schemas/>`_ has beend 
+defined by the `Earth Observation Application Package (EOAP) GitHub 
+Organization <https://github.com/eoap>`_. 
+They helps to define the data structure used in the CWL workflow description
+for the additional values to the JSON Schema formats key for OGC Process 
+Descripton. They are managed on the 
+`Schemas EOAP GitHub repository <https://github.com/eoap/schemas>`_.
+
+They are organized in the following three definition files:
+
+- **OGC**: `ogc.yaml <https://raw.githubusercontent.com/eoap/schemas/refs/heads/main/ogc.yaml>`_
+- **GeoJSON**: `geojson.yaml <https://raw.githubusercontent.com/eoap/schemas/refs/heads/main/geojson.yaml>`_
+- **STAC**: `stac.yaml <https://raw.githubusercontent.com/eoap/schemas/refs/heads/main/stac.yaml>`_
+
+
+In the `oas.cfg` file, the `schemas` property can be defined to list the 
+predefined schemas definition used in the exposed OpenAPI.
+The value explicitely linked to the `format` key in the `schema` property is 
+the URL of the OpenAPI or JSON Schema definition file.
+
+Below is the list of the predefined format names and their corresponding 
+schemas.
+
+.. code-block:: guess
+
+       [schemas]
+       length=7
+       value=https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/bbox.yaml
+       name=ogc-bbox
+       value_1=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureCollectionGeoJSON.yaml
+       name_1=geojson-feature-collection
+       value_2=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureGeoJSON.yaml
+       name_2=geojson-feature
+       value_3=https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometryGeoJSON.yaml
+       name_3=geojson-geometry
+       value_4=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/catalog-spec/json-schema/catalog.json
+       name_4=stac-catalog
+       value_5=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/collection-spec/json-schema/collection.json
+       name_5=stac-collection
+       value_6=https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/item-spec/json-schema/item.json
+       name_6=stac-item
+
+
+The table below provides the list of the predefined supported CWL Custom Types 
+and their corresponding format key values and OGC Processes Description.
+
+.. list-table:: CWL Custom Types and OGC Processes Description
+   :widths: 15 10 75
+   :align: center
+   :header-rows: 1
+
+   * - CWL Custom Type
+     - Short code
+     - OGC Processes Description
+   * - geojson.yaml#FeatureCollection
+     - geojson-feature-collection
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "geojson-feature-collection"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureCollectionGeoJSON.yaml"
+                        }
+                      ]
+                     }
+   * - geojson.yaml#Feature
+     - geojson-feature
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "geojson-feature"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/featureGeoJSON.yaml"
+                        }
+                      ]
+                     }
+   * - * geojson.yaml#GeometryCollection
+       * geojson.yaml#Polygon
+       * geojson.yaml#LineString
+       * geojson.yaml#Point
+       * geojson.yaml#MultiPolygon
+       * geojson.yaml#MultiLineString
+       * geojson.yaml#MultiPoint
+     - geojson-geometry
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "geojson-geometry"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/geometryGeoJSON.yaml"
+                        }
+                      ]
+                     }
+   * - ogc.yaml#BBox
+     - ogc-bbox
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "ogc-bbox"
+                        },
+                        {
+                          "$ref": "https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/bbox.yaml"
+                        }
+                      ]
+                     }
+   * - None
+     - epsg-code
+     - None
+   * - None
+     - wkt2-def
+     - None
+   * - None
+     - cql2-text
+     - None
+   * - None
+     - cql2-json  
+     - None
+   * - None
+     - collection-id
+     - None
+   * - stac.yaml#Collection
+     - stac-collection
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "stac-collection"
+                        },
+                        {
+                          "$ref": "https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/collection-spec/json-schema/collection.json"
+                        }
+                      ]
+                     }
+   * - stac.yaml#Catalog
+     - stac-catalog
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "stac-catalog"
+                        },
+                        {
+                          "$ref": "https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/catalog-spec/json-schema/catalog.json"
+                        }
+                      ]
+                     }
+   * - None
+     - stac-itemCollection
+     - None
+   * - stac.yaml#Item
+     - stac-item
+     - .. code-block:: guess
+
+                    "schema": {
+                      "allOf": [
+                        {
+                          "format": "stac-item"
+                        },
+                        {
+                          "$ref": "https://raw.githubusercontent.com/radiantearth/stac-api-spec/refs/heads/release/v1.0.0/stac-spec/item-spec/json-schema/item.json"
+                        }
+                      ]
+                     }
+   * - None
+     - ogc-feature-collection
+     - None
+   * - None
+     - ogc-coverage-collection
+     - None
+
+

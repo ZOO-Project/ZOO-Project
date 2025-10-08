@@ -1,0 +1,78 @@
+apiVersion: skaffold/v4beta9
+kind: Config
+build:
+  # tagPolicy: 
+  #   sha256: {}
+  artifacts:
+    - image: zoodruimage
+      context: .
+      docker:
+        dockerfile: docker/dru/Dockerfile
+
+deploy:
+  helm:
+    releases:
+
+      - name: zoo-project-dru
+        remoteChart: zoo-project/zoo-project-dru
+        namespace: eoap-zoo-project
+        createNamespace: true
+        version: 0.4.14
+        valuesFiles:
+        - values.yaml
+        setValueTemplates:
+          iam.enabled: false
+          # Argo cookiecutter
+          cookiecutter.templateUrl: https://github.com/gfenoy/zoo-argo-wf-proc-service-template.git
+          cookiecutter.templateBranch: feature/additional-parameters-log-urls
+          filter_in.enabled: true
+          filter_out.enabled: true
+          zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+          zoofpm.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
+          zoofpm.image.pullPolicy: IfNotPresent
+          zookernel.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
+          zookernel.image.tag: "{{.IMAGE_TAG_zoodruimage}}"
+          zookernel.image.pullPolicy: IfNotPresent
+
+          # ARGO specific
+          workflow.argo.enabled: true
+          workflow.argo.wfToken: "<ARGO_WF_TOKEN>"
+
+          # Persistence settings (should be same in the original chart)
+          persistence.procServicesAccessMode: ReadWriteMany
+
+          # RabbitMQ resource limits
+          rabbitmq.resource.limits.memory: 2048Mi
+
+          workflow.additionalInputs:
+            s3_bucket: results
+            region_name: us-east-1
+            aws_secret_access_key: minio-admin
+            aws_access_key_id: minio-admin
+            endpoint_url: http://minio.ns1.svc.cluster.local:9000
+
+profiles:
+
+  - name: hostpath
+    patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/persistence.storageClass
+        value: hostpath
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/persistence.procServicesStorageClass
+        value: hostpath
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/persistence.tmpStorageClass
+        value: hostpath
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.storageClass
+        value: hostpath
+
+
+portForward:
+  - resourceType: service
+    resourceName: zoo-project-dru-service
+    namespace: eoap-zoo-project
+    address: localhost
+    port: 80
+    localPort: 8080

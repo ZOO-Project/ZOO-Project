@@ -59,6 +59,13 @@ def securityIn(conf,inputs,outputs):
                 conf["renv"]["HTTP_ACCEPT_ORIGIN"]="application/cwl+json"
                 conf["renv"]["HTTP_ACCEPT"]="application/cwl"
                 conf["lenv"]["require_conversion_to_json"]="true"
+    if not(has_rpath):
+        rPath += "anonymous"
+        conf["lenv"]["fpm_user"] = "anonymous"
+        conf["lenv"]["fpm_cwd"] = rPath
+        conf["auth_env"] = {"user": "anonymous","cwd": rPath}
+        conf["main"]["tmpPath"]=rPath+"/temp"
+        conf["zooServicesNamespace"] = {"namespace": "anonymous","cwd": rPath}
     if not(os.path.isdir(rPath)):
         zoo.info(f"Creating directory {rPath}")
         os.mkdir(rPath)

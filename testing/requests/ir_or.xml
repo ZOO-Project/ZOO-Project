@@ -4,7 +4,7 @@
 <wps:Input>
 <ows:Identifier>InputPolygon</ows:Identifier>
 <ows:Title>Playground area</ows:Title>
-<wps:Reference xlink:href="http://www.zoo-project.org:8082/geoserver/ows?SERVICE=WFS&amp;REQUEST=GetFeature&amp;VERSION=1.0.0&amp;typename=topp:states&amp;SRS=EPSG:4326&amp;FeatureID=states.15" />
+<wps:Reference xlink:href="https://old-www.zoo-project.org:8082/geoserver/ows?SERVICE=WFS&amp;REQUEST=GetFeature&amp;VERSION=1.0.0&amp;typename=topp:states&amp;SRS=EPSG:4326&amp;FeatureID=states.15" />
 </wps:Input>
 </wps:DataInputs>
 <wps:ResponseForm>

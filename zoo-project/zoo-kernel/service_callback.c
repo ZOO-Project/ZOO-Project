@@ -521,18 +521,18 @@ extern "C" {
     }
     if(arg->state==SERVICE_STARTED && pmTmp!=NULL){
       if(maxProgress<=atoi(pmTmp->value)){
-	maxProgress=atoi(pmTmp->value);
+        maxProgress=atoi(pmTmp->value);
       }else{
 #ifdef CALLBACK_DEBUG
-	fprintf(stderr,"************************* From thread %d %s %d: REQUEST CANCELLED (%s) EXIT!\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
-	fflush(stderr);
+        fprintf(stderr,"************************* From thread %d %s %d: REQUEST CANCELLED (%s) EXIT!\n",pthread_self(),__FILE__,__LINE__,arg->url->value);
+        fflush(stderr);
 #endif
-	freeMaps(&arg->conf);
-	free(arg->conf);
-	freeMap(&arg->url);
-	free(arg->url);
-	pthread_exit(NULL);
-	return NULL;
+        freeMaps(&arg->conf);
+        free(arg->conf);
+        freeMap(&arg->url);
+        free(arg->url);
+        pthread_exit(NULL);
+        return NULL;
       }
     }else
       maxProgress=101;
@@ -561,9 +561,9 @@ extern "C" {
 				 * sizeof (char));
     if (tmp == NULL)
       {
-	setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
-	setMapInMaps(arg->conf,"lenv","code","InternalError");
-	return NULL;
+        setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
+        setMapInMaps(arg->conf,"lenv","code","InternalError");
+        return NULL;
       }
     size_t bRead;
     InternetReadFile (hInternet.ihandle[0],
@@ -596,50 +596,53 @@ extern "C" {
    * @return bool true in case of success, false in other cases
    */
   bool invokeBasicCallback(maps* conf,int state){
-    map* url=getMapFromMaps(conf,"subscriber","inProgressUri");
+    map* pmUrl=getMapFromMaps(conf,"subscriber","inProgressUri");
     if(state==SERVICE_SUCCEEDED)
-      url=getMapFromMaps(conf,"subscriber","successUri");
+      pmUrl=getMapFromMaps(conf,"subscriber","successUri");
     else
       if(state==SERVICE_FAILED)
-	url=getMapFromMaps(conf,"subscriber","failedUri");
-    if(url==NULL)
+        pmUrl=getMapFromMaps(conf,"subscriber","failedUri");
+    if(pmUrl==NULL)
       return false;
-    map* url0=createMap("url",url->value);
+    map* pmUrl0=createMap("url",pmUrl->value);
     map* sname=getMapFromMaps(conf,"lenv","identifier");
     if(sname!=NULL && isProhibited(conf,sname->value))
       return false;
     if(state<cStep)
       return true;
-    if(cStep!=state || isOngoing==0){
+    if(cStep!=state || isOngoing>=0){
+      maps* pmsaLocalConf=dupMaps(&conf);
       json_object *res=NULL;
       if(state==SERVICE_SUCCEEDED || state==SERVICE_FAILED){
-	maps* pmsTmp=getMaps(conf,"lenv");
-	setMapInMaps(conf,"lenv","no-write","true");
-	map* pmTmp=getMapFromMaps(conf,"lenv","usid");
-	if(pmTmp!=NULL){
-	  map* pmResponse=getMapFromMaps(conf,"lenv","jsonStr");
-	  res=parseJson(conf,pmResponse->value);
-	}
+        maps* pmsTmp=getMaps(pmsaLocalConf,"lenv");
+        setMapInMaps(pmsaLocalConf,"lenv","no-write","true");
+        map* pmTmp=getMapFromMaps(pmsaLocalConf,"lenv","usid");
+        if(pmTmp!=NULL){
+          map* pmResponse=getMapFromMaps(pmsaLocalConf,"lenv","jsonStr");
+          res=parseJson(pmsaLocalConf,pmResponse->value);
+        }
       }else
-	res=createStatus(conf,state);
+        res=createStatus(pmsaLocalConf,state);
       if(local_arguments==NULL)
-	local_arguments=(local_params**)malloc(sizeof(local_params*));
+        local_arguments=(local_params**)malloc(sizeof(local_params*));
       else
-	local_arguments=(local_params**)realloc(local_arguments,(nbThreads+1)*sizeof(local_params*));
+        local_arguments=(local_params**)realloc(local_arguments,(nbThreads+1)*sizeof(local_params*));
       local_arguments[nbThreads]=(local_params*)malloc(MAPS_SIZE+MAP_SIZE+sizeof(json_object*)+(2*sizeof(int)));	
-      local_arguments[nbThreads]->conf=dupMaps(&conf);
-      local_arguments[nbThreads]->url=url0;
+      local_arguments[nbThreads]->conf=pmsaLocalConf;
+      local_arguments[nbThreads]->url=pmUrl0;
       local_arguments[nbThreads]->res=res;
       local_arguments[nbThreads]->step=0;
       local_arguments[nbThreads]->state=state;
       cStep=state;
       if(myThreads==NULL)
-	myThreads=(pthread_t*)malloc((nbThreads+1)*sizeof(pthread_t));
+        myThreads=(pthread_t*)malloc((nbThreads+1)*sizeof(pthread_t));
       else
-	myThreads=(pthread_t*)realloc(myThreads,(nbThreads+1)*sizeof(pthread_t));
+        myThreads=(pthread_t*)realloc(myThreads,(nbThreads+1)*sizeof(pthread_t));
       if(pthread_create(&myThreads[nbThreads], NULL, _invokeBasicCallback, (void*)local_arguments[nbThreads])==-1){
-	setMapInMaps(conf,"lenv","message",_("Unable to create a new thread"));
-	return false;
+        setMapInMaps(conf,"lenv","message",_("Unable to create a new thread"));
+        freeMaps(&local_arguments[nbThreads]->conf);
+        free(local_arguments[nbThreads]->conf);
+        return false;
       }
       nbThreads++;
     }
@@ -776,7 +779,7 @@ extern "C" {
   /**
    * Invoke the callback in case there is a [callback] section containing a url parameter
    * 
-   * @param m the maps containing the main configuration file definitions
+   * @param ppmsConf the maps containing the main configuration file definitions
    * @param inputs the inputs defined in the request (can be null if not yet initialized)
    * @param inputs the outputs provided in the request (can be null if not yet initialized)
    * @param step the step number, steps are defined as: 
@@ -791,7 +794,8 @@ extern "C" {
    * @param state 0 in case the step starts, 1 when it ends
    * @return bool true in case of success, false in other cases
    */
-  bool invokeCallback(maps* conf,maps* inputs,maps* outputs,int step,int state){
+  bool invokeCallback(maps** ppmsConf,maps* inputs,maps* outputs,int step,int state){
+    maps* conf=*ppmsConf;
     map* url=getMapFromMaps(conf,"callback","url");
     if(url==NULL)
       return false;
@@ -856,273 +860,273 @@ extern "C" {
     case 1: {
       // Update the execute request stored on disk at step 0,0 to modify the references used.
       if(state==1){
-	maps* curs=inputs;
-	xmlInitParser();
-	map* xmlPath=getMapFromMaps(conf,"lenv","execute_file");
-	while(curs!=NULL){
-	  map* length=getMap(curs->content,"length");
-	  map* useMS=getMap(curs->content,"useMapserver");
-	  if(length==NULL){
-	    addToMap(curs->content,"length","1");
-	    length=getMap(curs->content,"length");
-	  }
-	  int len=atoi(length->value);
-	  for(int ii=0;ii<len;ii++){
-	    if(getMapArray(curs->content,"byValue",ii)!=NULL && getMapArray(curs->content,"mimeType",ii)!=NULL && useMS!=NULL && strncasecmp(useMS->value,"true",4)==0){
-	      map* tmpMap=getMapArray(curs->content,"value",ii);
-	      char tmpStr[100];
-	      sprintf(tmpStr,"%ld",strlen(tmpMap->value));
-	      setMapArray(curs->content,"size",ii,tmpStr);
-	      tmpMap=getMapArray(curs->content,"mimeType",ii);
-	      setMapArray(curs->content,"fmimeType",ii,tmpMap->value);
-	      tmpMap=getMapArray(curs->content,"cache_file",ii);
-	      setMapArray(curs->content,"generated_file",ii,tmpMap->value);
-	      setMapArray(curs->content,"storage",ii,tmpMap->value);
-	      setReferenceUrl(conf,curs);
-	      addIntToMap(curs->content,"published_id",ii+1);
-	      const char *params[7];
-	      int xmlLoadExtDtdDefaultValue;
-	      int hasFile=-1;
-	      map* xslPath=getMapFromMaps(conf,"callback","template");
-	      map* filePath=getMapArray(curs->content,"ref_wfs_link",ii);
-	      if(filePath==NULL)
-		filePath=getMap(curs->content,"ref_wcs_link");
-	      char* inputName=curs->name;
-	      if(xslPath==NULL || xmlPath==NULL || filePath==NULL)
-		break;
-	      char *tmpParam=(char*)malloc((strlen(curs->name)+11)*sizeof(char));
-	      char *tmpParam1=(char*)malloc((strlen(filePath->value)+11)*sizeof(char));
-	      char tmpParam2[24];
-	      sprintf(tmpParam2,"string(\"%d\")",ii);
-	      setMapArray(curs->content,"href",ii,filePath->value);
-	      setMapArray(curs->content,"xlink:href",ii,filePath->value);
-	      tmpMap=getMapArray(curs->content,"cache_url",ii);
-	      if(tmpMap!=NULL)
-		setMapArray(curs->content,"xlink:href",ii,tmpMap->value);
-	      else
-		setMapArray(curs->content,"xlink:href",ii,filePath->value);
-	      sprintf(tmpParam,"string(\"%s\")",curs->name);
-	      sprintf(tmpParam1,"string(\"%s\")",filePath->value);
-	      sprintf(tmpParam2,"string(\"%d\")",ii);
-	      params[0]="attr";
-	      params[1]=tmpParam;
-	      params[2]="value";
-	      params[3]=tmpParam1;//filePath->value;
-	      params[4]="cnt";
-	      params[5]=tmpParam2;
-	      params[6]=NULL;
-	      fprintf(stderr, "## XSLT PARAMETERS ATTR: %s VALUE: %s INDEX: %s\n",
-		      tmpParam,tmpParam1,tmpParam2);
-	      fflush(stderr);
-	      xmlSubstituteEntitiesDefault(1);
-	      xmlLoadExtDtdDefaultValue = 0;
-	      xsltStylesheetPtr cur = NULL;
-	      xmlDocPtr doc, res;
-	      cur = xsltParseStylesheetFile(BAD_CAST xslPath->value);
-	      doc = xmlParseFile(xmlPath->value);
-	      fflush(stderr);
-	      res = xsltApplyStylesheet(cur, doc, params);
-	      xmlChar *xmlbuff;
-	      int buffersize;
-	      xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
-	      // Store the executeRequest in file again
-	      free(tmpParam);
-	      free(tmpParam1);
-	      fprintf(stderr," # Request / XSLT: %s\n",xmlbuff);
-	      fflush(stderr);
-	      FILE* saveExecute=fopen(xmlPath->value,"wb");
-	      if(saveExecute!=NULL){
-		fwrite(xmlbuff,1,buffersize,saveExecute);
-		fflush(saveExecute);
-		fclose(saveExecute);
-	      }
-	      xmlFree(xmlbuff);
-	      xmlFreeDoc(doc);
-	      xsltFreeStylesheet(cur);
-	    }
-	  }
-	  addIntToMap(curs->content,"published_id",0);
-	  curs=curs->next;
-	}
-	xmlCleanupParser();
-	FILE* f0=fopen(xmlPath->value,"rb");
-	if(f0!=NULL){
-	  long flen;
-	  char *fcontent;
-	  fseek (f0, 0, SEEK_END);
-	  flen = ftell (f0);
-	  fseek (f0, 0, SEEK_SET);
-	  fcontent = (char *) malloc ((flen + 1) * sizeof (char));
-	  fread(fcontent,flen,1,f0);
-	  fcontent[flen]=0;
-	  fclose(f0);
-	  map *schema=getMapFromMaps(conf,"database","schema");
-	  map* sid=getMapFromMaps(conf,"lenv","usid");
-	  char *req=(char*)malloc((flen+strlen(schema->value)+strlen(sid->value)+66)*sizeof(char));
-	  sprintf(req,"UPDATE %s.services set request_execute_content=$$%s$$ WHERE uuid=$$%s$$",schema->value,fcontent,sid->value);
-#ifdef RELY_ON_DB
-	  execSql(conf,1,req);
-#endif
-	  free(fcontent);
-	  free(req);
-	}
+    maps* curs=inputs;
+    xmlInitParser();
+    map* xmlPath=getMapFromMaps(conf,"lenv","execute_file");
+    while(curs!=NULL){
+      map* length=getMap(curs->content,"length");
+      map* useMS=getMap(curs->content,"useMapserver");
+      if(length==NULL){
+        addToMap(curs->content,"length","1");
+        length=getMap(curs->content,"length");
       }
-
-      // Fetching data inputs
-      maps* curs=inputs;
-      const char *keys[11][2]={
-        {
-          "xlink:href",
-          "ref_download_link"
-        },
-        {
-          "cache_file",
-          "cachefile"
-        },
-        {
-          "fmimeType",
-          "mimetype"
-        },
-        {
-          "size",
-          "size"
-        },
-        {
-          "ref_wms_link",
-          "ref_wms_link"
-        },
-        {
-          "ref_wfs_link",
-          "ref_wfs_link"
-        },
-        {
-          "ref_wcs_link",
-          "ref_wcs_link"
-        },
-        {
-          "ref_wcs_link",
-          "ref_wcs_link"
-        },
-        {
-          "ref_wcs_preview_link",
-          "ref_wcs_preview_link"
-        },
-        {
-          "geodatatype",
-          "datatype"
-        },
-        {
-          "wgs84_extent",
-          "boundingbox"
-        }
-      };
-      json_object *res1=json_object_new_object();
-      while(curs!=NULL){
-	if(getMap(curs->content,"length")==NULL){
-	  addToMap(curs->content,"length","1");
-	}
-	map* length=getMap(curs->content,"length");
-	int len=atoi(length->value);
-	json_object *res3;
-	int hasRef=-1;
-	for(int ii=0;ii<len;ii++){
-	  map* tmpMap=getMapArray(curs->content,"cache_file",ii);
-	  sid=getMapArray(curs->content,"ref_wms_link",ii);
-	  json_object *res2=json_object_new_object();
-	  if(tmpMap!=NULL){
-	    if(sid==NULL){
-	      setMapArray(curs->content,"generated_file",ii,tmpMap->value);
-	      setMapArray(curs->content,"storage",ii,tmpMap->value);
-	    }
-	    struct stat buf;
-	    char timeStr[ 100 ] = "";
-	    if (stat(tmpMap->value, &buf)==0){
-	      strftime(timeStr, 100, "%d-%m-%Y %H:%M:%S", localtime( &buf.st_mtime));
-	      json_object *jsStr=json_object_new_string(timeStr);
-	      json_object_object_add(res2,"creation_date",jsStr);
-	    }
-	    tmpMap=getMapArray(curs->content,"fmimeType",ii);
-	    if(tmpMap!=NULL){
-	      setMapArray(curs->content,"mimeType",ii,tmpMap->value);
-	    }
-	    setReferenceUrl(conf,curs);
-	  }else{	  
-	  }
-	  addIntToMap(curs->content,"published_id",ii+1);
-	  int i=0;
-	  for(;i<11;i++){
-	    sid=getMapArray(curs->content,keys[i][0],ii);
-	    if(sid!=NULL){
-	      json_object *jsStr=json_object_new_string(sid->value);
-	      json_object_object_add(res2,keys[i][1],jsStr);
-	      if(i==0){
-		hasRef=1;
-		json_object *jsStr1=json_object_new_string(getProvenance(conf,sid->value));
-		json_object_object_add(res2,"dataOrigin",jsStr1);
-	      }
-	    }
-	  }
-	  if(len>1){
-	    if(ii==0)
-	      res3=json_object_new_array();
-	    json_object_array_add(res3,res2);
-	  }else
-	    res3=res2;
-	}
-	if(hasRef<0)
-	  json_object_put(res3);
-	else{
-	  json_object_object_add(res1,curs->name,json_object_get(res3));
-	  json_object_put(res3);
-	}
-	addIntToMap(curs->content,"published_id",0);
-	curs=curs->next;
-      }
-      json_object_object_add(res,"inputs",res1);
+      int len=atoi(length->value);
+      for(int ii=0;ii<len;ii++){
+        if(getMapArray(curs->content,"byValue",ii)!=NULL && getMapArray(curs->content,"mimeType",ii)!=NULL && useMS!=NULL && strncasecmp(useMS->value,"true",4)==0){
+          map* tmpMap=getMapArray(curs->content,"value",ii);
+          char tmpStr[100];
+          sprintf(tmpStr,"%ld",strlen(tmpMap->value));
+          setMapArray(curs->content,"size",ii,tmpStr);
+          tmpMap=getMapArray(curs->content,"mimeType",ii);
+          setMapArray(curs->content,"fmimeType",ii,tmpMap->value);
+          tmpMap=getMapArray(curs->content,"cache_file",ii);
+          setMapArray(curs->content,"generated_file",ii,tmpMap->value);
+          setMapArray(curs->content,"storage",ii,tmpMap->value);
+          setReferenceUrl(ppmsConf,curs);
+          addIntToMap(curs->content,"published_id",ii+1);
+          const char *params[7];
+          int xmlLoadExtDtdDefaultValue;
+          int hasFile=-1;
+          map* xslPath=getMapFromMaps(conf,"callback","template");
+          map* filePath=getMapArray(curs->content,"ref_wfs_link",ii);
+          if(filePath==NULL)
+      filePath=getMap(curs->content,"ref_wcs_link");
+          char* inputName=curs->name;
+          if(xslPath==NULL || xmlPath==NULL || filePath==NULL)
       break;
+          char *tmpParam=(char*)malloc((strlen(curs->name)+11)*sizeof(char));
+          char *tmpParam1=(char*)malloc((strlen(filePath->value)+11)*sizeof(char));
+          char tmpParam2[24];
+          sprintf(tmpParam2,"string(\"%d\")",ii);
+          setMapArray(curs->content,"href",ii,filePath->value);
+          setMapArray(curs->content,"xlink:href",ii,filePath->value);
+          tmpMap=getMapArray(curs->content,"cache_url",ii);
+          if(tmpMap!=NULL)
+      setMapArray(curs->content,"xlink:href",ii,tmpMap->value);
+          else
+      setMapArray(curs->content,"xlink:href",ii,filePath->value);
+          sprintf(tmpParam,"string(\"%s\")",curs->name);
+          sprintf(tmpParam1,"string(\"%s\")",filePath->value);
+          sprintf(tmpParam2,"string(\"%d\")",ii);
+          params[0]="attr";
+          params[1]=tmpParam;
+          params[2]="value";
+          params[3]=tmpParam1;//filePath->value;
+          params[4]="cnt";
+          params[5]=tmpParam2;
+          params[6]=NULL;
+          fprintf(stderr, "## XSLT PARAMETERS ATTR: %s VALUE: %s INDEX: %s\n",
+            tmpParam,tmpParam1,tmpParam2);
+          fflush(stderr);
+          xmlSubstituteEntitiesDefault(1);
+          xmlLoadExtDtdDefaultValue = 0;
+          xsltStylesheetPtr cur = NULL;
+          xmlDocPtr doc, res;
+          cur = xsltParseStylesheetFile(BAD_CAST xslPath->value);
+          doc = xmlParseFile(xmlPath->value);
+          fflush(stderr);
+          res = xsltApplyStylesheet(cur, doc, params);
+          xmlChar *xmlbuff;
+          int buffersize;
+          xmlDocDumpFormatMemory(res, &xmlbuff, &buffersize, 1);
+          // Store the executeRequest in file again
+          free(tmpParam);
+          free(tmpParam1);
+          fprintf(stderr," # Request / XSLT: %s\n",xmlbuff);
+          fflush(stderr);
+          FILE* saveExecute=fopen(xmlPath->value,"wb");
+          if(saveExecute!=NULL){
+      fwrite(xmlbuff,1,buffersize,saveExecute);
+      fflush(saveExecute);
+      fclose(saveExecute);
+          }
+          xmlFree(xmlbuff);
+          xmlFreeDoc(doc);
+          xsltFreeStylesheet(cur);
+        }
+      }
+      addIntToMap(curs->content,"published_id",0);
+      curs=curs->next;
     }
+    xmlCleanupParser();
+    FILE* f0=fopen(xmlPath->value,"rb");
+    if(f0!=NULL){
+      long flen;
+      char *fcontent;
+      fseek (f0, 0, SEEK_END);
+      flen = ftell (f0);
+      fseek (f0, 0, SEEK_SET);
+      fcontent = (char *) malloc ((flen + 1) * sizeof (char));
+      fread(fcontent,flen,1,f0);
+      fcontent[flen]=0;
+      fclose(f0);
+      map *schema=getMapFromMaps(conf,"database","schema");
+      map* sid=getMapFromMaps(conf,"lenv","usid");
+      char *req=(char*)malloc((flen+strlen(schema->value)+strlen(sid->value)+66)*sizeof(char));
+      sprintf(req,"UPDATE %s.services set request_execute_content=$$%s$$ WHERE uuid=$$%s$$",schema->value,fcontent,sid->value);
+  #ifdef RELY_ON_DB
+      execSql(conf,1,req);
+  #endif
+      free(fcontent);
+      free(req);
+    }
+        }
+
+        // Fetching data inputs
+        maps* curs=inputs;
+        const char *keys[11][2]={
+          {
+            "xlink:href",
+            "ref_download_link"
+          },
+          {
+            "cache_file",
+            "cachefile"
+          },
+          {
+            "fmimeType",
+            "mimetype"
+          },
+          {
+            "size",
+            "size"
+          },
+          {
+            "ref_wms_link",
+            "ref_wms_link"
+          },
+          {
+            "ref_wfs_link",
+            "ref_wfs_link"
+          },
+          {
+            "ref_wcs_link",
+            "ref_wcs_link"
+          },
+          {
+            "ref_wcs_link",
+            "ref_wcs_link"
+          },
+          {
+            "ref_wcs_preview_link",
+            "ref_wcs_preview_link"
+          },
+          {
+            "geodatatype",
+            "datatype"
+          },
+          {
+            "wgs84_extent",
+            "boundingbox"
+          }
+        };
+        json_object *res1=json_object_new_object();
+        while(curs!=NULL){
+          if(getMap(curs->content,"length")==NULL){
+            addToMap(curs->content,"length","1");
+          }
+          map* length=getMap(curs->content,"length");
+          int len=atoi(length->value);
+          json_object *res3;
+          int hasRef=-1;
+          for(int ii=0;ii<len;ii++){
+            map* tmpMap=getMapArray(curs->content,"cache_file",ii);
+            sid=getMapArray(curs->content,"ref_wms_link",ii);
+            json_object *res2=json_object_new_object();
+            if(tmpMap!=NULL){
+              if(sid==NULL){
+                setMapArray(curs->content,"generated_file",ii,tmpMap->value);
+                setMapArray(curs->content,"storage",ii,tmpMap->value);
+              }
+              struct stat buf;
+              char timeStr[ 100 ] = "";
+              if (stat(tmpMap->value, &buf)==0){
+                strftime(timeStr, 100, "%d-%m-%Y %H:%M:%S", localtime( &buf.st_mtime));
+                json_object *jsStr=json_object_new_string(timeStr);
+                json_object_object_add(res2,"creation_date",jsStr);
+              }
+              tmpMap=getMapArray(curs->content,"fmimeType",ii);
+              if(tmpMap!=NULL){
+                setMapArray(curs->content,"mimeType",ii,tmpMap->value);
+              }
+              setReferenceUrl(ppmsConf,curs);
+            }else{	  
+            }
+            addIntToMap(curs->content,"published_id",ii+1);
+            int i=0;
+            for(;i<11;i++){
+              sid=getMapArray(curs->content,keys[i][0],ii);
+              if(sid!=NULL){
+                json_object *jsStr=json_object_new_string(sid->value);
+                json_object_object_add(res2,keys[i][1],jsStr);
+                if(i==0){
+                  hasRef=1;
+                  json_object *jsStr1=json_object_new_string(getProvenance(conf,sid->value));
+                  json_object_object_add(res2,"dataOrigin",jsStr1);
+                }
+              }
+            }
+            if(len>1){
+              if(ii==0)
+                res3=json_object_new_array();
+              json_object_array_add(res3,res2);
+            }else
+              res3=res2;
+          }
+          if(hasRef<0)
+            json_object_put(res3);
+          else{
+            json_object_object_add(res1,curs->name,json_object_get(res3));
+            json_object_put(res3);
+          }
+          addIntToMap(curs->content,"published_id",0);
+          curs=curs->next;
+        }
+        json_object_object_add(res,"inputs",res1);
+        break;
+      }
       
     case 2: {
       // Uploading data input to cluster
       maps* in=getMaps(conf,"uploadQueue");
       if(in!=NULL){
-	maps* curs=in;
-	map* length=getMapFromMaps(in,"uploadQueue","length");
-	if(length!=NULL){
-	  json_object *res1=json_object_new_object();
-	  int limit=atoi(length->value);
-	  int i=0;
-	  maps* uploadQueue=getMaps(in,"uploadQueue");
-	  map* tmp=uploadQueue->content;
-	  for(;i<limit;i++){
-	    map* tmp0=getMapArray(tmp,"input",i);
-	    map* tmp1=getMapArray(tmp,"localPath",i);
-	    map* tmp2=getMapArray(tmp,"targetPath",i);
-	    if(tmp0!=NULL && tmp1!=NULL && tmp2!=NULL){
-	      json_object *res2=json_object_new_object();
-	      json_object *jsStr=json_object_new_string(tmp1->value);
-	      json_object_object_add(res2,"local_path",jsStr);
-	      jsStr=json_object_new_string(tmp2->value);
-	      json_object_object_add(res2,"target_path",jsStr);
-	      json_object *res4=NULL;
-	      if(json_object_object_get_ex(res1,tmp0->value,&res4)!=FALSE){
-		if(json_object_is_type(res4,json_type_null)){
-		  json_object_object_add(res1,tmp0->value,res2);
-		}else{
-		  if(json_object_is_type(res4,json_type_object) && !json_object_is_type(res4, json_type_array)){
-		    json_object *res3=json_object_new_array();
-		    json_object_array_add(res3,json_object_get(res4));
-		    json_object_array_add(res3,res2);
-		    json_object_object_del(res1,tmp0->value);
-		    json_object_object_add(res1,tmp0->value,res3);
-		  }else
-		    json_object_array_add(res4,res2);
-		}
-	      }
-	    }
-	  }
-	  json_object_object_add(res,"inputs",res1);
-	}
+        maps* curs=in;
+        map* length=getMapFromMaps(in,"uploadQueue","length");
+        if(length!=NULL){
+          json_object *res1=json_object_new_object();
+          int limit=atoi(length->value);
+          int i=0;
+          maps* uploadQueue=getMaps(in,"uploadQueue");
+          map* tmp=uploadQueue->content;
+          for(;i<limit;i++){
+            map* tmp0=getMapArray(tmp,"input",i);
+            map* tmp1=getMapArray(tmp,"localPath",i);
+            map* tmp2=getMapArray(tmp,"targetPath",i);
+            if(tmp0!=NULL && tmp1!=NULL && tmp2!=NULL){
+              json_object *res2=json_object_new_object();
+              json_object *jsStr=json_object_new_string(tmp1->value);
+              json_object_object_add(res2,"local_path",jsStr);
+              jsStr=json_object_new_string(tmp2->value);
+              json_object_object_add(res2,"target_path",jsStr);
+              json_object *res4=NULL;
+              if(json_object_object_get_ex(res1,tmp0->value,&res4)!=FALSE){
+                if(json_object_is_type(res4,json_type_null)){
+                  json_object_object_add(res1,tmp0->value,res2);
+                }else{
+                  if(json_object_is_type(res4,json_type_object) && !json_object_is_type(res4, json_type_array)){
+                    json_object *res3=json_object_new_array();
+                    json_object_array_add(res3,json_object_get(res4));
+                    json_object_array_add(res3,res2);
+                    json_object_object_del(res1,tmp0->value);
+                    json_object_object_add(res1,tmp0->value,res3);
+                  }else
+                    json_object_array_add(res4,res2);
+                }
+              }
+            }
+          }
+          json_object_object_add(res,"inputs",res1);
+        }
       }
       break;
     }

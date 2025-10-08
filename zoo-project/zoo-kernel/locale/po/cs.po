@@ -1,0 +1,811 @@
+# ZOO-Kernel internal messages.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# 
+# Translators:
+# Jiří Podhorecký <jirka.p@volny.cz>, 2024
+msgid ""
+msgstr ""
+"Project-Id-Version: ZOO-Kernel Internationalization\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-12-07 22:21+0100\n"
+"PO-Revision-Date: 2015-07-01 12:58+0000\n"
+"Last-Translator: Jiří Podhorecký <jirka.p@volny.cz>, 2024\n"
+"Language-Team: Czech (http://app.transifex.com/zoo-project/zoo-kernel-internationalization/language/cs/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: cs\n"
+"Plural-Forms: nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;\n"
+
+#: caching.c:507 caching.c:528 caching.c:759 request_parser.c:225
+#: request_parser.c:236 request_parser.c:273 request_parser.c:418
+#: request_parser.c:476 request_parser.c:528 request_parser.c:587
+#: request_parser.c:717 request_parser.c:843 request_parser.c:1339
+#: request_parser.c:1428 service_callback.c:204 service_callback.c:377
+#: zcfg2yaml.c:38 zoo_service_loader.c:421 zoo_service_loader.c:605
+#: zoo_service_loader.c:608 zoo_service_loader.c:861 zoo_service_loader.c:1906
+msgid "Unable to allocate memory"
+msgstr "Nelze přidělit paměť"
+
+#: caching.c:534
+#, c-format
+msgid ""
+"Unable to download the file for the input <%s>, response code was : %d."
+msgstr "Nelze stáhnout soubor pro vstup <%s>, kód odpovědi byl: %d."
+
+#: caching.c:745
+msgid "Unable to download the file."
+msgstr "Nelze stáhnout soubor."
+
+#: request_parser.c:100
+#, c-format
+msgid "The maximum allowed occurrences for <%s> (%i) was exceeded."
+msgstr "Bylo překročeno maximální povolené množství výskytů pro <%s> (%i)."
+
+#: request_parser.c:121
+#, c-format
+msgid "ZOO-Kernel was unable to load your data for %s position %s."
+msgstr "ZOO-Kernel nemohl načíst vaše údaje pro %s pozici %s."
+
+#: request_parser.c:132
+#, c-format
+msgid "The maximum allowed occurrences for <%s> is one."
+msgstr "Maximální povolený počet výskytů pro <%s> je jeden."
+
+#: request_parser.c:326
+#, c-format
+msgid "Unable to find a valid protocol to download the remote file %s"
+msgstr "Nelze najít platný protokol pro stahování vzdáleného souboru %s"
+
+#: request_parser.c:665
+msgid "Unable to add a request in the queue."
+msgstr "Nelze přidat požadavek do fronty."
+
+#: request_parser.c:1190
+msgid "Unable to append maps to maps."
+msgstr "Nelze přidat mapy k mapám."
+
+#: request_parser.c:1512
+msgid "Duplicate <Output> elements in WPS Execute request"
+msgstr "Duplikujte prvky <Output> v požadavku WPS Execute."
+
+#: request_parser.c:1718
+#, c-format
+msgid ""
+"The <%s> parameter has a size limit (%s MB) defined in the ZOO "
+"ServicesProvider configuration file, but the reference you provided exceeds "
+"this limit (%f MB)."
+msgstr "Parametr <%s> má velikostní limit (%s MB) definovaný v konfiguračním souboru ZOO ServicesProvider, ale poskytnutý odkaz překračuje tento limit (%f MB)."
+
+#: request_parser.c:1751
+#, c-format
+msgid ""
+"The <%s> argument was not specified in DataInputs but is required according "
+"to the ZOO ServicesProvider configuration file."
+msgstr "Argument <%s> nebyl specifikován v DataInputs, ale je vyžadován podle konfiguračního souboru ZOO ServicesProvider."
+
+#: request_parser.c:1777
+#, c-format
+msgid ""
+"The <%s> argument specified as %s identifier was not recognized (not defined"
+" in the ZOO Configuration File)."
+msgstr "Argument s názvem %s, který byl určen jako identifikátor %s, nebyl rozpoznán (není definován v konfiguračním souboru ZOO)."
+
+#: request_parser.c:1899
+#, c-format
+msgid "Mandatory parameter <%s> was not specified"
+msgstr "Povinný parametr <%s> nebyl specifikován."
+
+#: request_parser.c:1948
+#, c-format
+msgid "The value <%s> was not recognized, %s %s the only acceptable value."
+msgstr "Hodnota <%s> nebyla rozpoznána, %s %s je jedinou přijatelnou hodnotou."
+
+#: request_parser.c:1951
+msgid "is"
+msgstr "je"
+
+#: request_parser.c:1963
+msgid "are"
+msgstr "jsou"
+
+#: response_print.c:153
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the session maps."
+msgstr "Nelze vytvořit soubor \"%s\" pro ukládání map sezení."
+
+#: response_print.c:2001
+#, c-format
+msgid "The service \"%s\" ran successfully."
+msgstr "Služba \"%s\" byla úspěšně spuštěna."
+
+#: response_print.c:2009
+#, c-format
+msgid ""
+"The ZOO service \"%s\" is currently running. Please reload this document to "
+"get the up-to-date status of the service."
+msgstr "Služba ZOO \"%s\" je v současné době spuštěna. Prosím, znovu načtěte tento dokument, abyste získali aktuální stav služby."
+
+#: response_print.c:2015
+#, c-format
+msgid ""
+"The service \"%s\" was accepted by the ZOO-Kernel and is running as a "
+"background task. Please access the URL in the statusLocation attribute "
+"provided in this document to get the up-to-date status and results."
+msgstr "Služba \"%s\" byla přijata jádrem ZOO a běží jako úloha na pozadí. Pro získání aktuálního stavu a výsledků přistupujte prosím na URL adresu uvedenou v atributu statusLocation tohoto dokumentu."
+
+#: response_print.c:2032
+msgid "No more information available"
+msgstr "Žádné další informace nejsou k dispozici"
+
+#: response_print.c:2039
+#, c-format
+msgid "error code not know : %i\n"
+msgstr "chybový kód není známý: %i\n"
+
+#: response_print.c:2129
+msgid "Lock failed."
+msgstr "Zámek selhal."
+
+#: response_print.c:2142
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the ExecuteResponse."
+msgstr "Nelze vytvořit soubor \"%s\" pro uložení ExecuteResponse."
+
+#: response_print.c:2707
+msgid "No debug message available"
+msgstr "Žádná ladící zpráva není k dispozici"
+
+#: response_print.c:2801
+#, c-format
+msgid "Unable to create the file \"%s\" for storing the %s final result."
+msgstr "Nelze vytvořit soubor \"%s\" pro uložení %s finálního výsledku."
+
+#: response_print.c:2815
+#, c-format
+msgid "No value found for the requested output %s."
+msgstr "Nebyla nalezena žádná hodnota pro požadovaný výstup %s."
+
+#: response_print.c:3101 response_print.c:3150
+#, c-format
+msgid ""
+"Wrong RawDataOutput parameter: unable to fetch any result for the given "
+"parameter name: \"%s\"."
+msgstr "Špatný parametr RawDataOutput: nelze načíst žádný výsledek pro zadaný název parametru: \"%s\"."
+
+#: server_internal.c:997 server_internal.c:1002 server_internal.c:1104
+#: server_internal.c:1109 zoo_service_loader.c:2709
+msgid ""
+"The JobID from the request does not match any of the Jobs running on this "
+"server"
+msgstr "JobID z požadavku neodpovídá žádnému z běžících úkolů na tomto serveru."
+
+#: server_internal.c:1009 server_internal.c:1014
+msgid ""
+"The result for the requested JobID has not yet been generated. The service "
+"is currently running."
+msgstr "Výsledek pro požadované ID úlohy ještě nebyl vygenerován. Služba je v současné době spuštěna."
+
+#: server_internal.c:1052
+msgid ""
+"The result for the requested JobID has not yet been generated. The service "
+"ends but it still needs to produce the outputs."
+msgstr "Výsledek pro požadované ID úlohy ještě nebyl vygenerován. Služba končí, ale stále musí produkovat výstupy."
+
+#: server_internal.c:1150 server_internal.c:1155
+msgid "The job cannot be removed, a file cannot be removed"
+msgstr "Práce nemůže být odstraněna, soubor nemůže být odstraněn"
+
+#: server_internal.c:1235
+msgid "Unable to open the registry directory."
+msgstr "Nelze otevřít adresář registru."
+
+#: server_internal.c:1254
+msgid "Unable to allocate memory."
+msgstr "Nelze přidělit paměť."
+
+#: server_internal.c:1265 zoo_service_loader.c:437 zoo_service_loader.c:498
+#, c-format
+msgid "Unable to parse the ZCFG file: %s (%s)"
+msgstr "Nelze analyzovat soubor ZCFG: %s (%s)"
+
+#: server_internal.c:1268 zoo_service_loader.c:440 zoo_service_loader.c:502
+#, c-format
+msgid "Unable to parse the ZCFG file: %s."
+msgstr "Nelze analyzovat soubor ZCFG: %s."
+
+#: server_internal.c:1298
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: "
+msgstr "Nelze spustit službu. Zpráva vrácená službou byla následující:"
+
+#: server_internal.c:1299
+#, c-format
+msgid ""
+"Unable to run the Service. The message returned back by the Service was the "
+"following: %s"
+msgstr "Nelze spustit službu. Zpráva vrácená službou byla následující: %s"
+
+#: server_internal.c:1302 server_internal.c:1303
+msgid ""
+"Unable to run the Service. No more information was returned back by the "
+"Service."
+msgstr "Nelze spustit službu. Služba nevrátila žádné další informace zpět."
+
+#: service_callback.c:281 service_callback.c:1034
+msgid "Unable to create a new thread"
+msgstr "Nelze vytvořit nové vlákno"
+
+#: service_internal_hpc.c:92 service_internal_hpc.c:167
+msgid "Download link"
+msgstr "Odkaz stahování"
+
+#: service_internal_hpc.c:93 service_internal_hpc.c:168
+msgid "The download link"
+msgstr "Stahovací odkaz"
+
+#: service_internal_hpc.c:103
+msgid "WMS link"
+msgstr "WMS odkaz"
+
+#: service_internal_hpc.c:104
+msgid "The WMS link"
+msgstr "WMS odkaz"
+
+#: service_internal_hpc.c:118
+msgid "WFS link"
+msgstr "WFS odkaz"
+
+#: service_internal_hpc.c:119
+msgid "The WFS link"
+msgstr "WFS odkaz"
+
+#: service_internal_hpc.c:122
+msgid "WCS link"
+msgstr "WCS odkaz"
+
+#: service_internal_hpc.c:123
+msgid "The WCS link"
+msgstr "WCS odkaz"
+
+#: service_internal_hpc.c:215
+#, c-format
+msgid "Unable to lock the file for %s in read mode."
+msgstr "Nelze uzamknout soubor pro %s v režimu čtení."
+
+#: service_internal_hpc.c:253
+#, c-format
+msgid "Unable to unlock the file for %s after execution."
+msgstr "Nelze odemknout soubor pro %s po provedení."
+
+#: service_internal_hpc.c:356
+msgid "The synchronous mode is not supported by this type of service"
+msgstr "Synchronní režim není podporován tímto typem služby."
+
+#: service_internal_hpc.c:489 sshapi.c:742
+msgid "Unable to lock the file for upload!"
+msgstr "Nelze uzamknout soubor pro nahrání!"
+
+#: service_internal_hpc.c:738 service_internal_hpc.c:740
+msgid "There is no remote_work_path defined in your section!"
+msgstr "Není definována vzdálená_pracovní_cesta ve vaší sekci!"
+
+#: service_internal_hpc.c:764 service_internal_hpc.c:768
+msgid "Unable to upload the script"
+msgstr "Nelze nahrát skript."
+
+#: service_internal_hpc.c:801 zoo_service_loader.c:1097
+msgid "No message provided"
+msgstr "Žádná zpráva nebyla poskytnuta"
+
+#: service_internal_hpc.c:803
+msgid "Unable to fetch the remote error log file"
+msgstr "Nelze načíst vzdálený soubor s protokolem chyb."
+
+#: service_internal_hpc.c:852 service_internal_hpc.c:853
+msgid "Unable to bind socket!"
+msgstr "Nelze připojit socket!"
+
+#: service_internal_hpc.c:874 service_internal_hpc.c:875
+msgid "Listen error"
+msgstr ""
+
+#: service_internal_hpc.c:892 service_internal_hpc.c:893
+msgid "Accept error"
+msgstr ""
+
+#: service_internal_hpc.c:918 service_internal_hpc.c:919
+msgid "Read closed"
+msgstr ""
+
+#: service_internal_hpc.c:936 service_internal_hpc.c:937
+msgid "Read error"
+msgstr ""
+
+#: service_internal_hpc.c:1030 service_internal_hpc.c:1031
+#: service_internal_hpc.c:1036 service_internal_hpc.c:1037
+#: service_internal_hpc.c:1111 service_internal_hpc.c:1112
+#: service_internal_hpc.c:1117 service_internal_hpc.c:1118
+#, c-format
+msgid "Unable to fetch the remote file for %s"
+msgstr "Nelze načíst vzdálený soubor pro %s"
+
+#: service_internal_hpc.c:1135 service_internal_hpc.c:1136
+msgid "HPC Execution failed!"
+msgstr "HPC Execution selhalo!"
+
+#: service_internal_hpc.c:1153 service_internal_hpc.c:1154
+msgid "Unable to parse the value returned by remote execution"
+msgstr "Nelze analyzovat hodnotu vrácenou vzdáleným provedením"
+
+#: service_internal_mono.c:115
+msgid "The ZMaps.dll assembly cannot be found!"
+msgstr "ZMaps.dll sestava nemůže být nalezena!"
+
+#: service_internal_mono.c:195
+#, c-format
+msgid "Your service assembly: %s cannot be found!"
+msgstr "Vaše služba sestavení: %s nelze najít!"
+
+#: service_internal_mono.c:196
+#, c-format
+msgid "Your service assembly %s cannot be found!"
+msgstr "Vaše služba sestavení %s nebyla nalezena!"
+
+#: service_internal_mono.c:209 service_internal_mono.c:210
+#, c-format
+msgid "Your service class method %s::%s cannot be found!"
+msgstr "Vaše metoda třídy služby %s::%s nebyla nalezena!"
+
+#: service_internal_mono.c:218 service_internal_mono.c:219
+#, c-format
+msgid "Your service static method %s cannot be found!"
+msgstr "Vaše statická metoda služby %s nebyla nalezena!"
+
+#: service_internal_ms.c:156
+msgid "Unable to find any mapserverAddress defined in the main.cfg file"
+msgstr "Nelze najít žádnou definici mapserverAddress v souboru main.cfg"
+
+#: service_internal_ms.c:199
+msgid ""
+"The ZOO-Kernel was able to retrieve the data but could not read it as "
+"geographic data."
+msgstr "ZOO-Kernel byl schopný získat data, ale nemohl je přečíst jako geografická data."
+
+#: service_internal_ms.c:201
+msgid ""
+"The ZOO-Kernel was able to retrieve the data but could not access any "
+"feature or pixel in te resulting file."
+msgstr "ZOO-Kernel byl schopný získat data, ale nemohl přistoupit k žádné funkci nebo pixelu ve výsledném souboru."
+
+#: service_internal_ms.c:203
+msgid "Unable to find any geographic data"
+msgstr "Nelze najít žádná geografická data"
+
+#: service_internal_ms.c:261
+#, c-format
+msgid "Unable to create the mapfile for %s because of missing values."
+msgstr "Nelze vytvořit mapový soubor pro %s kvůli chybějícím hodnotám."
+
+#: service_internal_ms.c:1340
+msgid "Unable to open your template mapfile!"
+msgstr "Nelze otevřít váš šablonový mapový soubor!"
+
+#: service_internal_php.c:225 service_internal_php7.c:236
+#, c-format
+msgid "Unable to load the PHP file %s"
+msgstr "Nelze načíst PHP soubor %s"
+
+#: service_internal_python.c:358
+#, c-format
+msgid "Python module %s cannot be loaded. Message: %s\n"
+msgstr "Python modul %s nelze načíst. Zpráva: %s\n"
+
+#: service_internal_python.c:396
+#, c-format
+msgid ""
+"%s\n"
+"Unable to run your python process properly. Please check the following messages : %s"
+msgstr "%s\nNelze správně spustit váš python proces. Zkontrolujte prosím následující zprávy: %s"
+
+#: service_internal_python.c:403
+#, c-format
+msgid ""
+"%s \n"
+" Unable to run your python process properly. Unable to provide any further information."
+msgstr "%s \nNelze správně spustit váš python proces. Není možné poskytnout další informace."
+
+#: service_internal_r.c:134
+msgid "Unable to load your R file"
+msgstr "Nelze načíst váš R soubor"
+
+#: service_internal_r.c:179 service_internal_r.c:180
+msgid "Unable to run your R service: "
+msgstr "Nelze spustit vaši R službu:"
+
+#: service_json.c:1173 service_json.c:1229
+#, c-format
+msgid "Missing input for %s"
+msgstr "Chybějící vstup pro %s"
+
+#: service_json.c:1193 service_json.c:1249
+#, c-format
+msgid "Issue with input %s"
+msgstr "Problém se vstupem %s"
+
+#: service_json.c:1705 service_json.c:1716 zoo_service_loader.c:2866
+#: zoo_service_loader.c:2877
+#, c-format
+msgid "ZOO-Kernel cannot parse your POST data: %s"
+msgstr "ZOO-Kernel nemůže analyzovat vaše POST data: %s"
+
+#: service_json.c:2000
+msgid "Status location"
+msgstr ""
+
+#: service_json.c:2017
+msgid "Result location"
+msgstr "Výsledná poloha"
+
+#: service_json.c:2150
+msgid "ZOO-Kernel accepted to run your service!"
+msgstr "ZOO-Kernel souhlasil se spuštěním vaší služby!"
+
+#: service_json.c:2156
+msgid "ZOO-Kernel is currently running your service!"
+msgstr "Na ZOO-Kernel v současné době běží  vaše služba!"
+
+#: service_json.c:2168
+msgid "ZOO-Kernel pause your service!"
+msgstr "ZOO-Kernel pozastavuje vaši službu!"
+
+#: service_json.c:2174
+msgid "ZOO-Kernel successfully run your service!"
+msgstr "ZOO-Kernel úspěšně spustil vaši službu!"
+
+#: service_json.c:2182
+msgid "ZOO-Kernel successfully dismissed your service!"
+msgstr "ZOO-Kernel úspěšně zrušil vaši službu!"
+
+#: service_json.c:2257
+msgid "The job list for the current process"
+msgstr "Seznam pracovních úloh pro aktuální proces"
+
+#: service_json.c:2289
+msgid "Unable to store the statusInfo!"
+msgstr "Nelze uložit statusInfo!"
+
+#: service_json.c:2734 service_json.c:2735 service_json.c:2738
+#: service_json.c:2739
+msgid "Example "
+msgstr "Příklad"
+
+#: sqlapi.c:172
+msgid "Failed to connect to the database backend"
+msgstr "Selhalo připojení k databázovému backendu"
+
+#: sshapi.c:112
+msgid "Issue when invoking gethostbyname!"
+msgstr "Problém při volání gethostbyname!"
+
+#: sshapi.c:732
+#, c-format
+msgid ""
+"Unable to copy over SSH the file requested for setting the value of %s."
+msgstr "Nelze zkopírovat po SSH požadovaný soubor pro nastavení hodnoty %s."
+
+#: zoo_service_loader.c:642
+#, c-format
+msgid ""
+"The value for <identifier> seems to be wrong (%s). Please specify one of the"
+" processes in the list returned by a GetCapabilities request."
+msgstr "Hodnota pro <identifier> se zdá být nesprávná (%s). Prosím, specifikujte jednu z procesů v seznamu vráceném požadavkem GetCapabilities."
+
+#: zoo_service_loader.c:1289 zoo_service_loader.c:1334
+#, c-format
+msgid "ZOO Kernel failed to process your request, receiving signal %d = %s "
+msgstr "ZOO Kernel selhal při zpracování vašeho požadavku, přijímá signál %d = %s"
+
+#: zoo_service_loader.c:1520
+#, c-format
+msgid "Error occurred while running the %s function: %s"
+msgstr "Vyskytla se chyba při spuštění funkce %s: %s"
+
+#: zoo_service_loader.c:1571
+#, c-format
+msgid "Unable to load C Library %s"
+msgstr "Nelze načíst knihovnu C %s"
+
+#: zoo_service_loader.c:1697
+#, c-format
+msgid ""
+"Programming Language (%s) set in ZCFG file is not currently supported by ZOO"
+" Kernel.\n"
+msgstr "Programovací jazyk (%s) nastavený v souboru ZCFG není momentálně podporován jádrem ZOO Kernel.\n"
+
+#: zoo_service_loader.c:1762
+msgid "Unable to cache HTTP POST Execute request."
+msgstr "Nelze vložit do vyrovnávací paměti požadavek HTTP POST Execute."
+
+#: zoo_service_loader.c:1926
+msgid "Unable to load the main.cfg file."
+msgstr "Nelze načíst soubor main.cfg."
+
+#: zoo_service_loader.c:2002
+#, c-format
+msgid "The value %s is not supported for the <language> parameter"
+msgstr "Hodnota %s není podporována pro parametr <language>"
+
+#: zoo_service_loader.c:2106
+#, c-format
+msgid "CORS is enabled.\r\n"
+msgstr "CORS je povoleno.\n"
+
+#: zoo_service_loader.c:2170
+msgid ""
+"OGC API - Processes is not supported by this ZOO-Kernel, please contact the "
+"service provider."
+msgstr "OGC API - Processes není podporováno tímto ZOO-Kernel, prosím, kontaktujte poskytovatele služby."
+
+#: zoo_service_loader.c:2226
+msgid "Unable to load the oas.cfg file."
+msgstr "Nelze načíst soubor oas.cfg."
+
+#: zoo_service_loader.c:2266
+msgid "The request method used to access the current path is not supported."
+msgstr "Metoda požadavku použitá k přístupu k aktuální cestě není podporována."
+
+#: zoo_service_loader.c:2276
+msgid "This API does not support the method."
+msgstr "Tato API nepodporuje tento postup."
+
+#: zoo_service_loader.c:2722
+msgid "The job is still running."
+msgstr "Pracovní úloha stále běží."
+
+#: zoo_service_loader.c:2791
+msgid "The service failed to execute."
+msgstr "Službu se nepodařilo provést."
+
+#: zoo_service_loader.c:2805
+msgid ""
+"The JobID seem to be running on this server but not for this process id"
+msgstr "JobID vypadá že běží na tomto serveru, ale ne pro toto ID procesu."
+
+#: zoo_service_loader.c:2833
+msgid "The ressource is not available"
+msgstr "Zdroj není k dispozici"
+
+#: zoo_service_loader.c:2927 zoo_service_loader.c:3687
+msgid "Initializing"
+msgstr "Inicializace"
+
+#: zoo_service_loader.c:3379
+msgid "The specified path does not exist."
+msgstr "Zadaná cesta neexistuje."
+
+#: zoo_service_loader.c:3498
+msgid "Unable to run Execute request using the GET HTTP method"
+msgstr "Nelze spustit požadavek Execute pomocí metody GET HTTP."
+
+#: zoo_service_loader.c:3574
+msgid ""
+"The status parameter cannot be set to true if storeExecuteResponse is set to"
+" false. Please modify your request parameters."
+msgstr "Parametr stavu nemůže být nastaven na true, pokud je storeExecuteResponse nastaveno na false. Prosím, upravte své parametry požadavku."
+
+#: zoo_service_loader.c:3602
+msgid "The process does not permit the desired execution mode."
+msgstr "Proces neumožňuje požadovaný režim provádění."
+
+#: zoo_service_loader.c:3870
+msgid "Issue with geographic data"
+msgstr "Problém s geografickými daty"
+
+#: zoo_service_loader.c:3891
+msgid "Unable to run the child process properly"
+msgstr "Nelze správně spustit podřazený proces"
+
+#: locale/.cache/my_service_string_to_translate.c:1
+msgid "The ZOO-Project OGC WPS Developement Server"
+msgstr "The ZOO-Project OGC WPS Developement Server"
+
+#: locale/.cache/my_service_string_to_translate.c:2
+msgid ""
+"Developement version of ZOO-Project OGC WPS. See http://www.zoo-project.org"
+msgstr "Vývojová verze ZOO-Project OGC WPS. Viz http://www.zoo-project.org"
+
+#: locale/.cache/my_service_string_to_translate.c:3
+msgid "The limit parameter"
+msgstr "parametr limit"
+
+#: locale/.cache/my_service_string_to_translate.c:4
+msgid "The skip parameter"
+msgstr "parametr skip"
+
+#: locale/.cache/my_service_string_to_translate.c:5
+msgid "this document"
+msgstr "tento dokument"
+
+#: locale/.cache/my_service_string_to_translate.c:6
+msgid "landing page of this API"
+msgstr "úvodní stránka tohoto API"
+
+#: locale/.cache/my_service_string_to_translate.c:7
+msgid "the API definition"
+msgstr "API definice"
+
+#: locale/.cache/my_service_string_to_translate.c:8
+#: locale/.cache/my_service_string_to_translate.c:41
+msgid "This document"
+msgstr "Tento dokument"
+
+#: locale/.cache/my_service_string_to_translate.c:9
+msgid "OGC API - Processes conformance classes implemented by this server"
+msgstr "OGC API - Procesy třídy shody implementované tímto serverem"
+
+#: locale/.cache/my_service_string_to_translate.c:10
+msgid "information about standards that this API conforms to"
+msgstr "informace o standardech, kterým tato API odpovídá"
+
+#: locale/.cache/my_service_string_to_translate.c:11
+msgid "The processes offered by this server"
+msgstr "Procesy nabízené tímto serverem"
+
+#: locale/.cache/my_service_string_to_translate.c:12
+msgid "retrieve available processes"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:13
+msgid "retrieve a process description"
+msgstr ""
+
+#: locale/.cache/my_service_string_to_translate.c:14
+#: locale/.cache/my_service_string_to_translate.c:15
+#: locale/.cache/my_service_string_to_translate.c:16
+#: locale/.cache/my_service_string_to_translate.c:19
+msgid "execute a job"
+msgstr "provést úlohu"
+
+#: locale/.cache/my_service_string_to_translate.c:17
+msgid "Job Management"
+msgstr "Správa úloh"
+
+#: locale/.cache/my_service_string_to_translate.c:18
+msgid "retrieve a list of jobs run"
+msgstr "získat seznam spuštěných úloh"
+
+#: locale/.cache/my_service_string_to_translate.c:20
+msgid "Status"
+msgstr "Stav"
+
+#: locale/.cache/my_service_string_to_translate.c:21
+#: locale/.cache/my_service_string_to_translate.c:51
+msgid "The status of a job."
+msgstr "Stav úlohy."
+
+#: locale/.cache/my_service_string_to_translate.c:22
+msgid "Cancel a job"
+msgstr "Zrušit úlohu"
+
+#: locale/.cache/my_service_string_to_translate.c:23
+msgid "Get Result"
+msgstr "Získat výsledek"
+
+#: locale/.cache/my_service_string_to_translate.c:24
+#: locale/.cache/my_service_string_to_translate.c:53
+msgid "The result of a job execution."
+msgstr "Výsledek provedení úlohy."
+
+#: locale/.cache/my_service_string_to_translate.c:25
+#: locale/.cache/my_service_string_to_translate.c:54
+msgid "The id of a process"
+msgstr "Id procesu"
+
+#: locale/.cache/my_service_string_to_translate.c:26
+#: locale/.cache/my_service_string_to_translate.c:55
+msgid "The id of a job"
+msgstr "Id úlohy"
+
+#: locale/.cache/my_service_string_to_translate.c:27
+#: locale/.cache/my_service_string_to_translate.c:56
+msgid "The id of an output"
+msgstr "Id výstupu"
+
+#: locale/.cache/my_service_string_to_translate.c:28
+msgid "The optional f parameter"
+msgstr "Volitelný parametr f"
+
+#: locale/.cache/my_service_string_to_translate.c:29
+msgid "NotFound"
+msgstr "Nenalezeno"
+
+#: locale/.cache/my_service_string_to_translate.c:30
+msgid "ServerError"
+msgstr "Serverová chyba"
+
+#: locale/.cache/my_service_string_to_translate.c:31
+msgid "InvalidParameter"
+msgstr "Neplatný parametr"
+
+#: locale/.cache/my_service_string_to_translate.c:32
+msgid "NotAllowed"
+msgstr "Nepovoleno"
+
+#: locale/.cache/my_service_string_to_translate.c:33
+msgid "NotSupported"
+msgstr "Nepodporováno"
+
+#: locale/.cache/my_service_string_to_translate.c:34
+msgid "Results received successfully"
+msgstr "Výsledky byly úspěšně obdrženy"
+
+#: locale/.cache/my_service_string_to_translate.c:35
+msgid "Status received successfully"
+msgstr "Status úspěšně obdržen"
+
+#: locale/.cache/my_service_string_to_translate.c:36
+msgid "Exception received successfully"
+msgstr "Výjimka byla úspěšně přijata"
+
+#: locale/.cache/my_service_string_to_translate.c:38
+msgid ""
+"The limit parameter indicates the number of elements to return in an array"
+msgstr "limit parametr udává počet prvků, které mají být vráceny v poli"
+
+#: locale/.cache/my_service_string_to_translate.c:39
+msgid ""
+"The skip parameter indicates the number of elements to skip before starting "
+"returning values in an array"
+msgstr "Parametr skip udává počet prvků, které mají být přeskočeny před začátkem vrácení hodnot v poli."
+
+#: locale/.cache/my_service_string_to_translate.c:40
+msgid ""
+"The landing page provides links to the API definition, the Conformance "
+"statements and the metadata about the processes offered by this service."
+msgstr "Úvodní stránka poskytuje odkazy na definici API, výroky o shodě a metadata o procesech nabízených touto službou."
+
+#: locale/.cache/my_service_string_to_translate.c:42
+msgid ""
+"list all requirements classes specified in a standard (e.g., WPS REST/JSON "
+"Binding Core) that the server conforms to"
+msgstr "výpis všech tříd požadavků specifikovaných ve standardu (např. WPS REST/JSON Binding Core), který server splňuje"
+
+#: locale/.cache/my_service_string_to_translate.c:43
+msgid "Information about the available processes"
+msgstr "Informace o dostupných procesech"
+
+#: locale/.cache/my_service_string_to_translate.c:44
+msgid "A process description."
+msgstr "Popis procesu."
+
+#: locale/.cache/my_service_string_to_translate.c:45
+#: locale/.cache/my_service_string_to_translate.c:46
+#: locale/.cache/my_service_string_to_translate.c:47
+#: locale/.cache/my_service_string_to_translate.c:49
+msgid "An execute endpoint."
+msgstr "Koncový bod provedení."
+
+#: locale/.cache/my_service_string_to_translate.c:48
+msgid "A list of jobs run."
+msgstr "Seznam spuštěných úloh."
+
+#: locale/.cache/my_service_string_to_translate.c:50
+msgid "Mandatory execute request in JSON format"
+msgstr "Povinný požadavek na provedení ve formátu JSON"
+
+#: locale/.cache/my_service_string_to_translate.c:52
+msgid "Cancel the job execution."
+msgstr "Zrušit provedení úlohy."
+
+#: locale/.cache/my_service_string_to_translate.c:57
+msgid ""
+"The optional f parameter indicates the output format which the server shall "
+"provide as part of the response document.  The default format is JSON."
+msgstr "Volitelný parametr f označuje výstupní formát, který server poskytne jako součást dokumentu odpovědi. Výchozím formátem je JSON."
+
+#: locale/.cache/my_service_string_to_translate.c:58
+msgid "Exception"
+msgstr "Výjimka"

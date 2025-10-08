@@ -1006,115 +1006,116 @@ int isRunning(maps* conf,char* pid){
  * @param pid the service identifier (usid key from the [lenv] section)
  * @param req the request (GetStatus / GetResult)
  */
-void runGetStatus(maps* conf,char* pid,char* req){
-  map* r_inputs = getMapFromMaps (conf, "main", "tmpPath");
-  map* e_type = getMapFromMaps (conf, "main", "executionType");
-  char *sid=getStatusId(conf,pid);
+void runGetStatus(maps** ppmsConf,char* pid,char* req){
+  maps* pmsConf=*ppmsConf;
+  map* r_inputs = getMapFromMaps (pmsConf, "main", "tmpPath");
+  map* e_type = getMapFromMaps (pmsConf, "main", "executionType");
+  char *sid=getStatusId(pmsConf,pid);
   if(sid==NULL){
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      errorException (&conf, _("The JobID from the request does not match any of the Jobs running on this server"),
+      errorException (ppmsConf, _("The JobID from the request does not match any of the Jobs running on this server"),
 		      "NoSuchJob", pid);
     else{
-      setMapInMaps(conf,"lenv","error","true");
-      setMapInMaps(conf,"lenv","code","NoSuchJob");
-      setMapInMaps(conf,"lenv","message",_("The JobID from the request does not match any of the Jobs running on this server"));
+      setMapInMaps(pmsConf,"lenv","error","true");
+      setMapInMaps(pmsConf,"lenv","code","NoSuchJob");
+      setMapInMaps(pmsConf,"lenv","message",_("The JobID from the request does not match any of the Jobs running on this server"));
     }
   }else{
     map* statusInfo=createMap("JobID",pid);
-    if(isRunning(conf,pid)>0){
+    if(isRunning(pmsConf,pid)>0){
       if(strncasecmp(req,"GetResult",strlen(req))==0){
 	if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	  errorException (&conf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
+	  errorException (ppmsConf, _("The result for the requested JobID has not yet been generated. The service is currently running."),
 			  "ResultNotReady", pid);
 	else{
-	  setMapInMaps(conf,"lenv","error","true");
-	  setMapInMaps(conf,"lenv","code","ResultNotReady");
-	  setMapInMaps(conf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service is currently running."));
+	  setMapInMaps(pmsConf,"lenv","error","true");
+	  setMapInMaps(pmsConf,"lenv","code","ResultNotReady");
+	  setMapInMaps(pmsConf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service is currently running."));
 	}
 	free(sid);
 	return;
       }
       else{
-	if(strncasecmp(req,"GetStatus",strlen(req))==0){
-	  addToMap(statusInfo,"Status","Running");
-	  setMapInMaps(conf,"lenv","status","Running");
-	  char* tmpStr=_getStatus(conf,pid);
-	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	    char *tmpStr1=zStrdup(tmpStr);
-	    char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
-	    free(tmpStr);
-	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
-	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
-	    addToMap(statusInfo,"Message",tmpStr0);
-	    setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
-	    setMapInMaps(conf,"lenv","Message",tmpStr0);
-	    free(tmpStr0);
-	    free(tmpStr1);
-	  }
-	}
+        if(strncasecmp(req,"GetStatus",strlen(req))==0){
+          addToMap(statusInfo,"Status","Running");
+          setMapInMaps(pmsConf,"lenv","status","Running");
+          char* tmpStr=_getStatus(pmsConf,pid);
+          if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+            char *tmpStr1=zStrdup(tmpStr);
+            char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
+            free(tmpStr);
+            tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+            addToMap(statusInfo,"PercentCompleted",tmpStr1);
+            addToMap(statusInfo,"Message",tmpStr0);
+            setMapInMaps(pmsConf,"lenv","PercentCompleted",tmpStr1);
+            setMapInMaps(pmsConf,"lenv","Message",tmpStr0);
+            free(tmpStr0);
+            free(tmpStr1);
+          }
+        }
       }
     }
     else{
       if(strncasecmp(req,"GetResult",strlen(req))==0){
-	char* result=_getStatusFile(conf,pid);
-	if(result!=NULL){
-	  char *encoding=getEncoding(conf);
-	  map* pmTmp=getMapFromMaps(conf,"headers","Content-Type");
-	  if(pmTmp!=NULL){
-	    printHeaders(conf);
-	    printf("Status: 200 OK\r\n\r\n");
-	  }
-	  else
-	    printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
-	  printf("%s",result);
-	  fflush(stdout);
-	  free(sid);
-	  freeMap(&statusInfo);
-	  free(statusInfo);
-	  free(result);
-	  return;
-	}else{
-	  if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-	    errorException (&conf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
-			    "ResultNotReady", pid);
-	  else{
-	    setMapInMaps(conf,"lenv","error","true");
-	    setMapInMaps(conf,"lenv","code","ResultNotReady");
-	    setMapInMaps(conf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."));
-	  }
-	  freeMap(&statusInfo);
-	  free(statusInfo);
-	  free(sid);
-	  return;
-	}
+        char* result=_getStatusFile(pmsConf,pid);
+        if(result!=NULL){
+          char *encoding=getEncoding(pmsConf);
+          map* pmTmp=getMapFromMaps(pmsConf,"headers","Content-Type");
+          if(pmTmp!=NULL){
+            printHeaders(ppmsConf);
+            printf("Status: 200 OK\r\n\r\n");
+          }
+          else
+            printf("Content-Type: text/xml; charset=%s\r\nStatus: 200 OK\r\n\r\n",encoding);
+          printf("%s",result);
+          fflush(stdout);
+          free(sid);
+          freeMap(&statusInfo);
+          free(statusInfo);
+          free(result);
+          return;
+        }else{
+          if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
+            errorException (ppmsConf, _("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."),
+                "ResultNotReady", pid);
+          else{
+            setMapInMaps(pmsConf,"lenv","error","true");
+            setMapInMaps(pmsConf,"lenv","code","ResultNotReady");
+            setMapInMaps(pmsConf,"lenv","message",_("The result for the requested JobID has not yet been generated. The service ends but it still needs to produce the outputs."));
+          }
+          freeMap(&statusInfo);
+          free(statusInfo);
+          free(sid);
+          return;
+        }
       }else
-	if(strncasecmp(req,"GetStatus",strlen(req))==0){
-	  readFinalRes(conf,pid,statusInfo);
-	  if(e_type==NULL || strncasecmp(e_type->value,"json",4)==0){
-	    map* pmStatus=getMap(statusInfo,"status");	    
-	    if(pmStatus!=NULL)
-	      setMapInMaps(conf,"lenv","status",pmStatus->value);    
-	  }
-	  char* tmpStr=_getStatus(conf,pid);
-	  if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
-	    char *tmpStr1=zStrdup(tmpStr);
-	    char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
-	    free(tmpStr);
-	    tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
-	    addToMap(statusInfo,"PercentCompleted",tmpStr1);
-	    addToMap(statusInfo,"Message",tmpStr0);
-	    setMapInMaps(conf,"lenv","PercentCompleted",tmpStr1);
-	    setMapInMaps(conf,"lenv","Message",tmpStr0);
-	    free(tmpStr0);
-	    free(tmpStr1);
-	  }
-	}
+      if(strncasecmp(req,"GetStatus",strlen(req))==0){
+        readFinalRes(pmsConf,pid,statusInfo);
+        if(e_type==NULL || strncasecmp(e_type->value,"json",4)==0){
+          map* pmStatus=getMap(statusInfo,"status");	    
+          if(pmStatus!=NULL)
+            setMapInMaps(pmsConf,"lenv","status",pmStatus->value);    
+        }
+        char* tmpStr=_getStatus(pmsConf,pid);
+        if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+          char *tmpStr1=zStrdup(tmpStr);
+          char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
+          free(tmpStr);
+          tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
+          addToMap(statusInfo,"PercentCompleted",tmpStr1);
+          addToMap(statusInfo,"Message",tmpStr0);
+          setMapInMaps(pmsConf,"lenv","PercentCompleted",tmpStr1);
+          setMapInMaps(pmsConf,"lenv","Message",tmpStr0);
+          free(tmpStr0);
+          free(tmpStr1);
+        }
+      }
     }
     free(sid);
     if(e_type==NULL || strncasecmp(e_type->value,"json",4)!=0)
-      printStatusInfo(conf,statusInfo,req);
+      printStatusInfo(pmsConf,statusInfo,req);
     else
-      setMapInMaps(conf,"lenv","error","false");
+      setMapInMaps(pmsConf,"lenv","error","false");
     freeMap(&statusInfo);
     free(statusInfo);
   }

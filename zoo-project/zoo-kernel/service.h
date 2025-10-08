@@ -906,6 +906,7 @@ do {\
 	"The result for the requested JobID has not yet been generated."
   };
 
+  ZOO_DLL_EXPORT int zooDebugPrint( const char * format, ... );
   ZOO_DLL_EXPORT void _dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMaps(maps* m);

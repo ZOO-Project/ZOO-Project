@@ -102,7 +102,7 @@ WORKDIR /zoo-project
 COPY . .
 
 RUN set -ex \
-    && sudo apt-get update \
+    && apt-get update \
     && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && curl -o mapserver-8.0.1.tar.gz -L https://github.com/MapServer/MapServer/releases/download/rel-8-0-1/mapserver-8.0.1.tar.gz \
@@ -263,12 +263,12 @@ COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/service_internal.h /zoo
 COPY --from=builder1 /zoo-project/zoo-project/zoo-kernel/version.h /zoo-project/zoo-project/zoo-kernel/version.h
 
 RUN set -ex \
-    && sudo apt-get update && sudo apt-get install -y --no-install-recommends $BUILD_DEPS \
+    && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     \
     && cd ./zoo-project/zoo-services/utils/status \
     && make \
-    && sudo mkdir -p /usr/com/zoo-project \
-    && sudo make install \
+    && mkdir -p /usr/com/zoo-project \
+    && make install \
     \
     #&& cd ../../cgal \
     #&& make \

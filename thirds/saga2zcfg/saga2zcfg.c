@@ -163,9 +163,14 @@ int main(int argc, char *argv[]) {
     fprintf(stderr,"initialisation failed");
     return -1;
   }
+  wxTheApp->SetVendorName("www.zoo-project.org");
+  wxTheApp->SetAppName("saga2zcfg");
   setlocale(LC_NUMERIC, "C");
   static bool g_bShow_Messages = false;
   SG_Set_UI_Callback(Get_Callback());
+#if SAGA_MAJOR_VERSION >= 9
+  SG_Initialize_Environment(true,true,wxT(MODULE_LIBRARY_PATH),true);
+#endif
 #if SAGA_MAJOR_VERSION == 2
   int n = SG_Get_Module_Library_Manager().Add_Directory(wxT(MODULE_LIBRARY_PATH),false);
   if( SG_Get_Module_Library_Manager().Get_Count() <= 0 )

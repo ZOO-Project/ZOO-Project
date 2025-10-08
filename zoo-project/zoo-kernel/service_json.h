@@ -135,10 +135,10 @@ extern "C" {
   void printGetCapabilitiesForProcessJ(registry*, maps*,void*,void*,service*);
   void printExceptionReportResponseJ(maps**,map*);
   void parseJRequest(maps*,service*,json_object*,map*,maps**,maps**);
-  json_object*  printJResult(maps*,service*,maps*,int);
-  json_object* printJobStatus(maps*,char*);
-  json_object* printJobList(maps*);
-  json_object* printFilteredJobList(maps*,map*);
+  json_object*  printJResult(maps**,service*,maps*,int);
+  json_object* printJobStatus(maps**,char*);
+  json_object* printJobList(maps**);
+  json_object* printFilteredJobList(maps**,map*);
   int createNextLinks(maps*,json_object*);
   int createStatusFile(maps*,int);
   void json_getStatusAttributes(maps*,map*,json_object*,int);
@@ -152,9 +152,10 @@ extern "C" {
   void produceRoot(maps*,json_object*);
   void produceConformances(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
+  void outputSingleJsonLiteralData(maps*,maps*,json_object*,const char*,char*);
   bool jsonIsFalse(json_bool);
 #ifdef DRU_ENABLED
-  void handleDRUError(maps*);
+  void handleDRUError(maps**);
   int convertOGCAppPkgToExecute(maps*,map*,json_object**);
   json_object* convertCwlToOGCAppPkg(maps*,map*);
   bool serviceIsDRU(maps*,char*);

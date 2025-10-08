@@ -474,12 +474,12 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
 #ifdef USE_CALLBACK
-  invokeCallback(m,inputs,NULL,1,1);
-  invokeCallback(m,inputs,NULL,2,0);
+  invokeCallback(main_conf,inputs,NULL,1,1);
+  invokeCallback(main_conf,inputs,NULL,2,0);
 #endif  
   if(getMapFromMaps(m,"lenv","mapError")!=NULL){
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,inputs,NULL,7,0);
+    invokeCallback(main_conf,inputs,NULL,7,0);
 #endif
     return -1;
   }
@@ -497,7 +497,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,inputs,NULL,7,0);
+    invokeCallback(main_conf,inputs,NULL,7,0);
 #endif
 #ifdef HPC_DEBUG
     fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -508,7 +508,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
 #ifdef USE_CALLBACK
-  invokeCallback(m,inputs,NULL,2,1);
+  invokeCallback(main_conf,inputs,NULL,2,1);
 #endif
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -623,7 +623,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-  invokeCallback(m,inputs,NULL,3,0);
+  invokeCallback(main_conf,inputs,NULL,3,0);
 #endif
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -731,7 +731,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
 #ifdef USE_CALLBACK
-  invokeCallback(m,inputs,NULL,3,1);
+  invokeCallback(main_conf,inputs,NULL,3,1);
 #endif
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -743,7 +743,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
 #endif
 #ifdef USE_CALLBACK
-  invokeCallback(m,inputs,NULL,4,0);
+  invokeCallback(main_conf,inputs,NULL,4,0);
 #endif
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -759,7 +759,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,NULL,NULL,7,0);
+    invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 #ifdef HPC_DEBUG
     fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -778,7 +778,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   if(copy0!=true){
     setMapInMaps(*main_conf,"lenv","message",_("Unable to upload the script"));
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,NULL,NULL,7,0);
+    invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
     errorException(main_conf,_("Unable to upload the script"),"NoApplicableCode",NULL);
     return -1;
@@ -823,7 +823,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,NULL,NULL,7,0);
+    invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 #ifdef HPC_DEBUG
     fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -843,7 +843,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
   fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-  invokeCallback(m,NULL,NULL,4,1);
+  invokeCallback(main_conf,NULL,NULL,4,1);
 #endif
 #ifdef HPC_DEBUG
   fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -901,7 +901,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,NULL,NULL,7,0);
+    invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
     removeReadLocks(main_conf);
 #ifdef HPC_DEBUG
@@ -923,7 +923,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,NULL,NULL,7,0);
+    invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
     removeReadLocks(main_conf);
 #ifdef HPC_DEBUG
@@ -941,7 +941,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
     fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-    invokeCallback(*main_conf,NULL,NULL,7,0);
+    invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
     removeReadLocks(main_conf);
 #ifdef HPC_DEBUG
@@ -967,7 +967,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-	invokeCallback(*main_conf,NULL,NULL,7,0);
+	invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 	removeReadLocks(main_conf);
 #ifdef HPC_DEBUG
@@ -985,7 +985,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	  fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-	  invokeCallback(*main_conf,NULL,NULL,7,0);
+	  invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 	  removeReadLocks(main_conf);
 #ifdef HPC_DEBUG
@@ -1010,7 +1010,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-	invokeCallback(m,NULL,outputs,5,0);
+	invokeCallback(main_conf,NULL,outputs,5,0);
 #endif
 #ifdef HPC_DEBUG
 	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -1087,7 +1087,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
                   free(tmpStr);
                 }
 #ifdef USE_CALLBACK
-		invokeCallback(*main_conf,NULL,NULL,7,0);
+		invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 		return SERVICE_FAILED;
 	      }
@@ -1168,7 +1168,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 		  free(tmpStr);
 		}
 #ifdef USE_CALLBACK
-                invokeCallback(*main_conf,NULL,NULL,7,0);
+                invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
                 return SERVICE_FAILED;
 	      }
@@ -1188,7 +1188,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
 	fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-	invokeCallback(*main_conf,NULL,NULL,7,0);
+	invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 #ifdef HPC_DEBUG
 	fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);
@@ -1206,7 +1206,7 @@ int zoo_hpc_support(maps** main_conf,map* request,service* s,maps **real_inputs,
       fflush(stderr);
 #endif
 #ifdef USE_CALLBACK
-      invokeCallback(*main_conf,NULL,NULL,7,0);
+      invokeCallback(main_conf,NULL,NULL,7,0);
 #endif
 #ifdef HPC_DEBUG
       fprintf(stderr,"************************* %s %d \n\n",__FILE__,__LINE__);

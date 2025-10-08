@@ -43,7 +43,7 @@ extern "C" {
 #endif
   map* getCorrespondance();
   void setMapSize(maps* output,double minx,double miny,double maxy,double maxx);
-  void setReferenceUrl(maps* m,maps* tmpI);
+  void setReferenceUrl(maps** m,maps* tmpI);
 
   void setSrsInformations(maps* output,mapObj* m,layerObj* myLayer, char* pszProjection);
   

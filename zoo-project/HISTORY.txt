@@ -1,4 +1,27 @@
 Version 2.1.0-dev
+  * Add profiles as per https://docs.ogc.org/DRAFTS/18-062r3.html#profile-uris
+  * Enhanced storage of metadata embedded within a CWL Application Pachage.
+  * Type detection for literal data output for proper result access.
+  * Use the cwl2ogc Python library for the transactional support and 
+  schema definitions for inputs and output.
+  * C-API change signature of: printHeaders, printSessionHeaders,
+  printAFile, printProcessResponse, printDocument, printRawdataOutput,
+  printRawdataOutputs, outputResponse, runGetStatus, invokeCallback,
+  setReferenceUrl, printJResult, printJobStatus, printJobList,
+  printFilteredJobList, handleDRUError.
+  * Introduce the conversion from CWL type to LiteralData in documentation.
+  * ZOO-Project-DRU: Bind user to anonymous when no SERVICE_NAMESPACE is 
+  defined.
+  * Add documentation on how to bind a format key to a schema using the 
+  dedicated schemas section from the configuration file.
+  * Support CWL Custom Types with their corresponding format from OGC Process
+  Description.
+  * Support the format key in input/output schema from OGC Process Description.
+  * Add the CollectionDB.PrimitiveDataFormats table to the database containing
+  the possible formats key values and CWL Custom types.
+  * Change the strcuture of CollectionDB.ows_DataDescription to support a
+  format reference (data_format_id).
+  * Correct support for BoundingBox format in OGC Process Description.
   * Store the zoofpm ip address in the status database to enable tracking
   which zoofpm pod/container is used to run a process.
   * Update GDAL based services to use the validateVRT for VRT used as
@@ -39,6 +62,7 @@ Version 2.1.0-dev
   * Support recording metadata and author for processes deployed from CWL.
   * Add gdalmdiminfo and gdalmdimtranslate services
   * Update support for OGC API - Processes - Part 3: Workflows
+
 Version 2.0.0
   * Update the beta Part 3: Workflow & chaining support
   * Add Configuration option to force stderr in the console rather 

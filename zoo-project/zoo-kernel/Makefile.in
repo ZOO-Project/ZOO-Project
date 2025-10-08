@@ -75,7 +75,7 @@ service_yaml.o: service_yaml.c service.h
 	$(CC) ${YAML_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_yaml.c
 
 meta_sql.o: meta_sql.c meta_sql.h service.h
-	$(CXX)  ${METADB_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${CFLAGS} -c meta_sql.c
+	$(CXX)  ${METADB_ENABLED} ${GDAL_CFLAGS} ${XML2CFLAGS} ${JSON_CFLAGS} ${CFLAGS} -c meta_sql.c
 
 service_internal_ms.o: service_internal_ms.c
 	$(CC) ${JS_ENABLED} ${NODEJS_ENABLED} ${GDAL_CFLAGS}  ${JSCFLAGS} ${NODEJSCPPFLAGS} ${XML2CFLAGS} ${CFLAGS} -fPIC -c service_internal_ms.c
