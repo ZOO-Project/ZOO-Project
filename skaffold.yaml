@@ -28,7 +28,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.7.4
+        version: 0.8.1
         valuesFiles:
         - values.yaml
         setValueTemplates:

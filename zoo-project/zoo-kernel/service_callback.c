@@ -735,12 +735,11 @@ extern "C" {
     free(tmp1);
     char *tmp = (char *) malloc ((hInternet.ihandle[0].nDataLen + 1)
 				 * sizeof (char));
-    if (tmp == NULL)
-      {
-	setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
-	setMapInMaps(arg->conf,"lenv","code","InternalError");
-	return NULL;
-      }
+    if (tmp == NULL){
+      setMapInMaps(arg->conf,"lenv","message",_("Unable to allocate memory"));
+      setMapInMaps(arg->conf,"lenv","code","InternalError");
+      return NULL;
+    }
     size_t bRead;
     InternetReadFile (hInternet.ihandle[0],
 		      (LPVOID) tmp,
