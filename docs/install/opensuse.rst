@@ -3,51 +3,63 @@
 Install on OpenSUSE
 ===================
 
-:ref:`kernel_index` is maintained as a package in `OpenSUSE Build Service (OBS) <https://build.opensuse.org/package/show?package=zoo-kernel&project=Application%3AGeo>`__. RPM are thus provided for all versions of OpenSUSE Linux (11.2, 11.3, 11.4, Factory).
+ZOO-Project's :ref:`kernel_index` can be installed on recent OpenSUSE distributions either via pre-built packages from the OpenSUSE Build Service (OBS) or by compiling from source.
+
+.. note::
+   These instructions are updated for OpenSUSE Leap 15.4+ or Tumbleweed. Older instructions for 11.4 releases are obsolete.
 
 Stable release
-----------------------
+---------------
 
-Use the following instructions to install ZOO-Project latetst release on OpenSUSE distribution.
+To install the latest stable version of ZOO-Kernel on OpenSUSE:
 
-One-click installer
-...................
+Via YaST Software Manager
+.........................
 
-A one-click installer is available `here <http://software.opensuse.org/search?q=zoo-kernel&baseproject=openSUSE%3A11.4&lang=en&exclude_debug=true>`__. 
-For openSUSE 11.4, follow this direct `link <http://software.opensuse.org/ymp/Application:Geo/openSUSE_11.4/zoo-kernel.ymp?base=openSUSE%3A11.4&query=zoo-kernel>`__.
+1. Open YaST.
+2. Navigate to *Software > Software Repositories* and add the following repository:
 
-Yast software manager
-.....................
+    - Repository Name: `Application:Geo`
+    - URL: `http://download.opensuse.org/repositories/Application:/Geo/openSUSE_Leap_15.4/` (replace version if needed)
 
-Add the `Application:Geo <http://download.opensuse.org/repositories/Application:/Geo/>`__ repository to the software repositories and then ZOO-Kernel can then be found in Software Management using the provided search tool.
+3. Refresh repositories and search for `zoo-kernel` in the Software Management tool.
 
-Command line (as root for openSUSE 11.4)
-........................................
 
-Install ZOO-Kernel package by yourself using the following command:
+Via Command Line
+................
 
-.. code-block:: guess
+.. code-block:: bash
 
-  zypper ar http://download.opensuse.org/repositories/Application:/Geo/openSUSE_11.4/
+  zypper ar http://download.opensuse.org/repositories/Application:/Geo/openSUSE_Leap_15.4/ Application:Geo
   zypper refresh
   zypper install zoo-kernel
+
+.. note::
+
+   You can check the latest available versions here: https://software.opensuse.org/package/zoo-kernel
 
 Developement version
 ********************
 
-The latest development version of ZOO-Kernel can be found in OBS under the project `home:tzotsos <https://build.opensuse.org/project/show?project=home%3Atzotsos>`__. ZOO-Kernel packages are maintained and tested there before being released to the Application:Geo repository. Installation methods are identical as for the stable version. Make sure to use `this <http://download.opensuse.org/repositories/home:/tzotsos/>`__ repository instead.
+For the most recent development version of ZOO-Kernel, use the testing OBS repository maintained by developers:
 
-Command line (as root for openSUSE 11.4)
-********************************************
+.. warning::
+
+   Development versions may be unstable and should only be used for testing purposes.
+
+
+Via Command Line
+****************
 
 Install latest ZOO-Kernel trunk version with the following command:
 
-.. code-block:: guess
+.. code-block:: bash
 
-  zypper ar http://download.opensuse.org/repositories/home:/tzotsos/openSUSE_11.4/
+  zypper ar http://download.opensuse.org/repositories/home:/tzotsos/openSUSE_Leap_15.4/ ZOO-Dev
   zypper refresh
   zypper install zoo-kernel
   zypper install zoo-kernel-grass-bridge
 
-Note that there is the option of adding the zoo-wps-grass-bridge package. This option will automatically install grass7 (svn trunk).
+.. note::
 
+   The `zoo-kernel-grass-bridge` package requires GRASS GIS (GRASS7) and enables integration between ZOO and GRASS.
