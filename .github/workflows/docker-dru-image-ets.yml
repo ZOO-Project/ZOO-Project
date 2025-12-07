@@ -66,7 +66,7 @@ jobs:
         done
         i=0
         while [ "$i" == 0 ] ; do
-          if [ "$(kubectl get pods -n eoap-zoo-project | grep "1/1" | wc -l)" == "9" ] ; then
+          if [ "$(kubectl get pods -n eoap-zoo-project | grep "1/1" | wc -l)" == "8" ] ; then
             echo "Pods are all in running state!"
             i=1
           else
