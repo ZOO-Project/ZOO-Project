@@ -369,7 +369,7 @@ int addServicesNamespaceToMap(maps** pmsConf){
             // checking if namespace folder exists
             char *pcaNamespaceFolder = (char *) malloc(1024*sizeof(char));
             //memset(pcaNamespaceFolder, '\0', 1024);
-            map *servicesNamespaceParentFolder = getMapFromMaps(*pmsConf, "servicesN amespace", "path");
+            map *servicesNamespaceParentFolder = getMapFromMaps(*pmsConf, "servicesNamespace", "path");
             if(servicesNamespaceParentFolder!=NULL){
               sprintf(pcaNamespaceFolder, "%s/%s", servicesNamespaceParentFolder->value, pcNamespaceName);
               DIR *pdDir = opendir(pcaNamespaceFolder);
@@ -420,6 +420,11 @@ void setRootUrlMap(maps* pmConf){
                                                    "namespace");
     map* pmRootHost=getMapFromMaps(pmConf,"openapi","rootHost");
     map* pmRootPath=getMapFromMaps(pmConf,"openapi","rootPath");
+    map* pmGlobalNamespace=getMapFromMaps(pmConf,"openapi","globalNamespace");
+    if(pmGlobalNamespace==NULL){
+      setMapInMaps(pmConf,"openapi","globalNamespace","anonymous");
+      pmGlobalNamespace=getMapFromMaps(pmConf,"openapi","globalNamespace");
+    }
 #ifdef DEBUG
     fprintf (stderr, "zooServicesNamespaceMap: %s\n",
              zooServicesNamespaceMap->value);
@@ -427,7 +432,7 @@ void setRootUrlMap(maps* pmConf){
     fprintf (stderr, "rootPath: %s\n", pmRootPath->value);
 #endif
     if (zooServicesNamespaceMap!=NULL && zooServicesNamespaceMap->value &&
-        strcmp(zooServicesNamespaceMap->value,"generalNamespace") != 0 ){
+        strcmp(zooServicesNamespaceMap->value,pmGlobalNamespace->value) != 0 ){
       if(pmRootHost!=NULL && pmRootPath!=NULL){
         pcaRootUrl=(char*)
           malloc((strlen(pmRootHost->value)+
