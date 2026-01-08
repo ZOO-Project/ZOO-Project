@@ -275,6 +275,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     git clone -b develop https://github.com/Terradue/pycalrissian.git && \
     cd pycalrissian && \
     #sed "s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
+    sed "s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g;s:kubernetes==:kubernetes>=:g;s:cwltool==:cwltool>=:g;" -i pyproject.toml && \
     hatch build && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
     cd .. && \
@@ -283,7 +284,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
-    pip install --upgrade setuptools cryptography PyJWT pip zipp urllib3 && \
+    pip install --upgrade setuptools cryptography PyJWT pip zipp urllib3 "kubernetes>=34.1.0"&& \
     cd .. && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
