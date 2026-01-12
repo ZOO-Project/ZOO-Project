@@ -222,6 +222,7 @@ extern "C" {
       "NotFound",
       "NoSuchProcess",
       "NoSuchJob",
+      "NoSuchOutput",
       "ResultNotReady",
       NULL
     },

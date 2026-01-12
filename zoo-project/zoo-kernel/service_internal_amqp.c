@@ -381,6 +381,11 @@ void publish_amqp_msg(maps* pmsConf,int* eres,map* pmRequest,maps* pmsInputs,map
   json_object *maps1_obj = mapToJson(pmsLenv->content);
   json_object_object_add(poMsg,"main_lenv",maps1_obj);
 
+  pmsLenv=getMaps(pmsConf,"main");
+  if(pmsLenv!=NULL){
+    json_object *poMain = mapToJson(pmsLenv->content);
+    json_object_object_add(poMsg,"main_main",poMain);
+  }
   pmsLenv=getMaps(pmsConf,"subscriber");
   if(pmsLenv!=NULL){
     json_object *poSubscriber = mapToJson(pmsLenv->content);

@@ -2179,10 +2179,12 @@ void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
     pmsCurrentPath=getMaps(pmsConf,"processes/{processId}/execution");
   else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"processes/")!=NULL)
     pmsCurrentPath=getMaps(pmsConf,"processes/{processId}");
+  else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"results/")!=NULL && strlen(pcCgiQueryString)>52)
+    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobId}/results/{outputId}");
   else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"results")!=NULL)
-    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobID}/results");
+    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobId}/results");
   else if(pmsCurrentPath==NULL && strstr(pcCgiQueryString,"jobs/")!=NULL)
-    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobID}");
+    pmsCurrentPath=getMaps(pmsConf,"jobs/{jobId}");
   if(pmsCurrentPath!=NULL){
     map* pmLength=getMap(pmsCurrentPath->content,"length");
     int iLength=1;
@@ -3379,6 +3381,7 @@ int runRequest(map** inputs) {
                 fflush(stdout);
             }else{
               // In case the service has run, then forward request to target result file
+              char* pcaEndUrl=zStrdup(jobId);
               if(strlen(jobId)>36)
                 jobId[36]=0;
               char *sid=getStatusId(pmsaConfig,jobId);
@@ -3428,13 +3431,302 @@ int runRequest(map** inputs) {
                   free(pmsaConfig);
                   return 1;
                 }else{
-                  prepareLinksHeader(pmsaConfig,"/jobs/{jobID}/results");
-                  char *Url0=getResultPath(pmsaConfig,jobId);
+                  char *pcaUrl0=getRealResultPath(pmsaConfig,jobId);
                   zStatStruct f_status;
-                  int s=zStat(Url0, &f_status);
+                  int s=zStat(pcaUrl0, &f_status);
+                  if(strstr(pcaEndUrl+36,"results/")!=NULL && strlen(pcaEndUrl)>45){
+                    // Parse the output identifier stored in the {outputID} path parameter
+                    char* pcaOutputId=zStrdup(pcaEndUrl+45);
+                    if(pcaOutputId!=NULL){
+                      // Load result file to get the specific output
+                      if(s==0 && f_status.st_size>0){
+                        json_object* pjoResult=json_readFile(pmsaConfig,pcaUrl0);
+                        // We should parse the process metadata to get the output type
+                        // Depending on the type, we will return different content
+                        map* pmProcessId=getMapFromMaps(pmsaConfig,"lenv","processId");
+                        service* psService=NULL;
+                        if(pmProcessId!=NULL){
+                          // Load service metadata to identify output type
+                          fetchService(zooRegistry,&pmsaConfig,&psService,NULL,conf_dir_,pmProcessId->value,localPrintExceptionJ);
+                        }
+                        if(pjoResult!=NULL){
+                          json_object* pjoSingleOutput=NULL;
+                          if(json_object_object_get_ex(pjoResult,pcaOutputId,&pjoSingleOutput)){
+                            if(json_object_is_type(pjoSingleOutput, json_type_object)){
+                              json_object* pjoSingleOutputValue=NULL;
+                              char* pcaMimeType=NULL;
+                              json_object* pjoSingleOutputFormat=NULL;
+                              if(json_object_object_get_ex(pjoSingleOutput,"format",&pjoSingleOutputFormat)){
+                                json_object* pjoSingleOutputMimeType=NULL;
+                                if(json_object_object_get_ex(pjoSingleOutputFormat,"mediaType",&pjoSingleOutputMimeType)){
+                                  pcaMimeType=zStrdup(json_object_get_string(pjoSingleOutputMimeType));
+                                }
+                              }
+                              if(json_object_object_get_ex(pjoSingleOutput,"href",&pjoSingleOutputValue)){
+                                map* pmCgiRealRequestMethod=getMapFromMaps(pmsaConfig,"lenv","real_request_method");
+                                if((strcasecmp(pmCgiRequestMethod->value,"get")==0 && pmCgiRealRequestMethod==NULL)||
+                                   (pmCgiRealRequestMethod!=NULL && strcasecmp(pmCgiRealRequestMethod->value,"get"))==0){
+                                  // Reference output, redirect to its URL using 301 Status code
+                                  const char* pcaHref=json_object_get_string(pjoSingleOutputValue);
+                                  setMapInMaps(pmsaConfig,"headers","Location",pcaHref);
+                                  setMapInMaps(pmsaConfig,"headers","Status","301 Moved permanently");
+                                  printHeaders(&pmsaConfig);
+                                  fflush(stdout);
+                                  free(pcaOutputId);
+                                  free(pcaUrl0);
+                                  if(pcaMimeType!=NULL)
+                                    free(pcaMimeType);
+                                  if(psService!=NULL){
+                                    freeService(&psService);
+                                    free(psService);
+                                  }
+                                  return 0;
+                                }else{
+                                  // Read the file content of the reference URL
+                                  const char* pcaHref=json_object_get_string(pjoSingleOutputValue);
+                                  map* pmTmpUrl=getMapFromMaps(pmsaConfig,"main","tmpUrl");
+                                  if(strstr(pcaHref,pmTmpUrl->value)!=NULL && strlen(pcaHref)>strlen(pmTmpUrl->value)){
+                                    // Local file, read and return its content
+                                    char* pcaFilename=zStrdup(pcaHref+strlen(pmTmpUrl->value));
+                                    map* pmTmpPath=getMapFromMaps(pmsaConfig,"main","tmpPath");
+                                    char* pcaFilepath=(char*)malloc((strlen(pmTmpPath->value)+strlen(pcaFilename)+2)*sizeof(char));
+                                    sprintf(pcaFilepath,"%s/%s",pmTmpPath->value,pcaFilename);
+                                    zStatStruct f_status2;
+                                    int s2=zStat(pcaFilepath, &f_status2);
+                                    if(s2==0 && f_status2.st_size>0){
+                                      FILE* pfTmp=fopen(pcaFilepath,"rb");
+                                      if(pfTmp!=NULL){
+                                        char* pcaFileContent=(char*)malloc((f_status2.st_size+1)*sizeof(char));
+                                        fread(pcaFileContent,1,f_status2.st_size,pfTmp);
+                                        pcaFileContent[f_status2.st_size]=0;
+                                        fclose(pfTmp);
+                                        // Return file content
+                                        if(pcaMimeType!=NULL){
+                                          setMapInMaps(pmsaConfig,"headers","Content-Type",pcaMimeType);
+                                          free(pcaMimeType);
+                                        }
+                                        else
+                                          setMapInMaps(pmsaConfig,"headers","Content-Type","application/octet-stream");
+                                        setMapInMaps(pmsaConfig,"lenv","json_response_object",pcaFileContent);
+                                        free(pcaFileContent);
+                                        free(pcaFilepath);
+                                        free(pcaFilename);
+                                        goto jsonPrintOut;
+                                      }else{
+                                        // Unable to read file
+                                        map* error=createMap("code","FileReadError");
+                                        char* errorMsg=(char*)malloc((strlen(_("Unable to read the file \"%s\"."))+strlen(pcaFilepath)+1)*sizeof(char));
+                                        sprintf(errorMsg,_("Unable to read the file \"%s\"."),pcaFilepath);
+                                        addToMap(error,"message",errorMsg);
+                                        localPrintExceptionJ(&pmsaConfig,error);
+                                        free(errorMsg);
+                                        freeMap(&error);
+                                        free(error);
+                                        free(pcaFilepath);
+                                        free(pcaFilename);
+                                        json_object_put(pjoResult);
+                                        free(pcaOutputId);
+                                        free(pcaUrl0);
+                                        free(jobId);
+                                        free(sid);
+                                        json_object_put(res);
+                                        free(pcaCgiQueryString);
+                                        map* pmTest=getMap(request_inputs,"shouldFree");
+                                        if(pmTest!=NULL){
+                                          freeMap (inputs);
+                                          free (*inputs);
+                                          *inputs=NULL;
+                                          freeMap(&r_inputs);
+                                          free (r_inputs);
+                                          r_inputs=NULL;
+                                        }
+                                        return 1;
+                                      }
+                                    }
+                                  }else{
+                                    // Download from external URL, if any
+                                    HINTERNET bInternet, res1, res;
+                                    maps *tmpConf=createMaps("main");
+                                    tmpConf->content=createMap("memory","load");
+                                    bInternet = InternetOpen (
+  #ifndef WIN32
+                                                  (LPCTSTR)
+  #endif
+                                                  "ZooWPSClient\0",
+                                                  INTERNET_OPEN_TYPE_PRECONFIG,
+                                                  NULL, NULL, 0);
+  #ifndef WIN32
+                                    if (!CHECK_INET_HANDLE (bInternet))
+                                      fprintf (stderr,
+                                          "WARNING : bInternet handle failed to initialize");
+  #endif
+                                    bInternet.waitingRequests[0] =
+                                      zStrdup ((char *) pcaHref);
+                                    res1 =
+                                      InternetOpenUrl (&bInternet,
+                                              bInternet.waitingRequests
+                                              [0], NULL, 0,
+                                              INTERNET_FLAG_NO_CACHE_WRITE,
+                                              0,
+                                              tmpConf);
+                                    processDownloads (&bInternet);
+                                    freeMaps(&tmpConf);
+                                    free(tmpConf);
+                                    char *pcaTmp =
+                                      (char *)
+                                      malloc ((bInternet.ihandle[0].nDataLen +
+                                          1) * sizeof (char));
+                                    if (pcaTmp == NULL) {
+                                      return errorException (&pmsaConfig,
+                                                  _("Unable to allocate memory"),
+                                                  "InternalError",
+                                                  NULL);
+                                    }
+                                    size_t bRead;
+                                    InternetReadFile (bInternet.ihandle[0],
+                                              (LPVOID) pcaTmp,
+                                              bInternet.
+                                              ihandle[0].nDataLen,
+                                              &bRead);
+                                    pcaTmp[bInternet.ihandle[0].nDataLen] = 0;
+                                    InternetCloseHandle(&bInternet);
+                                    if(pcaMimeType!=NULL){
+                                      setMapInMaps(pmsaConfig,"headers","Content-Type",pcaMimeType);
+                                      free(pcaMimeType);
+                                    }
+                                    else
+                                      setMapInMaps(pmsaConfig,"headers","Content-Type","application/octet-stream");
+                                    setMapInMaps(pmsaConfig,"lenv","json_response_object",pcaTmp);
+                                    free(pcaTmp);
+                                    goto jsonPrintOut;
+
+                                  }
+                                }
+                              } else if(json_object_object_get_ex(pjoSingleOutput,"value",&pjoSingleOutputValue)){
+                                if(psService!=NULL && psService->outputs!=NULL){
+                                  // Find the output element matching pcaOutputId
+                                  elements* pElem=getElements(psService->outputs,pcaOutputId);
+                                  if(pElem!=NULL){
+                                    // Found matching output, check its format
+                                    if(strcmp(pElem->format,"ComplexData")==0){
+                                      iotype* pIotype=pElem->defaults;
+                                      if(pIotype==NULL)
+                                        pIotype=pElem->supported;
+                                      if(pIotype!=NULL){
+                                        map* pmMimeType=getMap(pIotype->content,"mimeType");
+                                        if((pmMimeType!=NULL && strstr(pmMimeType->value,"json")!=NULL) && (pcaMimeType==NULL) ){
+                                          const char* jsonStr=json_object_to_json_string_ext(pjoSingleOutputValue,JSON_C_TO_STRING_NOSLASHESCAPE);
+                                          setMapInMaps(pmsaConfig,"lenv","json_response_object",jsonStr);
+                                        }else{
+                                          // Return the value as string
+                                          const char* jsonStr=json_object_get_string(pjoSingleOutputValue);
+                                          setMapInMaps(pmsaConfig,"lenv","json_response_object",jsonStr);
+                                          if(pcaMimeType!=NULL){
+                                            setMapInMaps(pmsaConfig,"headers","Content-Type",pcaMimeType);
+                                            free(pcaMimeType);
+                                          }
+                                          else
+                                            setMapInMaps(pmsaConfig,"headers","Content-Type",pmMimeType->value);
+                                        }
+                                      }
+                                    }
+                                  }
+                                  freeService(&psService);
+                                  free(psService);
+                                }
+                              } else {
+                                // Default: return JSON representation of the output value
+                                const char* jsonStr=json_object_to_json_string_ext(pjoSingleOutput,JSON_C_TO_STRING_NOSLASHESCAPE);
+                                setMapInMaps(pmsaConfig,"lenv","json_response_object",jsonStr);
+                              }
+                              goto jsonPrintOut;
+                            } else if(pjoResult!=NULL){
+                              // Result is not an object
+                              dumpElements(psService->outputs);
+                              elements* peElements=getElements(psService->outputs,pcaOutputId);
+                              if(peElements!=NULL && strcmp(peElements->format,"LiteralData")==0){
+                                setMapInMaps(pmsaConfig,"headers","Content-Type","text/plain;charset=UTF-8");
+                                if(json_object_is_type(pjoSingleOutput, json_type_string)){
+                                  setMapInMaps(pmsaConfig,"lenv","json_response_object",json_object_get_string(pjoSingleOutput));
+                                }else{
+                                  const char* jsonStr=json_object_to_json_string_ext(pjoSingleOutput,JSON_C_TO_STRING_NOSLASHESCAPE);
+                                  setMapInMaps(pmsaConfig,"lenv","json_response_object",jsonStr);
+                                }
+                                goto jsonPrintOut;
+                              }else{
+                                // Output type not supported
+                                map* error=createMap("code","UnsupportedOutputType");
+                                char* errorMsg=(char*)malloc((strlen(_("The output identifier \"%s\" has an unsupported type for this job."))+strlen(pcaOutputId)+1)*sizeof(char));
+                                sprintf(errorMsg,_("The output identifier \"%s\" has an unsupported type for this job."),pcaOutputId);
+                                addToMap(error,"message",errorMsg);
+                                localPrintExceptionJ(&pmsaConfig,error);
+                                free(errorMsg);
+                                freeMap(&error);
+                                free(error);
+                                json_object_put(pjoResult);
+                                free(pcaOutputId);
+                                free(pcaUrl0);
+                                free(jobId);
+                                free(sid);
+                                json_object_put(res);
+                                free(pcaCgiQueryString);
+                                map* pmTest=getMap(request_inputs,"shouldFree");
+                                if(pmTest!=NULL){
+                                  freeMap (inputs);
+                                  free (*inputs);
+                                  *inputs=NULL;
+                                  freeMap(&r_inputs);
+                                  free (r_inputs);
+                                  r_inputs=NULL;
+                                }
+                                return 1;
+                              }
+
+                            }
+                            json_object_put(pjoResult);
+                          }else {
+                            // Output not found
+                            map* error=createMap("code","NoSuchOutput");
+                            char* errorMsg=(char*)malloc((strlen(_("The output identifier \"%s\" does not exist for this job."))+strlen(pcaOutputId)+1)*sizeof(char));
+                            sprintf(errorMsg,_("The output identifier \"%s\" does not exist for this job."),pcaOutputId);
+                            addToMap(error,"message",errorMsg);
+                            localPrintExceptionJ(&pmsaConfig,error);
+                            free(errorMsg);
+                            freeMap(&error);
+                            free(error);
+                            json_object_put(pjoResult);
+                            free(pcaOutputId);
+                            free(pcaUrl0);
+                            free(jobId);
+                            free(sid);
+                            json_object_put(res);
+                            free(pcaCgiQueryString);
+                            map* pmTest=getMap(request_inputs,"shouldFree");
+                            if(pmTest!=NULL){
+                              freeMap (inputs);
+                              free (*inputs);
+                              *inputs=NULL;
+                              freeMap(&r_inputs);
+                              free (r_inputs);
+                              r_inputs=NULL;
+                            }
+                            cleanUpSql(pmsaConfig);
+                            freeMaps(&pmsaConfig);
+                            free(pmsaConfig);
+                            return 1;
+                          }
+                        }
+                      }
+                      free(pcaOutputId);
+                    }
+                  }
+                  free(pcaUrl0);
+                  pcaUrl0=getResultPath(pmsaConfig,jobId);
+                  s=zStat(pcaUrl0, &f_status);
+                  prepareLinksHeader(pmsaConfig,"/jobs/{jobID}/results");
                   if(s==0 && f_status.st_size>0){
                     if(f_status.st_size>15){
-                      json_object* pjoTmp=json_readFile(pmsaConfig,Url0);
+                      json_object* pjoTmp=json_readFile(pmsaConfig,pcaUrl0);
                       json_object* pjoCode=NULL;
                       json_object* pjoMessage=NULL;
                       if(pjoTmp!=NULL &&
@@ -3454,16 +3746,16 @@ int runRequest(map** inputs) {
                         return 1;
                       }else{
                         map* tmpPath = getMapFromMaps (pmsaConfig, "main", "tmpUrl");
-                        Url0=(char*) realloc(Url0,(strlen(tmpPath->value)+
+                        pcaUrl0=(char*) realloc(pcaUrl0,(strlen(tmpPath->value)+
                                                     //strlen(cIdentifier->value)+
                                                     strlen(jobId)+8)*sizeof(char));
-                        sprintf(Url0,"%s/%s.json",tmpPath->value,jobId);
-                        setMapInMaps(pmsaConfig,"headers","Location",Url0);
+                        sprintf(pcaUrl0,"%s/%s.json",tmpPath->value,jobId);
+                        setMapInMaps(pmsaConfig,"headers","Location",pcaUrl0);
                         ensureFiltered(&pmsaConfig,"out");
                       }
                       if(pjoTmp!=NULL)
                         json_object_put(pjoTmp);
-                      free(Url0);
+                      free(pcaUrl0);
                     }else{
                       // Service Failed
                       map* statusInfo=createMap("JobID",jobId);
@@ -3500,7 +3792,7 @@ int runRequest(map** inputs) {
                     }
 
                   }else{
-                    free(Url0);
+                    free(pcaUrl0);
                     ensureFiltered(&pmsaConfig,"out");
                     runGetStatus(&pmsaConfig,jobId,(char*)"GetResult");
                     free(jobId);
@@ -3523,8 +3815,6 @@ int runRequest(map** inputs) {
                   }
                 }
               }
-
-
             }
             free(jobId);
           }
@@ -5393,6 +5683,23 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
                 addMapsToMaps(&lconf,pmsaTmp);
                 freeMaps(&pmsaTmp);
                 free(pmsaTmp);
+              }
+            }
+            map* pmMain;
+            json_object *req_main;
+            if(json_object_object_get_ex(msg_obj,"main_main",&req_main)!=FALSE){
+              pmMain=jsonToMap(req_main);
+              if(pmMain!=NULL){
+                map* pmTmp=getMap(pmMain,"tmpPath");
+                if(pmTmp!=NULL){
+                  setMapInMaps(lconf,"main","tmpPath",pmTmp->value);
+                }
+                pmTmp=getMap(pmMain,"tmpUrl");
+                if(pmTmp!=NULL){
+                  setMapInMaps(lconf,"main","tmpUrl",pmTmp->value);
+                }
+                freeMap(&pmMain);
+                free(pmMain);
               }
             }
             map* pmListSections=getMapFromMaps(lconf,"servicesNamespace","sections_list");

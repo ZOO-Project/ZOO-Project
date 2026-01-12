@@ -1293,7 +1293,7 @@ extern "C" {
       json_object_object_add(pjoRes,"title",json_object_new_string(_(pmTmp->value)));
       int i=0;
       int hasType=-1;
-      for(i=0;i<8;i++){
+      for(i=0;i<OAPIPCorrespondancesLength;i++){
         if(strcasecmp(pmTmp->value,WPSExceptionCode[OAPIPCorrespondances[i][0]])==0){
           map* pmExceptionUrl=getMapFromMaps(pmsConf,"openapi","exceptionsUrl");
           // Use OGC API - Processes - Part 2: Deploy, Replace, Undeploy
@@ -3233,6 +3233,44 @@ extern "C" {
     char *pcaUrl=(char*) malloc((strlen(pmTmpPath->value)+
 				 strlen(jobId)+8)*sizeof(char));
     sprintf(pcaUrl,"%s/%s.json",pmTmpPath->value,jobId);
+    return pcaUrl;
+  }
+
+  /**
+   * Get the result path
+   *
+   * @param pmsConf the conf maps containing the main.cfg settings
+   * @param jobId the job identifier
+   * @return the full path to the result file
+   */
+  char* getRealResultPath(maps* pmsConf,char* jobId){
+    map *pmTmpPath = getMapFromMaps (pmsConf, "main", "tmpPath");
+    char *pcaUrl=NULL;
+    setMapInMaps(pmsConf,"lenv","gs_usid",jobId);
+    // Read the status file to extract processId if available
+    char* pcaStatusPath = json_getStatusFilePath(pmsConf);
+    json_object* pjoStatus = json_readFile(pmsConf, pcaStatusPath);
+    free(pcaStatusPath);
+    char* pcaProcessId = NULL;
+    if(pjoStatus != NULL){
+      json_object* pjoProcessId = NULL;
+      if(json_object_object_get_ex(pjoStatus, "processID", &pjoProcessId) != FALSE){
+        pcaProcessId = zStrdup(json_object_get_string(pjoProcessId));
+        setMapInMaps(pmsConf,"lenv","processId",pcaProcessId);
+      }
+      json_object_put(pjoStatus);
+    }
+    // Build the result path with processId if available
+    if(pcaProcessId != NULL){
+      pcaUrl = (char*) malloc((strlen(pmTmpPath->value) + strlen(pcaProcessId) +
+                               strlen(jobId) + 9) * sizeof(char));
+      sprintf(pcaUrl, "%s/%s_%s.json", pmTmpPath->value, pcaProcessId, jobId);
+      free(pcaProcessId);
+    }
+    else{
+      pcaUrl = (char*) malloc((strlen(pmTmpPath->value) + strlen(jobId) + 8) * sizeof(char));
+      sprintf(pcaUrl, "%s/%s.json", pmTmpPath->value, jobId);
+    }
     return pcaUrl;
   }
 

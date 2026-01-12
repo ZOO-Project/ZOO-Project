@@ -147,6 +147,7 @@ extern "C" {
   json_object* parseJson(maps*,char*);
   json_object* json_readFile(maps*,char*);
   char* getResultPath(maps*,char*);
+  char* getRealResultPath(maps*,char*);
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
   void produceRoot(maps*,json_object*);

@@ -54,6 +54,7 @@ ARG RUN_DEPS="\
     pkg-config\
     gettext \
     locales \
+    libsodium23 \
 "
 
 ARG BUILD_DEPS="libfcgi-dev\
@@ -286,7 +287,8 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     git clone https://github.com/EOEPCA/cwl-wrapper.git && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
-    pip install --upgrade setuptools cryptography PyJWT pip zipp urllib3 "kubernetes>=34.1.0" && \
+    pip install --upgrade setuptools cryptography PyJWT pip zipp "kubernetes>=34.1.0" && \
+    pip install  "urllib3>=2.6.3" && \
     cd .. && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
