@@ -5690,10 +5690,6 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
             if(json_object_object_get_ex(msg_obj,"main_main",&req_main)!=FALSE){
               pmMain=jsonToMap(req_main);
               if(pmMain!=NULL){
-                map* pmTmp=getMap(pmMain,"tmpPath");
-                if(pmTmp!=NULL){
-                  setMapInMaps(lconf,"main","tmpPath",pmTmp->value);
-                }
                 pmTmp=getMap(pmMain,"tmpUrl");
                 if(pmTmp!=NULL){
                   setMapInMaps(lconf,"main","tmpUrl",pmTmp->value);

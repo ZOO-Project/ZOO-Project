@@ -28,7 +28,7 @@
  click-config-file
  cwl-upgrader==1.2.11
  cwl-utils>=0.14
- cwl-loader==0.9.0
+ cwl-loader==0.15.0
  hera
  httpx
  h11>=0.16.0
