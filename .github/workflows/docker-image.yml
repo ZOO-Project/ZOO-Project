@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Docker Image CI (Ubuntu Jammy)
 
 on:
   push:
@@ -16,9 +16,9 @@ jobs:
     - name: Cache Docker layers
       uses: actions/cache@v3
       with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: ${{ runner.os }}-buildx-
+        path: /tmp/.buildx-osgeolive-cache
+        key: ${{ runner.os }}-buildx-osgeolive-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-buildx-osgeolive-
     - name: docker login
       env:
         DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -30,45 +30,36 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel:node-${{ github.sha }}
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-    - name: Build and push Official image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: zooproject/zoo-project:node-${{ github.sha }}
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-    - name: Build and push latest
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: ${{secrets.DOCKER_USER}}/zookernel:node-latest
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-    - name: Build and push latest
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: zooproject/zoo-project:node-latest
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        file: Dockerfile-OSGeoLive
+        tags: ${{secrets.DOCKER_USER}}/zookernel:osgeolive-${{ github.sha }}
+        cache-from: type=local,src=/tmp/.buildx-osgeolive-cache
+        cache-to: type=local,dest=/tmp/.buildx-osgeolive-cache-new,mode=max
     - name: Move cache
       run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-    - name: Build TeamEngine and the ETS for OGC API - Processes and add it to the docker-compose
-      run: docker/ets-ogcapi-processes/build.sh && head -n $(expr $(grep "^networks:" -rn docker-compose.yml | cut -d':' -f1) - 1) docker-compose.yml > docker-compose1.yml && cat docker/ets-ogcapi-processes/docker-compose-ets-part.yml >> docker-compose1.yml && cat docker-compose.yml| grep "^networks" -A10 >> docker-compose1.yml && mv docker-compose1.yml docker-compose.yml
+        rm -rf /tmp/.buildx-osgeolive-cache
+        mv /tmp/.buildx-osgeolive-cache-new /tmp/.buildx-osgeolive-cache
+    - name: Build and push osgeolive-latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        file: Dockerfile-OSGeoLive
+        tags: ${{secrets.DOCKER_USER}}/zookernel:osgeolive-latest
+        cache-from: type=local,src=/tmp/.buildx-osgeolive-cache
+        cache-to: type=local,dest=/tmp/.buildx-osgeolive-cache-new,mode=max
+    - name: Build and push osgeolive-latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        file: Dockerfile-OSGeoLive
+        tags: zooproject/zoo-project:osgeolive-latest
+        cache-from: type=local,src=/tmp/.buildx-osgeolive-cache
+        cache-to: type=local,dest=/tmp/.buildx-osgeolive-cache-new,mode=max
     - name: Start the test env
-      run: mkdir docker/tmp; chmod 777 -R docker ; docker compose up -d
+      run: mkdir docker/tmp; chmod 777 -R docker ; sed "s=djayzen/zookernel:latest=djayzen/zookernel:osgeolive-latest=g" -i docker-compose.yml ; docker compose up -d
     - name: Install required package
       run: docker ps ; docker exec zoo-project-zookernel-1 /bin/bash -c "apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get -y install lynx;"
-    - name: Run the ETS for OGC API - Processes (see test-run-props.xml for settings)
-      run: docker compose exec -T teamengine /root/test.sh
     - name: Run GetCapabilities tests version 1.0.0
       run: docker exec zoo-project-zookernel-1 /bin/bash -c "cd /var/www/html/cptesting/scripts/; mkdir ../tmp; ./run.sh http://localhost/cgi-bin/zoo_loader.cgi 1.0.0 Buffer \"GetCapabilities\" 0 0 > outputGC.html 2> log; lynx -dump outputGC.html"
     - name: Run DescribeProcess tests version 1.0.0
