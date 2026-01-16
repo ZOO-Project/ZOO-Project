@@ -288,7 +288,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd cwl-wrapper/ && \
     python3 setup.py install && \
     pip install --upgrade setuptools cryptography PyJWT pip zipp "kubernetes>=34.1.0" && \
-    pip install  "urllib3>=2.6.3" && \
+    pip install  "urllib3>=2.6.3"  "jaraco.context>=6.1.0" && \
     cd .. && \
     rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
