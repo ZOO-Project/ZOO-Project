@@ -1056,7 +1056,7 @@ extern "C" {
 #if JSON_C_MINOR_VERSION >= 13
       map* pmUseRawSchema=getMapFromMaps(pmsConf,"openapi","cwl2ogc_schema");
       map* pmRawSchema=getMap(peInput->content,"raw_schema");
-      if((pmUseRawSchema==NULL || strcasecmp(pmUseRawSchema->value,"false")==0) && pmRawSchema!=NULL){
+      if((pmUseRawSchema==NULL || strcasecmp(pmUseRawSchema->value,"true")==0) && pmRawSchema!=NULL){
         if(pmRawSchema->value[0]=='{' || pmRawSchema->value[0]=='['){
           json_object* pjoRawSchema=parseJson(pmsConf,pmRawSchema->value);
           // If there is a schema definition already, rename it to original-schema
@@ -1283,6 +1283,7 @@ extern "C" {
    * @param pmsConf the maps containing the settings of the main.cfg file
    * @param s the map containing the text,code,locator keys (or a map array of the same keys)
    * @return the create JSON object (make sure to free memory)
+   * @see printExceptionReportResponseJ, OAPIPCorrespondancesLength,OAPIPCorrespondances,OAPIPExceptionLimits,OAPIPExceptionCode
    */
   json_object *createExceptionJ(maps* pmsConf,map* s){
     json_object *pjoRes=json_object_new_object();
