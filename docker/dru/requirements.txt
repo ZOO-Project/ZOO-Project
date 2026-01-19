@@ -10,9 +10,9 @@
  boto3==1.35.92
  kubernetes
  coverage
- git+https://github.com/EOEPCA/zoo-calrissian-runner.git@develop
- git+https://github.com/ZOO-Project/zoo-argowf-runner.git@develop
- git+https://github.com/ZOO-Project/zoo-wes-runner.git@main
+ git+https://github.com/EOEPCA/zoo-calrissian-runner.git@feature/zoo-runner-common
+ git+https://github.com/ZOO-Project/zoo-argowf-runner.git@feature/zoo-runner-common
+ git+https://github.com/ZOO-Project/zoo-wes-runner.git@feature/zoo-runner-common
  cwl2ogc==0.10.0.dev5
  eoap-cwlwrap==0.16.0
  cheetah3
@@ -32,6 +32,7 @@
  hera
  httpx
  h11>=0.16.0
+ zoo-template-common>=0.1.4
  #setuptools>=75.3.2
  #urllib>=1.26.5
 

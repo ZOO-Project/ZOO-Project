@@ -40,7 +40,7 @@ deploy:
           # cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
           # cookiecutter.templateBranch: feature-secrets-nodeselector-imagepullsecrets
           cookiecutter.templateUrl: https://github.com/GeoLabs/zoo-service-template.git
-          cookiecutter.templateBranch: feature/eoap-tooling
+          cookiecutter.templateBranch: feature/zoo-template-common
           filter_in.enabled: true
           filter_out.enabled: true
           zoofpm.image.repository: "{{.IMAGE_REPO_zoodruimage}}"
