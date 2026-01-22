@@ -13,11 +13,11 @@ exclude_patterns = ['_build']
 # General information
 
 project = 'ZOO-Project'
-version = '2.0.0'
-release = '2.0.0'
+version = '2.1.0'
+release = '2.1.0'
 license = 'This work is released under a Creative Commons Attribution-ShareAlike 4.0 International Public License'
 authors = 'ZOO-Project team'
-copyright = '2009-2024, ' + authors+ '. '+ license
+copyright = '2009-2026, ' + authors+ '. '+ license
 show_authors = True
 
 # Options for HTML output
