@@ -28,7 +28,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.8.1
+        version: 0.9.0
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -83,6 +83,9 @@ profiles:
       - op: add
         path: /deploy/helm/releases/1/setValueTemplates/persistence.tmpStorageClass
         value: hostpath
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.storageClass
+        value: hostpath
 
   - name: wes
     patches:
@@ -104,6 +107,172 @@ profiles:
 
   - name: argo
     patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/minio.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/minio.persistence.size
+        value: 2Gi
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/minio.persistence.accessMode
+        value: ReadWriteOnce
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/minio.defaultBuckets
+        value: "eoepca"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.installCRDs
+        value: false
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.instanceID
+        value: "eoap-zoo-project"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.cwlwrapperImage
+        value: "eoepca/cwl-wrapper:0.12.1"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.stageOutImage
+        value: "ghcr.io/eoap/mastering-app-package/stage:1.1.1"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.serviceAccount.name
+        value: "argo-workflow"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.featureCollectionScript
+        value: ""
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.autoTokenManagement
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.restartOnTokenUpdate
+        value: false
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.s3.bucket
+        value: "eoepca"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.s3.endpoint
+        value: "s3-service.eoap-zoo-project.svc.cluster.local:9000"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.s3.insecure
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.s3.secretName
+        value: "s3-service"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.s3.accessKeySecretKey
+        value: "rootUser"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo.s3.secretKeySecretKey
+        value: "rootPassword"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.singleNamespace
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.crds.install
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.crds.keep
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.archiveLogs
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.endpoint
+        value: s3-service.eoap-zoo-project.svc.cluster.local:9000
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.bucket
+        value: eoepca
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.insecure
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.accessKeySecret.name
+        value: s3-service
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.accessKeySecret.key
+        value: rootUser
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.secretKeySecret.name
+        value: s3-service
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.artifactRepository.s3.secretKeySecret.key
+        value: rootPassword
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.controller.instanceID.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.controller.instanceID.useReleaseName
+        value: false
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.controller.instanceID.explicitID
+        value: eoap-zoo-project
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.controller.workflowDefaults.spec.serviceAccountName
+        value: argo-workflow
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.server.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.server.serviceType
+        value: ClusterIP
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.server.servicePort
+        value: 2746
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.server.secure
+        value: false
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.server.namespaced
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.server.authModes
+        value: ["server"]
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.rbac.create
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/argo-workflows.serviceAccount.create
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/wrapper.rules
+        value: ""
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/wrapper.main
+        value: ""
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/wrapper.stageIn
+        value: ""
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/wrapper.stageOut
+        value: ""
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.internal
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.instanceID
+        value: "eoap-zoo-project"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.defaultVolumeSize
+        value: "12Gi"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.defaultMaxRam
+        value: "2Gi"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.wfServer
+        value: "http://zoo-project-dru-argo-workflows-server.eoap-zoo-project.svc.cluster.local:2746"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.wfNamespace
+        value: "eoap-zoo-project"
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/customConfig.main.argo
+        value: |
+          namespace=eoap-zoo-project
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.s3_bucket
         value: results
@@ -112,25 +281,43 @@ profiles:
         value: us-east-1
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.aws_secret_access_key
-        value: minio-admin
+        value: minio-secret-password
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.aws_access_key_id
         value: minio-admin
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.endpoint_url
-        value: http://minio.ns1.svc.cluster.local:9000
+        value: http://s3-service.eoap-zoo-project.svc.cluster.local:9000
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/cookiecutter.templateUrl
         value: https://github.com/gfenoy/zoo-argo-wf-proc-service-template.git
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/cookiecutter.templateBranch
-        value: main
-      - op: add
-        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.enabled
-        value: true
-      - op: add
-        path: /deploy/helm/releases/1/setValueTemplates/workflow.argo.wfToken
-        value: "<ARGO_WF_TOKEN>"
+        value: feature/use-argo-wf-namespace
+    portForward:
+      - resourceType: service
+        resourceName: zoo-project-dru-argo-workflows-server
+        namespace: eoap-zoo-project
+        address: localhost
+        port: 2746
+        localPort: 2746
+      - resourceType: service
+        resourceName: zoo-project-dru-service
+        namespace: eoap-zoo-project
+        address: localhost
+        port: 80
+        localPort: 8080
+      - resourceType: service
+        resourceName: zoo-project-dru-websocketd
+        namespace: eoap-zoo-project
+        port: 8888
+        localPort: 8888
+      - resourceType: service
+        resourceName: s3-service-console
+        namespace: eoap-zoo-project
+        address: localhost
+        port: 9001
+        localPort: 8022
 
 portForward:
   - resourceType: service
