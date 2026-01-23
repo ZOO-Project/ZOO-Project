@@ -33,4 +33,5 @@
  httpx
  h11>=0.16.0
  zoo-template-common>=0.1.5
+ wheel>=0.46.2
 
