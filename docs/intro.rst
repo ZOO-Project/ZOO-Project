@@ -20,7 +20,7 @@ What is ZOO-Project ?
 It provides developers with tools to **wrap existing algorithms and libraries into WPS-compliant services**, allowing them to be called over the web. These services can process **geospatial and non-geospatial data** in a flexible and scalable manner.
 
 
-Key Features:
+Key Features
 -------------
 
 - Create services using **C, Python, JavaScript, and more** (up to 7 languages)
