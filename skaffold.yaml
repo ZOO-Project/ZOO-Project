@@ -94,16 +94,40 @@ profiles:
         value: https://github.com/gfenoy/eoepca-proc-service-template-wes.git
       - op: replace
         path: /deploy/helm/releases/1/setValueTemplates/cookiecutter.templateBranch
-        value: develop
+        value: feature/zoo-template-common
+      # Replace the 192.168.1.61 with your IP address where the WES server is reachable
       - op: add
         path: /deploy/helm/releases/1/setValueTemplates/workflow.inputs.WES_URL
-        value: "http://192.168.1.59:8100/ga4gh/wes/v1/"
+        value: "http://192.168.1.61:8090/ga4gh/wes/v1/"
       - op: add
         path: /deploy/helm/releases/1/setValueTemplates/workflow.inputs.WES_USER
         value: "test"
       - op: add
         path: /deploy/helm/releases/1/setValueTemplates/workflow.inputs.WES_PASSWORD
         value: "$$2y$$12$$ci.4U63YX83CwkyUrjqxAucnmi2xXOIlEF6T/KdP9824f1Rf1iyNG"
+      # Replace the 192.168.1.61 with your local IP address where the s3-console is reachable
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/workflow.additionalInputs.endpoint_url
+        value: http://192.168.1.61:8022
+    portForward:
+      - resourceType: service
+        resourceName: zoo-project-dru-service
+        namespace: eoap-zoo-project
+        address: localhost
+        port: 80
+        localPort: 8080
+      - resourceType: service
+        resourceName: zoo-project-dru-websocketd
+        namespace: eoap-zoo-project
+        port: 8888
+        localPort: 8888
+      - resourceType: service
+        resourceName: eoap-zoo-project-localstack
+        namespace: eoap-zoo-project
+        address: 0.0.0.0
+        port: 4566
+        localPort: 8022
+
 
   - name: argo
     patches:

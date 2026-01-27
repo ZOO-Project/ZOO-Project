@@ -12,7 +12,7 @@
  coverage
  zoo-calrissian-runner==0.4.0
  zoo-argowf-runner==0.2.0
- zoo-wes-runner==0.2.0
+ zoo-wes-runner==0.2.1
  cwl2ogc==0.10.0
  eoap-cwlwrap==0.23.0
  cheetah3
