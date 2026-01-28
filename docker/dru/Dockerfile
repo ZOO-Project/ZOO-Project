@@ -54,6 +54,7 @@ ARG RUN_DEPS="\
     pkg-config\
     gettext \
     locales \
+    libsodium23 \
 "
 
 ARG BUILD_DEPS="libfcgi-dev\
@@ -157,6 +158,7 @@ RUN git clone --depth 1 https://github.com/swagger-api/swagger-ui.git \
     && mv /var/www/html/swagger-ui/dist /var/www/html/swagger-ui/oapip
 
 COPY docker/dru/default.conf /etc/apache2/sites-available/000-default.conf
+COPY zoo-project/zoo-services/utils/open-api/dru/DetectEntrypoint.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.py /usr/lib/cgi-bin
@@ -264,6 +266,7 @@ ARG DEPS_TO_REMOVE="\
     automake \
 "
 
+COPY docker/startUp.sh /startUp.sh
 COPY docker/dru/requirements.txt /tmp/
 COPY zoo-project/zoo-kernel/locale /tmp/locale
 
@@ -274,33 +277,45 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     cd /tmp && \
     git clone -b develop https://github.com/Terradue/pycalrissian.git && \
     cd pycalrissian && \
-    #sed "s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
-    sed "s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g;s:kubernetes==:kubernetes>=:g;s:cwltool==:cwltool>=:g;" -i pyproject.toml && \
+    #sed "s:cwltool==:cwltool>=:g;s:setuptools==:setuptools>=:g;s:" -i pyproject.toml && \
+    sed "s:cwltool==:cwltool>=:g;s:kubernetes==:kubernetes>=:g;s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
     hatch build && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
-    cd .. && \
+    # cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
-    git clone https://github.com/EOEPCA/cwl-wrapper.git && \
-    cd cwl-wrapper/ && \
-    python3 setup.py install && \
-    pip install --upgrade setuptools cryptography PyJWT pip zipp urllib3 "kubernetes>=34.1.0"&& \
-    cd .. && \
-    rm -r pycalrissian cwl-wrapper /tmp/requirements.txt && \
+    pip install --upgrade setuptools cryptography PyJWT pip zipp "kubernetes>=34.1.0" && \
+    pip install  "urllib3>=2.6.3" "jaraco.context>=6.1.0" "pyasn1>=0.6.2" "oauthlib>=3.2.2" "wheel>=0.46.2" && \
+    # cd .. && \
+    rm -r pycalrissian /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
     rm /var/log/apache2/error.log && \
     ln -s /dev/stdout /var/log/apache2/error.log && \
     # Add minimal translation support for the ZOO-Kernel internal messages
     cd /tmp && for i in  $(ls ./locale/po/*po | grep -v utf8 | grep -v message); do \
         j=$(echo $i | sed "s:./locale/po/::g;s:.po::g"); \
-        mkdir -p /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
-        msgfmt  $i -o /usr/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
-        mkdir -p /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES; \
-        msgfmt  $i -o /usr/local/share/locale/$(echo $i| sed "s:./locale/po/::g;s:.po::g")/LC_MESSAGES/zoo-kernel.mo ; \
-        locale-gen $j ; \
-        localedef -i $j -c -f UTF-8 -A /usr/share/locale/locale.alias ${j}.UTF-8; \
+        case "$j" in \
+            cs) j_full="cs_CZ" ;; \
+            de) j_full="de_DE" ;; \
+            es) j_full="es_ES" ;; \
+            fi) j_full="fi_FI" ;; \
+            ja) j_full="ja_JP" ;; \
+            messages) \
+            echo "Skipping $j (not a real locale)" \
+            continue \
+            ;; \
+            *) j_full="$j" ;; \
+        esac ; \
+        echo "🔹 Processing $file -> $j_full" ; \
+        mkdir -p /usr/share/locale/$j_full/LC_MESSAGES; \
+        msgfmt  $i -o /usr/share/locale/$j_full/LC_MESSAGES/zoo-kernel.mo ; \
+        mkdir -p /usr/local/share/locale/$j_full/LC_MESSAGES; \
+        msgfmt  $i -o /usr/local/share/locale/$j_full/LC_MESSAGES/zoo-kernel.mo ; \
+        locale-gen $j_full ; \
+        localedef -i $j_full -c -f UTF-8 -A /usr/share/locale/locale.alias ${j_full}.UTF-8; \
     done  && \
     \
+    chown www-data:www-data -R /var/www && \
     apt-get purge -y $DEPS_TO_REMOVE $BUILD_DEPS && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 
