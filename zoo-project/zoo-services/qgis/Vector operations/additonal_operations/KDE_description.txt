@@ -1,0 +1,106 @@
+Heatmap (Kernel Density Estimation) (qgis:heatmapkerneldensityestimation)
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Point layer
+
+	Parameter type:	QgsProcessingParameterFeatureSource
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProcessingFeatureSourceDefinition
+		- QgsProperty
+		- QgsVectorLayer
+
+RADIUS: Radius
+
+	Parameter type:	QgsProcessingParameterDistance
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+RADIUS_FIELD: Radius from field
+
+	Parameter type:	QgsProcessingParameterField
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+PIXEL_SIZE: Output raster size
+
+	Parameter type:	ParameterHeatmapPixelSize
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+WEIGHT_FIELD: Weight from field
+
+	Parameter type:	QgsProcessingParameterField
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+KERNEL: Kernel shape
+
+	Parameter type:	QgsProcessingParameterEnum
+
+	Available values:
+		- 0: Quartic
+		- 1: Triangular
+		- 2: Uniform
+		- 3: Triweight
+		- 4: Epanechnikov
+
+	Accepted data types:
+		- int
+		- str: as string representation of int, e.g. '1'
+		- QgsProperty
+
+DECAY: Decay ratio (Triangular kernels only)
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+OUTPUT_VALUE: Output value scaling
+
+	Parameter type:	QgsProcessingParameterEnum
+
+	Available values:
+		- 0: Raw
+		- 1: Scaled
+
+	Accepted data types:
+		- int
+		- str: as string representation of int, e.g. '1'
+		- QgsProperty
+
+OUTPUT: Heatmap
+
+	Parameter type:	QgsProcessingParameterRasterDestination
+
+	Accepted data types:
+		- str
+		- QgsProperty
+		- QgsProcessingOutputLayerDefinition
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputRasterLayer>
+	Heatmap

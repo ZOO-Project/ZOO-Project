@@ -1,0 +1,11 @@
+paths
+/usr/share/qgis/python
+/home/sandeeepan/.local/share/QGIS/QGIS3/profiles/default/python
+/home/sandeeepan/.local/share/QGIS/QGIS3/profiles/default/python/plugins
+/usr/share/qgis/python/plugins
+/usr/lib/python310.zip
+/usr/lib/python3.10
+/usr/lib/python3.10/lib-dynload
+/usr/local/lib/python3.10/dist-packages
+/usr/lib/python3/dist-packages
+/home/sandeeepan/.local/share/QGIS/QGIS3/profiles/default/python

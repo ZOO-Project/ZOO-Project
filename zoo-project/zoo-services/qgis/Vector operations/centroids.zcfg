@@ -1,0 +1,46 @@
+[CalculateCentroids]
+ Title = Centroid 
+ Abstract = Given a geometry and parameters describing an affine transform apply the transform to the geometry. 
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qgis
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [inputGeometry]
+   Title = Geometry for which the centroids are to be calculated.
+   Abstract = URI to a vector file that contains the mentionned two bands.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+    </Default>
+   </ComplexData>
+  [parts]
+   Title = parts to be processed
+   Abstract = The number of parts for which the centroid is to be calculated.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [centroids]
+   Title = The Centroids
+   Abstract = The geometry with the centroids calculated
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+     extension = .geojson
+    </Default>
+   </ComplexData>
+ </DataOutputs>  
