@@ -50,6 +50,7 @@ Nuxt Client
 -----------
 
 The Nuxt client relies on an **official published Docker image**.
+
 - Example service definition in ``docker-compose.yml``: 
 
 .. code-block:: yaml
