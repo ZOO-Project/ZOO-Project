@@ -13,43 +13,31 @@ Two Keycloak clients are required:
 1. **API Client** (for Apache to validate Bearer tokens)
 2. **Web Client** (for the Nuxt web app to authenticate users and obtain tokens)
 
-Docker Setup
-------------
+Running Keycloak (Example Setup)
+--------------------------------
 
-### docker-compose-ko.yml (Keycloak service)
+Below is an example ``docker-compose-ko.yml`` file that users may create locally to run a keycloak instance for developement.
 
-This file is located at: `zoo-project/docker/nuxt-client/`
+- This file is provided as an example only and is not shipped by the ZOO-Project repository.
 
 .. code-block:: yaml
 
     services:
       keycloak:
-        image: quay.io/keycloak/keycloak:26.0.7
+        image: quay.io/keycloak/keycloak:latest
         command:
           - start-dev
-          - --http-enabled=true
-          - --verbose
         environment:
           KEYCLOAK_ADMIN: admin
           KEYCLOAK_ADMIN_PASSWORD: admin
         ports:
           - "8099:8080"
-        networks:
-          front-tier:
-            ipv4_address: 172.37.0.18
-
-    networks:
-      front-tier:
-        ipam:
-          driver: default
-          config:
-            - subnet: "172.37.0.0/24"
 
 To run the above service:
 
 .. code-block:: bash
 
-    docker compose -f docker/nuxt-client/docker-compose-ko.yml up -d --build
+    docker compose -f /docker-compose-ko.yml up -d --build
 
 **Note**: If port 8099 is already in use, run the following to find and stop the conflicting process:
 
@@ -58,36 +46,27 @@ To run the above service:
     sudo lsof -i :8099
     docker stop <container_id>
 
-Nuxt Client Setup
------------------
+Nuxt Client
+-----------
 
-### docker-compose.yml (Nuxt client service)
-
-Please verify that the nuxclient service is correctly configured in the docker-compose.yml file.
-
-File path: `zoo-project/docker-compose.yml`
+The Nuxt client relies on an **official published Docker image**.
+- Example service definition in ``docker-compose.yml``: 
 
 .. code-block:: yaml
 
     nuxtclient:
       platform: linux/amd64
-      image: zooproject/nuxt-client-test:latest
-      build:
-        context: .
-        dockerfile: docker/nuxt-client/Dockerfile
-      networks:
-        front-tier-1:
-          ipv4_address: 172.15.232.17
+      image: zoo-project/nuxt-client:latest
       ports:
-        - "0.0.0.0:3000:3000"
+        - "3000:3000"
       env_file:
-        - ./docker/nuxt-client/env_nuxt.sample
+        - ./env_nuxt
 
 
 Keycloak Setup
 --------------
 
-1. Open Keycloak in your browser: http://192.168.1.6:8099/
+1. Open Keycloak in your browser: http://your-ip-address:8099/
 
 Log in to Keycloak using the default admin credentials:
   - Username: `admin`
@@ -171,7 +150,7 @@ All the URLs in this webapp-zooproject creation should be your local IP address,
 Nuxt Environment Configuration
 ------------------------------
 
-1. Open the file `docker/nuxt-client/env_nuxt.sample`
+1. Create or Open the file `/env_nuxt.sample`
 
 2. Ensure that your local IP address is correctly specified in the environment variable configuration within this file.
 
@@ -189,7 +168,7 @@ Nuxt Environment Configuration
 Apache OIDC Configuration
 -------------------------
 
-1. Open `docker/nuxt-client/default.conf`
+1. Open `/default.conf`
 
 2. Update the following block with details from the `apache-zooproject` client:
 
