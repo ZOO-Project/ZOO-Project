@@ -37,7 +37,7 @@ To run the above service:
 
 .. code-block:: bash
 
-    docker compose -f /docker-compose-ko.yml up -d --build
+    docker compose -f docker-compose-ko.yml up -d --build
 
 **Note**: If port 8099 is already in use, run the following to find and stop the conflicting process:
 
