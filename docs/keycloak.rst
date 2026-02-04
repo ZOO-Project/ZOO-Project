@@ -202,17 +202,49 @@ Configuration Files
 - Make sure they point to the IP.
 
 
-Build and Launch Nuxt Client
-----------------------------
+Run the Nuxt Client
+-------------------
 
-To build and run the Nuxt client:
+To start the Nuxt client, simply run:
 
 ::
 
-    docker compose -f docker-compose.yml --project-directory . build nuxtclient --no-cache
-    docker compose -f docker-compose.yml --project-directory . up -d
+      docker compose -f docker-compose.yml up -d
 
-Once completed, open the Nuxt client and Login at:
+Docker will automatically pull the official Nuxt client image if not already available locally.
 
-http://your-ip-address:3000/
+You can then access the Nuxt web application at:
 
+::
+
+    http://your-ip-address:3000
+
+For Local Development
+---------------------
+
+For developement purposes, It is also possible to build and run a local Nuxt client image.
+
+1. Clone the Nuxt client repository:
+
+:: 
+
+      git clone https://github.com/ZOO-Project/nuxt-client.git
+      cd nuxt-client
+
+2. Build the Docker image locally:
+
+::
+
+      docker build -t zoo-project/nuxt-client:local .
+
+3. Update your `docker-compose.yml` to use the local image:
+
+::
+
+      image: zoo-project/nuxt-client:local
+
+4. Start the Service:
+
+::
+
+      docker compose -f docker-compose.yml up -d
