@@ -16,8 +16,13 @@ deploy:
         remoteChart: localstack/localstack
         namespace: eoap-zoo-project
         createNamespace: true
+        overrides:
+          extraEnvVars:
+            - name: ACTIVATE_PRO
+              value: "0"
         setValues:
           service.type: ClusterIP
+          image.tag: "3.8"
           enableStartupScripts: true
           startupScriptContent: |
             #!/bin/bash
@@ -28,7 +33,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.9.0
+        version: 0.9.2
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -60,12 +65,14 @@ deploy:
           websocketd.enabled: true
 
           #workflow.calrissianImage: 192.168.1.13:5010/geolabs/calrissian:0.18.1
+          workflow.calrissianImage: ghcr.io/duke-gcb/calrissian/calrissian:latest
           workflow.additionalInputs:
             s3_bucket: results
             region_name: us-east-1
             aws_secret_access_key: test
             aws_access_key_id: test
             endpoint_url: http://eoap-zoo-project-localstack.eoap-zoo-project.svc.cluster.local:4566
+            gateway_url: http://traefik-dask-gateway.eoap-dask-gateway.svc.cluster.local:80
 
 profiles:
 

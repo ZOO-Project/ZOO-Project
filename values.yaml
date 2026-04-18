@@ -424,3 +424,155 @@ files:
 
                 print(f"Downloaded to {output_path}")
 
+    stageout-file.yaml: |
+      cwlVersion: v1.2
+
+      class: CommandLineTool
+      id: stageout-file
+
+      doc: "Stage-out a file to S3 storage"
+
+      inputs:
+        file:
+          doc: "The file to stage out"
+          label: "File to stage out"
+          type: File
+
+        s3_bucket:
+          doc: "The S3 bucket name (e.g., results)"
+          label: "S3 bucket name"
+          type: string
+
+        sub_path:
+          doc: "The sub path / job ID for the output"
+          label: "Sub path"
+          type: string
+
+        aws_access_key_id:
+          doc: "AWS access key ID"
+          label: "AWS access key ID"
+          type: string
+
+        aws_secret_access_key:
+          doc: "AWS secret access key"
+          label: "AWS secret access key"
+          type: string
+
+        region_name:
+          doc: "AWS region"
+          label: "AWS region"
+          type: string
+
+        endpoint_url:
+          doc: "AWS service URL (for S3-compatible storage)"
+          label: "AWS service URL"
+          type: string
+
+      outputs:
+        s3_file_output:
+          doc: "The S3 URI of the staged-out file"
+          label: "S3 file URI"
+          type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI
+          outputBinding:
+            glob: file-uri.txt
+            loadContents: true
+            outputEval: |
+              ${
+                return { "value": self[0].contents.trim(), "type": "https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI" };
+              }
+
+      stdout: file-uri.txt
+
+      baseCommand:
+        - python
+        - stage.py
+
+      arguments:
+        - $(inputs.file.path)
+        - $(inputs.s3_bucket)
+        - ${
+            var firstPart = (Math.random() * 46656) | 0;
+            var secondPart = (Math.random() * 46656) | 0;
+            firstPart = ("000" + firstPart.toString(36)).slice(-3);
+            secondPart = ("000" + secondPart.toString(36)).slice(-3);
+            return inputs.sub_path + "-" + firstPart + secondPart;
+          }
+
+      requirements:
+        NetworkAccess:
+          networkAccess: true
+        
+        SchemaDefRequirement:
+          types:
+            - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+        
+        DockerRequirement:
+          dockerPull: ghcr.io/eoap/mastering-app-package/stage:1.0.0
+        
+        InlineJavascriptRequirement: {}
+        
+        EnvVarRequirement:
+          envDef:
+            aws_access_key_id: $(inputs.aws_access_key_id)
+            aws_secret_access_key: $(inputs.aws_secret_access_key)
+            aws_region_name: $(inputs.region_name)
+            aws_endpoint_url: $(inputs.endpoint_url)
+        
+        ResourceRequirement: {}
+        
+        InitialWorkDirRequirement:
+          listing:
+            - entryname: stage.py
+              entry: |-
+                import os
+                import sys
+                import boto3
+                import botocore
+
+                file_path = sys.argv[1]
+                bucket_uri = sys.argv[2]
+                subfolder = sys.argv[3]
+
+                print(f"file_path: {file_path}", file=sys.stderr)
+                print(f"bucket_uri: {bucket_uri}", file=sys.stderr)
+                print(f"subfolder: {subfolder}", file=sys.stderr)
+
+                aws_access_key_id = os.environ["aws_access_key_id"]
+                aws_secret_access_key = os.environ["aws_secret_access_key"]
+                region_name = os.environ["aws_region_name"]
+                endpoint_url = os.environ["aws_endpoint_url"]
+
+                # bucket is the plain bucket name (e.g., results)
+                bucket = bucket_uri
+                base_path = ""
+
+                # Create S3 client
+                client = boto3.client(
+                    "s3",
+                    aws_access_key_id=aws_access_key_id,
+                    aws_secret_access_key=aws_secret_access_key,
+                    endpoint_url=endpoint_url,
+                    region_name=region_name,
+                )
+
+                # Get file name from path
+                file_name = os.path.basename(file_path)
+
+                # Construct S3 key
+                if base_path:
+                    s3_key = os.path.normpath(f"{base_path}/{subfolder}/{file_name}")
+                else:
+                    s3_key = os.path.normpath(f"{subfolder}/{file_name}")
+
+                # Remove leading slashes from s3_key
+                s3_key = s3_key.lstrip("/")
+
+                # Upload file to S3
+                print(f"Uploading {file_path} to s3://{bucket}/{s3_key}", file=sys.stderr)
+                client.upload_file(file_path, bucket, s3_key)
+
+                # Construct and return the S3 URI
+                s3_uri = f"s3://{bucket}/{s3_key}"
+                print(f"File staged out to: {s3_uri}", file=sys.stderr)
+                print(s3_uri)
+

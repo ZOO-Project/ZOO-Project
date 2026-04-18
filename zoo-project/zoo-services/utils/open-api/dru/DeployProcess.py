@@ -45,6 +45,8 @@ from pathlib import Path
 from deploy_util import Process
 from collections import namedtuple
 from deploy_util import Services
+from cwl_loader import dump_cwl_with_custom_requirements, load_cwl_from_yaml
+from io import StringIO
 
 
 def get_s3_settings():
@@ -108,6 +110,13 @@ class DeployService(Services):
 
         self.conf["lenv"]["workflow_id"] = self.service_configuration.identifier
         self.conf["lenv"]["service_name"] = self.service_configuration.identifier
+        self.add_filter_out_options()
+
+    def add_filter_out_options(self):
+        if "orequest_method" in self.conf["lenv"]:
+            self.conf["lenv"]["operation"]="replace"
+        else:
+            self.conf["lenv"]["operation"]="deploy"
 
     def create_service_tmp_folder(self):
         # creating the folder where we will download the applicationPackage
@@ -254,8 +263,13 @@ class DeployService(Services):
             )
 
             zoo.info(f"Storing the CWL file in {app_package_file}")
+            # Use dump_cwl_with_custom_requirements to reinject custom requirements
+            # First load the CWL content to get the parsed process objects
+            process = load_cwl_from_yaml(self.cwl_content)
+            buffer = StringIO()
+            dump_cwl_with_custom_requirements(process=process, stream=buffer)
             with open(app_package_file, "w") as file:
-                yaml.dump(self.cwl_content, file)
+                file.write(buffer.getvalue())
 
             zoo.info(f"Moving {path} to {self.zooservices_folder}")
             shutil.move(path, self.zooservices_folder)
@@ -455,8 +469,10 @@ def DeployProcess(conf, inputs, outputs):
         return zoo.SERVICE_DEPLOYED
 
     except Exception as e:
+        import traceback
         zoo.error("Failed to deploy the service")
         zoo.error(str(e))
+        zoo.error(traceback.format_exc())
         if "headers" not in conf:
             conf["headers"]={}
         conf["headers"]["status"]="400 Bad Request"

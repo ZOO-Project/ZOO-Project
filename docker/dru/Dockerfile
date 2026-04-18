@@ -163,6 +163,8 @@ COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.py /usr/lib/cgi-b
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/UndeployProcess.zcfg /usr/lib/cgi-bin
+COPY zoo-project/zoo-services/utils/open-api/dru/NotifyProcess.py /usr/lib/cgi-bin
+COPY zoo-project/zoo-services/utils/open-api/dru/Notify.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/deploy_util.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/ZooStub.py /usr/lib/cgi-bin
 
@@ -275,7 +277,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install hatch && \
     # Using the latest version of pycalrissian with the fix for the RBAC
     cd /tmp && \
-    git clone -b develop https://github.com/Terradue/pycalrissian.git && \
+    git clone -b feature/kubernetes-watch https://github.com/gfenoy/pycalrissian.git && \
     cd pycalrissian && \
     #sed "s:cwltool==:cwltool>=:g;s:setuptools==:setuptools>=:g;s:" -i pyproject.toml && \
     sed "s:cwltool==:cwltool>=:g;s:kubernetes==:kubernetes>=:g;s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \

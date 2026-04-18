@@ -1,4 +1,7 @@
-Version 2.1.0-dev
+Version 2.1.1-dev
+  * Add a basic Notify process for DRU operations,
+  * Add support for File outputs with the format key when deploying a process.
+Version 2.1.0
   * Add support for the /jobs/{jobId}/results/{outputId} endpoint
   * Force update of the libsodium23 on ubuntu to fix CVE-2025-69277
   * Fix urllib version 2.6.3 to fix CVE-2026-21441, CVE-2025-66418, 

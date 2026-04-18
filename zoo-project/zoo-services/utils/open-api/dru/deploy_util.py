@@ -28,7 +28,7 @@ import os
 import json
 import yaml
 import re
-from cwl_utils.parser import load_document as load_cwl
+from cwl_loader import load_cwl_from_yaml
 from cwl_utils.parser import *
 import cwl_utils.__meta__ as cwl_meta
 from cwl2ogc import BaseCWLtypes2OGCConverter
@@ -78,10 +78,9 @@ class Process:
         """
         Creates a Process object from a dictionary representing the CWL YAML file.
         """
-        if cwl_meta.__version__ < "0.16":
-            cwl_obj = load_cwl(cwl)
-        else:
-            cwl_obj = load_cwl(cwl, id_=(workflow_id if workflow_id else "main"), load_all=True)
+        # Use cwl_loader.load_cwl_from_yaml which handles custom requirements
+        # sort=False to preserve the original workflow order from the CWL $graph
+        cwl_obj = load_cwl_from_yaml(cwl, sort=False)
 
         workflows = [
             item for item in cwl_obj if item.class_ == 'Workflow'
@@ -89,10 +88,11 @@ class Process:
         if len(workflows) == 0:
             raise Exception("No workflow found")
         if workflow_id is None:
+            # Use the first workflow from the graph
             workflow = workflows[0]
         else:
             workflow = next(
-                (wf for wf in workflows if wf.id.split("#")[1] == workflow_id), None
+                (wf for wf in workflows if wf.id.split("#")[-1] == workflow_id), None
             )
             if workflow is None:
                 raise Exception("Workflow '{0}' not found".format(workflow_id))
@@ -448,8 +448,13 @@ class Process:
 
     def handle_oneof(self,cur,io_entity):
         for i in range(len(io_entity["oneOf"])):
+            schema = None
             if "$id" in io_entity["oneOf"][i]:
-                schema=io_entity["oneOf"][i]["$id"]
+                schema = io_entity["oneOf"][i]["$id"]
+            elif "$ref" in io_entity["oneOf"][i]:
+                schema = io_entity["oneOf"][i]["$ref"]
+
+            if schema is not None:
                 # This is a workaround for schema with anchors
                 if schema.count("#")>0:
                     schema=schema.split("#")[0]
@@ -457,7 +462,7 @@ class Process:
                             "where schemaUrl=$q${0}$q$ LIMIT 1".format(schema))
                 val= cur.fetchone()
                 if val is not None:
-                    self.sql_add_complex_data(cur, val[0])
+                    self.sql_add_complex_data(cur, val[0], io_entity["oneOf"][i])
                 else:
                     zoo.error("No format found for schema "+schema)
                 # do not break to use the last option as complex data type
@@ -474,7 +479,7 @@ class Process:
                     self.sql_add_literal_data_domain(cur, io_entity["schema"])
                 else:
                     if io_entity["metadata"][0]["value"].count("#")>0:
-                        self.sql_add_complex_data(cur, io_entity["metadata"][0]["value"])
+                        self.sql_add_complex_data(cur, io_entity["metadata"][0]["value"], io_entity["schema"])
             else:
                 io_entity["maxOccurs"] = 0
                 if "oneOf" in io_entity["schema"]["items"]:
@@ -483,7 +488,7 @@ class Process:
                     self.sql_add_literal_data_domain(cur, io_entity["schema"]["items"])
                 else:
                     if io_entity["metadata"][0]["value"].count("#")>0:
-                        self.sql_add_complex_data(cur, io_entity["metadata"][0]["value"])
+                        self.sql_add_complex_data(cur, io_entity["metadata"][0]["value"], io_entity["schema"]["items"])
 
             if "enum" in io_entity["schema"]:
                 for i in range(len(io_entity["schema"]["enum"])):
@@ -529,7 +534,7 @@ class Process:
             cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
                         "(true,(SELECT id from CollectionDB.PrimitiveDatatypes where name = $q${0}$q$));".format(primitive_data["type"]))
 
-    def sql_add_complex_data(self, cur, complex_data):
+    def sql_add_complex_data(self, cur, complex_data, schema=None):
         # myInputs[input]["metadata"][0]["value"] = <complex_data>
         parsed_str=complex_data.split("#")[0].split("/")
         usable_str=parsed_str[len(parsed_str)-1]
@@ -538,11 +543,20 @@ class Process:
                                                                                     complex_data.split("#")[1]))
         val=cur.fetchone()
         # zoo.debug(f"Found format: {val}")
-        # Use a static mimeType for now
-        current_content_type="application/json"
+
+        # Extract contentMediaType from schema if available
+        current_content_type="application/json"  # Default value
+
         cur.execute("SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1".
                             format(current_content_type))
         val1=cur.fetchone()
+
+        if val1 is None:
+            # If the MIME type doesn't exist in the database, insert it
+            cur.execute(f"INSERT INTO CollectionDB.PrimitiveFormats (mime_type) VALUES ($q${current_content_type}$q$);")
+            cur.execute("SELECT last_value FROM CollectionDB.PrimitiveFormats_id_seq;")
+            val1=cur.fetchone()
+
         cur.execute("INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES "+
                     "(true,{0});".format(val1[0]))
         cur.execute(f"INSERT INTO CollectionDB.ows_DataDescription (format_id,data_format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq),{val[0]});")
@@ -556,7 +570,18 @@ class Services(object):
         self.inputs = inputs
         self.outputs = outputs
         self.zooservices_folder = self.get_zoo_services_folder()
+        self.add_filter_out()
 
+    def add_filter_out(self):
+        if "filter_out" not in self.conf:
+            self.conf["filter_out"] = {"path": "/usr/lib/cgi-bin/","service": "Notify"}
+        else:
+            if "length" not in self.conf["filter_out"]:
+                self.conf["filter_out"]["length"] = "1"
+            length = int(self.conf["filter_out"]["length"])
+            self.conf["filter_out"]["path_" + str(length)] = "/usr/lib/cgi-bin/"
+            self.conf["filter_out"]["service_" + str(length)] = "Notify"
+            self.conf["filter_out"]["length"] = str(length + 1)
 
     def get_zoo_services_folder(self):
 
