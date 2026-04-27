@@ -23,22 +23,23 @@
 # THE SOFTWARE.
 
 mkdir -p /tmp/zTmp/statusInfos
-cp /var/www/html/data/* /usr/com/zoo-project
-chown www-data:www-data -R /tmp/zTmp /usr/com/zoo-project
-chmod 777 -R /tmp/zTmp
 
-CMD="curl -o toto.out http://rabbitmq:15672"
+CMD="curl -o /tmp/toto.out http://zoo-project-dru-rabbitmq:15672"
 $CMD
-cat toto.out
-if [ -e toto.out ]; then echo "Should start" ; else echo wait; sleep 1; $CMD ; fi 
 
-while [ ! -e toto.out ]; do echo wait; sleep 1; $CMD ;  done
+if [ -e /tmp/toto.out ]; then echo "Should start" ; else echo wait; sleep 1; $CMD ; fi 
+
+while [ ! -e /tmp/toto.out ]; do echo wait; sleep 1; $CMD ;  done
 
 
 echo "START FPM in 5 seconds"
 
 touch /var/log/zoofpm.log
-chown www-data:www-data /var/log/zoofpm.log
 sleep 5
 
-su www-data -s /bin/bash -c "cd /usr/lib/cgi-bin; ./zoo_loader_fpm ./main.cfg 2> /var/log/zoofpm.log >> /var/log/zoofpm.log"
+if [ "$(id -u)" = "0" ]; then
+	su www-data -s /bin/bash -c "cd /usr/lib/cgi-bin; ./zoo_loader_fpm ./main.cfg 2> /var/log/zoofpm.log >> /var/log/zoofpm.log"
+else
+	cd /usr/lib/cgi-bin
+	./zoo_loader_fpm ./main.cfg 2> /var/log/zoofpm.log >> /var/log/zoofpm.log
+fi

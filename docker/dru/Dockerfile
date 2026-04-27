@@ -54,6 +54,7 @@ ARG RUN_DEPS="\
     pkg-config\
     gettext \
     locales \
+    libcap2-bin \
     libsodium23 \
 "
 
@@ -80,7 +81,8 @@ RUN apt-get update -qqy  --no-install-recommends  && \
     apt-get install -qqy  --no-install-recommends software-properties-common\
         ${RUN_DEPS}\
         ${BUILD_DEPS}\
-    && a2enmod cgi rewrite headers auth_openidc proxy proxy_http actions fcgid alias proxy_fcgi \
+    && a2enmod cgi rewrite headers auth_openidc proxy proxy_http actions alias proxy_fcgi \
+    && a2dismod fcgid \
     && /etc/init.d/apache2 restart \
     && rm -rf /var/lib/apt/lists/*
 
@@ -123,6 +125,7 @@ RUN cd ./zoo-project/zoo-kernel \
      && sed -i "s%http://www.zoo-project.org/zoo/%http://127.0.0.1%g" /usr/lib/cgi-bin/main.cfg \
      && sed -i "s%../tmpPathRelativeToServerAdress/%http://localhost/temp/%g" /usr/lib/cgi-bin/main.cfg \
      && sed "s:AllowOverride None:AllowOverride All:g" -i /etc/apache2/apache2.conf \
+     && printf "\nMutex posixsem\n" >> /etc/apache2/apache2.conf \
      && cd /opt/ZOO-Project \
      && cp ./docker/.htaccess /var/www/html/.htaccess \
      && cp -r zoo-project/zoo-services/utils/open-api/templates/index.html /var/www/index.html \
@@ -317,11 +320,17 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
         localedef -i $j_full -c -f UTF-8 -A /usr/share/locale/locale.alias ${j_full}.UTF-8; \
     done  && \
     \
-    chown www-data:www-data -R /var/www && \
+    mkdir -p /tmp/zTmp /tmp/fcgid/sock /var/run/apache2 /var/lock/apache2 /opt/zooservices_namespaces && \
+    touch /var/log/zoofpm.log && \
+    chown www-data:www-data -R /usr/com/zoo-project /var/www /tmp/zTmp /tmp/fcgid /var/run/apache2 /var/lock/apache2 /opt/zooservices_namespaces /var/log/apache2 /var/log/zoofpm.log && \
+    setcap 'cap_net_bind_service=+ep' /usr/sbin/apache2 && \
+    chmod +x /startUp.sh && \
     apt-get purge -y $DEPS_TO_REMOVE $BUILD_DEPS && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 
 COPY docker/dru/index.html /var/www/html/index.html
 
+USER www-data
+
 EXPOSE 80
-CMD ["apachectl", "-D", "FOREGROUND"]
+CMD ["/bin/sh", "-lc", "mkdir -p /tmp/fcgid/sock && rm -f /tmp/fcgid/proctable* && exec apachectl -D FOREGROUND"]
