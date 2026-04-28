@@ -32,11 +32,14 @@ import urllib.error
 def Notify(conf, inputs, outputs):
     zoo.info(f"{str(conf['lenv'])}")
 
-    if 'publisherUrl' not in conf['openapi']:
+    if 'publisherUrl' not in conf['openapi'] or not "operation" in conf['lenv']:
         zoo.error("Publisher URL not configured in 'openapi.publisherUrl'")
         return zoo.SERVICE_SUCCEEDED
 
     publisher_url = conf['openapi']['publisherUrl']
+    if "operation" not in conf['lenv']:
+        zoo.warning("Operation not specified in 'lenv.operation', skipping notification")
+        return zoo.SERVICE_SUCCEEDED
     operation = conf['lenv']['operation']
 
     url = re.sub(r'jobid=[^&]*', f'operation={operation}', publisher_url)
