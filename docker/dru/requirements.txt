@@ -37,5 +37,5 @@
  hera
  httpx
  h11>=0.16.0
- zoo-template-common>=0.1.7
+ zoo-template-common>=0.1.8
 

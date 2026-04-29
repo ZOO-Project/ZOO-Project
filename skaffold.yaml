@@ -33,7 +33,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.9.5
+        version: 0.9.6
         valuesFiles:
         - values.yaml
         setValueTemplates:
@@ -349,6 +349,12 @@ profiles:
         address: localhost
         port: 9001
         localPort: 8022
+
+  - name: dask
+    patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/dask.enabled
+        value: true
 
 portForward:
   - resourceType: service
