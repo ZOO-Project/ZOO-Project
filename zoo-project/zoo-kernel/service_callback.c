@@ -26,6 +26,13 @@
  * THE SOFTWARE.
  */
 
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+
 #include <pthread.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>

@@ -569,7 +569,7 @@ HINTERNET InternetOpenUrl(HINTERNET* hInternet,LPCTSTR lpszUrl,LPCTSTR lpszHeade
 #endif
     map* pmMethod=getMapFromMaps((maps*)conf,"lenv","callback_request_method");
     if(pmMethod!=NULL && strcasecmp(pmMethod->value,"PUT")==0)
-	curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_PUT,1);
+	curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_UPLOAD,1);
     else{
       curl_easy_setopt(hInternet->ihandle[hInternet->nb].handle,CURLOPT_POST,1);
     }
