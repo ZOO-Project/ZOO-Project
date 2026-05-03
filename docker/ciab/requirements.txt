@@ -16,7 +16,7 @@ odc-index
 gdal
 scipy
 jupyter==1.0.0
-jupyterlab==3.6.8
+jupyterlab==4.4.8
 ipyleaflet
 folium
 pandas==2.0.0
