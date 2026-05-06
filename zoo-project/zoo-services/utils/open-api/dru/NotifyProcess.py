@@ -52,8 +52,15 @@ def Notify(conf, inputs, outputs):
         if "deployedServiceId" in conf["lenv"]:
             service_name = conf["lenv"]["deployedServiceId"]
         else:
-            service_name = conf["lenv"]["service_name"]
-    if operation != "undeploy":        
+            if "service_name" in conf["lenv"]:
+                service_name = conf["lenv"]["service_name"]
+    if operation == "delete_job":
+        if "error" in conf["lenv"] and conf["lenv"]["error"]=="true":
+            zoo.warning("JobId not found! No notification will be sent.")
+            return zoo.SERVICE_SUCCEEDED
+        body = conf["lenv"]["gs_usid"]
+        content_type = 'text/plain'
+    elif operation != "undeploy":
         body = {
             "href": f"{host_name}/{user_name}/{root_path}/processes/{service_name}",
             "rel": "self",
