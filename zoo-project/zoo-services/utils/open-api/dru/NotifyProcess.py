@@ -30,7 +30,6 @@ import urllib.request
 import urllib.error
 
 def Notify(conf, inputs, outputs):
-    zoo.info(f"{str(conf['lenv'])}")
 
     if 'publisherUrl' not in conf['openapi'] or not "operation" in conf['lenv']:
         zoo.error("Publisher URL not configured in 'openapi.publisherUrl'")
@@ -47,10 +46,13 @@ def Notify(conf, inputs, outputs):
     host_name = conf["openapi"]["rootHost"]
     root_path = conf["openapi"]["rootPath"]
     user_name = conf["lenv"]["fpm_user"]
-    try:
+    if "workflow_id" in conf["lenv"]:
         service_name = conf["lenv"]["workflow_id"]
-    except:
-        service_name = conf["lenv"]["service_name"]
+    else:
+        if "deployedServiceId" in conf["lenv"]:
+            service_name = conf["lenv"]["deployedServiceId"]
+        else:
+            service_name = conf["lenv"]["service_name"]
     if operation != "undeploy":        
         body = {
             "href": f"{host_name}/{user_name}/{root_path}/processes/{service_name}",

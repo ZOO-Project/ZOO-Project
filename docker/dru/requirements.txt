@@ -21,7 +21,7 @@
  #eoap-cwlwrap==0.26.0
  cheetah3
  redis
- CloudEvents
+ CloudEvents==1.12.1
  psycopg2-binary
  pyyaml
  pyjwt
