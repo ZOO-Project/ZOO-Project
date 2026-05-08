@@ -46,9 +46,7 @@ jobs:
 
       - name: Build ZOO-Project Docker image
         run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            --load \
+          docker build \
             -t zoo-project:${{ github.sha }} \
             -f Dockerfile .
 
