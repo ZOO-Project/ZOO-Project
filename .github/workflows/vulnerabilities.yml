@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - main
-      - vulnerabilities-check
     paths-ignore:
       - '**.md'
 
   pull_request:
     branches:
       - main
-      - vulnerabilities-check
     paths-ignore:
       - '**.md'
 
