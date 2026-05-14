@@ -1,0 +1,21 @@
+[Notify]
+ Title = Notify DRU operations through the publisherUrl
+ Abstract = Notify DRU operations through the publisherUrl webhook.
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = NotifyProcess
+ serviceType = Python
+ mutable = false
+ <DataInputs />
+ </DataInputs>
+ <DataOutputs>
+  [Result]
+   Title = Nothing
+   Abstract = Nothing.
+   <ComplexData>
+    <Default>
+    MimeType = application/json
+    </Default>
+   </ComplexData>
+ </DataOutputs>

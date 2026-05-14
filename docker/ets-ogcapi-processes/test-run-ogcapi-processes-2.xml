@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties version="1.0">
+  <comment>Sample test run arguments (ets-ogcapi-processes10)</comment>
+  <entry key="iut">http://localhost:8080/anonymous/ogc-api/</entry>
+<!--   <entry key="iut">http://geoprocessing.demo.52north.org:8080/javaps/rest/</entry> -->
+  <entry key="echoprocessid">echo</entry>
+  <!-- entry key="testallprocesses">on</entry-->
+  <entry key="processtestlimit">3</entry>
+  <entry key="urlapppkg">https://github.com/Terradue/ogc-eo-application-package-hands-on/releases/download/1.5.0/app-water-bodies-cloud-native.1.5.0.cwl</entry>
+</properties>

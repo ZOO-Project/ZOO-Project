@@ -192,39 +192,39 @@ STag
     if(strncasecmp($2,"DataOutputs",11)==0){
       if(wait_inputs==true){
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"(DATAOUTPUTS %d) DUP INPUTS current_element\n",__LINE__);
-	fprintf(stderr,"CURRENT_ELEMENT\n");
-	dumpElements(current_element);
-	fprintf(stderr,"SERVICE INPUTS\n");
-	dumpElements(my_service->inputs);
-	dumpService(my_service);
+        fprintf(stderr,"(DATAOUTPUTS %d) DUP INPUTS current_element\n",__LINE__);
+        fprintf(stderr,"CURRENT_ELEMENT\n");
+        dumpElements(current_element);
+        fprintf(stderr,"SERVICE INPUTS\n");
+        dumpElements(my_service->inputs);
+        dumpService(my_service);
 #endif	
-	if(my_service->inputs==NULL && current_element!=NULL && current_element->name!=NULL){
-	  my_service->inputs=dupElements(current_element);
-	  my_service->inputs->next=NULL;
-	  freeElements(&current_element);
-	}
-	else if(current_element!=NULL && current_element->name!=NULL){
-	  addToElements(&my_service->inputs,current_element);
-	  freeElements(&current_element);
-	}
+        if(my_service->inputs==NULL && current_element!=NULL && current_element->name!=NULL){
+          my_service->inputs=dupElements(current_element);
+          my_service->inputs->next=NULL;
+          freeElements(&current_element);
+        }
+        else if(current_element!=NULL && current_element->name!=NULL){
+          addToElements(&my_service->inputs,current_element);
+          freeElements(&current_element);
+        }
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"CURRENT_ELEMENT\n");
-	dumpElements(current_element);
-	fprintf(stderr,"SERVICE INPUTS\n");
-	dumpElements(my_service->inputs);
-	fprintf(stderr,"(DATAOUTPUTS) FREE current_element\n");
+        fprintf(stderr,"CURRENT_ELEMENT\n");
+        dumpElements(current_element);
+        fprintf(stderr,"SERVICE INPUTS\n");
+        dumpElements(my_service->inputs);
+        fprintf(stderr,"(DATAOUTPUTS) FREE current_element\n");
 #endif
-	free(current_element);
-	current_element=NULL;
-	wait_inputs=false;
+        free(current_element);
+        current_element=NULL;
+        wait_inputs=false;
       }
       if(current_element==NULL){
 #ifdef DEBUG_SERVICE_CONF
-	fprintf(stderr,"(DATAOUTPUTS - %d) ALLOCATE current_element (%s)\n",__LINE__,$2);
-	fflush(stderr);
+      fprintf(stderr,"(DATAOUTPUTS - %d) ALLOCATE current_element (%s)\n",__LINE__,$2);
+      fflush(stderr);
 #endif
-	current_element=createEmptyElements();
+        current_element=createEmptyElements();
       }
       wait_outputs=1;
       current_data=2;
@@ -232,89 +232,89 @@ STag
     }
     else
       if(strncasecmp($2,"MetaData",8)==0 ||
-	 strncasecmp($2,"AdditionalParameters",8)==0){
-	if(strncasecmp($2,"AdditionalParameters",8)==0){
-	  previous_data=current_data;
-	  current_data=4;
-	  if(current_element!=NULL){
+        strncasecmp($2,"AdditionalParameters",8)==0){
+        if(strncasecmp($2,"AdditionalParameters",8)==0){
+          previous_data=current_data;
+          current_data=4;
+          if(current_element!=NULL){
 #ifdef DEBUG_SERVICE_CONF
-	    fprintf(stderr,"add current_content to current_element->content\n");
-	    fprintf(stderr,"LINE %d",__LINE__);
+            fprintf(stderr,"add current_content to current_element->content\n");
+            fprintf(stderr,"LINE %d",__LINE__);
 #endif
-	    if(wait_mainmetadata)
-	      addMapToMap(&my_service->metadata,current_content);
-	    else
-	      if(wait_metadata)
-		addMapToMap(&current_element->metadata,current_content);
-	      else
-		addMapToMap(&current_element->content,current_content);		
-	    freeMap(&current_content);
-	    free(current_content);
-	    if(previous_data==1 || previous_data==2)
-	      wait_ap=true;
-	    else
-	      wait_mainap=true;
-	  }
-	  else{
-	    if(previous_data==1 || previous_data==2)
-	      wait_ap=true;
-	    else
-	      wait_mainap=true;
-	  }
-	}else{
-	  previous_data=current_data;
-	  current_data=3;
-	  if(current_element!=NULL){
+            if(wait_mainmetadata)
+              addMapToMap(&my_service->metadata,current_content);
+            else
+              if(wait_metadata)
+          addMapToMap(&current_element->metadata,current_content);
+              else
+          addMapToMap(&current_element->content,current_content);		
+            freeMap(&current_content);
+            free(current_content);
+            if(previous_data==1 || previous_data==2)
+              wait_ap=true;
+            else
+              wait_mainap=true;
+          }
+          else{
+            if(previous_data==1 || previous_data==2)
+              wait_ap=true;
+            else
+              wait_mainap=true;
+          }
+        }else{
+          previous_data=current_data;
+          current_data=3;
+          if(current_element!=NULL){
 #ifdef DEBUG_SERVICE_CONF
-	    fprintf(stderr,"add current_content to current_element->content\n");
-	    fprintf(stderr,"LINE %d",__LINE__);
+            fprintf(stderr,"add current_content to current_element->content\n");
+            fprintf(stderr,"LINE %d",__LINE__);
 #endif
-	    addMapToMap(&current_element->content,current_content);
-	    freeMap(&current_content);
-	    free(current_content);
-	    if(previous_data==1 || previous_data==2)
-	      wait_metadata=true;
-	    else
-	      wait_mainmetadata=true;
-	  }
-	  else{
-	    if(previous_data==1 || previous_data==2)
-	      wait_metadata=true;
-	    else
-	      wait_mainmetadata=true;
-	  }
-	}
-	current_content=NULL;
+            addMapToMap(&current_element->content,current_content);
+            freeMap(&current_content);
+            free(current_content);
+            if(previous_data==1 || previous_data==2)
+              wait_metadata=true;
+            else
+              wait_mainmetadata=true;
+          }
+          else{
+            if(previous_data==1 || previous_data==2)
+              wait_metadata=true;
+            else
+              wait_mainmetadata=true;
+          }
+        }
+        current_content=NULL;
       }
       else
-	if(strncasecmp($2,"ComplexData",11)==0 || strncasecmp($2,"LiteralData",10)==0
-	   || strncasecmp($2,"ComplexOutput",13)==0 || strncasecmp($2,"LiteralOutput",12)==0
-	   || strncasecmp($2,"BoundingBoxOutput",13)==0 || strncasecmp($2,"BoundingBoxData",12)==0){
-	  current_data=4;
-	  addMapToMap(&current_element->content,current_content);
-	  freeMap(&current_content);
-	  free(current_content);
-	  current_element->next=NULL;
-	  if($2!=NULL)
-	    current_element->format=zStrdup($2);
-	  current_element->defaults=NULL;
-	  current_element->supported=NULL;
-	  current_element->child=NULL;
-	  current_content=NULL;
-	}
-	else
-	  if(strncasecmp($2,"Default",7)==0){
-	    wait_defaults=true;
-	    current_data=5;
-	  }
-	  else
-	    if(strncasecmp($2,"Supported",9)==0){
-	      wait_supporteds=true;
-	      if(wait_defaults==true){
-		defaultsc++;
-	      }
-	      current_data=5;
-	    }
+        if(strncasecmp($2,"ComplexData",11)==0 || strncasecmp($2,"LiteralData",10)==0
+          || strncasecmp($2,"ComplexOutput",13)==0 || strncasecmp($2,"LiteralOutput",12)==0
+          || strncasecmp($2,"BoundingBoxOutput",13)==0 || strncasecmp($2,"BoundingBoxData",12)==0){
+          current_data=4;
+          addMapToMap(&current_element->content,current_content);
+          freeMap(&current_content);
+          free(current_content);
+          current_element->next=NULL;
+          if($2!=NULL)
+            current_element->format=zStrdup($2);
+          current_element->defaults=NULL;
+          current_element->supported=NULL;
+          current_element->child=NULL;
+          current_content=NULL;
+        }
+        else
+          if(strncasecmp($2,"Default",7)==0){
+            wait_defaults=true;
+            current_data=5;
+          }
+          else
+            if(strncasecmp($2,"Supported",9)==0){
+              wait_supporteds=true;
+              if(wait_defaults==true){
+                defaultsc++;
+              }
+              current_data=5;
+            }
 #ifdef DEBUG_SERVICE_CONF
   fprintf(stderr,"* Identifiant : %s\n",$2);
   fflush(stderr);
@@ -684,9 +684,11 @@ processid
 	      cursor=cursor->next;
 	    if(nested_level>1){
 	      for(int j=0;j<nested_level-1;j++){
-		cursor=cursor->child;
-		while(cursor->next!=NULL)
-		  cursor=cursor->next;
+          if(cursor!=NULL && cursor->child!=NULL){
+            cursor=cursor->child;
+            while(cursor->next!=NULL)
+              cursor=cursor->next;
+          }
 	      }
 	    }
 	    if(cursor->child==NULL){
@@ -706,10 +708,12 @@ processid
 	      cursor=cursor->next;
 	    if(nested_level>1){
 	      for(int j=0;j<nested_level-1;j++){
-		cursor=cursor->child;
-		while(cursor->next!=NULL)
-		  cursor=cursor->next;
-	      }
+          if(cursor!=NULL && cursor->child!=NULL){
+            cursor=cursor->child;
+            while(cursor->next!=NULL)
+              cursor=cursor->next;
+  	      }
+        }
 	    }
 	    addMapToMap(&cursor->content,current_content);
 	    freeMap(&current_content);
@@ -800,87 +804,91 @@ processid
 
 	  current_content=NULL;
 	}
-	else
-	  if(current_element!=NULL && current_element->name!=NULL){
-	    if(my_service->outputs==NULL)
-	      my_service->outputs=dupElements(current_element);
-	    else{
-	      if(wait_nested){
-		elements* cursor=my_service->outputs;
-		while(cursor->next!=NULL)
-		  cursor=cursor->next;
-		if(nested_level>1){
-		  for(int j=0;j<nested_level-1;j++){
-		    cursor=cursor->child;
-		    while(cursor->next!=NULL)
-		      cursor=cursor->next;
-		  }
-		}
-		if(cursor->child==NULL){
-		  cursor->child=dupElements(current_element);
-		}else
-		  addToElements(&cursor->child,current_element);
-	      }else
-		addToElements(&my_service->outputs,current_element);
-	    }
+  else
+    if(current_element!=NULL && current_element->name!=NULL){
+      if(my_service->outputs==NULL)
+        my_service->outputs=dupElements(current_element);
+      else{
+        if(wait_nested){
+          elements* cursor=my_service->outputs;
+          while(cursor->next!=NULL)
+            cursor=cursor->next;
+          if(nested_level>1){
+            for(int j=0;j<nested_level-1;j++){
+              if(cursor!=NULL && cursor->child!=NULL){
+                cursor=cursor->child;
+                while(cursor->next!=NULL)
+                  cursor=cursor->next;
+              }
+            }
+          }
+          if(cursor->child==NULL){
+            cursor->child=dupElements(current_element);
+          }else
+            addToElements(&cursor->child,current_element);
+        }else
+          addToElements(&my_service->outputs,current_element);
+      }
 	    if(current_element->format==NULL){
 	      wait_nested=true;
 	      nested_level+=1;
 	      if(current_content!=NULL){
-		elements* cursor=my_service->outputs;
-		while(cursor->next!=NULL)
-		  cursor=cursor->next;
-		if(nested_level>1){
-		  for(int j=0;j<nested_level-1;j++){
-		    cursor=cursor->child;
-		    while(cursor->next!=NULL)
-		      cursor=cursor->next;
-		  }
-		}
-		addMapToMap(&cursor->content,current_content);
-		freeMap(&current_content);
-		free(current_content);
-		current_content=NULL;
+          elements* cursor=my_service->outputs;
+          while(cursor->next!=NULL)
+            cursor=cursor->next;
+          if(nested_level>1){
+            for(int j=0;j<nested_level-1;j++){
+              if(cursor!=NULL && cursor->child!=NULL){
+                cursor=cursor->child;
+                while(cursor->next!=NULL)
+                  cursor=cursor->next;
+              }
+            }
+          }
+          addMapToMap(&cursor->content,current_content);
+          freeMap(&current_content);
+          free(current_content);
+          current_content=NULL;
 	      }
 	    }
 
 #ifdef DEBUG_SERVICE_CONF
-	    fprintf(stderr,"ADD TO OUTPUTS Elements\n");
-	    dupElements(current_element);
+      fprintf(stderr,"ADD TO OUTPUTS Elements\n");
+      dupElements(current_element);
 #endif
-	    freeElements(&current_element);
-	    free(current_element);
-	    current_element=NULL;
-	    
-	    char *cen=zStrdup($1);
-	    cen[strlen(cen)-1]=0;
-	    cen+=1;
-	    current_element=createElements(cen);
-	    cen-=1;
-	    free(cen);
-	  }
-	  else{
-#ifdef DEBUG_SERVICE_CONF
-	    fprintf(stderr,"NAME OUT %s\n",$1);
-	    fprintf(stderr,"(DATAOUTPUTS - %d) SET NAME OF current_element %s\n",__LINE__,$1);
-#endif
-	    if($1!=NULL){ 
-	      char *cen=zStrdup($1);
-	      cen[strlen(cen)-1]=0;
-#ifdef DEBUG
-	      fprintf(stderr,"tmp %s\n",cen);
-#endif
-	      cen+=1;
-	      setElementsName(&current_element,cen);
-	      cen-=1;
-	      free(cen);
-	    }
-	  }
-	wait_inputs=false;
-	wait_outputs=1;
-	//wait_outputs=true;
+      freeElements(&current_element);
+      free(current_element);
+      current_element=NULL;
+      
+      char *cen=zStrdup($1);
+      cen[strlen(cen)-1]=0;
+      cen+=1;
+      current_element=createElements(cen);
+      cen-=1;
+      free(cen);
+    }
+    else{
+  #ifdef DEBUG_SERVICE_CONF
+      fprintf(stderr,"NAME OUT %s\n",$1);
+      fprintf(stderr,"(DATAOUTPUTS - %d) SET NAME OF current_element %s\n",__LINE__,$1);
+  #endif
+      if($1!=NULL){ 
+        char *cen=zStrdup($1);
+        cen[strlen(cen)-1]=0;
+  #ifdef DEBUG
+        fprintf(stderr,"tmp %s\n",cen);
+  #endif
+        cen+=1;
+        setElementsName(&current_element,cen);
+        cen-=1;
+        free(cen);
       }
-  }
+    }
+    wait_inputs=false;
+    wait_outputs=1;
+    //wait_outputs=true;
+      }
+    }
  }
  ;
 
@@ -891,8 +899,7 @@ processid
  * 
  * @param s the error message
  */
-void srerror(const char *s)
-{
+void srerror(const char *s){
   if(debug)
     fprintf(stderr,"\nligne %d : %s\n",srlineno,s);
 }

@@ -129,11 +129,143 @@ void printHeaders(maps** ppmsConf){
       }
     }
     printSessionHeaders(ppmsConf);
+    printAssociatedLinks(ppmsConf);
     map* pmTmp=getMapFromMaps(pmsConf,"headers","status");
     if(pmTmp!=NULL){
       printf("Status: %s\r\n\r\n",pmTmp->value);
     }
     setMapInMaps(pmsConf,"lenv","no-headers","true");
+  }
+}
+
+
+/**
+ * Print link information.
+ *
+ * @param pccUrl the URL of the link
+ * @param pccRel the rel attribute
+ * @param pccTitle the title attribute
+ * @param pccType the type attribute
+ * @param pccFormat the format attribute
+ */
+void printLinkInfo(const char* pccUrl,const char* pccRel,const char* pccTitle,const char* pccType,const char* pccFormat){
+  if (pccUrl != NULL) {
+    printf("<%s>", pccUrl);
+    if (pccRel != NULL) {
+        printf("; rel=\"%s\"", pccRel);
+    }
+    if (pccType != NULL) {
+        printf("; type=\"%s\"", pccType);
+    }
+    if (pccFormat != NULL) {
+        printf("; format=\"%s\"", pccFormat);
+    }
+    if (pccTitle != NULL) {
+        printf("; title=\"%s\"", pccTitle);
+    }
+  }
+}
+
+/**
+ * Prepare the Links header based on the profile of the endpoint.
+ *
+ * @param pmsaConfig the main configuration map
+ * @param pccEndPoint the endpoint to check
+ */
+void prepareLinksHeader(maps* pmsConfig, const char* pccEndPoint){
+  maps* pmsProfiles=getMaps(pmsConfig,"processes_profiles");
+  if(pmsProfiles!=NULL){
+    map* pmLength=getMap(pmsProfiles->content,"length");
+    int iLength=1;
+    if(pmLength!=NULL)
+      iLength=atoi(pmLength->value);
+    int iCnt=0;
+    for(;iCnt<iLength;iCnt++){
+      map* pmLink=getMapArray(pmsProfiles->content,"url",iCnt);
+      if(pmLink!=NULL && strcasecmp(pmLink->value,pccEndPoint)==0){
+        setMapInMaps(pmsConfig,"headers_links","length","1");
+        setMapInMaps(pmsConfig,"headers_links","rel","profile");
+        map* pmProfile=getMapArray(pmsProfiles->content,"profile",iCnt);
+        if(pmProfile!=NULL){
+          setMapInMaps(pmsConfig,"headers_links","url",pmProfile->value);
+        }
+        break;
+      }
+    }
+  }
+}
+
+/**
+  * Produce the Links header based on the links stored in the
+  * headers_links section of the main configuration.
+  *
+  * @param ppmsConf the main configuration map
+  * @return void
+ */
+void printAssociatedLinks(maps** ppmsConf){
+  maps* pmsConf=*ppmsConf;
+  map* pmResponse=getMapFromMaps(pmsConf,"lenv","json_response_object");
+  if(pmResponse!=NULL){
+    json_object* jobj=parseJson(pmsConf,pmResponse->value);
+    map* pmLinksHeader=getMapFromMaps(pmsConf,"openapi","include_links_header");
+    printf("Content-Length: %lu\r\n",strlen(pmResponse->value)+1);
+    if(jobj!=NULL && pmLinksHeader!=NULL && strncasecmp(pmLinksHeader->value,"true",4)==0){
+      json_object* jlinks=json_object_object_get(jobj,"links");
+      if(jlinks!=NULL && json_object_get_type(jlinks)==json_type_array){
+        printf("Link: ");
+        int iLength=json_object_array_length(jlinks);
+        for(int i=0;i<iLength;i++){
+          if(i>0)
+            printf(", ");
+          json_object* jlink=json_object_array_get_idx(jlinks,i);
+          if(json_object_get_type(jlink)==json_type_object){
+            json_object* pjoUrl=json_object_object_get(jlink,"href");
+            json_object* pjoRel=json_object_object_get(jlink,"rel");
+            json_object* pjoType=json_object_object_get(jlink,"type");
+            json_object* pjoFormat=json_object_object_get(jlink,"format");
+            json_object* pjoTitle=json_object_object_get(jlink,"title");
+
+            printLinkInfo(
+              pjoUrl != NULL ? json_object_get_string(pjoUrl) : NULL,
+              pjoRel != NULL ? json_object_get_string(pjoRel) : NULL,
+              pjoTitle != NULL ? json_object_get_string(pjoTitle) : NULL,
+              pjoType != NULL ? json_object_get_string(pjoType) : NULL,
+              pjoFormat != NULL ? json_object_get_string(pjoFormat) : NULL
+            );
+
+          }
+        }
+        printf("\r\n");
+      }
+      json_object_put(jobj);
+    }
+  }
+  maps* pmsLinks=getMaps(pmsConf,"headers_links");
+  if(pmsLinks!=NULL){
+    map* pmTmp=getMap(pmsLinks->content,"length");
+    int iLength=1;
+    if(pmTmp!=NULL)
+      iLength=atoi(pmTmp->value);
+    printf("Link: ");
+    for(int i=0;i<iLength;i++){
+      map* pmUrl=getMapArray(pmsLinks->content,"url",i);
+      map* pmRel=getMapArray(pmsLinks->content,"rel",i);
+      map* pmType=getMapArray(pmsLinks->content,"type",i);
+      map* pmFormat=getMapArray(pmsLinks->content,"format",i);
+      map* pmTitle=getMapArray(pmsLinks->content,"title",i);
+      if(i>0)
+        printf(", ");
+
+      printLinkInfo(
+        pmUrl!=NULL ? pmUrl->value : NULL,
+        pmRel!=NULL ? pmRel->value : NULL,
+        pmTitle!=NULL ? pmTitle->value : NULL,
+        pmType!=NULL ? pmType->value : NULL,
+        pmFormat!=NULL ? pmFormat->value : NULL
+      );
+
+    }
+    printf("\r\n");
   }
 }
 
@@ -3526,4 +3658,3 @@ void printStatusInfo(maps* conf,map* statusInfo,char* req){
   zooXmlCleanupNs();
   
 }
-

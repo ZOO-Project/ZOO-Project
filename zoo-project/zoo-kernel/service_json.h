@@ -147,11 +147,13 @@ extern "C" {
   json_object* parseJson(maps*,char*);
   json_object* json_readFile(maps*,char*);
   char* getResultPath(maps*,char*);
+  char* getRealResultPath(maps*,char*);
   int json_getStatusFile(maps*);
   void produceApi(maps*,json_object*);
   void produceRoot(maps*,json_object*);
   void produceConformances(maps*,json_object*);
   void outputSingleJsonComplexRes(maps*,maps*,json_object*,json_object*,char*,long);
+  void outputSingleJsonLiteralData(maps*,maps*,json_object*,const char*,char*);
   bool jsonIsFalse(json_bool);
 #ifdef DRU_ENABLED
   void handleDRUError(maps**);

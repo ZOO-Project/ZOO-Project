@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ###############################################################################
 #  Author:   Gérald Fenoy, gerald.fenoy@geolabs.fr
-#  Copyright (c) 2020-2024, GeoLabs SARL.
+#  Copyright (c) 2020-2025, GeoLabs SARL.
 ############################################################################### 
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
@@ -60,12 +60,15 @@ def securityIn(conf,inputs,outputs):
                 conf["renv"]["HTTP_ACCEPT"]="application/cwl"
                 conf["lenv"]["require_conversion_to_json"]="true"
     if not(has_rpath):
-        rPath += "anonymous"
-        conf["lenv"]["fpm_user"] = "anonymous"
+        uname="anonymous"
+        if "globalNamespace" in conf["openapi"]:
+            uname=conf["openapi"]["globalNamespace"]
+        rPath += uname
+        conf["lenv"]["fpm_user"] = uname
         conf["lenv"]["fpm_cwd"] = rPath
-        conf["auth_env"] = {"user": "anonymous","cwd": rPath}
+        conf["auth_env"] = {"user": uname,"cwd": rPath}
         conf["main"]["tmpPath"]=rPath+"/temp"
-        conf["zooServicesNamespace"] = {"namespace": "anonymous","cwd": rPath}
+        conf["zooServicesNamespace"] = {"namespace": uname,"cwd": rPath}
     if not(os.path.isdir(rPath)):
         zoo.info(f"Creating directory {rPath}")
         os.mkdir(rPath)

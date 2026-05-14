@@ -53,6 +53,12 @@ Release versions lead to an update in documentation and standard tarballs. This 
 
 * Double check that the pages from `the ZOO-Project.org web site <http://zoo-project.org/>`_ match the current version.
 * Double check that the latest build file matches the current revisions number.
+* Update the `CITATION.cff <https://github.com/ZOO-Project/ZOO-Project/blob/main/CITATION.cff>`_ file to reflect the new release:
+
+  * Update the ``version`` field with the new version number (e.g., "1.9.1")
+  * Update the ``date-released`` field with the release date (format: YYYY-MM-DD)
+  * Review and update the ``authors`` list if there are new contributors to acknowledge
+
 * If this is a new major release create a branch and a tag.
 
 .. code::
@@ -102,6 +108,20 @@ Release versions lead to an update in documentation and standard tarballs. This 
     rm -rf ./zoo-project-$VERSION/docs
     tar -cvjf ./zoo-project-$VERSION.tar.bz2 ./zoo-project-$VERSION
     zip -r ./zoo-project-$VERSION.zip ./zoo-project-$VERSION
-    scp -P 1046 ./zoo-project-$VERSION.{zip,tar.bz2} zoo-project.org:/var/www/localhost/htdocs/dl/
+
+* Create a GitHub release using the tag created previously:
+
+  * Go to the `ZOO-Project releases page <https://github.com/ZOO-Project/ZOO-Project/releases>`_
+  * Click on "Draft a new release"
+  * Select the tag created previously (e.g., rel-1.9.1)
+  * Set the release title to "ZOO-Project X.Y.Z"
+  * Include the release notes as the description
+  * Upload the archives (``zoo-project-$VERSION.tar.bz2`` and ``zoo-project-$VERSION.zip``) as release assets
+  * Publish the release
+
+  Once published, the archives will be automatically available on the GitHub release page. 
+  The publication of the release will automatically trigger the creation of a DOI in Zenodo, 
+  which will be associated with this specific version of the ZOO-Project. The DOI will be 
+  visible on the Zenodo page and should be updated in the `CITATION.cff <https://github.com/ZOO-Project/ZOO-Project/blob/main/CITATION.cff>`_ file for future releases.
 
 * Update the `Downloads page <https://zoo-project.org/resources/download/>`_ to add the latest release (by editing `this file <https://github.com/ZOO-Project/website/blob/main/themes/zoo-project/layouts/resources/download.html>`_).

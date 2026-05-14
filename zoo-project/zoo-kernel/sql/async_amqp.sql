@@ -33,6 +33,12 @@
 -- CREATE SCHEMA processdb;
 -- SET search_path TO processdb;
 --------------------------------------------------------------------------------
+CREATE TABLE servers (
+       id serial primary key,
+       host varchar(17) UNIQUE,
+       nb int
+);
+
 CREATE TABLE workers (
        id serial primary key,
        uuid text,
@@ -42,6 +48,25 @@ CREATE TABLE workers (
        creation_time timestamp with time zone default now(),
        UNIQUE(uuid)
 );
+
+
+CREATE OR REPLACE FUNCTION registerServer(schema text,host text, nb int) RETURNS boolean AS 
+$BODY$
+DECLARE
+	res int;
+        cnt int;
+BEGIN
+        EXECUTE 'SELECT count(*) from '||schema||'.servers where host = '''||host||'''' INTO cnt;
+	IF cnt = 0  THEN
+	   EXECUTE 'INSERT INTO '||schema||'.servers (host,nb) VALUES ('''||host||''','||nb||')';
+	   RETURN true;
+	ELSE
+	   RETURN false;
+	END IF;
+END;
+$BODY$
+LANGUAGE 'plpgsql' COST 100.0 SECURITY INVOKER;
+
 
 
 CREATE OR REPLACE FUNCTION checkAvailableExecutionSlot(schema text,uuid text, host text, pid int) RETURNS boolean AS 
@@ -60,3 +85,4 @@ BEGIN
 END;
 $BODY$
 LANGUAGE 'plpgsql' COST 100.0 SECURITY INVOKER;
+

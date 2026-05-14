@@ -45,6 +45,10 @@ class UndeployService(Services):
     def __init__(self, conf, inputs, outputs):
         super().__init__(conf,inputs,outputs)
         self.service_identifier = self.get_process_identifier()
+        self.add_filter_out_options()
+
+    def add_filter_out_options(self):
+        self.conf["lenv"]["operation"]="undeploy"
 
     def remove_service(self):
 

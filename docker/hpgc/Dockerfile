@@ -33,10 +33,11 @@ ARG MINICONDA=Miniconda3-latest-Linux-x86_64.sh
 ARG PY_VER=3.10
 # Miniconda
 RUN wget -nv \
-    https://repo.anaconda.com/miniconda/$MINICONDA \
+    https://repo.anaconda.com/miniconda/$MINICONDA --no-check-certificate \
     && bash $MINICONDA -b -p /usr/miniconda3 \
     && rm -f $MINICONDA
 ENV PATH="/usr/miniconda3/envs/ades-dev/bin:/usr/miniconda3/bin:${PATH}"
+ENV CONDA_PLUGINS_AUTO_ACCEPT_TOS=true
 COPY docker/hpgc/ades-dev_env.yaml /tmp/ades-dev_env.yaml
 RUN conda install mamba -n base -c conda-forge && \
     mamba env create --file /tmp/ades-dev_env.yaml &&\

@@ -3,31 +3,30 @@
 Contribute to the Website
 ===================================
 
-This guide provides step-by-step instructions for contributing to the ZOO-Project website using the Hugo static site generator.
+This guide provides step-by-step instructions on how to run the ZOO-Project using the Hugo framework, including installation and implementation within the Hugo project structure.
+`Hugo <https://gohugo.io>`_ is a fast and flexible static site generator written in Go, designed to build websites quickly and efficiently.
 
-Repository Location
--------------------
-
-The source code for the website is hosted on GitHub:
-
-`https://github.com/ZOO-Project/website <https://github.com/ZOO-Project/website>`_
-
-If you're new to the project, this is where all the website content is managed. You will need to clone this repository and set it up locally before making any changes.
-
-Cloning the Repository
+Clone the Repository
 ----------------------
 
-To get started, clone the official repository and navigate into the project folder:
+Execute the following commands in the terminal:
 
 .. code:: bash
 
    git clone https://github.com/ZOO-Project/website.git
    cd website
 
+.. note::
+
+   Changes made to the "Examples" page in the ZOO-Project/website repository  
+   (`https://github.com/ZOO-Project/website <https://github.com/ZOO-Project/website>`_)  
+   must also be reflected in the examples repository  
+   (`https://github.com/ZOO-Project/examples <https://github.com/ZOO-Project/examples>`_)  
+   to ensure consistency between both sources.
+
+
 Installing Hugo
 ---------------
-
-The website uses Hugo, a fast static site generator written in Go. You must install Hugo on your system.
 
 Install Hugo by following instructions here: https://gohugo.io/getting-started/installing/
 
@@ -37,22 +36,19 @@ To check if Hugo was installed successfully, run:
 
    hugo version
 
+
 Running the Website Locally
 ---------------------------
-
-To preview the website locally before committing changes:
 
 .. code:: bash
 
    hugo server
 
-Then open your browser at `http://localhost:8080/` to see the live site.
+Visit `http://localhost:8080/` to preview the site.
 
 
 Creating a New Page
 -------------------
-
-To create a new page in the documentation:
 
 1. Navigate to the `content` directory of the Hugo project.
 2. Identify the appropriate section where the new page should be added.
@@ -62,51 +58,30 @@ To create a new page in the documentation:
 
       hugo new docs/new-page.md
 
-4. Open the newly created file in a text editor and add relevant content following Hugo's Markdown syntax.
-5. Ensure the front matter (YAML, TOML, or JSON format) contains necessary metadata, e.g.:
+4. Edit the file and include front matter like:
 
    .. code:: yaml
 
       ---
-      title: "New Page Title"
-      date: 2025-03-11
-      description: "A brief description of the new page."
-      draft: false
+      title = "New Page Title"
+      date = 2025-03-11
+      description = "A brief description of the new page."
+      draft = false
       ---
 
-6. Save the file and preview changes using:
+5. Preview with:
 
    .. code:: bash
 
       hugo server --buildDrafts
 
-Updating an Existing Page
--------------------------
-
-To modify an existing page:
-
-1. Locate the page inside the `content` directory.
-2. Open the file and make necessary changes.
-3. Save the file and verify the updates using:
-
-   .. code:: bash
-
-      hugo server
-
-4. When you're satisfied, commit and push your changes:
-
-   .. code:: bash
-
-      git add content/docs/updated-page.md
-      git commit -m "Updated documentation"
-      git push origin main
 
 Adding Navigation Links
 -----------------------
 
 To include the new page in the navigation menu:
 
-1. Edit the `config.toml` (or `config.yaml`/`config.json`) file.
+1. Edit the `config.toml` (or `hugo.toml`) file.
 2. Add a reference under `[menu]`:
 
    .. code:: toml
@@ -117,9 +92,36 @@ To include the new page in the navigation menu:
       url = "/docs/new-page/"
       weight = 10
 
-3. Save the file and test the navigation link locally using:
+
+Steps to Use Custom Layouts
+------------------------
+
+1. Create a layout file (e.g., new-page.html) in themes/<your-theme>/layouts/
+2. Edit the Markdown File:
+
+   - In your .md file (e.g., new-page.md), specify the custom layout in the front matter
+
+   .. code:: yaml
+
+      ---
+      title = "My Custom Page"
+      layout = "new-page"
+      ---
+
+Add Custom CSS/JS
+-----------------
+
+1. Add files in themes/<your-theme>/static/
+2. Reference them in:
+
+   - `themes/<theme_name>/layouts/partials/head.html`
+   - `themes/<theme_name>/layouts/_default/baseof.html`
+
+3. Save the changes and test them with:
 
    .. code:: bash
 
+      hugo --minify
       hugo server
+
 

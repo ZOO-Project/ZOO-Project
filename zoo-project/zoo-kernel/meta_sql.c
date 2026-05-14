@@ -37,6 +37,9 @@
 #include "meta_sql.h"
 #include "sqlapi.h"
 #include "response_print.h"
+#ifdef USE_JSON
+#include "service_json.h"
+#endif
 #ifdef USE_HPC
 #include "service_internal_hpc.h"
 #endif
@@ -77,7 +80,7 @@
 #define META_SERVICES_AP_FROM_AP_LENGTH strlen(META_SERVICES_AP_FROM_AP)
 
 #define META_SERVICES_LIST_INPUTS_FROM_PROCESS				\
-  "select id, identifier,title,abstract,min_occurs,max_occurs " \
+  "select id, identifier,title,abstract,min_occurs,max_occurs,raw_schema " \
   "from CollectionDB.ows_Input " \
   "where id in (SELECT input_id from CollectionDB.ProcessInputAssignment where process_id=%s) order by id"
 #define META_SERVICES_LIST_INPUTS_FROM_PROCESS_LENGTH strlen(META_SERVICES_LIST_INPUTS_FROM_PROCESS)
@@ -89,7 +92,7 @@
 #define META_SERVICES_LIST_INPUTS_FROM_INPUT_LENGTH strlen(META_SERVICES_LIST_INPUTS_FROM_INPUT)
 
 #define META_SERVICES_LIST_OUTPUTS_FROM_PROCESS \
-  "select id, identifier,title,abstract " \
+  "select id, identifier,title,abstract,raw_schema " \
   "from CollectionDB.ows_Output "\
   "where id in (SELECT output_id from CollectionDB.ProcessOutputAssignment where process_id=%s) order by id"
 #define META_SERVICES_LIST_OUTPUTS_FROM_PROCESS_LENGTH strlen(META_SERVICES_LIST_OUTPUTS_FROM_PROCESS)
@@ -346,18 +349,18 @@ int fillKeywords(int iDbId,maps* conf,map** pmContent,const char* dref){
  * Try to fill the default/supported map for the LiteralData with the data
  * extracted from metadb.
  *
- * @param conf the main configuration maps
+ * @param pmsConf the main configuration maps
  * @param in the element to fill default/supported
  * @param input the OGRFeature corresponding to the input/output
  * @param ltype the element type ("Input" or "Output")
  * @return the number of default/supported definition found
  */
-int fillLiteralData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const char* ltype){
+int fillLiteralData(int iDbId,maps* pmsConf,elements* in,OGRFeature  *input,const char* ltype){
   int res=0;
   char* ioQuery=(char*)malloc((META_SERVICES_LIST_LITERAL_FROM_IO_LENGTH+(strlen(ltype)*2)+strlen(input->GetFieldAsString( 0 ))+1)*sizeof(char));
   sprintf(ioQuery,META_SERVICES_LIST_LITERAL_FROM_IO,ltype,ltype,input->GetFieldAsString( 0 ));
   OGRFeature  *io = NULL;
-  OGRLayer *ios=fetchSql(conf,iDbId-1,ioQuery);
+  OGRLayer *ios=fetchSql(pmsConf,iDbId-1,ioQuery);
   free(ioQuery);
   int ioCnt=0;
   const char* fields[5]={"dataType","value","uom","AllowedValues",NULL};
@@ -367,20 +370,34 @@ int fillLiteralData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const c
       in->defaults=getIoType(io,fields);
     }else{
       if(in->supported==NULL)
-	in->supported=getIoType(io,fields);
+        in->supported=getIoType(io,fields);
       else{
-	iotype* p=in->supported;
-	while(p->next!=NULL){
-	  p=p->next;
-	}
-	p->next=getIoType(io,fields);
+        iotype* p=in->supported;
+        while(p->next!=NULL){
+          p=p->next;
+        }
+        p->next=getIoType(io,fields);
       }
     }
     in->format=strdup("LiteralData");
     res++;
     OGRFeature::DestroyFeature( io );
   }
-  cleanFetchSql(conf,iDbId-1,ios);
+#ifdef USE_JSON
+  char* pcaJson=zStrdup(input->GetFieldAsString( 6 ));
+  if(strlen(pcaJson)>0){
+    json_object* pjoFields = parseJson(pmsConf,pcaJson);
+    free(pcaJson);
+    if(pjoFields!=NULL){
+      json_object* pjoFormat=NULL;
+      if(json_object_object_get_ex(pjoFields,"format",&pjoFormat)!=FALSE){
+        if(in->defaults!=NULL)
+          addToMap(in->defaults->content,"format",json_object_get_string(pjoFormat));
+      }
+    }
+  }
+#endif
+  cleanFetchSql(pmsConf,iDbId-1,ios);
   return res;
 }
 
@@ -396,8 +413,9 @@ int fillLiteralData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const c
  */
 int fillComplexData(int iDbId,maps* conf,elements* in,OGRFeature  *input,const char* ltype){
   int res=0;
-  char* ioQuery=(char*)malloc((META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH+(strlen(ltype)*3)+(strlen(input->GetFieldAsString( 0 ))*2)+1)*sizeof(char));
-  sprintf(ioQuery,META_SERVICES_LIST_FORMATS_FROM_IO,ltype,ltype,input->GetFieldAsString( 0 ),ltype,ltype,input->GetFieldAsString( 0 ));
+  const char* pccField0 = input->GetFieldAsString( 0 );
+  char* ioQuery=(char*)malloc((META_SERVICES_LIST_FORMATS_FROM_IO_LENGTH+(strlen(ltype)*4)+(strlen(pccField0)*2)+1)*sizeof(char));
+  sprintf(ioQuery,META_SERVICES_LIST_FORMATS_FROM_IO,ltype,ltype,pccField0,ltype,ltype,pccField0);
   OGRFeature  *io = NULL;
   OGRLayer *ios=fetchSql(conf,iDbId-1,ioQuery);
   free(ioQuery);
@@ -465,6 +483,7 @@ elements* extractInput(int iDbId,maps* conf,OGRFeature *input){
   addToMap(res->content,"abstract",input->GetFieldAsString( 3 ));
   addToMap(res->content,"minOccurs",input->GetFieldAsString( 4 ));
   addToMap(res->content,"maxOccurs",input->GetFieldAsString( 5 ));
+  addToMap(res->content,"raw_schema",input->GetFieldAsString( 6 ));
   // Extract metadata
   fillMetadata(iDbId,conf,&res->metadata,input->GetFieldAsString( 0 ));
   res->additional_parameters=NULL;
@@ -510,6 +529,7 @@ elements* extractOutput(int iDbId,maps* conf,OGRFeature *output){
   elements* res=createElements(output->GetFieldAsString( 1 ));
   res->content=createMap("title",output->GetFieldAsString( 2 ));
   addToMap(res->content,"abstract",output->GetFieldAsString( 3 ));
+  addToMap(res->content,"raw_schema",output->GetFieldAsString( 4 ));
   fillMetadata(iDbId,conf,&res->metadata,output->GetFieldAsString( 0 ));
   fillAdditionalParameters(iDbId,conf,&res->additional_parameters,output->GetFieldAsString( 0 ));
   int ioCnt=fillLiteralData(iDbId,conf,res,output,"Output");

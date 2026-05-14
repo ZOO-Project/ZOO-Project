@@ -9,33 +9,33 @@ Prerequisites
 -------------
 
 Using Debian
-......................
+.............
 
 The following command should install all the required dependancies on Debian. See the :ref:`install-prereq` section for additional information.
 
-.. code-block:: guess
+.. code-block:: bash
 
-   apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion python-dev libgdal1-dev build-essential libmozjs185-dev libxslt1-dev
+   sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion python-dev libgdal1-dev build-essential libmozjs185-dev libxslt1-dev
 
 Using Ubuntu
-......................
+.............
 
 On Ubuntu, use the following command first to install the required dependancies :
 
-.. code-block:: guess
+.. code-block:: bash
 
    sudo apt-get install flex bison libfcgi-dev libxml2 libxml2-dev curl openssl autoconf apache2 python-software-properties subversion libmozjs185-dev python-dev build-essential libxslt1-dev
 
-Then add the *UbuntuGIS* repository in order to get the latest versions of libraries
+Then add the *UbuntuGIS* repository to get the latest versions of geographic libraries:
 
-.. code-block:: guess
+.. code-block:: bash
 
    sudo add-apt-repository ppa:ubuntugis/ppa
    sudo apt-get update
 
-Install the geographic library as follow:
+Install the GDAL library:
 
-.. code-block:: guess
+.. code-block:: bash
 
    sudo apt-get install libgdal1-dev
 
@@ -43,102 +43,114 @@ Install the geographic library as follow:
 Installation
 ------------
 
-:ref:`install-download` ZOO-Project latest version from git using the following command:
+:ref:`install-download` Download the latest version of ZOO-Project from Git:
 
-.. code-block:: guess
+.. code-block:: bash
 
   git clone https://github.com/ZOO-Project/ZOO-Project.git zoo-project
 
-Install the *cgic* library from packages using the following command:
+Build and install the `cgic` library:
 
-.. code-block:: guess
+.. code-block:: bash
 
   cd zoo-project/thirds/cgic206/
   make
 
-Head to the :ref:`kernel_index` directory
+Navigate to the ZOO-Kernel :ref:`kernel_index` directory:
 
-.. code-block:: guess
+.. code-block:: bash
 
   cd ../../zoo-project/zoo-kernel/
 
-Create a configure file as follow:
+Generate the configure script:
 
-.. code-block:: guess
+.. code-block:: bash
 
   autoconf
 
-Run configure with the desired options, for example with the following command:
+Run the configure script with the desired options:
 
-.. code-block:: guess
+.. code-block:: bash
 
   ./configure --with-js --with-python
 
 .. note::
-   Refer to the :ref:`install-installation` section for the full list of available options
+   Refer to the :ref:`install-installation` section for a complete list of available options
 
-Compile ZOO-Kernel as follow:
+Compile ZOO-Kernel:
 
-.. code-block:: guess
+.. code-block:: bash
 
   make
 
-Install the ``libzoo_service.so.1.5`` by using the following command:
+Install the compiled library:
 
-.. code-block:: guess
+.. code-block:: bash
 
       sudo make install
 
+Deployment
+----------
 
-Copy the necessary files to the `cgi-bin` directory (as administrator
-user):
+Copy necessary files to the `cgi-bin` directory (requires administrative privileges):
 
-.. code-block:: guess
+.. code-block:: bash
 
-  cp main.cfg /usr/lib/cgi-bin
-  cp zoo_loader.cgi /usr/lib/cgi-bin
+  sudo cp main.cfg /usr/lib/cgi-bin
+  sudo cp zoo_loader.cgi /usr/lib/cgi-bin
 
-Install ZOO ServiceProviders, for example the basic Python service (as administrator user)
+Install example ZOO ServiceProviders (basic Python services):
 
-.. code-block:: guess
+.. code-block:: bash
 
-  cp ../zoo-services/hello-py/cgi-env/*.zcfg /usr/lib/cgi-bin
-  cp ../zoo-services/hello-py/cgi-env/*.py /usr/lib/cgi-bin/
+  sudo cp ../zoo-services/hello-py/cgi-env/*.zcfg /usr/lib/cgi-bin
+  sudo cp ../zoo-services/hello-py/cgi-env/*.py /usr/lib/cgi-bin/
 
-Edit the *main.cfg* file as follow (example configuration):
+Edit the `main.cfg` file for configuration:
 
-.. code-block:: guess
+.. code-block:: bash
 
-  nano /usr/lib/cgi-bin/main.cfg
-  - serverAddress = http://127.0.0.1
+  sudo nano /usr/lib/cgi-bin/main.cfg
 
+Example modification:
 
-Test the ZOO-Kernel installation with the following requests:
+::
 
-.. code-block::
+   serverAddress = http://127.0.0.1
+
+Testing
+-------
+
+Test the ZOO-Kernel installation by accessing the following URLs in your browser:
+
+**GetCapabilities**
+
+::
 
    http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=GetCapabilities&Version=1.0.0
 
-.. code-block::
+**DescribeProcess**
+
+::
 
    http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=DescribeProcess&Version=1.0.0&Identifier=HelloPy
 
-.. code-block::
+**Execute**
+
+::
 
    http://127.0.0.1/cgi-bin/zoo_loader.cgi?ServiceProvider=&metapath=&Service=WPS&Request=Execute&Version=1.0.0&Identifier=HelloPy&DataInputs=a=myname
 
 
 .. note:: 
 
-   Such request should return well formed XML documents (OWS documents responses).
+   These requests should return valid XML documents (OWS-compliant responses).
 
 .. warning:: 
 
-   The URLs provided here suppose that you have previously setup a web
-   server and defined cgi-bin as a location where you can run cgi
-   application.
+   Ensure a web server is properly configured to run CGI scripts under the `/usr/lib/cgi-bin` path.
 
 .. warning:: 
 
-   If ZOO-Kernel returns an error please check the :ref:`kernel_config` and beware of the :ref:`install-prereq`.
+  If ZOO-Kernel returns an error, review the :ref:`kernel_config` section and verify all :ref:`install-prereq` dependencies are correctly installed.
 

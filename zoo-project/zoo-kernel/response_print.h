@@ -222,6 +222,7 @@ extern "C" {
       "NotFound",
       "NoSuchProcess",
       "NoSuchJob",
+      "NoSuchOutput",
       "ResultNotReady",
       NULL
     },
@@ -234,6 +235,7 @@ extern "C" {
   void addLangAttr(xmlNodePtr,maps*);
 
   void printHeaders(maps**);
+  void printAssociatedLinks(maps**);
   void printSessionHeaders(maps**);
   int printAFile(maps**,char*,zStatStruct,void (funcError) (maps**, map*));
 
@@ -265,6 +267,8 @@ extern "C" {
   void printStatusInfo(maps*,map*,char*);
   void addAdditionalParameters(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
   void addMetadata(map*,xmlDocPtr,xmlNodePtr,xmlNsPtr,xmlNsPtr,int);
+
+  void prepareLinksHeader(maps*,const char*);
 
   char* produceFileUrl(service*,maps*,maps*,const char*, int);
   void outputResponse(service*,maps*,maps*,map*,int,maps**,int);

@@ -126,16 +126,28 @@ def securityIn(main_conf,inputs,outputs):
                             hasAuth=True
             break
     if "auth_env" in main_conf and "user" in main_conf["auth_env"]:
+        # Ensure no other SERVICES_NAMESPACE variable is set
+        for a in main_conf["auth_env"].keys():
+            if a.count("SERVICES_NAMESPACE")>0:
+                main_conf["renv"][a]=main_conf["auth_env"]["user"]
         main_conf["renv"]["SERVICES_NAMESPACE"]=main_conf["auth_env"]["user"]
+    zoo.info(f"renv. {main_conf['renv']}")
     if hasAuth or \
        ("lenv" in main_conf and "secured_url" in main_conf["lenv"] and main_conf["lenv"]["secured_url"]=="false"):
         return zoo.SERVICE_SUCCEEDED
     else:
+        status_code="401 Unauthorized"
+        message="Authentication is required to perform the requested operation on the resource."
+        for a in main_conf["renv"].keys():
+            if a.count("HTTP_AUTHORIZATION")>0:
+                status_code="403 Forbidden"
+                message="You are not authorized to perform the requested operation on the resource."
+                break
         if "headers" in main_conf:
-            main_conf["headers"]["status"]="403 Forbidden"
+            main_conf["headers"]["status"]=status_code
         else:
-            main_conf["headers"]={"status":"403 Forbidden"}
+            main_conf["headers"]={"status":status_code}
         if "lenv" in main_conf:
             main_conf["lenv"]["code"]="NotAllowed"
-            main_conf["lenv"]["message"]="Unable to ensure that you are allowed to access the resource."
+            main_conf["lenv"]["message"]=message
         return zoo.SERVICE_FAILED

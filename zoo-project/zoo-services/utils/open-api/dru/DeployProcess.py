@@ -45,6 +45,8 @@ from pathlib import Path
 from deploy_util import Process
 from collections import namedtuple
 from deploy_util import Services
+from cwl_loader import dump_cwl_with_custom_requirements, load_cwl_from_yaml
+from io import StringIO
 
 
 def get_s3_settings():
@@ -108,6 +110,13 @@ class DeployService(Services):
 
         self.conf["lenv"]["workflow_id"] = self.service_configuration.identifier
         self.conf["lenv"]["service_name"] = self.service_configuration.identifier
+        self.add_filter_out_options()
+
+    def add_filter_out_options(self):
+        if "orequest_method" in self.conf["lenv"]:
+            self.conf["lenv"]["operation"]="replace"
+        else:
+            self.conf["lenv"]["operation"]="deploy"
 
     def create_service_tmp_folder(self):
         # creating the folder where we will download the applicationPackage
@@ -254,8 +263,13 @@ class DeployService(Services):
             )
 
             zoo.info(f"Storing the CWL file in {app_package_file}")
+            # Use dump_cwl_with_custom_requirements to reinject custom requirements
+            # First load the CWL content to get the parsed process objects
+            process = load_cwl_from_yaml(self.cwl_content)
+            buffer = StringIO()
+            dump_cwl_with_custom_requirements(process=process, stream=buffer)
             with open(app_package_file, "w") as file:
-                yaml.dump(self.cwl_content, file)
+                file.write(buffer.getvalue())
 
             zoo.info(f"Moving {path} to {self.zooservices_folder}")
             shutil.move(path, self.zooservices_folder)
@@ -318,10 +332,55 @@ def storeCwl(conf, inputs, outputs):
 
 
 def DeployProcess(conf, inputs, outputs):
-
     try:
+        # If noRunSql is true, we will try to detect the entrypoint of the docker image(s)
         if "noRunSql" in conf["lenv"]:
-            zoo.info("Nothing to do here.")
+            if os.environ.get("ZOOFPM_DETECT_ENTRYPOINT","false") == "false":
+                zoo.info("Nothing to do here.")
+                return zoo.SERVICE_SUCCEEDED
+            from DetectEntrypoint import KubernetesClient
+            # Here we need to invoke the crane pod to detect potential entrypoint
+            zooservices_folder = os.path.join(
+                conf["auth_env"]["cwd"],
+                conf["lenv"]["deployedServiceId"]
+            )
+            f = open(os.path.join(zooservices_folder, "app-package.cwl"),"r")
+            cwl_content = yaml.safe_load(f.read())
+            f.close()
+            try:
+                has_updated_values = False
+                k8s_client = KubernetesClient(conf)
+                # for each class: CommandLineTool
+                for graph_item in cwl_content.get("$graph",[]):
+                    if graph_item.get("class") == "CommandLineTool":
+                        zoo.info(f"Found CommandLineTool: {graph_item.get('hints', {}).get('DockerRequirement', {}).get('dockerPull')}")
+                        image_config = k8s_client.get_image_entrypoint(graph_item.get("hints", {}).get("DockerRequirement", {}).get("dockerPull"))
+                        # Detect entry point using the remote service
+                        if image_config["config"].get("Entrypoint") is not None:
+                            has_updated_values = True
+                            zoo.info(f"Entrypoint found: {image_config['config']['Entrypoint']}")
+                            if graph_item.get("baseCommand") is not None:
+                                graph_item["baseCommand"] = graph_item.get("baseCommand").prepend(image_config['config']['Entrypoint'])
+                            else:
+                                graph_item["baseCommand"] = image_config['config']['Entrypoint']
+                        else:
+                            zoo.info("No Entrypoint found")
+                k8s_client.delete_crane_pod()
+                # Here we need to save the updated CWL graph
+                if has_updated_values:
+                    with open(os.path.join(zooservices_folder, "app-package.cwl"), "w") as f:
+                        yaml.dump(cwl_content, f)
+                        f.close()
+                    zoo.success("CWL file updated successfully.")
+                else:
+                    zoo.success("No updates were made to the CWL file.")
+            except Exception as e:
+                zoo.error(f"Failed to get the image entrypoint(s): {e}")
+                try:
+                    k8s_client.delete_crane_pod()
+                except Exception as e:
+                    zoo.error(f"Failed to delete the crane pod: {e}")
+                return zoo.SERVICE_FAILED
             return zoo.SERVICE_SUCCEEDED
 
         if (
@@ -410,8 +469,10 @@ def DeployProcess(conf, inputs, outputs):
         return zoo.SERVICE_DEPLOYED
 
     except Exception as e:
+        import traceback
         zoo.error("Failed to deploy the service")
         zoo.error(str(e))
+        zoo.error(traceback.format_exc())
         if "headers" not in conf:
             conf["headers"]={}
         conf["headers"]["status"]="400 Bad Request"

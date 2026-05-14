@@ -243,13 +243,15 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 
   PyThreadState *mainstate;
 #if PY_MAJOR_VERSION >= 3  
-  PyImport_AppendInittab("zoo", init_zoo);  
+  PyImport_AppendInittab("zoo", init_zoo);
 #else
   PyEval_InitThreads();
 #endif
   Py_Initialize();
-#if PY_MAJOR_VERSION >= 3  
+#if PY_MAJOR_VERSION >= 3
+#if PY_MINOR_VERSION < 9
   PyEval_InitThreads();
+#endif
   PyImport_ImportModule("zoo");
 #else
   init_zoo();
@@ -942,20 +944,60 @@ PythonUpdateStatus(PyObject* self, PyObject* args)
  * @return a new Python string containing the translated value
  * @see _ss
  */
+#include <Python.h>
+#if PY_VERSION_HEX < 0x030C0000  // For Python < 3.12
 #include "frameobject.h"
+#endif
+
+// This function prints a debug message along with the module, function, and line number
+// where it was called from. Only string arguments are supported.
 PyObject*
 PythonPrintDebugMessage(PyObject* self, PyObject* args)
 {
-  char *str;
-  if (!PyArg_ParseTuple(args, "s", &str)){
-    fprintf(stderr,"Incorrect arguments to debug, only strings are supported\n");
-  }
-  PyFrameObject* poFrame=PyEval_GetFrame();
-  char const* pccModule = _PyUnicode_AsString(poFrame->f_code->co_filename);
-  char const* pccFunction = _PyUnicode_AsString(poFrame->f_code->co_name);
-  int iLine=PyFrame_GetLineNumber(poFrame);
-  _ZOO_DEBUG(str,pccModule,pccFunction,iLine);
-  Py_RETURN_NONE;
+    char *str;
+
+    // Expecting a single string argument
+    if (!PyArg_ParseTuple(args, "s", &str)) {
+        fprintf(stderr, "Incorrect arguments to debug, only strings are supported\n");
+        Py_RETURN_NONE;
+    }
+
+    // Get the current Python frame using the public API
+#if PY_VERSION_HEX < 0x030C0000  // For Python < 3.12
+    PyFrameObject* poFrame = PyEval_GetFrame();
+    char const* pccModule = _PyUnicode_AsString(poFrame->f_code->co_filename);
+    char const* pccFunction = _PyUnicode_AsString(poFrame->f_code->co_name);
+    int iLine = PyFrame_GetLineNumber(poFrame);
+#else  // For Python >= 3.12
+    const char* pccModule = "unknown";
+    const char* pccFunction = "unknown";
+    int iLine = -1;
+    PyThreadState* tstate = PyThreadState_Get();
+    PyFrameObject* poFrame = tstate ? PyThreadState_GetFrame(tstate) : NULL;
+
+    if (poFrame) {
+        // Extract code object safely (don't access f_code directly)
+        PyCodeObject* code = PyFrame_GetCode(poFrame);
+        if (code) {
+            // Make sure these are Unicode objects before converting to UTF-8
+            if (code->co_filename && PyUnicode_Check(code->co_filename)) {
+                pccModule = PyUnicode_AsUTF8(code->co_filename);
+            }
+            if (code->co_name && PyUnicode_Check(code->co_name)) {
+                pccFunction = PyUnicode_AsUTF8(code->co_name);
+            }
+            Py_DECREF(code);  // Avoid memory leaks
+        }
+
+        // Get the current line number in the frame
+        iLine = PyFrame_GetLineNumber(poFrame);
+    }
+#endif
+
+    // Custom debug macro
+    _ZOO_DEBUG(str, pccModule, pccFunction, iLine);
+
+    Py_RETURN_NONE;
 }
 
 /**

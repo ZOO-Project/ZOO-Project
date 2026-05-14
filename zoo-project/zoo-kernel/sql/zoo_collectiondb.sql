@@ -178,34 +178,57 @@ create table CollectionDB.PrimitiveDataFormats (
 	id serial primary key,
 	short_name varchar(255),
 	cwl_type varchar(100),
-	namespace varchar(255)
+	namespace varchar(255),
+	schemaUrl text,
+    is_literal boolean default false
 );
+
 -- source : Open Geospatial Consortium - OGC API - Processes - Part 1: Core, v1.1 - Table 13 — Additional values for the JSON schema format key for OGC Process Description
 -- reference for namespaces can be found at https://github.com/eoap/schemas
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-feature-collection','FeatureCollection','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-feature','Feature','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-feature-collection','FeatureCollection','geojson.yaml','https://geojson.org/schema/FeatureCollection.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-feature','Feature','geojson.yaml','https://geojson.org/schema/Feature.json');
 -- We bind the geometry types of the geojson.yaml namespace to the geojson-geometry short_name (we lost the geometry type information)
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','Point','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','LineString','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','Polygon','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','MultiPoint','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','MultiLineString','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','MultiPolygon','geojson.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('geojson-geometry','GeometryCollection','geojson.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','Point','geojson.yaml','https://geojson.org/schema/Geometry.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','LineString','geojson.yaml','https://geojson.org/schema/Geometry.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','Polygon','geojson.yaml','https://geojson.org/schema/Geometry.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','MultiPoint','geojson.yaml','https://geojson.org/schema/Geometry.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','MultiLineString','geojson.yaml','https://geojson.org/schema/Geometry.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','MultiPolygon','geojson.yaml','https://geojson.org/schema/Geometry.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('geojson-geometry','GeometryCollection','geojson.yaml','https://geojson.org/schema/GeometryCollection.json');
 -- It is not clear if the following short_name should be bound to a cwl_type
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('epsg-code',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('wkt2-def',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('cql2-text',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('cql2-json',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('collection-id',NULL,NULL);
--- We bind the stac catalog, collection and item to the stac.yaml namespace with their respective cwl_type (no itemCollection correspondance found)
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-collection','Collection','stac.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-catalog','Catalog','stac.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-item-collection',NULL,'stac.yaml');
-INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('stac-item','Item','stac.yaml');
+-- We bind the stac catalog, collection and item to the stac.yaml namespace with their respective cwl_type (no itemCollection correspondence found)
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('stac-collection','Collection','stac.yaml','https://schemas.stacspec.org/v1.0.0/collection-spec/json-schema/collection.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('stac-catalog','Catalog','stac.yaml','https://schemas.stacspec.org/v1.0.0/catalog-spec/json-schema/catalog.json');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('stac-item-collection',NULL,'stac.yaml',NULL);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,schemaUrl) VALUES ('stac-item','Item','stac.yaml','https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json');
 -- ogc-feature-collection and ogc-coverage-collection are not bound to a cwl_type nor supported
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('ogc-feature-collection',NULL,NULL);
 INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('ogc-coverage-collection',NULL,NULL);
+-- Add string formats
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','Date','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','DateTime','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','Duration','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','Email','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','Hostname','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','IDNEmail','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','IDNHostname','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','IPv4','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','IPv6','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','IRI','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','IRIReference','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','JsonPointer','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','Password','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','RelativeJsonPointer','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','UUID','string_format.yaml',true);
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('string','URI','string_format.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('string','URIReference','string_format.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace) VALUES ('string','URITemplate','string_format.yaml');
+INSERT INTO CollectionDB.PrimitiveDataFormats (short_name,cwl_type,namespace,is_literal) VALUES ('string','Time','string_format.yaml',true);
 
 create table CollectionDB.ows_DataDescription (
     id serial primary key,
@@ -265,7 +288,8 @@ create table CollectionDB.ows_Input (
     abstract text,
     identifier varchar(255),
     min_occurs int,
-    max_occurs int
+    max_occurs int,
+    raw_schema json
 ); -- inherits (CollectionDB.Descriptions);
 alter table CollectionDB.ows_Input add constraint codb_input_id unique (id);
 CREATE TRIGGER ows_Input_proc AFTER INSERT ON CollectionDB.ows_Input FOR EACH ROW EXECUTE PROCEDURE update_Description();
@@ -274,7 +298,8 @@ create table CollectionDB.ows_Output (
     id int primary key default nextval('collectiondb.descriptions_id_seq'::regclass),
     title text,
     abstract text,
-    identifier varchar(255)
+    identifier varchar(255),
+    raw_schema json
 ); --inherits (CollectionDB.Descriptions);
 alter table CollectionDB.ows_Output add constraint codb_output_id unique (id);
 CREATE TRIGGER ows_Output_proc AFTER INSERT ON CollectionDB.ows_Output FOR EACH ROW EXECUTE PROCEDURE update_Description();

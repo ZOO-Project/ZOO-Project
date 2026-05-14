@@ -6,20 +6,11 @@
 What is ZOO-Kernel ?
 ====================
 
-ZOO-Kernel is the heart of the `ZOO-Project <http://zoo-project.org>`_ WPS platform. It is a WPS compliant implementation written in C language which provides a powerful and extensible WPS server. 
+**ZOO-Kernel** is the core of the `ZOO-Project <http://zoo-project.org>`_ WPS platform. It is a WPS-compliant implementation written in C, providing a robust and extensible WPS (Web Processing Service) server.
 
-ZOO-Kernel is an extensible WPS server that makes your system more
-powerful. It provides a full-featured processing engine which runs on
-Linux, Mac OSX |trade| and Windows |trade| operating
-systems. ZOO-Kernel is a CGI program which works on common web servers
-(namely `Apache <http://httpd.apache.org/>`_ or `IIS
-<http://www.iis.net/>`_ |trade|). It can be seamlessly integrated to
-new or existing web platforms.
+ZOO-Kernel enhances your system's capabilities by offering a full-featured processing engine that operates across Linux, macOS |trade|, and Windows |trade|. It functions as a CGI program compatible with standard web servers like `Apache <http://httpd.apache.org/>`_ and `IIS <http://www.iis.net/>`_ |trade|, and can be seamlessly integrated into both new and existing web platforms.
 
-ZOO-Kernel lets you process geospatial or non geospatial data using
-well formed WPS requests. The WPS server is able to manage and chain
-WPS Services (see ZOO-Services for examples) by loading dynamic
-libraries and source code written in different programming languages.  
+ZOO-Kernel allows the processing of geospatial and non-geospatial data using well-formed WPS requests. It supports chaining and execution of WPS services (see ZOO-Services for examples) using dynamic libraries and source code in various programming languages.  
 
 First class WPS server
 -----------------------
@@ -27,46 +18,34 @@ First class WPS server
 Simple
 ......
 
-The ZOO-Kernel rely on simple principles and tends to ease the
-implementation of new services by sharing similar data structures for
-every supported programming languages. The ZOO-Kernel is responsible
-to parse the requests it receives and return the corresponding WPS
-response. 
+ZOO-Kernel is based on straightforward principles and aims to simplify the creation of new services. It does this by using a unified data structure across all supported programming languages.
 
-In case of an *Execute* request, the ZOO-Kernel stores informations in
-a basic KVP data structure for the programming language used to
-implement the service, dynamically load the Service Provider defined
-in the zcfg file and run a specific function corresponding to the
-service, passing three arguments. Once the function return, ZOO-Kernel
-knows if the service run succeessfuly or failed by checking the
-returned value. In the case it succeeded, the ZOO-Kernel then parse
-the third arguments containing the result and produce the output in
-the desired format.
+ZOO-Kernel handles incoming WPS requests by parsing them and producing appropriate WPS responses. For Execute requests, it:
+  1. Stores request information in a basic key-value pair (KVP) structure.
+  2. Dynamically loads the appropriate Service Provider defined in the `.zcfg` file.
+  3. Calls the corresponding function of the service, passing **three arguments**.
+
+After the function executes, ZOO-Kernel checks the return value to determine if the service ran successfully. If successful, it parses the third argument (containing the result) and generates the response in the required format.
 
 Compliant
 .........
 
-ZOO-Kernel implements and complies with the `WPS 1.0.0
-<http://www.opengeospatial.org/standards/wps/>`_ and the `WPS 2.0.0
-<http://www.opengeospatial.org/standards/wps/>`_ standards edited by
-the `Open Geospatial Consortium <http://www.opengeospatial.org/>`_. It
-is able to perform the WPS operations defined in the OpenGIS |reg|
-specification, such as:
+ZOO-Kernel complies with both the `WPS 1.0.0 <http://www.opengeospatial.org/standards/wps/>`_ and `WPS 2.0.0 <http://www.opengeospatial.org/standards/wps/>`_ standards from the `Open Geospatial Consortium <http://www.opengeospatial.org/>`_.
 
-* **GetCapablities**: Returns service-level metadata information.It
+It supports the following standard WPS operations:
+
+* **GetCapablities** - Returns service-level metadata information.It
   provides the list of available processing services.
-* **DescribeProcess**: Returns a description of a process, including
-  its supported input and output.
-* **Execute**:  Launches computation and returns the output produced
-  by a particular process.
-* **GetStatus**:  only available in WPS 2.0.0, it lets the client fetch
+* **DescribeProcess** - Provides a detailed description of a process, including input/output definitions.
+* **Execute** -  Runs a process and returns its output.
+* **GetStatus** (WPS 2.0.0 only) - It lets the client fetch
   the ongoing status of a running service.
-* **GetResult**: only available in WPS 2.0.0, it lets the client fetch
+* **GetResult** (WPS 2.0.0 only) -It lets the client fetch
   the final result of a running service.
-* **Dismiss**: only available in WPS 2.0.0, it lets the client ask
+* **Dismiss** (WPS 2.0.0 only) - It lets the client ask
   the server to stop a running service and remove any file it created.
 
-ZOO-Kernel compliancy and performances can be tested using the
+ZOO-Kernel's compliance and performances can be tested using the
 following tools:
 
 * `cptesting <https://github.com/WPS-Benchmarking/cptesting>`_ 
@@ -76,10 +55,9 @@ following tools:
 Polyglot
 ........
 
-ZOO-Kernel is a **polyglot**. The software is written in a valid form
-of multiple programming languages, which performs the same operations
-independent of the programming language used to compile or interpret
-it. The supported programming languages are listed bellow:
+ZOO-Kernel is **polyglot**, meaning it supports service implementation in multiple programming languages. 
+Developers can write services in the language they are most comfortable with. Below is the list of supported languages, service types, data structures, and return conventions:
+
 
 ============ =================== ========================= ============
 **Language** **ServiceProvider** **DataStructure**         **Return**

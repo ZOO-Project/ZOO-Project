@@ -1,5 +1,7 @@
 RewriteEngine On
+RewriteOptions InheritDown
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+SetEnvIf Accep-Language "(.*)" HTTP_ACCEPT_LANGUAGE=$1
 SetEnvIf Request_URI "^\/?(\w+)\/ogc-api(.*)" SERVICES_NAMESPACE=$1
 RewriteRule ^(.*)/ogc-api/(.*) /ogc-api/$2 [PT]
 RewriteCond %{REQUEST_FILENAME} !-f

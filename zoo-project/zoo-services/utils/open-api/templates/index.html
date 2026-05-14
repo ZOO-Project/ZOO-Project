@@ -3,7 +3,11 @@
 #import html,os
 #set removeCacheFile=False
 #set strUrl=$inputs["tmpl"]["xlink:href"]
+#if strUrl.count($openapi["openapi"]["rootUrl"])>0
 #set currentUrl=$strUrl.replace($openapi["openapi"]["rootUrl"],"")
+#else
+#set currentUrl=$strUrl[$strUrl.find($openapi["openapi"]["rootPath"])+len($openapi["openapi"]["rootPath"]):]
+#end if
 #if $currentUrl=="/"
 #set currentKey="root"
 #set $currentUrl="/index"
@@ -160,11 +164,17 @@ $zoo._("View default (no title found for ")$v).
 	  <div class="input-group-prepend">
 	    <div class="input-group-text">crs</div>
 	  </div>
+    #if "properties" in $obj["schema"]
 	  <select name="$(oType)_$obj["id"]" class="form-control" #if "nullable" not in $obj["schema"] and ("minOccurs" not in $obj or $obj["minOccurs"]>=1)#required#end if#>
 	  #for i in range(len($obj["schema"]["properties"]["crs"]["enum"]))
 	    <option>$obj["schema"]["properties"]["crs"]["enum"][$i]</option>
 	  #end for
 	  </select>
+    #else
+    <select name="$(oType)_$obj["id"]" class="form-control" #if "nullable" not in $obj["schema"] and ("minOccurs" not in $obj or $obj["minOccurs"]>=1)#required#end if#>
+      <option>EPSG:4326</option>
+    </select>
+    #end if
 	  <div class="invalid-feedback">
 	    Please set a value for $obj["id"].
 	  </div>

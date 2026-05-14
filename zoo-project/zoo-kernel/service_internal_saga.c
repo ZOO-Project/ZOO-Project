@@ -395,28 +395,36 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 	    
 	    else if( param->is_DataObject_List() )
 	      {
-		for(int i=0; i<
+        for(int i=0; i<
 #if SAGA_MAJOR_VERSION == 2
-		      param->asList()->Get_Count()
+              param->asList()->Get_Count()
 #else
-		      param->asList()->Get_Data_Count()
+#if SAGA_MAJOR_VERSION >= 9
+              param->asList()->Get_Item_Count()
+#else
+              param->asList()->Get_Data_Count()
+#endif
 #endif		      
-		      ; i++)
-		  {
-		    CSG_Data_Object *pObject =
+              ; i++)
+          {
+            CSG_Data_Object *pObject =
 #if SAGA_MAJOR_VERSION == 2		      
-		      param->asList()->asDataObject(i)
+              param->asList()->asDataObject(i)
 #else
-		      param->asList()->Get_Data(i)
-#endif		      
-		      ;
-		    
-		    if( pObject->is_Modified() && SG_File_Exists(pObject->Get_File_Name()) )
-		      {
-			pObject->Save(pObject->Get_File_Name());
-			setMapArray(cMaps->content,"generated_file",i,CSG_String(pObject->Get_File_Name()).b_str());
-		      }
-		  }
+#if SAGA_MAJOR_VERSION >= 9
+              param->asList()->Get_Item(i)
+#else
+              param->asList()->Get_Data(i)
+#endif
+#endif
+              ;
+
+              if( pObject->is_Modified() && SG_File_Exists(pObject->Get_File_Name()) )
+              {
+                pObject->Save(pObject->Get_File_Name());
+                setMapArray(cMaps->content,"generated_file",i,CSG_String(pObject->Get_File_Name()).b_str());
+              }
+          }
 	      }
 	  }
 	else
@@ -480,26 +488,50 @@ bool sagaSaveOutputs(CSG_Parameters *params,maps* main_conf,maps** outputs)
 				  CSG_String(param->asList()->asDataObject(i)->Get_File_Name()).b_str());
 		    }
 #else
-		  int nFileNames = param->asList()->Get_Data_Count() <= fileNames.Get_Count() ? fileNames.Get_Count() : fileNames.Get_Count() - 1;
-		  for(int i=0; i<param->asList()->Get_Data_Count(); i++)
-		    {
-		      if( i < nFileNames )
-			{
-			  param->asList()->Get_Data(i)->Save(fileNames[i]);
-			}
-		      else
-			{
-			  param->asList()->Get_Data(i)->Save(CSG_String::Format(SG_T("%s_%0*d"),
-										    fileNames[fileNames.Get_Count() - 1].c_str(),
-										    SG_Get_Digit_Count(param->asList()->Get_Data_Count()),
-										    1 + i - nFileNames
-										    ));
-			}
-		      setMapArray(cMaps->content,"generated_file",i,
-				  CSG_String(param->asList()->Get_Data(i)->Get_File_Name()).b_str());
-		    }
+      int iDataCount = 
+#if SAGA_MAJOR_VERSION >= 9
+        param->asList()->Get_Item_Count()
+#else
+        param->asList()->Get_Data_Count()
+#endif
+        ;
+      int nFileNames = iDataCount <= fileNames.Get_Count() ? fileNames.Get_Count() : fileNames.Get_Count() - 1;
+      for(int i=0; i<iDataCount; i++)
+        {
+          if( i < nFileNames )
+      {
+#if SAGA_MAJOR_VERSION >= 9
+        param->asList()->Get_Item(i)->Save(fileNames[i]);
+#else
+        param->asList()->Get_Data(i)->Save(fileNames[i]);
+#endif
+      }
+          else
+          {
+#if SAGA_MAJOR_VERSION >= 9
+            param->asList()->Get_Item(i)->Save(CSG_String::Format(SG_T("%s_%0*d"),
+                            fileNames[fileNames.Get_Count() - 1].c_str(),
+                            SG_Get_Digit_Count(param->asList()->Get_Item_Count()),
+                            1 + i - nFileNames
+                            ));
+#else
+            param->asList()->Get_Data(i)->Save(CSG_String::Format(SG_T("%s_%0*d"),
+                            fileNames[fileNames.Get_Count() - 1].c_str(),
+                            SG_Get_Digit_Count(param->asList()->Get_Data_Count()),
+                            1 + i - nFileNames
+                            ));
+#endif
+          }
+          setMapArray(cMaps->content,"generated_file",i,
+#if SAGA_MAJOR_VERSION >= 9
+          CSG_String(param->asList()->Get_Item(i)->Get_File_Name()).b_str());
+#else
+          CSG_String(param->asList()->Get_Data(i)->Get_File_Name()).b_str());
+#endif
+
+#endif
+      }
 		  
-#endif		  
 		}
 	    }
       }
@@ -566,7 +598,11 @@ int sagaExecuteCmd(maps** main_conf,const char* lib_name,const char* module_name
   
   if(retval && outputs!=NULL){
     sagaSaveOutputs(module->Get_Parameters(),*main_conf,outputs);
+#if SAGA_MAJOR_VERSION >= 9
+    SG_Get_Data_Manager().Delete(true,true);
+#else
     SG_Get_Data_Manager().Delete_Unsaved();
+#endif
     return SERVICE_SUCCEEDED;
   }
 
@@ -1025,6 +1061,8 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
     fprintf(stderr,"initialisation failed");
     return SERVICE_FAILED;
   }
+  wxTheApp->SetVendorName("www.zoo-project.org");
+  wxTheApp->SetAppName   ("zoo_saga_support");
   setlocale(LC_NUMERIC, "C");
   static bool g_bShow_Messages = false;
 
@@ -1034,7 +1072,9 @@ int zoo_saga_support(maps** main_conf,map* request,service* s,maps** inputs,maps
   watcher.SetConf(main_conf);
 
   SG_Set_UI_Callback(Get_Callback(watcher));
-
+#if SAGA_MAJOR_VERSION >= 9
+  SG_Initialize_Environment(true,true,wxT(MODULE_LIBRARY_PATH),true);
+#endif
 #if SAGA_MAJOR_VERSION == 2  
   int n = SG_Get_Module_Library_Manager().Add_Directory(wxT(MODULE_LIBRARY_PATH),false);
   if( SG_Get_Module_Library_Manager().Get_Count() <= 0 )
