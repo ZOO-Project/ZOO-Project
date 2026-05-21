@@ -61,13 +61,13 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        tags: zooproject/zoo-project:dru-${{ github.sha }}
+        tags: anushacs/zoo-project:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
     - name: Check libmozjs version
       run: |
-        docker run --rm zooproject/zoo-project:dru-${{ github.sha }} \
+        docker run --rm anushacs/zoo-project:dru-${{ github.sha }} \
         sh -c "dpkg -l | grep mozjs || rpm -qa | grep mozjs || apk info | grep mozjs"
 
     # Scan the built image for vulnerabilities
@@ -75,7 +75,7 @@ jobs:
       uses: aquasecurity/trivy-action@0.35.0
       with:
         scan-type: image
-        image-ref: zooproject/zoo-project:dru-${{ github.sha }}
+        image-ref: anushacs/zoo-project:dru-${{ github.sha }}
         vuln-type: os,library
         severity: CRITICAL,HIGH
         ignore-unfixed: true
@@ -87,7 +87,7 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        tags: zooproject/zoo-project:eoepca-${{ github.sha }}
+        tags: anushacs/zoo-project:eoepca-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-eoepca-cache
         cache-to: type=local,dest=/tmp/.buildx-eoepca-cache-new,mode=max
 
@@ -114,7 +114,7 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        tags: zooproject/zoo-project:dru-latest
+        tags: anushacs/zoo-project:dru-latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
