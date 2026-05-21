@@ -65,12 +65,9 @@ jobs:
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-    - name: Check libmozjs version
-      run: |
-        docker run --rm anushacs/zoo-project:dru-${{ github.sha }} \
-        sh -c "dpkg -l | grep mozjs || rpm -qa | grep mozjs || apk info | grep mozjs"
 
-    # Scan the built image for vulnerabilities
+
+    # Scan docker image
     - name: Scan Docker image with Trivy
       uses: aquasecurity/trivy-action@0.35.0
       with:
