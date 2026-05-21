@@ -38,12 +38,11 @@ jobs:
         key: ${{ runner.os }}-buildx-${{ github.sha }}
         restore-keys: ${{ runner.os }}-buildx-
 
-    - name: docker login
-      env:
-        username: ${{secrets.DOCKER_USER}}
-        password: ${{secrets.DOCKER_PASSWORD}}
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - name: Docker login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and push
       uses: docker/build-push-action@v4
