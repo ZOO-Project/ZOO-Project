@@ -2,7 +2,7 @@ name: Docker Image CI (DRU support)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, vulnerabilities-check ]
 
 jobs:
 
@@ -38,12 +38,11 @@ jobs:
         key: ${{ runner.os }}-buildx-${{ github.sha }}
         restore-keys: ${{ runner.os }}-buildx-
 
-    - name: docker login
-      env:
-        DOCKER_USER: ${{secrets.DOCKER_USER}}
-        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - name: Docker login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and push
       uses: docker/build-push-action@v4
@@ -62,7 +61,7 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        tags: zooproject/zoo-project:dru-${{ github.sha }}
+        tags: anushacs/zoo-project:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -72,7 +71,7 @@ jobs:
       uses: aquasecurity/trivy-action@0.35.0
       with:
         scan-type: image
-        image-ref: zooproject/zoo-project:dru-${{ github.sha }}
+        image-ref: anushacs/zoo-project:dru-${{ github.sha }}
         vuln-type: os,library
         severity: CRITICAL,HIGH
         ignore-unfixed: true
@@ -91,7 +90,7 @@ jobs:
 
     # Upload SARIF report to GitHub 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: trivy-results.sarif
 
@@ -102,7 +101,7 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        tags: zooproject/zoo-project:eoepca-${{ github.sha }}
+        tags: anushacs/zoo-project:eoepca-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-eoepca-cache
         cache-to: type=local,dest=/tmp/.buildx-eoepca-cache-new,mode=max
 
@@ -129,7 +128,7 @@ jobs:
         context: .
         push: true
         file: docker/dru/Dockerfile
-        tags: zooproject/zoo-project:dru-latest
+        tags: anushacs/zoo-project:dru-latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
