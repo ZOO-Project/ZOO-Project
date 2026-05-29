@@ -34,6 +34,12 @@ Run the following commands:
    Ensure the ``docker/`` directory is writable by the container user
    if your system uses restricted file permissions.
 
+.. note::
+
+   The Docker image used by default is defined in the ``docker-compose.yml`` file.
+   You can modify the image tag to use a different version or flavor of ZOO-Project
+   (for example, a specific release or a custom build).
+
 Verify Installation
 ^^^^^^^^^^^^^^^^^^^
 
