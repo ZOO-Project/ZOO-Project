@@ -10,8 +10,26 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+    - name: Run Trivy filesystem scan
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        scan-type: fs
+        scan-ref: .
+        scanners: vuln,misconfig,secret
+        severity: CRITICAL,HIGH
+        ignore-unfixed: true
+        exit-code: 0
+
+
     - uses: docker/setup-buildx-action@v2
     - name: Cache Docker layers
       uses: actions/cache@v3
@@ -37,6 +55,7 @@ jobs:
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
+
     - name: Build and push (official dru image)
       uses: docker/build-push-action@v4
       with:
@@ -46,6 +65,36 @@ jobs:
         tags: zooproject/zoo-project:dru-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+
+
+    - name: Scan Docker image with Trivy
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        scan-type: image
+        image-ref: zooproject/zoo-project:dru-${{ github.sha }}
+        vuln-type: os,library
+        severity: CRITICAL,HIGH
+        ignore-unfixed: true
+        exit-code: 0
+
+    # Generate SARIF report 
+    - name: Run Trivy SARIF scan
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        scan-type: fs
+        scan-ref: .
+        format: sarif
+        output: trivy-results.sarif
+        severity: CRITICAL,HIGH
+        ignore-unfixed: true
+
+    # Upload SARIF report to GitHub 
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: trivy-results.sarif
+
 
     - name: Build and push (official eoepca image)
       uses: docker/build-push-action@v4
