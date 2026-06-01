@@ -39,6 +39,9 @@ Run the following commands:
    The Docker image used by default is defined in the ``docker-compose.yml`` file.
    You can modify the image tag to use a different version or flavor of ZOO-Project
    (for example, a specific release or a custom build).
+   
+   Available image tags can be found on Docker Hub:
+   https://hub.docker.com/r/zooproject/zoo-project/tags
 
 Verify Installation
 ^^^^^^^^^^^^^^^^^^^
