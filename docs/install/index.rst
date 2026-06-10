@@ -6,7 +6,7 @@ This section explains how to install and run ZOO-Project.
 For most users, the recommended way to start is with Docker,
 as it provides a consistent environment across platforms.
 
-Quick Start (Recommended)
+Quick Start
 -------------------------
 
 Requirements
@@ -64,14 +64,14 @@ Configuration
 The default Docker setup uses the following files:
 
 - ``docker-compose.yml``
-- ``docker/main.cfg``
-- ``docker/oas.cfg``
+- `docker/main.cfg <../kernel/configuration.html#main-configuration-file>`_
+- `docker/oas.cfg <../kernel/configuration.html#openapi-specification-configuration-file>`_
 
 These files can be adjusted to customize your local deployment.
 
 
 Additional Installation Methods
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For manual installation or custom deployments, see:
 
