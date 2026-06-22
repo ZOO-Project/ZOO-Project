@@ -778,7 +778,7 @@ int _fetchService(registry* zooRegistry,maps** pmsConf,service** spService, map*
     strncpy(tmps1, import->value, 1024);
     setMapInMaps (m, "lenv", "Identifier", cIdentifier);
     setMapInMaps (m, "lenv", "oIdentifier", cIdentifier);
-  } 
+  }
   else {
     snprintf (tmps1, 1024, "%s/%s.zcfg", pcDir, cIdentifier);
 #ifdef DEBUG
@@ -807,14 +807,12 @@ int _fetchService(registry* zooRegistry,maps** pmsConf,service** spService, map*
   int metadb_id=_init_sql(m,"metadb");
   //FAILED CONNECTING DB
   if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
-    int iTmp=iZooLogLevel;
-    iZooLogLevel=ZOO_DEBUG_LEVEL_ERROR;
-    ZOO_DEBUG("ERROR CONNECTING METADB");
-    iZooLogLevel=iTmp;
+    ZOO_ERROR("CONNECTING METADB");
   }
   if(metadb_id>0){
     *spService=extractServiceFromDb(m,cIdentifier,0);
     close_sql(m,metadb_id-1);
+    ZOO_DEBUG("Disconect from MetaDB");
     s1=*spService;
   }
   if(s1!=NULL){
@@ -1133,7 +1131,7 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** ppmsConf, char* r
               int metadb_id=_init_sql(m,"metadb");
               //FAILED CONNECTING DB
               if(getMapFromMaps(m,"lenv","dbIssue")!=NULL || metadb_id<=0){
-                fprintf(stderr,"ERROR CONNECTING METADB");
+                ZOO_ERROR("CONNECTING METADB");
               }
               service* s2=NULL;
               if(metadb_id>0){
@@ -1399,28 +1397,20 @@ void initAllEnvironment(maps* conf,map* request_inputs,
       {
 #ifndef WIN32
         setenv (mapcs->name, mapcs->value, 1);
-#ifdef DEBUG
-        fprintf (stderr, "[ZOO: setenv (%s=%s)]\n", mapcs->name,
-                 mapcs->value);
-#endif
+        ZOO_TRACE("setenv (%s=%s)", mapcs->name, mapcs->value);
 #else
         if (mapcs->value[strlen (mapcs->value) - 2] == '\r')
           {
-#ifdef DEBUG
-            fprintf (stderr, "[ZOO: Env var finish with \r]\n");
-#endif
             mapcs->value[strlen (mapcs->value) - 1] = 0;
           }
 #ifdef DEBUG
         if (SetEnvironmentVariable (mapcs->name, mapcs->value) == 0)
           {
             fflush (stderr);
-            fprintf (stderr, "setting variable... %s\n", "OK");
           }
         else
           {
             fflush (stderr);
-            fprintf (stderr, "setting variable... %s\n", "OK");
           }
 #else
         SetEnvironmentVariable (mapcs->name, mapcs->value);
@@ -1609,6 +1599,26 @@ void initAllEnvironment(maps* conf,map* request_inputs,
   if(strlen(cgiAuthType)>0){
     addToMap(_tmpMaps->content,"HTTP_AUTHORIZATION",cgiAuthType);
   }
+  // Set the log level if defined in the ZOO_DEBUG_LEVEL environment variable
+  if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"ZOO_DEBUG_LEVEL")!=NULL){
+    map* pmTmp=getMap(_tmpMaps->content,"ZOO_DEBUG_LEVEL");
+    bool bFound=false;
+    for(int i=0;i<8;i++){
+      if(strcasecmp(pccLogLevel[i],pmTmp->value)==0){
+        iMinZooLogLevel=i;
+        bFound=true;
+        break;
+      }
+    }
+    if(!bFound)
+      iMinZooLogLevel=ZOO_DEBUG_LEVEL_ALL;
+    const char* pccLevel;
+    if(iMinZooLogLevel>=0)
+      pccLevel = pccLogLevel[iMinZooLogLevel];
+    else
+      pccLevel = "ALL";
+    ZOO_TRACE("ZOO_DEBUG_LEVEL environment variable set to %s",pccLevel);
+  }
   addMapsToMaps (&conf, _tmpMaps);
   freeMaps (&_tmpMaps);
   free (_tmpMaps);
@@ -1650,9 +1660,7 @@ void initAllEnvironment(maps* conf,map* request_inputs,
 void
 donothing (int sig)
 {
-#ifdef DEBUG
-  fprintf (stderr, "Signal %d after the ZOO-Kernel returned result!\n", sig);
-#endif
+  ZOO_TRACE("Signal %d after the ZOO-Kernel returned result!", sig);
   exit (0);
 }
 
@@ -1820,7 +1828,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
       return;
     }
   }
-  r_inputs = getMap (s1->content, "serviceType");  
+  r_inputs = getMap (s1->content, "serviceType");
 #ifdef DEBUG
   fprintf (stderr, "LOAD A %s SERVICE PROVIDER \n", r_inputs->value);
   fflush (stderr);
@@ -1901,13 +1909,12 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #endif
 #ifdef DEBUG
 #ifdef WIN32
-                          errstr = getLastErrorMessage();
+              errstr = getLastErrorMessage();
 #else
               errstr = dlerror ();
 #endif
               fprintf (stderr, "Function loaded %s\n", errstr);
 #endif
-
               char main_conf[10][30][1024];
               char inputs[10][30][1024];
               char outputs[10][30][1024];
@@ -1926,6 +1933,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               *eres =
                 execute ((char ***) &main_conf[0], (char ***) &inputs[0],
                          (char ***) &outputs[0]);
+
 #ifdef DEBUG
               fprintf (stderr, "Function run successfully \n");
 #endif
@@ -1938,7 +1946,7 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
 #ifdef WIN32
               errstr = getLastErrorMessage();
               fprintf (stderr, "Function %s failed to load because of %s\n",
-                       r_inputs->value, errstr);
+                        r_inputs->value, errstr);
 #endif
 #endif
               r_inputs = getMapFromMaps (m, "lenv", "Identifier");
@@ -1983,11 +1991,6 @@ loadServiceAndRun (maps ** myMap, service * s1, map * request_inputs,
               errstr = dlerror ();
 #endif
               fprintf (stderr, "Function loaded %s\n", errstr);
-#endif
-
-#ifdef DEBUG
-              fprintf (stderr, "Now run the function \n");
-              fflush (stderr);
 #endif
               *eres =
                 execute (&m, &request_input_real_format,
@@ -2430,7 +2433,6 @@ createProcess (maps * m, map * request_inputs, service * s1, char *opts,
   if (tmpq != NULL) {
     free(tmpq);
   }
-
 #ifdef DEBUG
   fprintf (stderr, "CreateProcess finished !\n");
 #endif
@@ -2988,6 +2990,7 @@ int runRequest(map** inputs) {
             free(pcaCgiQueryString);
             return 1;
           }else{
+            ZOO_DEBUG("Process to undeploy found, but no package file found for this process, undeploy is not allowed.");
             setMapInMaps(pmsaConfig,"headers","Status","403 Forbidden");
             map* error=createMap("code","ImmutableProcess");
             addToMap(error,"message",_("The process cannot be modified."));
@@ -3108,6 +3111,8 @@ int runRequest(map** inputs) {
         return -1;
       }
       map* pmMutable=getMap(s1->content,"mutable");
+      if(pmMutable!=NULL)
+        ZOO_DEBUG("Mutable value: %s",pmMutable->value);
       if(pmMutable!=NULL && strncmp(pmMutable->value,"1",1)==0){
         maps* pmsTmp=getMaps(pmsaConfig,"renv");
         dumpMap(pmsTmp->content);
@@ -3365,12 +3370,21 @@ int runRequest(map** inputs) {
           prepareLinksHeader(pmsaConfig,"/jobs");
           if(res!=NULL)
             json_object_put(res);
+#ifdef RELY_ON_DB
+          init_sql(pmsaConfig);
+#endif
           res=printFilteredJobList(&pmsaConfig,request_inputs);
+#ifdef RELY_ON_DB
+          close_sql(pmsaConfig,0);
+#endif
         }
         else{
           char* tmpUrl=strstr(pcaCgiQueryString,"/jobs/");
           if(tmpUrl!=NULL && strlen(tmpUrl)>6){
             char* jobId=zStrdup(tmpUrl+6);
+#ifdef RELY_ON_DB
+            init_sql(pmsaConfig);
+#endif
             if(strlen(jobId)==36){
               if(res!=NULL)
                 json_object_put(res);
@@ -3403,7 +3417,9 @@ int runRequest(map** inputs) {
                   free (r_inputs);
                   r_inputs=NULL;
                 }
+#ifdef RELY_ON_DB
                 cleanUpSql(pmsaConfig);
+#endif
                 freeMaps(&pmsaConfig);
                 free(pmsaConfig);
                 return 1;
@@ -3426,7 +3442,10 @@ int runRequest(map** inputs) {
                     free (r_inputs);
                     r_inputs=NULL;
                   }
+#ifdef RELY_ON_DB
+                  close_sql(pmsaConfig,0);
                   cleanUpSql(pmsaConfig);
+#endif
                   freeMaps(&pmsaConfig);
                   free(pmsaConfig);
                   return 1;
@@ -3480,6 +3499,9 @@ int runRequest(map** inputs) {
                                     freeService(&psService);
                                     free(psService);
                                   }
+#ifdef RELY_ON_DB
+                                  close_sql(pmsaConfig,0);
+#endif
                                   return 0;
                                 }else{
                                   // Read the file content of the reference URL
@@ -3511,6 +3533,9 @@ int runRequest(map** inputs) {
                                         free(pcaFileContent);
                                         free(pcaFilepath);
                                         free(pcaFilename);
+#ifdef RELY_ON_DB
+                                        close_sql(pmsaConfig,0);
+#endif
                                         goto jsonPrintOut;
                                       }else{
                                         // Unable to read file
@@ -3540,6 +3565,9 @@ int runRequest(map** inputs) {
                                           free (r_inputs);
                                           r_inputs=NULL;
                                         }
+#ifdef RELY_ON_DB
+                                        close_sql(pmsaConfig,0);
+#endif
                                         return 1;
                                       }
                                     }
@@ -3598,8 +3626,10 @@ int runRequest(map** inputs) {
                                       setMapInMaps(pmsaConfig,"headers","Content-Type","application/octet-stream");
                                     setMapInMaps(pmsaConfig,"lenv","json_response_object",pcaTmp);
                                     free(pcaTmp);
+#ifdef RELY_ON_DB
+                                    close_sql(pmsaConfig,0);
+#endif
                                     goto jsonPrintOut;
-
                                   }
                                 }
                               } else if(json_object_object_get_ex(pjoSingleOutput,"value",&pjoSingleOutputValue)){
@@ -3639,6 +3669,9 @@ int runRequest(map** inputs) {
                                 const char* jsonStr=json_object_to_json_string_ext(pjoSingleOutput,JSON_C_TO_STRING_NOSLASHESCAPE);
                                 setMapInMaps(pmsaConfig,"lenv","json_response_object",jsonStr);
                               }
+#ifdef RELY_ON_DB
+                              close_sql(pmsaConfig,0);
+#endif
                               goto jsonPrintOut;
                             } else if(pjoResult!=NULL){
                               // Result is not an object
@@ -3652,6 +3685,9 @@ int runRequest(map** inputs) {
                                   const char* jsonStr=json_object_to_json_string_ext(pjoSingleOutput,JSON_C_TO_STRING_NOSLASHESCAPE);
                                   setMapInMaps(pmsaConfig,"lenv","json_response_object",jsonStr);
                                 }
+#ifdef RELY_ON_DB
+                                close_sql(pmsaConfig,0);
+#endif
                                 goto jsonPrintOut;
                               }else{
                                 // Output type not supported
@@ -3679,6 +3715,10 @@ int runRequest(map** inputs) {
                                   free (r_inputs);
                                   r_inputs=NULL;
                                 }
+#ifdef RELY_ON_DB
+                                close_sql(pmsaConfig,0);
+                                cleanUpSql(pmsaConfig);
+#endif
                                 return 1;
                               }
 
@@ -3710,7 +3750,10 @@ int runRequest(map** inputs) {
                               free (r_inputs);
                               r_inputs=NULL;
                             }
+#ifdef RELY_ON_DB
+                            close_sql(pmsaConfig,0);
                             cleanUpSql(pmsaConfig);
+#endif
                             freeMaps(&pmsaConfig);
                             free(pmsaConfig);
                             return 1;
@@ -3738,6 +3781,10 @@ int runRequest(map** inputs) {
                         free(jobId);
                         freeMap(&error);
                         free(error);
+#ifdef RELY_ON_DB
+                        close_sql(pmsaConfig,0);
+                        cleanUpSql(pmsaConfig);
+#endif
                         freeMaps(&pmsaConfig);
                         free(pmsaConfig);
                         json_object_put(res);
@@ -3784,6 +3831,10 @@ int runRequest(map** inputs) {
                       free(jobId);
                       freeMap(&error);
                       free(error);
+#ifdef RELY_ON_DB
+                      close_sql(pmsaConfig,0);
+                      cleanUpSql(pmsaConfig);
+#endif
                       freeMaps(&pmsaConfig);
                       free(pmsaConfig);
                       json_object_put(res);
@@ -3808,7 +3859,10 @@ int runRequest(map** inputs) {
                       free (r_inputs);
                       r_inputs=NULL;
                     }
+#ifdef RELY_ON_DB
+                    close_sql(pmsaConfig,0);
                     cleanUpSql(pmsaConfig);
+#endif
                     freeMaps(&pmsaConfig);
                     free(pmsaConfig);
                     return 1;
@@ -3817,6 +3871,9 @@ int runRequest(map** inputs) {
               }
             }
             free(jobId);
+#ifdef RELY_ON_DB
+            close_sql(pmsaConfig,0);
+#endif
           }
         }
 
@@ -3892,7 +3949,7 @@ int runRequest(map** inputs) {
             sprintf(pacMessage,pccErr,pcTmpErr);
             addToMap(pamError,"message",pacMessage);
             localPrintExceptionJ(&pmsaConfig,pamError);
-            fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+            ZOO_ERROR("ZOO-Kernel cannot parse your POST data: %s\n", json_tokener_error_desc(jerr));
             json_tokener_free(tok);
             freeMaps(&pmsaConfig);
             free(pmsaConfig);
@@ -3906,7 +3963,7 @@ int runRequest(map** inputs) {
             sprintf(pacMessage,pccErr,pcTmpErr);
             addToMap(pamError,"message",pacMessage);
             localPrintExceptionJ(&pmsaConfig,pamError);
-            fprintf(stderr, "Error: %s\n", json_tokener_error_desc(jerr));
+            ZOO_ERROR("ZOO-Kernel cannot parse your POST data: %s\n", json_tokener_error_desc(jerr));
             json_tokener_free(tok);
             return 1;
           }
@@ -4888,10 +4945,6 @@ int runRequest(map** inputs) {
               xmlDocPtr doc = xmlNewDoc (BAD_CAST "1.0");
               r_inputs = NULL;
               r_inputs = getMap (request_inputs, "version");
-#ifdef DEBUG
-              fprintf(stderr," ** DEBUG %s %d \n",__FILE__,__LINE__);
-              fflush(stderr);
-#endif
               xmlNodePtr n = printWPSHeader(doc,pmsaConfig,"DescribeProcess",
                                             root_nodes[vid][1],(version!=NULL?version->value:"1.0.0"),1);
 
@@ -4965,9 +5018,7 @@ int runRequest(map** inputs) {
               char* message=(char*)malloc((61+len)*sizeof(char));
               sprintf(message,"The <request> value was not recognized. Allowed values are %s.",tmpStr);
               errorException (&pmsaConfig,_(message),"InvalidParameterValue", "request");
-#ifdef DEBUG
-              fprintf (stderr, "No request found %s", REQUEST);
-#endif
+              ZOO_DEBUG("No request found %s", REQUEST);
               closedir (dirp);
               freeMaps (&pmsaConfig);
               free (pmsaConfig);
@@ -5037,7 +5088,7 @@ int runRequest(map** inputs) {
 
 #ifndef WIN32
     if (!CHECK_INET_HANDLE (hInternet))
-      fprintf (stderr, "WARNING : hInternet handle failed to initialize");
+      ZOO_WARNING("hInternet handle failed to initialize");
 #endif
     maps *tmpmaps = request_input_real_format;
 
@@ -5573,13 +5624,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
   maps* conf=*ppmsConf;
   map* request_inputs=*irequest_inputs;
   map* dsNb=getMapFromMaps(conf,"lenv","ds_nb");
-  int metadb_id=0;
-  //if(dsNb==NULL || strncasecmp(dsNb->value,"-1",2)==0){
-#ifdef META_DB
-  metadb_id=_init_sql(conf,"metadb");
-#endif
   int iSqlCon=init_sql(conf);
-    //}
   map *uusid=getMap(*ppmLenv,"usid");
   map *schema=getMapFromMaps(conf,"database","schema");
   map* pmAsyncWorkers=getMapFromMaps(conf,"server","async_worker");
@@ -5588,8 +5633,8 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
   int hostname=gethostname(acHost, sizeof(acHost));
   struct hostent *host_entry = gethostbyname(acHost);
   char *pcIP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
-  ZOO_DEBUG(pcIP);
-  ZOO_DEBUG(acHost);
+  ZOO_DEBUG("IP address %s", pcIP);
+  ZOO_DEBUG("Host name %s", acHost);
   char* pcaSqlQuery2=(char*)malloc(((2*strlen(schema->value))+
                                   strlen(pcIP)+strlen(pmAsyncWorkers->value)+
                                   strlen(SQL_REGISTER_SERVER)+1)*sizeof(char));
@@ -5601,7 +5646,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
                                 strlen(pcIP)+strlen(uusid->value)+
                                 strlen(SQL_AVAILABLE_SLOT)+129)*sizeof(char));
   sprintf(pcaSqlQuery0,SQL_AVAILABLE_SLOT,schema->value,schema->value,uusid->value,pcIP,getpid());
-  ZOO_DEBUG(pcaSqlQuery0);
+  ZOO_DEBUG("SQL query: %s", pcaSqlQuery0);
   OGRLayer *res=fetchSql(conf,iSqlCon-1,pcaSqlQuery0);
   free(pcaSqlQuery0);
   if(res!=NULL){
@@ -5614,13 +5659,15 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
           ZOO_DEBUG(_("No need to run the async request, it has been taken"
                       "into account by another worker!"));
         }else{
+          cleanFetchSql(conf,iSqlCon-1,res);
+          close_sql(conf,0);
 
           int forkId=fork();
           if(forkId==0){
             char ntmp[1024];
 #ifndef ETC_DIR
             if(zGetCwd(ntmp,1024)==NULL){
-              ZOO_DEBUG(_("Unable to get the current working directory"));
+              ZOO_ERROR(_("Unable to get the current working directory"));
               return -1;
             }
 #else
@@ -5790,6 +5837,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
             // Reset metapath
             addToMap(request_inputs,"metapath","");
             setMapInMaps(lconf,"lenv","metapath","");
+            ZOO_DEBUG("Fetch service metadata");
             if(fetchService(zooRegistry,&lconf,&s1,request_inputs,conf_dir,r_inputs->value,printExceptionReportResponse)!=0){
               // Cleanup memory
               invokeBasicCallback(lconf,SERVICE_FAILED);
@@ -5797,6 +5845,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
               free(lconf);
               return -1;
             }
+            setMapInMaps(conf,"lenv","ds_nb","0");
 
             /**
              * Create the input and output maps data structure
@@ -5812,7 +5861,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
                                       INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 #ifndef WIN32
             if (!CHECK_INET_HANDLE (hInternet))
-              fprintf (stderr, "WARNING : hInternet handle failed to initialize");
+              ZOO_WARNING("hInternet handle failed to initialize");
 #endif
             json_object *reqi_format_jobj;
             maps *request_input_real_format = NULL;
@@ -6121,9 +6170,8 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
             zUnlink (fbkp1);
             unhandleStatus (lconf);
             //zSleep(100000);
-            fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-            fprintf(stderr,"This worker can now exit!\n");
-            fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
+            ZOO_DEBUG("This worker can now exit!");
+            iSqlCon=init_sql(conf);
             char* sqlQuery2=(char*)malloc(((strlen(schema->value))+
                                            strlen(uusid->value)+36)*sizeof(char));
             sprintf(sqlQuery2,"DELETE FROM %s.workers WHERE uuid='%s'",schema->value,uusid->value);
@@ -6133,21 +6181,16 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
             free(lconf);
           }else{
             if(forkId<0){
-              fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-              fprintf(stderr,_("Unable to create a new process, please try later!\n"));
-              fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-              fflush(stderr);
+              ZOO_DEBUG(_("Unable to create a new process, please try later!"));
             }else
               wait(0);
           }
         }
-        poFeature = res->GetNextFeature();
+        poFeature = NULL;
       }
     }
-    cleanFetchSql(conf,iSqlCon-1,res);
   }else{
-    fprintf(stderr,"Concurrent access on the workers table imply that there is no need to take this request into account!\n");
-    fflush(stderr);
+    ZOO_WARNING(_("Concurrent access on the workers table imply that there is no need to take this request into account!"));
   }
   fflush(stderr);
 #ifdef META_DB

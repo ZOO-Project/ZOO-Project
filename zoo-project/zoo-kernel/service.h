@@ -219,80 +219,131 @@ extern "C" {
 #define TIME_SIZE 40
 
 /**
- * The global debug level: DEBUG
+ * The debug level: ALL
+ */
+#define ZOO_DEBUG_LEVEL_ALL -1
+/**
+ * The debug level: TRACE
  */
 #define ZOO_DEBUG_LEVEL_TRACE 0
 /**
- * The global debug level: DEBUG
+ * The debug level: DEBUG
  */
 #define ZOO_DEBUG_LEVEL_DEBUG 1
 /**
- * The global debug level: INFO
+ * The debug level: INFO
  */
 #define ZOO_DEBUG_LEVEL_INFO 2
 /**
- * The global debug level: WARN
+ * The debug level: SUCCESS
  */
 #define ZOO_DEBUG_LEVEL_SUCCESS 3
 /**
- * The global debug level: WARN
+ * The debug level: WARNING
  */
 #define ZOO_DEBUG_LEVEL_WARNING 4
 /**
- * The global debug level: ERROR
+ * The debug level: ERROR
  */
 #define ZOO_DEBUG_LEVEL_ERROR 5
 /**
- * The global debug level: FATAL
+ * The debug level: FATAL
  */
 #define ZOO_DEBUG_LEVEL_FATAL 6
+/**
+ * The debug level: OFF
+ */
+#define ZOO_DEBUG_LEVEL_OFF 7
 
 /**
  * The global log level names
  */
-static const char* pccLogLevel[7]={
+static const char* pccLogLevel[8]={
   "TRACE",
   "DEBUG",
   "INFO",
   "SUCCESS",
   "WARNING",
   "ERROR",
-  "CRITICAL"
+  "CRITICAL",
+  "OFF"
 };
 
 /**
- * The global log level
+ * The log level is used to define the severity of messages that will be logged.
  */
 static int iZooLogLevel=1;
 
 /**
- * The global log level
+ * The minimal global log level is used to filter messages based on their
+ * severity.
+ *
+ * Messages with a severity level lower than or equal to this value will be
+ * ignored.
+ *
  */
 static int iMinZooLogLevel=0;
 
 /**
- * The _ZOO_DEBUG macro print a message with date time, process id (UNIX pid),
- * file name, function name, and line number.
+ * The ZOO_LOG_MESSAGE macro print a message using _ZOO_DEBUG.
  *
- * The message uses the ZOO_LOG_FORMAT to format the output.
- *
- * The values that should be included in this specific order in the
- * ZOO_LOG_FORMAT are:
- *
- *  * %d: the date time
- *  * %l: the log level
- *  * %p: the process identifier
- *  * %f: the file name
- *  * %u: the function name
- *  * %i: the line number
- *  * %m: the message
- *
- *  In case the ZOO_LOG_FORMAT is not defined, the default format is used:
- *  "%d %l %p %f:%u %m\n"
+ * The function name, file name and line number are automatically added to the
+ * message.
  *
  * @param message the message to print
+ * @see _ZOO_DEBUG
  */
-#define ZOO_DEBUG(message) _ZOO_DEBUG(message,__FILE__,__func__,__LINE__)
+#define ZOO_LOG_MESSAGE(message) _ZOO_DEBUG(message,__FILE__,__func__,__LINE__)
+
+/**
+ * The ZOO_LOG_MESSAGE_WITH_LEVEL macro print a message using _ZOO_LOG_MSG.
+ *
+ * @param level the log level
+ * @param message the printf-style format string
+ * @param ... corresponding variadic arguments
+ * @see _ZOO_LOG_MSG
+ */
+#define ZOO_LOG_MESSAGE_WITH_LEVEL(level,message,...) do {\
+  if(level<=iMinZooLogLevel)\
+    break;\
+  _ZOO_LOG_MSG(level,__FILE__,__func__,__LINE__,message,##__VA_ARGS__);\
+} while(0)
+
+/**
+ * The ZOO_TRACE print a message, log level is set to TRACE
+ */
+#define ZOO_TRACE(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_TRACE,message,##__VA_ARGS__)
+/**
+ * The ZOO_DEBUG print a message, log level is set to DEBUG
+ */
+#define ZOO_DEBUG(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_DEBUG,message,##__VA_ARGS__)
+/**
+ * The ZOO_INFO print a message, log level is set to INFO
+ */
+#define ZOO_INFO(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_INFO,message,##__VA_ARGS__)
+/**
+ * The ZOO_SUCCESS print a message, log level is set to SUCCESS
+ */
+#define ZOO_SUCCESS(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_SUCCESS,message,##__VA_ARGS__)
+/**
+ * The ZOO_WARNING print a message, log level is set to WARNING
+ */
+#define ZOO_WARNING(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_WARNING,message,##__VA_ARGS__)
+/**
+ * The ZOO_ERROR print a message, log level is set to ERROR
+ */
+#define ZOO_ERROR(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_ERROR,message,##__VA_ARGS__)
+/**
+ * The ZOO_FATAL print a message, log level is set to FATAL
+ */
+#define ZOO_FATAL(message,...) \
+  ZOO_LOG_MESSAGE_WITH_LEVEL(ZOO_DEBUG_LEVEL_FATAL,message,##__VA_ARGS__)
 
 /**
  * The ZOO_COLOR_* variables are used to create colored output in the console.
@@ -358,7 +409,8 @@ static int iMinZooLogLevel=0;
 
 #include "time.h"
 /**
- * The ZOO_DEBUG macro print a message with date time, process id (UNIX pid), file name, function name, and line number
+ * The _ZOO_DEBUG macro print a message with date time, process id (UNIX pid),
+ * file name, function name, and line number
  *
  * The message uses the ZOO_LOG_FORMAT to format the output.
  *
@@ -373,7 +425,7 @@ static int iMinZooLogLevel=0;
  *  * %i: the line number
  *  * %m: the message
  *
- *  The ZOO_DEBUG macro print messages in color, if stderr is a TTY.
+ *  The _ZOO_DEBUG macro print messages in color, if stderr is a TTY.
  *
  * @param message the message to print
  * @param pccFile the file name
@@ -915,6 +967,8 @@ do {\
 	"The result for the requested JobID has not yet been generated."
   };
 
+  ZOO_DLL_EXPORT int _ZOO_LOG_MSG(int level, const char*, const char*, int, const char *, ...)
+    __attribute__((format(printf, 5, 6)));
   ZOO_DLL_EXPORT int zooDebugPrint( const char * format, ... );
   ZOO_DLL_EXPORT void _dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMap(map*);

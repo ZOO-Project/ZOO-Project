@@ -51,6 +51,73 @@ int snprintf(char *pcBuffer, size_t n, const char *pccFormat, ...)
 #endif
 
 /**
+ * Log a message with a printf-style format and variadic arguments.
+ *
+ * @pccFile the source file name
+ * @pccFunc the function name
+ * @iLine  the line number
+ * @pccFmt  printf-style format string
+ * @vlApOrig  variadic arguments list
+ *
+ * @return  0 on success, -1 if malloc fails.
+ * @see _ZOO_DEBUG
+ */
+int __ZOO_LOG_MSG(const char* pccFile, const char* pccFunc, int iLine,
+                 const char *pccFmt, va_list vlApOrig){
+    va_list vlAp;
+    int     iMsgLen;
+
+    va_copy(vlAp, vlApOrig);
+    iMsgLen = vsnprintf(NULL, 0, pccFmt, vlAp);
+    va_end(vlAp);
+    if (iMsgLen < 0) {
+        fprintf(stderr, "[ERROR] %s:%d (%s) vsnprintf sizing failed\n",
+                pccFile, iLine, pccFunc);
+        return -1;
+    }
+
+    char *pcaMsg = (char *)malloc((size_t)(iMsgLen + 1));
+    if (pcaMsg == NULL) {
+        fprintf(stderr, "[ERROR] %s:%d (%s) malloc failed for log message\n",
+                pccFile, iLine, pccFunc);
+        return -1;
+    }
+
+    va_copy(vlAp, vlApOrig);
+    vsnprintf(pcaMsg, (size_t)(iMsgLen + 1), pccFmt, vlAp);
+    va_end(vlAp);
+
+    _ZOO_DEBUG(pcaMsg,pccFile,pccFunc,iLine);
+
+    free(pcaMsg);
+    return 0;
+}
+
+/**
+ * Invoke the log message function after setting the log level.
+ *
+ * @level the log level
+ * @pccFile the source file name
+ * @pccFunc the function name
+ * @iLine  the line number
+ * @pccFmt  printf-style format string
+ * @...  corresponding variadic arguments
+ * @return  0 on success, -1 if malloc fails.
+ * @see __ZOO_LOG_MSG
+ */
+int _ZOO_LOG_MSG(int level, const char* pccFile, const char* pccFunc, int iLine,
+                 const char *pccFmt, ...){
+    va_list vlAp;
+    va_start(vlAp, pccFmt);
+    int iOldZooLogLevel=iZooLogLevel;
+    iZooLogLevel=level;
+    int iRc = __ZOO_LOG_MSG(pccFile, pccFunc, iLine, pccFmt, vlAp);
+    iZooLogLevel=iOldZooLogLevel;
+    va_end(vlAp);
+    return iRc;
+}
+
+/**
  * Dump a map on stderr
  *
  * @param pmMap the map to dump
@@ -1315,20 +1382,20 @@ void dumpElementsAsYAML(elements* peElem,int iLevel){
     fprintf(stderr,"%s:\n",peTmp->name);
     while(pmCurs!=NULL){
       for(i=0;i<4+(4*iLevel);i++)
-	fprintf(stderr," ");
+        fprintf(stderr," ");
       _dumpMap(pmCurs);
       pmCurs=pmCurs->next;
     }
     pmCurs=peTmp->metadata;
     if(pmCurs!=NULL){
       for(i=0;i<4+(4*iLevel);i++)
-	fprintf(stderr," ");
+        fprintf(stderr," ");
       fprintf(stderr,"MetaData:\n");
       while(pmCurs!=NULL){
-	for(i=0;i<6+(4*iLevel);i++)
-	  fprintf(stderr," ");
-	_dumpMap(pmCurs);
-	pmCurs=pmCurs->next;
+        for(i=0;i<6+(4*iLevel);i++)
+          fprintf(stderr," ");
+        _dumpMap(pmCurs);
+        pmCurs=pmCurs->next;
       }
     }
     for(i=0;i<4+(4*iLevel);i++)
@@ -1338,22 +1405,22 @@ void dumpElementsAsYAML(elements* peElem,int iLevel){
     else{
       fprintf(stderr,"Child:\n");
       if(peTmp->child!=NULL)
-	dumpElementsAsYAML(peTmp->child,iLevel+1);
+      dumpElementsAsYAML(peTmp->child,iLevel+1);
     }
     piotTmp=peTmp->defaults;
     while(piotTmp!=NULL){
       for(i=0;i<6+(4*iLevel);i++)
-	fprintf(stderr," ");
+        fprintf(stderr," ");
       fprintf(stderr,"default:\n");
       pmCurs=piotTmp->content;
       while(pmCurs!=NULL){
-	for(i=0;i<8+(4*iLevel);i++)
-	  fprintf(stderr," ");
-	if(strcasecmp(pmCurs->name,"range")==0){
-	  fprintf(stderr,"range: \"%s\"\n",pmCurs->value);
-	}else
-	  _dumpMap(pmCurs);
-	pmCurs=pmCurs->next;
+        for(i=0;i<8+(4*iLevel);i++)
+          fprintf(stderr," ");
+        if(strcasecmp(pmCurs->name,"range")==0){
+          fprintf(stderr,"range: \"%s\"\n",pmCurs->value);
+        }else
+          _dumpMap(pmCurs);
+        pmCurs=pmCurs->next;
       }
       piotTmp=piotTmp->next;
       ioc++;
@@ -1362,17 +1429,17 @@ void dumpElementsAsYAML(elements* peElem,int iLevel){
     ioc=0;
     while(piotTmp!=NULL){
       for(i=0;i<6+(4*iLevel);i++)
-	fprintf(stderr," ");
+        fprintf(stderr," ");
       fprintf(stderr,"supported:\n");
       pmCurs=piotTmp->content;
       while(pmCurs!=NULL){
-	for(i=0;i<8+(4*iLevel);i++)
-	  fprintf(stderr," ");
-	if(strcasecmp(pmCurs->name,"range")==0){
-	  fprintf(stderr,"range: \"%s\"\n",pmCurs->value);
-	}else
-	  _dumpMap(pmCurs);
-	pmCurs=pmCurs->next;
+        for(i=0;i<8+(4*iLevel);i++)
+          fprintf(stderr," ");
+        if(strcasecmp(pmCurs->name,"range")==0){
+          fprintf(stderr,"range: \"%s\"\n",pmCurs->value);
+        }else
+          _dumpMap(pmCurs);
+        pmCurs=pmCurs->next;
       }
       piotTmp=piotTmp->next;
       ioc++;

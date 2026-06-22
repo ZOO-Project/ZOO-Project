@@ -453,6 +453,8 @@ def DeployProcess(conf, inputs, outputs):
                 zoo.info(
                     f"Service {deploy_process.service_configuration.identifier} already deployed"
                 )
+                if "operation" in conf["lenv"]:
+                    del conf["lenv"]["operation"]
                 return duplicateMessage(conf, deploy_process)
 
         zoo.info(
@@ -473,6 +475,8 @@ def DeployProcess(conf, inputs, outputs):
         zoo.error("Failed to deploy the service")
         zoo.error(str(e))
         zoo.error(traceback.format_exc())
+        if "operation" in conf["lenv"]:
+            del conf["lenv"]["operation"]
         if "headers" not in conf:
             conf["headers"]={}
         conf["headers"]["status"]="400 Bad Request"

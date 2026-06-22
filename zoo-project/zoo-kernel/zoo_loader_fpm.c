@@ -90,15 +90,14 @@ int cgiMain(){
   conf->next = NULL;
   int ret = conf_read (file_value, conf);
   if ( ret == 2){
-    //a verifier mais conf_read ne renvoie jamais 0
-    fprintf(stderr,_("Unable to load the %s file.\n"),file_value);
+    ZOO_ERROR(_("Unable to load the %s file.\n"),file_value);
     return 1;
   }
 
   char ntmp[1024];
 #ifndef ETC_DIR
   if(zGetCwd(ntmp,1024)==NULL){
-    ZOO_DEBUG("Unable to get the current working directory\n");
+    ZOO_ERROR("Unable to get the current working directory\n");
     return 1;
   }
 
@@ -113,7 +112,7 @@ int cgiMain(){
   oapi->next = NULL;
   ret = conf_read (conf_file1, oapi);
   if ( ret == 2){
-    fprintf(stderr,_("Unable to load the %s file.\n"),file_value);
+    ZOO_ERROR(_("Unable to load the %s file.\n"),file_value);
     return 1;
   }
   addMapsToMaps(&conf,oapi);
@@ -124,7 +123,7 @@ int cgiMain(){
   int async_worker;
   map *m_async_worker = getMapFromMaps (conf, "server", "async_worker");  
   if (m_async_worker == NULL){
-    fprintf(stderr,"Configuration error: async_worker not found");
+    ZOO_ERROR("Configuration error: async_worker not found");
     return 2;
   }
   else {
@@ -148,8 +147,7 @@ int cgiMain(){
     for (i = 0; i< async_worker; i++){
       fork_status = fork();
       if (fork_status == 0){
-        fprintf(stderr,"# %d child async \n",getpid());
-        fflush(stderr);
+        ZOO_SUCCESS("Child async worker started");
         break;
       }
     }
@@ -184,54 +182,52 @@ int cgiMain(){
             break;
           int consumed = consumer_ack_amqp(c);
           if(consumed<0){
-            fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-            fprintf(stderr,"Unable to acknowledge the message!\n");
-            fprintf(stderr,"# %d +++++++++++++++++++++++++++ %s %d \n",getpid(),__FILE__,__LINE__);
-            fflush(stderr);
+            ZOO_ERROR("Unable to acknowledge the message!");
             return -1;
           }
-
           msg_obj = json_tokener_parse(msg);
 
-#ifdef AMQP_DEBUG
-          fprintf(stderr,"##########################################@@\n",getpid());
-          fprintf(stderr,"# MSG TO TREAT:  %s\n",msg);
-          fprintf(stderr,"##########################################@@\n",getpid());
-#endif //AMQP_DEBUG
+          ZOO_TRACE("JSON message parsed %s",msg);
 
-          json_object_object_get_ex(msg_obj,"request_inputs",&req_jobj);
-          map* mpReq=jsonToMap(req_jobj);
-
-          json_object_object_get_ex(msg_obj,"main_lenv",&lenv_jobj);
-          map* mpLenv=jsonToMap(lenv_jobj);
+          map* pmReq=NULL;
+          if(json_object_object_get_ex(msg_obj,"request_inputs",&req_jobj)){
+            pmReq=jsonToMap(req_jobj);
+          }
+          map* pmLenv=NULL;
+          if(json_object_object_get_ex(msg_obj,"main_lenv",&lenv_jobj)){
+            pmLenv=jsonToMap(lenv_jobj);
+          }
 
           free(msg);
 
-          runAsyncRequest(&conf,&mpLenv,&mpReq,msg_obj);
+          runAsyncRequest(&conf,&pmLenv,&pmReq,msg_obj);
 
-          freeMap(&mpLenv);
-          free(mpLenv);
-          freeMap(&mpReq);
-          free(mpReq);
+          if(pmLenv!=NULL){
+            freeMap(&pmLenv);
+            free(pmLenv);
+          }
+          if(pmReq!=NULL){
+            freeMap(&pmReq);
+            free(pmReq);
+          }
           freeMaps(&conf);
           free(conf);
           close_amqp();
-          json_object_put(req_jobj);
-          json_object_put(lenv_jobj);
+          // json_object_put(req_jobj);
+          // json_object_put(lenv_jobj);
           fclose(stderr);
           exit(0);
         }
         close_amqp();
       }
       else {
-        fprintf(stderr,"##########################################@@\n",getpid());
-        fprintf(stderr,"# Master async %d\n",getpid());
-        fprintf(stderr,"# New async Child\n");
-        fprintf(stderr,"##########################################@@\n",getpid());
-        fflush(stderr);
+        ZOO_TRACE("Master async wait for async worker");
+        wait(0);
         int pid=fork();
-        if(pid==0)
+        if(pid==0){
+          ZOO_TRACE("Master async fork new async worker, reinit");
           goto reinit;
+        }
         else
           wait(0);
       }

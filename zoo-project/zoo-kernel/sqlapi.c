@@ -343,6 +343,36 @@ int getCurrentId(maps* pmsConf){
 #ifdef RELY_ON_DB
 
 /**
+ * Verify if a connection to the database backend is already open and open it if not
+ *
+ * @param pmsConf the maps containing the setting of the main.cfg file
+ * @param iZooDsNb the current number of open connections
+ * @param iCreated the flag to update if a new connection is open
+ */
+void verifyDbConnection(maps* pmsConf,int &iZooDsNb,int &iCreated){
+  if( iZooDsNb == 0 ){
+    init_sql(pmsConf);
+    iZooDsNb++;
+    iCreated=1;
+  }
+}
+
+/**
+ * Close the connection if it was open
+ *
+ * @param pmsConf the maps containing the setting of the main.cfg file
+ * @param iZooDsNb the current number of open connections
+ * @param iCreated the flag to update if a new connection is open
+ */
+void closeIfNeeded(maps* pmsConf,int &iZooDsNb,int &iCreated){
+  if(iCreated>0){
+    close_sql(pmsConf,iZooDsNb-1);
+    iZooDsNb--;
+    iCreated=-1;
+  }
+}
+
+/**
  * Record a file stored during ZOO-Kernel execution
  * 
  * @param pmsConf the maps containing the setting of the main.cfg file
@@ -351,6 +381,7 @@ int getCurrentId(maps* pmsConf){
  * @param pccName the maps containing the setting of the main.cfg file
  */
 void recordStoredFile(maps* pmsConf,const char* pccFileName,const char* pccType,const char* pccName){
+  int iCreated=0;
   int iZooDsNb=getCurrentId(pmsConf);
   map *pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
@@ -359,9 +390,11 @@ void recordStoredFile(maps* pmsConf,const char* pccFileName,const char* pccType,
     sprintf(pcaSqlQuery,"INSERT INTO %s.files (uuid,filename,nature,name) VALUES ('%s','%s','%s','%s');",pmSchema->value,pmUsid->value,pccFileName,pccType,pccName);
   else
     sprintf(pcaSqlQuery,"INSERT INTO %s.files (uuid,filename,nature,name) VALUES ('%s','%s','%s',NULL);",pmSchema->value,pmUsid->value,pccFileName,pccType);
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   free(pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
 }
 
 /**
@@ -374,11 +407,8 @@ void recordStoredFile(maps* pmsConf,const char* pccFileName,const char* pccType,
 char* runSqlQuery(maps* pmsConf,char* query){
   int iZooDsNb=getCurrentId(pmsConf);
   int iCreated=0;
-  if( iZooDsNb == 0 || ppoZooDS == NULL || ppoZooDS[iZooDsNb-1]==NULL ){
-    init_sql(pmsConf);
-    iCreated=1;
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
+  // if( iZooDsNb == 0 || ppoZooDS == NULL || ppoZooDS[iZooDsNb-1]==NULL ){
   if(execSql(pmsConf,iZooDsNb-1,query)<0)
     return NULL;
   OGRFeature  *poFeature = NULL;
@@ -394,8 +424,7 @@ char* runSqlQuery(maps* pmsConf,char* query){
     OGRFeature::DestroyFeature( poFeature );
   }
   cleanUpResultSet(pmsConf,iZooDsNb-1);
-  if(iCreated>0)
-    close_sql(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   return pcaTmp;
 }
 
@@ -450,7 +479,8 @@ void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
  * 
  * @param pmsConf the maps containing the setting of the main.cfg file
  * @param iZooDsNb the SQL connexion identifier
- * @return pmSchema the map pointing the database schema
+ * @param pmSchema the map pointing the database schema
+ * @return the user identifier
  */
 int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
   map* pmUserName=getMapFromMaps(pmsConf,"auth_env","user");
@@ -460,11 +490,7 @@ int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
 				  strlen(pmUserName->value)+
 				  36+1)*sizeof(char));
     sprintf(pcaSqlQuery,"SELECT id from %s.users WHERE name='%s'",pmSchema->value,pmUserName->value);
-    if( iZooDsNb == 0 ){
-      init_sql(pmsConf);
-      iCreated=1;
-      iZooDsNb++;
-    }
+    verifyDbConnection(pmsConf,iZooDsNb,iCreated);
     execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
     OGRFeature  *poFeature = NULL;
     char *pcaTmp;
@@ -476,6 +502,7 @@ int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
           int iResult=atoi(pcaTmp);
           free(pcaTmp);
           cleanUpResultSet(pmsConf,iZooDsNb-1);
+          closeIfNeeded(pmsConf,iZooDsNb,iCreated);
           return iResult;
         }
         else
@@ -499,6 +526,7 @@ int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
           int iResult=atoi(pcaTmp);
           free(pcaTmp);
           cleanUpResultSet(pmsConf,iZooDsNb-1);
+          closeIfNeeded(pmsConf,iZooDsNb,iCreated);
           return iResult;
         }
         else
@@ -507,6 +535,7 @@ int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
       OGRFeature::DestroyFeature( poFeature );
     }
     cleanUpResultSet(pmsConf,iZooDsNb-1);
+    closeIfNeeded(pmsConf,iZooDsNb,iCreated);
     return 0;
   }
   else
@@ -545,16 +574,11 @@ void recordServiceStatus(maps* pmsConf){
 	  wpsStatus[2],
 	  pmType->value,
 	  getUserId(pmsConf,iZooDsNb,pmSchema));
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iCreated=1;
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   free(pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
-  if(iCreated>1)
-    close_sql(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
 }
 
 /**
@@ -567,14 +591,17 @@ void recordServiceStatus(maps* pmsConf){
  * @param len the content length
  */
 void recordRequestResponse(maps* pmsConf,const char* pcTableName,const char* content,const int len){
+  int iCreated=0;
   int iZooDsNb=getCurrentId(pmsConf);
   map *pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+len+strlen(pmUsid->value)+strlen(pcTableName)+48+1)*sizeof(char));
   sprintf(pcaSqlQuery,"INSERT INTO %s.%s (content,uuid) VALUES ($$%s$$,$$%s$$);",pmSchema->value,pcTableName,content,pmUsid->value);
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   free(pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
 }
 
 /**
@@ -637,26 +664,21 @@ void recordRequest(maps* pmsConf,map* pcaInputs){
  */
 int _updateStatus(maps* pmsConf){
   int iZooDsNb=getCurrentId(pmsConf);
+  int iCreated=0;
   map *pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
   map *pmStatus=getMapFromMaps(pmsConf,"lenv","status");
   map *pmMessage=getMapFromMaps(pmsConf,"lenv","message");
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pmMessage->value)+strlen(pmStatus->value)+strlen(pmUsid->value)+81+1)*sizeof(char));
   sprintf(pcaSqlQuery,"UPDATE %s.services set status=$$%s$$,message=$$%s$$,updated_time=now() where uuid=$$%s$$;",pmSchema->value,pmStatus->value,pmMessage->value,pmUsid->value);
-  if( iZooDsNb == 0 ){
-    if(getMapFromMaps(pmsConf,"lenv","file.log")==NULL){
-      free(pcaSqlQuery);
-      return 1;
-    }
-    init_sql(pmsConf);
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
   free(pcaSqlQuery);
 #ifdef USE_JSON  
   invokeBasicCallback(pmsConf,SERVICE_STARTED);
 #endif
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   return 0;
 }
 
@@ -673,11 +695,7 @@ char* _getStatus(maps* pmsConf,char* pcPid){
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+104+1)*sizeof(char));
   sprintf(pcaSqlQuery,"select CASE WHEN message is null THEN '-1' ELSE status||'|'||message END from %s.services where uuid=$$%s$$;",pmSchema->value,pcPid);
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-    iCreated=1;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   OGRFeature  *poFeature = NULL;
   const char *pccTmp;
@@ -693,6 +711,7 @@ char* _getStatus(maps* pmsConf,char* pcPid){
   }
   cleanUpResultSet(pmsConf,iZooDsNb-1);
   free(pcaSqlQuery);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   return (char*)pccTmp;
 }
 
@@ -721,11 +740,7 @@ char* _getStatusField(maps* pmsConf,char* pcPid,const char* field){
       sprintf(pcaSqlQuery,"select CASE WHEN %s is null THEN '-1' ELSE %s::text END from %s.services where uuid=$$%s$$;",field,field,pmSchema->value,pcPid);
     }
   }
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-    iCreated=1;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   if(execSql(pmsConf,iZooDsNb-1,pcaSqlQuery)<0)
     return NULL;
   OGRFeature  *poFeature = NULL;
@@ -742,6 +757,7 @@ char* _getStatusField(maps* pmsConf,char* pcPid,const char* field){
   }
   cleanUpResultSet(pmsConf,iZooDsNb-1);
   free(pcaSqlQuery);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   return (char*)pccTmp;
 }
 /**
@@ -757,14 +773,12 @@ char* _getStatusFile(maps* pmsConf,char* pcPid){
   OGRFeature  *poFeature = NULL;
   const char *pccTmp=NULL;
   int iHasRes=-1;
+  int iCreated=-1;
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+82+1)*sizeof(char));
   sprintf(pcaSqlQuery,
 	  "select content from %s.responses where uuid=$$%s$$"
 	  " order by creation_time desc limit 1",pmSchema->value,pcPid);
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   if(poZooResultSet!=NULL){
       while( (poFeature = poZooResultSet->GetNextFeature()) != NULL ){
@@ -782,6 +796,7 @@ char* _getStatusFile(maps* pmsConf,char* pcPid){
   if(iHasRes<0)
     pccTmp=NULL;
   cleanUpResultSet(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   free(pcaSqlQuery);
   return (char*)pccTmp;
 }
@@ -802,15 +817,10 @@ void removeService(maps* pmsConf,char* pcPid){
   sprintf(pcaSqlQuery,
 	  "DELETE FROM %s.services where uuid=$$%s$$;",
 	  pmSchema->value,pcPid);
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-    iCreated=1;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
-  if(iCreated>0)
-    close_sql(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   free(pcaSqlQuery);
   //end_sql();
 }
@@ -822,6 +832,7 @@ void removeService(maps* pmsConf,char* pcPid){
  */
 void unhandleStatus(maps* pmsConf){
   int iZooDsNb=getCurrentId(pmsConf);
+  int iCreated=-1;
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   map *pmUsid=getMapFromMaps(pmsConf,"lenv","usid");
   map *fstate=getMapFromMaps(pmsConf,"lenv","fstate");
@@ -835,8 +846,10 @@ void unhandleStatus(maps* pmsConf){
 	  "UPDATE %s.services set end_time=now(), fstate=$$%s$$"
 	  " where uuid=$$%s$$;",
 	  pmSchema->value,(fstate!=NULL?fstate->value:"Failed"),pmUsid->value);
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   //close_sql(pmsConf,iZooDsNb-1);
   free(pcaSqlQuery);
   //end_sql();
@@ -851,15 +864,13 @@ void unhandleStatus(maps* pmsConf){
  */
 char* getStatusId(maps* pmsConf,char* pcPid){
   int iZooDsNb=getCurrentId(pmsConf);
+  int iCreated=-1;
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+42+1)*sizeof(char));
   sprintf(pcaSqlQuery,
 	  "select osid from %s.services where uuid=$$%s$$",
 	  pmSchema->value,pcPid);
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   if(execSql(pmsConf,iZooDsNb-1,pcaSqlQuery)<0)
     return NULL;
   OGRFeature  *poFeature = NULL;
@@ -879,6 +890,7 @@ char* getStatusId(maps* pmsConf,char* pcPid){
     pccTmp=NULL;
   free(pcaSqlQuery);
   cleanUpResultSet(pmsConf,iZooDsNb-1);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   return (char*)pccTmp;
 }
 
@@ -890,15 +902,13 @@ char* getStatusId(maps* pmsConf,char* pcPid){
  */
 void readFinalRes(maps* pmsConf,char* pcPid,map* pmStatus){
   int iZooDsNb=getCurrentId(pmsConf);
+  int iCreated=-1;
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+44+1)*sizeof(char));
   sprintf(pcaSqlQuery,
 	  "select fstate from %s.services where uuid=$$%s$$",
 	  pmSchema->value,pcPid);
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   OGRFeature  *poFeature = NULL;
   int iHasRes=-1;
@@ -915,6 +925,7 @@ void readFinalRes(maps* pmsConf,char* pcPid,map* pmStatus){
   cleanUpResultSet(pmsConf,iZooDsNb-1);
   if(iHasRes<0)
     addToMap(pmStatus,"Status","Failed");
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   free(pcaSqlQuery);
   return;
 }
@@ -929,13 +940,11 @@ void readFinalRes(maps* pmsConf,char* pcPid,map* pmStatus){
 int isRunning(maps* pmsConf,char* pcPid){
   int iResult=0;
   int iZooDsNb=getCurrentId(pmsConf);
+  int iCreated=-1;
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
   char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+73+1)*sizeof(char));
   sprintf(pcaSqlQuery,"select count(*) as t from %s.services where uuid=$$%s$$ and end_time is null;",pmSchema->value,pcPid);
-  if( iZooDsNb == 0 ){
-    init_sql(pmsConf);
-    iZooDsNb++;
-  }
+  verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   execSql(pmsConf,iZooDsNb-1,pcaSqlQuery);
   OGRFeature  *poFeature = NULL;
   while( (poFeature = poZooResultSet->GetNextFeature()) != NULL ){
@@ -950,6 +959,7 @@ int isRunning(maps* pmsConf,char* pcPid){
   }
   cleanUpResultSet(pmsConf,iZooDsNb-1);
   free(pcaSqlQuery);
+  closeIfNeeded(pmsConf,iZooDsNb,iCreated);
   return iResult;
 }
 

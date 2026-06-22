@@ -28,11 +28,15 @@
 #include "service.h"
 #include <stdint.h>
 
+#ifndef AMQP_HEARTBEAT_SECONDS
+#define AMQP_HEARTBEAT_SECONDS 30
+#endif
+
 int init_amqp(maps*);
 int bind_amqp();
 int bind_queue();
-void init_confirmation();
-void init_consumer();
+int init_confirmation();
+int init_consumer();
 uint64_t consumer_amqp(char ** m);
 int send_msg(const char * msg, const char * content_type);
 int close_amqp();

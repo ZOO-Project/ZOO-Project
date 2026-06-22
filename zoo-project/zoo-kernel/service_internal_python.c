@@ -247,6 +247,9 @@ int zoo_python_support(maps** main_conf,map* request,service* s,maps **real_inpu
 #else
   PyEval_InitThreads();
 #endif
+  setvbuf(stdout, NULL, _IONBF, 0);
+  setvbuf(stderr, NULL, _IONBF, 0);
+  setenv("PYTHONUNBUFFERED", "1", 1);
   Py_Initialize();
 #if PY_MAJOR_VERSION >= 3
 #if PY_MINOR_VERSION < 9

@@ -87,6 +87,8 @@ def UndeployProcess(conf, inputs, outputs):
         return zoo.SERVICE_UNDEPLOYED
 
     except Exception as err:
+        if "operation" in conf["lenv"]:
+            del conf["lenv"]["operation"]
         conf["lenv"]["message"]=str(err)
         zoo.error(f"Service cannot be undeployed for the following reason: {str(err)}")
         return zoo.SERVICE_FAILED

@@ -1,5 +1,10 @@
 Version 2.1.1-dev
-  * Add a basic Notify process for DRU operations,
+  * Enhance internal log message management, relying on ZOO_DEBUG_LEVEL
+  * value.
+  * Add basic QOS to rabbitmq setting prefetch count to 1.
+  * Do not preserve database connection open during process execution,
+  add functions: verifyDbConnection and closeIfNeeded.
+  * Add a basic Notify process for DRU operations.
   * Add support for File outputs with the format key when deploying a process.
 Version 2.1.0
   * Add support for the /jobs/{jobId}/results/{outputId} endpoint
