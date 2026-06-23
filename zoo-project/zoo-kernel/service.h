@@ -975,7 +975,8 @@ do {\
 	"The result for the requested JobID has not yet been generated."
   };
 
-  ZOO_DLL_EXPORT int _ZOO_LOG_MSG(int level, const char*, const char*, int, const char *, ...)
+  ZOO_DLL_EXPORT void setMinZooLogLevel(char*);
+  ZOO_DLL_EXPORT int _ZOO_LOG_MSG(int, const char*, const char*, int, const char *, ...)
     __attribute__((format(printf, 5, 6)));
   ZOO_DLL_EXPORT int zooDebugPrint( const char * format, ... );
   ZOO_DLL_EXPORT void _dumpMap(map*);

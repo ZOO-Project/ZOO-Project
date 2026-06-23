@@ -61,6 +61,7 @@ extern "C" {
 
 
 int runAsyncRequest(maps**,map**,map**,json_object *);
+void setMinZooLogLevel(char*);
 
 using namespace std;
 
@@ -130,11 +131,15 @@ int cgiMain(){
     async_worker = atoi(m_async_worker->value);
     //freeMap(&m_async_worker);
     if (async_worker == 0){
-      fprintf(stderr,"Configuration error: req_worker");
+      ZOO_ERROR("Configuration error: async_worker");
       return 2;
     }
   }
 
+  char* pcDebugLevel = getenv("ZOO_DEBUG_LEVEL");
+  if(pcDebugLevel!=NULL){
+    setMinZooLogLevel(pcDebugLevel);
+  }
   init_amqp(conf);
  
   int fork_status = fork();

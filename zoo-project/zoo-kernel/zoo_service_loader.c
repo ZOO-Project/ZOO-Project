@@ -189,11 +189,11 @@ extern "C"
 #endif
 
 /**
- * Translation function for zoo-kernel
+ * Translation function for ZOO-Kernel
  */
 #define _(String) dgettext ("zoo-kernel",String)
 /**
- * Translation function for zoo-service
+ * Translation function for ZOO-Service
  */
 #define __(String) dgettext ("zoo-service",String)
 
@@ -1602,22 +1602,7 @@ void initAllEnvironment(maps* conf,map* request_inputs,
   // Set the log level if defined in the ZOO_DEBUG_LEVEL environment variable
   if(_tmpMaps->content!=NULL && getMap(_tmpMaps->content,"ZOO_DEBUG_LEVEL")!=NULL){
     map* pmTmp=getMap(_tmpMaps->content,"ZOO_DEBUG_LEVEL");
-    bool bFound=false;
-    for(int i=0;i<8;i++){
-      if(strcasecmp(pccLogLevel[i],pmTmp->value)==0){
-        iMinZooLogLevel=i;
-        bFound=true;
-        break;
-      }
-    }
-    if(!bFound)
-      iMinZooLogLevel=ZOO_DEBUG_LEVEL_ALL;
-    const char* pccLevel;
-    if(iMinZooLogLevel>=0)
-      pccLevel = pccLogLevel[iMinZooLogLevel];
-    else
-      pccLevel = "ALL";
-    ZOO_TRACE("ZOO_DEBUG_LEVEL environment variable set to %s",pccLevel);
+    setMinZooLogLevel(pmTmp->value);
   }
   addMapsToMaps (&conf, _tmpMaps);
   freeMaps (&_tmpMaps);

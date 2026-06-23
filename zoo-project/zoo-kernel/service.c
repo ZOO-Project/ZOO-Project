@@ -34,6 +34,33 @@
 int iZooLogLevel=1;
 int iMinZooLogLevel=0;
 
+/**
+ * Set the minimum log level for ZOO-Kernel
+ *
+ * @param pcLevel the debug level to set (TRACE, DEBUG, INFO, SUCCESS, WARNING,
+ * ERROR, CRITICAL, OFF, any other values is equivalent to using ALL).
+ *
+ * @see iMinZooLogLevel
+ */
+void setMinZooLogLevel(char* pcLevel){
+    bool bFound=false;
+    for(int i=0;i<8;i++){
+      if(strcasecmp(pccLogLevel[i],pcLevel)==0){
+        iMinZooLogLevel=i;
+        bFound=true;
+        break;
+      }
+    }
+    if(!bFound)
+      iMinZooLogLevel=ZOO_DEBUG_LEVEL_ALL;
+    const char* pccLevel;
+    if(iMinZooLogLevel>=0)
+      pccLevel = pccLogLevel[iMinZooLogLevel];
+    else
+      pccLevel = "ALL";
+    ZOO_TRACE("ZOO_DEBUG_LEVEL environment variable set to %s",pccLevel);
+}
+
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #include <stdarg.h>
 /**
