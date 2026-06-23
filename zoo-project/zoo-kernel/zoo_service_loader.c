@@ -812,7 +812,7 @@ int _fetchService(registry* zooRegistry,maps** pmsConf,service** spService, map*
   if(metadb_id>0){
     *spService=extractServiceFromDb(m,cIdentifier,0);
     close_sql(m,metadb_id-1);
-    ZOO_DEBUG("Disconect from MetaDB");
+    ZOO_TRACE("Disconnect from MetaDB");
     s1=*spService;
   }
   if(s1!=NULL){
@@ -2247,10 +2247,7 @@ int ensureFiltered(maps** ppmsConf,const char* pcType){
        ((pmPath=getMapArray(pmsSection->content,"path",iCnt))!=NULL) &&
        ((pmName=getMapArray(pmsSection->content,"service",iCnt))!=NULL)){
       if(fetchService(NULL,ppmsConf,&psaService,NULL,pmPath->value,pmName->value,printExceptionReportResponseJ)!=0){
-        int iTmp=iZooLogLevel;
-        iZooLogLevel=ZOO_DEBUG_LEVEL_ERROR;
-        ZOO_DEBUG("ERROR fetching the service");
-        iZooLogLevel=iTmp;
+        ZOO_ERROR("ERROR fetching the service");
         return 1;
       }
       maps* pmsInputs=NULL;
@@ -2990,7 +2987,7 @@ int runRequest(map** inputs) {
             free(pcaCgiQueryString);
             return 1;
           }else{
-            ZOO_DEBUG("Process to undeploy found, but no package file found for this process, undeploy is not allowed.");
+            ZOO_ERROR("Process to undeploy found, but no package file found for this process, undeploy is not allowed.");
             setMapInMaps(pmsaConfig,"headers","Status","403 Forbidden");
             map* error=createMap("code","ImmutableProcess");
             addToMap(error,"message",_("The process cannot be modified."));
@@ -5018,7 +5015,7 @@ int runRequest(map** inputs) {
               char* message=(char*)malloc((61+len)*sizeof(char));
               sprintf(message,"The <request> value was not recognized. Allowed values are %s.",tmpStr);
               errorException (&pmsaConfig,_(message),"InvalidParameterValue", "request");
-              ZOO_DEBUG("No request found %s", REQUEST);
+              ZOO_ERROR("No request found %s", REQUEST);
               closedir (dirp);
               freeMaps (&pmsaConfig);
               free (pmsaConfig);
@@ -5646,7 +5643,7 @@ runAsyncRequest (maps** ppmsConf, map ** ppmLenv, map ** irequest_inputs,json_ob
                                 strlen(pcIP)+strlen(uusid->value)+
                                 strlen(SQL_AVAILABLE_SLOT)+129)*sizeof(char));
   sprintf(pcaSqlQuery0,SQL_AVAILABLE_SLOT,schema->value,schema->value,uusid->value,pcIP,getpid());
-  ZOO_DEBUG("SQL query: %s", pcaSqlQuery0);
+  ZOO_TRACE("SQL query: %s", pcaSqlQuery0);
   OGRLayer *res=fetchSql(conf,iSqlCon-1,pcaSqlQuery0);
   free(pcaSqlQuery0);
   if(res!=NULL){

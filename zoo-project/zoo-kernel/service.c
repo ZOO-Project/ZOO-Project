@@ -31,6 +31,9 @@
 #include <process.h>
 #endif
 
+int iZooLogLevel=1;
+int iMinZooLogLevel=0;
+
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #include <stdarg.h>
 /**

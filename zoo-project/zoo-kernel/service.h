@@ -272,7 +272,7 @@ static const char* pccLogLevel[8]={
 /**
  * The log level is used to define the severity of messages that will be logged.
  */
-static int iZooLogLevel=1;
+extern int iZooLogLevel;
 
 /**
  * The minimal global log level is used to filter messages based on their
@@ -284,13 +284,13 @@ static int iZooLogLevel=1;
  * Per default, the minimal log level is set to 0 (TRACE), which means that all
  * messages will be logged, except those with a severity level equal to TRACE.
  *
- * At runtime, the minimal log level can be changed by settting the ZOO_DEBUG_LEVEL
- * environment variable to one of the pccLogLevel values. If the environment
- * variable is set to ALL, then all messages will be logged. If the environment
- * variable is set to OFF, then no messages will be logged.
+ * At runtime, the minimal log level can be changed by setting the ZOO_DEBUG_LEVEL
+ * environment variable to one of the pccLogLevel values or ALL. If the
+ * environment variable is set to ALL, then all messages will be logged. If
+ * the environment variable is set to OFF, then no messages will be logged.
  *
  */
-static int iMinZooLogLevel=0;
+extern int iMinZooLogLevel;
 
 /**
  * The ZOO_LOG_MESSAGE macro print a message using _ZOO_DEBUG.

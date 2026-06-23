@@ -131,7 +131,6 @@ def securityIn(main_conf,inputs,outputs):
             if a.count("SERVICES_NAMESPACE")>0:
                 main_conf["renv"][a]=main_conf["auth_env"]["user"]
         main_conf["renv"]["SERVICES_NAMESPACE"]=main_conf["auth_env"]["user"]
-    zoo.info(f"renv. {main_conf['renv']}")
     if hasAuth or \
        ("lenv" in main_conf and "secured_url" in main_conf["lenv"] and main_conf["lenv"]["secured_url"]=="false"):
         return zoo.SERVICE_SUCCEEDED
