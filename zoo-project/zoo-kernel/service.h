@@ -281,6 +281,12 @@ static int iZooLogLevel=1;
  * Messages with a severity level lower than or equal to this value will be
  * ignored.
  *
+ * Per default, the minimal log level is set to 0 (TRACE), which means that all
+ * messages will be logged, except those with a severity level equal to TRACE.
+ *
+ * At runtime, the minimal log level can be changed by settting the ZOO_DEBUG_LEVEL
+ * environment variable to one of the pccLogLevel values.
+ *
  */
 static int iMinZooLogLevel=0;
 
