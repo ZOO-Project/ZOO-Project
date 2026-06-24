@@ -13,10 +13,11 @@ Several ways to download the `ZOO-Project <http://zoo-project.org>`_ source code
 ZOO-Project releases archives
 -------------------------------
 
-Each new `ZOO-Project <http://zoo-project.org>`_ major release are
-available on the project official website as .zip and .tar.bz2
+Each new `ZOO-Project <http://zoo-project.org>`_ release is
+available on the project official website and the `GitHub Releases page <https://github.com/ZOO-Project/ZOO-Project/releases>`_ as .zip and .tar.bz2
 archives. Head to the `Downloads
-<http://zoo-project.org/new/Code/Download>`_ section to get the latest or
+<http://zoo-project.org/resources/download/>`_ section or the
+`GitHub Releases <https://github.com/ZOO-Project/ZOO-Project/releases>`_ page to get the latest or
 older ZOO-Project releases. 
 
 .. warning::
