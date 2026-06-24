@@ -377,7 +377,7 @@ char* _getStatus(maps* conf,char* lid){
   sprintf (pcaStatusFile, "%s/%s.status", pmInputs->value, lid);
   FILE* f0 = fopen (pcaStatusFile, "r");
   if(f0!=NULL){
-    semid lockid = NULL;
+    semid lockid = -1;
     char* stat;
     long flen;
     stat=getStatusId(conf,lid);
@@ -461,7 +461,7 @@ int _updateStatus(maps *conf){
   if(status!=NULL && msg!=NULL &&
      status->value!=NULL && msg->value!=NULL && 
      strlen(status->value)>0 && strlen(msg->value)>1){    
-    semid lockid = NULL;
+    semid lockid = -1;
     char* stat=getStatusId(conf,pmSid->value);
     if(stat!=NULL){
       lockid=acquireLock(conf);
