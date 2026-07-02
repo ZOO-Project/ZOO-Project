@@ -1,7 +1,7 @@
 #
-# Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau
+# Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau, Gérald Fenoy
 #
-# Copyright 2023 Terradue. All rights reserved.
+# Copyright 2023-2026 Terradue. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -56,14 +56,25 @@ class UndeployService(Services):
             import psycopg2
             import psycopg2.extensions
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-            conn = psycopg2.connect("host=%s port=%s dbname=%s user=%s password=%s" % (self.conf["metadb"]["host"], self.conf["metadb"]["port"], self.conf["metadb"]["dbname"], self.conf["metadb"]["user"], self.conf["metadb"]["password"]))
+            conn = psycopg2.connect(
+                host=self.conf["metadb"]["host"],
+                port=self.conf["metadb"]["port"],
+                dbname=self.conf["metadb"]["dbname"],
+                user=self.conf["metadb"]["user"],
+                password=self.conf["metadb"]["password"],
+            )
             cur = conn.cursor()
             if "auth_env" in self.conf:
                 self.user=self.conf["auth_env"]["user"]
             else:
                 self.user="anonymous"
             zoo.info(f"Delete service {self.get_process_identifier} from database.")
-            cur.execute("DELETE FROM collectiondb.ows_process WHERE identifier='%s' AND user_id=(select id from public.users where name=$q$%s$q$)" % (self.get_process_identifier(),self.user))
+            cur.execute(
+                "DELETE FROM collectiondb.ows_process "
+                "WHERE identifier=%s "
+                "AND user_id=(select id from public.users where name=%s)",
+                (self.get_process_identifier(),self.user,)
+            )
             conn.commit()
             conn.close()
 

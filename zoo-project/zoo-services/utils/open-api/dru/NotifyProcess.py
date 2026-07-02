@@ -31,8 +31,8 @@ import urllib.error
 
 def Notify(conf, inputs, outputs):
 
-    if 'publisherUrl' not in conf['openapi'] or not "operation" in conf['lenv']:
-        zoo.error("Publisher URL not configured in 'openapi.publisherUrl'")
+    if 'publisherUrl' not in conf['openapi']:
+        zoo.warning("Publisher URL not configured in 'openapi.publisherUrl'")
         return zoo.SERVICE_SUCCEEDED
 
     publisher_url = conf['openapi']['publisherUrl']

@@ -78,6 +78,18 @@ def securityIn(conf,inputs,outputs):
             for i in range(len(rFiles)):
                 zoo.info(f"Copy file {rFiles[i]}")
                 shutil.copyfile(conf["renv"]["CONTEXT_DOCUMENT_ROOT"]+"/"+rFiles[i],rPath+"/"+rFiles[i])
+    conf["renv"]["FAKE_HTTP_ACCEPT_PROFILE"] = False
+    if "REDIRECT_QUERY_STRING" in conf["renv"]:
+        from urllib.parse import urlparse, parse_qs, parse_qsl
+        params = parse_qs(conf["renv"]["REDIRECT_QUERY_STRING"])
+        profile_value = params.get('profile', [''])[0]
+        if profile_value != '':
+            if "HTTP_ACCEPT_PROFILE" not in conf["renv"]:
+                conf["renv"]["HTTP_ACCEPT_PROFILE"] = profile_value
+                conf["renv"]["FAKE_HTTP_ACCEPT_PROFILE"] = True
+    if "HTTP_ACCEPT_PROFILE" in conf["renv"] and conf["renv"]["HTTP_ACCEPT_PROFILE"].count("openeo") > 0:
+        import openeo_processes
+        openeo_processes.convert(conf,{},outputs)
     return zoo.SERVICE_SUCCEEDED
 
 def securityOut(conf,inputs,outputs):

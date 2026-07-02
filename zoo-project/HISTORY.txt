@@ -1,4 +1,8 @@
 Version 2.1.1-dev
+  * Add support for openeo-process-list on /processes with the profile 
+  request parameter.
+  * Define list of not allowed content for identifiers created from the CWL.
+  * Avoid potential SQL injection from deploy_util.py and UndeployProcess.py.
   * Enhance internal log message management, relying on ZOO_DEBUG_LEVEL
   * value.
   * Add basic QOS to rabbitmq setting prefetch count to 1.

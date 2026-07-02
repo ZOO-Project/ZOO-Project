@@ -34,6 +34,7 @@
  cwl-utils>=0.14
  #cwl-loader==0.15.0
  git+https://github.com/GeoLabs/cwl-loader.git@feature/add-dask-support
+ git+https://github.com/GeoLabs/oapip2openeo.git
  hera
  httpx
  h11>=0.16.0

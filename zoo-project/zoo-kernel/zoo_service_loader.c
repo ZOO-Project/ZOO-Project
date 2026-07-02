@@ -1012,7 +1012,10 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** ppmsConf, char* r
       if (int res =
           _recursReaddirF (ppmsConf, zooRegistry, doc, n, conf_dir, NULL, saved_stdout, 0,
                           func) < 0){
+        fflush(stdout);
+        fflush(stderr);
         zDup2 (saved_stdout, fileno (stdout));
+        zClose(saved_stdout);
         return res;
       }
 #ifdef META_DB
@@ -1048,7 +1051,10 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** ppmsConf, char* r
 
                 if (t < 0) // failure reading zcfg
                   {
+                    fflush(stdout);
+                    fflush(stderr);
                     zDup2 (saved_stdout, fileno (stdout));
+                    zClose(saved_stdout);
 #ifdef META_DB
                     close_sql(m,metadb_id-1);
 #endif
@@ -1098,7 +1104,10 @@ int _fetchServicesForDescription(registry* zooRegistry, maps** ppmsConf, char* r
               t = readServiceFile (m, buff1, &s1, tmpMapI->value);
               if (t < 0)
                 {
+                  fflush (stdout);
+                  fflush (stderr);
                   zDup2 (saved_stdout, fileno (stdout));
+                  zClose(saved_stdout);
                   if(pmContinue!=NULL && strncasecmp(pmContinue->value,"false",5)==0)
                     exitAndCleanUp(zooRegistry, &m,
                                    tmps,"InvalidParameterValue","identifier",
@@ -3042,6 +3051,7 @@ int runRequest(map** inputs) {
                                               request_inputs,
                                               localPrintExceptionJ);
             if(json_object_array_length(res4)==0){
+              ZOO_ERROR("Unable to access the process to be updated, it may not exist. %d",t);
               json_object_put(res4);
               json_object_put(res3);
               free (REQUEST);
@@ -3974,6 +3984,7 @@ int runRequest(map** inputs) {
         bool isAlreadyDeployed=false;
         if(pmIsDeployed!=NULL && strncasecmp(pmIsDeployed->value,"true",4)==0){
           eres=SERVICE_DEPLOYED;
+          ZOO_DEBUG("Service is already deployed, skipping deployment step %d.", eres);
           isAlreadyDeployed=true;
           bBypassed=true;
           goto printDescription;
@@ -3984,9 +3995,9 @@ int runRequest(map** inputs) {
         if(fetchService(zooRegistry,&pmsaConfig,&s1,request_inputs,conf_dir_,cIdentifier,localPrintExceptionJ)!=0){
           // Cleanup memory
           register_signals(donothing);
+          ZOO_ERROR("fetch service failed!");
           free(REQUEST);
           json_object_put(res);
-
           freeMap(inputs);
           free(*inputs);
           *inputs=NULL;
@@ -4485,6 +4496,7 @@ int runRequest(map** inputs) {
                   printHeaders(&pmsaConfig);
                   setMapInMaps(pmsaConfig,"lenv","hasPrinted","true");
                   res=NULL;
+                  ZOO_DEBUG("Service %s undeployed successfully.", pmTmp->value);
                 }
               free(pcaFileName);
             }else{

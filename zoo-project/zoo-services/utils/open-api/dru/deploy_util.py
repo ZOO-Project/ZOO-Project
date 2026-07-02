@@ -1,7 +1,7 @@
 #
 # Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau
 #
-# Copyright 2023-2025 Terradue. All rights reserved.
+# Copyright 2023-2026 Terradue. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -127,7 +127,8 @@ class Process:
                     root_metadata[item.replace(search_str,"https://schema.org/")]=cwl[item]
 
         id = re.sub(".*#", '', workflow.id)
-
+        if not cls.isValidVaIdentifier(id):
+            raise ValueError(f"Invalid workflow identifier: {id}")
         process = Process(
             identifier=id,
             version=version,
@@ -143,6 +144,17 @@ class Process:
         process.cwl2ogc_converter = BaseCWLtypes2OGCConverter(workflow)
 
         return process
+
+    _FORBIDDEN_CONTENT = (",", "$q$", "$$", ";")
+
+    @classmethod
+    def isValidVaIdentifier(cls, identifier_name):
+        for a in cls._FORBIDDEN_CONTENT:
+            if a in identifier_name:
+                msg = f"Service identifier {identifier_name} contains a forbidden character: {a}"
+                zoo.error(msg)
+                raise ValueError(msg)
+        return True
 
 
     def write_zcfg(self, stream):
@@ -294,44 +306,66 @@ class Process:
             self.user=conf["auth_env"]["user"]
         else:
             self.user="anonymous"
-        conn = psycopg2.connect("host=%s port=%s dbname=%s user=%s password=%s" % (conf["metadb"]["host"], conf["metadb"]["port"], conf["metadb"]["dbname"], conf["metadb"]["user"], conf["metadb"]["password"]))
+        conn = psycopg2.connect(
+            host=conf["metadb"]["host"],
+            port=conf["metadb"]["port"],
+            dbname=conf["metadb"]["dbname"],
+            user=conf["metadb"]["user"],
+            password=conf["metadb"]["password"],
+        )
         cur = conn.cursor()
         if "orequest_method" in conf["lenv"]:
-            cur.execute("DELETE FROM collectiondb.ows_process WHERE identifier=$q$%s$q$ and user_id=(select id from public.users where name=$q$%s$q$)" % (self.identifier,self.user))
+            cur.execute(
+                "DELETE FROM collectiondb.ows_process "
+                "WHERE identifier=%s and user_id=(select id from public.users where name=%s)",
+                (self.identifier,self.user,)
+            )
         conn.commit()
-        cur.execute("SELECT id FROM collectiondb.ows_process WHERE identifier=$q$%s$q$ and user_id=(select id from public.users where name=$q$%s$q$)" % (self.identifier,self.user))
+        cur.execute(
+            "SELECT id FROM collectiondb.ows_process "
+            "WHERE identifier=%s and user_id=(select id from public.users where name=%s)",
+            (self.identifier,self.user,)
+        )
         vals = cur.fetchone()
         if vals is not None:
             conn.close()
             return False
         conn.commit()
-        cur.execute(("INSERT INTO CollectionDB.zoo_DeploymentMetadata"+
-                  "(executable_name,service_type_id)"+
-                  " VALUES "+
-                  " ($q${0}$q$,"+
-                  "(SELECT id from CollectionDB.zoo_ServiceTypes WHERE service_type=$q${1}$q$));")
-                  .format(self.service_provider,self.service_type))
+        cur.execute(
+            "INSERT INTO CollectionDB.zoo_DeploymentMetadata"
+            "(executable_name,service_type_id)"
+            " VALUES "
+            " (%s,(SELECT id from CollectionDB.zoo_ServiceTypes WHERE service_type=%s));",
+            (self.service_provider,self.service_type,)
+        )
         cur.execute("INSERT INTO CollectionDB.zoo_PrivateMetadata(id) VALUES (default);")
-        cur.execute("INSERT INTO CollectionDB.PrivateMetadataDeploymentMetadataAssignment(private_metadata_id,deployment_metadata_id) VALUES"+
-                  "((SELECT last_value FROM CollectionDB.zoo_PrivateMetadata_id_seq),"+
-                  "(SELECT last_value FROM CollectionDB.zoo_DeploymentMetadata_id_seq));")
+        cur.execute(
+            "INSERT INTO CollectionDB.PrivateMetadataDeploymentMetadataAssignment(private_metadata_id,deployment_metadata_id) VALUES"
+            "((SELECT last_value FROM CollectionDB.zoo_PrivateMetadata_id_seq),"
+            "(SELECT last_value FROM CollectionDB.zoo_DeploymentMetadata_id_seq));"
+        )
         try:
-            cur.execute("SELECT id from public.users WHERE name = $q${0}$q$".format(self.user))
+            cur.execute(
+                "SELECT id from public.users WHERE name = %s",
+                (self.user,)
+            )
             if cur.fetchone() is None:
-                cur.execute("INSERT INTO public.users (name) VALUES ($q${0}$q$)".format(self.user));
+                cur.execute(
+                    "INSERT INTO public.users (name) VALUES (%s)", (self.user,)
+                )
         except Exception as e:
             print(e,file=sys.stderr)
-            cur.commit()
-        cur.execute(("INSERT INTO CollectionDB.ows_Process"+
-                  "(identifier,title,abstract,version,user_id,private_metadata_id,mutable,availability)"+
-                  "VALUES"+
-                  "($q${0}$q$,"+
-                  "$q${1}$q$,"+
-                  "$q${2}$q$,"+
-                  "$q${3}$q$,"+
-                  "(select id from public.users where name=$q${4}$q$),"+
-                  "(SELECT last_value FROM CollectionDB.PrivateMetadataDeploymentMetadataAssignment_id_seq),"+
-                  "true,true);").format(self.identifier,self.title,self.description,self.version,self.user))
+            conn.commit()
+        cur.execute(
+            "INSERT INTO CollectionDB.ows_Process"
+            "(identifier,title,abstract,version,user_id,private_metadata_id,mutable,availability)"
+            "VALUES"
+            "(%s,%s,%s,%s,"
+            "(select id from public.users where name=%s),"
+            "(SELECT last_value FROM CollectionDB.PrivateMetadataDeploymentMetadataAssignment_id_seq),"
+            "true,true);",
+            (self.identifier,self.title,self.description,self.version,self.user,)
+        )
         cur.execute("CREATE TEMPORARY TABLE pid AS (select last_value as id from CollectionDB.Descriptions_id_seq);")
 
         # Main Metadata extraction
@@ -340,81 +374,96 @@ class Process:
                 if isinstance(self.metadata[item],dict):
                     self.metadata[item]=[self.metadata[item]]
                 if isinstance(self.metadata[item],str):
-                    cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href) "+
-                                "VALUES ($q${0}$q$,$q${1}$q$)".format(item,self.metadata[item]))
-                    cur.execute("INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "+
-                                "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Metadata_id_seq))")
+                    cur.execute(
+                        "INSERT INTO CollectionDB.ows_Metadata (role,href) "
+                        "VALUES (%s,%s)",
+                        (item,self.metadata[item],)
+                    )
+                    cur.execute(
+                        "INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "
+                        "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Metadata_id_seq))"
+                    )
                 elif isinstance(self.metadata[item],list):
                     # Parse Keywords if any
                     if len(self.metadata[item])>0 and isinstance(self.metadata[item][0],str):
                         for icnt in range(len(self.metadata[item])):
-                            res=cur.execute("INSERT INTO CollectionDB.ows_Keywords (keyword) "+
-                                            "VALUES ($q${0}$q$)".format(self.metadata[item][icnt]));
-                            cur.execute("INSERT INTO CollectionDB.DescriptionsKeywordsAssignment (descriptions_id,keywords_id) "+
-                                        "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Keywords_id_seq))")
+                            res=cur.execute(
+                                "INSERT INTO CollectionDB.ows_Keywords (keyword) VALUES (%s)",
+                                (self.metadata[item][icnt],)
+                            )
+                            cur.execute(
+                                "INSERT INTO CollectionDB.DescriptionsKeywordsAssignment (descriptions_id,keywords_id) "
+                                "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Keywords_id_seq))"
+                            )
                     elif len(self.metadata[item])>0 and isinstance(self.metadata[item][0],dict):
-                        res=cur.execute("INSERT INTO CollectionDB.ows_Metadata (role) "+
-                                        "VALUES ($q${0}$q$) RETURNING id".format(item))
+                        res=cur.execute(
+                            "INSERT INTO CollectionDB.ows_Metadata (role) VALUES (%s) RETURNING id",
+                            (item,)
+                        )
                         metadata_id=cur.fetchone()
-                        cur.execute("INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "+
-                                    "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Metadata_id_seq))")
+                        cur.execute(
+                            "INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "
+                            "VALUES ((select id from pid),(select last_value from CollectionDB.ows_Metadata_id_seq))"
+                        )
                         for icnt in range(len(self.metadata[item])):
                             for subitem in self.metadata[item][icnt]:
                                 if subitem=="class":
-                                    cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
-                                                "VALUES ($q$@context$q$,$q$https://schema.org$q$,{0},{1})".format(
-                                                    str(metadata_id[0]),
-                                                    str(icnt)
-                                                ))
-                                    cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
-                                                "VALUES ($q$@type$q$,$q${0}$q$,{1},{2})".format(
-                                                    self.metadata[item][icnt][subitem].split(":")[1]
-                                                    if self.metadata[item][icnt][subitem].count(":")>0
-                                                    else self.metadata[item][icnt][subitem],
-                                                    str(metadata_id[0]),
-                                                    str(icnt)
-                                                ))
+                                    cur.execute(
+                                        "INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "
+                                        "VALUES (%s,%s,%s,%s)",
+                                         ("@context", "https://schema.org", metadata_id[0], icnt,)
+                                    )
+                                    type_value = (
+                                        self.metadata[item][icnt][subitem].split(":")[1]
+                                        if self.metadata[item][icnt][subitem].count(":") > 0
+                                        else self.metadata[item][icnt][subitem]
+                                    )
+                                    cur.execute(
+                                        "INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "
+                                        "VALUES (%s,%s,%s,%s)",
+                                        ("@type", type_value, metadata_id[0], icnt,)
+                                    )
                                 else:
-                                    if subitem.count(":")>0:
-                                        cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
-                                                    "VALUES ($q${0}$q$,$q${1}$q$,{2},{3})".format(
-                                                        subitem.split(":")[1],
-                                                        self.metadata[item][icnt][subitem],
-                                                        str(metadata_id[0]),
-                                                        str(icnt)
-                                                    ))
-                                    else:
-                                        cur.execute("INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "+
-                                                    "VALUES ($q${0}$q$,$q${1}$q$,{2},{3})".format(
-                                                        subitem,
-                                                        self.metadata[item][icnt][subitem],
-                                                        str(metadata_id[0]),
-                                                        str(icnt)
-                                                    ))
+                                    role_value = (
+                                        subitem.split(":")[1]
+                                        if subitem.count(":") > 0
+                                        else subitem
+                                    )
+                                    cur.execute(
+                                        "INSERT INTO CollectionDB.ows_Metadata (role,href,pid,index) "
+                                        "VALUES (%s,%s,%s,%s)",
+                                        (role_value, self.metadata[item][icnt][subitem], metadata_id[0], icnt,)
+                                    )
 
         # Inputs handling
         myInputs = self.cwl2ogc_converter.get_inputs()
         for input in myInputs:
             # zoo.debug(str(myInputs[input]))
+            if not Process.isValidVaIdentifier(input):
+                raise ValueError(f"Invalid input identifier: {input}")
+
             self.sql_handle_io(cur,myInputs[input],input,"Input")
-            cur.execute(("INSERT INTO CollectionDB.ows_Input (identifier,title,abstract,min_occurs,max_occurs,raw_schema) VALUES "+
-                      "($q${0}$q$,"+
-                      "$q${1}$q$,"+
-                      "$q${2}$q$,"+
-                      "{3},"+
-                      "{4},"+
-                      "$q${5}$q$);").format(input,
-                                myInputs[input].get("title",None),
-                                myInputs[input].get("description",None),
-                                myInputs[input].get("minOccurs",None),
-                                999 if myInputs[input]["maxOccurs"] == 0 else myInputs[input]["maxOccurs"],
-                                json.dumps(myInputs[input].get("schema",None))
-                      ))
-            cur.execute("INSERT INTO CollectionDB.InputDataDescriptionAssignment (input_id,data_description_id)"+
-                        "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"+
-                        "(select last_value from CollectionDB.ows_DataDescription_id_seq));");
-            cur.execute("INSERT INTO CollectionDB.ProcessInputAssignment(process_id,input_id)"+
-                        "VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));")
+            cur.execute(
+                "INSERT INTO CollectionDB.ows_Input (identifier,title,abstract,min_occurs,max_occurs,raw_schema) VALUES "
+                "(%s,%s,%s,%s,%s,%s);",
+                (
+                    input,
+                    myInputs[input].get("title", 'None'),
+                    myInputs[input].get("description", 'None'),
+                    myInputs[input].get("minOccurs", 'None'),
+                    999 if myInputs[input]["maxOccurs"] == 0 else myInputs[input]["maxOccurs"],
+                    json.dumps(myInputs[input].get("schema", None)),
+                )
+            )
+            cur.execute(
+                "INSERT INTO CollectionDB.InputDataDescriptionAssignment (input_id,data_description_id)"
+                "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"
+                "(select last_value from CollectionDB.ows_DataDescription_id_seq));"
+            )
+            cur.execute(
+                "INSERT INTO CollectionDB.ProcessInputAssignment(process_id,input_id)"
+                "VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));"
+            )
             for i in range(len(myInputs[input]["metadata"])):
                 self.sql_add_metadata(cur, myInputs[input]["metadata"][i])
 
@@ -422,22 +471,31 @@ class Process:
         myOutputs = self.cwl2ogc_converter.get_outputs()
         for output in myOutputs:
             # zoo.debug(str(myOutputs[output]))
+            if not Process.isValidVaIdentifier(output):
+                raise ValueError(f"Invalid output identifier: {output}")
             self.sql_handle_io(cur,myOutputs[output],output,"Output")
-            cur.execute("INSERT INTO CollectionDB.ows_Output"+
-                      "(identifier,title,abstract,raw_schema)"+
-                      " VALUES "+
-                      "($q${0}$q$,$q${1}$q$,$q${2}$q$,$q${3}$q$);".format(output,
-                                                                myOutputs[output].get("title",None),
-                                                                myOutputs[output].get("description",None),
-                                                                json.dumps(myOutputs[output].get("schema",None))
-                                                            )
-                      )
-            cur.execute("INSERT INTO CollectionDB.OutputDataDescriptionAssignment (output_id,data_description_id) "+
-                        "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"+
-                        "(select last_value from CollectionDB.ows_DataDescription_id_seq));")
+            cur.execute(
+                "INSERT INTO CollectionDB.ows_Output"
+                "(identifier,title,abstract,raw_schema)"
+                " VALUES "+
+                "(%s,%s,%s,%s);",
+                (
+                    output,
+                    myOutputs[output].get("title","None"),
+                    myOutputs[output].get("description","None"),
+                    json.dumps(myOutputs[output].get("schema",None)),
+                )
+            )
+            cur.execute(
+                "INSERT INTO CollectionDB.OutputDataDescriptionAssignment (output_id,data_description_id) "
+                "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"
+                "(select last_value from CollectionDB.ows_DataDescription_id_seq));"
+            )
             # zoo.info(f"Using {local_format} as output format")
-            cur.execute("INSERT INTO CollectionDB.ProcessOutputAssignment(process_id,output_id) "+
-                        "VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));")
+            cur.execute(
+                "INSERT INTO CollectionDB.ProcessOutputAssignment(process_id,output_id) "
+                "VALUES((select id from pid),(select last_value as id from CollectionDB.Descriptions_id_seq));"
+            )
             for i in range(len(myOutputs[output]["metadata"])):
                 self.sql_add_metadata(cur, myOutputs[output]["metadata"][i])
 
@@ -458,8 +516,11 @@ class Process:
                 # This is a workaround for schema with anchors
                 if schema.count("#")>0:
                     schema=schema.split("#")[0]
-                cur.execute("SELECT namespace|| '#' || cwl_type from CollectionDB.PrimitiveDataFormats "+
-                            "where schemaUrl=$q${0}$q$ LIMIT 1".format(schema))
+                cur.execute(
+                    "SELECT namespace|| '#' || cwl_type from CollectionDB.PrimitiveDataFormats "+
+                    "where schemaUrl=%s LIMIT 1",
+                    (schema,)
+                )
                 val= cur.fetchone()
                 if val is not None:
                     self.sql_add_complex_data(cur, val[0], io_entity["oneOf"][i])
@@ -492,74 +553,105 @@ class Process:
 
             if "enum" in io_entity["schema"]:
                 for i in range(len(io_entity["schema"]["enum"])):
-                    cur.execute("INSERT INTO CollectionDB.AllowedValues (allowed_value) VALUES ($q${0}$q$);".format(io_entity["schema"]["enum"][i]))
-                    cur.execute("INSERT INTO CollectionDB.AllowedValuesAssignment (literal_data_domain_id,allowed_value_id) VALUES ("+
-                                    "(select last_value as id from CollectionDB.ows_DataDescription_id_seq),"+
-                                    "(select last_value as id from CollectionDB.AllowedValues_id_seq)"
-                                    ");")
+                    cur.execute(
+                        "INSERT INTO CollectionDB.AllowedValues (allowed_value) VALUES (%s);",
+                        (io_entity["schema"]["enum"][i],)
+                    )
+                    cur.execute(
+                        "INSERT INTO CollectionDB.AllowedValuesAssignment (literal_data_domain_id,allowed_value_id) "
+                        "VALUES ("
+                            "(select last_value as id from CollectionDB.ows_DataDescription_id_seq),"
+                            "(select last_value as id from CollectionDB.AllowedValues_id_seq)"
+                        ");"
+                    )
 
             if "default" in io_entity["schema"]:
-                cur.execute("UPDATE CollectionDB.LiteralDataDomain"+
-                                " set default_value = $q${0}$q$ ".format(io_entity["schema"]["default"])+
-                                " WHERE id = "+
-                                "  ((SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));")
+                cur.execute(
+                    "UPDATE CollectionDB.LiteralDataDomain"
+                    " set default_value = %s "
+                    " WHERE id = "
+                    "((SELECT last_value FROM CollectionDB.ows_DataDescription_id_seq));",
+                    (io_entity["schema"]["default"],)
+                )
 
     def sql_add_metadata(self, cur, metadata_object):
-        cur.execute("INSERT INTO CollectionDB.ows_Metadata (title,href) VALUES "+
-                    "($q${0}$q$,$q${1}$q$);".format(
-                        metadata_object["title"],
-                        metadata_object["value"]
-                    )
+        cur.execute(
+            "INSERT INTO CollectionDB.ows_Metadata (title,href) VALUES (%s,%s);",
+            (metadata_object["title"], metadata_object["value"],)
         )
-        cur.execute("INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "+
-                "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"+
-                "(select last_value from CollectionDB.ows_Metadata_id_seq));")
+        cur.execute(
+            "INSERT INTO CollectionDB.DescriptionsMetadataAssignment (descriptions_id,metadata_id) "
+            "VALUES ((select last_value as id from CollectionDB.Descriptions_id_seq),"
+            "(select last_value from CollectionDB.ows_Metadata_id_seq));"
+        )
 
     def sql_add_literal_data_domain(self, cur, primitive_data):
         if "format" in primitive_data:
             try:
-                cur.execute("SELECT id from CollectionDB.PrimitiveDatatypes "+
-                            "where name = $q${0}$q$;".format(primitive_data["format"]))
+                cur.execute(
+                    "SELECT id from CollectionDB.PrimitiveDatatypes WHERE name = %s;",
+                    (primitive_data["format"],)
+                )
                 val=cur.fetchone()
                 if val is None:
-                    cur.execute("SELECT id from CollectionDB.PrimitiveDatatypes "+
-                                "where name = $q${0}$q$;".format(primitive_data["type"]))
+                    cur.execute(
+                        "SELECT id from CollectionDB.PrimitiveDatatypes WHERE name = %s;", 
+                        (primitive_data["type"],)
+                    )
                     val=cur.fetchone()
             except Exception as e:
                 zoo.error(f"Error fetching primitive datatype: {e}")
             if val is not None:
-                cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
-                            "(true,{0});".format(val[0]))
+                cur.execute(
+                    "INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES (true,%s);",
+                    (val[0],)
+                )
         else:
-            cur.execute("INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "+
-                        "(true,(SELECT id from CollectionDB.PrimitiveDatatypes where name = $q${0}$q$));".format(primitive_data["type"]))
+            cur.execute(
+                "INSERT INTO CollectionDB.LiteralDataDomain (def,data_type_id) VALUES "
+                "(true,(SELECT id from CollectionDB.PrimitiveDatatypes where name = %s));",
+                (primitive_data["type"],)
+            )
 
     def sql_add_complex_data(self, cur, complex_data, schema=None):
         # myInputs[input]["metadata"][0]["value"] = <complex_data>
         parsed_str=complex_data.split("#")[0].split("/")
         usable_str=parsed_str[len(parsed_str)-1]
-        cur.execute("SELECT id FROM CollectionDB.PrimitiveDataFormats "+
-                    "where namespace=$q${0}$q$ and cwl_type=$q${1}$q$ LIMIT 1".format(usable_str,
-                                                                                    complex_data.split("#")[1]))
+        cur.execute(
+            "SELECT id FROM CollectionDB.PrimitiveDataFormats "
+            "where namespace=%s and cwl_type=%s LIMIT 1",
+            (usable_str, complex_data.split("#")[1],)
+        )
         val=cur.fetchone()
         # zoo.debug(f"Found format: {val}")
 
         # Extract contentMediaType from schema if available
         current_content_type="application/json"  # Default value
 
-        cur.execute("SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type='{0}' LIMIT 1".
-                            format(current_content_type))
+        cur.execute(
+            "SELECT id from CollectionDB.PrimitiveFormats WHERE mime_type=%s LIMIT 1",
+            (current_content_type,)
+        )
         val1=cur.fetchone()
 
         if val1 is None:
             # If the MIME type doesn't exist in the database, insert it
-            cur.execute(f"INSERT INTO CollectionDB.PrimitiveFormats (mime_type) VALUES ($q${current_content_type}$q$);")
+            cur.execute(
+                "INSERT INTO CollectionDB.PrimitiveFormats (mime_type) VALUES (%s);",
+                (current_content_type,)
+            )
             cur.execute("SELECT last_value FROM CollectionDB.PrimitiveFormats_id_seq;")
             val1=cur.fetchone()
 
-        cur.execute("INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES "+
-                    "(true,{0});".format(val1[0]))
-        cur.execute(f"INSERT INTO CollectionDB.ows_DataDescription (format_id,data_format_id) VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq),{val[0]});")
+        cur.execute(
+            "INSERT INTO CollectionDB.ows_Format (def,primitive_format_id) VALUES (true,%s);",
+            (val1[0],)
+        )
+        cur.execute(
+            "INSERT INTO CollectionDB.ows_DataDescription (format_id,data_format_id) "
+            "VALUES ((SELECT last_value FROM CollectionDB.ows_Format_id_seq),%s);",
+            (val[0],)
+        )
 
 
 class Services(object):

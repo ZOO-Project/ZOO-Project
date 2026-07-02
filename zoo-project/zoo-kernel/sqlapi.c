@@ -562,7 +562,7 @@ void recordServiceStatus(maps* pmsConf){
 				strlen(pmType->value)+
 				strlen(pmSid->value)+
 				strlen(pmOsid->value)+
-				strlen(wpsStatus[2])+99+9+1)*sizeof(char));
+				strlen(wpsStatus[2])+99+12+1)*sizeof(char));
   sprintf(pcaSqlQuery,
 	  "INSERT INTO %s.services (uuid,processid,sid,osid,fstate,itype,user_id) "
 	  "VALUES ('%s','%s','%s','%s','%s','%s','%d');",
