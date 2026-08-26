@@ -1,0 +1,133 @@
+[ApplyAffineTransform]
+ Title = Affine Transform  
+ Abstract = Given a geometry and parameters describing an affine transform apply the transform to the geometry. 
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qgis
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [inputGeometry]
+   Title = Geometry on which the transform is to be applied
+   Abstract = URI to a vector file that contains the mentionned two bands.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+    </Default>
+   </ComplexData>
+  [deltaX]
+   Title = The shift in X direction
+   Abstract = The distance by which the geometry is to be shifted  in the X direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [deltaY]
+   Title = The shift in Y direction
+   Abstract = The distance by which the geometry is to be shifted  in the Y direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [deltaZ]
+   Title = The shift in Z direction
+   Abstract = The distance by which the geometry is to be shifted  in the Z direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+  [deltaM]
+   Title = The shift in M direction
+   Abstract = The distance by which the geometry is to be shifted  in the M direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [scaleX]
+   Title = The scaling factor in X direction
+   Abstract = The factor by which the geometry is to be scaled in the X direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [scaleY]
+   Title = The scaling factor in Y direction
+   Abstract = The factor by which the geometry is to be scaled in the Y direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [scaleZ]
+   Title = The scaling factor in Z direction
+   Abstract = The factor by which the geometry is to be scaled in the Z direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [scaleM]
+   Title = The scaling factor in M direction
+   Abstract = The factor by which the geometry is to be scaled in the M direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [rotationZ]
+   Title = The angle for for the Z direction
+   Abstract = The angle by which the geometry is to be rotated in the Z direction.
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [outputGeometry]
+   Title = The resulting geometry
+   Abstract = The geometry with the affine transform applied
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+     extension = .geojson
+    </Default>
+   </ComplexData>
+ </DataOutputs>  

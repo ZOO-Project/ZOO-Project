@@ -1,0 +1,69 @@
+[SamplePointsInPolygon]
+ Title = Point sampling inside polygons
+ Abstract = Given some parameters and strategy sample points inside polygons
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qgis
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [inputGeometry]
+   Title = Geometry from which points are to be sampled.
+   Abstract = URI to a vector file that contains the mentionned two bands.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+    </Default>
+   </ComplexData>
+  [minValue]
+   Title = Minimum Number of colors
+   Abstract = The minimum number of colors needed for coloring the .
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = int
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [minDistance]
+   Title = The Minimum distance between points
+   Abstract = The value of the minimum distance that must be maintained between two features.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [balance]
+   Title = Color assignment Balance
+   Abstract = Balance the color assignment for the features
+   minOccurs = 0
+   maxOccurs = 1
+   <LiteralData>
+    DataType = int
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  
+ </DataInputs>
+ <DataOutputs>
+  [coloredGeometry]
+   Title = The coloured geometry
+   Abstract = The geometry assigned colors based on the parameters
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+     extension = .geojson
+    </Default>
+   </ComplexData>
+ </DataOutputs>  

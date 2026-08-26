@@ -1,0 +1,337 @@
+0--Tessellate--3d:tessellate
+1--Aspect--native:aspect
+2--Assign projection--native:assignprojection
+3--Buffer vectors--gdal:buffervectors
+4--Build virtual raster--gdal:buildvirtualraster
+5--Build virtual vector--gdal:buildvirtualvector
+6--Clip raster by extent--gdal:cliprasterbyextent
+7--Clip raster by mask layer--gdal:cliprasterbymasklayer
+8--Clip vector by extent--gdal:clipvectorbyextent
+9--Clip vector by mask layer--gdal:clipvectorbypolygon
+10--Color relief--gdal:colorrelief
+11--Contour--gdal:contour
+12--Contour Polygons--gdal:contour_polygon
+13--Convert format--gdal:convertformat
+14--Dissolve--native:dissolve
+15--Execute SQL--qgis:executesql
+16--Extract projection--gdal:extractprojection
+17--Fill nodata--gdal:fillnodata
+18--gdal2tiles--gdal:gdal2tiles
+19--gdal2xyz--gdal:gdal2xyz
+20--Raster information--gdal:gdalinfo
+21--Grid (Moving average)--gdal:gridaverage
+22--Grid (Data metrics)--gdal:griddatametrics
+23--Grid (Inverse distance to a power)--gdal:gridinversedistance
+24--Grid (IDW with nearest neighbor searching)--gdal:gridinversedistancenearestneighbor
+25--Grid (Linear)--gdal:gridlinear
+26--Grid (Nearest neighbor)--gdal:gridnearestneighbor
+27--Hillshade--native:hillshade
+28--Export to PostgreSQL (available connections)--gdal:importvectorintopostgisdatabaseavailableconnections
+29--Export to PostgreSQL (new connection)--gdal:importvectorintopostgisdatabasenewconnection
+30--Merge--gdal:merge
+31--Near black--gdal:nearblack
+32--Offset curve--gdal:offsetcurve
+33--Vector information--gdal:ogrinfo
+34--One side buffer--gdal:onesidebuffer
+35--Build overviews (pyramids)--gdal:overviews
+36--Pansharpening--gdal:pansharp
+37--PCT to RGB--gdal:pcttorgb
+38--Points along lines--gdal:pointsalonglines
+39--Polygonize (raster to vector)--gdal:polygonize
+40--Proximity (raster distance)--gdal:proximity
+41--Raster calculator--qgis:rastercalculator
+42--Rasterize (vector to raster)--gdal:rasterize
+43--Rasterize (overwrite with attribute)--gdal:rasterize_over
+44--Rasterize (overwrite with fixed value)--gdal:rasterize_over_fixed_value
+45--Rearrange bands--gdal:rearrange_bands
+46--Retile--gdal:retile
+47--RGB to PCT--gdal:rgbtopct
+48--Roughness--gdal:roughness
+49--Sieve--gdal:sieve
+50--Slope--native:slope
+51--Tile index--gdal:tileindex
+52--Topographic Position Index (TPI)--gdal:tpitopographicpositionindex
+53--Translate (convert format)--gdal:translate
+54--Terrain Ruggedness Index (TRI)--gdal:triterrainruggednessindex
+55--Viewshed--gdal:viewshed
+56--Warp (reproject)--gdal:warpreproject
+57--Add autoincremental field--native:addautoincrementalfield
+58--Add field to attributes table--native:addfieldtoattributestable
+59--Add unique value index field--native:adduniquevalueindexfield
+60--Add X/Y fields to layer--native:addxyfields
+61--Affine transform--native:affinetransform
+62--Aggregate--native:aggregate
+63--Align points to features--native:angletonearest
+64--Geodesic line split at antimeridian--native:antimeridiansplit
+65--Array of offset (parallel) lines--native:arrayoffsetlines
+66--Array of translated features--native:arraytranslatedfeatures
+67--Export atlas layout as image--native:atlaslayouttoimage
+68--Export atlas layout as PDF--native:atlaslayouttopdf
+69--Convert spatial bookmarks to layer--native:bookmarkstolayer
+70--Boundary--native:boundary
+71--Bounding boxes--native:boundingboxes
+72--Buffer--native:buffer
+73--Variable width buffer (by M value)--native:bufferbym
+74--Overlap analysis--native:calculatevectoroverlaps
+75--Create categorized renderer from styles--native:categorizeusingstyle
+76--Cell stack percentile--native:cellstackpercentile
+77--Cell stack percentrank from raster layer--native:cellstackpercentrankfromrasterlayer
+78--Cell stack percent rank from value--native:cellstackpercentrankfromvalue
+79--Cell statistics--native:cellstatistics
+80--Centroids--native:centroids
+81--Clip--native:clip
+82--Collect geometries--native:collect
+83--Combine style databases--native:combinestyles
+84--Conditional branch--native:condition
+85--Convert to curved geometries--native:converttocurves
+86--Convex hull--native:convexhull
+87--Count points in polygon--native:countpointsinpolygon
+88--Create attribute index--native:createattributeindex
+89--Create constant raster layer--native:createconstantrasterlayer
+90--Create directory--native:createdirectory
+91--Create grid--native:creategrid
+92--Create points layer from table--native:createpointslayerfromtable
+93--Create random raster layer (binomial distribution)--native:createrandombinomialrasterlayer
+94--Create random raster layer (exponential distribution)--native:createrandomexponentialrasterlayer
+95--Create random raster layer (gamma distribution)--native:createrandomgammarasterlayer
+96--Create random raster layer (geometric distribution)--native:createrandomgeometricrasterlayer
+97--Create random raster layer (negative binomial distribution)--native:createrandomnegativebinomialrasterlayer
+98--Create random raster layer (normal distribution)--native:createrandomnormalrasterlayer
+99--Create random raster layer (poisson distribution)--native:createrandompoissonrasterlayer
+100--Create random raster layer (uniform distribution)--native:createrandomuniformrasterlayer
+101--Create spatial index--native:createspatialindex
+102--DBSCAN clustering--native:dbscanclustering
+103--Drop field(s)--native:deletecolumn
+104--Delete duplicate geometries--native:deleteduplicategeometries
+105--Delete holes--native:deleteholes
+106--Densify by count--native:densifygeometries
+107--Densify by interval--native:densifygeometriesgivenaninterval
+108--Detect dataset changes--native:detectvectorchanges
+109--Difference--native:difference
+110--Drop geometries--native:dropgeometries
+111--Drop M/Z values--native:dropmzvalues
+112--Export layers to DXF--native:dxfexport
+113--Equal to frequency--native:equaltofrequency
+114--Explode HStore Field--native:explodehstorefield
+115--Explode lines--native:explodelines
+116--Export layer(s) information--native:exportlayersinformation
+117--Export mesh edges--native:exportmeshedges
+118--Export mesh faces--native:exportmeshfaces
+119--Export mesh on grid--native:exportmeshongrid
+120--Export mesh vertices--native:exportmeshvertices
+121--Export to spreadsheet--native:exporttospreadsheet
+122--Extend lines--native:extendlines
+123--Create layer from extent--native:extenttolayer
+124--Extract binary field--native:extractbinary
+125--Extract by attribute--native:extractbyattribute
+126--Extract by expression--native:extractbyexpression
+127--Extract/clip by extent--native:extractbyextent
+128--Extract by location--native:extractbylocation
+129--Extract M values--native:extractmvalues
+130--Extract specific vertices--native:extractspecificvertices
+131--Extract vertices--native:extractvertices
+132--Extract Z values--native:extractzvalues
+133--Field calculator--native:fieldcalculator
+134--Download file--native:filedownloader
+135--Fill NoData cells--native:fillnodata
+136--Feature filter--native:filter
+137--Filter by geometry type--native:filterbygeometry
+138--Filter layers by type--native:filterlayersbytype
+139--Filter vertices by M value--native:filterverticesbym
+140--Filter vertices by Z value--native:filterverticesbyz
+141--Fix geometries--native:fixgeometries
+142--Flatten relationship--native:flattenrelationships
+143--Force right-hand-rule--native:forcerhr
+144--Fuzzify raster (gaussian membership)--native:fuzzifyrastergaussianmembership
+145--Fuzzify raster (large membership)--native:fuzzifyrasterlargemembership
+146--Fuzzify raster (linear membership)--native:fuzzifyrasterlinearmembership
+147--Fuzzify raster (near membership)--native:fuzzifyrasternearmembership
+148--Fuzzify raster (power membership)--native:fuzzifyrasterpowermembership
+149--Fuzzify raster (small membership)--native:fuzzifyrastersmallmembership
+150--Generate points (pixel centroids) inside polygons--native:generatepointspixelcentroidsinsidepolygons
+151--Geometry by expression--native:geometrybyexpression
+152--Greater than frequency--native:greaterthanfrequency
+153--Highest position in raster stack--native:highestpositioninrasterstack
+154--Join by lines (hub lines)--native:hublines
+155--Import geotagged photos--native:importphotos
+156--Interpolate point on line--native:interpolatepoint
+157--Intersection--native:intersection
+158--Join attributes by location--native:joinattributesbylocation
+159--Join attributes by field value--native:joinattributestable
+160--Join attributes by nearest--native:joinbynearest
+161--K-means clustering--native:kmeansclustering
+162--Convert layer to spatial bookmarks--native:layertobookmarks
+163--Less than frequency--native:lessthanfrequency
+164--Line density--native:linedensity
+165--Line intersections--native:lineintersections
+166--Line substring--native:linesubstring
+167--Load layer into project--native:loadlayer
+168--Lowest position in raster stack--native:lowestpositioninrasterstack
+169--Mean coordinate(s)--native:meancoordinates
+170--Merge lines--native:mergelines
+171--Merge vector layers--native:mergevectorlayers
+172--Export contours--native:meshcontours
+173--Export cross section dataset values on lines from mesh--native:meshexportcrosssection
+174--Export time series values from points of a mesh dataset--native:meshexporttimeseries
+175--Rasterize mesh dataset--native:meshrasterize
+176--Minimum enclosing circles--native:minimumenclosingcircle
+177--Multipart to singleparts--native:multiparttosingleparts
+178--Multi-ring buffer (constant distance)--native:multiringconstantbuffer
+179--Nearest neighbour analysis--native:nearestneighbouranalysis
+180--Offset lines--native:offsetline
+181--Order by expression--native:orderbyexpression
+182--Oriented minimum bounding box--native:orientedminimumboundingbox
+183--Orthogonalize--native:orthogonalize
+184--Package layers--native:package
+185--Raster pixels to points--native:pixelstopoints
+186--Raster pixels to polygons--native:pixelstopolygons
+187--Point on surface--native:pointonsurface
+188--Points along geometry--native:pointsalonglines
+189--Points to path--native:pointstopath
+190--Create layer from point--native:pointtolayer
+191--Pole of inaccessibility--native:poleofinaccessibility
+192--Extract layer extent--native:polygonfromlayerextent
+193--Polygonize--native:polygonize
+194--Polygons to lines--native:polygonstolines
+195--PostgreSQL execute SQL--native:postgisexecutesql
+196--Print layout map extent to layer--native:printlayoutmapextenttolayer
+197--Export print layout as image--native:printlayouttoimage
+198--Export print layout as PDF--native:printlayouttopdf
+199--Project points (Cartesian)--native:projectpointcartesian
+200--Promote to multipart--native:promotetomulti
+201--Raise exception--native:raiseexception
+202--Raise warning--native:raisewarning
+203--Random extract--native:randomextract
+204--Random points in extent--native:randompointsinextent
+205--Random points in polygons--native:randompointsinpolygons
+206--Random points on lines--native:randompointsonlines
+207--Raster boolean AND--native:rasterbooleanand
+208--Convert map to raster--native:rasterize
+209--Raster layer statistics--native:rasterlayerstatistics
+210--Raster layer unique values report--native:rasterlayeruniquevaluesreport
+211--Raster layer zonal statistics--native:rasterlayerzonalstats
+212--Raster boolean OR--native:rasterlogicalor
+213--Sample raster values--native:rastersampling
+214--Raster surface volume--native:rastersurfacevolume
+215--Reclassify by layer--native:reclassifybylayer
+216--Reclassify by table--native:reclassifybytable
+217--Rectangles, ovals, diamonds--native:rectanglesovalsdiamonds
+218--Refactor fields--native:refactorfields
+219--Delete duplicates by attribute--native:removeduplicatesbyattribute
+220--Remove duplicate vertices--native:removeduplicatevertices
+221--Remove null geometries--native:removenullgeometries
+222--Rename layer--native:renamelayer
+223--Rename field--native:renametablefield
+224--Repair Shapefile--native:repairshapefile
+225--Reproject layer--native:reprojectlayer
+226--Rescale raster--native:rescaleraster
+227--Retain fields--native:retainfields
+228--Reverse line direction--native:reverselinedirection
+229--Rotate--native:rotatefeatures
+230--Round raster--native:roundrastervalues
+231--Ruggedness index--native:ruggednessindex
+232--Save vector features to file--native:savefeatures
+233--Save log to file--native:savelog
+234--Extract selected features--native:saveselectedfeatures
+235--Segmentize by maximum angle--native:segmentizebymaxangle
+236--Segmentize by maximum distance--native:segmentizebymaxdistance
+237--Select by location--native:selectbylocation
+238--Service area (from layer)--native:serviceareafromlayer
+239--Service area (from point)--native:serviceareafrompoint
+240--Set layer encoding--native:setlayerencoding
+241--Set layer style--native:setlayerstyle
+242--Set M value from raster--native:setmfromraster
+243--Set M value--native:setmvalue
+244--Set project variable--native:setprojectvariable
+245--Drape (set Z value from raster)--native:setzfromraster
+246--Set Z value--native:setzvalue
+247--Shortest path (layer to point)--native:shortestpathlayertopoint
+248--Shortest path (point to layer)--native:shortestpathpointtolayer
+249--Shortest path (point to point)--native:shortestpathpointtopoint
+250--Extract Shapefile encoding--native:shpencodinginfo
+251--Simplify--native:simplifygeometries
+252--Single sided buffer--native:singlesidedbuffer
+253--Smooth--native:smoothgeometry
+254--Snap geometries to layer--native:snapgeometries
+255--Snap points to grid--native:snappointstogrid
+256--SpatiaLite execute SQL--native:spatialiteexecutesql
+257--SpatiaLite execute SQL (registered DB)--native:spatialiteexecutesqlregistered
+258--Split features by character--native:splitfeaturesbycharacter
+259--Split lines by maximum length--native:splitlinesbylength
+260--Split vector layer--native:splitvectorlayer
+261--Split with lines--native:splitwithlines
+262--String concatenation--native:stringconcatenation
+263--Create style database from project--native:stylefromproject
+264--Subdivide--native:subdivide
+265--Sum line lengths--native:sumlinelengths
+266--Swap X and Y coordinates--native:swapxy
+267--Symmetrical difference--native:symmetricaldifference
+268--Tapered buffers--native:taperedbuffer
+269--TIN Mesh Creation--native:tinmeshcreation
+270--Transect--native:transect
+271--Translate--native:translategeometry
+272--Truncate table--native:truncatetable
+273--Union--native:union
+274--Create wedge buffers--native:wedgebuffers
+275--Write Vector Tiles (MBTiles)--native:writevectortiles_mbtiles
+276--Write Vector Tiles (XYZ)--native:writevectortiles_xyz
+277--Zonal histogram--native:zonalhistogram
+278--Zonal statistics (in place)--native:zonalstatistics
+279--Zonal statistics--native:zonalstatisticsfb
+280--Advanced Python field calculator--qgis:advancedpythonfieldcalculator
+281--Bar plot--qgis:barplot
+282--Basic statistics for fields--qgis:basicstatisticsforfields
+283--Box plot--qgis:boxplot
+284--Check validity--qgis:checkvalidity
+285--Climb along line--qgis:climbalongline
+286--Concave hull (alpha shapes)--qgis:concavehull
+287--Convert geometry type--qgis:convertgeometrytype
+288--Define Shapefile projection--qgis:definecurrentprojection
+289--Delaunay triangulation--qgis:delaunaytriangulation
+290--Distance matrix--qgis:distancematrix
+291--Distance to nearest hub (line to hub)--qgis:distancetonearesthublinetohub
+292--Distance to nearest hub (points)--qgis:distancetonearesthubpoints
+293--Eliminate selected polygons--qgis:eliminateselectedpolygons
+294--Add geometry attributes--qgis:exportaddgeometrycolumns
+295--Find projection--qgis:findprojection
+296--Generate points (pixel centroids) along line--qgis:generatepointspixelcentroidsalongline
+297--Heatmap (Kernel Density Estimation)--qgis:heatmapkerneldensityestimation
+298--Hypsometric curves--qgis:hypsometriccurves
+299--IDW interpolation--qgis:idwinterpolation
+300--Export to PostgreSQL--qgis:importintopostgis
+301--Export to SpatiaLite--qgis:importintospatialite
+302--Join attributes by location (summary)--qgis:joinbylocationsummary
+303--Keep N biggest parts--qgis:keepnbiggestparts
+304--Concave hull (k-nearest neighbor)--qgis:knearestconcavehull
+305--Lines to polygons--qgis:linestopolygons
+306--List unique values--qgis:listuniquevalues
+307--Mean and standard deviation plot--qgis:meanandstandarddeviationplot
+308--Minimum bounding geometry--qgis:minimumboundinggeometry
+309--Points displacement--qgis:pointsdisplacement
+310--Polar plot--qgis:polarplot
+311--PostgreSQL execute and load SQL--qgis:postgisexecuteandloadsql
+312--Random extract within subsets--qgis:randomextractwithinsubsets
+313--Random points along line--qgis:randompointsalongline
+314--Random points in layer bounds--qgis:randompointsinlayerbounds
+315--Random points inside polygons--qgis:randompointsinsidepolygons
+316--Random selection--qgis:randomselection
+317--Random selection within subsets--qgis:randomselectionwithinsubsets
+318--Raster layer histogram--qgis:rasterlayerhistogram
+319--Rectangles, ovals, diamonds (variable)--qgis:rectanglesovalsdiamondsvariable
+320--Regular points--qgis:regularpoints
+321--Relief--qgis:relief
+322--Vector layer scatterplot 3D--qgis:scatter3dplot
+323--Select by attribute--qgis:selectbyattribute
+324--Select by expression--qgis:selectbyexpression
+325--Set style for raster layer--qgis:setstyleforrasterlayer
+326--Set style for vector layer--qgis:setstyleforvectorlayer
+327--Statistics by categories--qgis:statisticsbycategories
+328--Text to float--qgis:texttofloat
+329--Generate XYZ tiles (Directory)--qgis:tilesxyzdirectory
+330--Generate XYZ tiles (MBTiles)--qgis:tilesxyzmbtiles
+331--TIN interpolation--qgis:tininterpolation
+332--Topological coloring--qgis:topologicalcoloring
+333--Variable distance buffer--qgis:variabledistancebuffer
+334--Vector layer histogram--qgis:vectorlayerhistogram
+335--Vector layer scatterplot--qgis:vectorlayerscatterplot
+336--Voronoi polygons--qgis:voronoipolygons
