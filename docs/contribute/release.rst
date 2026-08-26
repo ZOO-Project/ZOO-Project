@@ -38,10 +38,10 @@ rules:
 * Once the tag is pushed back to GitHub, make sure to use the 
   "Create release from tag" button on the tag page (accessible from the 
   `Tags list <https://github.com/ZOO-Project/ZOO-Project/tags>`__).
-  Set the release title to "ZOO-Project X.Y.Z" and you may include the 
-  release note as the release description. Before publishing the
-  release, make sure to upload a copy of the archives stored on 
-  zoo-project.org/dl.
+  Set the release title to "ZOO-Project X.Y.Z". Use the consistent release
+  template (see below) to link to the Release Notes wiki page and the
+  official archives. Before publishing the release, make sure to upload a
+  copy of the archives stored on zoo-project.org/dl as release assets.
 * Announce on various email list and other locations
   (news_item@osgeo.org, SlashGeo, etc)
 
@@ -115,8 +115,20 @@ Release versions lead to an update in documentation and standard tarballs. This 
   * Click on "Draft a new release"
   * Select the tag created previously (e.g., rel-1.9.1)
   * Set the release title to "ZOO-Project X.Y.Z"
-  * Include the release notes as the description
+  * Use the following template for the release description:
+
+    .. code-block:: text
+
+       The ZOO-Project X.Y.Z release, please see the release notes for details.
+
+       Release notes: https://github.com/ZOO-Project/ZOO-Project/wiki/Release:-X.Y.Z:-Notes
+
+       Archives ZOO-Project Release X.Y.Z:
+       - http://zoo-project.org/dl/zoo-project-X.Y.Z.tar.bz2
+       - http://zoo-project.org/dl/zoo-project-X.Y.Z.zip
+
   * Upload the archives (``zoo-project-$VERSION.tar.bz2`` and ``zoo-project-$VERSION.zip``) as release assets
+  * If this is a Release Candidate (RC), check "Set as a pre-release"
   * Publish the release
 
   Once published, the archives will be automatically available on the GitHub release page. 
