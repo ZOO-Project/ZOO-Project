@@ -278,12 +278,10 @@ COPY zoo-project/zoo-kernel/locale /tmp/locale
 RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install --upgrade pip && \
     pip install hatch && \
-    # Using the latest version of pycalrissian with the fix for the RBAC
+    # Using the latest version of pycalrissian from the ZOO-Project organization
     cd /tmp && \
-    git clone -b feature/kubernetes-watch https://github.com/gfenoy/pycalrissian.git && \
+    git clone -b develop https://github.com/ZOO-Project/pycalrissian.git && \
     cd pycalrissian && \
-    #sed "s:cwltool==:cwltool>=:g;s:setuptools==:setuptools>=:g;s:" -i pyproject.toml && \
-    sed "s:cwltool==:cwltool>=:g;s:kubernetes==:kubernetes>=:g;s:typing-extensions==:typing-extensions>=:g;s:setuptools==:setuptools>=:g" -i pyproject.toml && \
     hatch build && \
     pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
     # cd .. && \
@@ -293,6 +291,7 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install  "urllib3>=2.6.3" "jaraco.context>=6.1.0" "pyasn1>=0.6.2" "oauthlib>=3.2.2" "wheel>=0.46.2" && \
     pip uninstall -y chardet || true && \
     pip install --force-reinstall --no-binary charset-normalizer charset-normalizer==3.4.9 && \
+    pip install --force-reinstall "git+https://github.com/GeoLabs/cwl-loader.git@feature/merged-patch" && \
     # cd .. && \
     rm -r pycalrissian /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \

@@ -1,4 +1,7 @@
 Version 2.1.1-dev
+  * Still rely on branch feature/stageout-file-support for
+  zoo-calrissian-runner, and feature/merged-patch for cwl-loader.
+  * Use the pycalrissian Python module from the ZOO-Project organization
   * Fix arbitrary file read via path traversal in DRU browse operation.
   * Fix Authentication bypass by ensuring JWT are properly verified at runtime,
   for debuging purposes, you can set the ZOO_INSECURE_JWT environment variable

@@ -8,6 +8,8 @@ build:
       context: .
       docker:
         dockerfile: docker/dru/Dockerfile
+        # Uncomment the line below if you want to rebuild the docker image every time
+        #noCache: true
 
 deploy:
   helm:
@@ -33,7 +35,7 @@ deploy:
         remoteChart: zoo-project/zoo-project-dru
         namespace: eoap-zoo-project
         createNamespace: true
-        version: 0.10.2
+        version: 0.10.4
         valuesFiles:
         - values.yaml
         setValueTemplates:
