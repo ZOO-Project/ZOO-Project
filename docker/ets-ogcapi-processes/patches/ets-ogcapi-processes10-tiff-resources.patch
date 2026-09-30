@@ -1,0 +1,33 @@
+--- a/ets-ogcapi-processes10/pom.xml
++++ b/ets-ogcapi-processes10/pom.xml
+@@ -296,6 +296,30 @@
+         </plugin>
+       </plugins>
+     </pluginManagement>
++
++    <!--
++      Override the parent's blanket filtering=true resource entry: it tries
++      to text-filter testgeotiff.tiff (a binary test fixture) as UTF-8,
++      which fails with MalformedInputException. Split into a filtered entry
++      that excludes binary test data and an unfiltered one that copies it
++      as-is.
++    -->
++    <resources>
++      <resource>
++        <directory>src/main/resources</directory>
++        <filtering>true</filtering>
++        <excludes>
++          <exclude>**/*.tiff</exclude>
++        </excludes>
++      </resource>
++      <resource>
++        <directory>src/main/resources</directory>
++        <filtering>false</filtering>
++        <includes>
++          <include>**/*.tiff</include>
++        </includes>
++      </resource>
++    </resources>
+   </build>
+ 
+   <profiles>

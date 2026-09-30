@@ -1,0 +1,19 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>local</groupId>
+  <artifactId>jaxb-fetch</artifactId>
+  <version>1.0</version>
+  <!--
+    Not a real project: only used with `mvn dependency:copy-dependencies` to
+    resolve JAXB's (javax.xml.bind) full transitive dependency closure onto
+    a JRE 17 runtime, where it was removed from the JDK. See
+    src1/ets-ogcapi-processes10-part2/Dockerfile.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>2.3.9</version>
+    </dependency>
+  </dependencies>
+</project>

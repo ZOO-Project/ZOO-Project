@@ -1,0 +1,20 @@
+--- a/teamengine-web/src/main/webapp/META-INF/context.xml
++++ b/teamengine-web/src/main/webapp/META-INF/context.xml
+@@ -14,8 +14,15 @@
+   <WatchedResource>${TE_BASE}/config.xml</WatchedResource>
+   <WatchedResource>${TE_BASE}/scripts</WatchedResource>
+ 
+-  <Loader className="org.apache.catalina.loader.VirtualWebappLoader" 
+-          virtualClasspath="${TE_BASE}/resources/lib/*.jar" />
++  <!--
++    org.apache.catalina.loader.VirtualWebappLoader was removed after
++    Tomcat 7/early 8.x; on Tomcat 8.5+/9 its ClassNotFoundException marks
++    this context unavailable at startup, so every request 404s. Its job
++    (letting extra jars be dropped into TE_BASE/resources/lib without
++    rebuilding the war) isn't needed for the test suites this image runs,
++    so it's dropped rather than replaced with the modern
++    <Resources><PostResources .../></Resources> equivalent.
++  -->
+   <!-- improve startup time -->
+   <JarScanner scanClassPath="false" />
+ </Context>

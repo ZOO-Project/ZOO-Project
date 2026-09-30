@@ -1,19 +1,29 @@
-FROM maven:3.8.3-jdk-8-slim AS build
+FROM maven:3.9.16-eclipse-temurin-8 AS build
 ARG BUILD_DEPS=" \
     git \
+    patch \
     unzip \
 "
 WORKDIR /home/app
 COPY docker/ets-ogcapi-processes/src /home/app/src
 COPY docker/ets-ogcapi-processes/src1 /home/app/src1
-RUN apt-get update && \
+COPY docker/ets-ogcapi-processes/patches /home/app/patches
+RUN sed -i \
+        -e 's|deb.debian.org/debian|archive.debian.org/debian|g' \
+        -e '/security.debian.org/d' \
+        -e '/-updates/d' \
+        /etc/apt/sources.list && \
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until && \
+    apt-get update && \
     apt-get install -y $BUILD_DEPS && \
     echo "teamengine building..." && \
     curl -o /home/app/src1/pom.xml https://raw.githubusercontent.com/opengeospatial/ets-common/ecabb653c869b36c47feed31fbd67fcbc089af81/pom.xml && \
+    patch -p1 -d /home/app/src < /home/app/patches/teamengine-web-remove-virtualwebapploader.patch && \
     mvn -f /home/app/src/pom.xml clean install > log && \
     echo "common building..." && \
     mvn -f /home/app/src1/pom.xml clean install  && \
     echo "OGC API - Processes ETS building..." && \
+    patch -p1 -d /home/app/src1 < /home/app/patches/ets-ogcapi-processes10-tiff-resources.patch && \
     mvn -f /home/app/src1/ets-ogcapi-processes10/pom.xml clean install && \
     echo "WPS 2.0 ETS building..." && \
     mvn -f /home/app/src1/ets-wps20/pom.xml clean install && \

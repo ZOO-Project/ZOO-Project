@@ -23,11 +23,14 @@
 # THE SOFTWARE.
 
 cd docker/ets-ogcapi-processes
-git clone https://github.com/opengeospatial/teamengine.git src
+curl -L -o 5.7.zip https://github.com/opengeospatial/teamengine/archive/refs/tags/5.7.zip
+unzip 5.7.zip
+mv teamengine-5.7 src
+#git clone https://github.com/opengeospatial/teamengine.git src
 
 git clone https://github.com/opengeospatial/ets-common.git src1
-#Cannot clone the repo anymore, better to work with a target version (1.2)
-git clone https://github.com/opengeospatial/ets-ogcapi-processes10-part2.git src1/ets-ogcapi-processes10-part2
+#git clone https://github.com/opengeospatial/ets-ogcapi-processes10-part2.git src1/ets-ogcapi-processes10-part2
+git clone -b feature/fix-docker-build https://github.com/GeoLabs/ets-ogcapi-processes10-part2.git src1/ets-ogcapi-processes10-part2
 
 docker build . -f src1/ets-ogcapi-processes10-part2/Dockerfile --progress plain -t zooproject/ets-ogcapi-processes10-part2:latest
 
