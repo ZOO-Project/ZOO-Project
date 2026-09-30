@@ -1040,10 +1040,10 @@ void runGetStatus(maps** ppmsConf,char* pid,char* req){
           addToMap(statusInfo,"Status","Running");
           setMapInMaps(pmsConf,"lenv","status","Running");
           char* tmpStr=_getStatus(pmsConf,pid);
-          if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+          char* pipePos=NULL;
+          if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0 && (pipePos=strstr(tmpStr,"|"))!=NULL){
             char *tmpStr1=zStrdup(tmpStr);
-            char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
-            free(tmpStr);
+            char *tmpStr0=zStrdup(pipePos+1);
             tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
             addToMap(statusInfo,"PercentCompleted",tmpStr1);
             addToMap(statusInfo,"Message",tmpStr0);
@@ -1052,6 +1052,7 @@ void runGetStatus(maps** ppmsConf,char* pid,char* req){
             free(tmpStr0);
             free(tmpStr1);
           }
+          free(tmpStr);
         }
       }
     }
@@ -1097,10 +1098,10 @@ void runGetStatus(maps** ppmsConf,char* pid,char* req){
             setMapInMaps(pmsConf,"lenv","status",pmStatus->value);    
         }
         char* tmpStr=_getStatus(pmsConf,pid);
-        if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0){
+        char* pipePos=NULL;
+        if(tmpStr!=NULL && strncmp(tmpStr,"-1",2)!=0 && (pipePos=strstr(tmpStr,"|"))!=NULL){
           char *tmpStr1=zStrdup(tmpStr);
-          char *tmpStr0=zStrdup(strstr(tmpStr,"|")+1);
-          free(tmpStr);
+          char *tmpStr0=zStrdup(pipePos+1);
           tmpStr1[strlen(tmpStr1)-strlen(tmpStr0)-1]='\0';
           addToMap(statusInfo,"PercentCompleted",tmpStr1);
           addToMap(statusInfo,"Message",tmpStr0);
@@ -1109,6 +1110,7 @@ void runGetStatus(maps** ppmsConf,char* pid,char* req){
           free(tmpStr0);
           free(tmpStr1);
         }
+        free(tmpStr);
       }
     }
     free(sid);
