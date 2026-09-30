@@ -31,6 +31,10 @@ jobs:
     - name: Start Minikube
       run: |
         minikube start --driver=docker --memory=6500
+        minikube update-context
+        eval $(minikube -p minikube docker-env)
+        docker context ls
+        docker info
 
     - name: Wait for Minikube to be ready
       run: |
@@ -51,6 +55,7 @@ jobs:
     
     - name: Run skaffold
       run: |
+        eval $(minikube -p minikube docker-env)
         hostip=$(host $(hostname) | awk {'print $4'})
         sed "s#address: localhost#address: ${hostip}#g;s#localPort: 8888#localPort: 8821#g" -i skaffold.yaml
         skaffold build
