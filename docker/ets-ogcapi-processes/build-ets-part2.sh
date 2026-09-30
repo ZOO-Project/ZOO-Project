@@ -30,7 +30,7 @@ mv teamengine-5.7 src
 
 git clone https://github.com/opengeospatial/ets-common.git src1
 #git clone https://github.com/opengeospatial/ets-ogcapi-processes10-part2.git src1/ets-ogcapi-processes10-part2
-git clone -b feature/fix-docker-build https://github.com/GeoLabs/ets-ogcapi-processes10-part2.git src1/ets-ogcapi-processes10-part2
+git clone -b feature/fix-docker-build https://github.com/GeoLabs/ets-ogcapi-processes10-part2-new.git src1/ets-ogcapi-processes10-part2
 
 docker build . -f src1/ets-ogcapi-processes10-part2/Dockerfile --progress plain -t zooproject/ets-ogcapi-processes10-part2:latest
 
