@@ -30,7 +30,7 @@ jobs:
     # Start Minikube
     - name: Start Minikube
       run: |
-        minikube start --driver=docker --memory=6500
+        minikube start --driver=docker --container-runtime=docker --memory=6500
         minikube update-context
 
     - name: Wait for Minikube to be ready
