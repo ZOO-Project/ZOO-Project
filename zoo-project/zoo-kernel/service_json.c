@@ -2829,7 +2829,7 @@ extern "C" {
             else{
 #ifdef USE_MS
               map* pmTest=getMap(resu->content,"useMapserver");
-              if(pmTest!=NULL){
+              if(pmTest!=NULL && strcasecmp(pmTest->value,"true")==0){
                 map* geodatatype=getMap(resu->content,"geodatatype");
                 map* nbFeatures;
                 setMapInMaps(conf,"lenv","state","out");
