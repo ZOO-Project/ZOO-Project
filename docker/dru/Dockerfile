@@ -276,7 +276,7 @@ COPY docker/dru/requirements.txt /tmp/
 COPY zoo-project/zoo-kernel/locale /tmp/locale
 
 RUN date && mkdir /tmp/cookiecutter-templates && \
-    pip install --upgrade pip && \
+    pip install --upgrade "pip>=26.2.0" && \
     pip install hatch && \
     # Using the latest version of pycalrissian from the ZOO-Project organization
     cd /tmp && \
@@ -287,13 +287,16 @@ RUN date && mkdir /tmp/cookiecutter-templates && \
     # cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
-    pip install --upgrade setuptools cryptography PyJWT pip zipp "kubernetes==35.0.0" && \
-    pip install  "urllib3>=2.6.3" "jaraco.context>=6.1.0" "pyasn1>=0.6.2" "oauthlib>=3.2.2" "wheel>=0.46.2" && \
-    pip uninstall -y chardet || true && \
+    pip install --upgrade cryptography zipp && \
+    pip install "jaraco.context>=6.1.0" "pyasn1>=0.6.2" "oauthlib>=3.2.2" && \
+    (pip uninstall -y chardet || true) && \
     pip install --force-reinstall --no-binary charset-normalizer charset-normalizer==3.4.9 && \
     pip install --force-reinstall "git+https://github.com/GeoLabs/cwl-loader.git@feature/merged-patch" && \
+    pip install --upgrade "httplib2>=0.32.0" && \
+    pip uninstall -y hatch virtualenv && \
+    pip uninstall -y pip && \
     # cd .. && \
-    rm -r pycalrissian /tmp/requirements.txt && \
+    rm -r pycalrissian requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
     rm /var/log/apache2/error.log && \
     ln -s /dev/stdout /var/log/apache2/error.log && \

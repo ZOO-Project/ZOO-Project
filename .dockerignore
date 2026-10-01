@@ -4,3 +4,4 @@ docker-compose.yml
 *.md
 debian/*
 .github/*
+skaffold.yaml
