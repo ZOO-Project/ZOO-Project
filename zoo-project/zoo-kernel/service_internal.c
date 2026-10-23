@@ -890,7 +890,12 @@ bool validateVRT(maps* pmsConf,const char* pccVRTName){
     char* pccVRTContent=(char*)malloc(zStatus.st_size*sizeof(char));
     FILE* f=fopen(pccVRTName,"r");
     if(f!=NULL){
-      fread(pccVRTContent,zStatus.st_size,1,f);
+      size_t stRead=fread(pccVRTContent,1,zStatus.st_size,f);
+      if(stRead!=zStatus.st_size){
+        free(pccVRTContent);
+        fclose(f);
+        return false;
+      }
       fclose(f);
       xmlInitParser ();
       xmlDocPtr doc = xmlReadMemory (pccVRTContent, zStatus.st_size, "validationFile.vrt.", NULL, XML_PARSE_RECOVER);

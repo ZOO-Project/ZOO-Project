@@ -2210,10 +2210,10 @@ void setSecurityFlags(maps* pmsConf,char* pcCgiQueryString){
  * Invoke the execution of the security module in case security is activated
  *
  * @param ppmsConf the maps pointing to the main.cfg file content
- * @param pcType the string defining the process to execute ('in' or 'out')
+ * @param pccType the string defining the process to execute ('in' or 'out')
  * @return 0 in case of success, 1 in case or error
  */
-int ensureFiltered(maps** ppmsConf,const char* pcType){
+int ensureFiltered(maps** ppmsConf,const char* pccType){
   int eres=0;
   service* psaService=NULL;
   maps* pmsOsecurity=getMaps(*ppmsConf,"osecurity");
@@ -2221,8 +2221,8 @@ int ensureFiltered(maps** ppmsConf,const char* pcType){
   map* pmName=NULL;
   map* pmRun=NULL;
   int iLen=1;
-  char* pcaName=(char*)malloc((strlen(pcType)+8)*sizeof(char));
-  sprintf(pcaName,"filter_%s",pcType);
+  char* pcaName=(char*)malloc((strlen(pccType)+8)*sizeof(char));
+  sprintf(pcaName,"filter_%s",pccType);
   maps* pmsSection=getMaps(*ppmsConf,pcaName);
   if(pmsSection==NULL){
     free(pcaName);
@@ -2231,7 +2231,7 @@ int ensureFiltered(maps** ppmsConf,const char* pcType){
   map* pmLength=getMap(pmsSection->content,"length");
   if(pmLength!=NULL)
     iLen=atoi(pmLength->value);
-  if(strcasecmp(pcType,"out")==0){
+  if(strcasecmp(pccType,"out")==0){
     fflush(stdout);
     fflush(stderr);
   }
@@ -2839,21 +2839,60 @@ int runRequest(map** inputs) {
       return 1;
     }
 
+    char* pcaCgiContentType=zStrdup(cgiContentType);
+    map* pmSupportMultipart=getMapFromMaps(pmsaConfig,"openapi","support_multipart");
+    if(pmSupportMultipart!=NULL && strcmp(pmSupportMultipart->value,"true")==0){
+      map* pmContentType=getMapFromMaps(pmsaConfig,"renv","CONTENT_TYPE");
+      if (pmContentType != NULL &&
+        strncasecmp(pmContentType->value, "multipart/related", 17) == 0) {
+        char *pcBoundary = extractMimeParam(pmContentType->value, "boundary");
+        char *pcStartId  = extractMimeParam(pmContentType->value, "start"); // RFC 2387
+        map* pmRequest=getMapFromMaps(pmsaConfig,"renv","jrequest");
+        if(handleCwlMultipartDeploy(pmsaConfig, pmRequest->value, strlen(pmRequest->value), pcBoundary, pcStartId)!=0){
+          freeMaps(&pmsaConfig);
+          free(pmsaConfig);
+          free(pcaCgiQueryString);
+          free(pcBoundary);
+          free(pcStartId);
+          return 1;
+        }
+        free(pcBoundary);
+        free(pcStartId);
+        free(pcaCgiContentType);
+        pcaCgiContentType = zStrdup("application/cwl");
+        // Need to invoke the CWL processing logic to pack the CWL content
+        ensureFiltered(&pmsaConfig,"internal");
+        setMapInMaps(pmsaConfig,"renv","CONTENT_TYPE","application/cwl");
+        setMapInMaps(pmsaConfig,"request","Content-Type","application/cwl");
+        pmRequest=getMapFromMaps(pmsaConfig,"renv","jrequest");
+        if(pmRequest!=NULL){
+          map* pmTmp=getMap(request_inputs,"jrequest");
+          if(pmTmp!=NULL){
+            free(pmTmp->value);
+            pmTmp->value=zStrdup(pmRequest->value);
+          }else
+            addToMap(request_inputs,"jrequest",pmRequest->value);
+        }
+      }
+    }
+
     // Ensure that the content type used is supported.
     bool bIsSupported=true;
     for(int iCnt=0;OAPIPSupportedContentTypes[iCnt]!=NULL;iCnt++){
-      if(strcmp(cgiContentType,OAPIPSupportedContentTypes[iCnt])==0){
+      if(strcmp(pcaCgiContentType,OAPIPSupportedContentTypes[iCnt])==0){
         bIsSupported=true;
         break;
       }
       else
         bIsSupported=false;
     }
-    if(!bIsSupported && strlen(cgiContentType)>0){
+    if(!bIsSupported && strlen(pcaCgiContentType)>0){
       setMapInMaps(pmsaConfig,"headers","Status","415 Unsupported Media Type");
       errorException (&pmsaConfig, _("The Content-Type specified in the request is not supported by this ZOO-Kernel, please contact the service provider."), "UnsupportedMediaType", "Content-Type");
+      free(pcaCgiContentType);
       return 1;
     }
+    free(pcaCgiContentType);
 
     //
     // Verify if a filter_in was setting conf["lenv"]["response"] or
@@ -4016,7 +4055,8 @@ int runRequest(map** inputs) {
           zooXmlCleanupNs ();
           return 1;
         }
-        setMapInMaps(pmsaConfig,"request","Content-Type",cgiContentType);
+        if(strstr(cgiContentType,"multipart/related")==NULL)
+          setMapInMaps(pmsaConfig,"request","Content-Type",cgiContentType);
 #ifdef DRU_ENABLED
         json_object *jobj = convertCwlToOGCAppPkg(pmsaConfig,request_inputs);
 #else

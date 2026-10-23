@@ -977,7 +977,7 @@ do {\
 
   ZOO_DLL_EXPORT void setMinZooLogLevel(char*);
   ZOO_DLL_EXPORT int _ZOO_LOG_MSG(int, const char*, const char*, int, const char *, ...)
-    __attribute__((format(printf, 5, 6)));
+    __attribute__((format(__printf__, 5, 6)));
   ZOO_DLL_EXPORT int zooDebugPrint( const char * format, ... );
   ZOO_DLL_EXPORT void _dumpMap(map*);
   ZOO_DLL_EXPORT void dumpMap(map*);

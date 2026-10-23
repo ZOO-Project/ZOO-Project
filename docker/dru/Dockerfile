@@ -1,4 +1,24 @@
+FROM golang:1.26.9 AS kubectl-build
+ARG KUBECTL_VERSION=v1.35.0
+ARG XNET_VERSION=v0.60.0
+ARG TEXT_VERSION=v0.41.0
+ARG SPDYSTREAM_VERSION=v0.5.1
+ARG OTEL_VERSION=v1.41.0
+ARG SYS_VERSION=v0.44.0
+RUN git clone --depth 1 -b ${KUBECTL_VERSION} https://github.com/kubernetes/kubernetes /src
+RUN apt-get update -qq && apt-get install -qqy --no-install-recommends jq rsync
+WORKDIR /src
+RUN ./hack/pin-dependency.sh golang.org/x/net ${XNET_VERSION} \
+#  && ./hack/pin-dependency.sh github.com/golang/text ${TEXT_VERSION} \
+ && ./hack/pin-dependency.sh github.com/moby/spdystream ${SPDYSTREAM_VERSION} \
+ && ./hack/pin-dependency.sh go.opentelemetry.io/otel ${OTEL_VERSION} \
+#  && ./hack/pin-dependency.sh github.com/golang/sys ${SYS_VERSION} \
+ && ./hack/update-vendor.sh
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /kubectl ./cmd/kubectl \
+ && go version -m /kubectl | grep -E "go1|golang.org/x/net"
+
 FROM ubuntu:22.04
+COPY --from=kubectl-build /kubectl /usr/local/bin/kubectl
 
 # to build:
 # docker build --rm -t ades:latest .
@@ -26,8 +46,6 @@ RUN apt-get update -qqy --no-install-recommends \
     apt-get clean -qqy
 
 ARG PY_VER=3.10
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 
 ########################################
@@ -99,15 +117,15 @@ RUN cd ./zoo-project/zoo-kernel \
      && autoreconf -i \
      && autoreconf --install \
      && ./configure --with-dru=yes \
-       --with-python=/usr/ \
-	--with-pyvers=$PY_VER \
-	--with-mapserver=/usr \
-	--with-ms-version=7 \
-	--with-json=/usr \
-	--prefix=/usr \
-	--with-metadb=yes \
-	--with-db-backend \
-	--with-rabbitmq=yes \
+        --with-python=/usr/ \
+        --with-pyvers=$PY_VER \
+        --with-mapserver=/usr \
+        --with-ms-version=7 \
+        --with-json=/usr \
+        --prefix=/usr \
+        --with-metadb=yes \
+        --with-db-backend \
+        --with-rabbitmq=yes \
      && sed -i "s/-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H/-DPROJ_VERSION_MAJOR=8/g" ./ZOOMakefile.opts \
      && make -j4\
      && make install \
@@ -161,6 +179,8 @@ RUN git clone --depth 1 https://github.com/swagger-api/swagger-ui.git \
     && mv /var/www/html/swagger-ui/dist /var/www/html/swagger-ui/oapip
 
 COPY docker/dru/default.conf /etc/apache2/sites-available/000-default.conf
+COPY zoo-project/zoo-services/utils/cwl_pack/cgi-env/cwl_pack_service.py /usr/lib/cgi-bin
+COPY zoo-project/zoo-services/utils/cwl_pack/cgi-env/cwl_pack.zcfg /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DetectEntrypoint.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.py /usr/lib/cgi-bin
 COPY zoo-project/zoo-services/utils/open-api/dru/DeployProcess.zcfg /usr/lib/cgi-bin
@@ -278,25 +298,18 @@ COPY zoo-project/zoo-kernel/locale /tmp/locale
 RUN date && mkdir /tmp/cookiecutter-templates && \
     pip install --upgrade "pip>=26.2.0" && \
     pip install hatch && \
-    # Using the latest version of pycalrissian from the ZOO-Project organization
     cd /tmp && \
-    git clone -b develop https://github.com/ZOO-Project/pycalrissian.git && \
-    cd pycalrissian && \
-    hatch build && \
-    pip install ./dist/pycalrissian-0.8.0-py3-none-any.whl && \
-    # cd .. && \
     pip install -r /tmp/requirements.txt && \
     cd /tmp && \
     pip install --upgrade cryptography zipp && \
     pip install "jaraco.context>=6.1.0" "pyasn1>=0.6.2" "oauthlib>=3.2.2" && \
     (pip uninstall -y chardet || true) && \
     pip install --force-reinstall --no-binary charset-normalizer charset-normalizer==3.4.9 && \
-    pip install --force-reinstall "git+https://github.com/GeoLabs/cwl-loader.git@feature/merged-patch" && \
+    pip install --force-reinstall --no-binary pyyaml pyyaml && \
     pip install --upgrade "httplib2>=0.32.0" && \
     pip uninstall -y hatch virtualenv && \
     pip uninstall -y pip && \
-    # cd .. && \
-    rm -r pycalrissian requirements.txt && \
+    rm -rf /tmp/requirements.txt && \
     chmod -R 777 /tmp/cookiecutter-templates && \
     rm /var/log/apache2/error.log && \
     ln -s /dev/stdout /var/log/apache2/error.log && \

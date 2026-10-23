@@ -10,8 +10,9 @@
  boto3==1.35.92
  kubernetes==35.0.0
  coverage
- #zoo-calrissian-runner==0.4.0
- git+https://github.com/ZOO-Project/zoo-calrissian-runner.git@feature/stageout-file-support
+ pycalrissian>=0.8.3
+ zoo-calrissian-runner==0.4.2
+ #git+https://github.com/ZOO-Project/zoo-calrissian-runner.git@feature/stageout-file-support
  zoo-argowf-runner==0.2.1
  zoo-wes-runner==0.2.1
  #git+https://github.com/gfenoy/cwl2ogc.git@feature/add-file-format-support
@@ -31,9 +32,9 @@
  gdal==3.8.4
  attrs
  click-config-file
- cwl-upgrader==1.2.11
+ cwl-upgrader>=1.2.11
  cwl-utils>=0.14
- #cwl-loader==0.15.0
+ cwl-loader==0.28.0
  git+https://github.com/GeoLabs/oapip2openeo.git
  hera==v5.27.0
  httpx

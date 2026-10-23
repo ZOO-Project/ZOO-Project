@@ -33,9 +33,52 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
+
+#define CWL_MAX_PARTS 64
+
+/* Defensive limits (override at compile time if needed). They do not replace
+ * the request size limit that should already be enforced upstream. */
+#ifndef CWL_MAX_BODY_SIZE
+#define CWL_MAX_BODY_SIZE (16UL * 1024UL * 1024UL)
+#endif
+#ifndef CWL_MAX_HEADER_BLOCK
+#define CWL_MAX_HEADER_BLOCK 16384
+#endif
+#define CWL_MAX_BOUNDARY_LEN 70   /* RFC 2046 */
+
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+  /**
+  * Result of the parsing helpers. NOMEM is kept distinct from INVALID so that
+  * an allocation failure is reported as a server error, not as a bad request.
+  */
+  typedef enum {
+    CWL_OK = 0,
+    CWL_ERR_INVALID = 1,   // malformed or unsafe input
+    CWL_ERR_NOMEM = 2      // allocation failure
+  } cwlStatus;
+
+  /**
+   * Structure representing a single part of a multipart request.
+   * This structure holds metadata and content for each part of a multipart request.
+   * It is used when handling multipart requests, such as CWL multipart deploys.
+   * Each part contains its Content-ID, proposed relative path, MIME type, and the actual data.
+   * The data pointer points into the original body buffer and should not be freed separately.
+   * The length field indicates the size of the data buffer.
+   */
+  typedef struct {
+    char *contentId;        // Content-ID of the part (without < and >)
+    char *contentLocation;  // relative path proposed by the client
+    char *contentType;      // MIME type of the part
+    const char *data;       // pointer INTO the body buffer (no copy, never freed)
+    size_t len;             // length of the part's data
+  } cwlPart;
 
   xmlXPathObjectPtr extractFromDoc (xmlDocPtr, const char *);
   int appendMapsToMaps (maps**, maps*, maps*, elements*);
@@ -52,6 +95,8 @@ extern "C" {
   int validateRequest(maps**,service*,map*,maps**,maps**,HINTERNET*);
   void parseCookie(maps**,const char*);
   int parseInputHttpRequests(maps*,maps*, HINTERNET*);
+  char *extractMimeParam(const char *contentType, const char *paramName);
+  int handleCwlMultipartDeploy(maps*, const char*, size_t, const char*, const char*);
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
 #
-# Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau
+# Author : Blasco Brauzzi, Fabrice Brito, Frank Löschau, Gérald Fenoy
 #
-# Copyright 2023 Terradue. All rights reserved.
+# Copyright 2023-2026 Terradue. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -35,7 +35,6 @@ except ImportError:
     zoo = ZooStub()
     pass
 
-from cookiecutter.main import cookiecutter
 import os
 import sys
 import shutil
@@ -45,7 +44,7 @@ from pathlib import Path
 from deploy_util import Process
 from collections import namedtuple
 from deploy_util import Services
-from cwl_loader import dump_cwl_with_custom_requirements, load_cwl_from_yaml
+from cwl_loader import dump_cwl, load_cwl_from_yaml
 from io import StringIO
 
 
@@ -142,7 +141,7 @@ class DeployService(Services):
                 f"Loading CWL from cache file {self.inputs['applicationPackage']['cache_file']}"
             )
             cwl_content = yaml.safe_load(
-                open(self.inputs["applicationPackage"]["cache_file"]).read()
+                open(self.inputs["applicationPackage"]["cache_file"], encoding="utf-8").read()
             )
         else:
             zoo.info("Loading CWL from value")
@@ -151,6 +150,11 @@ class DeployService(Services):
         return cwl_content
 
     def generate_service(self):
+
+        try:
+            from cookiecutter.main import cookiecutter
+        except Exception as e:
+            raise RuntimeError(f"Unable to load cookiecutter: {e}")
 
         path = None
         if "noRunSql" not in self.conf["lenv"]:
@@ -223,7 +227,7 @@ class DeployService(Services):
             zcfg_file = os.path.join(
                 self.zooservices_folder, f"{self.service_configuration.identifier}.zcfg"
             )
-            with open(zcfg_file, "w") as file:
+            with open(zcfg_file, "w", encoding="utf-8") as file:
                 self.service_configuration.write_zcfg(file)
 
         # In case the service is not run asynchronously and method is PUT,
@@ -267,8 +271,8 @@ class DeployService(Services):
             # First load the CWL content to get the parsed process objects
             process = load_cwl_from_yaml(self.cwl_content)
             buffer = StringIO()
-            dump_cwl_with_custom_requirements(process=process, stream=buffer)
-            with open(app_package_file, "w") as file:
+            dump_cwl(process=process, stream=buffer)
+            with open(app_package_file, "w", encoding="utf-8") as file:
                 file.write(buffer.getvalue())
 
             zoo.info(f"Moving {path} to {self.zooservices_folder}")
@@ -325,7 +329,7 @@ def storeCwl(conf, inputs, outputs):
 
     try:
         zoo.info(f"Storing the CWL file in {app_package_file}")
-        with open(app_package_file, "w") as file:
+        with open(app_package_file, "w", encoding="utf-8") as file:
             yaml.dump(cwl_content, file)
     except Exception as e:
         zoo.error(str(e))
@@ -344,7 +348,7 @@ def DeployProcess(conf, inputs, outputs):
                 conf["auth_env"]["cwd"],
                 conf["lenv"]["deployedServiceId"]
             )
-            f = open(os.path.join(zooservices_folder, "app-package.cwl"),"r")
+            f = open(os.path.join(zooservices_folder, "app-package.cwl"),"r", encoding="utf-8")
             cwl_content = yaml.safe_load(f.read())
             f.close()
             try:
@@ -360,7 +364,7 @@ def DeployProcess(conf, inputs, outputs):
                             has_updated_values = True
                             zoo.info(f"Entrypoint found: {image_config['config']['Entrypoint']}")
                             if graph_item.get("baseCommand") is not None:
-                                graph_item["baseCommand"] = graph_item.get("baseCommand").prepend(image_config['config']['Entrypoint'])
+                                graph_item["baseCommand"] = [*image_config['config']['Entrypoint'], *graph_item.get("baseCommand")]
                             else:
                                 graph_item["baseCommand"] = image_config['config']['Entrypoint']
                         else:
@@ -368,7 +372,7 @@ def DeployProcess(conf, inputs, outputs):
                 k8s_client.delete_crane_pod()
                 # Here we need to save the updated CWL graph
                 if has_updated_values:
-                    with open(os.path.join(zooservices_folder, "app-package.cwl"), "w") as f:
+                    with open(os.path.join(zooservices_folder, "app-package.cwl"), "w", encoding="utf-8") as f:
                         yaml.dump(cwl_content, f)
                         f.close()
                     zoo.success("CWL file updated successfully.")

@@ -1,6 +1,7 @@
 Version 2.1.1-dev
-  * Still rely on branch feature/stageout-file-support for
-  zoo-calrissian-runner, and feature/merged-patch for cwl-loader.
+  * Add support for deployment of multipart/related CWL, if the openapi's
+  support_multiparl parameter is set to true in the main configuration.
+  * Rely only on released Python packages, including released pycalrissian.
   * Use the pycalrissian Python module from the ZOO-Project organization
   * Fix arbitrary file read via path traversal in DRU browse operation.
   * Fix Authentication bypass by ensuring JWT are properly verified at runtime,
@@ -13,7 +14,7 @@ Version 2.1.1-dev
   * Define list of not allowed content for identifiers created from the CWL.
   * Avoid potential SQL injection from deploy_util.py and UndeployProcess.py.
   * Enhance internal log message management, relying on the ZOO_DEBUG_LEVEL
-  * environement variable value.
+  environement variable value.
   * Add basic QOS to RabbitMQ setting prefetch count to 1.
   * Do not preserve database connection open during process execution,
   add functions: verifyDbConnection and closeIfNeeded.

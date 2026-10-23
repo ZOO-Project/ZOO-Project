@@ -1,6 +1,7 @@
 FROM alpine:3
+
 ADD . /websocketd
-RUN    apk update && apk add --no-cache unzip curl python3 py3-pip py3-setuptools py3-wheel py3-redis \
+RUN    apk update && apk add --no-cache unzip python3~3.14.8 expat~2.9.0 zlib~1.3 py3-pip py3-setuptools py3-wheel py3-redis \
     && apk add --upgrade libcrypto3 libssl3 \
     && cp /websocketd/zoo-project/zoo-services/utils/open-api/server/subscriber.py /shell.py\
     && chown nobody: /shell.py \

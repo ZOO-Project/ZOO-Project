@@ -60,7 +60,7 @@ class Process:
         self.title = title or identifier
         if self.title:
             self.title = str(self.title)
-        self.description = description or title
+        self.description = description if description is not None else title
         if self.description:
             self.description = str(self.description)
         self.store_supported = store_supported

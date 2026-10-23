@@ -103,7 +103,8 @@ int cgiMain(){
   }
   else if((strncmp(cgiContentType,"application/json",16)==0
       || strstr(cgiContentType,"json")!=NULL
-      || strncmp(cgiContentType,"application/cwl",15)==0 )
+      || strncmp(cgiContentType,"application/cwl",15)==0 
+      || strncmp(cgiContentType,"multipart/related",17)==0)
       && (strncasecmp(cgiRequestMethod,"post",4)==0
       || strncasecmp(cgiRequestMethod,"put",3)==0)){
       char *buffer=new char[2];

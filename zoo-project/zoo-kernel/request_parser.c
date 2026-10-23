@@ -29,6 +29,10 @@
 #include "response_print.h"
 #include "caching.h"
 #include "cgic.h"
+#include <errno.h>
+#include <dirent.h>
+#include <string.h>
+
 
 /**
  * Apply XPath Expression on XML document.
@@ -2061,3 +2065,926 @@ int parseInputHttpRequests(maps* conf,maps* inputs, HINTERNET* hInternet){
 
   return 0;
 }
+
+/**
+ * Returns the parent directory of the given path, allocated with malloc.
+ * The caller is responsible for freeing the returned string.
+ *
+ * @param pccPath Full path to the file for which the parent directory is to be determined.
+ * @return Malloc'ed parent directory, or NULL if the allocation fails.
+ */
+char *getDirName(const char *pccPath) {
+  if(!pccPath || pccPath[0] == '\0')
+    return zStrdup(".");
+  const char *pccLastSlash = strrchr(pccPath, '/');
+  if(!pccLastSlash)
+    return zStrdup(".");
+  if(pccLastSlash == pccPath)
+    return zStrdup("/");
+  return strndup(pccPath, pccLastSlash - pccPath);
+}
+
+/**
+ * Searches for a sequence of bytes (needle) within a larger block of data.
+ *
+ * @param pccData Pointer to the start of the data block.
+ * @param stDataLen Length of the data block.
+ * @param pccNeedle Pointer to the sequence of bytes to search for.
+ * @param stNeedleLen Length of the sequence of bytes to search for.
+ * @return Pointer to the first occurrence of the sequence within the data block, or NULL if not found.
+ */
+static const char *findBytes(const char *pccData, size_t stDataLen,
+                             const char *pccNeedle, size_t stNeedleLen) {
+  if(stNeedleLen == 0)
+    return pccData;
+  if(stNeedleLen > stDataLen)
+    return NULL;
+  for(size_t stCounter = 0; stCounter <= stDataLen - stNeedleLen; stCounter++) {
+    if (memcmp(pccData + stCounter, pccNeedle, stNeedleLen) == 0)
+      return pccData + stCounter;
+  }
+  return NULL;
+}
+
+/**
+ * Finds the end of the headers in a CWL multipart message.
+ *
+ * @param pccStart Pointer to the start of the buffer containing headers.
+ * @param pccEnd Pointer to the end of the buffer.
+ * @param pstSepLen Pointer to a size_t variable where the length of the separator will be stored.
+ * @return Pointer to the end of the headers, or NULL if not found.
+ */
+static const char *findHeaderEnd(const char *pccStart, const char *pccEnd, size_t *pstSepLen) {
+  size_t stLen = (size_t)(pccEnd - pccStart);
+  if(pccEnd <= pccStart) return NULL;
+  const char *pccCrlf = findBytes(pccStart, stLen, "\r\n\r\n", 4);
+  const char *pccLf = findBytes(pccStart, stLen, "\n\n", 2);
+  if(pccCrlf && (!pccLf || pccCrlf <= pccLf)) {
+    *pstSepLen = 4;
+    return pccCrlf;
+  }
+  if(pccLf) {
+    *pstSepLen = 2;
+    return pccLf;
+  }
+  return NULL;
+}
+
+/**
+ * Finds the next boundary delimiter LINE in a multipart body.
+ *
+ * A delimiter is only accepted if it starts at the beginning of the body or
+ * right after a '\n', and is followed by either "--" (closing delimiter) or
+ * optional blanks and a line break. An occurrence of "--boundary" inside the
+ * content of a part (or a longer boundary sharing the same prefix) is ignored.
+ *
+ * @param pccBody Start of the whole body (used to detect "beginning of body").
+ * @param pccFrom Where to start searching.
+ * @param pccEnd End of the body.
+ * @param pccDelim The delimiter string ("--" + boundary).
+ * @param stDelimLen Length of the delimiter string.
+ * @param piIsFinal Set to 1 if the delimiter is the closing one ("--boundary--").
+ * @param ppcAfterLine Set to the first byte after the delimiter line.
+ * @return Pointer to the start of the delimiter line, or NULL if not found.
+ */
+static const char *findBoundaryLine(const char *pccBody, const char *pccFrom,
+                                    const char *pccEnd, const char *pccDelim,
+                                    size_t stDelimLen, int *piIsFinal,
+                                    const char **ppcAfterLine) {
+  const char *pccSearch = pccFrom;
+  while (pccSearch < pccEnd) {
+    const char *pccHit = findBytes(pccSearch, (size_t)(pccEnd - pccSearch),
+                                   pccDelim, stDelimLen);
+    if(!pccHit)
+      return NULL;
+    if(pccHit == pccBody || pccHit[-1] == '\n') {
+      const char *pccQ = pccHit + stDelimLen;
+      int iFinal = 0;
+      if(pccEnd - pccQ >= 2 && pccQ[0] == '-' && pccQ[1] == '-') {
+        iFinal = 1;
+        pccQ += 2;
+      }
+      while (pccQ < pccEnd && (*pccQ == ' ' || *pccQ == '\t'))
+        pccQ++;
+
+      if(pccQ == pccEnd && iFinal) {
+        *piIsFinal = 1;
+        *ppcAfterLine = pccQ;
+        return pccHit;
+      }
+      if(pccEnd - pccQ >= 2 && pccQ[0] == '\r' && pccQ[1] == '\n') {
+        *piIsFinal = iFinal;
+        *ppcAfterLine = pccQ + 2;
+        return pccHit;
+      }
+      if(pccQ < pccEnd && pccQ[0] == '\n') {
+        *piIsFinal = iFinal;
+        *ppcAfterLine = pccQ + 1;
+        return pccHit;
+      }
+    }
+    pccSearch = pccHit + 1; // false positive: keep searching after this hit
+  }
+  return NULL;
+}
+
+/**
+ * Splits a header line into its field and value components.
+ * On CWL_OK, both outputs are either malloc'ed (to be freed by the caller) or
+ * both NULL when the line is a folded continuation line, which is ignored.
+ *
+ * @param pccLine Pointer to the start of the header line.
+ * @param stLen Length of the header line.
+ * @param ppcField Receives the field name.
+ * @param ppcValue Receives the field value.
+ * @return CWL_OK, CWL_ERR_INVALID (no colon on a non-continuation line) or CWL_ERR_NOMEM.
+ */
+static cwlStatus splitHeaderLine(const char *pccLine, size_t stLen, char **ppcField, char **ppcValue) {
+  *ppcField = NULL;
+  *ppcValue = NULL;
+
+  const char *pccColon = (const char*) memchr(pccLine, ':', stLen);
+  if(!pccColon) {
+    // Header folding is not supported: a continuation line is ignored,
+    // anything else without a colon is malformed.
+    return (pccLine[0] == ' ' || pccLine[0] == '\t') ? CWL_OK : CWL_ERR_INVALID;
+  }
+
+  size_t stFieldLen = pccColon - pccLine;
+  *ppcField = strndup(pccLine, stFieldLen);
+  if(!*ppcField)
+    return CWL_ERR_NOMEM;
+
+  const char *pccValue = pccColon + 1;
+  size_t stVLen = stLen - stFieldLen - 1;
+  while (stVLen > 0 && (*pccValue == ' ' || *pccValue == '\t')) {
+    pccValue++;
+    stVLen--;
+  }
+  while (stVLen > 0 && (pccValue[stVLen-1] == '\r'))
+    stVLen--;
+
+  *ppcValue = strndup(pccValue, stVLen);
+  if(!*ppcValue) {
+    free(*ppcField);
+    *ppcField = NULL;
+    return CWL_ERR_NOMEM;
+  }
+  return CWL_OK;
+}
+
+/**
+ * Strips angle brackets from a string if they exist.
+ *
+ * @param pccInput The input string.
+ * @return A newly allocated string without angle brackets, or NULL if the
+ *         input is NULL or the allocation fails.
+ */
+static char *stripAngleBrackets(const char *pccInput) {
+  if(!pccInput) return NULL;
+  size_t stLen = strlen(pccInput);
+  if(stLen >= 2 && pccInput[0] == '<' && pccInput[stLen-1] == '>')
+    return strndup(pccInput + 1, stLen - 2);
+  return zStrdup(pccInput);
+}
+
+/**
+ * Frees the strings owned by the parts. 'data' is NOT freed: it points into
+ * the body buffer provided by the caller.
+ *
+ * @param pcpParts Array of parts.
+ * @param iNbParts Number of valid entries in the array.
+ */
+static void freeCwlParts(cwlPart *pcpParts, int iNbParts) {
+  for(int iCnt = 0; iCnt < iNbParts; iCnt++) {
+    free(pcpParts[iCnt].contentId);
+    free(pcpParts[iCnt].contentLocation);
+    free(pcpParts[iCnt].contentType);
+    pcpParts[iCnt].contentId = NULL;
+    pcpParts[iCnt].contentLocation = NULL;
+    pcpParts[iCnt].contentType = NULL;
+  }
+}
+
+/**
+ * Parses the headers of a multipart part and fills the corresponding fields in
+ * the cwlPart structure. A repeated Content-ID, Content-Location or
+ * Content-Type header is rejected (ambiguous), and an allocation failure is
+ * reported instead of silently dropping the header.
+ *
+ * @param pccHeaderBlock Pointer to the start of the header block.
+ * @param stLen Length of the header block.
+ * @param pcpPart Pointer to the cwlPart structure to be filled with the parsed headers.
+ * @return CWL_OK, CWL_ERR_INVALID or CWL_ERR_NOMEM. On error, the strings
+ *         already stored in pcpPart stay owned by it (freed by freeCwlParts).
+ */
+static cwlStatus parsePartHeaders(const char *pccHeaderBlock, size_t stLen, cwlPart *pcpPart) {
+  const char *pccLineStart = pccHeaderBlock;
+  const char *pccEnd = pccHeaderBlock + stLen;
+
+  while (pccLineStart < pccEnd) {
+    const char *pccLineEnd = (const char*) memchr(pccLineStart, '\n', pccEnd - pccLineStart);
+    if(!pccLineEnd)
+      pccLineEnd = pccEnd;
+
+    size_t stLineLen = pccLineEnd - pccLineStart;
+    if(stLineLen > 0 && pccLineStart[stLineLen-1] == '\r')
+      stLineLen--; // CRLF
+
+    if(stLineLen > 0) {
+      char *pcField = NULL, *pcValue = NULL;
+      cwlStatus eSt = splitHeaderLine(pccLineStart, stLineLen, &pcField, &pcValue);
+      if(eSt != CWL_OK)
+        return eSt;
+
+      if(pcField && pcValue) {
+        char **ppcTarget = NULL;
+        if(strcasecmp(pcField, "Content-ID") == 0) {
+          char *pcClean = stripAngleBrackets(pcValue);
+          if(!pcClean) {
+            free(pcField);
+            free(pcValue);
+            return CWL_ERR_NOMEM;
+          }
+          free(pcValue);
+          pcValue = pcClean;
+          ppcTarget = &pcpPart->contentId;
+        } else if(strcasecmp(pcField, "Content-Location") == 0) {
+          ppcTarget = &pcpPart->contentLocation;
+        } else if(strcasecmp(pcField, "Content-Type") == 0) {
+          ppcTarget = &pcpPart->contentType;
+        }
+
+        if(ppcTarget) {
+          if(*ppcTarget) {           // repeated header
+            free(pcField);
+            free(pcValue);
+            return CWL_ERR_INVALID;
+          }
+          *ppcTarget = pcValue;       // ownership transferred
+          pcValue = NULL;
+        }
+      }
+      free(pcField);
+      free(pcValue);
+    }
+
+    pccLineStart = pccLineEnd + 1;
+  }
+  return CWL_OK;
+}
+
+/**
+ * Splits a multipart/related body into its constituent parts.
+ *
+ * Delimiters are only recognized as full lines; the closing delimiter
+ * ("--boundary--") is required; more than iMaxParts parts is an error (no
+ * silent truncation). On failure, everything allocated here is released.
+ *
+ * @param pccBody Pointer to the start of the body.
+ * @param stBodyLen Length of the body.
+ * @param pccBoundary Boundary string used to separate parts.
+ * @param pcpParts Array of cwlPart structures to be filled.
+ * @param iMaxParts Maximum number of parts that can be stored in the parts array.
+ * @param piNbParts Pointer to an integer where the number of parts found will be stored (0 on failure).
+ * @return CWL_OK, CWL_ERR_INVALID or CWL_ERR_NOMEM.
+ */
+cwlStatus splitMultipartRelated(const char *pccBody, size_t stBodyLen, const char *pccBoundary,
+                                cwlPart pcpParts[], int iMaxParts, int *piNbParts) {
+  char acDelim[CWL_MAX_BOUNDARY_LEN + 8];   // "--" + boundary + NUL
+  const char *pccEnd = pccBody + stBodyLen;
+  const char *pccCursor = NULL, *pccNext = NULL, *pccAfter = NULL;
+  const char *pccHeaderEnd = NULL, *pccDataStart = NULL, *pccDataEnd = NULL;
+  size_t stSepLen = 0, stBoundaryLen = 0;
+  int iIsFinal = 0, iCount = 0, iClosed = 0, iDelimLen = 0;
+  cwlStatus eRes = CWL_ERR_INVALID, eSt = CWL_OK;
+
+  *piNbParts = 0;
+
+  stBoundaryLen = strlen(pccBoundary);
+  if(stBoundaryLen == 0 || stBoundaryLen > CWL_MAX_BOUNDARY_LEN)
+    return CWL_ERR_INVALID;
+  iDelimLen = snprintf(acDelim, sizeof(acDelim), "--%s", pccBoundary);
+
+  // First delimiter, an empty multipart is invalid
+  if(!findBoundaryLine(pccBody, pccBody, pccEnd, acDelim, iDelimLen, &iIsFinal, &pccCursor)
+      || iIsFinal)
+    return CWL_ERR_INVALID;
+
+  while (!iClosed) {
+    // Check if we have exceeded the maximum allowed parts
+    if(iCount >= iMaxParts) {
+      eRes = CWL_ERR_INVALID;
+      goto fail;
+    }
+
+    pccNext = findBoundaryLine(pccBody, pccCursor, pccEnd, acDelim, iDelimLen,
+                               &iIsFinal, &pccAfter);
+    // Multipart not properly closed
+    if(!pccNext) {
+      eRes = CWL_ERR_INVALID;
+      goto fail;
+    }
+
+    pccHeaderEnd = findHeaderEnd(pccCursor, pccNext, &stSepLen);
+    if(!pccHeaderEnd || (size_t)(pccHeaderEnd - pccCursor) > CWL_MAX_HEADER_BLOCK) {
+      eRes = CWL_ERR_INVALID;
+      goto fail;
+    }
+
+    memset(&pcpParts[iCount], 0, sizeof(cwlPart));
+    eSt = parsePartHeaders(pccCursor, pccHeaderEnd - pccCursor, &pcpParts[iCount]);
+    iCount++;
+    if(eSt != CWL_OK) {
+      eRes = eSt;
+      goto fail;
+    }
+
+    pccDataStart = pccHeaderEnd + stSepLen;
+    pccDataEnd = pccNext;
+    // The line break preceding the delimiter belongs to the delimiter
+    if(pccDataEnd > pccDataStart && pccDataEnd[-1] == '\n') pccDataEnd--;
+    if(pccDataEnd > pccDataStart && pccDataEnd[-1] == '\r') pccDataEnd--;
+
+    pcpParts[iCount-1].data = pccDataStart;
+    pcpParts[iCount-1].len = pccDataEnd - pccDataStart;
+
+    iClosed = iIsFinal;
+    pccCursor = pccAfter;
+  }
+
+  *piNbParts = iCount;
+  return CWL_OK;
+
+fail:
+  freeCwlParts(pcpParts, iCount);
+  *piNbParts = 0;
+  return eRes;
+}
+
+/**
+ * Sanitize a relative file path.
+ *
+ * @param pccRawName The raw relative file path to sanitize.
+ * @param ppcOut Receives a newly allocated "clean" relative path on CWL_OK, NULL otherwise.
+ * @return CWL_OK, CWL_ERR_INVALID (dangerous or invalid path) or CWL_ERR_NOMEM.
+ */
+cwlStatus sanitizeRelativePath(const char *pccRawName, char **ppcOut) {
+  *ppcOut = NULL;
+  if(!pccRawName || pccRawName[0] == '\0')
+    return CWL_ERR_INVALID;
+
+  size_t stLen = strlen(pccRawName);
+
+  if(pccRawName[0] == '/' || pccRawName[0] == '\\')
+    return CWL_ERR_INVALID;
+  if(stLen >= 2 && pccRawName[1] == ':')
+    return CWL_ERR_INVALID;
+
+  if(findBytes(pccRawName, stLen, "://", 3) || strncasecmp(pccRawName, "cid:", 4) == 0)
+    return CWL_ERR_INVALID;
+
+  char *pcWork = zStrdup(pccRawName);
+  if(!pcWork)
+    return CWL_ERR_NOMEM;
+  for(char *pcP = pcWork; *pcP; pcP++) if(*pcP == '\\') *pcP = '/';
+
+  // The result can never be longer than the input
+  char *pcResult = (char*) malloc(strlen(pcWork) + 1);
+  if(!pcResult) {
+    free(pcWork);
+    return CWL_ERR_NOMEM;
+  }
+  pcResult[0] = '\0';
+
+  size_t stPos = 0;
+  char *pcSaveptr = NULL;
+  char *pcSegment = strtok_r(pcWork, "/", &pcSaveptr);
+
+  while (pcSegment) {
+    if(strcmp(pcSegment, "..") == 0) {
+      free(pcWork);
+      free(pcResult);
+      return CWL_ERR_INVALID;
+    }
+    if(strcmp(pcSegment, ".") == 0 || pcSegment[0] == '\0') {
+      pcSegment = strtok_r(NULL, "/", &pcSaveptr);
+      continue;
+    }
+    for (char *pcC = pcSegment; *pcC; pcC++) {
+      if((unsigned char)*pcC < 0x20 || (unsigned char)*pcC == 0x7f) {
+        free(pcWork);
+        free(pcResult);
+        return CWL_ERR_INVALID;
+      }
+    }
+    if(stPos > 0)
+      pcResult[stPos++] = '/';
+    size_t stSegLen = strlen(pcSegment);
+    memcpy(pcResult + stPos, pcSegment, stSegLen);
+    stPos += stSegLen;
+    pcResult[stPos] = '\0';
+    pcSegment = strtok_r(NULL, "/", &pcSaveptr);
+  }
+  free(pcWork);
+
+  if(stPos == 0) {
+    free(pcResult);
+    return CWL_ERR_INVALID;
+  }
+
+  if(stPos < 5 ||
+      (strcasecmp(pcResult + stPos - 4, ".cwl") != 0 &&
+       strcasecmp(pcResult + stPos - 5, ".yaml") != 0 &&
+       strcasecmp(pcResult + stPos - 4, ".yml") != 0)) {
+    free(pcResult);
+    return CWL_ERR_INVALID;
+  }
+
+  *ppcOut = pcResult;
+  return CWL_OK;
+}
+
+/**
+ * Verify that the parent directory of fullPath resolves under workDir.
+ * The final file component is NOT checked here: it is created with
+ * O_CREAT | O_EXCL | O_NOFOLLOW by the caller, which refuses an existing
+ * file or a symlink.
+ *
+ * @param pccWorkDir The base directory to check against.
+ * @param pccFullPath The full path to check.
+ * @return 1 if the parent of fullPath is under workDir, 0 otherwise.
+ */
+int pathStaysUnderWorkDir(const char *pccWorkDir, const char *pccFullPath) {
+  char acResolvedWork[PATH_MAX];
+  if(!realpath(pccWorkDir, acResolvedWork))
+    return 0;
+
+  char *pcParentDir = getDirName(pccFullPath);
+  if(!pcParentDir) return 0;
+  char acResolvedParent[PATH_MAX];
+  int iOk = realpath(pcParentDir, acResolvedParent) != NULL;
+  free(pcParentDir);
+  if(!iOk)
+    return 0;
+
+  size_t wlen = strlen(acResolvedWork);
+  return strncmp(acResolvedWork, acResolvedParent, wlen) == 0 &&
+         (acResolvedParent[wlen] == '/' || acResolvedParent[wlen] == '\0');
+}
+
+/**
+ * Creates one directory; an already existing path is accepted ONLY if it is
+ * a real directory (not a file, not a symlink).
+ */
+static int mkdirOne(const char *pccPath) {
+  if(zMkdir(pccPath) == 0)
+    return 0;
+  if(errno != EEXIST)
+    return -1;
+  struct stat st;
+  return (lstat(pccPath, &st) == 0 && S_ISDIR(st.st_mode)) ? 0 : -1;
+}
+
+/**
+ * Recursively create the specified directory and all its missing parent directories.
+ * Equivalent to "mkdir -p".
+ *
+ * @param pccPath The path of the directory to create.
+ * @return 0 on success (or if the directory already exists), -1 on failure.
+ */
+int mkdirRecursive(const char *pccPath) {
+  if(!pccPath || pccPath[0] == '\0')
+    return -1;
+
+  char *pcCopy = zStrdup(pccPath);
+  if(!pcCopy)
+    return -1;
+  size_t stLen = strlen(pcCopy);
+  // remove a trailing '/' to avoid an empty segment
+  if(stLen > 1 && pcCopy[stLen - 1] == '/')
+    pcCopy[stLen - 1] = '\0';
+
+  for (char *pcP = pcCopy + 1; *pcP; pcP++) {
+    if(*pcP == '/') {
+      *pcP = '\0';
+      if(mkdirOne(pcCopy) != 0) {
+        free(pcCopy);
+        return -1;
+      }
+      *pcP = '/';
+    }
+  }
+
+  int iRc = mkdirOne(pcCopy);
+  free(pcCopy);
+  return iRc;
+}
+
+/**
+ * Recursively create the parent directory of the specified file path (without creating the file itself).
+ *
+ * @param pccFilePath The path of the file whose parent directory is to be created.
+ * @return 0 on success (or if the parent directory already exists), -1 on failure.
+ */
+int mkdirRecursiveForFile(const char *pccFilePath) {
+  if(!pccFilePath)
+    return -1;
+
+  char *pcDir = getDirName(pccFilePath);
+  if(!pcDir)
+    return -1;
+  int iRc = mkdirRecursive(pcDir);
+  free(pcDir);
+  return iRc;
+}
+
+/**
+ * Recursively remove the specified file or directory.
+ * If the path is a directory, all its contents are removed as well.
+ *
+ * @param pccPath The path to remove.
+ * @return 0 on success, -1 on failure.
+ */
+static int removeRecursive(const char *pccPath) {
+  struct stat st;
+  if(lstat(pccPath, &st) != 0) {
+    return (errno == ENOENT) ? 0 : -1;
+  }
+
+  if(S_ISLNK(st.st_mode)) {
+    // Never follow a symlink: we remove the link itself,
+    // never its target (security -> avoid leaving the workDir)
+    return zUnlink(pccPath);
+  }
+
+  if(S_ISDIR(st.st_mode)) {
+    DIR *pdDir = opendir(pccPath);
+    if(!pdDir)
+      return -1;
+
+    struct dirent *psdEntry;
+    int iRc = 0;
+    while ((psdEntry = readdir(pdDir)) != NULL) {
+      if(strcmp(psdEntry->d_name, ".") == 0 || strcmp(psdEntry->d_name, "..") == 0)
+        continue;
+
+      char acChildPath[PATH_MAX];
+      int iN = snprintf(acChildPath, sizeof(acChildPath), "%s/%s", pccPath, psdEntry->d_name);
+      if(iN < 0 || iN >= (int)sizeof(acChildPath)) { iRc = -1; continue; }
+
+      if(removeRecursive(acChildPath) != 0) {
+        ZOO_WARNING("cleanupWorkDir: failed to remove %s: %s",
+                    acChildPath, strerror(errno));
+        iRc = -1; // keep cleaning the rest anyway
+      }
+    }
+    closedir(pdDir);
+
+    if(rmdir(pccPath) != 0) iRc = -1;
+    return iRc;
+  }
+
+  return zUnlink(pccPath);
+}
+
+/**
+ * Clean up the specified work directory by recursively removing all its contents.
+ *
+ * @param pccWorkDir The path to the work directory to clean up.
+ * @return 0 on success, -1 on failure.
+ */
+int cleanupWorkDir(const char *pccWorkDir) {
+  if(!pccWorkDir || pccWorkDir[0] == '\0')
+    return -1;
+  return removeRecursive(pccWorkDir) == 0 ? 0 : -1;
+}
+
+/**
+ * Create the work directory of a multipart deployment with mkdtemp(): the
+ * directory is guaranteed to be new and owned by this request (mode 0700), so
+ * it is always safe to remove it on error.
+ *
+ * @param pmsConf The configuration maps ("main"/"tmpPath", default "/tmp").
+ * @return A malloc'ed path of the created directory, or NULL on error.
+ */
+char *createExclusiveWorkDir(maps *pmsConf) {
+  map *pmTmpPath = getMapFromMaps(pmsConf, "main", "tmpPath");
+  const char *pccBase = (pmTmpPath != NULL) ? pmTmpPath->value : "/tmp";
+
+  if(mkdirRecursive(pccBase) != 0)
+    return NULL;
+
+  size_t stNeeded = strlen(pccBase) + strlen("/cwl_deploy_XXXXXX") + 1;
+  char *pcTemplate = (char*) malloc(stNeeded);
+  if(!pcTemplate)
+    return NULL;
+  snprintf(pcTemplate, stNeeded, "%s/cwl_deploy_XXXXXX", pccBase);
+
+  if(mkdtemp(pcTemplate) == NULL) {
+    free(pcTemplate);
+    return NULL;
+  }
+  return pcTemplate;
+}
+
+/**
+ * Extract the value of a parameter from a header such as
+ * 'multipart/related; boundary="a;b"; start="<main@cwl>"'.
+ *
+ * Handles unquoted values, quoted values containing ';' and backslash-escaped
+ * characters inside quoted values. The parameter name is matched exactly
+ * (case-insensitively). Angle brackets are NOT removed here.
+ *
+ * @param pccContentType The content type header string.
+ * @param pccParamName The name of the parameter to extract.
+ * @return A malloc'ed string with the unquoted value, or NULL if the parameter
+ *         is absent, empty, malformed or if the allocation fails.
+ */
+char *extractMimeParam(const char *pccContentType, const char *pccParamName) {
+  if(!pccContentType || !pccParamName)
+    return NULL;
+
+  size_t stNameLen = strlen(pccParamName);
+  const char *pccCur = strchr(pccContentType, ';');
+
+  while (pccCur && *pccCur == ';') {
+    pccCur++;
+    while (*pccCur == ' ' || *pccCur == '\t')
+      pccCur++;
+
+    const char *pccNameStart = pccCur;
+    while (*pccCur && *pccCur != '=' && *pccCur != ';')
+      pccCur++;
+    if(*pccCur != '=')
+      continue;                        // parameter without value (pccCur is on ';' or at the end)
+
+    const char *pccNameEnd = pccCur;
+    while (pccNameEnd > pccNameStart && (pccNameEnd[-1] == ' ' || pccNameEnd[-1] == '\t'))
+      pccNameEnd--;
+    int iMatch = ((size_t)(pccNameEnd - pccNameStart) == stNameLen &&
+                  strncasecmp(pccNameStart, pccParamName, stNameLen) == 0);
+
+    pccCur++;                          // skip '='
+    while (*pccCur == ' ' || *pccCur == '\t')
+      pccCur++;
+
+    if(*pccCur == '"') {
+      pccCur++;
+      char *pcBuf = NULL;
+      size_t stPos = 0;
+      if(iMatch) {
+        pcBuf = (char*) malloc(strlen(pccCur) + 1);
+        if(!pcBuf)
+          return NULL;
+      }
+      while (*pccCur && *pccCur != '"') {
+        if(*pccCur == '\\' && pccCur[1] != '\0')
+          pccCur++;                    // quoted-pair: keep the escaped character
+        if(pcBuf)
+          pcBuf[stPos++] = *pccCur;
+        pccCur++;
+      }
+      if(*pccCur != '"') {            // unterminated quoted string
+        free(pcBuf);
+        return NULL;
+      }
+      pccCur++;
+      if(iMatch) {
+        if(stPos == 0) {
+          free(pcBuf);
+          return NULL;
+        }
+        pcBuf[stPos] = '\0';
+        return pcBuf;
+      }
+    } else {
+      const char *pccValStart = pccCur;
+      while (*pccCur && *pccCur != ';' && *pccCur != ' ' && *pccCur != '\t' &&
+             *pccCur != '\r' && *pccCur != '\n')
+        pccCur++;
+      if(iMatch) {
+        if(pccCur == pccValStart)
+          return NULL;
+        return strndup(pccValStart, pccCur - pccValStart);
+      }
+    }
+    while (*pccCur && *pccCur != ';')  // skip to the next parameter
+      pccCur++;
+  }
+  return NULL;
+}
+
+/**
+ * Raise an OGC "InvalidParameterValue" exception and return -1.
+ *
+ * @param pmsConf The configuration maps.
+ * @param pccMessage The error message.
+ * @return Always returns -1.
+ */
+int handleInvalidParameterValue(maps *pmsConf, const char *pccMessage) {
+  errorException(&pmsConf, pccMessage, "InvalidParameterValue", NULL);
+  return -1;
+}
+
+/**
+ * Raise an OGC "NoApplicableCode" exception (server-side failure: disk full,
+ * out of memory, ...) and return -1.
+ *
+ * @param pmsConf The configuration maps.
+ * @param pccMessage The error message.
+ * @return Always returns -1.
+ */
+int handleInternalError(maps *pmsConf, const char *pccMessage) {
+  errorException(&pmsConf, pccMessage, "NoApplicableCode", NULL);
+  return -1;
+}
+
+/**
+ * Write the whole buffer to a file descriptor, handling partial writes and EINTR.
+ * Uses write(2) directly, so FCGI's stdio wrappers are not involved.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int writeAll(int iFd, const char *pccData, size_t stLen) {
+  while (stLen > 0) {
+    ssize_t sstN = write(iFd, pccData, stLen);
+    if(sstN < 0) {
+      if(errno == EINTR)
+        continue;
+      return -1;
+    }
+    if(sstN == 0)
+      return -1;
+    pccData += sstN;
+    stLen -= (size_t) sstN;
+  }
+  return 0;
+}
+
+/* Records the error kind/message and jumps to the single exit point. */
+#define CWL_FAIL(kind, msg) do { iErrKind = (kind); pccErrMsg = (msg); goto cleanup; } while (0)
+
+/**
+ * Handle the deployment of a CWL multipart request.
+ *
+ * Writes every part under an exclusively created work directory and publishes
+ * the "cwl-parts" map and "main"/"workDir" in the configuration only once
+ * everything has been written successfully. Every error path goes through a
+ * single cleanup block.
+ *
+ * Root document contract (RFC 2387):
+ *  - if start= is given, it is compared, after removing the optional angle
+ *    brackets, with the Content-ID of each part (exact match, no "cid:"
+ *    handling): start="<main@cwl>" selects the part whose header is
+ *    "Content-ID: <main@cwl>". It must match exactly one part, otherwise the
+ *    request is rejected;
+ *  - if start= is absent, the root is the FIRST part.
+ *
+ * Published in "cwl-parts": name (raw start value, "" if absent), path[i] and
+ * file[i] for each part, main (relative name of the root) and mainPath
+ * (absolute path of the root). Two parts resolving to the same path, or
+ * sharing the same Content-ID, are rejected.
+ *
+ * @param pmsConf The configuration maps.
+ * @param pccBody The body of the multipart request.
+ * @param stBodyLen The length of the body.
+ * @param pccBoundary The boundary string for the multipart request.
+ * @param pccStartId The start parameter value (may be NULL).
+ * @return 0 on success, -1 on failure (an OGC exception has been raised).
+ */
+int handleCwlMultipartDeploy(maps *pmsConf, const char *pccBody, size_t stBodyLen,
+                             const char *pccBoundary, const char *pccStartId) {
+  cwlPart acpParts[CWL_MAX_PARTS];
+  char *apcNames[CWL_MAX_PARTS];     // sanitized relative names, one per part
+  int iNbParts = 0, iRet = -1, iErrKind = 0, iFd = -1, iMainIdx = -1;
+  int i, j, iN, iErr, iIsRoot;
+  cwlStatus eSt;
+  const char *pccErrMsg = NULL;
+  char *pcWorkDir = NULL, *pcCleanStartId = NULL;
+  maps *pmsCwlParts = NULL;
+  char acFullPath[PATH_MAX];
+  char acMainPath[PATH_MAX];
+
+  memset(apcNames, 0, sizeof(apcNames));
+  if(!pccBody || !pccBoundary || pccBoundary[0] == '\0')
+    CWL_FAIL(1, "Missing multipart body or boundary");
+  if(stBodyLen > CWL_MAX_BODY_SIZE)
+    CWL_FAIL(1, "Multipart body too large");
+
+  eSt = splitMultipartRelated(pccBody, stBodyLen, pccBoundary, acpParts,
+                              CWL_MAX_PARTS, &iNbParts);
+  if(eSt == CWL_ERR_NOMEM)
+    CWL_FAIL(2, "Out of memory");
+  if(eSt != CWL_OK)
+    CWL_FAIL(1, "Malformed multipart/related body");
+
+  pcWorkDir = createExclusiveWorkDir(pmsConf);
+  if(!pcWorkDir)
+    CWL_FAIL(2, "Unable to create the work directory");
+  if(pccStartId) {
+    pcCleanStartId = stripAngleBrackets(pccStartId);
+    if(!pcCleanStartId)
+      CWL_FAIL(2, "Out of memory");
+  }
+
+  pmsCwlParts = createMaps("cwl-parts");
+  if(!pmsCwlParts)
+    CWL_FAIL(2, "Out of memory");
+  pmsCwlParts->content = createMap("name", pccStartId ? pccStartId : "");
+  if(!pmsCwlParts->content)
+    CWL_FAIL(2, "Out of memory");
+
+  for(i = 0; i < iNbParts; i++) {
+    const char *pccRawName = acpParts[i].contentLocation ? acpParts[i].contentLocation
+                                                         : acpParts[i].contentId;
+    eSt = sanitizeRelativePath(pccRawName, &apcNames[i]);
+    if(eSt == CWL_ERR_NOMEM)
+      CWL_FAIL(2, "Out of memory");
+    if(eSt != CWL_OK)
+      CWL_FAIL(1, "Unsafe or missing part name/location");
+
+    // Reject duplicates: same normalized path or same Content-ID
+    for (j = 0; j < i; j++) {
+      if(strcmp(apcNames[j], apcNames[i]) == 0)
+        CWL_FAIL(1, "Two parts resolve to the same path");
+      if(acpParts[i].contentId && acpParts[j].contentId &&
+          strcmp(acpParts[i].contentId, acpParts[j].contentId) == 0)
+        CWL_FAIL(1, "Duplicate Content-ID");
+    }
+
+    iN = snprintf(acFullPath, sizeof(acFullPath), "%s/%s", pcWorkDir, apcNames[i]);
+    if(iN < 0 || (size_t)iN >= sizeof(acFullPath))
+      CWL_FAIL(1, "Part path too long");
+
+    if(mkdirRecursiveForFile(acFullPath) != 0)
+      CWL_FAIL(2, "Unable to create the directory for a part");
+
+    if(!pathStaysUnderWorkDir(pcWorkDir, acFullPath))
+      CWL_FAIL(1, "Path traversal detected");
+
+    // Exclusive creation: refuses an existing file and any symlink on the last component
+    iFd = zOpen(acFullPath, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0640);
+    if(iFd < 0) {
+      iErr = errno;
+      if(iErr == EEXIST)
+        CWL_FAIL(1, "A part path already exists or conflicts with another part");
+      CWL_FAIL(2, "Unable to create a part file");
+    }
+
+    if(writeAll(iFd, acpParts[i].data, acpParts[i].len) != 0)
+      CWL_FAIL(2, "Write error while saving a part (disk full?)");
+
+    iN = zClose(iFd);
+    iFd = -1;
+    if(iN != 0)
+      CWL_FAIL(2, "Error while closing a part file");
+
+    iIsRoot = pcCleanStartId
+                ? (acpParts[i].contentId && strcmp(acpParts[i].contentId, pcCleanStartId) == 0)
+                : (i == 0);
+    if(iIsRoot)
+      iMainIdx = i;
+
+    ZOO_DEBUG("Processed part: %s (safe name: %s)", acFullPath, apcNames[i]);
+    setMapArray(pmsCwlParts->content, "path", i, acFullPath);
+    setMapArray(pmsCwlParts->content, "file", i, apcNames[i]);
+  }
+
+  if(iMainIdx < 0)
+    CWL_FAIL(1, "start= does not match the Content-ID of any part");
+
+  iN = snprintf(acMainPath, sizeof(acMainPath), "%s/%s", pcWorkDir, apcNames[iMainIdx]);
+  if(iN < 0 || (size_t)iN >= sizeof(acMainPath))
+    CWL_FAIL(1, "Main document path too long");
+  addToMap(pmsCwlParts->content, "main", apcNames[iMainIdx]);
+  addToMap(pmsCwlParts->content, "mainPath", acMainPath);
+
+  addMapsToMaps(&pmsConf, pmsCwlParts);
+  setMapInMaps(pmsConf, "main", "workDir", pcWorkDir);
+  iRet = 0;
+
+cleanup:
+  if(iFd >= 0)
+    close(iFd);
+  for (j = 0; j < CWL_MAX_PARTS; j++)
+    free(apcNames[j]);
+  if(pmsCwlParts) {
+    freeMaps(&pmsCwlParts);
+    free(pmsCwlParts);
+  }
+  free(pcCleanStartId);
+  freeCwlParts(acpParts, iNbParts);
+  if(iRet != 0) {
+    // pcWorkDir is only set once mkdtemp() succeeded: the directory is ours
+    if(pcWorkDir && cleanupWorkDir(pcWorkDir) != 0)
+      ZOO_WARNING("Unable to fully remove the work directory %s", pcWorkDir);
+    if(iErrKind == 1)
+      handleInvalidParameterValue(pmsConf, pccErrMsg);
+    else if(iErrKind == 2)
+      handleInternalError(pmsConf, pccErrMsg);
+  }
+  free(pcWorkDir);
+  return iRet;
+}
+#undef CWL_FAIL
