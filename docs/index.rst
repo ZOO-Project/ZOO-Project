@@ -20,6 +20,7 @@ This is the `ZOO-Project <http://zoo-project.org>`__ Open WPS Platform official 
    api/index
    client/index
    contribute/index
+   keycloak
 
 This document is released under the Creative Commons
 Attribution-ShareAlike 4.0 International Public License (`CC-BY-SA
