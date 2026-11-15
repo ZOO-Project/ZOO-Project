@@ -40,6 +40,12 @@
 #include "service_internal_ms.h"
 #endif
 #include <dirent.h>
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
 
 #ifdef __cplusplus
 extern "C" {
