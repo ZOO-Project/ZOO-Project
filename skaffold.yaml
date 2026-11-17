@@ -36,8 +36,13 @@ deploy:
         namespace: eoap-zoo-project
         createNamespace: true
         version: 0.10.9
+        # Remote charts are never upgraded by skaffold once installed unless this
+        # is set: without it, `skaffold deploy` / the dev loop silently keep the
+        # old values and image ("Release ... not upgraded as it is remote").
+        upgradeOnChange: true
         valuesFiles:
         - values.yaml
+        
         setValueTemplates:
           iam.enabled: false
           # EOEPCA cookiecutter
@@ -46,7 +51,7 @@ deploy:
           # Standard cookiecutter
           # cookiecutter.templateUrl: https://github.com/eoap/zoo-service-template.git
           # cookiecutter.templateBranch: feature-secrets-nodeselector-imagepullsecrets
-          cookiecutter.templateUrl: https://github.com/GeoLabs/zoo-service-template.git
+          cookiecutter.templateUrl: https://github.com/JFarduino/zoo-service-template.git
           cookiecutter.templateBranch: feature/zoo-template-common
           filter_in.enabled: true
           filter_out.enabled: true
@@ -357,6 +362,89 @@ profiles:
       - op: add
         path: /deploy/helm/releases/1/setValueTemplates/dask.enabled
         value: true
+
+  - name: webui
+    # Deploy the Nuxt web client (zooproject/nuxt-client) next to the API and
+    # port-forward it to http://localhost:3058. Composes with the other profiles:
+    #   skaffold dev -p hostpath,webui --platform=linux/amd64
+    # The browser talks to the API through the existing 8080 port-forward
+    # (chart helper `hosturl` defaults to http://localhost:8080 when ingress is
+    # disabled) and to websocketd through 8888. CORS is already enabled in the
+    # chart's main.cfg. IAM is disabled here, so values-webui.yaml tells the UI
+    # not to wait for a bearer token and gives it the in-cluster kernel address
+    # (NUXT_ZOO_INTERNAL_BASEURL). For an IAM-enabled deployment, set
+    # webui.oidc.* (issuer, clientId, clientSecret) and keep only the extraEnv.
+    patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.enabled
+        value: true
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.url
+        value: http://localhost:3058
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.wsurl
+        value: ws://localhost:8888
+      # requiresBearerToken must stay a string for the chart schema; Helm's
+      # --set would turn "false" into a boolean, hence the extra values file.
+      - op: add
+        path: /deploy/helm/releases/1/valuesFiles/-
+        value: values-webui.yaml
+      - op: add
+        path: /portForward/-
+        value:
+          resourceType: service
+          resourceName: zoo-project-dru-webui
+          namespace: eoap-zoo-project
+          address: localhost
+          port: 3000
+          localPort: 3058
+
+  - name: keycloak
+    # Wire the WebUI login and the API's JWT validation to the local Keycloak
+    # started with docker/keycloak/start.sh (realm zooproject, client webapp,
+    # user jules/zoo). KEYCLOAK_URL must be reachable from the browser AND from
+    # the pods (webui does OIDC discovery, zookernel fetches the JWKS), so it is
+    # the Mac's LAN IP, never localhost:
+    #   export KEYCLOAK_URL=http://10.50.1.68:8085
+    #   skaffold deploy -p hostpath,webui,keycloak --images zoodruimage=... --port-forward=user
+    # iam.enabled stays false: anonymous API calls keep working, only presented
+    # JWTs are checked (issuer + audience zoo-project-webapp). Once logged in,
+    # the API serves the user's own namespace, not `anonymous`.
+    patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.oidc.issuer
+        value: '{{default "http://10.50.1.68:8085" .KEYCLOAK_URL}}/realms/zooproject'
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.oidc.authVerifyJwksUri
+        value: '{{default "http://10.50.1.68:8085" .KEYCLOAK_URL}}/realms/zooproject/protocol/openid-connect/certs'
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.oidc.clientId
+        value: webapp
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.oidc.clientSecret
+        value: zoo-webapp-secret
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/iam.issuer
+        value: '{{default "http://10.50.1.68:8085" .KEYCLOAK_URL}}/realms/zooproject'
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/iam.openIdConnectUrl
+        value: '{{default "http://10.50.1.68:8085" .KEYCLOAK_URL}}/realms/zooproject/.well-known/openid-configuration'
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/iam.audience
+        value: zoo-project-webapp
+
+  - name: webui-local
+    # Use a nuxt-client image built from a local checkout instead of the released one:
+    #   (cd ../nuxt-client && docker build -f Dockerfile.nuxt -t zooproject/nuxt-client:boost .)
+    #   skaffold deploy -p hostpath,webui,keycloak,webui-local --images zoodruimage=... --port-forward=user
+    # Docker Desktop shares the local image store with the cluster (IfNotPresent).
+    patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.image.tag
+        value: '{{default "boost" .WEBUI_IMAGE_TAG}}'
+      - op: add
+        path: /deploy/helm/releases/1/setValueTemplates/webui.image.pullPolicy
+        value: IfNotPresent
 
 portForward:
   - resourceType: service

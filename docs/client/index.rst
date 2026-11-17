@@ -12,5 +12,6 @@ This section provides information on **ZOO-Client**, the `ZOO-Project
    what
    howto
    example
+   webui
    
 

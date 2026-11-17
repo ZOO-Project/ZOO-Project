@@ -1,0 +1,62 @@
+{
+  "realm": "zooproject",
+  "enabled": true,
+  "displayName": "ZOO-Project (local dev)",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "accessTokenLifespan": 3600,
+  "clients": [
+    {
+      "clientId": "webapp",
+      "name": "ZOO-Project WebUI",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "zoo-webapp-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3058/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3058"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:3058/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "zoo-project-webapp audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "zoo-project-webapp",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "jules",
+      "enabled": true,
+      "email": "jules@zoo.local",
+      "emailVerified": true,
+      "firstName": "Jules",
+      "lastName": "Fenoy",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "zoo",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "ssoSessionIdleTimeout": 43200,
+  "ssoSessionMaxLifespan": 604800
+}
