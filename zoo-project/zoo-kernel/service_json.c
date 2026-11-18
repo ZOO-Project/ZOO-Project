@@ -1740,6 +1740,14 @@ extern "C" {
         } else if(getMapFromMaps(pmsConf,"openapi","ensure_type_validation")!=NULL){
           return returnBadRequestException(pmsConf,peCurrentInput);
         }
+      } else if(json_object_is_type(val,json_type_null)){
+        map* error=createMap("code","BadRequest");
+        char tmpS1[1024];
+        sprintf(tmpS1,_("Wrong type used for input %s"),pccKey);
+        addToMap(error,"message",tmpS1);
+        setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
+        printExceptionReportResponseJ(&pmsConf,error);
+        return;
       } else if(json_object_is_type(val,json_type_array)){
         // Need to run detection on each item within the array
       }else{
@@ -1961,10 +1969,16 @@ extern "C" {
               parseJIOSingle(pmsConf,ioElements,ioMaps,ioType,json_object_get_string(cname),json_current_io);
           }
         }
-      }else{
+      }else if(json_object_is_type(json_io,json_type_object)){
         json_object_object_foreach(json_io, pcKey, pjoVal) {
           parseJIOSingle(pmsConf,ioElements,ioMaps,ioType,pcKey,pjoVal);
         }
+      }else{
+        map* error=createMap("code","BadRequest");
+        addToMap(error,"message",_("Wrong type used for inputs"));
+        setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
+        printExceptionReportResponseJ(&pmsConf,error);
+        return;
       }
     }else{
       // Requirement 27: when no output is specified, the server should consider returning all outputs.
