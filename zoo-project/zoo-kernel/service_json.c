@@ -2959,7 +2959,7 @@ extern "C" {
     map* pmType=getMap(pmsResult->content,"dataType");
     if(pmType!=NULL){
       if(strncasecmp(pmType->value,"integer",7)==0){
-        json_object_object_add(pjoRes,pccFieldName,json_object_new_int(atoi(pcValue)));
+        json_object_object_add(pjoRes,pccFieldName,json_object_new_int64(atoll(pcValue)));
       }else if(strncasecmp(pmType->value,"float",5)==0 ||
           strncasecmp(pmType->value,"double",6)==0 ||
           strncasecmp(pmType->value,"decimal",7)==0){
