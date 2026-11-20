@@ -68,3 +68,21 @@ docker-compose up
 ````
 
 Then, from your favorite browser, just load the following URL: http://localhost/ and get immediate access to the 700+ ZOO-Services through WPS and OGC API - Processes depending on your preferences 🎉.
+
+### WebUI and local Keycloak with Skaffold
+
+The `webui` Skaffold profile deploys the [nuxt-client](https://github.com/ZOO-Project/nuxt-client) web interface next to the API on the local Kubernetes stack and forwards it to http://localhost:3058:
+
+```bash
+skaffold dev -p hostpath,webui --platform=linux/amd64
+```
+
+Without an identity provider the UI runs anonymously (`values-webui.yaml` sets `webui.requiresBearerToken` to `"false"`, which must stay a string for the chart schema, hence the values file, and `NUXT_ZOO_INTERNAL_BASEURL` so that the WebUI pod reaches the kernel through its service). To sign in, start the bundled Keycloak and add the `keycloak` profile, which wires both the UI login and the kernel's JWT validation to it:
+
+```bash
+docker/keycloak/start.sh                       # realm zooproject, client webapp, user jules/zoo
+export KEYCLOAK_URL=http://<lan-ip>:8085       # printed by the script; must be reachable from the pods too
+skaffold dev -p hostpath,webui,keycloak --platform=linux/amd64
+```
+
+`skaffold deploy -p hostpath,webui,keycloak --images zoodruimage=zoodruimage:<tag> --port-forward=user` redeploys without rebuilding the kernel image; `upgradeOnChange: true` on the release is what lets Skaffold upgrade the remote chart. The `webui-local` profile uses an image built from a local checkout of `nuxt-client` (`docker build -f Dockerfile.nuxt -t zooproject/nuxt-client:boost .`). The user guide and the configuration reference are in `docs/client/webui.rst` and in the `nuxt-client` repository.

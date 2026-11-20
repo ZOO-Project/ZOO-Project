@@ -1,0 +1,11 @@
+# Values for the `webui` skaffold profile (skaffold dev -p hostpath,webui).
+# Kept in a file because Helm's --set turns "false" into a boolean, and the
+# chart schema requires webui.requiresBearerToken to be a string.
+webui:
+  # IAM is disabled in skaffold.yaml, so the UI must not wait for a bearer token.
+  requiresBearerToken: "false"
+  extraEnv:
+    # Address of the kernel as seen from the webui pod (the public one,
+    # http://localhost:8080, is only reachable through the port-forward).
+    - name: NUXT_ZOO_INTERNAL_BASEURL
+      value: http://zoo-project-dru-service
