@@ -13,7 +13,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "zoo-webapp-secret",
+      "secret": "${ZOO_WEBAPP_CLIENT_SECRET}",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "redirectUris": [
@@ -42,16 +42,16 @@
   ],
   "users": [
     {
-      "username": "jules",
+      "username": "demo",
       "enabled": true,
-      "email": "jules@zoo.local",
+      "email": "demo@zoo.local",
       "emailVerified": true,
-      "firstName": "Jules",
-      "lastName": "Fenoy",
+      "firstName": "Demo",
+      "lastName": "User",
       "credentials": [
         {
           "type": "password",
-          "value": "zoo",
+          "value": "${ZOO_DEMO_PASSWORD}",
           "temporary": false
         }
       ]

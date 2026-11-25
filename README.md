@@ -80,8 +80,8 @@ skaffold dev -p hostpath,webui --platform=linux/amd64
 Without an identity provider the UI runs anonymously (`values-webui.yaml` sets `webui.requiresBearerToken` to `"false"`, which must stay a string for the chart schema, hence the values file, and `NUXT_ZOO_INTERNAL_BASEURL` so that the WebUI pod reaches the kernel through its service). To sign in, start the bundled Keycloak and add the `keycloak` profile, which wires both the UI login and the kernel's JWT validation to it:
 
 ```bash
-docker/keycloak/start.sh                       # realm zooproject, client webapp, user jules/zoo
-export KEYCLOAK_URL=http://<lan-ip>:8085       # printed by the script; must be reachable from the pods too
+docker/keycloak/start.sh                       # realm zooproject, client webapp, test user demo
+set -a; . docker/keycloak/.env; set +a         # generated credentials, KEYCLOAK_URL (LAN IP) and KEYCLOAK_CLIENT_SECRET
 skaffold dev -p hostpath,webui,keycloak --platform=linux/amd64
 ```
 

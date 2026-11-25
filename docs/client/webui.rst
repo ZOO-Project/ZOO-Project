@@ -113,9 +113,12 @@ The ``skaffold.yaml`` of this repository provides composable profiles:
   ``values-webui.yaml``, sets ``requiresBearerToken`` to ``"false"`` and
   ``NUXT_ZOO_INTERNAL_BASEURL`` to ``http://zoo-project-dru-service``.
 * ``keycloak``: wires the WebUI login and the kernel's JWT validation to a local Keycloak
-  started with ``docker/keycloak/start.sh`` (realm ``zooproject``, client ``webapp``, user
-  ``jules`` / ``zoo``, admin console ``admin`` / ``admin``). The Keycloak URL must be reachable
-  from the browser **and** from the pods, hence the machine's LAN IP (``KEYCLOAK_URL``).
+  started with ``docker/keycloak/start.sh`` (realm ``zooproject``, client ``webapp``, test
+  user ``demo``). No credential is stored in the repository: on first use the script generates
+  the client secret and the passwords into ``docker/keycloak/.env`` (git-ignored) and reuses
+  them afterwards; delete that file and run ``start.sh --recreate`` to change them. The Keycloak
+  URL must be reachable from the browser **and** from the pods, hence the machine's LAN IP
+  (``KEYCLOAK_URL``, also written to that file).
 * ``webui-local``: uses an image built from a local checkout of ``nuxt-client``
   (``docker build -f Dockerfile.nuxt -t zooproject/nuxt-client:boost .``).
 
@@ -123,7 +126,7 @@ The ``skaffold.yaml`` of this repository provides composable profiles:
 
    # 1. optional: identity provider
    docker/keycloak/start.sh
-   export KEYCLOAK_URL=http://<lan-ip>:8085
+   set -a; . docker/keycloak/.env; set +a   # KEYCLOAK_URL, KEYCLOAK_CLIENT_SECRET
 
    # 2. the stack (first run builds the kernel image, ~30 min)
    skaffold dev -p hostpath,webui,keycloak --platform=linux/amd64
