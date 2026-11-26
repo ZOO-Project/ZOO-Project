@@ -1,0 +1,112 @@
+[ApplyRandomSelection]
+ Title = Kernel Density estimation  
+ Abstract = Given a vector layer generate a raster containing the density of the vector elements based on a specified kernel. 
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qgis
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [inputGeometry]
+   Title = Vector layer
+   Abstract = URI to a vector file whose density is to be estimated.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+    </Default>
+   </ComplexData>
+  [radius]
+   Title = Kernel radius
+   Abstract = The radius of the kernel to be used for the density to be estimated.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [pixelSize]
+   Title = Raster Pixel Size
+   Abstract = The size of the pixels in the output raster.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [kernelShape]
+   Title = Shape of the kernel 
+   Abstract = The shape of the kernel is defined based on numbers between 0-4.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [rawOrScaled]
+   Title = Save the raw output or scale it 
+   Abstract = Select wether the raw output of the kde operation is to be save, or is to be scaled. 0 or 1, respectively.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [decayRatio]
+   Title = Decay ratio for the a triangluar kernel 
+   Abstract = Specify the value for the decay ratio, to be used if a triangular kernel is to be used.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [radiusField]
+   Title = The field where radius is to be used 
+   Abstract = The field with the radius.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+   [weightField]
+   Title = Field corresponding to the weight of the vector 
+   Abstract = The field corresponding to the weight of the vector entity used for weighing during kernel density estimation.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [outputGeometry]
+   Title = The resulting geometry
+   Abstract = The geometry with the sampled features
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+     extension = .geojson
+    </Default>
+   </ComplexData>
+ </DataOutputs>  

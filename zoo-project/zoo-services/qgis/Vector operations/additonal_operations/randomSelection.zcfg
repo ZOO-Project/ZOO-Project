@@ -1,0 +1,57 @@
+[ApplyRandomSelection]
+ Title = Random Selection  
+ Abstract = Given a geometry the approach (number of percent of features) and the number/percent of features sample features from it. 
+ Profile = urn:ogc:wps:1.0.0:buffer
+ processVersion = 2
+ storeSupported = true
+ statusSupported = true
+ serviceProvider = qgis
+ serviceType = Python
+ <MetaData>
+   title = Demo
+ </MetaData>
+ <DataInputs>
+  [inputGeometry]
+   Title = Geometry from which the samples are to be sampled
+   Abstract = URI to a vector file that contains the geometry.
+   minOccurs = 1
+   maxOccurs = 1
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+    </Default>
+   </ComplexData>
+  [method]
+   Title = Method for sampling
+   Abstract = Wether a fixed number of features or a percent of the total features are to be sampled, .
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+  [numberOrPercentParameter]
+   Title = Parameter for the chosen method
+   Abstract = The number of features, or percent of features to be sampled.
+   minOccurs = 1
+   maxOccurs = 1
+   <LiteralData>
+    DataType = float
+    <Default>
+     value = 1
+    </Default>
+   </LiteralData>
+ </DataInputs>
+ <DataOutputs>
+  [outputGeometry]
+   Title = The resulting geometry
+   Abstract = The geometry with the sampled features
+   <ComplexData>
+    <Default>
+     mimeType = geojson
+     extension = .geojson
+    </Default>
+   </ComplexData>
+ </DataOutputs>  

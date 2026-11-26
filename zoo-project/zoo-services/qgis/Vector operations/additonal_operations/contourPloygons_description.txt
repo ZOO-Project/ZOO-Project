@@ -1,0 +1,120 @@
+Contour Polygons (gdal:contour_polygon)
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Input layer
+
+	Parameter type:	QgsProcessingParameterRasterLayer
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProperty
+		- QgsRasterLayer
+
+BAND: Band number
+
+	Parameter type:	QgsProcessingParameterBand
+
+	Accepted data types:
+		- int
+		- QgsProperty
+
+INTERVAL: Interval between contour lines
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+CREATE_3D: Produce 3D vector
+
+	Parameter type:	QgsProcessingParameterBoolean
+
+	Accepted data types:
+		- bool
+		- int
+		- str
+		- QgsProperty
+
+IGNORE_NODATA: Treat all raster values as valid
+
+	Parameter type:	QgsProcessingParameterBoolean
+
+	Accepted data types:
+		- bool
+		- int
+		- str
+		- QgsProperty
+
+NODATA: Input pixel value to treat as "nodata"
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+OFFSET: Offset from zero relative to which to interpret intervals
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+EXTRA: Additional command-line parameters
+
+	Parameter type:	QgsProcessingParameterString
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+OPTIONS: Additional creation options
+
+	Parameter type:	QgsProcessingParameterString
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+FIELD_NAME_MIN: Attribute name for minimum elevation of contour polygon
+
+	Parameter type:	QgsProcessingParameterString
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+FIELD_NAME_MAX: Attribute name for maximum elevation of contour polygon
+
+	Parameter type:	QgsProcessingParameterString
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+OUTPUT: Contours
+
+	Parameter type:	QgsProcessingParameterVectorDestination
+
+	Accepted data types:
+		- str
+		- QgsProperty
+		- QgsProcessingOutputLayerDefinition
+
+----------------
+Outputs
+----------------
+
+OUTPUT:  <QgsProcessingOutputVectorLayer>
+	Contours
