@@ -952,10 +952,13 @@ char* getStatusId(maps* pmsConf,char* pcPid){
   int iZooDsNb=getCurrentId(pmsConf);
   int iCreated=-1;
   map *pmSchema=getMapFromMaps(pmsConf,"database","schema");
-  char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+42+1)*sizeof(char));
+  char* pcaUserClause=NULL;
+  filterJobByUser(pmsConf,&pcaUserClause,NULL);
+  char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+strlen(pcPid)+strlen(pcaUserClause)+48+1)*sizeof(char));
   sprintf(pcaSqlQuery,
-	  "select osid from %s.services where uuid=$$%s$$",
-	  pmSchema->value,pcPid);
+	  "select osid from %s.services where uuid=$$%s$$ and %s",
+	  pmSchema->value,pcPid,pcaUserClause);
+  free(pcaUserClause);
   verifyDbConnection(pmsConf,iZooDsNb,iCreated);
   if(execSql(pmsConf,iZooDsNb-1,pcaSqlQuery)<0)
     return NULL;
