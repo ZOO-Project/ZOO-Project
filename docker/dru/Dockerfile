@@ -1,4 +1,4 @@
-FROM golang:1.26.9 AS kubectl-build
+FROM golang:1.26.10 AS kubectl-build
 ARG KUBECTL_VERSION=v1.35.0
 ARG XNET_VERSION=v0.60.0
 ARG TEXT_VERSION=v0.41.0

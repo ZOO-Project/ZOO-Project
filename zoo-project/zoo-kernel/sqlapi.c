@@ -263,6 +263,42 @@ void end_sql(){
 }
 
 /**
+ * Verify that a given username is safe.
+ *
+ * @param pccValue the username to verify
+ * @return 1 if the username is safe, 0 otherwise
+ */
+int isSafeUserName(const char* pccValue){
+  if(pccValue==NULL || pccValue[0]=='\0' ||
+    pccValue[0]=='-' ||
+    strcmp(pccValue,".")==0 || strcmp(pccValue,"..")==0)
+    return 0;
+  for(size_t i=0;pccValue[i]!='\0';i++){
+    char c=pccValue[i];
+    if(!( (c>='A'&&c<='Z') || (c>='a'&&c<='z') || (c>='0'&&c<='9')
+          || c=='.' || c=='_' || c=='-' || c=='@' || c=='+' ))
+      return 0;
+  }
+  return 1;
+}
+
+/**
+ * Verify that a given username is safe.
+ *
+ * @param pmUserName the map containing the username to verify
+ * @return 1 if the username is safe, 0 otherwise
+ */
+int checkUserName(map* pmUserName){
+  if(pmUserName==NULL)
+    return 0;
+  if(isSafeUserName(pmUserName->value)==0){
+    ZOO_ERROR(_("Rejected unsafe user name in job filter; restricting to public jobs"));
+    return 0;
+  }
+  return 1;
+}
+
+/**
  * Fetch a tuple set by executing a SQL query to the Database Backend.
  * 
  * @param pmsConf the maps containing the setting of the main.cfg file
@@ -451,6 +487,8 @@ char* runSqlQuery(maps* pmsConf,char* query){
 void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
   map* pmUserName=getMapFromMaps(pmsConf,"auth_env","user");
   char* pcClause=*pcaClauseFinal;
+  if(checkUserName(pmUserName)==0)
+    pmUserName=NULL;
   if(pmUserName!=NULL){
     char* pcaTmp=NULL;
     if(pcClause!=NULL){
@@ -497,6 +535,8 @@ void filterJobByUser(maps* pmsConf,char** pcaClauseFinal,char* pcaClauseDate){
  */
 int getUserId(maps* pmsConf,int iZooDsNb,map* pmSchema){
   map* pmUserName=getMapFromMaps(pmsConf,"auth_env","user");
+  if(checkUserName(pmUserName)==0)
+    pmUserName=NULL;
   if(pmUserName!=NULL){
     int iCreated=0;
     char *pcaSqlQuery=(char*)malloc((strlen(pmSchema->value)+

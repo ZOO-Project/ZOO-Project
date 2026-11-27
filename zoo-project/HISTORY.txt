@@ -1,4 +1,5 @@
 Version 2.1.1-dev
+  * Fix security vulnerability GHSA-26f8-55c3-vrmc
   * Add support for deployment of multipart/related CWL, if the openapi's
   support_multiparl parameter is set to true in the main configuration.
   * Rely only on released Python packages, including released pycalrissian.
