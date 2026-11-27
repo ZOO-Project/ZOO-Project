@@ -666,6 +666,11 @@ do {\
 } while(0)
 
 /**
+ * The maximum length of a session identifier (cookie value)
+ * @see isValidSessionId
+ */
+#define ZOO_SESSID_MAX_LENGTH 128
+/**
  * The memory size to create an elements
  */
 #define ELEMENTS_SIZE (sizeof(char*)+(((2*sizeof(char*))+sizeof(maps*))*3)+sizeof(char*)+((sizeof(map*) + sizeof(iotype*))*2)+(2*sizeof(elements*)))
@@ -1064,6 +1069,7 @@ do {\
   #define zooLogMsg(file,message) logMessage(__FILE__, __func__, __LINE__, (file), (message)) 
   #define zooLog logMessage(__FILE__, __func__, __LINE__)  
   ZOO_DLL_EXPORT int isValidUuid(const char*);
+  ZOO_DLL_EXPORT int isValidSessionId(const char*);
 
   // knut : function for pre-allocated memory for a map value;
   // processing algorithms may be able to write directly to this space, thereby avoiding unneccesary copying of data

@@ -65,6 +65,37 @@ int isValidUuid(const char *pccUuid) {
 }
 
 /**
+ * Verify if a string is a valid session identifier.
+ *
+ * A session identifier comes from a client-controlled cookie and is used to
+ * build the session file path (<sessPath>/sess_<SESSID>.cfg). To prevent
+ * buffer overflows and path traversal, it must:
+ *  - be non-NULL and non-empty,
+ *  - not exceed ZOO_SESSID_MAX_LENGTH characters,
+ *  - only contain characters from [A-Za-z0-9_-].
+ *
+ * @param pccSessId the string to validate (null-terminated)
+ * @return 1 if the session identifier is valid, 0 otherwise
+ */
+int isValidSessionId(const char *pccSessId) {
+  if (pccSessId == NULL || pccSessId[0] == '\0') {
+    return 0;
+  }
+  size_t len = 0;
+  for (const char *pccCur = pccSessId; *pccCur != '\0'; pccCur++) {
+    if (++len > ZOO_SESSID_MAX_LENGTH) {
+      return 0;
+    }
+    unsigned char c = (unsigned char) *pccCur;
+    if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+          (c >= '0' && c <= '9') || c == '-' || c == '_')) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+/**
  * Set the minimum log level for ZOO-Kernel
  *
  * @param pcLevel the debug level to set (TRACE, DEBUG, INFO, SUCCESS, WARNING,

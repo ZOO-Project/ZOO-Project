@@ -1503,48 +1503,49 @@ void initAllEnvironment(maps* conf,map* request_inputs,
     addToMap (_tmpMaps->content, "soap", "false");
 
   // Parse the session file and add it to the main maps
-  char* originalCookie=NULL;
   if (cgiCookie != NULL && strlen (cgiCookie) > 0)
     {
-      int hasValidCookie = -1;
-      char *tcook = originalCookie = zStrdup (cgiCookie);
-      map *testing = getMapFromMaps (conf, "main", "cookiePrefix");
-      parseCookie(&conf,originalCookie);
-      map *sessId=getMapFromMaps(conf,"cookies",
-                                 (testing==NULL?"ID":testing->value));
-      if (sessId!=NULL)
+      map *pmTesting = getMapFromMaps (conf, "main", "cookiePrefix");
+      parseCookie(&conf,cgiCookie);
+      map *pmSessId=getMapFromMaps(conf,"cookies",
+                                 (pmTesting==NULL?"ID":pmTesting->value));
+      map *pmTmpPath = getMapFromMaps (conf, "main", "sessPath");
+      if (pmTmpPath == NULL)
+        pmTmpPath = getMapFromMaps (conf, "main", "tmpPath");
+      if (pmSessId!=NULL && !isValidSessionId(pmSessId->value)){
+        ZOO_WARNING(_("Ignoring invalid session identifier provided in cookie"));
+        pmSessId=NULL;
+      }
+      if (pmSessId!=NULL && pmTmpPath!=NULL)
         {
-          addToMap (_tmpMaps->content, "sessid", sessId->value);
+          addToMap (_tmpMaps->content, "sessid", pmSessId->value);
           char session_file_path[1024];
-          map *tmpPath = getMapFromMaps (conf, "main", "sessPath");
-          if (tmpPath == NULL)
-            tmpPath = getMapFromMaps (conf, "main", "tmpPath");
-          char *tmp1 = strtok (tcook, ";");
-          if (tmp1 != NULL)
-            sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     sessId->value);
-          else
-            sprintf (session_file_path, "%s/sess_%s.cfg", tmpPath->value,
-                     sessId->value);
-          free (tcook);
-          maps *tmpSess = (maps *) malloc (MAPS_SIZE);
-          tmpSess->content = NULL;
-          tmpSess->child = NULL;
-          tmpSess->next = NULL;
-          struct stat file_status;
-          int istat = stat (session_file_path, &file_status);
-          if (istat == 0 && file_status.st_size > 0)
+          int iLen = snprintf (session_file_path, sizeof (session_file_path),
+                               "%s/sess_%s.cfg", pmTmpPath->value,
+                               pmSessId->value);
+          if (iLen > 0 && (size_t) iLen < sizeof (session_file_path))
             {
-              int saved_stdout = zDup (fileno (stdout));
-              zDup2 (fileno (stderr), fileno (stdout));
-              conf_read (session_file_path, tmpSess);
-              addMapsToMaps (&conf, tmpSess);
-              freeMaps (&tmpSess);
-              fflush(stdout);
-              zDup2 (saved_stdout, fileno (stdout));
-              zClose(saved_stdout);
+              zStatStruct f_status;
+              int istat = zStat(session_file_path, &f_status);
+              if (istat == 0 && f_status.st_size > 0)
+                {
+                  maps *pmTmpSess = (maps *) malloc (MAPS_SIZE);
+                  pmTmpSess->content = NULL;
+                  pmTmpSess->child = NULL;
+                  pmTmpSess->next = NULL;
+                  int saved_stdout = zDup (fileno (stdout));
+                  zDup2 (fileno (stderr), fileno (stdout));
+                  conf_read (session_file_path, pmTmpSess);
+                  addMapsToMaps (&conf, pmTmpSess);
+                  freeMaps (&pmTmpSess);
+                  fflush(stdout);
+                  zDup2 (saved_stdout, fileno (stdout));
+                  zClose(saved_stdout);
+                  free (pmTmpSess);
+                }
             }
-          free (tmpSess);
+          else
+            ZOO_WARNING(_("Session file path too long, ignoring session"));
         }
     }
   addMapsToMaps (&conf, _tmpMaps);

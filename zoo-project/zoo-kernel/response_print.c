@@ -282,7 +282,7 @@ void printSessionHeaders(maps** ppmsConf){
   maps* pmsSess=getMaps(pmsConf,"senv");
   if(pmsSess!=NULL){
     map *pmTmp=getMapFromMaps(pmsConf,"lenv","cookie");
-    char* sessId=NULL;
+    char* pcaSessId=NULL;
     if(pmTmp!=NULL){
       printf("Set-Cookie: %s; HttpOnly\r\n",pmTmp->value);
       map *pmTmp1=getMapFromMaps(pmsConf,"senv","ecookie_length");
@@ -296,34 +296,46 @@ void printSessionHeaders(maps** ppmsConf){
         }
       }
       printf("P3P: CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"\r\n");
-      char session_file_path[100];
-      char *tmp1=strtok(pmTmp->value,";");
-      if(tmp1!=NULL)
-        sprintf(session_file_path,"%s",strstr(tmp1,"=")+1);
-      else
-        sprintf(session_file_path,"%s",strstr(pmTmp->value,"=")+1);
-      sessId=zStrdup(session_file_path);
+      char *pcaCookie=zStrdup(pmTmp->value);
+      char *pcSaveptr=NULL;
+      char *tmp1=strtok_r(pcaCookie,";",&pcSaveptr);
+      char *pcValue=(tmp1!=NULL?strchr(tmp1,'='):NULL);
+      if(pcValue!=NULL)
+        pcaSessId=zStrdup(pcValue+1);
+      free(pcaCookie);
     }else{
       maps* t=getMaps(pmsConf,"senv");
       map*p=t->content;
       while(p!=NULL){
         if(strstr(p->name,"ID")!=NULL){
-          sessId=zStrdup(p->value);
+          pcaSessId=zStrdup(p->value);
           break;
         }
         p=p->next;
       }
     }
+    if(!isValidSessionId(pcaSessId)){
+      ZOO_WARNING(_("Invalid or missing session identifier, session not saved"));
+      if(pcaSessId!=NULL)
+        free(pcaSessId);
+      return;
+    }
     char session_file_path[1024];
-    map *tmpPath=getMapFromMaps(pmsConf,"main","sessPath");
-    if(tmpPath==NULL)
-      tmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
-    sprintf(session_file_path,"%s/sess_%s.cfg",tmpPath->value,sessId);
+    map *pmTmpPath=getMapFromMaps(pmsConf,"main","sessPath");
+    if(pmTmpPath==NULL)
+      pmTmpPath=getMapFromMaps(pmsConf,"main","tmpPath");
+    int iLen=snprintf(session_file_path,sizeof(session_file_path),
+                      "%s/sess_%s.cfg",pmTmpPath->value,pcaSessId);
+    free(pcaSessId);
+    if(iLen<0 || (size_t)iLen>=sizeof(session_file_path)){
+      ZOO_WARNING(_("Session file path too long, session not saved"));
+      return;
+    }
     FILE* teste=fopen(session_file_path,"w");
     if(teste==NULL){
-      char tmpMsg[1024];
-      sprintf(tmpMsg,_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
-      errorException(ppmsConf,tmpMsg,"InternalError",NULL);
+      char acTmpMsg[2048];
+      snprintf(acTmpMsg,sizeof(acTmpMsg),_("Unable to create the file \"%s\" for storing the session maps."),session_file_path);
+      errorException(ppmsConf,acTmpMsg,"InternalError",NULL);
       return;
     }
     else{
