@@ -1692,9 +1692,9 @@ extern "C" {
    */
   void returnBadRequestException(maps* pmsConf,elements* peInput){
     map* pmError=createMap("code","BadRequest");
-    char tmpS1[1024];
-    sprintf(tmpS1,_("Wrong type used for input %s"),peInput->name);
-    addToMap(pmError,"message",tmpS1);
+    char acTmp[1024];
+    snprintf(acTmp,sizeof(acTmp),_("Wrong type used for input %s"),peInput->name);
+    addToMap(pmError,"message",acTmp);
     setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
     printExceptionReportResponseJ(&pmsConf,pmError);
     freeMap(&pmError);
@@ -1741,12 +1741,14 @@ extern "C" {
           return returnBadRequestException(pmsConf,peCurrentInput);
         }
       } else if(json_object_is_type(val,json_type_null)){
-        map* error=createMap("code","BadRequest");
-        char tmpS1[1024];
-        sprintf(tmpS1,_("Wrong type used for input %s"),pccKey);
-        addToMap(error,"message",tmpS1);
+        map* pmError=createMap("code","BadRequest");
+        char acTmp[1024];
+        snprintf(acTmp,sizeof(acTmp),_("Wrong type used for input %s"),pccKey);
+        addToMap(pmError,"message",acTmp);
         setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
-        printExceptionReportResponseJ(&pmsConf,error);
+        printExceptionReportResponseJ(&pmsConf,pmError);
+        freeMap(&pmError);
+        free(pmError);
         return;
       } else if(json_object_is_type(val,json_type_array)){
         // Need to run detection on each item within the array
@@ -1758,12 +1760,14 @@ extern "C" {
           elements* peCurrentInput=getElements(cio,cMaps->name);
           if(peCurrentInput!=NULL){
             if(peCurrentInput->format!=NULL && strcasecmp(peCurrentInput->format,"LiteralData")!=0){
-              map* error=createMap("code","BadRequest");
-              char tmpS1[1024];
-              sprintf(tmpS1,_("Wrong type used for input %s"),peCurrentInput->name);
-              addToMap(error,"message",tmpS1);
+              map* pmError=createMap("code","BadRequest");
+              char acTmp[1024];
+              snprintf(acTmp,sizeof(acTmp),_("Wrong type used for input %s"),peCurrentInput->name);
+              addToMap(pmError,"message",acTmp);
               setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
-              printExceptionReportResponseJ(&pmsConf,error);
+              printExceptionReportResponseJ(&pmsConf,pmError);
+              freeMap(&pmError);
+              free(pmError);
               return;
             }
           }
@@ -1781,12 +1785,14 @@ extern "C" {
       }// else error!
       else{
         if(json_object_object_get_ex(val,"value",&json_cinput)!=FALSE){
-          map* error=createMap("code","BadRequest");
-          char tmpS[1024];
-          sprintf(tmpS,_("Missing input for %s"),cio->name);
-          addToMap(error,"message",tmpS);
+          map* pmError=createMap("code","BadRequest");
+          char acTmp[1024];
+          sprintf(acTmp,_("Missing input for %s"),cio->name);
+          addToMap(pmError,"message",acTmp);
           setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
-          printExceptionReportResponseJ(&pmsConf,error);
+          printExceptionReportResponseJ(&pmsConf,pmError);
+          freeMap(&pmError);
+          free(pmError);
           return;
         }else{
           if(json_object_get_type(val)==json_type_string){
@@ -1801,12 +1807,14 @@ extern "C" {
             }
           }else{
             if(strcmp(ioType,"input")==0){
-              map* error=createMap("code","BadRequest");
-              char tmpS1[1024];
-              sprintf(tmpS1,_("Issue with input %s"),cio->name);
-              addToMap(error,"message",tmpS1);
+              map* pmError=createMap("code","BadRequest");
+              char acTmp[1024];
+              sprintf(acTmp,_("Issue with input %s"),cio->name);
+              addToMap(pmError,"message",acTmp);
               setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
-              printExceptionReportResponseJ(&pmsConf,error);
+              printExceptionReportResponseJ(&pmsConf,pmError);
+              freeMap(&pmError);
+              free(pmError);
               return;
             }
           }
@@ -1843,6 +1851,8 @@ extern "C" {
         addToMap(error,"message",tmpS);
         setMapInMaps(pmsConf,"lenv","status_code","400 Bad Request");
         printExceptionReportResponseJ(&pmsConf,error);
+        freeMap(&error);
+        free(error);
         return;
       }else{
         if(json_object_get_type(json_cinput)==json_type_string){
