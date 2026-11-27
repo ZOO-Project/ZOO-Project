@@ -107,6 +107,7 @@ def securityIn(conf,inputs,outputs):
     conf["lenv"]["fpm_cwd"] = rPath
     conf["zooServicesNamespace"] = {"namespace": namespace, "cwd": rPath}
     conf["main"]["tmpPath"] = rPath + "/temp"
+    conf["main"]["tmpUrl"] = conf["main"]["tmpUrl"].replace("/temp", "/" + namespace + "/temp")
 
     for i in conf["renv"]:
         if i.count("QUERY_STRING") and conf["renv"].get("REDIRECT_QUERY_STRING","").count("/package")>0:
